@@ -1,5 +1,7 @@
 use crate::dex::position_manager::PositionRead;
+use crate::dex::router::RouteAndFill;
 use crate::dex::{router::path::Path, router::FillRoute, PositionManager};
+use crate::dex::{StateReadExt, StateWriteExt};
 use crate::temp_storage_ext::TempStorageExt;
 use futures::StreamExt;
 use penumbra_crypto::dex::lp::position::Position;
@@ -13,6 +15,7 @@ use penumbra_crypto::{
     fixpoint::U128x128,
     Amount, Value,
 };
+use penumbra_crypto::{MockFlowCiphertext, SwapFlow};
 use penumbra_storage::ArcStateDeltaExt;
 use penumbra_storage::TempStorage;
 use penumbra_storage::{StateDelta, StateWrite};
@@ -126,8 +129,6 @@ async fn path_extension_basic() {
     // This price should be more expensive since the the cheaper path along the mispriced gn:pusd position no longer exists.
     let expensive_price = path.price;
 
-    println!("cheap: {}", cheap_price);
-    println!("expensive: {}", expensive_price);
     assert!(
         cheap_price < expensive_price,
         "price should be cheaper with mispriced position"
@@ -501,14 +502,6 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("pusd");
 
-    println!("unit {} gm: {}", gm.unit_amount(), gm.id());
-    println!("unit {} gn: {}", gn.unit_amount(), gn.id());
-    println!(
-        "unit {} penumbra: {}",
-        penumbra.unit_amount(),
-        penumbra.id()
-    );
-    println!("unit {} pusd: {}", pusd.unit_amount(), pusd.id());
     let pair_1 = Market::new(gm.clone(), gn.clone());
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
@@ -610,14 +603,6 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("pusd");
 
-    println!("unit {} gm: {}", gm.unit_amount(), gm.id());
-    println!("unit {} gn: {}", gn.unit_amount(), gn.id());
-    println!(
-        "unit {} penumbra: {}",
-        penumbra.unit_amount(),
-        penumbra.id()
-    );
-    println!("unit {} pusd: {}", pusd.unit_amount(), pusd.id());
     let pair_1 = Market::new(gm.clone(), gn.clone());
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
@@ -885,7 +870,7 @@ async fn simple_route() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn best_position_route() -> anyhow::Result<()> {
+async fn best_position_route_and_fill() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let storage = TempStorage::new().await?.apply_default_genesis().await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
@@ -902,11 +887,47 @@ async fn best_position_route() -> anyhow::Result<()> {
     state_tx.apply();
 
     // We should be able to call path_search and route through that position.
-    let (path, _spill) = state.path_search(gn.id(), penumbra.id(), 1).await.unwrap();
+    let (path, _spill) = state.path_search(gn.id(), penumbra.id(), 4).await.unwrap();
 
     assert!(path.is_some(), "path exists between gn<->penumbra");
     assert!(path.clone().unwrap().len() == 1, "path is of length 1");
     assert!(path.unwrap()[0] == penumbra.id(), "path[0] is penumbra");
+
+    // Now we should be able to fill a 1:1 gn:penumbra swap.
+    let trading_pair = pair_1.into_directed_trading_pair().into();
+
+    let mut swap_flow = state.swap_flow(&trading_pair);
+
+    assert!(trading_pair.asset_1() == penumbra.id());
+
+    // Add the amount of each asset being swapped to the batch swap flow.
+    swap_flow.0 += MockFlowCiphertext::new(0u32.into());
+    swap_flow.1 += MockFlowCiphertext::new(1u32.into());
+
+    // Set the batch swap flow for the trading pair.
+    Arc::get_mut(&mut state)
+        .unwrap()
+        .put_swap_flow(&trading_pair, swap_flow.clone());
+    state
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0, 0)
+        .await
+        .expect("unable to process batch swaps");
+
+    // Output data should have 1 penumbra out and 1 gn in.
+    let output_data = state.output_data(0, trading_pair).await?.unwrap();
+
+    // 0 penumbra in
+    assert_eq!(output_data.delta_1, 0u64.into());
+    // 1 gn in
+    assert_eq!(output_data.delta_2, 1u64.into());
+    // 0 unfilled penumbra out
+    assert_eq!(output_data.lambda_1_1, 0u64.into());
+    // 0 gn out for penumbra -> gn
+    assert_eq!(output_data.lambda_2_1, 0u64.into());
+    // 1 penumbra out for gn -> penumbra
+    assert_eq!(output_data.lambda_1_2, 1u64.into());
+    // 0 unfilled gn
+    assert_eq!(output_data.lambda_2_2, 0u64.into());
 
     Ok(())
 }
