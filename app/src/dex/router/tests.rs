@@ -5,6 +5,7 @@ use crate::dex::{StateReadExt, StateWriteExt};
 use crate::temp_storage_ext::TempStorageExt;
 use futures::StreamExt;
 use penumbra_crypto::dex::lp::position::Position;
+use penumbra_crypto::MockFlowCiphertext;
 use penumbra_crypto::{
     asset,
     asset::Unit,
@@ -15,7 +16,6 @@ use penumbra_crypto::{
     fixpoint::U128x128,
     Amount, Value,
 };
-use penumbra_crypto::{MockFlowCiphertext, SwapFlow};
 use penumbra_storage::ArcStateDeltaExt;
 use penumbra_storage::TempStorage;
 use penumbra_storage::{StateDelta, StateWrite};
@@ -557,9 +557,10 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
 
     let spill_price = U128x128::from(Amount::from(1_000_000_000u64) * pusd.unit_amount());
 
-    let (unfilled, output) = FillRoute::fill_route(&mut state_tx, delta_1, &route, spill_price)
-        .await
-        .unwrap();
+    let (unfilled, output) =
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+            .await
+            .unwrap();
 
     // let output_cal = U128x128::ratio(output.amount, pusd.unit_amount()).unwrap();
     let desired_output: Amount = (Amount::from(10_000u64)
@@ -655,9 +656,10 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
 
     let spill_price = U128x128::from(Amount::from(1_000_000_000u64) * pusd.unit_amount());
 
-    let (unfilled, output) = FillRoute::fill_route(&mut state_tx, delta_1, &route, spill_price)
-        .await
-        .unwrap();
+    let (unfilled, output) =
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+            .await
+            .unwrap();
 
     let desired_output: Amount = (Amount::from(10_000u64)
         + Amount::from(3100u64)
@@ -737,9 +739,10 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     let spill_price =
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(pusd.unit_amount())).unwrap();
 
-    let (unfilled, output) = FillRoute::fill_route(&mut state_tx, delta_1, &route, spill_price)
-        .await
-        .unwrap();
+    let (unfilled, output) =
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+            .await
+            .unwrap();
 
     let desired_output = Amount::from(3000u64) * pusd.unit_amount();
 
@@ -817,9 +820,10 @@ async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
     let valuation_gm = (U128x128::from(one) * U128x128::from(gm.unit_amount())).unwrap();
     let spill_price = U128x128::ratio(valuation_gm, valuation_penumbra).unwrap();
 
-    let (unfilled, output) = FillRoute::fill_route(&mut state_tx, delta_1, &route, spill_price)
-        .await
-        .unwrap();
+    let (unfilled, output) =
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+            .await
+            .unwrap();
 
     let desired_output = Amount::from(2900u64) * pusd.unit_amount();
 
@@ -909,7 +913,7 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
         .unwrap()
         .put_swap_flow(&trading_pair, swap_flow.clone());
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0, 0)
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0)
         .await
         .expect("unable to process batch swaps");
 
