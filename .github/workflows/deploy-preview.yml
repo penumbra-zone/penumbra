@@ -16,6 +16,12 @@ on:
     branches:
       - main
 
+# Cancel any pending preview deploys, in favor of a newer PR
+# that was just merged.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-container:
     name: Build container for preview
