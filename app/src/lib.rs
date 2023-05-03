@@ -13,7 +13,6 @@ pub mod app;
 pub mod dex;
 pub mod governance;
 pub mod stake;
-pub mod stubdex;
 
 /// Temporary compat wrapper for duplicate trait impls
 pub struct Compat<'a, T>(&'a T);

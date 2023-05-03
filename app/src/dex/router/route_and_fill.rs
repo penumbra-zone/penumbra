@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_crypto::{
     asset,
-    dex::{BatchSwapOutputData, TradingPair},
+    dex::{BatchSwapOutputData, DirectedTradingPair, TradingPair},
     fixpoint::U128x128,
     Amount, SwapFlow, Value,
 };
@@ -12,7 +12,7 @@ use penumbra_storage::StateWrite;
 
 use crate::dex::{
     router::{FillRoute, PathSearch},
-    PositionManager, StateWriteExt,
+    PositionManager, PositionRead, StateWriteExt,
 };
 
 /// Ties together the routing and filling logic, to process
@@ -37,28 +37,52 @@ pub trait RouteAndFill: StateWrite + Sized {
 
         // Depending on the contents of the batch swap inputs, we might need to path search in either direction.
         let (lambda_2, unfilled_1) = if delta_1.value() > 0 {
-            // There is input for asset 1, so we need to route for asset 1 -> asset 2
-            self.route_and_fill_inner(
-                trading_pair.asset_1(),
-                trading_pair.asset_2(),
-                delta_1,
-                price_limit,
-            )
-            .await?
+            // The price limit is the maximum price we're willing to pay for asset 1 -> asset 2.
+            // Since we don't have a good way of setting a mid-price based on positions and available liquidity designed right now
+            // let's just set it to the maximum price in any position to fill as much as possible.
+            let target_pair =
+                DirectedTradingPair::new(trading_pair.asset_1(), trading_pair.asset_2());
+            if let Some(worst_price_position) = self.worst_position(&target_pair).await? {
+                // There is input for asset 1, so we need to route for asset 1 -> asset 2
+                self.route_and_fill_inner(
+                    trading_pair.asset_1(),
+                    trading_pair.asset_2(),
+                    delta_1,
+                    Amount::try_from(worst_price_position.phi.component.effective_price())?,
+                )
+                .await?
+            } else {
+                (0u64.into(), delta_1)
+            }
         } else {
             // There was no input for asset 1, so there's 0 output for asset 2 from this side.
             (0u64.into(), delta_1)
         };
 
         let (lambda_1, unfilled_2) = if delta_2.value() > 0 {
-            // There is input for asset 2, so we need to route for asset 2 -> asset 1
-            self.route_and_fill_inner(
-                trading_pair.asset_2(),
-                trading_pair.asset_1(),
-                delta_2,
-                price_limit,
-            )
-            .await?
+            // The price limit is the maximum price we're willing to pay for asset 2 -> asset 1.
+            // Since we don't have a good way of setting a mid-price based on positions and available liquidity designed right now
+            // let's just set it to the maximum price in any position to fill as much as possible.
+            let target_pair =
+                DirectedTradingPair::new(trading_pair.asset_2(), trading_pair.asset_1());
+            if let Some(worst_price_position) = self.worst_position(&target_pair).await? {
+                tracing::debug!(
+                    ?target_pair,
+                    ?worst_price_position,
+                    "routing and filling with price limit from worst position"
+                );
+                // There is input for asset 1, so we need to route for asset 1 -> asset 2
+                self.route_and_fill_inner(
+                    trading_pair.asset_2(),
+                    trading_pair.asset_1(),
+                    delta_2,
+                    Amount::try_from(worst_price_position.phi.component.effective_price())?,
+                )
+                .await?
+            } else {
+                tracing::debug!(?target_pair, "no worst priced position found");
+                (0u64.into(), delta_2)
+            }
         } else {
             // There was no input for asset 2, so there's 0 output for asset 1 from this side.
             (0u64.into(), delta_2)

@@ -78,9 +78,7 @@ impl TradingFunction {
             let f = self
                 .component
                 .convert_to_lambda_2(U128x128::from(output.amount));
-            println!("1before rounding: {f}");
             let f = f.round_up().try_into()?;
-            println!("1after rounding: {f:?}");
             Ok(Value {
                 amount: f,
                 asset_id: self.pair.asset_2(),
@@ -90,9 +88,7 @@ impl TradingFunction {
                 .component
                 .convert_to_delta_1(U128x128::from(output.amount));
 
-            println!("2before rounding: {fillable_delta_1}");
             let fillable_delta_1 = fillable_delta_1.round_up().try_into()?;
-            println!("2after rounding: {fillable_delta_1:?}");
             Ok(Value {
                 amount: fillable_delta_1,
                 asset_id: self.pair.asset_1(),

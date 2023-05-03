@@ -9,7 +9,7 @@ use penumbra_crypto::{
     Value,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{StateRead, StateWrite};
+use penumbra_storage::{EscapedByteSlice, StateRead, StateWrite};
 
 use super::state_key;
 use futures::Stream;
@@ -18,6 +18,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     iter::FromIterator,
     pin::Pin,
+    sync::Arc,
 };
 
 #[async_trait]
@@ -58,17 +59,14 @@ pub trait PositionRead: StateRead {
         pair: &DirectedTradingPair,
     ) -> Pin<Box<dyn Stream<Item = Result<position::Id>> + Send + 'static>> {
         let prefix = state_key::internal::price_index::prefix(pair);
-        tracing::debug!(?prefix);
+        tracing::debug!(prefix = ?EscapedByteSlice(&prefix), "searching for positions by price");
         self.nonconsensus_prefix_raw(&prefix)
-            .map(|entry| {
-                println!("looking at entry");
-                match entry {
-                    Ok((k, _)) => {
-                        let raw_id = <&[u8; 32]>::try_from(&k[103..135])?.to_owned();
-                        Ok(position::Id(raw_id))
-                    }
-                    Err(e) => Err(e),
+            .map(|entry| match entry {
+                Ok((k, _)) => {
+                    let raw_id = <&[u8; 32]>::try_from(&k[103..135])?.to_owned();
+                    Ok(position::Id(raw_id))
                 }
+                Err(e) => Err(e),
             })
             .boxed()
     }
@@ -94,6 +92,29 @@ pub trait PositionRead: StateRead {
             None => Ok(None),
         }
     }
+
+    async fn worst_position(
+        &self,
+        pair: &DirectedTradingPair,
+    ) -> Result<Option<position::Position>> {
+        // Since the other direction might not have any positions, we need to
+        // fetch the last one in the index.
+        //
+        // TODO: Maybe we should have a separate index for this?
+        let positions_by_price = self.positions_by_price(pair);
+        let positions = positions_by_price.collect::<Vec<_>>().await;
+
+        let id = match positions.last() {
+            Some(id) => match id {
+                Ok(id) => id.clone(),
+                Err(e) => {
+                    return Err(anyhow::anyhow!("{}", e).context("failed to fetch worst position"));
+                }
+            },
+            None => return Ok(None),
+        };
+        self.position_by_id(&id).await
+    }
 }
 impl<T: StateRead + ?Sized> PositionRead for T {}
 
@@ -112,10 +133,6 @@ pub trait PositionManager: StateWrite + PositionRead {
         if position.state == position::State::Opened {
             self.index_position(&position);
         }
-        println!(
-            "store position in consensus storage key: {:?}",
-            state_key::position_by_id(&id)
-        );
         self.put(state_key::position_by_id(&id), position);
     }
 
@@ -271,12 +288,10 @@ pub(super) trait Inner: StateWrite {
             };
             let phi12 = phi.component.clone();
             let k = state_key::internal::price_index::key(&pair12, &phi12, &id);
-            println!("indexing to k (1): {:?}", k);
             self.nonconsensus_put_raw(
                 state_key::internal::price_index::key(&pair12, &phi12, &id),
                 vec![],
             );
-            println!("done putting");
             tracing::debug!(pair = ?pair12, ?id, "indexing position 12");
         }
 
@@ -288,12 +303,10 @@ pub(super) trait Inner: StateWrite {
             };
             let phi21 = phi.component.flip();
             let k = state_key::internal::price_index::key(&pair21, &phi21, &id);
-            println!("indexing to k (2): {:?}", k);
             self.nonconsensus_put_raw(
                 state_key::internal::price_index::key(&pair21, &phi21, &id),
                 vec![],
             );
-            println!("done putting");
             tracing::debug!(pair = ?pair21, ?id, "indexing position 21");
         }
     }
