@@ -170,9 +170,9 @@ impl OrderCmd {
                     .default_unit();
 
                 // We're buying 1 unit of the desired asset...
-                let p = desired_unit.unit_amount();
+                let q = desired_unit.unit_amount();
                 // ... for the given amount of the price asset.
-                let q = buy_order.price.amount;
+                let p = buy_order.price.amount;
 
                 // we want to end up with (r1, r2) = (0, desired)
                 // amm is p * r1 + q * r2 = k
@@ -209,9 +209,9 @@ impl OrderCmd {
                     .default_unit();
 
                 // We're selling 1 unit of the selling asset...
-                let p = selling_unit.unit_amount();
+                let q = selling_unit.unit_amount();
                 // ... for the given amount of the price asset.
-                let q = sell_order.price.amount;
+                let p = sell_order.price.amount;
 
                 (
                     pair,
