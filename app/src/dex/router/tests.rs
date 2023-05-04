@@ -325,6 +325,22 @@ impl Market {
     }
 }
 
+/// Create a `Position` to buy `asset_1` using `asset_2` with explicit p/q.
+/// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
+fn limit_buy_pq(market: Market, quantity: Amount, p: Amount, q: Amount, fee: u32) -> Position {
+    Position::new(
+        OsRng,
+        market.into_directed_trading_pair(),
+        fee,
+        p,
+        q,
+        Reserves {
+            r1: Amount::zero(),
+            r2: quantity * (q / p) * market.end.unit_amount(),
+        },
+    )
+}
+
 /// Create a `Position` to buy `asset_1` using `asset_2`.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
 fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
@@ -932,6 +948,144 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     assert_eq!(output_data.lambda_1_2, 1u64.into());
     // 0 unfilled gn
     assert_eq!(output_data.lambda_2_2, 0u64.into());
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+
+    let pair_gn_penumbra = Market::new(gn.clone(), penumbra.clone());
+    let pair_gm_gn = Market::new(gm.clone(), gn.clone());
+    let pair_gn_gm = Market::new(gn.clone(), gm.clone());
+    let pair_gm_penumbra = Market::new(gm.clone(), penumbra.clone());
+
+    // Create a 2:1 penumbra:gm position (i.e. buy 20 gm at 2 penumbra each).
+    let buy_1 = limit_buy_pq(
+        pair_gm_penumbra.clone(),
+        5u64.into(),
+        1u64.into(),
+        2u64.into(),
+        0u32,
+    );
+    state_tx.put_position(buy_1);
+
+    // Create a 2.1:1 penumbra:gm position (i.e. buy 40 gm at 2.1 penumbra each).
+    let buy_2 = limit_buy_pq(
+        pair_gm_penumbra.clone(),
+        40u64.into(),
+        1000000u64.into(),
+        2100000u64.into(),
+        0u32,
+    );
+    state_tx.put_position(buy_2);
+
+    // Create a 2.2:1 penumbra:gm position (i.e. buy 160 gm at 2.2 penumbra each).
+    let buy_3 = limit_buy_pq(
+        pair_gm_penumbra.clone(),
+        160u64.into(),
+        1000000u64.into(),
+        2200000u64.into(),
+        0u32,
+    );
+    state_tx.put_position(buy_3);
+
+    // Create a 1:1 gm:gn position (i.e. buy 100 gm at 1 gn each).
+    let buy_4 = limit_buy_pq(
+        pair_gm_gn.clone(),
+        100u64.into(),
+        1u64.into(),
+        2u64.into(),
+        // with 20bps fee
+        20u32,
+    );
+    state_tx.put_position(buy_4);
+
+    // Create a 1.9:1 penumbra:gn position (i.e. buy 160 gn at 1.9 penumbra each).
+    let buy_5 = Position::new(
+        OsRng,
+        pair_gn_penumbra.into_directed_trading_pair(),
+        0u32,
+        1000000u64.into(),
+        1900000u64.into(),
+        Reserves {
+            r1: Amount::zero(),
+            r2: 80000000u32.into(),
+        },
+    );
+    state_tx.put_position(buy_5);
+
+    // Create a 1:1 gm:gn position (i.e. buy 100 gn at 1 gm each).
+    let buy_6 = limit_buy_pq(
+        pair_gn_gm.clone(),
+        100u64.into(),
+        1u64.into(),
+        1u64.into(),
+        // with 20bps fee
+        20u32,
+    );
+    state_tx.put_position(buy_6);
+
+    state_tx.apply();
+
+    // Now if we swap 1000gm into penumbra, we should not get total execution, but we should
+    // consume all penumbra liquidity on the direct gm:penumbra pairs, as well as route through the
+    // gm:gn and gn:penumbra pairs to obtain penumbra.
+    let (path, _spill) = state.path_search(gm.id(), penumbra.id(), 4).await.unwrap();
+
+    assert!(path.is_some(), "path exists between gm<->penumbra");
+    assert!(path.unwrap()[0] == penumbra.id(), "path[0] is penumbra");
+
+    let trading_pair = pair_gm_penumbra.into_directed_trading_pair().into();
+
+    let mut swap_flow = state.swap_flow(&trading_pair);
+
+    assert!(trading_pair.asset_1() == gm.id());
+
+    // Add the amount of each asset being swapped to the batch swap flow.
+    swap_flow.0 += MockFlowCiphertext::new(1_000_000_000_000u64.into());
+    swap_flow.1 += MockFlowCiphertext::new(0u32.into());
+
+    // Set the batch swap flow for the trading pair.
+    Arc::get_mut(&mut state)
+        .unwrap()
+        .put_swap_flow(&trading_pair, swap_flow.clone());
+    state
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0)
+        .await
+        .expect("unable to process batch swaps");
+
+    // Output data should have 1 penumbra out and 1000000 gm in.
+    let output_data = state.output_data(0, trading_pair).await?.unwrap();
+
+    // 1000000 gm in
+    assert_eq!(output_data.delta_1, 1000000000000u64.into());
+    // 0 penumbra in
+    assert_eq!(output_data.delta_2, 0u64.into());
+    // Some gm leftover
+    assert!(output_data.lambda_1_1 > 0u64.into());
+
+    // Verify all positions that provided `penumbra` have had all their liquidity consumed.
+    let mut s = state.all_positions();
+    while let Some(position) = s.next().await.transpose()? {
+        let trading_pair = position.phi.pair;
+
+        if trading_pair.asset_1() == penumbra.id() {
+            assert_eq!(position.reserves.r1, 0u64.into());
+        }
+
+        if trading_pair.asset_2() == penumbra.id() {
+            assert_eq!(position.reserves.r2, 0u64.into());
+        }
+    }
 
     Ok(())
 }

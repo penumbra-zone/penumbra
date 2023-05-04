@@ -79,38 +79,58 @@ pub trait RouteAndFill: StateWrite + Sized {
     where
         Self: 'static,
     {
-        // Find the best route between the two assets in the trading pair.
-        let (path, spill_price) = self
-            // TODO: max hops should not be hardcoded
-            .path_search(asset_1, asset_2, 4)
-            .await
-            .unwrap();
+        // Output of asset 2
+        let mut outer_lambda_2 = 0u64.into();
+        // Unfilled output of asset 1
+        let mut outer_unfilled_1 = delta_1;
 
-        tracing::debug!("path is some? {}", path.is_some());
+        // Continuously route and fill until either:
+        // 1. We have no more delta_1 remaining
+        // 2. A path can no longer be found
+        loop {
+            // Find the best route between the two assets in the trading pair.
+            let (path, spill_price) = self
+                // TODO: max hops should not be hardcoded
+                .path_search(asset_1, asset_2, 4)
+                .await
+                .unwrap();
 
-        let (lambda_2, unfilled_1) = if path.is_some() {
+            tracing::debug!("path is some? {}", path.is_some());
+            if path.is_none() {
+                // No path found, so we can't fill any more.
+                break;
+            }
+
             let path = path.unwrap();
             tracing::debug!(?path);
 
-            // path found, fill as much as we can
-            let delta_1 = Value {
-                amount: delta_1,
-                asset_id: asset_1,
-            };
-            let (unfilled_1, lambda_2) = Arc::get_mut(self)
-                .expect("expected state to have no other refs")
-                .fill_route(delta_1, &path, spill_price)
-                .await?;
-            assert_eq!(lambda_2.asset_id, asset_2);
-            assert_eq!(unfilled_1.asset_id, asset_1);
-            let lambda_2 = lambda_2.amount;
-            tracing::debug!(?lambda_2, ?unfilled_1);
-            (lambda_2, unfilled_1.amount)
-        } else {
-            (0u64.into(), 0u64.into())
-        };
+            (outer_lambda_2, outer_unfilled_1) = {
+                // path found, fill as much as we can
+                let delta_1 = Value {
+                    amount: outer_unfilled_1,
+                    asset_id: asset_1,
+                };
+                let (unfilled_1, lambda_2) = Arc::get_mut(self)
+                    .expect("expected state to have no other refs")
+                    .fill_route(delta_1, &path, spill_price)
+                    .await?;
+                assert_eq!(lambda_2.asset_id, asset_2);
+                assert_eq!(unfilled_1.asset_id, asset_1);
+                let lambda_2 = lambda_2.amount;
+                tracing::debug!(?lambda_2, ?unfilled_1);
 
-        Ok((lambda_2, unfilled_1))
+                // The output of asset 2 is the sum of all the `lambda_2` values,
+                // and the unfilled amount becomes the new `delta_1`.
+                (outer_lambda_2 + lambda_2, unfilled_1.amount)
+            };
+
+            if outer_unfilled_1.value() == 0 {
+                // All of the `delta_1` was spent
+                break;
+            }
+        }
+
+        Ok((outer_lambda_2, outer_unfilled_1))
     }
 }
 
