@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use ndarray::s;
 use ndarray::Array;
 use ndarray::Array2;
@@ -5,26 +6,32 @@ use ndarray::Array2;
 pub mod xyk {
     use ndarray::Array;
     use penumbra_crypto::{dex::lp::position::Position, fixpoint::U128x128, Value};
-    pub fn approximate(_invariant_k: &Value, _current_price: U128x128) -> Vec<Position> {
-        let a = vec![2.0, 3.0, 5.0, 7.0, 9.0, 11.0, 13.0, 15.0];
-        let k = 2.0;
-        let n = a.len();
 
-        let b: Vec<f64> = a
+    /// The number of positions that is used to approximate the xyk CFMM.
+    const NUM_POOLS_PRECISION: usize = 100;
+
+    pub fn approximate(
+        invariant_k: &Value,
+        _current_price: U128x128,
+    ) -> anyhow::Result<Vec<Position>> {
+        let alphas = super::sample_points(NUM_POOLS_PRECISION);
+        let global_invariant = invariant_k.amount.value() as f64;
+
+        let b: Vec<f64> = alphas
             .iter()
-            .map(|alpha: &f64| {
-                let inner: f64 = k * *alpha;
-                let inner = inner.sqrt();
-                2.0 * inner
-            })
+            .map(|price: &f64| portfolio_value_function(global_invariant, *price))
             .collect();
 
-        match solve(&a, k, n) {
-            Ok(k_values) => println!("k_1, ..., k_n: {:?}", k_values),
-            Err(err) => eprintln!("{}", err),
-        }
+        let k_invariants = solve(
+            &alphas,
+            invariant_k.amount.value() as f64,
+            NUM_POOLS_PRECISION,
+        )?
+        .to_vec();
 
-        vec![]
+        println!("k_invariants: {k_invariants:?}");
+
+        Ok(vec![])
     }
 
     pub fn solve(
@@ -46,7 +53,7 @@ pub mod xyk {
             }
         }
 
-        super::gauss_seidel(A, b, 1000, 1e-8)
+        super::gauss_seidel(A, b, 1000, super::APPROXIMATION_TOLERANCE)
     }
 
     pub fn portfolio_value_function(invariant_k: f64, price: f64) -> f64 {
@@ -54,19 +61,15 @@ pub mod xyk {
     }
 }
 
-fn lower_triangular(matrix: &Array2<f64>) -> Array2<f64> {
-    let (rows, cols) = matrix.dim();
-    let mut result = Array2::zeros((rows, cols));
+pub mod balancer {
 
-    for i in 0..rows {
-        for j in 0..=i {
-            result[[i, j]] = matrix[[i, j]];
-        }
-    }
-
-    result
 }
 
+/// The acceptable amount of difference between a value and its approximation.
+const APPROXIMATION_TOLERANCE: f64 = 1e-8;
+
+/// Applies the Gaus-Seidel method to a square matrix A and returns
+/// a vector of solutions.
 fn gauss_seidel(
     A: Array<f64, ndarray::Dim<[usize; 2]>>,
     b: Array<f64, ndarray::Dim<[usize; 1]>>,
@@ -104,4 +107,27 @@ fn gauss_seidel(
     }
 
     Ok(k)
+}
+
+/// Converts a square matrix into a lower triangular matrix.
+fn lower_triangular(matrix: &Array2<f64>) -> Array2<f64> {
+    let (rows, cols) = matrix.dim();
+    let mut result = Array2::zeros((rows, cols));
+
+    for i in 0..rows {
+        for j in 0..=i {
+            result[[i, j]] = matrix[[i, j]];
+        }
+    }
+
+    result
+}
+
+fn sample_points(n: usize) -> Vec<f64> {
+    let mut points = vec![];
+    for i in 1..=n {
+        points.push(i as f64)
+    }
+
+    points
 }

@@ -594,9 +594,10 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
             |                              |          50gn@2                      |           1penumbra@2500           |
             |                              |                                      |           1penumbra@2000           |
             ------------------------------------------------------------------------------------------------------------
-            * marginal price
             Delta_1 = 4gm
-            Lambda_2 = 2000 + 2500
+            Delta_2 = $0
+            Lambda_1 = 0gm
+            Lambda_2 = $10,000 + $3100 + 6 * $3000 = $29,100
     */
 
     let gm = asset::REGISTRY.parse_unit("gm");
