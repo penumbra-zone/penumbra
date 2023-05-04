@@ -5,12 +5,17 @@ use ndarray::Array2;
 
 pub mod xyk {
     use ndarray::Array;
-    use penumbra_crypto::{dex::lp::position::Position, fixpoint::U128x128, Value};
+    use penumbra_crypto::{
+        dex::{lp::position::Position, Market},
+        fixpoint::U128x128,
+        Value,
+    };
 
     /// The number of positions that is used to approximate the xyk CFMM.
     const NUM_POOLS_PRECISION: usize = 100;
 
     pub fn approximate(
+        market: &Market,
         invariant_k: &Value,
         _current_price: U128x128,
     ) -> anyhow::Result<Vec<Position>> {
@@ -61,9 +66,9 @@ pub mod xyk {
     }
 }
 
-pub mod balancer {
+pub mod balancer {}
 
-}
+pub mod volatility {}
 
 /// The acceptable amount of difference between a value and its approximation.
 const APPROXIMATION_TOLERANCE: f64 = 1e-8;

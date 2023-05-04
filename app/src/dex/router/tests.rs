@@ -8,10 +8,9 @@ use penumbra_crypto::dex::lp::position::Position;
 use penumbra_crypto::MockFlowCiphertext;
 use penumbra_crypto::{
     asset,
-    asset::Unit,
     dex::{
         lp::{position, Reserves},
-        DirectedTradingPair,
+        DirectedTradingPair, Market,
     },
     fixpoint::U128x128,
     Amount, Value,
@@ -305,24 +304,6 @@ fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
     }
     s.put_position(position_7);
     s.put_position(position_8);
-}
-
-#[derive(Clone, Debug)]
-struct Market {
-    start: Unit,
-    end: Unit,
-}
-
-impl Market {
-    fn new(start: Unit, end: Unit) -> Self {
-        Self { start, end }
-    }
-    fn into_directed_trading_pair(&self) -> DirectedTradingPair {
-        DirectedTradingPair {
-            start: self.start.id(),
-            end: self.end.id(),
-        }
-    }
 }
 
 /// Create a `Position` to buy `asset_1` using `asset_2`.
