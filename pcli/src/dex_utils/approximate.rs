@@ -79,7 +79,7 @@ fn gauss_seidel(
     A: Array<f64, ndarray::Dim<[usize; 2]>>,
     b: Array<f64, ndarray::Dim<[usize; 1]>>,
     max_iterations: usize,
-    _tolerance: f64,
+    tolerance: f64,
 ) -> anyhow::Result<Array<f64, ndarray::Dim<[usize; 1]>>> {
     let n = A.shape()[0];
     let L = lower_triangular(&A);
@@ -87,8 +87,7 @@ fn gauss_seidel(
 
     let mut k = Array::zeros(n);
     for _ in 0..max_iterations {
-        // See TODO about implementing tolerance checks.
-        // let k_old = k.clone();
+        let k_old = k.clone();
 
         for i in 0..n {
             // This looks more gnarly than it actually is, TODO(erwan): link to the spec.
@@ -100,15 +99,16 @@ fn gauss_seidel(
             k[i] = (b[i] - sum_ld) / L[[i, i]];
         }
 
-        // TODO(erwan): unfortunately, we cannot use the L2 Norm helper
-        // from `ndarray-linalg` without adding a dependency to LAPACK.
-        // I'm not going to implement it manually, even though it can be
-        // done because it's relatively lower priority. However, it would
-        // be nice to stop G-S early if we get below a tolerance level.
-        // Mostly for performance purposes.
-        // if (&k - &k_old).norm_l2() < tol {
-        //     break;
-        // }
+        let delta_approximation = &k - &k_old;
+        let l2_norm_delta = delta_approximation
+            .iter()
+            .map(|&x| x * x)
+            .sum::<f64>()
+            .sqrt();
+
+        if l2_norm_delta < tolerance {
+            break;
+        }
     }
 
     Ok(k)
