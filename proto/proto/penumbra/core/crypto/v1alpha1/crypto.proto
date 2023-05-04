@@ -76,6 +76,45 @@ message Denom {
     string denom = 1;
 }
 
+// DenomMetadata represents a struct that describes a basic token.
+message DenomMetadata {
+    string description = 1;
+    // denom_units represents the list of DenomUnit's for a given coin
+    repeated DenomUnit denom_units = 2;
+    // base represents the base denom (should be the DenomUnit with exponent = 0).
+    string base = 3;
+    // display indicates the suggested denom that should be
+    // displayed in clients.
+    string display = 4;
+    // name defines the name of the token (eg: Cosmos Atom)
+    string name = 5;
+    // symbol is the token symbol usually shown on exchanges (eg: ATOM). This can
+    // be the same as the display.
+    string symbol = 6;
+    // URI to a document (on or off-chain) that contains additional information. Optional.
+    string uri = 7;
+    // URIHash is a sha256 hash of a document pointed by URI. It's used to verify that
+    // the document didn't change. Optional.
+    string uri_hash = 8;
+
+    // the asset ID on Penumbra for this denomination.
+    AssetId penumbra_asset_id = 1984;
+}
+
+// DenomUnit represents a struct that describes a given denomination unit of the basic token.
+message DenomUnit {
+    // denom represents the string name of the given denom unit (e.g uatom).
+    string denom = 1;
+    // exponent represents power of 10 exponent that one must
+    // raise the base_denom to in order to equal the given DenomUnit's denom
+    // 1 denom = 10^exponent base_denom
+    // (e.g. with a base_denom of uatom, one can create a DenomUnit of 'atom' with
+    // exponent = 6, thus: 1 atom = 10^6 uatom).
+    uint32 exponent = 2;
+    // aliases is a list of string aliases for the given denom
+    repeated string aliases = 3;
+}
+
 message Value {
     Amount amount = 1;
     AssetId asset_id = 2;

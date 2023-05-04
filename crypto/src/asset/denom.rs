@@ -10,6 +10,51 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{asset, Fq, Value};
+
+use super::Id;
+/// Metadata for an asset denomination.
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(try_from = "pb::DenomMetadata", into = "pb::DenomMetadata")]
+pub struct DenomMetadata {
+    pub description: String,
+    pub denom_units: Vec<Unit>,
+    pub base: String,
+    pub display: String,
+    pub name: String,
+    pub symbol: String,
+    pub uri: String,
+    pub uri_hash: Vec<u8>,
+    pub penumbra_asset_id: Id,
+}
+
+impl DomainType for DenomMetadata {
+    type Proto = pb::DenomMetadata;
+}
+
+impl From<DenomMetadata> for pb::DenomMetadata {
+    fn from(dm: DenomMetadata) -> Self {
+        pb::DenomMetadata {
+            description: dm.description,
+            base: dm.base,
+            display: dm.display,
+            name: dm.name,
+            symbol: dm.symbol,
+            uri: dm.uri,
+            denom_units: todo!(),
+            uri_hash: todo!(),
+            penumbra_asset_id: todo!(),
+        }
+    }
+}
+impl TryFrom<pb::DenomMetadata> for DenomMetadata {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::DenomMetadata) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+
 /// An asset denomination.
 ///
 /// Each denomination has a unique [`asset::Id`] and base unit, and may also
