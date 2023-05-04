@@ -56,6 +56,10 @@ pub fn generate_tm_config(
         tm_config.p2p.laddr =
             parse_tm_address(None, &Url::parse(format!("tcp://{}", p2p).as_str())?)?;
     }
+    // We don't use pprof_laddr, and tendermint-rs incorrectly prepends "tcp://" to it,
+    // which emits an error on service start, so let's remove it entirely.
+    tm_config.rpc.pprof_laddr = None;
+
     Ok(tm_config)
 }
 
