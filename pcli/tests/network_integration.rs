@@ -7,9 +7,10 @@
 //!
 //! Tests assume that the initial state of the test account is after genesis,
 //! where no tokens have been delegated, and the address with index 0
-//! was distributed 20pusd (`TEST_ASSET`).
+//! was distributed 20pusd ([`TEST_ASSET`]).
 //!
-//! See [`AppState::default`] for the initial allocations to the test validator addresses (`ADDRESS_0_STR`, `ADDRESS_1_STR`).
+//! See the latest testnet's `allocations.csv` for the initial allocations to the test validator addresses
+//! ([`ADDRESS_0_STR`], [`ADDRESS_1_STR`]).
 
 use std::thread;
 use std::{path::PathBuf, time::Duration};
@@ -274,7 +275,7 @@ fn delegate_and_undelegate() {
 fn swap() {
     let tmpdir = load_wallet_into_tmpdir();
 
-    // Create a liquidity position selling 20pusd for 1gn each.
+    // Create a liquidity position selling 1cube for 1penumbra each.
     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
     sell_cmd
         .args([
@@ -284,7 +285,7 @@ fn swap() {
             "position",
             "order",
             "sell",
-            format!("{}@1gn", TEST_ASSET).as_str(),
+            "1cube@1penumbra",
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     sell_cmd.assert().success();
@@ -301,24 +302,24 @@ fn swap() {
 
     balance_cmd
         .assert()
-        // Address 0 has no `gn`
+        // Address 0 has no `cube`.
         .stdout(
-            predicate::str::is_match(format!(r"0\s*[1-9]+.*gn"))
+            predicate::str::is_match(format!(r"0\s*[0-9]+.*cube"))
                 .unwrap()
                 .not(),
         )
-        // but address 1 has 100gn.
-        .stdout(predicate::str::is_match(format!(r"1\s*100gn")).unwrap())
-        // Address 0 should have 80pusd
-        .stdout(predicate::str::is_match(format!(r"0\s*80pusd")).unwrap())
-        // and address 1 should have none.
+        // Address 1 should also have no cube.
         .stdout(
-            predicate::str::is_match(format!(r"1\s*[1-9]+.*pusd"))
+            predicate::str::is_match(format!(r"1\s*[0-9]+.*cube"))
                 .unwrap()
                 .not(),
-        );
+        )
+        // Address 1 has 1001penumbra.
+        .stdout(predicate::str::is_match(format!(r"1\s*1001penumbra")).unwrap())
+        // Address 0 should have some penumbra
+        .stdout(predicate::str::is_match(format!(r"0\s*[0-9]+.*penumbra")).unwrap());
 
-    // Swap 1gn for some pusd from address 1.
+    // Swap 1penumbra for some cube from address 1.
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
     swap_cmd
         .args([
@@ -326,9 +327,9 @@ fn swap() {
             tmpdir.path().to_str().unwrap(),
             "tx",
             "swap",
-            "1gn",
+            "1penumbra",
             "--into",
-            "pusd",
+            "cube",
             "--source",
             "1",
         ])
@@ -347,14 +348,16 @@ fn swap() {
 
     balance_cmd
         .assert()
-        // Address 0 has 1gn now
-        .stdout(predicate::str::is_match(format!(r"0\s*1gn")).unwrap())
-        // and address 1 has 99gn.
-        .stdout(predicate::str::is_match(format!(r"1\s*99gn")).unwrap())
-        // Address 0 should have 80pusd
-        .stdout(predicate::str::is_match(format!(r"0\s*80pusd")).unwrap())
-        // and address 1 should have 1.
-        .stdout(predicate::str::is_match(format!(r"1\s*1pusd")).unwrap());
+        // Address 1 has 1cube now
+        .stdout(predicate::str::is_match(format!(r"1\s*1cube")).unwrap())
+        // and address 0 has no cube.
+        .stdout(
+            predicate::str::is_match(format!(r"0\s*[0-9]+.*cube"))
+                .unwrap()
+                .not(),
+        )
+        // Address 1 spent 1penumbra.
+        .stdout(predicate::str::is_match(format!(r"1\s*1000penumbra")).unwrap());
 }
 
 #[ignore]
