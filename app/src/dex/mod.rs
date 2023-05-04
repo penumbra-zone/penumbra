@@ -1,6 +1,4 @@
-//! The dex component contains implementations of the real Penumbra CPMM with token supplies based on liquidity provider interactions.
-//! It will run in parallel along with the [crate::stubdex] component until the dex component implementation is complete
-//! and the dex component can process [penumbra_transaction::Action::Swap] and [penumbra_transaction::Action::SwapClaim] actions.
+//! The dex component contains implementations of the Penumbra dex with token supplies based on liquidity provider interactions.
 mod component;
 pub mod metrics;
 pub mod state_key;

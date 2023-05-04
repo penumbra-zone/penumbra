@@ -95,7 +95,7 @@ impl PenaltyVar {
     pub fn apply_to(&self, amount: AmountVar) -> Result<AmountVar, SynthesisError> {
         let penalty = self.value().unwrap_or(Penalty(0));
 
-        // Out of circuit scale factor computation:
+        // Out of circuit penalized amount computation:
         let amount_bytes = &amount.value().unwrap_or(Amount::from(0u64)).to_le_bytes()[0..16];
         let amount_128 =
             u128::from_le_bytes(amount_bytes.try_into().expect("should fit in 16 bytes"));

@@ -1,0 +1,44 @@
+#!/bin/bash
+# Helper script for dev/debugging of relayer functionality. Heavily based
+# on the "smoke test" network integration test suite scripts.
+# Configures and runs a relayer instance between "preview" (latest main)
+# and local devnet on current HEAD.
+set -euo pipefail
+
+
+# Fail fast if testnet dir exists, otherwise `cargo run ...` will block
+# for a while, masking the error.
+if [[ -d ~/.penumbra/testnet_data ]] ; then
+    >&2 echo "ERROR: testnet data directory exists at ~/.penumbra/testnet_data"
+    >&2 echo "Not removing this directory automatically; to remove, run: pd testnet unsafe-reset-all"
+    exit 1
+fi
+
+echo "Generating new local devnet..."
+cargo run --release --bin pd -- testnet generate --chain-id penumbra-devnet-local
+
+echo "Starting Tendermint..."
+tendermint start --log_level=error --home "${HOME}/.penumbra/testnet_data/node0/tendermint" &
+tendermint_pid="$!"
+
+export RUST_LOG="info,[CheckTx]=debug"
+echo "Starting pd..."
+cargo run --release --bin pd -- start --home "${HOME}/.penumbra/testnet_data/node0/pd" &
+pd_pid="$!"
+
+# Ensure processes are cleaned up after script exits, regardless of status.
+trap 'kill -9 "$tendermint_pid" "$pd_pid"' EXIT
+
+echo "Waiting a bit for network to start..."
+sleep 10s
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "${repo_root}/deployments/relayer" || exit 1
+./generate-configs preview
+./generate-configs local
+./configure-relayer
+cd - || exit 2
+
+echo "OK, devnet's up, try running ./build-path and see if you can link the two chains."
+# block forever on the processes
+wait

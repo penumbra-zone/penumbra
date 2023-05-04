@@ -4,14 +4,15 @@ use async_stream::try_stream;
 use futures::StreamExt;
 use futures::TryStreamExt;
 use penumbra_app::dex::PositionRead;
+use penumbra_app::dex::StateReadExt;
 use penumbra_app::governance::StateReadExt as _;
 use penumbra_app::stake::rate::RateData;
 use penumbra_app::stake::StateReadExt as _;
-use penumbra_app::stubdex::StateReadExt as _;
 use penumbra_chain::component::AppHashRead;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_crypto::asset::{self, Asset};
 use penumbra_crypto::dex::lp::position;
+use penumbra_crypto::dex::lp::position::Position;
 use penumbra_proto::{
     self as proto,
     client::v1alpha1::{
@@ -63,19 +64,27 @@ impl SpecificQueryService for Info {
         request: tonic::Request<LiquidityPositionsRequest>,
     ) -> Result<tonic::Response<Self::LiquidityPositionsStream>, Status> {
         let state = self.storage.latest_snapshot();
-        let stream_iter = state.all_positions().next().await.into_iter();
-        let s = try_stream! {
-            for item in stream_iter
-                .map(|item| item.map_err(|e| tonic::Status::internal(e.to_string()))) {
-                    let item = item.unwrap();
-                    if (request.get_ref().only_open && item.state == penumbra_crypto::dex::lp::position::State::Opened) || request.get_ref().only_open == false {
-                        yield LiquidityPositionsResponse { data: Some(item.into()) }
-                    }
-                }
-        };
 
+        let only_open = request.get_ref().only_open;
+        let s = state.all_positions();
         Ok(tonic::Response::new(
-            s.map_err(|e: anyhow::Error| {
+            s.filter(move |item| {
+                if item.is_err() {
+                    return futures::future::ready(false);
+                }
+                let item = item.as_ref().unwrap();
+                if (only_open && item.state == penumbra_crypto::dex::lp::position::State::Opened)
+                    || only_open == false
+                {
+                    futures::future::ready(true)
+                } else {
+                    futures::future::ready(false)
+                }
+            })
+            .map_ok(|i: Position| LiquidityPositionsResponse {
+                data: Some(i.into()),
+            })
+            .map_err(|e: anyhow::Error| {
                 tonic::Status::unavailable(format!("error getting prefix value from storage: {e}"))
             })
             // TODO: how do we instrument a Stream
@@ -259,35 +268,13 @@ impl SpecificQueryService for Info {
         }
     }
 
-    #[instrument(skip(self, request))]
-    /// Get the batch swap data associated with a given trading pair and height.
+    #[instrument(skip(self, _request))]
+    /// TODO: remove in followup
     async fn stub_cpmm_reserves(
         &self,
-        request: tonic::Request<StubCpmmReservesRequest>,
+        _request: tonic::Request<StubCpmmReservesRequest>,
     ) -> Result<tonic::Response<StubCpmmReservesResponse>, Status> {
-        let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
-        let request_inner = request.into_inner();
-        let trading_pair = request_inner
-            .trading_pair
-            .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
-            .try_into()
-            .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
-
-        let cpmm_reserves = state
-            .stub_cpmm_reserves(&trading_pair)
-            .await
-            .map_err(|e| tonic::Status::internal(e.to_string()))?;
-
-        match cpmm_reserves {
-            Some(reserves) => Ok(tonic::Response::new(StubCpmmReservesResponse {
-                reserves: Some(reserves.into()),
-            })),
-            None => Err(Status::not_found("CPMM reserves not found")),
-        }
+        Err(tonic::Status::internal("stub cpmm disabled".to_string()))
     }
 
     #[instrument(skip(self, request))]
@@ -376,21 +363,11 @@ impl SpecificQueryService for Info {
         let proposal_id = request.into_inner().proposal_id;
 
         use penumbra_app::governance::state_key;
-        let stream_iter = state
-            .prefix(&state_key::all_rate_data_at_proposal_start(proposal_id))
-            .next()
-            .await
-            .into_iter();
-        let s = try_stream! {
-            for item in stream_iter
-                .map(|item| item.map_err(|e| tonic::Status::internal(e.to_string()))) {
-                    yield item
-                }
-        };
 
+        let s = state.prefix(&state_key::all_rate_data_at_proposal_start(proposal_id));
         Ok(tonic::Response::new(
-            s.map_ok(|i: Result<(String, RateData), tonic::Status>| {
-                let (_key, rate_data) = i.unwrap();
+            s.map_ok(|i: (String, RateData)| {
+                let (_key, rate_data) = i;
                 ProposalRateDataResponse {
                     rate_data: Some(rate_data.into()),
                 }
@@ -471,25 +448,21 @@ impl SpecificQueryService for Info {
             return Err(Status::invalid_argument("prefix is empty"));
         }
 
-        let stream_iter = state.prefix_raw(&request.prefix).next().await.into_iter();
-        let s = try_stream! {
-            for item in stream_iter
-                .map(|item| item.map_err(|e| tonic::Status::internal(e.to_string()))) {
-                    yield item
-                }
-        };
-
         Ok(tonic::Response::new(
-            s.map_ok(|i: Result<(String, Vec<u8>), tonic::Status>| {
-                let (key, value) = i.unwrap();
-                PrefixValueResponse { key, value }
-            })
-            .map_err(|e: anyhow::Error| {
-                tonic::Status::unavailable(format!("error getting prefix value from storage: {e}"))
-            })
-            // TODO: how do we instrument a Stream
-            //.instrument(Span::current())
-            .boxed(),
+            state
+                .prefix_raw(&request.prefix)
+                .map_ok(|i: (String, Vec<u8>)| {
+                    let (key, value) = i;
+                    PrefixValueResponse { key, value }
+                })
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!(
+                        "error getting prefix value from storage: {e}"
+                    ))
+                })
+                // TODO: how do we instrument a Stream
+                //.instrument(Span::current())
+                .boxed(),
         ))
     }
 }

@@ -49,7 +49,10 @@ function create_paths() {
 }
 
 # Create Penumbra-only path, between preview and testnet. Works!
-create_paths penumbra-testnet penumbra-preview penumbra_path
+# create_paths penumbra-testnet penumbra-preview penumbra_path
+
+# Create Penumbra-only path, between preview and devnet.
+create_paths penumbra-preview penumbra-local penumbra_path
 
 # Create paths between Penumbra and/or other Cosmos-adjacent testnets.
 # These are not working yet, so commenting them out by default.

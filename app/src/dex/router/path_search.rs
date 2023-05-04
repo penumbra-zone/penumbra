@@ -8,8 +8,6 @@ use tracing::instrument;
 use crate::dex::PositionManager;
 
 use super::{Path, PathCache, PathEntry, SharedPathCache};
-use crate::dex::PositionRead;
-use penumbra_crypto::dex::DirectedTradingPair;
 
 #[async_trait]
 pub trait PathSearch: StateRead + Clone + 'static {
@@ -22,21 +20,6 @@ pub trait PathSearch: StateRead + Clone + 'static {
         max_hops: usize,
     ) -> Result<(Option<Vec<asset::Id>>, Option<U128x128>)> {
         tracing::debug!(?src, ?dst, ?max_hops, "searching for path");
-
-        /*
-
-
-        If I query the stream here, do i get the best position
-
-        */
-
-        let pair = DirectedTradingPair {
-            start: src,
-            end: dst,
-        };
-        println!("do we find the best position here?");
-        let best_position = self.best_position(&pair).await;
-        println!("best: {best_position:?}");
 
         // Work in a new stack of state changes, which we can completely discard
         // at the end of routing
@@ -55,7 +38,6 @@ pub trait PathSearch: StateRead + Clone + 'static {
             tracing::info!(price = %path.price, spill_price = %spill_price.unwrap_or_else(|| 0u64.into()), ?src, ?nodes, "found path");
             Ok((Some(nodes), spill_price))
         } else {
-            println!("no path found");
             Ok((None, None))
         }
     }
@@ -71,8 +53,6 @@ async fn relax_active_paths<S: StateRead + 'static>(cache: SharedPathCache<S>) -
         "relaxing active paths"
     );
     for path in active_paths {
-        println!("path start: {:?}", path.start);
-        println!("path nodes: {:?}", path.nodes);
         js.spawn(relax_path(cache.clone(), path));
     }
     // Wait for all relaxations to complete.
@@ -91,14 +71,11 @@ async fn relax_path<S: StateRead + 'static>(
         .candidate_set(*path.end(), hardcoded_candidates())
         .await?;
 
-    println!("candidates: {:?}", candidates);
-
     let mut js = JoinSet::new();
     for new_end in candidates {
         let new_path = path.fork();
         let cache2 = cache.clone();
         js.spawn(async move {
-            println!("extending to {:?}", new_end);
             if let Some(new_path) = new_path.extend_to(new_end).await? {
                 cache2.lock().consider(new_path)
             }

@@ -104,12 +104,15 @@ function create_genesis() {
     done
 }
 
-# Remove existing deployment. Intended to omit removal
+# Remove existing deployment and associated storage. Intended to omit removal
 # of certain durable resources, such as LoadBalancer and ManagedCertificate.
+# We intentionally don't use "helm uninstall" because GCP takes a while
+# to propagate ingress recreation, causing delays in endpoint availability.
 function helm_uninstall() {
-    if helm list --short | grep -xq "$HELM_RELEASE" ; then
-        helm uninstall --wait "$HELM_RELEASE"
-    fi
+    # Delete existing deployments.
+    kubectl delete deployments -l app.kubernetes.io/instance="$HELM_RELEASE" --wait=false > /dev/null 2>&1
+    # Delete all existing PVCs so that fresh testnet is created.
+    kubectl delete pvc -l app.kubernetes.io/instance="$HELM_RELEASE" > /dev/null 2>&1
 }
 
 # Apply the Helm configuration to the cluster. Will overwrite resources

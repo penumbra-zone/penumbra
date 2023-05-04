@@ -16,7 +16,8 @@ jobs:
           toolchain: stable
           override: true
       - uses: taiki-e/install-action@nextest
-      - uses: Swatinem/rust-cache@v1
+      - name: Load rust cache
+        uses: Swatinem/rust-cache@v2
       - name: Run tests with nextest
         uses: actions-rs/cargo@v1
         with:
@@ -35,7 +36,8 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - name: Load rust cache
+        uses: Swatinem/rust-cache@v2
       - run: rustup component add rustfmt
       - uses: actions-rs/cargo@v1
         with:
@@ -52,7 +54,8 @@ jobs:
   #        profile: minimal
   #        toolchain: stable
   #        override: true
-  #    - uses: Swatinem/rust-cache@v1
+  #    - name: Load rust cache
+  #      uses: Swatinem/rust-cache@v2
   #    - run: rustup component add clippy
   #    - uses: actions-rs/cargo@v1
   #      with:
