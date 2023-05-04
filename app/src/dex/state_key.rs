@@ -23,6 +23,15 @@ pub fn output_data(height: u64, trading_pair: TradingPair) -> String {
     )
 }
 
+pub fn swap_execution(height: u64, trading_pair: TradingPair) -> String {
+    format!(
+        "dex/swap_execution/{}/{}/{}",
+        height,
+        &trading_pair.asset_1(),
+        &trading_pair.asset_2()
+    )
+}
+
 pub fn swap_flows() -> &'static str {
     "dex/swap_flows"
 }
