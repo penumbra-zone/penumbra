@@ -119,7 +119,7 @@ impl TendermintProxyService for TendermintProxy {
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error broadcasting tx sync: {e}")))?;
 
-        tracing::info!("{:#?}", res);
+        tracing::debug!("{:?}", res);
         Ok(tonic::Response::new(BroadcastTxSyncResponse {
             code: u32::from(res.code) as u64,
             data: res.data.to_vec(),
