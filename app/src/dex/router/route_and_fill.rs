@@ -43,7 +43,7 @@ pub trait RouteAndFill: StateWrite + Sized {
         };
 
         let (lambda_1, unfilled_2) = if delta_2.value() > 0 {
-            // There is input for asset 1, so we need to route for asset 1 -> asset 2
+            // There is input for asset 2, so we need to route for asset 2 -> asset 1
             self.route_and_fill_inner(trading_pair.asset_2(), trading_pair.asset_1(), delta_2)
                 .await?
         } else {
