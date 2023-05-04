@@ -113,7 +113,10 @@ impl Info {
             }
             _ => {
                 // TODO: handle unrecognized path
-                Ok(Default::default())
+                Err(anyhow::anyhow!(
+                    "requested unrecognized path in ABCI query: {}. currently only state/key is supported.",
+                    query.path
+                ))
             }
         }
         // TODO: implement (#22)
