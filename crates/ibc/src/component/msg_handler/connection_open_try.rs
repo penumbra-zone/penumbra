@@ -81,7 +81,7 @@ impl MsgHandler for MsgConnectionOpenTry {
             ConnectionState::Init,
             self.counterparty.client_id().clone(),
             Counterparty::new(
-                self.counterparty.client_id().clone(),
+                self.client_id_on_b.clone(),
                 None,
                 PENUMBRA_COMMITMENT_PREFIX.clone(),
             ),
@@ -90,9 +90,7 @@ impl MsgHandler for MsgConnectionOpenTry {
         );
 
         // get the stored client state for the counterparty
-        let trusted_client_state = state
-            .get_client_state(self.counterparty.client_id())
-            .await?;
+        let trusted_client_state = state.get_client_state(&self.client_id_on_b).await?;
 
         // check if the client is frozen
         // TODO: should we also check if the client is expired here?
