@@ -336,6 +336,8 @@ fn swap() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     swap_cmd.assert().success();
 
+    // Sleep to allow the outputs from the swap to be processed.
+    thread::sleep(*UNBONDING_DURATION);
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
         .args([
