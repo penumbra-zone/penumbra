@@ -4,7 +4,7 @@ use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
-use crate::asset::{self, REGISTRY};
+use crate::asset::{self, Unit, REGISTRY};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 #[serde(try_from = "pb::DirectedTradingPair", into = "pb::DirectedTradingPair")]
@@ -177,5 +177,45 @@ impl FromStr for TradingPair {
 impl fmt::Display for TradingPair {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}:{}", self.asset_1, self.asset_2)
+    }
+}
+
+/// A directed tuple of `Unit`s, similar to a `DirectedTradingPair` but embedding
+/// useful denom data.
+#[derive(Clone, Debug)]
+pub struct Market {
+    pub start: Unit,
+    pub end: Unit,
+}
+
+impl Market {
+    pub fn new(start: Unit, end: Unit) -> Self {
+        Self { start, end }
+    }
+    pub fn into_directed_trading_pair(&self) -> DirectedTradingPair {
+        DirectedTradingPair {
+            start: self.start.id(),
+            end: self.end.id(),
+        }
+    }
+}
+
+impl FromStr for Market {
+    type Err = anyhow::Error;
+
+    /// Takes an input of the form DENOM1:DENOM2,
+    /// splits on the `:` (erroring if there is more than one `:`),
+    /// parses the first and second halves using `asset::REGISTRY.parse_unit`,
+    /// then forms a `Market` i.e. which is a directed tuple of `Units`.
+    fn from_str(s: &str) -> anyhow::Result<Self> {
+        let parts: Vec<&str> = s.split(':').collect();
+
+        if parts.len() != 2 {
+            Err(anyhow!("invalid market string"))
+        } else {
+            let denom_1 = REGISTRY.parse_unit(parts[0]);
+            let denom_2 = REGISTRY.parse_unit(parts[1]);
+            Ok(Self::new(denom_1, denom_2))
+        }
     }
 }
