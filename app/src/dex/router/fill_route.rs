@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use penumbra_crypto::{
     asset,
-    dex::{lp::position, DirectedTradingPair},
+    dex::{execution::SwapExecution, lp::position, DirectedTradingPair},
     fixpoint::U128x128,
     Amount, Value,
 };
@@ -109,7 +109,7 @@ pub trait FillRoute: StateWrite + Sized {
         mut input: Value,
         hops: &[asset::Id],
         spill_price: Option<U128x128>,
-    ) -> Result<(Value, Value)> {
+    ) -> Result<(Value, Value, SwapExecution)> {
         let mut route = hops.to_vec();
         route.insert(0, input.asset_id);
 

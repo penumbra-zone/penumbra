@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_crypto::{
     asset,
-    dex::{BatchSwapOutputData, TradingPair},
+    dex::{execution::SwapExecution, BatchSwapOutputData, TradingPair},
     Amount, SwapFlow, Value,
 };
 use penumbra_storage::StateWrite;
@@ -31,6 +31,13 @@ pub trait RouteAndFill: StateWrite + Sized {
         let (delta_1, delta_2) = (batch_data.0.mock_decrypt(), batch_data.1.mock_decrypt());
 
         tracing::debug!(?delta_1, ?delta_2, ?trading_pair);
+
+        // Since we store a single swap execution struct for the canonical trading pair,
+        // representing swaps in both directions, let's set that up now:
+        self.object_put(
+            &format!("swap_execution/{}", trading_pair),
+            SwapExecution::default(),
+        );
 
         // Depending on the contents of the batch swap inputs, we might need to path search in either direction.
         let (lambda_2, unfilled_1) = if delta_1.value() > 0 {
@@ -63,9 +70,18 @@ pub trait RouteAndFill: StateWrite + Sized {
             lambda_2_2: unfilled_2,
         };
         tracing::debug!(?output_data);
+
+        // Fetch the swap execution object that should have been modified during the routing and filling.
+        let swap_execution = self
+            .object_get(&format!("swap_execution/{}", trading_pair))
+            .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store"))?;
         Arc::get_mut(self)
             .expect("expected state to have no other refs")
-            .set_output_data(output_data);
+            .set_output_data(output_data, swap_execution);
+
+        // Clean up the swap execution object store now that it's been persisted.
+        self.object_delete(&format!("swap_execution/{}", trading_pair));
+
         Ok(())
     }
 

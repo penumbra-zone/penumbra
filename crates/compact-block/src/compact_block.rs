@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, convert::TryFrom};
 use anyhow::Result;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
-    dex::{BatchSwapOutputData, TradingPair},
+    dex::{execution::SwapExecution, BatchSwapOutputData, DirectedTradingPair, TradingPair},
     Nullifier,
 };
 use penumbra_proto::{
