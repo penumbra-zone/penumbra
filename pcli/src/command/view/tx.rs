@@ -1,8 +1,10 @@
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use penumbra_crypto::{
-    asset::Cache, dex::swap::SwapPlaintext, keys::IncomingViewingKey, Address, Note, NoteView,
-    Value,
+    asset::Cache,
+    dex::{lp::position::Position, swap::SwapPlaintext},
+    keys::IncomingViewingKey,
+    Address, Note, NoteView, Value,
 };
 use penumbra_proto::{client::v1alpha1::GetTxRequest, DomainType};
 use penumbra_transaction::{
@@ -176,6 +178,28 @@ fn format_address(ivk: &IncomingViewingKey, address: &Address) -> String {
     }
 }
 
+fn format_position_row(asset_cache: &Cache, position: Position) -> String {
+    let trading_pair = position.phi.pair;
+    let denom_1 = asset_cache
+        .get(&trading_pair.asset_1())
+        .expect("asset should be known to view service");
+    let denom_2 = asset_cache
+        .get(&trading_pair.asset_2())
+        .expect("asset should be known to view service");
+
+    let display_denom_1 = denom_1.default_unit();
+    let display_denom_2 = denom_2.default_unit();
+
+    format!(
+        "ID: {} Trading Pair: ({}, {}) State: {} Fee: {}",
+        position.id(),
+        display_denom_1,
+        display_denom_2,
+        position.state,
+        position.phi.component.fee,
+    )
+}
+
 impl TxCmd {
     pub fn offline(&self) -> bool {
         false
@@ -325,9 +349,10 @@ impl TxCmd {
                     penumbra_transaction::ActionView::DelegatorVote(_) => {
                         ["Delegator Vote".to_string(), "".to_string()]
                     }
-                    penumbra_transaction::ActionView::PositionOpen(_) => {
-                        ["Open Liquidity Position".to_string(), "".to_string()]
-                    }
+                    penumbra_transaction::ActionView::PositionOpen(position_open) => [
+                        "Open Liquidity Position".to_string(),
+                        format_position_row(&asset_cache, position_open.position),
+                    ],
                     penumbra_transaction::ActionView::PositionClose(_) => {
                         ["Close Liquidity Position".to_string(), "".to_string()]
                     }
