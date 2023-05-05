@@ -18,6 +18,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     iter::FromIterator,
     pin::Pin,
+    sync::Arc,
 };
 
 #[async_trait]
@@ -219,7 +220,7 @@ pub trait PositionManager: StateWrite + PositionRead {
     async fn candidate_set(
         &self,
         from: asset::Id,
-        fixed_candidates: Vec<asset::Id>,
+        fixed_candidates: Arc<Vec<asset::Id>>,
     ) -> Result<Vec<asset::Id>> {
         // query the state for liquidity-based candidates
         let mut position_ids = self.all_positions_from(&from);

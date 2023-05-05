@@ -19,3 +19,5 @@ mod tests;
 
 #[cfg(test)]
 pub(crate) use tests::limit_buy;
+
+pub(crate) use path_search::hardcoded_candidates;

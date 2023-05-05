@@ -1,7 +1,7 @@
 use anyhow::Ok;
 use futures::StreamExt;
 use penumbra_crypto::{
-    asset::{self},
+    asset,
     dex::{
         lp::{position::Position, Reserves},
         BatchSwapOutputData, DirectedTradingPair, Market,
@@ -500,7 +500,13 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap()
         .put_swap_flow(&trading_pair, swap_flow.clone());
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0)
+        .handle_batch_swaps(
+            trading_pair,
+            swap_flow,
+            0u32.into(),
+            0,
+            super::router::hardcoded_candidates(),
+        )
         .await
         .expect("unable to process batch swaps");
 
@@ -586,7 +592,15 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap()
         .put_swap_flow(&trading_pair, swap_flow.clone());
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0)
+        .handle_batch_swaps(
+            trading_pair,
+            swap_flow,
+            0u32.into(),
+            0,
+            // Create a candidate set that includes all relevant asset IDs.
+            //Arc::new(vec![penumbra.id(), gn.id(), pusd.id(), gm.id()]),
+            super::router::hardcoded_candidates(),
+        )
         .await
         .expect("unable to process batch swaps");
 
