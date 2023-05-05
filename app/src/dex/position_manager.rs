@@ -147,8 +147,6 @@ pub trait PositionManager: StateWrite + PositionRead {
             .await?
             .ok_or_else(|| anyhow::anyhow!("tried to fill against unknown position {id:?}"))?;
 
-        tracing::debug!(?input, ?position, "executing against position");
-
         if position.state != position::State::Opened {
             return Err(anyhow::anyhow!(
                 "tried to fill against non-Opened position {:?}",
@@ -163,6 +161,16 @@ pub trait PositionManager: StateWrite + PositionRead {
                 "could not fill {:?} against position {:?}",
                 input, id
             ))?;
+
+        tracing::debug!(
+            input = ?input.amount,
+            output = ?output.amount,
+            unfilled = ?unfilled.amount,
+            old_reserves = ?position.reserves,
+            ?new_reserves,
+            ?id,
+            "executed against position",
+        );
 
         position.reserves = new_reserves;
         self.put_position(position);

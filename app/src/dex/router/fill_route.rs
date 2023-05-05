@@ -169,7 +169,7 @@ pub trait FillRoute: StateWrite + Sized {
                 },
             );
 
-            tracing::debug!(?effective_price, "effective price across the route");
+            tracing::debug!(%effective_price, "effective price across the route");
             tracing::debug!(num = constraining_hops.len(), "found constraints");
 
             //  Stop filling if the effective price exceeds the spill price.
