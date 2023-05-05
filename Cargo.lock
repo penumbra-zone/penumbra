@@ -4057,6 +4057,7 @@ dependencies = [
  "penumbra-chain",
  "penumbra-compact-block",
  "penumbra-crypto",
+ "penumbra-ibc",
  "penumbra-proto",
  "penumbra-shielded-pool",
  "penumbra-storage",
