@@ -478,6 +478,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
     let pair_gn_penumbra = Market::new(gn.clone(), penumbra.clone());
+    let pair_penumbra_gn = Market::new(gn.clone(), penumbra.clone());
 
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
     let buy_1 = limit_buy(pair_gn_penumbra.clone(), 1u64.into(), 1u64.into());
@@ -514,6 +515,87 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     assert_eq!(swap_execution.traces[0][1].asset_id, penumbra.id());
     assert_eq!(swap_execution.traces[0][0].amount, 1u32.into());
     assert_eq!(swap_execution.traces[0][1].amount, 1u32.into());
+
+    // Now do a more complicated swap execution through a few positions
+    // and asset types.
+
+    // Reset storage and state for this test.
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    // Flow:
+    //
+    //                       ┌───────┐       ┌─────┐
+    //                  ┌───▶│  5gm  │──────▶│ 5gn │
+    // ┌────────────┐   │    └───────┘       └─────┘
+    // │ 10penumbra │───┤
+    // └────────────┘   │
+    //                  │    ┌───────┐      ┌──────┐       ┌──────┐
+    //                  └───▶│ 1pusd │─────▶│ 20gm │──────▶│ 20gn │
+    //                       └───────┘      └──────┘       └──────┘
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let pusd = asset::REGISTRY.parse_unit("pusd");
+
+    let pair_gm_gn = Market::new(gm.clone(), gn.clone());
+    let pair_gm_pusd = Market::new(gm.clone(), pusd.clone());
+    let pair_penumbra_gm = Market::new(penumbra.clone(), gm.clone());
+    let pair_penumbra_pusd = Market::new(penumbra.clone(), pusd.clone());
+
+    // Create a 1:1 gm:penumbra position (i.e. sell 5 gm at 1 penumbra each).
+    let buy_1 = limit_buy(pair_penumbra_gm.clone(), 5u64.into(), 1u64.into());
+    state_tx.put_position(buy_1);
+
+    // Create a 5:1 pusd:penumbra position (i.e. sell 1 pusd at 5 penumbra each).
+    let buy_2 = limit_buy(pair_penumbra_pusd.clone(), 1u64.into(), 5u64.into());
+    state_tx.put_position(buy_2);
+
+    // Create a 1:1 gm:gn position (i.e. sell 25 gn at 1 gm each).
+    let buy_3 = limit_buy(pair_gm_gn.clone(), 25u64.into(), 1u64.into());
+    state_tx.put_position(buy_3);
+
+    // Create a 1:20 pusd:gm position (i.e. sell 1 pusd at 20 gm each).
+    let buy_4 = limit_buy(pair_gm_pusd.clone(), 20u64.into(), 1u64.into());
+    state_tx.put_position(buy_4);
+
+    state_tx.apply();
+
+    // Now we should be able to fill a 10penumbra into 25gn swap.
+    let trading_pair = pair_penumbra_gn.into_directed_trading_pair().into();
+
+    let mut swap_flow = state.swap_flow(&trading_pair);
+
+    assert!(trading_pair.asset_1() == penumbra.id());
+
+    // Add the amount of each asset being swapped to the batch swap flow.
+    swap_flow.0 += MockFlowCiphertext::new(10u32.into());
+    swap_flow.1 += MockFlowCiphertext::new(0u32.into());
+
+    // Set the batch swap flow for the trading pair.
+    Arc::get_mut(&mut state)
+        .unwrap()
+        .put_swap_flow(&trading_pair, swap_flow.clone());
+    state
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0)
+        .await
+        .expect("unable to process batch swaps");
+
+    let output_data = state.output_data(0, trading_pair).await?.unwrap();
+
+    // Output data should have 10 penumbra in and 25gn out
+    assert_eq!(output_data.delta_1, 10u32.into());
+    assert_eq!(output_data.lambda_2_1, 25u32.into());
+
+    // Swap execution should have two traces.
+    let swap_execution = state.swap_execution(0, trading_pair).await?.unwrap();
+
+    assert_eq!(swap_execution.traces.len(), 2);
+    assert_eq!(swap_execution.traces[0].len(), 2);
+
+    // assert_eq!(swap_execution.traces[0][0].asset_id, gn.id());
+    // assert_eq!(swap_execution.traces[0][1].asset_id, penumbra.id());
+    // assert_eq!(swap_execution.traces[0][0].amount, 1u32.into());
+    // assert_eq!(swap_execution.traces[0][1].amount, 1u32.into());
 
     Ok(())
 }
