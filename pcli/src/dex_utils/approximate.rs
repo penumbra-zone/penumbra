@@ -73,7 +73,7 @@ pub mod xyk {
                     .expect("integral after truncating");
                 let mut q = Amount::from(1u64) * market.start.unit_amount();
 
-                let mut r1: Amount = fixpoint::from_f64_unsafe(k_i)
+                let mut r1: Amount = fixpoint::from_f64_unsafe(*k_i)
                     .round_down()
                     .try_into()
                     .expect("integral after truncating");
