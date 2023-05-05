@@ -250,13 +250,10 @@ pub trait FillRoute: StateWrite + Sized {
             output.amount = output.amount + current_value.amount;
         }
 
-        // Record the final output in the trace:
-        trace.push(output.clone());
-
         // Add the trace to the object store:
         let mut swap_execution: im::Vector<Vec<Value>> = self
             .object_get("swap_execution")
-            .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store"))?;
+            .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store1"))?;
         swap_execution.push_front(trace);
         self.object_put("swap_execution", swap_execution);
 

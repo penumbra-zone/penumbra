@@ -69,15 +69,20 @@ pub trait RouteAndFill: StateWrite + Sized {
             lambda_1_1: unfilled_1,
             lambda_2_2: unfilled_2,
         };
-        tracing::debug!(?output_data);
 
         // Fetch the swap execution object that should have been modified during the routing and filling.
-        let swap_execution = self
+        let swap_execution: im::Vector<Vec<Value>> = self
             .object_get("swap_execution")
-            .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store"))?;
+            .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store2"))?;
+        tracing::debug!(?output_data, ?swap_execution);
         Arc::get_mut(self)
             .expect("expected state to have no other refs")
-            .set_output_data(output_data, swap_execution);
+            .set_output_data(
+                output_data,
+                SwapExecution {
+                    traces: swap_execution.into_iter().collect(),
+                },
+            );
 
         // Clean up the swap execution object store now that it's been persisted.
         Arc::get_mut(self)
