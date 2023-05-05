@@ -790,9 +790,15 @@ impl serde::Serialize for BroadcastTransactionResponse {
         if self.id.is_some() {
             len += 1;
         }
+        if self.detection_height != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.BroadcastTransactionResponse", len)?;
         if let Some(v) = self.id.as_ref() {
             struct_ser.serialize_field("id", v)?;
+        }
+        if self.detection_height != 0 {
+            struct_ser.serialize_field("detectionHeight", ToString::to_string(&self.detection_height).as_str())?;
         }
         struct_ser.end()
     }
@@ -805,11 +811,14 @@ impl<'de> serde::Deserialize<'de> for BroadcastTransactionResponse {
     {
         const FIELDS: &[&str] = &[
             "id",
+            "detection_height",
+            "detectionHeight",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Id,
+            DetectionHeight,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -832,6 +841,7 @@ impl<'de> serde::Deserialize<'de> for BroadcastTransactionResponse {
                     {
                         match value {
                             "id" => Ok(GeneratedField::Id),
+                            "detectionHeight" | "detection_height" => Ok(GeneratedField::DetectionHeight),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -852,6 +862,7 @@ impl<'de> serde::Deserialize<'de> for BroadcastTransactionResponse {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut id__ = None;
+                let mut detection_height__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Id => {
@@ -860,10 +871,19 @@ impl<'de> serde::Deserialize<'de> for BroadcastTransactionResponse {
                             }
                             id__ = map.next_value()?;
                         }
+                        GeneratedField::DetectionHeight => {
+                            if detection_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("detectionHeight"));
+                            }
+                            detection_height__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                     }
                 }
                 Ok(BroadcastTransactionResponse {
                     id: id__,
+                    detection_height: detection_height__.unwrap_or_default(),
                 })
             }
         }

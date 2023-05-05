@@ -161,7 +161,7 @@ pub trait ViewClient {
         &mut self,
         transaction: Transaction,
         await_detection: bool,
-    ) -> Pin<Box<dyn Future<Output = Result<penumbra_transaction::Id>> + Send + 'static>>;
+    ) -> Pin<Box<dyn Future<Output = Result<(penumbra_transaction::Id, u64)>> + Send + 'static>>;
 
     /// Return unspent notes, grouped by address index and then by asset id.
     #[instrument(skip(self, account_group_id))]
@@ -731,7 +731,8 @@ where
         &mut self,
         transaction: Transaction,
         await_detection: bool,
-    ) -> Pin<Box<dyn Future<Output = Result<penumbra_transaction::Id>> + Send + 'static>> {
+    ) -> Pin<Box<dyn Future<Output = Result<(penumbra_transaction::Id, u64)>> + Send + 'static>>
+    {
         let mut self2 = self.clone();
         async move {
             let rsp = ViewProtocolServiceClient::broadcast_transaction(
@@ -740,13 +741,16 @@ where
                     transaction: Some(transaction.into()),
                     await_detection,
                 }),
-            );
+            )
+            .await?
+            .into_inner();
+
             let id = rsp
-                .await?
-                .into_inner()
                 .id
-                .ok_or_else(|| anyhow::anyhow!("response id is empty"))?;
-            id.try_into()
+                .ok_or_else(|| anyhow::anyhow!("response id is empty"))?
+                .try_into()?;
+
+            Ok((id, rsp.detection_height))
         }
         .boxed()
     }
