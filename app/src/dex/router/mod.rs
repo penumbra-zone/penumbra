@@ -18,6 +18,6 @@ pub use route_and_fill::RouteAndFill;
 mod tests;
 
 #[cfg(test)]
-pub(crate) use tests::limit_buy;
+pub(crate) use tests::{limit_buy, limit_sell};
 
 pub(crate) use path_search::hardcoded_candidates;

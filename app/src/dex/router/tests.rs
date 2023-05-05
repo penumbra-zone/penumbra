@@ -347,7 +347,7 @@ pub(crate) fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Am
 }
 
 /// Create a `Position` to sell `asset_1` into `asset_2`.
-fn limit_sell(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
+pub(crate) fn limit_sell(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),
