@@ -13,10 +13,6 @@ use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
-    dex::{
-        lp::{position::Position, Reserves},
-        DirectedTradingPair,
-    },
     keys::AddressIndex,
     memo::MemoPlaintext,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
@@ -46,8 +42,6 @@ use proposal::ProposalCmd;
 
 mod liquidity_position;
 use liquidity_position::PositionCmd;
-
-use self::liquidity_position::OrderCmd;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {

@@ -106,10 +106,11 @@ impl ViewCmd {
                         0u64.into(),
                     );
                 }
-            }
-            ViewCmd::Approximate(_) => {
-                println!("linear")
-            }
+            } /*
+              ViewCmd::Approximate(_) => {
+                  println!("linear")
+              }
+               */
         }
 
         Ok(())
