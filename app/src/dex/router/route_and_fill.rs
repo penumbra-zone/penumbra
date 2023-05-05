@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_crypto::{
     asset,
@@ -8,6 +8,7 @@ use penumbra_crypto::{
     Amount, SwapFlow, Value,
 };
 use penumbra_storage::StateWrite;
+use tracing::instrument;
 
 use crate::dex::{
     router::{FillRoute, PathSearch},
@@ -18,6 +19,7 @@ use crate::dex::{
 /// a block's batch swap flows.
 #[async_trait]
 pub trait RouteAndFill: StateWrite + Sized {
+    #[instrument(skip(self, trading_pair, batch_data, block_height, epoch_height))]
     async fn handle_batch_swaps(
         self: &mut Arc<Self>,
         trading_pair: TradingPair,
@@ -42,16 +44,17 @@ pub trait RouteAndFill: StateWrite + Sized {
         // Depending on the contents of the batch swap inputs, we might need to path search in either direction.
         let (lambda_2, unfilled_1) = if delta_1.value() > 0 {
             // There is input for asset 1, so we need to route for asset 1 -> asset 2
-            self.route_and_fill_inner(trading_pair.asset_1(), trading_pair.asset_2(), delta_1)
+            self.route_and_fill(trading_pair.asset_1(), trading_pair.asset_2(), delta_1)
                 .await?
         } else {
             // There was no input for asset 1, so there's 0 output for asset 2 from this side.
+            tracing::debug!("no input for asset 1, skipping 1=>2 execution");
             (0u64.into(), delta_1)
         };
 
         let (lambda_1, unfilled_2) = if delta_2.value() > 0 {
             // There is input for asset 2, so we need to route for asset 2 -> asset 1
-            self.route_and_fill_inner(trading_pair.asset_2(), trading_pair.asset_1(), delta_2)
+            self.route_and_fill(trading_pair.asset_2(), trading_pair.asset_1(), delta_2)
                 .await?
         } else {
             // There was no input for asset 2, so there's 0 output for asset 1 from this side.
@@ -91,9 +94,16 @@ pub trait RouteAndFill: StateWrite + Sized {
 
         Ok(())
     }
+}
 
-    // TODO: this is publically exposed rn, but should be private
-    async fn route_and_fill_inner(
+impl<T: PositionManager> RouteAndFill for T {}
+
+/// Ties together the routing and filling logic, to process
+/// a block's batch swap flows.
+#[async_trait]
+trait RouteAndFillInner: StateWrite + Sized {
+    #[instrument(skip(self, asset_1, asset_2, delta_1))]
+    async fn route_and_fill(
         self: &mut Arc<Self>,
         asset_1: asset::Id,
         asset_2: asset::Id,
@@ -157,4 +167,4 @@ pub trait RouteAndFill: StateWrite + Sized {
     }
 }
 
-impl<T: PositionManager> RouteAndFill for T {}
+impl<T: RouteAndFill> RouteAndFillInner for T {}
