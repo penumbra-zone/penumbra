@@ -306,7 +306,6 @@ fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
     s.put_position(position_8);
 }
 
-
 /// Create a `Position` to buy `asset_1` using `asset_2` with explicit p/q.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
 fn limit_buy_pq(market: Market, quantity: Amount, p: Amount, q: Amount, fee: u32) -> Position {
@@ -322,7 +321,6 @@ fn limit_buy_pq(market: Market, quantity: Amount, p: Amount, q: Amount, fee: u32
         },
     )
 }
-
 
 /// Create a `Position` to buy `asset_1` using `asset_2`.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
