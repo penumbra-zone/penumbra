@@ -594,8 +594,8 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
             0u32.into(),
             0,
             // Create a candidate set that includes all relevant asset IDs.
-            Arc::new(vec![penumbra.id(), gn.id(), pusd.id(), gm.id()]),
-            //super::router::hardcoded_candidates(),
+            //Arc::new(vec![penumbra.id(), gn.id(), pusd.id(), gm.id()]),
+            super::router::hardcoded_candidates(),
         )
         .await
         .expect("unable to process batch swaps");
