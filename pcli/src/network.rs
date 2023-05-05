@@ -59,8 +59,15 @@ impl App {
         transaction: Transaction,
     ) -> Result<TransactionId, anyhow::Error> {
         println!("broadcasting transaction and awaiting confirmation...");
-        let id = self.view().broadcast_transaction(transaction, true).await?;
-        println!("transaction confirmed and detected: {}", id);
+        let (id, detection_height) = self.view().broadcast_transaction(transaction, true).await?;
+        if detection_height != 0 {
+            println!(
+                "transaction confirmed and detected: {} @ {}",
+                id, detection_height
+            );
+        } else {
+            println!("transaction confirmed and detected: {}", id);
+        }
         Ok(id)
     }
 

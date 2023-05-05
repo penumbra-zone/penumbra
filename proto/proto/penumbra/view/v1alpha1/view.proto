@@ -90,6 +90,9 @@ message BroadcastTransactionRequest {
 message BroadcastTransactionResponse {
   // The hash of the transaction that was broadcast.
   core.transaction.v1alpha1.Id id = 1;
+  // The height in which the transaction was detected as included in the chain, if any.
+  // Will not be included unless await_detection was true.
+  uint64 detection_height = 2;
 }
 
 message TransactionPlannerRequest {

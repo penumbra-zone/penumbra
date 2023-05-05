@@ -182,6 +182,11 @@ impl ViewService {
                 .actions()
                 .filter_map(|action| match action {
                     penumbra_transaction::Action::Spend(spend) => Some(spend.body.nullifier),
+                    /*
+                    penumbra_transaction::Action::SwapClaim(swap_claim) => {
+                        Some(swap_claim.body.nullifier)
+                    }
+                     */
                     _ => None,
                 })
                 .next()
@@ -312,8 +317,23 @@ impl ViewProtocolService for ViewService {
                 tonic::Status::internal(format!("could not broadcast transaction: {:#}", e))
             })?;
 
+        let detection_height = if await_detection {
+            // We already awaited detection, so we expect to know about the transaction:
+            self.storage
+                .transaction_by_hash(&id.0)
+                .await
+                .map_err(|e| tonic::Status::internal(format!("error querying storage: {:#}", e)))?
+                .map(|(height, _tx)| height)
+                // If we didn't find it for some reason, return 0 for unknown.
+                // TODO: how does this change if we detach extended transaction fetch from scanning?
+                .unwrap_or(0)
+        } else {
+            0
+        };
+
         Ok(tonic::Response::new(pb::BroadcastTransactionResponse {
             id: Some(id.into()),
+            detection_height,
         }))
     }
 
