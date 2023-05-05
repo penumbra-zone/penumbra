@@ -17,7 +17,7 @@ use penumbra_crypto::{
     keys::AddressIndex,
     memo::MemoPlaintext,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
-    Amount, Fee, Value, STAKING_TOKEN_ASSET_ID,
+    Amount, Fee, Value, STAKING_TOKEN_ASSET_ID, fixpoint,
 };
 use penumbra_ibc::Ics20Withdrawal;
 use penumbra_proto::{
@@ -1096,7 +1096,7 @@ impl TxCmd {
                     let _positions = crate::dex_utils::approximate::xyk::approximate(
                         market,
                         quantity,
-                        current_price,
+                        fixpoint::from_f64_unsafe(current_price),
                     );
                 }
             } /*
