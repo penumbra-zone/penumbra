@@ -245,13 +245,18 @@ impl TryFrom<pb::AddressIndex> for AddressIndex {
     type Error = anyhow::Error;
 
     fn try_from(d: pb::AddressIndex) -> Result<AddressIndex, Self::Error> {
-        Ok(Self {
-            account: d.account,
-            randomizer: d
-                .randomizer
+        let randomizer: [u8; 12] = if d.randomizer.is_empty() {
+            [0; 12]
+        } else {
+            d.randomizer
                 .as_slice()
                 .try_into()
-                .context("could not parse 12-byte array")?,
+                .context("could not parse 12-byte array")?
+        };
+
+        Ok(Self {
+            account: d.account,
+            randomizer,
         })
     }
 }
