@@ -1,6 +1,5 @@
 use std::pin::Pin;
 
-use async_stream::try_stream;
 use futures::StreamExt;
 use futures::TryStreamExt;
 use penumbra_app::dex::PositionRead;
@@ -36,6 +35,8 @@ use proto::client::v1alpha1::NextValidatorRateResponse;
 use proto::client::v1alpha1::PrefixValueRequest;
 use proto::client::v1alpha1::PrefixValueResponse;
 use proto::client::v1alpha1::StubCpmmReservesResponse;
+use proto::client::v1alpha1::SwapExecutionRequest;
+use proto::client::v1alpha1::SwapExecutionResponse;
 use proto::client::v1alpha1::TransactionByNoteRequest;
 use proto::client::v1alpha1::TransactionByNoteResponse;
 use proto::client::v1alpha1::ValidatorPenaltyRequest;
@@ -263,6 +264,38 @@ impl SpecificQueryService for Info {
         match output_data {
             Some(data) => Ok(tonic::Response::new(BatchSwapOutputDataResponse {
                 data: Some(data.into()),
+            })),
+            None => Err(Status::not_found("batch swap output data not found")),
+        }
+    }
+
+    #[instrument(skip(self, request))]
+    /// Get the batch swap data associated with a given trading pair and height.
+    async fn swap_execution(
+        &self,
+        request: tonic::Request<SwapExecutionRequest>,
+    ) -> Result<tonic::Response<SwapExecutionResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+        let request_inner = request.into_inner();
+        let height = request_inner.height;
+        let trading_pair = request_inner
+            .trading_pair
+            .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
+
+        let swap_execution = state
+            .swap_execution(height, trading_pair)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        match swap_execution {
+            Some(swap_execution) => Ok(tonic::Response::new(SwapExecutionResponse {
+                swap_execution: Some(swap_execution.into()),
             })),
             None => Err(Status::not_found("batch swap output data not found")),
         }
