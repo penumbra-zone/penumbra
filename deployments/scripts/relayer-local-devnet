@@ -30,7 +30,7 @@ pd_pid="$!"
 trap 'kill -9 "$tendermint_pid" "$pd_pid"' EXIT
 
 echo "Waiting a bit for network to start..."
-sleep 10s
+sleep 10
 
 repo_root="$(git rev-parse --show-toplevel)"
 cd "${repo_root}/deployments/relayer" || exit 1
