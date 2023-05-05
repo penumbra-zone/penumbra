@@ -5,7 +5,12 @@ use penumbra_crypto::Value;
 #[derive(Debug, clap::Subcommand)]
 pub enum ApproximateCmd {
     #[clap(visible_alias = "xyk")]
-    ConstantProduct { market: Market, quantity: Value },
+    ConstantProduct {
+        market: Market,
+        quantity: Value,
+        #[clap(short, long)]
+        current_price: Option<f64>,
+    },
 }
 
 impl ApproximateCmd {

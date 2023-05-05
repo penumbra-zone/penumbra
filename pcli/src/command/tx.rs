@@ -1078,7 +1078,11 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::RewardClaim {}) => todo!(),
-            TxCmd::Position(PositionCmd::Approximate(ApproximateCmd::ConstantProduct { market, quantity })) => {
+            TxCmd::Position(PositionCmd::Approximate(ApproximateCmd::ConstantProduct {
+                market,
+                quantity,
+                current_price,
+            })) => {
                 if quantity.asset_id != market.start.id() && quantity.asset_id != market.end.id() {
                     return Err(anyhow::anyhow!(
                         "you must supply liquidity with an asset that's part of the market"
@@ -1088,10 +1092,11 @@ impl TxCmd {
                         "the quantity of liquidity supplied must be non-zero.",
                     ));
                 } else {
+                    let current_price = current_price.unwrap_or_else(|| 1f64);
                     let _positions = crate::dex_utils::approximate::xyk::approximate(
                         market,
                         quantity,
-                        0u64.into(),
+                        current_price,
                     );
                 }
             } /*
