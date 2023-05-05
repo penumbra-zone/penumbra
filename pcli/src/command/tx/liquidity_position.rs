@@ -164,6 +164,12 @@ impl OrderCmd {
                 let pair =
                     DirectedTradingPair::new(buy_order.price.asset_id, buy_order.desired.asset_id);
 
+                if pair.start == pair.end {
+                    return Err(anyhow::anyhow!(
+                        "cannot create order between identical assets"
+                    ));
+                }
+
                 let desired_unit = asset_cache
                     .get(&buy_order.desired.asset_id)
                     .ok_or_else(|| anyhow!("unknown asset {}", buy_order.desired.asset_id))?
@@ -204,6 +210,12 @@ impl OrderCmd {
                     sell_order.selling.asset_id,
                     sell_order.price.asset_id,
                 );
+
+                if pair.start == pair.end {
+                    return Err(anyhow::anyhow!(
+                        "cannot create order between identical assets"
+                    ));
+                }
 
                 let selling_unit = asset_cache
                     .get(&sell_order.selling.asset_id)
