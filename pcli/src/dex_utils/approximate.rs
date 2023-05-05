@@ -7,7 +7,7 @@ pub mod xyk {
     use ndarray::Array;
     use penumbra_crypto::{
         dex::{lp::position::Position, Market},
-        fixpoint::U128x128,
+        fixpoint::{self, U128x128},
         Value,
     };
 
@@ -16,23 +16,35 @@ pub mod xyk {
 
     pub fn approximate(
         _market: &Market,
-        invariant_k: &Value,
-        _current_price: U128x128,
+        r1: &Value,
+        current_price: U128x128,
     ) -> anyhow::Result<Vec<Position>> {
-        let alphas = utils::sample_points(NUM_POOLS_PRECISION);
-        let global_invariant = invariant_k.amount.value() as f64;
+        let fp_r1 = U128x128::from(r1.amount.value());
+        let fp_r2 = (current_price * fp_r1).ok_or_else(|| {
+            anyhow::anyhow!(
+                "current_price: {} * fp_r1: {} caused overflow.",
+                current_price,
+                fp_r1
+            )
+        })?;
 
+        let invariant_k = (fp_r1 * fp_r2).ok_or_else(|| {
+            anyhow::anyhow!("overflow computing the curve invariant: {fp_r1} * {fp_r2}")
+        })?;
+
+        let invariant_k = fixpoint::to_f64_unsafe(&invariant_k);
+
+        let alphas = utils::sample_points(NUM_POOLS_PRECISION);
+
+        // TODO(erwan): unused for now, but next refactor will rip out `solve` internals to
+        // take this vector of solutions as an argument so that we can more easily recover from
+        // working with non-singular matrices etc.
         let _b: Vec<f64> = alphas
             .iter()
-            .map(|price: &f64| portfolio_value_function(global_invariant, *price))
+            .map(|price: &f64| portfolio_value_function(invariant_k, *price))
             .collect();
 
-        let k_invariants = solve(
-            &alphas,
-            invariant_k.amount.value() as f64,
-            NUM_POOLS_PRECISION,
-        )?
-        .to_vec();
+        let k_invariants = solve(&alphas, invariant_k, NUM_POOLS_PRECISION)?.to_vec();
 
         // TODO(erwan): it would be nice to have an option to output structured input
         // so that a graph tool can pickup the solutions and they can be independently checked.
