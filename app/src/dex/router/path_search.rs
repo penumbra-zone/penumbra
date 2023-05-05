@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_crypto::{asset, fixpoint::U128x128};
@@ -9,15 +11,23 @@ use crate::dex::PositionManager;
 
 use super::{Path, PathCache, PathEntry, SharedPathCache};
 
+pub(crate) fn hardcoded_candidates() -> Arc<Vec<asset::Id>> {
+    Arc::new(vec![
+        asset::REGISTRY.parse_unit("pusd").id(),
+        asset::REGISTRY.parse_unit("penumbra").id(),
+    ])
+}
+
 #[async_trait]
 pub trait PathSearch: StateRead + Clone + 'static {
     /// Find the best route from `src` to `dst`, also returning the spill price for the next-best route, if one exists.
-    #[instrument(skip(self, src, dst))]
+    #[instrument(skip(self, src, dst, fixed_candidates))]
     async fn path_search(
         &self,
         src: asset::Id,
         dst: asset::Id,
         max_hops: usize,
+        fixed_candidates: Arc<Vec<asset::Id>>,
     ) -> Result<(Option<Vec<asset::Id>>, Option<U128x128>)> {
         tracing::debug!(?src, ?dst, ?max_hops, "searching for path");
 
@@ -27,7 +37,7 @@ pub trait PathSearch: StateRead + Clone + 'static {
 
         let cache = PathCache::begin(src, state);
         for i in 0..max_hops {
-            relax_active_paths(cache.clone()).await?;
+            relax_active_paths(cache.clone(), fixed_candidates.clone()).await?;
             tracing::debug!(i, "finished relaxing all active paths");
         }
 
@@ -45,7 +55,10 @@ pub trait PathSearch: StateRead + Clone + 'static {
 
 impl<S> PathSearch for S where S: StateRead + Clone + 'static {}
 
-async fn relax_active_paths<S: StateRead + 'static>(cache: SharedPathCache<S>) -> Result<()> {
+async fn relax_active_paths<S: StateRead + 'static>(
+    cache: SharedPathCache<S>,
+    fixed_candidates: Arc<Vec<asset::Id>>,
+) -> Result<()> {
     let active_paths = cache.lock().extract_active();
     let mut js = JoinSet::new();
     tracing::debug!(
@@ -53,7 +66,7 @@ async fn relax_active_paths<S: StateRead + 'static>(cache: SharedPathCache<S>) -
         "relaxing active paths"
     );
     for path in active_paths {
-        js.spawn(relax_path(cache.clone(), path));
+        js.spawn(relax_path(cache.clone(), path, fixed_candidates.clone()));
     }
     // Wait for all relaxations to complete.
     while let Some(task) = js.join_next().await {
@@ -65,10 +78,11 @@ async fn relax_active_paths<S: StateRead + 'static>(cache: SharedPathCache<S>) -
 async fn relax_path<S: StateRead + 'static>(
     cache: SharedPathCache<S>,
     mut path: Path<S>,
+    fixed_candidates: Arc<Vec<asset::Id>>,
 ) -> Result<()> {
     let candidates = path
         .state
-        .candidate_set(*path.end(), hardcoded_candidates())
+        .candidate_set(*path.end(), fixed_candidates)
         .instrument(path.span.clone())
         .await?;
 
@@ -92,11 +106,4 @@ async fn relax_path<S: StateRead + 'static>(
         task??;
     }
     Ok(())
-}
-
-fn hardcoded_candidates() -> Vec<asset::Id> {
-    vec![
-        asset::REGISTRY.parse_unit("pusd").id(),
-        asset::REGISTRY.parse_unit("penumbra").id(),
-    ]
 }

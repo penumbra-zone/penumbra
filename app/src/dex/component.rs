@@ -14,7 +14,10 @@ use penumbra_storage::{StateRead, StateWrite};
 use tendermint::abci;
 use tracing::instrument;
 
-use super::{router::RouteAndFill, state_key};
+use super::{
+    router::{self, RouteAndFill},
+    state_key,
+};
 
 pub struct Dex {}
 
@@ -46,6 +49,7 @@ impl Component for Dex {
                     swap_flows,
                     end_block.height.try_into().expect("missing height"),
                     current_epoch.start_height,
+                    router::hardcoded_candidates(),
                 )
                 .await
                 .expect("unable to process batch swaps");

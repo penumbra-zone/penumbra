@@ -19,13 +19,22 @@ use crate::dex::{
 /// a block's batch swap flows.
 #[async_trait]
 pub trait RouteAndFill: StateWrite + Sized {
-    #[instrument(skip(self, trading_pair, batch_data, block_height, epoch_height))]
+    #[instrument(skip(
+        self,
+        trading_pair,
+        batch_data,
+        block_height,
+        epoch_height,
+        fixed_candidates
+    ))]
     async fn handle_batch_swaps(
         self: &mut Arc<Self>,
         trading_pair: TradingPair,
         batch_data: SwapFlow,
+        // TODO: why not read these 2 from the state?
         block_height: u64,
         epoch_height: u64,
+        fixed_candidates: Arc<Vec<asset::Id>>,
     ) -> Result<()>
     where
         Self: 'static,
@@ -44,8 +53,13 @@ pub trait RouteAndFill: StateWrite + Sized {
         // Depending on the contents of the batch swap inputs, we might need to path search in either direction.
         let (lambda_2, unfilled_1) = if delta_1.value() > 0 {
             // There is input for asset 1, so we need to route for asset 1 -> asset 2
-            self.route_and_fill(trading_pair.asset_1(), trading_pair.asset_2(), delta_1)
-                .await?
+            self.route_and_fill(
+                trading_pair.asset_1(),
+                trading_pair.asset_2(),
+                delta_1,
+                fixed_candidates.clone(),
+            )
+            .await?
         } else {
             // There was no input for asset 1, so there's 0 output for asset 2 from this side.
             tracing::debug!("no input for asset 1, skipping 1=>2 execution");
@@ -54,8 +68,13 @@ pub trait RouteAndFill: StateWrite + Sized {
 
         let (lambda_1, unfilled_2) = if delta_2.value() > 0 {
             // There is input for asset 2, so we need to route for asset 2 -> asset 1
-            self.route_and_fill(trading_pair.asset_2(), trading_pair.asset_1(), delta_2)
-                .await?
+            self.route_and_fill(
+                trading_pair.asset_2(),
+                trading_pair.asset_1(),
+                delta_2,
+                fixed_candidates.clone(),
+            )
+            .await?
         } else {
             // There was no input for asset 2, so there's 0 output for asset 1 from this side.
             tracing::debug!("no input for asset 2, skipping 2=>1 execution");
@@ -103,12 +122,13 @@ impl<T: PositionManager> RouteAndFill for T {}
 /// a block's batch swap flows.
 #[async_trait]
 trait RouteAndFillInner: StateWrite + Sized {
-    #[instrument(skip(self, asset_1, asset_2, delta_1))]
+    #[instrument(skip(self, asset_1, asset_2, delta_1, fixed_candidates))]
     async fn route_and_fill(
         self: &mut Arc<Self>,
         asset_1: asset::Id,
         asset_2: asset::Id,
         delta_1: Amount,
+        fixed_candidates: Arc<Vec<asset::Id>>,
     ) -> Result<(Amount, Amount)>
     where
         Self: 'static,
@@ -126,7 +146,7 @@ trait RouteAndFillInner: StateWrite + Sized {
             // Find the best route between the two assets in the trading pair.
             let (path, spill_price) = self
                 // TODO: max hops should not be hardcoded
-                .path_search(asset_1, asset_2, 4)
+                .path_search(asset_1, asset_2, 4, fixed_candidates.clone())
                 .await
                 .context("error finding best path")?;
 
