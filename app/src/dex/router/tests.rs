@@ -8,10 +8,9 @@ use penumbra_crypto::dex::lp::position::Position;
 use penumbra_crypto::MockFlowCiphertext;
 use penumbra_crypto::{
     asset,
-    asset::Unit,
     dex::{
         lp::{position, Reserves},
-        DirectedTradingPair,
+        DirectedTradingPair, Market,
     },
     fixpoint::U128x128,
     Amount, Value,
@@ -307,23 +306,6 @@ fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
     s.put_position(position_8);
 }
 
-#[derive(Clone, Debug)]
-struct Market {
-    start: Unit,
-    end: Unit,
-}
-
-impl Market {
-    fn new(start: Unit, end: Unit) -> Self {
-        Self { start, end }
-    }
-    fn into_directed_trading_pair(&self) -> DirectedTradingPair {
-        DirectedTradingPair {
-            start: self.start.id(),
-            end: self.end.id(),
-        }
-    }
-}
 
 /// Create a `Position` to buy `asset_1` using `asset_2` with explicit p/q.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
@@ -340,6 +322,7 @@ fn limit_buy_pq(market: Market, quantity: Amount, p: Amount, q: Amount, fee: u32
         },
     )
 }
+
 
 /// Create a `Position` to buy `asset_1` using `asset_2`.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
@@ -610,9 +593,10 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
             |                              |          50gn@2                      |           1penumbra@2500           |
             |                              |                                      |           1penumbra@2000           |
             ------------------------------------------------------------------------------------------------------------
-            * marginal price
             Delta_1 = 4gm
-            Lambda_2 = 2000 + 2500
+            Delta_2 = $0
+            Lambda_1 = 0gm
+            Lambda_2 = $10,000 + $3100 + 6 * $3000 = $29,100
     */
 
     let gm = asset::REGISTRY.parse_unit("gm");

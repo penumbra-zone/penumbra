@@ -4,3 +4,5 @@
 
 */
 pub mod approximate;
+#[cfg(test)]
+mod tests;

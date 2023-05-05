@@ -4,4 +4,4 @@ pub mod swap;
 pub use swap::BatchSwapOutputData;
 
 mod trading_pair;
-pub use trading_pair::{DirectedTradingPair, TradingPair};
+pub use trading_pair::{DirectedTradingPair, Market, TradingPair};
