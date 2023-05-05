@@ -3,19 +3,25 @@
 const APPROXIMATION_TOLERANCE: f64 = 1e-8;
 
 pub mod xyk {
+    use std::thread::current;
+
     use crate::dex_utils::approximate::utils;
     use ndarray::Array;
     use penumbra_crypto::{
-        dex::{lp::position::Position, Market},
+        dex::{
+            lp::{position::Position, Reserves},
+            Market,
+        },
         fixpoint::{self, U128x128},
-        Value,
+        Amount, Value,
     };
+    use rand_core::OsRng;
 
     /// The number of positions that is used to approximate the xyk CFMM.
     const NUM_POOLS_PRECISION: usize = 100;
 
     pub fn approximate(
-        _market: &Market,
+        market: &Market,
         r1: &Value,
         current_price: U128x128,
     ) -> anyhow::Result<Vec<Position>> {
@@ -28,11 +34,11 @@ pub mod xyk {
             )
         })?;
 
-        let invariant_k = (fp_r1 * fp_r2).ok_or_else(|| {
+        let xyk_invariant = (fp_r1 * fp_r2).ok_or_else(|| {
             anyhow::anyhow!("overflow computing the curve invariant: {fp_r1} * {fp_r2}")
         })?;
 
-        let invariant_k = fixpoint::to_f64_unsafe(&invariant_k);
+        let xyk_invariant = fixpoint::to_f64_unsafe(&xyk_invariant);
 
         let alphas = utils::sample_points(NUM_POOLS_PRECISION);
 
@@ -41,18 +47,58 @@ pub mod xyk {
         // working with non-singular matrices etc.
         let _b: Vec<f64> = alphas
             .iter()
-            .map(|price: &f64| portfolio_value_function(invariant_k, *price))
+            .map(|price: &f64| portfolio_value_function(xyk_invariant, *price))
             .collect();
 
-        let k_invariants = solve(&alphas, invariant_k, NUM_POOLS_PRECISION)?.to_vec();
+        let position_ks = solve(&alphas, xyk_invariant, NUM_POOLS_PRECISION)?.to_vec();
 
         // TODO(erwan): it would be nice to have an option to output structured input
         // so that a graph tool can pickup the solutions and they can be independently checked.
-        k_invariants
+        position_ks
             .iter()
             .enumerate()
             .for_each(|(i, k)| println!("k_{i} = {k}"));
 
+        let f64_current_price = fixpoint::to_f64_unsafe(&current_price);
+
+        let _positions: Vec<Position> = position_ks
+            .iter()
+            .enumerate()
+            .zip(alphas)
+            .map(|((i, k_i), alpha_i)| {
+                tracing::debug!(i, f64_current_price, k_i, alpha_i, "constructing pool");
+                let mut p = fixpoint::from_f64_unsafe(alpha_i)
+                    .round_down()
+                    .try_into()
+                    .expect("integral after truncating");
+                let mut q = Amount::from(1u64) * market.start.unit_amount();
+
+                let mut r1: Amount = fixpoint::from_f64_unsafe(k_i)
+                    .round_down()
+                    .try_into()
+                    .expect("integral after truncating");
+
+                let mut r2: Amount = Amount::from(0u64);
+
+                if alpha_i < f64_current_price {
+                    // Tick is below the current price, therefore we want
+                    // to create a one-sided position with price `alpha_i`
+                    // that provisions `asset_1`.
+                } else {
+                    // Tick is above the current price, so we want to create
+                    // a one-sided position with price `alpha_i` that provisions
+                    // `asset_2`.
+                }
+                Position::new(
+                    OsRng,
+                    market.into_directed_trading_pair(),
+                    0u32,
+                    p,
+                    q,
+                    Reserves { r1, r2 },
+                )
+            })
+            .collect();
         Ok(vec![])
     }
 
