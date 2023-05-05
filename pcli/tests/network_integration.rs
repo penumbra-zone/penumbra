@@ -28,7 +28,7 @@ use penumbra_chain::test_keys::{ADDRESS_0_STR, ADDRESS_1_STR, SEED_PHRASE};
 
 // The number "20" is chosen so that this is bigger than u64::MAX
 // when accounting for the 10e18 scaling factor from the base denom.
-const TEST_ASSET: &str = "20pusd";
+const TEST_ASSET: &str = "20test_usd";
 
 // The maximum amount of time any command is allowed to take before we error.
 const TIMEOUT_COMMAND_SECONDS: u64 = 20;

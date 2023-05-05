@@ -89,14 +89,14 @@ async fn path_extension_basic() {
     );
 
     // Extend further to "pusd".
-    let pusd = asset::REGISTRY.parse_unit("pusd");
+    let pusd = asset::REGISTRY.parse_unit("test_usd");
     let path = path
         .extend_to(pusd.id())
         .await
         .expect("extend_to failed")
-        .expect("path to pusd not found");
+        .expect("path to test_usd not found");
 
-    assert_eq!(path.end(), &pusd.id(), "path ends on pusd");
+    assert_eq!(path.end(), &pusd.id(), "path ends on test_usd");
     assert_eq!(path.start, gm.id(), "path starts on gm");
 
     // Extend further to "penumbra".
@@ -127,7 +127,7 @@ async fn path_extension_basic() {
         .extend_to(pusd.id())
         .await
         .expect("extend_to failed")
-        .expect("path to pusd not found")
+        .expect("path to test_usd not found")
         .extend_to(penumbra.id())
         .await
         .expect("extend_to failed")
@@ -149,7 +149,7 @@ fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
     let gm = asset::REGISTRY.parse_unit("gm");
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let pusd = asset::REGISTRY.parse_unit("pusd");
+    let pusd = asset::REGISTRY.parse_unit("test_usd");
     tracing::debug!(id = ?gm.id(), unit = %gm);
     tracing::debug!(id = ?gn.id(), unit = %gn);
     tracing::debug!(id = ?penumbra.id(), unit = %penumbra);
@@ -505,7 +505,7 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     let gm = asset::REGISTRY.parse_unit("gm");
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let pusd = asset::REGISTRY.parse_unit("pusd");
+    let pusd = asset::REGISTRY.parse_unit("test_usd");
 
     let pair_1 = Market::new(gm.clone(), gn.clone());
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
@@ -611,7 +611,7 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let gm = asset::REGISTRY.parse_unit("gm");
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let pusd = asset::REGISTRY.parse_unit("pusd");
+    let pusd = asset::REGISTRY.parse_unit("test_usd");
 
     let pair_1 = Market::new(gm.clone(), gn.clone());
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
@@ -710,7 +710,7 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     let gm = asset::REGISTRY.parse_unit("gm");
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let pusd = asset::REGISTRY.parse_unit("pusd");
+    let pusd = asset::REGISTRY.parse_unit("test_usd");
 
     let pair_1 = Market::new(gm.clone(), gn.clone());
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
@@ -792,7 +792,7 @@ async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
     let gm = asset::REGISTRY.parse_unit("gm");
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let pusd = asset::REGISTRY.parse_unit("pusd");
+    let pusd = asset::REGISTRY.parse_unit("test_usd");
 
     let pair_1 = Market::new(gm.clone(), gn.clone());
     let pair_2 = Market::new(gn.clone(), penumbra.clone());

@@ -536,7 +536,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     //                  └───▶│ 1pusd │─────▶│ 20gm │──────▶│ 20gn │
     //                       └───────┘      └──────┘       └──────┘
     let gm = asset::REGISTRY.parse_unit("gm");
-    let pusd = asset::REGISTRY.parse_unit("pusd");
+    let pusd = asset::REGISTRY.parse_unit("test_usd");
 
     tracing::info!(gm_id = ?gm.id());
     tracing::info!(gn_id = ?gn.id());
