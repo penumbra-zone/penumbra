@@ -1,6 +1,7 @@
 //! This module defines how to verify TCT auth paths in a rank-1 constraint system.
 use ark_ff::Zero;
 use ark_r1cs_std::prelude::*;
+use ark_r1cs_std::ToConstraintFieldGadget;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
 use decaf377::{r1cs::FqVar, FieldExt, Fq};
@@ -29,22 +30,26 @@ impl AllocVar<Position, Fq> for PositionVar {
     }
 }
 
+//             let epoch = (position >> 32) as u16;
+//let block = (position >> 16) as u16;
+//let commitment = position as u16;
+
 impl PositionVar {
-    /// Witness the commitment index corresponding to this leaf.
+    /// Witness the commitment index by taking the last 16 bytes of the position.
     pub fn commitment(&self) -> Result<FqVar, SynthesisError> {
         let position = self.value().unwrap_or_default();
         let commitment = position.commitment();
         FqVar::new_witness(self.cs(), || Ok(Fq::from(commitment)))
     }
 
-    /// Witness the block corresponding to this leaf.
+    /// Witness the block.
     pub fn block(&self) -> Result<FqVar, SynthesisError> {
         let position = self.value().unwrap_or_default();
         let block = position.block();
         FqVar::new_witness(self.cs(), || Ok(Fq::from(block)))
     }
 
-    /// Witness the epoch corresponding to this leaf.
+    /// Witness the epoch by taking the first 32 bytes of the position.
     pub fn epoch(&self) -> Result<FqVar, SynthesisError> {
         let position = self.value().unwrap_or_default();
         let epoch = position.epoch();
@@ -129,6 +134,8 @@ impl MerkleAuthPathVar {
         // and leaf.
         let domain_separator = FqVar::new_constant(cs.clone(), *DOMAIN_SEPARATOR)?;
         let leaf_var = poseidon377::r1cs::hash_1(cs.clone(), &domain_separator, commitment_var)?;
+        // Make UInt64?
+        let position_bits = &position_var.to_bits_le()?;
 
         // Height 0 is the commitment.
         let mut previous_level = leaf_var;
@@ -136,19 +143,8 @@ impl MerkleAuthPathVar {
         // Start hashing from height 1, first hashing the leaf and its three siblings together,
         // then the next level and so on, until we reach the root of the quadtree.
         for height_value in 1..=24 {
-            // Check which way to go.
-            let index_fq = position_var.value().unwrap_or_else(|_| Fq::zero());
-            let index_value = u64::from_le_bytes(
-                index_fq.to_bytes()[0..8]
-                    .try_into()
-                    .expect("index value should always fit in a u64"),
-            );
-            let which_way = WhichWay::at(height_value, index_value).0;
-            let which_way_var =
-                WhichWayVar::new_variable(cs.clone(), || Ok(which_way), AllocationMode::Witness)?;
-
             let height_var = FqVar::new_constant(cs.clone(), Fq::from(height_value as u64))?;
-
+            let which_way_var = WhichWayVar::at(height_value, position_bits)?;
             let siblings = &self.inner[(24 - height_value) as usize];
             let [leftmost, left, right, rightmost] =
                 which_way_var.insert(previous_level.clone(), siblings.clone())?;
@@ -185,45 +181,49 @@ pub struct WhichWayVar {
     pub is_rightmost: Boolean<Fq>,
 }
 
-impl AllocVar<WhichWay, Fq> for WhichWayVar {
-    fn new_variable<T: std::borrow::Borrow<WhichWay>>(
-        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
-        f: impl FnOnce() -> Result<T, SynthesisError>,
-        mode: ark_r1cs_std::prelude::AllocationMode,
-    ) -> Result<Self, SynthesisError> {
-        let ns = cs.into();
-        let cs = ns.cs();
-        let which_way: WhichWay = *f()?.borrow();
-        match which_way {
-            WhichWay::Leftmost => Ok(WhichWayVar {
-                is_leftmost: Boolean::new_variable(cs.clone(), || Ok(true), mode)?,
-                is_left: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
-                is_right: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
-                is_rightmost: Boolean::new_variable(cs, || Ok(false), mode)?,
-            }),
-            WhichWay::Left => Ok(WhichWayVar {
-                is_leftmost: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
-                is_left: Boolean::new_variable(cs.clone(), || Ok(true), mode)?,
-                is_right: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
-                is_rightmost: Boolean::new_variable(cs, || Ok(false), mode)?,
-            }),
-            WhichWay::Right => Ok(WhichWayVar {
-                is_leftmost: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
-                is_left: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
-                is_right: Boolean::new_variable(cs.clone(), || Ok(true), mode)?,
-                is_rightmost: Boolean::new_variable(cs, || Ok(false), mode)?,
-            }),
-            WhichWay::Rightmost => Ok(WhichWayVar {
-                is_leftmost: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
-                is_left: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
-                is_right: Boolean::new_variable(cs.clone(), || Ok(false), mode)?,
-                is_rightmost: Boolean::new_variable(cs, || Ok(true), mode)?,
-            }),
-        }
-    }
-}
+// pub fn mul_exp(f: Fq, exp: usize) -> Fq {
+//     let mut acc = Fq::from(1);
+//     for _ in 0..exp {
+//         acc *= f;
+//     }
+//     acc
+// }
+
+// pub fn convert_le_bits_to_fqvar(value: &[Boolean<Fq>]) -> FqVar {
+//     let mut acc = FqVar::zero();
+//     for (i, bit) in value.iter().enumerate() {
+//         acc += FqVar::from(bit.clone()) * FqVar::constant(mul_exp(Fq::from(2_i32), i));
+//     }
+//     acc
+// }
 
 impl WhichWayVar {
+    /// Given a height and an index of a leaf, determine which direction the path down to that leaf
+    /// should branch at the node at that height. Allocates a `WhichWayVar`.
+    pub fn at(height: u8, position_bits: &Vec<Boolean<Fq>>) -> Result<WhichWayVar, SynthesisError> {
+        let shift = 2 * (height - 1);
+        let index_1 = shift;
+        let index_2 = shift + 1;
+        let bit_1 = position_bits[index_1 as usize].clone();
+        let bit_2 = position_bits[index_2 as usize].clone();
+
+        // Convert last two bits back to a field element.
+        let num_last_two_bits =
+            FqVar::from(bit_1) + FqVar::constant(Fq::from(2)) * FqVar::from(bit_2);
+
+        let is_leftmost = num_last_two_bits.is_eq(&FqVar::zero())?;
+        let is_left = num_last_two_bits.is_eq(&FqVar::one())?;
+        let is_right = num_last_two_bits.is_eq(&FqVar::constant(Fq::from(2u128)))?;
+        let is_rightmost = num_last_two_bits.is_eq(&FqVar::constant(Fq::from(3u128)))?;
+
+        Ok(WhichWayVar {
+            is_leftmost,
+            is_left,
+            is_right,
+            is_rightmost,
+        })
+    }
+
     /// Insert the provided node into the quadtree at the provided height.
     pub fn insert(&self, node: FqVar, siblings: [FqVar; 3]) -> Result<[FqVar; 4], SynthesisError> {
         // Cases:
