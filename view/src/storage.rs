@@ -114,9 +114,9 @@ impl Storage {
         let storage = Self {
             pool: Self::connect(Some(path))?,
             uncommitted_height: Arc::new(Mutex::new(None)),
-            scanned_notes_tx: broadcast::channel(10).0,
-            scanned_nullifiers_tx: broadcast::channel(10).0,
-            scanned_swaps_tx: broadcast::channel(10).0,
+            scanned_notes_tx: broadcast::channel(128).0,
+            scanned_nullifiers_tx: broadcast::channel(512).0,
+            scanned_swaps_tx: broadcast::channel(128).0,
         };
 
         spawn_blocking(move || {
