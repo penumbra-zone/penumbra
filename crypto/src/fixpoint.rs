@@ -222,8 +222,7 @@ impl R1CSVar<Fq> for U128x128Var {
     type Value = U128x128;
 
     fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
-        //self.lo_var.cs()
-        todo!()
+        self.limbs[0].cs()
     }
 
     fn value(&self) -> Result<Self::Value, ark_relations::r1cs::SynthesisError> {
@@ -410,7 +409,7 @@ pub fn fqvar_to_bits(value: FqVar, n: usize) -> Result<Vec<Boolean<Fq>>, Synthes
     let inner = value.value()?;
 
     // Get only first n bits based on that value (OOC)
-    let inner_bigint = inner.into_repr();
+    let inner_bigint = inner.into_bigint();
     let bits = &inner_bigint.to_bits_le()[0..n];
 
     // Allocate Boolean vars for first n bits
