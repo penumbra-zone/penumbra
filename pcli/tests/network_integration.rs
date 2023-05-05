@@ -272,6 +272,138 @@ fn delegate_and_undelegate() {
 
 #[ignore]
 #[test]
+fn lp_management() {
+    let tmpdir = load_wallet_into_tmpdir();
+
+    // Create a liquidity position selling 1cube for 1penumbra each.
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1cube@1penumbra",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
+
+    println!("1: {}", output);
+
+    // Address 0 has an opened LPNFT.
+    assert!(output.contains("1lpnft_opened"));
+
+    // Get the asset id for the LPNFT so we can close it:
+    let asset_id = output
+        .split_whitespace()
+        .find(|s| s.contains("1lpnft_opened"))
+        .unwrap()
+        .split(' ')
+        .next()
+        .unwrap();
+    println!("opened asset_id: {}", asset_id);
+
+    // Close the LP.
+    let mut close_cmd = Command::cargo_bin("pcli").unwrap();
+    close_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "close",
+            asset_id,
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    close_cmd.assert().success();
+
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
+
+    println!("2: {}", output);
+
+    // Address 0 has a closed LPNFT.
+    assert!(output.contains("1lpnft_closed"));
+
+    // Get the asset id for the LPNFT so we can withdraw it:
+    let asset_id = output
+        .split_whitespace()
+        .find(|s| s.contains("1lpnft_closed"))
+        .unwrap()
+        .split(' ')
+        .next()
+        .unwrap();
+    println!("closed asset_id: {}", asset_id);
+
+    // Withdraw the LP.
+    let mut close_cmd = Command::cargo_bin("pcli").unwrap();
+    close_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "withdraw",
+            asset_id,
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    close_cmd.assert().success();
+
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
+
+    println!("3: {}", output);
+
+    // Address 0 has a withdrawn LPNFT.
+    assert!(output.contains("1lpnft_withdrawn"));
+}
+
+#[ignore]
+#[test]
 fn swap() {
     let tmpdir = load_wallet_into_tmpdir();
 
