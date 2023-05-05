@@ -156,7 +156,7 @@ pub enum TxCmd {
         source: u32,
     },
     /// Manage liquidity positions.
-    #[clap(display_order = 500, subcommand)]
+    #[clap(display_order = 500, subcommand, visible_alias = "lp")]
     Position(PositionCmd),
     /// Consolidate many small notes into a few larger notes.
     ///
