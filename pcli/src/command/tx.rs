@@ -12,12 +12,14 @@ use decaf377::Fr;
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
+    asset,
     asset::{self, Denom},
     dex::lp::position,
+    fixpoint,
     keys::AddressIndex,
     memo::MemoPlaintext,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
-    Amount, Fee, Value, STAKING_TOKEN_ASSET_ID, fixpoint,
+    Amount, Fee, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_ibc::Ics20Withdrawal;
 use penumbra_proto::{
