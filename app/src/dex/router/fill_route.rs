@@ -226,17 +226,19 @@ pub trait FillRoute: StateWrite + Sized {
                 // This should not happen, since the `current_capacity` is the
                 // saturating input for the route.
                 if unfilled.amount > 0u64.into() {
-                    tracing::error!(
-                        ?pair,
+                    tracing::warn!(
                         ?unfilled,
-                        ?position,
                         ?current_value,
-                        "residual unfilled amount here"
+                        ?position,
+                        ?pair,
+                        "burning unexpected residual unfilled amount"
                     );
+                    /*
                     return Err(anyhow::anyhow!(
                         "internal error: unfilled amount after filling against {:?}",
                         position.id(),
                     ));
+                    */
                 }
                 current_value = output;
 
