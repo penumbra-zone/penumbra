@@ -231,16 +231,88 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             }) as for<'r> fn(&'r str) -> _,
         )
         .add_asset(
-            "^wpusd$",
-            &["^pusd$"],
+            "^wtest_usd$",
+            &["^test_usd$"],
             (|data: &str| {
                 assert!(data.is_empty());
                 denom::Inner::new(
-                    "wpusd".to_string(),
+                    "wtest_usd".to_string(),
                     vec![
                         denom::UnitData {
                             exponent: 18,
-                            denom: "pusd".to_string(),
+                            denom: "test_usd".to_string(),
+                        },
+                    ],
+                )
+            }) as for<'r> fn(&'r str) -> _,
+        )
+        .add_asset(
+            "^wtest_eth$",
+            &["^test_eth$"],
+            (|data: &str| {
+                assert!(data.is_empty());
+                denom::Inner::new(
+                    "wtest_eth".to_string(),
+                    vec![
+                        denom::UnitData {
+                            exponent: 18,
+                            denom: "test_eth".to_string(),
+                        },
+                    ],
+                )
+            }) as for<'r> fn(&'r str) -> _,
+        )
+        .add_asset(
+            "^test_sat$",
+            &["^test_btc$"],
+            (|data: &str| {
+                assert!(data.is_empty());
+                denom::Inner::new(
+                    "test_sat".to_string(),
+                    vec![
+                        denom::UnitData {
+                            exponent: 8,
+                            denom: "test_btc".to_string(),
+                        },
+                    ],
+                )
+            }) as for<'r> fn(&'r str) -> _,
+        )
+        .add_asset(
+            "^utest_atom$",
+            &["^test_atom$", "^mtest_atom$"],
+            (|data: &str| {
+                assert!(data.is_empty());
+                denom::Inner::new(
+                    "utest_atom".to_string(),
+                    vec![
+                        denom::UnitData {
+                            exponent: 6,
+                            denom: "test_atom".to_string(),
+                        },
+                        denom::UnitData {
+                            exponent: 3,
+                            denom: "mtest_atom".to_string(),
+                        },
+                    ],
+                )
+            }) as for<'r> fn(&'r str) -> _,
+        )
+        .add_asset(
+            "^utest_osmo$",
+            &["^test_osmo$", "^mtest_osmo$"],
+            (|data: &str| {
+                assert!(data.is_empty());
+                denom::Inner::new(
+                    "utest_osmo".to_string(),
+                    vec![
+                        denom::UnitData {
+                            exponent: 6,
+                            denom: "test_osmo".to_string(),
+                        },
+                        denom::UnitData {
+                            exponent: 3,
+                            denom: "mtest_osmo".to_string(),
                         },
                     ],
                 )

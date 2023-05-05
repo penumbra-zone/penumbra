@@ -30,7 +30,7 @@ impl Default for AppState {
                 },
                 Allocation {
                     amount: 100u128.into(),
-                    denom: "pusd".parse().unwrap(),
+                    denom: "test_usd".parse().unwrap(),
                     address: crate::test_keys::ADDRESS_0_STR.parse().unwrap(),
                 },
                 Allocation {

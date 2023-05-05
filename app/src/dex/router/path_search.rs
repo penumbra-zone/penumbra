@@ -13,7 +13,7 @@ use super::{Path, PathCache, PathEntry, SharedPathCache};
 
 pub(crate) fn hardcoded_candidates() -> Arc<Vec<asset::Id>> {
     Arc::new(vec![
-        asset::REGISTRY.parse_unit("pusd").id(),
+        asset::REGISTRY.parse_unit("test_usd").id(),
         asset::REGISTRY.parse_unit("penumbra").id(),
     ])
 }
