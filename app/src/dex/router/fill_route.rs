@@ -22,7 +22,7 @@ pub trait FillRoute: StateWrite + Sized {
         &mut self,
         input: Value,
         hops: &[asset::Id],
-    ) -> Result<(Vec<(position::Position, Amount)>, Vec<position::Position>)> {
+    ) -> Result<Option<(Vec<(position::Position, Amount)>, Vec<position::Position>)>> {
         let mut route = hops.to_vec();
         route.insert(0, input.asset_id);
         let pairs = self.breakdown_route(&route)?;
@@ -38,7 +38,7 @@ pub trait FillRoute: StateWrite + Sized {
             let Some(position) = tmp_state
                 .best_position(&pair)
                 .await? else {
-                    return Ok((vec![], vec![]));
+                    return Ok(None);
                     // return Err(anyhow!("exhausted positions on hop {}-{}", current_input.asset_id, pair.end))
                 };
 
@@ -87,7 +87,7 @@ pub trait FillRoute: StateWrite + Sized {
             current_input = output;
         }
 
-        Ok((constraining_positions, best_positions))
+        Ok(Some((constraining_positions, best_positions)))
     }
 
     /// Breaksdown a route into a collection of `DirectedTradingPair`, this is mostly useful
@@ -157,11 +157,11 @@ pub trait FillRoute: StateWrite + Sized {
             // are limiting the flow aka. "constraints". For every such constraint,
             // there's an input capacity that maximize its output without causing an
             // overflow.
-            let (constraining_hops, best_positions) = self.find_constraints(input, hops).await?;
-            if best_positions.is_empty() {
-                // If we run out of positions, we can't fill anymore.
+            let Some((constraining_hops, best_positions)) = self.find_constraints(input, hops).await? else {
+                // If any hop along the route runs out of liquidity,
+                // we cannot fill and have to break early.
                 break;
-            }
+            };
 
             let effective_price = best_positions.clone().into_iter().zip(pairs.clone()).fold(
                 U128x128::from(1u64),
