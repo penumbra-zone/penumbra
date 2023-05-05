@@ -58,6 +58,7 @@ pub trait RouteAndFill: StateWrite + Sized {
                 .await?
         } else {
             // There was no input for asset 2, so there's 0 output for asset 1 from this side.
+            tracing::debug!("no input for asset 2, skipping 2=>1 execution");
             (0u64.into(), delta_2)
         };
 
@@ -112,6 +113,7 @@ trait RouteAndFillInner: StateWrite + Sized {
     where
         Self: 'static,
     {
+        tracing::debug!(?delta_1, ?asset_1, ?asset_2, "starting route_and_fill");
         // Output of asset 2
         let mut outer_lambda_2 = 0u64.into();
         // Unfilled output of asset 1
@@ -126,16 +128,12 @@ trait RouteAndFillInner: StateWrite + Sized {
                 // TODO: max hops should not be hardcoded
                 .path_search(asset_1, asset_2, 4)
                 .await
-                .unwrap();
+                .context("error finding best path")?;
 
-            tracing::debug!("path is some? {}", path.is_some());
-            if path.is_none() {
-                // No path found, so we can't fill any more.
+            let Some(path) = path else {
+                tracing::debug!("no path found, exiting route_and_fill");
                 break;
-            }
-
-            let path = path.unwrap();
-            tracing::debug!(?path);
+            };
 
             (outer_lambda_2, outer_unfilled_1) = {
                 // path found, fill as much as we can
@@ -143,22 +141,27 @@ trait RouteAndFillInner: StateWrite + Sized {
                     amount: outer_unfilled_1,
                     asset_id: asset_1,
                 };
+
+                tracing::debug!(?path, delta_1 = ?delta_1.amount, "found path, starting to fill up to spill price");
+
                 let (unfilled_1, lambda_2) = Arc::get_mut(self)
                     .expect("expected state to have no other refs")
                     .fill_route(delta_1, &path, spill_price)
-                    .await?;
+                    .await
+                    .context("error filling along best path")?;
+
+                tracing::debug!(lambda_2 = ?lambda_2.amount, unfilled_1 = ?unfilled_1.amount, "filled along best path");
+
                 assert_eq!(lambda_2.asset_id, asset_2);
                 assert_eq!(unfilled_1.asset_id, asset_1);
-                let lambda_2 = lambda_2.amount;
-                tracing::debug!(?lambda_2, ?unfilled_1);
 
                 // The output of asset 2 is the sum of all the `lambda_2` values,
                 // and the unfilled amount becomes the new `delta_1`.
-                (outer_lambda_2 + lambda_2, unfilled_1.amount)
+                (outer_lambda_2 + lambda_2.amount, unfilled_1.amount)
             };
 
             if outer_unfilled_1.value() == 0 {
-                // All of the `delta_1` was spent
+                tracing::debug!("filled all of delta_1, exiting route_and_fill");
                 break;
             }
         }

@@ -542,6 +542,11 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     let gm = asset::REGISTRY.parse_unit("gm");
     let pusd = asset::REGISTRY.parse_unit("pusd");
 
+    tracing::info!(gm_id = ?gm.id());
+    tracing::info!(gn_id = ?gn.id());
+    tracing::info!(pusd_id = ?pusd.id());
+    tracing::info!(penumbra_id = ?penumbra.id());
+
     let pair_gm_gn = Market::new(gm.clone(), gn.clone());
     let pair_gm_pusd = Market::new(gm.clone(), pusd.clone());
     let pair_penumbra_gm = Market::new(penumbra.clone(), gm.clone());

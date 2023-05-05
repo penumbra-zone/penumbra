@@ -61,7 +61,7 @@ pub trait PositionRead: StateRead {
         pair: &DirectedTradingPair,
     ) -> Pin<Box<dyn Stream<Item = Result<position::Id>> + Send + 'static>> {
         let prefix = state_key::internal::price_index::prefix(pair);
-        tracing::debug!(prefix = ?EscapedByteSlice(&prefix), "searching for positions by price");
+        tracing::trace!(prefix = ?EscapedByteSlice(&prefix), "searching for positions by price");
         self.nonconsensus_prefix_raw(&prefix)
             .map(|entry| match entry {
                 Ok((k, _)) => {
@@ -293,7 +293,7 @@ pub(super) trait Inner: StateWrite {
                 state_key::internal::price_index::key(&pair12, &phi12, &id),
                 vec![],
             );
-            tracing::debug!(pair = ?pair12, ?id, "indexing position 12");
+            tracing::debug!("indexing position for 1=>2 trades");
         }
 
         if position.reserves.r1 != 0u64.into() {
@@ -307,13 +307,13 @@ pub(super) trait Inner: StateWrite {
                 state_key::internal::price_index::key(&pair21, &phi21, &id),
                 vec![],
             );
-            tracing::debug!(pair = ?pair21, ?id, "indexing position 21");
+            tracing::debug!("indexing position for 2=>1 trades");
         }
     }
 
     fn deindex_position(&mut self, position: &Position) {
         let id = position.id();
-        tracing::debug!(?id, "deindexing position");
+        tracing::debug!("deindexing position");
         let pair12 = DirectedTradingPair {
             start: position.phi.pair.asset_1(),
             end: position.phi.pair.asset_2(),
