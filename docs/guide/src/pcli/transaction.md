@@ -90,7 +90,7 @@ $ cargo run --release --bin pcli -- view balance
 If you have an open liquidity position, you may close it, preventing further trading against it.
 
 ```bash
-cargo run --release --bin pcli -- tx position close 1lpnft_opened_plpid1hzrzr2myjw508nf0hyzehl0w0x2xzr4t8vwe6t3qtnfhsqzf5lzsufscqr
+cargo run --release --bin pcli -- tx position close plpid1hzrzr2myjw508nf0hyzehl0w0x2xzr4t8vwe6t3qtnfhsqzf5lzsufscqr
 ```
 
 This will subtract the opened LPNFT and deposit a closed LPNFT into your balance:
@@ -107,7 +107,7 @@ $ cargo run --release --bin pcli -- view balance
 If you have a closed liquidity position, you may withdraw it, depositing the reserves in the trading position into your balance.
 
 ```bash
-cargo run --release --bin pcli -- tx position withdraw 1lpnft_closed_plpid1hzrzr2myjw508nf0hyzehl0w0x2xzr4t8vwe6t3qtnfhsqzf5lzsufscqr
+cargo run --release --bin pcli -- tx position withdraw plpid1hzrzr2myjw508nf0hyzehl0w0x2xzr4t8vwe6t3qtnfhsqzf5lzsufscqr
 ```
 
 This will subtract the closed LPNFT and deposit a withdrawn LPNFT into your balance, along with any reserves belonging to the trading position:
