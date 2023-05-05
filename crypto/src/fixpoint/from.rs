@@ -54,6 +54,17 @@ impl From<U128x128> for [u8; 32] {
     }
 }
 
+impl From<U128x128> for f64 {
+    fn from(value: U128x128) -> Self {
+        // This is a hack but it seems to work mostly?
+        // doesn't seem critical for it to be exact, there's no reverse conversion.
+        let (hi, lo) = value.0.into_words();
+        // binary repr of 2^128
+        const BASE: u64 = 0x47f0000000000000;
+        (hi as f64) + (lo as f64) / f64::from_bits(BASE)
+    }
+}
+
 impl TryFrom<&[u8]> for U128x128 {
     type Error = super::Error;
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
