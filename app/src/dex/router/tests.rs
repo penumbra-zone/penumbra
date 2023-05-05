@@ -508,6 +508,9 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     let price1 = one;
     let price2 = 2u64.into();
 
+    let traces: im::Vector<Vec<Value>> = im::Vector::new();
+    state_tx.object_put("swap_execution", traces);
+
     let buy_1 = limit_buy(pair_1.clone(), 3u64.into(), price2);
     let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
     state_tx.put_position(buy_1);
@@ -606,6 +609,9 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
 
+    let traces: im::Vector<Vec<Value>> = im::Vector::new();
+    state_tx.object_put("swap_execution", traces);
+
     let one: Amount = 1u64.into();
 
     let price1 = one;
@@ -702,6 +708,9 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
 
+    let traces: im::Vector<Vec<Value>> = im::Vector::new();
+    state_tx.object_put("swap_execution", traces);
+
     let one = 1u64.into();
     let price1 = one;
     let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
@@ -780,6 +789,9 @@ async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
     let pair_1 = Market::new(gm.clone(), gn.clone());
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+
+    let traces: im::Vector<Vec<Value>> = im::Vector::new();
+    state_tx.object_put("swap_execution", traces);
 
     let one = 1u64.into();
     let price1 = one;
