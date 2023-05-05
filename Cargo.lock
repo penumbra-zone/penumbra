@@ -4163,6 +4163,7 @@ dependencies = [
  "hex",
  "ibc-proto",
  "ibc-types",
+ "im",
  "jmt",
  "metrics",
  "once_cell",

@@ -70,6 +70,15 @@ pub trait StateReadExt: StateRead {
             .await
     }
 
+    async fn swap_execution(
+        &self,
+        height: u64,
+        trading_pair: TradingPair,
+    ) -> Result<Option<SwapExecution>> {
+        self.get(&state_key::swap_execution(height, trading_pair))
+            .await
+    }
+
     // Get the swap flow for the given trading pair accumulated in this block so far.
     fn swap_flow(&self, pair: &TradingPair) -> SwapFlow {
         self.swap_flows().get(pair).cloned().unwrap_or_default()
