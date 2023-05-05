@@ -1,14 +1,13 @@
-use std::sync::Arc;
-
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use penumbra_crypto::{
     asset,
-    dex::{execution::SwapExecution, lp::position, DirectedTradingPair},
+    dex::{lp::position, DirectedTradingPair},
     fixpoint::U128x128,
     Amount, Value,
 };
 use penumbra_storage::{StateDelta, StateWrite};
+use tracing::instrument;
 
 use crate::dex::{PositionManager, PositionRead};
 
@@ -106,12 +105,20 @@ pub trait FillRoute: StateWrite + Sized {
         }
     }
 
+    #[instrument(skip(self, input, hops, spill_price))]
     async fn fill_route(
         &mut self,
         mut input: Value,
         hops: &[asset::Id],
         spill_price: Option<U128x128>,
     ) -> Result<(Value, Value)> {
+        tracing::debug!(
+            ?input,
+            ?hops,
+            ?spill_price,
+            "filling along route up to spill price"
+        );
+
         let mut route = hops.to_vec();
         route.insert(0, input.asset_id);
 

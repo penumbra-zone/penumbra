@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use penumbra_crypto::{asset, fixpoint::U128x128};
 use penumbra_storage::{StateDelta, StateRead};
 use tokio::task::JoinSet;
-use tracing::instrument;
+use tracing::{instrument, Instrument};
 
 use crate::dex::PositionManager;
 
@@ -35,7 +35,7 @@ pub trait PathSearch: StateRead + Clone + 'static {
         if let Some(PathEntry { path, spill, .. }) = entry {
             let nodes = path.nodes;
             let spill_price = spill.map(|p| p.price);
-            tracing::info!(price = %path.price, spill_price = %spill_price.unwrap_or_else(|| 0u64.into()), ?src, ?nodes, "found path");
+            tracing::debug!(price = %path.price, spill_price = %spill_price.unwrap_or_else(|| 0u64.into()), ?src, ?nodes, "found path");
             Ok((Some(nodes), spill_price))
         } else {
             Ok((None, None))
@@ -69,7 +69,12 @@ async fn relax_path<S: StateRead + 'static>(
     let candidates = path
         .state
         .candidate_set(*path.end(), hardcoded_candidates())
+        .instrument(path.span.clone())
         .await?;
+
+    path.span.in_scope(|| {
+        tracing::debug!(degree = ?candidates.len(), ?candidates, "relaxing path");
+    });
 
     let mut js = JoinSet::new();
     for new_end in candidates {
