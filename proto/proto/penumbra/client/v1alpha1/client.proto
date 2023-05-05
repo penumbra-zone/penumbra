@@ -112,6 +112,7 @@ service SpecificQueryService {
   rpc ValidatorPenalty(ValidatorPenaltyRequest) returns (ValidatorPenaltyResponse);
   rpc NextValidatorRate(NextValidatorRateRequest) returns (NextValidatorRateResponse);
   rpc BatchSwapOutputData(BatchSwapOutputDataRequest) returns (BatchSwapOutputDataResponse);
+  rpc SwapExecution(SwapExecutionRequest) returns (SwapExecutionResponse);
   rpc LiquidityPositions(LiquidityPositionsRequest) returns (stream LiquidityPositionsResponse);
   rpc LiquidityPositionById(LiquidityPositionByIdRequest) returns (LiquidityPositionByIdResponse);
   rpc StubCPMMReserves(StubCPMMReservesRequest) returns (StubCPMMReservesResponse);
@@ -181,6 +182,17 @@ message BatchSwapOutputDataRequest {
 
 message BatchSwapOutputDataResponse {
   core.dex.v1alpha1.BatchSwapOutputData data = 1;
+}
+
+message SwapExecutionRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  uint64 height = 2;
+  core.dex.v1alpha1.TradingPair trading_pair = 3;
+}
+
+message SwapExecutionResponse {
+  core.dex.v1alpha1.SwapExecution swap_execution = 1;
 }
 
 // Requests all liquidity position data from the view service.
