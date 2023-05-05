@@ -44,6 +44,9 @@ use proposal::ProposalCmd;
 mod liquidity_position;
 use liquidity_position::PositionCmd;
 
+mod approximate;
+use approximate::ApproximateCmd;
+
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
     /// Send funds to a Penumbra address.
@@ -1075,6 +1078,27 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::RewardClaim {}) => todo!(),
+            TxCmd::Position(PositionCmd::Approximate(ApproximateCmd::ConstantProduct { market, quantity })) => {
+                if quantity.asset_id != market.start.id() && quantity.asset_id != market.end.id() {
+                    return Err(anyhow::anyhow!(
+                        "you must supply liquidity with an asset that's part of the market"
+                    ));
+                } else if quantity.amount == 0u64.into() {
+                    return Err(anyhow::anyhow!(
+                        "the quantity of liquidity supplied must be non-zero.",
+                    ));
+                } else {
+                    let _positions = crate::dex_utils::approximate::xyk::approximate(
+                        market,
+                        quantity,
+                        0u64.into(),
+                    );
+                }
+            } /*
+              ViewCmd::Approximate(_) => {
+                  println!("linear")
+              }
+               */
         }
         Ok(())
     }

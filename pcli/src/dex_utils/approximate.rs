@@ -34,10 +34,12 @@ pub mod xyk {
         )?
         .to_vec();
 
+        // TODO(erwan): it would be nice to have an option to output structured input
+        // so that a graph tool can pickup the solutions and they can be independently checked.
         k_invariants
             .iter()
             .enumerate()
-            .for_each(|(k, i)| println!("k_{i} = {k}"));
+            .for_each(|(i, k)| println!("k_{i} = {k}"));
 
         Ok(vec![])
     }

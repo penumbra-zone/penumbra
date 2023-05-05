@@ -16,6 +16,8 @@ use penumbra_crypto::{
 };
 use rand_core::CryptoRngCore;
 
+use super::approximate::ApproximateCmd;
+
 #[derive(Debug, clap::Subcommand)]
 pub enum PositionCmd {
     /// Open a new liquidity position based on order details and credits an open position NFT.
@@ -61,9 +63,13 @@ pub enum PositionCmd {
         /// The [`position::Id`] of the position to withdraw.
         position_id: position::Id,
     },
+
     /// Debits a withdrawn position NFT and credits a claimed position NFT and any liquidity incentives.
     #[clap(hide(true))] // remove when reward claims exist
     RewardClaim {},
+    /// Approximate a trading function
+    #[clap(subcommand)]
+    Approximate(ApproximateCmd),
 }
 
 impl PositionCmd {
@@ -75,6 +81,7 @@ impl PositionCmd {
             PositionCmd::Withdraw { .. } => false,
             PositionCmd::WithdrawAll { .. } => false,
             PositionCmd::RewardClaim { .. } => false,
+            PositionCmd::Approximate(_) => false,
         }
     }
 }

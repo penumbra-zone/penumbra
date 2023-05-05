@@ -11,8 +11,6 @@ pub mod transaction_hashes;
 use transaction_hashes::TransactionHashesCmd;
 mod tx;
 use tx::TxCmd;
-mod approximate;
-use approximate::ApproximateCmd;
 
 use crate::App;
 
@@ -36,9 +34,6 @@ pub enum ViewCmd {
     ListTransactionHashes(TransactionHashesCmd),
     /// Displays a transaction's details by hash.
     Tx(TxCmd),
-    /// Approximate a trading function
-    #[clap(subcommand)]
-    Approximate(ApproximateCmd),
 }
 
 impl ViewCmd {
@@ -51,7 +46,6 @@ impl ViewCmd {
             ViewCmd::Sync => false,
             ViewCmd::ListTransactionHashes(transactions_cmd) => transactions_cmd.offline(),
             ViewCmd::Tx(tx_cmd) => tx_cmd.offline(),
-            ViewCmd::Approximate(approximate_cmd) => approximate_cmd.offline(),
         }
     }
 
@@ -90,27 +84,6 @@ impl ViewCmd {
                     .exec(&full_viewing_key, view_client, &mut oblivious_client)
                     .await?;
             }
-            ViewCmd::Approximate(ApproximateCmd::ConstantProduct { market, quantity }) => {
-                if quantity.asset_id != market.start.id() && quantity.asset_id != market.end.id() {
-                    return Err(anyhow::anyhow!(
-                        "you must supply liquidity with an asset that's part of the market"
-                    ));
-                } else if quantity.amount == 0u64.into() {
-                    return Err(anyhow::anyhow!(
-                        "the quantity of liquidity supplied must be non-zero.",
-                    ));
-                } else {
-                    let _positions = crate::dex_utils::approximate::xyk::approximate(
-                        market,
-                        quantity,
-                        0u64.into(),
-                    );
-                }
-            } /*
-              ViewCmd::Approximate(_) => {
-                  println!("linear")
-              }
-               */
         }
 
         Ok(())
