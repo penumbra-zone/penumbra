@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 use penumbra_chain::params::ChainParameters;
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 use crate::plan::TransactionPlan;
 
@@ -149,6 +149,10 @@ impl TryFrom<pb::Proposal> for Proposal {
             },
         })
     }
+}
+
+impl TypeUrl for Proposal {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.Proposal";
 }
 
 impl DomainType for Proposal {
@@ -390,6 +394,10 @@ impl State {
     }
 }
 
+impl TypeUrl for State {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ProposalState";
+}
+
 impl DomainType for State {
     type Proto = pb::ProposalState;
 }
@@ -559,6 +567,10 @@ impl TryFrom<Withdrawn<String>> for Withdrawn<()> {
     }
 }
 
+impl TypeUrl for Outcome<String> {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ProposalOutcome";
+}
+
 impl DomainType for Outcome<String> {
     type Proto = pb::ProposalOutcome;
 }
@@ -611,6 +623,10 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
             },
         )
     }
+}
+
+impl TypeUrl for Outcome<()> {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ProposalOutcome";
 }
 
 impl DomainType for Outcome<()> {

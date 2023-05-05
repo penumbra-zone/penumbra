@@ -1,6 +1,6 @@
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::{stake::IdentityKey, GovernanceKey};
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::{vote::Vote, ActionView, IsAction, TransactionPerspective};
@@ -98,6 +98,10 @@ impl TryFrom<pb::ValidatorVoteBody> for ValidatorVoteBody {
                 .try_into()?,
         })
     }
+}
+
+impl TypeUrl for ValidatorVoteBody {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ValidatorVoteBody";
 }
 
 impl DomainType for ValidatorVoteBody {

@@ -232,6 +232,10 @@ impl TryFrom<&[u8]> for AddressIndex {
     }
 }
 
+impl TypeUrl for AddressIndex {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.AddressIndex";
+}
+
 impl DomainType for AddressIndex {
     type Proto = pb::AddressIndex;
 }

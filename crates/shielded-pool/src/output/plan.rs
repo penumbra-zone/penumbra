@@ -6,7 +6,7 @@ use penumbra_crypto::{
     symmetric::WrappedMemoKey,
     Address, FieldExt, Fr, Note, PayloadKey, Rseed, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use rand_core::{CryptoRng, OsRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -121,6 +121,10 @@ impl OutputPlan {
     pub fn balance(&self) -> penumbra_crypto::Balance {
         -penumbra_crypto::Balance::from(self.value)
     }
+}
+
+impl TypeUrl for OutputPlan {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.OutputPlan";
 }
 
 impl DomainType for OutputPlan {

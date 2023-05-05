@@ -1,7 +1,7 @@
 use penumbra_crypto::Balance;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
-use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType};
+use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType, TypeUrl};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use serde::{Deserialize, Serialize};
@@ -200,6 +200,10 @@ impl From<Ics20Withdrawal> for ActionPlan {
     fn from(inner: Ics20Withdrawal) -> ActionPlan {
         ActionPlan::Withdrawal(inner)
     }
+}
+
+impl TypeUrl for ActionPlan {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.ActionPlan";
 }
 
 impl DomainType for ActionPlan {

@@ -2,7 +2,7 @@ use std::convert::{TryFrom, TryInto};
 
 use anyhow::{Context, Error};
 use penumbra_crypto::{Balance, EffectHash, EffectingData, Value};
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 #[derive(Clone, Debug)]
 pub struct DaoDeposit {
@@ -27,6 +27,10 @@ impl DaoDeposit {
         // Deposits into the DAO require value
         -Balance::from(self.value)
     }
+}
+
+impl TypeUrl for DaoDeposit {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.DaoDeposit";
 }
 
 impl DomainType for DaoDeposit {

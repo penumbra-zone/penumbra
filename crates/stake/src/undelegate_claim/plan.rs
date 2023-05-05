@@ -5,8 +5,8 @@ use penumbra_crypto::{
     Amount, FieldExt, Fr,
 };
 use penumbra_proof_params::UNDELEGATECLAIM_PROOF_PROVING_KEY;
-use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
-use rand_chacha::rand_core::OsRng;
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
+use rand_core::OsRng;
 
 use serde::{Deserialize, Serialize};
 
@@ -77,6 +77,10 @@ impl UndelegateClaimPlan {
         self.penalty
             .balance_for_claim(self.unbonding_id(), self.unbonding_amount)
     }
+}
+
+impl TypeUrl for UndelegateClaimPlan {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.UndelegateClaimPlan";
 }
 
 impl DomainType for UndelegateClaimPlan {

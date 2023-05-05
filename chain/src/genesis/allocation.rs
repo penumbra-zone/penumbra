@@ -1,5 +1,5 @@
 use penumbra_crypto::{asset, Address, Amount, Note, Rseed, Value};
-use penumbra_proto::{core::chain::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::chain::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 /// A (transparent) genesis allocation.
@@ -73,6 +73,11 @@ impl Allocation {
         )
         .map_err(Into::into)
     }
+}
+
+impl TypeUrl for Allocation {
+    // TODO: verify!
+    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.genesis_app_state.Allocation";
 }
 
 impl DomainType for Allocation {

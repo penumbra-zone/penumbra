@@ -7,7 +7,7 @@ use penumbra_crypto::{
     },
     Value,
 };
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::action::PositionWithdraw;
@@ -66,6 +66,10 @@ impl PositionWithdrawPlan {
 
         balance
     }
+}
+
+impl TypeUrl for PositionWithdrawPlan {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.PositionWithdrawPlan";
 }
 
 impl DomainType for PositionWithdrawPlan {
