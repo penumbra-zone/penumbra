@@ -318,7 +318,8 @@ fn lp_management() {
         .unwrap()
         .split(' ')
         .next()
-        .unwrap();
+        .unwrap()
+        .replace("1lpnft_opened_", "");
     println!("opened asset_id: {}", asset_id);
 
     // Close the LP.
@@ -330,7 +331,7 @@ fn lp_management() {
             "tx",
             "position",
             "close",
-            asset_id,
+            &asset_id,
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     close_cmd.assert().success();
@@ -363,7 +364,8 @@ fn lp_management() {
         .unwrap()
         .split(' ')
         .next()
-        .unwrap();
+        .unwrap()
+        .replace("1lpnft_closed_", "");
     println!("closed asset_id: {}", asset_id);
 
     // Withdraw the LP.
@@ -375,7 +377,7 @@ fn lp_management() {
             "tx",
             "position",
             "withdraw",
-            asset_id,
+            &asset_id,
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     close_cmd.assert().success();
