@@ -1112,3 +1112,75 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[ignore]
+#[tokio::test]
+/// Tests that no unfilled amount remains during routing execution.
+/// Context: hdevalence found a test vector that created some unfilled
+/// amount, leading to a local testnet halt, this replicates the bug.
+async fn fill_route_unfilled_amount_replicate_bug() -> anyhow::Result<()> {
+    /*
+     *
+     * order sell 25gn@1gm
+     * order buy 1pusd@20gm
+     * order buy 5penumbra@1gm
+     * order sell 1pusd@5penumbra
+     * swap 10penumbra to gn
+     */
+
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let pusd = asset::REGISTRY.parse_unit("pusd");
+
+    let gn_gm = Market::new(gn.clone(), gm.clone());
+    let pusd_gm = Market::new(pusd.clone(), gm.clone());
+    let penumbra_gm = Market::new(penumbra.clone(), gm.clone());
+    let pusd_penumbra = Market::new(pusd.clone(), penumbra.clone());
+
+    let one = Amount::from(1u64);
+
+    let traces: im::Vector<Vec<Value>> = im::Vector::new();
+    state_tx.object_put("swap_execution", traces);
+
+    let sell_1 = limit_sell(gn_gm, 25u64.into(), 1u64.into());
+    state_tx.put_position(sell_1);
+
+    let buy_1 = limit_buy(pusd_gm, 1u64.into(), 20u64.into());
+    state_tx.put_position(buy_1);
+
+    let buy_1 = limit_buy(penumbra_gm, 5u64.into(), 1u64.into());
+    let sell_1 = limit_buy(pusd_penumbra, one, 5u64.into());
+    state_tx.put_position(buy_1);
+    state_tx.put_position(sell_1);
+
+    let delta_1 = Value {
+        asset_id: penumbra.id(),
+        amount: Amount::from(10u64) * penumbra.unit_amount(),
+    };
+
+    let route = vec![gm.id(), gn.id()];
+
+    let spill_price = U128x128::from(1_000_000_000_000u64);
+
+    let (unfilled, output) =
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+            .await
+            .unwrap();
+
+    let desired_output = Amount::from(2900u64) * pusd.unit_amount();
+    let one_gm = gm.unit_amount() * one;
+    println!("UNFILLED: {unfilled:?}, OUTPUT: {output:?}");
+
+    assert_eq!(unfilled.amount, one_gm);
+    assert_eq!(unfilled.asset_id, gm.id());
+    assert_eq!(output.amount, desired_output);
+    assert_eq!(output.asset_id, pusd.id());
+
+    Ok(())
+}
