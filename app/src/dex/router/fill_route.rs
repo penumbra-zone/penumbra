@@ -62,6 +62,8 @@ pub trait FillRoute: StateWrite + Sized {
                 let delta_1_star = (U128x128::from(lambda_2) * accumulated_effective_price)
                     .expect("TODO(erwan): write proof");
 
+                tracing::debug!(lambda_2, accumulated_effective_price, delta_1_star, "calculating saturating input");
+
                 // SAFETY: There are two important reasons to round up the saturating
                 // input here. The first one is because of asset conservation:
                 // -> The first reason has to do with "asset conservation":
@@ -193,6 +195,8 @@ pub trait FillRoute: StateWrite + Sized {
                             Amount::min(current_min, saturating_input.clone())
                         },
                     );
+
+                    tracing::debug!(?min_delta_1_star);
 
                     min_delta_1_star
                 }
