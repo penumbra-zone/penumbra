@@ -821,7 +821,7 @@ mod tests {
                 Ok(self.state_commitment_proof.position())
             })?;
             merkle_path_var.verify(
-                cs.clone(),
+                cs,
                 &Boolean::TRUE,
                 position_var.inner,
                 anchor_var,
