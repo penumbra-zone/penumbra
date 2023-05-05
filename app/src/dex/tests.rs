@@ -4,11 +4,10 @@ use penumbra_crypto::{
     asset::{self},
     dex::{
         lp::{position::Position, Reserves},
-        DirectedTradingPair, Market,
+        BatchSwapOutputData, DirectedTradingPair, Market,
     },
     Amount, MockFlowCiphertext,
 };
-use penumbra_proto::core::dex::v1alpha1::swap_execution;
 use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
 
 use rand_core::OsRng;
@@ -493,8 +492,8 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     assert!(trading_pair.asset_1() == penumbra.id());
 
     // Add the amount of each asset being swapped to the batch swap flow.
-    swap_flow.0 += MockFlowCiphertext::new(0u32.into());
-    swap_flow.1 += MockFlowCiphertext::new(1u32.into());
+    swap_flow.0 += MockFlowCiphertext::new(Amount::from(0u32) * penumbra.unit_amount());
+    swap_flow.1 += MockFlowCiphertext::new(Amount::from(1u32) * gn.unit_amount());
 
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)
@@ -508,13 +507,19 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     // Swap execution should have a single trace consisting of `[1gn, 1penumbra]`.
     let swap_execution = state.swap_execution(0, trading_pair).await?.unwrap();
 
-    assert_eq!(swap_execution.traces.len(), 1);
-    assert_eq!(swap_execution.traces[0].len(), 2);
-
-    assert_eq!(swap_execution.traces[0][0].asset_id, gn.id());
-    assert_eq!(swap_execution.traces[0][1].asset_id, penumbra.id());
-    assert_eq!(swap_execution.traces[0][0].amount, 1u32.into());
-    assert_eq!(swap_execution.traces[0][1].amount, 1u32.into());
+    assert_eq!(
+        swap_execution.traces,
+        vec![vec![
+            Value {
+                asset_id: gn.id(),
+                amount: Amount::from(1u32) * gn.unit_amount(),
+            },
+            Value {
+                asset_id: penumbra.id(),
+                amount: Amount::from(1u32) * penumbra.unit_amount(),
+            }
+        ]]
+    );
 
     // Now do a more complicated swap execution through a few positions
     // and asset types.
@@ -568,8 +573,8 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     assert!(trading_pair.asset_1() == penumbra.id());
 
     // Add the amount of each asset being swapped to the batch swap flow.
-    swap_flow.0 += MockFlowCiphertext::new(10u32.into());
-    swap_flow.1 += MockFlowCiphertext::new(0u32.into());
+    swap_flow.0 += MockFlowCiphertext::new(Amount::from(10u32) * penumbra.unit_amount());
+    swap_flow.1 += MockFlowCiphertext::new(Amount::from(0u32) * gn.unit_amount());
 
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)
@@ -582,9 +587,27 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
 
     let output_data = state.output_data(0, trading_pair).await?.unwrap();
 
+    assert_eq!(
+        output_data,
+        BatchSwapOutputData {
+            delta_1: Amount::from(10u32) * penumbra.unit_amount(),
+            delta_2: 0u32.into(),
+            lambda_1_1: 0u32.into(),
+            lambda_1_2: 0u32.into(),
+            lambda_2_1: Amount::from(25u32) * gn.unit_amount(),
+            lambda_2_2: 0u32.into(),
+            height: 0,
+            epoch_height: 0,
+            trading_pair,
+        }
+    );
+
     // Output data should have 10 penumbra in and 25gn out
-    assert_eq!(output_data.delta_1, 10u32.into());
-    assert_eq!(output_data.lambda_2_1, 25u32.into());
+    assert_eq!(
+        output_data.delta_1,
+        Amount::from(10u32) * penumbra.unit_amount()
+    );
+    assert_eq!(output_data.delta_1, Amount::from(25u32) * gn.unit_amount());
 
     // Swap execution should have two traces.
     let swap_execution = state.swap_execution(0, trading_pair).await?.unwrap();
