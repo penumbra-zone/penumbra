@@ -285,7 +285,7 @@ fn lp_management() {
             "position",
             "order",
             "sell",
-            "1cube@1penumbra",
+            "1penumbra@1gm",
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     sell_cmd.assert().success();
