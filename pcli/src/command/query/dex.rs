@@ -2,20 +2,19 @@ use std::pin::Pin;
 
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
-use futures::{Future, FutureExt, Stream, StreamExt, TryStreamExt};
+use futures::{Stream, StreamExt, TryStreamExt};
 
 use penumbra_crypto::{
     asset,
     dex::{
-        execution::SwapExecution,
-        lp::{position::Position, Reserves},
-        BatchSwapOutputData, TradingPair,
+        execution::SwapExecution, lp::position::Position, BatchSwapOutputData, DirectedTradingPair,
+        TradingPair,
     },
     Asset,
 };
 use penumbra_proto::client::v1alpha1::{
     specific_query_service_client::SpecificQueryServiceClient, AssetInfoRequest,
-    BatchSwapOutputDataRequest, LiquidityPositionsRequest, StubCpmmReservesRequest,
+    BatchSwapOutputDataRequest, LiquidityPositionsByPriceRequest, LiquidityPositionsRequest,
     SwapExecutionRequest,
 };
 use penumbra_view::ViewClient;
@@ -25,11 +24,6 @@ use crate::App;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum DexCmd {
-    /// Display information about constant-pair market maker reserves.
-    CPMMReserves {
-        /// The trading pair to query for CPMM Reserves.
-        trading_pair: TradingPair,
-    },
     /// Display information about a specific trading pair & height's batch swap.
     BatchOutputs {
         /// The height to query for batch outputs.
@@ -46,80 +40,23 @@ pub enum DexCmd {
         /// The trading pair to query for the swap execution.
         trading_pair: TradingPair,
     },
-    /// Display information about liquidity positions known to the chain.
-    LiquidityPositions {
-        /// Display closed and withdrawn liquidity positions.
-        #[clap(long, default_value_t = false, action=clap::ArgAction::SetTrue)]
-        only_open: bool,
+    /// Display information about all liquidity positions known to the chain.
+    AllPositions {
+        /// Display closed and withdrawn liquidity positions as well as open ones.
+        #[clap(long)]
+        include_closed: bool,
+    },
+    /// Display open liquidity for a given pair, sorted by effective price.
+    Positions {
+        /// The trading pair to query, with ordering determining direction of trade (1=>2).
+        trading_pair: DirectedTradingPair,
+        /// A limit on the number of positions to display.
+        #[clap(long)]
+        limit: Option<u64>,
     },
 }
 
 impl DexCmd {
-    pub async fn print_cpmm_reserves(
-        &self,
-        app: &mut App,
-        trading_pair: &TradingPair,
-    ) -> Result<()> {
-        let mut client = app.specific_client().await?;
-
-        let chain_id = app.view().chain_params().await?.chain_id;
-        let reserves_data: Reserves = client
-            .stub_cpmm_reserves(StubCpmmReservesRequest {
-                trading_pair: Some((*trading_pair).into()),
-                chain_id: chain_id.clone(),
-            })
-            .await?
-            .into_inner()
-            .try_into()
-            .context("cannot parse stub CPMM reserves data")?;
-        println!("Constant-Product Market Maker Reserves:");
-        let mut table = Table::new();
-
-        let asset_1: Asset = client
-            .asset_info(AssetInfoRequest {
-                asset_id: Some(trading_pair.asset_1().into()),
-                chain_id: chain_id.clone(),
-            })
-            .await?
-            .into_inner()
-            .asset
-            .unwrap()
-            .try_into()?;
-
-        let display_denom_1 = asset_1.denom.best_unit_for(reserves_data.r1);
-
-        let (denom_1, reserve_amount_1) = (
-            format!("{display_denom_1}"),
-            display_denom_1.format_value(reserves_data.r1),
-        );
-
-        let asset_2: Asset = client
-            .asset_info(AssetInfoRequest {
-                asset_id: Some(trading_pair.asset_2().into()),
-                chain_id: chain_id.clone(),
-            })
-            .await?
-            .into_inner()
-            .asset
-            .unwrap()
-            .try_into()?;
-        let display_denom_2 = asset_2.denom.best_unit_for(reserves_data.r2);
-        let (denom_2, reserve_amount_2) = (
-            format!("{display_denom_2}"),
-            display_denom_2.format_value(reserves_data.r2),
-        );
-
-        table.load_preset(presets::NOTHING);
-        table
-            .set_header(vec!["Denomination", "Reserve Amount"])
-            .add_row(vec![denom_1, reserve_amount_1])
-            .add_row(vec![denom_2, reserve_amount_2]);
-
-        println!("{table}");
-
-        Ok(())
-    }
-
     pub async fn get_batch_outputs(
         &self,
         app: &mut App,
@@ -161,38 +98,49 @@ impl DexCmd {
             .context("cannot parse batch swap output data")
     }
 
-    pub async fn get_liquidity_positions(
+    pub async fn get_all_liquidity_positions(
         &self,
         mut client: SpecificQueryServiceClient<Channel>,
-        only_open: bool,
-        chain_id: String,
-    ) -> Pin<
-        Box<
-            dyn Future<
-                    Output = Result<Pin<Box<dyn Stream<Item = Result<Position>> + Send + 'static>>>,
-                > + Send
-                + 'static,
-        >,
-    > {
-        async move {
-            let stream = client.liquidity_positions(LiquidityPositionsRequest {
-                only_open,
-                chain_id,
-            });
-            let stream = stream.await?.into_inner();
+        include_closed: bool,
+        chain_id: Option<String>,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<Position>> + Send + 'static>>> {
+        let stream = client.liquidity_positions(LiquidityPositionsRequest {
+            include_closed,
+            chain_id: chain_id.unwrap_or_default(),
+        });
+        let stream = stream.await?.into_inner();
 
-            Ok(stream
-                .map_err(|e| anyhow::anyhow!("error fetching liquidity positions: {}", e))
-                .and_then(|msg| async move {
-                    msg.data
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("missing liquidity position in response data")
-                        })
-                        .map(Position::try_from)?
-                })
-                .boxed())
-        }
-        .boxed()
+        Ok(stream
+            .map_err(|e| anyhow::anyhow!("error fetching liquidity positions: {}", e))
+            .and_then(|msg| async move {
+                msg.data
+                    .ok_or_else(|| anyhow::anyhow!("missing liquidity position in response data"))
+                    .map(Position::try_from)?
+            })
+            .boxed())
+    }
+
+    pub async fn get_liquidity_positions_by_price(
+        &self,
+        mut client: SpecificQueryServiceClient<Channel>,
+        pair: DirectedTradingPair,
+        limit: Option<u64>,
+    ) -> Result<Pin<Box<dyn Stream<Item = Result<Position>> + Send + 'static>>> {
+        let stream = client.liquidity_positions_by_price(LiquidityPositionsByPriceRequest {
+            trading_pair: Some(pair.into()),
+            limit: limit.unwrap_or_default(),
+            ..Default::default()
+        });
+        let stream = stream.await?.into_inner();
+
+        Ok(stream
+            .map_err(|e| anyhow::anyhow!("error fetching liquidity positions: {}", e))
+            .and_then(|msg| async move {
+                msg.data
+                    .ok_or_else(|| anyhow::anyhow!("missing liquidity position in response data"))
+                    .map(Position::try_from)?
+            })
+            .boxed())
     }
 
     pub async fn print_swap_execution(
@@ -290,9 +238,6 @@ impl DexCmd {
 
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
-            DexCmd::CPMMReserves { trading_pair } => {
-                self.print_cpmm_reserves(app, trading_pair).await?;
-            }
             DexCmd::BatchOutputs {
                 height,
                 trading_pair,
@@ -305,19 +250,31 @@ impl DexCmd {
             } => {
                 self.print_swap_execution(app, height, trading_pair).await?;
             }
-            DexCmd::LiquidityPositions { only_open } => {
+            DexCmd::AllPositions { include_closed } => {
                 let client = app.specific_client().await?;
                 let chain_id = app.view().chain_params().await?.chain_id;
 
                 let positions_stream = self
-                    .get_liquidity_positions(client.clone(), *only_open, chain_id.clone())
-                    .await
+                    .get_all_liquidity_positions(client.clone(), *include_closed, Some(chain_id))
                     .await?;
 
                 let asset_cache = app.view().assets().await?;
 
                 let positions = positions_stream.try_collect::<Vec<_>>().await?;
 
+                println!("{}", render_positions(&asset_cache, &positions));
+            }
+            DexCmd::Positions {
+                trading_pair,
+                limit,
+            } => {
+                let client = app.specific_client().await?;
+                let positions = self
+                    .get_liquidity_positions_by_price(client, *trading_pair, *limit)
+                    .await?
+                    .try_collect::<Vec<_>>()
+                    .await?;
+                let asset_cache = app.view().assets().await?;
                 println!("{}", render_positions(&asset_cache, &positions));
             }
         };

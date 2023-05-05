@@ -170,6 +170,26 @@ impl FromStr for TradingPair {
     }
 }
 
+impl FromStr for DirectedTradingPair {
+    type Err = anyhow::Error;
+
+    /// Takes an input of the form DENOM1:DENOM2,
+    /// splits on the `:` (erroring if there is more than one `:`),
+    /// parses the first and second halves using `asset::REGISTRY.parse_unit`,
+    /// then computes the asset IDs and then the canonically-ordered trading pair.
+    fn from_str(s: &str) -> anyhow::Result<Self> {
+        let parts: Vec<&str> = s.split(':').collect();
+
+        if parts.len() != 2 {
+            Err(anyhow!("invalid trading pair string"))
+        } else {
+            let denom_1 = REGISTRY.parse_unit(parts[0]);
+            let denom_2 = REGISTRY.parse_unit(parts[1]);
+            Ok(Self::new(denom_1.id(), denom_2.id()))
+        }
+    }
+}
+
 /// Produce an output string of the form ASSET_ID1:ASSET_ID2
 /// TODO: this mismatches the `FromStr` impl which uses denominations.
 /// The asset ID is more canonical than a base denom so I think that's okay,
