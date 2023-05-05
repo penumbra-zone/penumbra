@@ -81,6 +81,10 @@ impl ChainCmd {
                 "Missed Blocks Max",
                 &format!("{}", params.missed_blocks_maximum),
             ])
+            .add_row(vec![
+                "Proposal Deposit Amount (upenumbra)",
+                &format!("{}", params.proposal_deposit_amount),
+            ])
             .add_row(vec!["IBC Enabled", &format!("{}", params.ibc_enabled)])
             .add_row(vec![
                 "Inbound ICS-20 Enabled",
