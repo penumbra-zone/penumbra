@@ -324,7 +324,7 @@ fn limit_buy_pq(market: Market, quantity: Amount, p: Amount, q: Amount, fee: u32
 
 /// Create a `Position` to buy `asset_1` using `asset_2`.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
-fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
+pub(crate) fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),

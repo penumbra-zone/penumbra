@@ -4,18 +4,23 @@ use penumbra_crypto::{
     asset::{self},
     dex::{
         lp::{position::Position, Reserves},
-        DirectedTradingPair,
+        DirectedTradingPair, Market,
     },
-    Amount,
+    Amount, MockFlowCiphertext,
 };
+use penumbra_proto::core::dex::v1alpha1::swap_execution;
 use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
 
 use rand_core::OsRng;
 
 use penumbra_crypto::Value;
 
-use crate::dex::position_manager::PositionManager;
-use crate::dex::position_manager::PositionRead;
+use crate::dex::{
+    position_manager::PositionManager,
+    router::{limit_buy, RouteAndFill},
+    StateWriteExt,
+};
+use crate::dex::{position_manager::PositionRead, StateReadExt};
 use crate::TempStorageExt;
 use std::sync::Arc;
 
@@ -457,6 +462,58 @@ async fn position_create_and_retrieve() -> anyhow::Result<()> {
         .map(|p| p.id())
         .collect::<Vec<_>>()
         .contains(&buy_2.id()));
+
+    Ok(())
+}
+
+#[tokio::test]
+/// Test that swap executions are created and recorded as expected.
+async fn swap_execution_tests() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+
+    let pair_gn_penumbra = Market::new(gn.clone(), penumbra.clone());
+
+    // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
+    let buy_1 = limit_buy(pair_gn_penumbra.clone(), 1u64.into(), 1u64.into());
+    state_tx.put_position(buy_1);
+    state_tx.apply();
+
+    // Now we should be able to fill a 1:1 gn:penumbra swap.
+    let trading_pair = pair_gn_penumbra.into_directed_trading_pair().into();
+
+    let mut swap_flow = state.swap_flow(&trading_pair);
+
+    assert!(trading_pair.asset_1() == penumbra.id());
+
+    // Add the amount of each asset being swapped to the batch swap flow.
+    swap_flow.0 += MockFlowCiphertext::new(0u32.into());
+    swap_flow.1 += MockFlowCiphertext::new(1u32.into());
+
+    // Set the batch swap flow for the trading pair.
+    Arc::get_mut(&mut state)
+        .unwrap()
+        .put_swap_flow(&trading_pair, swap_flow.clone());
+    state
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0)
+        .await
+        .expect("unable to process batch swaps");
+
+    // Swap execution should have a single trace consisting of `[1gn, 1penumbra]`.
+    let swap_execution = state.swap_execution(0, trading_pair).await?.unwrap();
+
+    assert_eq!(swap_execution.traces.len(), 1);
+    assert_eq!(swap_execution.traces[0].len(), 2);
+
+    assert_eq!(swap_execution.traces[0][0].asset_id, gn.id());
+    assert_eq!(swap_execution.traces[0][1].asset_id, penumbra.id());
+    assert_eq!(swap_execution.traces[0][0].amount, 1u32.into());
+    assert_eq!(swap_execution.traces[0][1].amount, 1u32.into());
 
     Ok(())
 }

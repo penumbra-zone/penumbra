@@ -16,3 +16,6 @@ pub use route_and_fill::RouteAndFill;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+pub(crate) use tests::limit_buy;

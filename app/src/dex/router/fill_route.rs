@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use penumbra_crypto::{
@@ -109,12 +111,15 @@ pub trait FillRoute: StateWrite + Sized {
         mut input: Value,
         hops: &[asset::Id],
         spill_price: Option<U128x128>,
-    ) -> Result<(Value, Value, SwapExecution)> {
+    ) -> Result<(Value, Value)> {
         let mut route = hops.to_vec();
         route.insert(0, input.asset_id);
 
         // Breakdown the route into a sequence of pairs to visit.
         let pairs = self.breakdown_route(&route)?;
+
+        // For storing a [`SwapExecution`] trace:
+        let mut trace: Vec<Value> = vec![];
 
         let mut output = Value {
             amount: 0u64.into(),
@@ -184,6 +189,9 @@ pub trait FillRoute: StateWrite + Sized {
                 asset_id: input.asset_id,
             };
 
+            // Store the current value in the execution trace:
+            trace.push(current_value.clone());
+
             // Now, we can execute along the route knowing that the most limiting
             // constraint is lifted. This means that this specific input is exactly
             // the maximum flow for the composed positions.
@@ -214,6 +222,10 @@ pub trait FillRoute: StateWrite + Sized {
                     ));
                 }
                 current_value = output;
+
+                if current_value.amount > 0u64.into() {
+                    trace.push(current_value.clone());
+                }
             }
 
             if current_value.amount == 0u64.into() {
@@ -237,6 +249,16 @@ pub trait FillRoute: StateWrite + Sized {
             input.amount = input.amount - input_capacity;
             output.amount = output.amount + current_value.amount;
         }
+
+        // Record the final output in the trace:
+        trace.push(output.clone());
+
+        // Add the trace to the object store:
+        let mut swap_execution: im::Vector<Vec<Value>> = self
+            .object_get("swap_execution")
+            .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store"))?;
+        swap_execution.push_front(trace);
+        self.object_put("swap_execution", swap_execution);
 
         Ok((input, output))
     }
