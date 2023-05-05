@@ -277,7 +277,7 @@ impl Info {
                     index: 0,
                 })
             }
-            "ibc.core.client.v1.Query/ClientStates" => {
+            "/ibc.core.client.v1.Query/ClientStates" => {
                 let (snapshot, height) = self
                     .get_snapshot_for_height(u64::from(query.height))
                     .await?;
@@ -318,12 +318,10 @@ impl Info {
                     index: 0,
                 })
             }
-            _ => {
-                Err(anyhow::anyhow!(
-                    "requested unrecognized path in ABCI query: {}. currently only state/key is supported.",
-                    query.path
-                ))
-            }
+            _ => Err(anyhow::anyhow!(
+                "requested unrecognized path in ABCI query: {}",
+                query.path
+            )),
         }
         // TODO: implement (#22)
     }
