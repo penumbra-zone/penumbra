@@ -1,5 +1,5 @@
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -38,6 +38,10 @@ impl PositionRewardClaimPlan {
     pub fn balance(&self) -> penumbra_crypto::Balance {
         todo!()
     }
+}
+
+impl TypeUrl for PositionRewardClaimPlan {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.PositionRewardClaimPlan";
 }
 
 impl DomainType for PositionRewardClaimPlan {

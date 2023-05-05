@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use penumbra_crypto::note;
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 
 #[derive(Clone, Debug)]
@@ -15,6 +15,10 @@ impl WitnessData {
     pub fn add_proof(&mut self, nc: note::Commitment, proof: tct::Proof) {
         self.state_commitment_proofs.insert(nc, proof);
     }
+}
+
+impl TypeUrl for WitnessData {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.WitnessData";
 }
 
 impl DomainType for WitnessData {

@@ -1,5 +1,5 @@
 use penumbra_crypto::dex::swap::SwapPlaintext;
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::action::Swap;
@@ -15,6 +15,10 @@ pub enum SwapView {
     Opaque {
         swap: Swap,
     },
+}
+
+impl TypeUrl for SwapView {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapView";
 }
 
 impl DomainType for SwapView {

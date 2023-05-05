@@ -4,7 +4,7 @@ use penumbra_crypto::{
     proofs::groth16::SpendProof, Address, FieldExt, Fr, FullViewingKey, Note, Nullifier, Rseed,
     Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, OsRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -120,6 +120,10 @@ impl SpendPlan {
         }
         .into()
     }
+}
+
+impl TypeUrl for SpendPlan {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.SpendPlan";
 }
 
 impl DomainType for SpendPlan {

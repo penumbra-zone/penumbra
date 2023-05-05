@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use penumbra_proto::{penumbra::core::transaction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 /// A transaction ID (hash), the Sha256 hash used by Tendermint to identify transactions.
@@ -38,6 +38,10 @@ impl FromStr for Id {
         id.copy_from_slice(&bytes);
         Ok(Id(id))
     }
+}
+
+impl TypeUrl for Id {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.Id";
 }
 
 impl DomainType for Id {

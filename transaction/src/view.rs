@@ -6,7 +6,7 @@ use penumbra_crypto::{
     memo::{MemoCiphertext, MemoPlaintext},
     Fee,
 };
-use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
+use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
 
 use serde::{Deserialize, Serialize};
 
@@ -88,6 +88,10 @@ impl TransactionView {
     pub fn action_views(&self) -> impl Iterator<Item = &ActionView> {
         self.body_view.action_views.iter()
     }
+}
+
+impl TypeUrl for TransactionView {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.TransactionView";
 }
 
 impl DomainType for TransactionView {

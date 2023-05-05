@@ -16,7 +16,7 @@ use penumbra_crypto::{
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_ibc::IbcAction;
 use penumbra_proto::{
-    core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pbt, DomainType, Message,
+    core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pbt, DomainType, Message, TypeUrl,
 };
 use penumbra_shielded_pool::{Output, Spend};
 use penumbra_tct as tct;
@@ -427,6 +427,10 @@ impl From<TransactionBody> for Vec<u8> {
     }
 }
 
+impl TypeUrl for TransactionBody {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.TransactionBody";
+}
+
 impl DomainType for TransactionBody {
     type Proto = pbt::TransactionBody;
 }
@@ -495,6 +499,11 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
         })
     }
 }
+
+impl TypeUrl for Transaction {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.Transaction";
+}
+
 impl DomainType for Transaction {
     type Proto = pbt::Transaction;
 }

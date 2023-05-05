@@ -1,9 +1,13 @@
 use ibc_types::core::ics03_connection::version::Version;
 use once_cell::sync::Lazy;
-use penumbra_proto::{core::ibc::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::ibc::v1alpha1 as pb, DomainType, TypeUrl};
 
 #[derive(Debug, Clone)]
 pub struct ConnectionCounter(pub u64);
+
+impl TypeUrl for ConnectionCounter {
+    const TYPE_URL: &'static str = "/penumbra.core.ibc.v1alpha1.ConnectionCounter";
+}
 
 impl DomainType for ConnectionCounter {
     type Proto = pb::ConnectionCounter;

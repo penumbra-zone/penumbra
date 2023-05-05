@@ -1,7 +1,9 @@
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_crypto::balance;
-use penumbra_proto::{core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{
+    core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pb, DomainType, TypeUrl,
+};
 
 mod delegate;
 mod delegator_vote;
@@ -168,6 +170,10 @@ impl IsAction for Action {
             Action::IbcAction(x) => ActionView::IbcAction(x.to_owned()),
         }
     }
+}
+
+impl TypeUrl for Action {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.Action";
 }
 
 impl DomainType for Action {

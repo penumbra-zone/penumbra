@@ -8,7 +8,7 @@ use penumbra_crypto::{
     rdsa::{Signature, SpendAuth, VerificationKey},
     EffectHash, EffectingData, FieldExt, Nullifier,
 };
-use penumbra_proto::{core::transaction::v1alpha1 as transaction, DomainType};
+use penumbra_proto::{core::transaction::v1alpha1 as transaction, DomainType, TypeUrl};
 
 #[derive(Clone, Debug)]
 pub struct Spend {
@@ -38,6 +38,10 @@ impl EffectingData for Body {
 
         EffectHash(state.finalize().as_array().clone())
     }
+}
+
+impl TypeUrl for Spend {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.Spend";
 }
 
 impl DomainType for Spend {
@@ -80,6 +84,10 @@ impl TryFrom<transaction::Spend> for Spend {
             proof,
         })
     }
+}
+
+impl TypeUrl for Body {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.SpendBody";
 }
 
 impl DomainType for Body {

@@ -1,7 +1,7 @@
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::core::stake::v1alpha1::ValidatorDefinition;
-use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
+use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 pub mod delegator_vote_view;
@@ -49,6 +49,10 @@ pub enum ActionView {
     DaoDeposit(DaoDeposit),
     DaoSpend(DaoSpend),
     DaoOutput(DaoOutput),
+}
+
+impl TypeUrl for ActionView {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.ActionView";
 }
 
 impl DomainType for ActionView {

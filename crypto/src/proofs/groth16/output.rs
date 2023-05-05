@@ -13,7 +13,7 @@ use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
@@ -169,6 +169,10 @@ impl OutputProof {
             .then_some(())
             .ok_or_else(|| anyhow::anyhow!("output proof did not verify"))
     }
+}
+
+impl TypeUrl for OutputProof {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.ZkOutputProof";
 }
 
 impl DomainType for OutputProof {

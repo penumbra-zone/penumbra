@@ -5,7 +5,7 @@ use penumbra_crypto::dex::swap::SwapPlaintext;
 use penumbra_crypto::Balance;
 use penumbra_crypto::{proofs::groth16::SwapProof, FieldExt, Fr, FullViewingKey, Value};
 use penumbra_proof_params::SWAP_PROOF_PROVING_KEY;
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use rand_core::{CryptoRng, OsRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -99,6 +99,10 @@ impl SwapPlan {
         balance -= value_fee;
         balance
     }
+}
+
+impl TypeUrl for SwapPlan {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapPlan";
 }
 
 impl DomainType for SwapPlan {

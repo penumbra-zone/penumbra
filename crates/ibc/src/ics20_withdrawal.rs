@@ -2,7 +2,7 @@ use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_crypto::{asset, value, Address, Amount, Balance, EffectHash, EffectingData};
 use penumbra_proto::{
     core::ibc::v1alpha1::{self as pb, FungibleTokenPacketData},
-    DomainType, Message,
+    DomainType, Message, TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -93,6 +93,10 @@ impl EffectingData for Ics20Withdrawal {
         state.update(&self.timeout_time.to_le_bytes());
         EffectHash(state.finalize().as_array().clone())
     }
+}
+
+impl TypeUrl for Ics20Withdrawal {
+    const TYPE_URL: &'static str = "/penumbra.core.ibc.v1alpha1.Ics20Withdrawal";
 }
 
 impl DomainType for Ics20Withdrawal {

@@ -2,7 +2,7 @@ use std::convert::{TryFrom, TryInto};
 
 use anyhow::{Context, Error};
 use penumbra_crypto::{Balance, EffectHash, EffectingData, Value};
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 #[derive(Clone, Debug)]
 pub struct DaoSpend {
@@ -27,6 +27,10 @@ impl DaoSpend {
         // Spends from the DAO produce value
         Balance::from(self.value)
     }
+}
+
+impl TypeUrl for DaoSpend {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.DaoSpend";
 }
 
 impl DomainType for DaoSpend {

@@ -1,6 +1,6 @@
 use decaf377_fmd::{Clue, ExpandedClueKey};
 use penumbra_crypto::Address;
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 
 use rand::{CryptoRng, RngCore};
 
@@ -35,6 +35,10 @@ impl CluePlan {
             .create_clue_deterministic(self.precision_bits, self.rseed)
             .expect("can construct clue key")
     }
+}
+
+impl TypeUrl for CluePlan {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.CluePlan";
 }
 
 impl DomainType for CluePlan {

@@ -2,7 +2,7 @@ use anyhow::{Context, Error};
 
 use bytes::Bytes;
 
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::{asset::Amount, ka, note, FullViewingKey, Note, NoteCiphertext};
@@ -65,6 +65,10 @@ impl std::fmt::Debug for NotePayload {
             .field("encrypted_note", &"...")
             .finish()
     }
+}
+
+impl TypeUrl for NotePayload {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.NotePayload";
 }
 
 impl DomainType for NotePayload {

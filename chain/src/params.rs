@@ -11,7 +11,7 @@ use penumbra_proto::client::v1alpha1 as pb_client;
 use penumbra_proto::core::chain::v1alpha1 as pb_chain;
 use penumbra_proto::core::crypto::v1alpha1 as pb_crypto;
 use penumbra_proto::view::v1alpha1 as pb_view;
-use penumbra_proto::DomainType;
+use penumbra_proto::{DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 pub mod change;
@@ -22,6 +22,10 @@ pub struct AssetInfo {
     pub denom: asset::Denom,
     pub as_of_block_height: u64,
     pub total_supply: u64,
+}
+
+impl TypeUrl for AssetInfo {
+    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.AssetInfo";
 }
 
 impl DomainType for AssetInfo {
@@ -96,6 +100,10 @@ pub struct ChainParameters {
 
     /// Whether DAO spend proposals are enabled.
     pub dao_spend_proposals_enabled: bool,
+}
+
+impl TypeUrl for ChainParameters {
+    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.ChainParameters";
 }
 
 impl DomainType for ChainParameters {
@@ -226,6 +234,10 @@ pub struct FmdParameters {
     pub precision_bits: u8,
     /// The block height at which these parameters became effective.
     pub as_of_block_height: u64,
+}
+
+impl TypeUrl for FmdParameters {
+    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alph1.FmdParameters";
 }
 
 impl DomainType for FmdParameters {

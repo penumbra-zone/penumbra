@@ -8,7 +8,7 @@ use penumbra_crypto::{
     },
     Balance, Fr, Value, Zero,
 };
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 
 use crate::{ActionView, TransactionPerspective};
 
@@ -165,6 +165,10 @@ impl IsAction for PositionRewardClaim {
     }
 }
 
+impl TypeUrl for PositionOpen {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.PositionOpen";
+}
+
 impl DomainType for PositionOpen {
     type Proto = pb::PositionOpen;
 }
@@ -190,6 +194,10 @@ impl TryFrom<pb::PositionOpen> for PositionOpen {
     }
 }
 
+impl TypeUrl for PositionClose {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.PositionClose";
+}
+
 impl DomainType for PositionClose {
     type Proto = pb::PositionClose;
 }
@@ -213,6 +221,10 @@ impl TryFrom<pb::PositionClose> for PositionClose {
                 .try_into()?,
         })
     }
+}
+
+impl TypeUrl for PositionWithdraw {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.PositionWithdraw";
 }
 
 impl DomainType for PositionWithdraw {
@@ -243,6 +255,10 @@ impl TryFrom<pb::PositionWithdraw> for PositionWithdraw {
                 .try_into()?,
         })
     }
+}
+
+impl TypeUrl for PositionRewardClaim {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.PositionRewardClaim";
 }
 
 impl DomainType for PositionRewardClaim {

@@ -4,7 +4,7 @@ use penumbra_crypto::{
     proofs::transparent::SwapClaimProof,
     FullViewingKey, Value,
 };
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 
 use serde::{Deserialize, Serialize};
@@ -93,6 +93,10 @@ impl SwapClaimPlan {
 
         value_fee.into()
     }
+}
+
+impl TypeUrl for SwapClaimPlan {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapClaimPlan";
 }
 
 impl DomainType for SwapClaimPlan {

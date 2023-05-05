@@ -3,7 +3,7 @@ use penumbra_crypto::{
     proofs::groth16::UndelegateClaimProof,
     stake::{IdentityKey, Penalty},
 };
-use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::{ActionView, IsAction, TransactionPerspective};
@@ -36,6 +36,10 @@ impl IsAction for UndelegateClaim {
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
         ActionView::UndelegateClaim(self.to_owned())
     }
+}
+
+impl TypeUrl for UndelegateClaimBody {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.UndelegateClaimBody";
 }
 
 impl DomainType for UndelegateClaimBody {
@@ -72,6 +76,10 @@ impl TryFrom<pb::UndelegateClaimBody> for UndelegateClaimBody {
                 .try_into()?,
         })
     }
+}
+
+impl TypeUrl for UndelegateClaim {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.UndelegateClaim";
 }
 
 impl DomainType for UndelegateClaim {

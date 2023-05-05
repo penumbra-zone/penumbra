@@ -8,10 +8,14 @@ use ibc_types::core::{
     ics24_host::identifier::{ChainId, ConnectionId},
 };
 use penumbra_chain::component::PENUMBRA_PROOF_SPECS;
-use penumbra_proto::{core::ibc::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::ibc::v1alpha1 as pb, DomainType, TypeUrl};
 
 #[derive(Clone, Debug)]
 pub struct ClientCounter(pub u64);
+
+impl TypeUrl for ClientCounter {
+    const TYPE_URL: &'static str = "/penumbra.core.ibc.v1alpha1.ClientCounter";
+}
 
 impl DomainType for ClientCounter {
     type Proto = pb::ClientCounter;
@@ -34,6 +38,10 @@ impl From<ClientCounter> for pb::ClientCounter {
 #[derive(Clone, Debug)]
 pub struct VerifiedHeights {
     pub heights: Vec<Height>,
+}
+
+impl TypeUrl for VerifiedHeights {
+    const TYPE_URL: &'static str = "/penumbra.core.ibc.v1alpha1.VerifiedHeights";
 }
 
 impl DomainType for VerifiedHeights {
@@ -63,6 +71,10 @@ impl From<VerifiedHeights> for pb::VerifiedHeights {
 #[derive(Clone, Debug, Default)]
 pub struct ClientConnections {
     pub connection_ids: Vec<ConnectionId>,
+}
+
+impl TypeUrl for ClientConnections {
+    const TYPE_URL: &'static str = "/penumbra.core.ibc.v1alpha1.ClientConnections";
 }
 
 impl DomainType for ClientConnections {

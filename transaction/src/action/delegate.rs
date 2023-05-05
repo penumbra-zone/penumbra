@@ -4,7 +4,7 @@ use penumbra_crypto::{
     stake::{DelegationToken, IdentityKey},
     Balance, Fr, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::{ActionView, TransactionPerspective};
@@ -58,6 +58,10 @@ impl Delegate {
         // We produce the delegation tokens and consume the staking tokens.
         delegation - stake
     }
+}
+
+impl TypeUrl for Delegate {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.Delegate";
 }
 
 impl DomainType for Delegate {

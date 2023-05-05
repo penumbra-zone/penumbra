@@ -6,7 +6,7 @@ use penumbra_crypto::{Address, Fee};
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::{
-    core::stake::v1alpha1 as pb_stake, core::transaction::v1alpha1 as pb, DomainType,
+    core::stake::v1alpha1 as pb_stake, core::transaction::v1alpha1 as pb, DomainType, TypeUrl,
 };
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
 use rand::{CryptoRng, Rng};
@@ -288,6 +288,10 @@ impl TransactionPlan {
 
         self.clue_plans = clue_plans;
     }
+}
+
+impl TypeUrl for TransactionPlan {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.TransactionPlan";
 }
 
 impl DomainType for TransactionPlan {
