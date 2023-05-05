@@ -13,12 +13,10 @@ use penumbra_crypto::{
     },
     Asset,
 };
-use penumbra_proto::{
-    client::v1alpha1::{
-        specific_query_service_client::SpecificQueryServiceClient, AssetInfoRequest,
-        BatchSwapOutputDataRequest, LiquidityPositionsRequest, StubCpmmReservesRequest,
-        SwapExecutionRequest,
-    },
+use penumbra_proto::client::v1alpha1::{
+    specific_query_service_client::SpecificQueryServiceClient, AssetInfoRequest,
+    BatchSwapOutputDataRequest, LiquidityPositionsRequest, StubCpmmReservesRequest,
+    SwapExecutionRequest,
 };
 use penumbra_view::ViewClient;
 use tonic::transport::Channel;

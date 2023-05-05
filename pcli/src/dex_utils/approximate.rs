@@ -15,14 +15,14 @@ pub mod xyk {
     const NUM_POOLS_PRECISION: usize = 100;
 
     pub fn approximate(
-        market: &Market,
+        _market: &Market,
         invariant_k: &Value,
         _current_price: U128x128,
     ) -> anyhow::Result<Vec<Position>> {
         let alphas = utils::sample_points(NUM_POOLS_PRECISION);
         let global_invariant = invariant_k.amount.value() as f64;
 
-        let b: Vec<f64> = alphas
+        let _b: Vec<f64> = alphas
             .iter()
             .map(|price: &f64| portfolio_value_function(global_invariant, *price))
             .collect();

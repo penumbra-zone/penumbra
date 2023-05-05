@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{fixpoint::U128x128, Amount};
 
-use super::{execution::SwapExecution, TradingPair};
+use super::TradingPair;
 
 mod ciphertext;
 mod payload;

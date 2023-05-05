@@ -30,8 +30,7 @@ use penumbra_proto::{
 };
 use penumbra_tct::{Commitment, Proof};
 use penumbra_transaction::{
-    plan::{ActionPlan, TransactionPlan},
-    AuthorizationData, Transaction, TransactionPerspective, WitnessData,
+    plan::TransactionPlan, AuthorizationData, Transaction, TransactionPerspective, WitnessData,
 };
 use rand::Rng;
 use rand_core::OsRng;
@@ -384,7 +383,7 @@ impl ViewProtocolService for ViewService {
         let fvk = self.storage.full_viewing_key().await.map_err(|e| {
             tonic::Status::failed_precondition(format!("Error retrieving full viewing key: {e:#}"))
         })?;
-        let mut plan = planner
+        let plan = planner
             .plan(&mut client_of_self, fvk.account_group_id(), 0u32.into())
             .await
             .context("could not plan requested transaction")
