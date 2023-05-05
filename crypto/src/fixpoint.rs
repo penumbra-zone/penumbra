@@ -8,6 +8,7 @@ mod ops;
 mod tests;
 
 use ark_ff::{BigInteger, Field, PrimeField};
+use ark_r1cs_std::fields::fp::FpVar;
 use ark_r1cs_std::prelude::*;
 use ark_r1cs_std::{bits::uint64::UInt64, ToConstraintFieldGadget};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
@@ -380,24 +381,25 @@ impl U128x128Var {
     }
 }
 
-// Move to upstream?
-// Add tests for the below functions
-
-/// Convert Uint64 into an FqVar (make generic)
-pub fn convert_uint64_to_fqvar(value: &UInt64<Fq>) -> FqVar {
+/// Convert Uint64 into an FqVar
+pub fn convert_uint64_to_fqvar<F: PrimeField>(value: &UInt64<F>) -> FpVar<F> {
     convert_le_bits_to_fqvar(&value.to_bits_le())
 }
 
-pub fn convert_le_bits_to_fqvar(value: &[Boolean<Fq>]) -> FqVar {
-    let mut acc = FqVar::zero();
-    for (i, bit) in value.into_iter().enumerate() {
-        let bit = bit
-            .to_constraint_field()
-            .expect("can convert to FqVar")
-            .into_iter()
-            .next()
-            .expect("should be one element in the vector");
-        acc += bit * Fq::from(1u128 << i);
+/// Modular exponentiation
+pub fn mod_exp<F: PrimeField>(f: F, exp: usize) -> F {
+    let mut acc = F::from(1u32);
+    for _ in 0..exp {
+        acc *= f;
+    }
+    acc
+}
+
+/// Convert little-endian boolean constraints into a field element
+pub fn convert_le_bits_to_fqvar<F: PrimeField>(value: &[Boolean<F>]) -> FpVar<F> {
+    let mut acc = FpVar::<F>::zero();
+    for (i, bit) in value.iter().enumerate() {
+        acc += FpVar::<F>::from(bit.clone()) * FpVar::<F>::constant(mod_exp(F::from(2_u32), i));
     }
     acc
 }
@@ -423,4 +425,23 @@ pub fn fqvar_to_bits(value: FqVar, n: usize) -> Result<Vec<Boolean<Fq>>, Synthes
     constructed_fqvar.enforce_equal(&value)?;
 
     Ok(boolean_constraints)
+}
+
+#[cfg(test)]
+mod test {
+    use proptest::prelude::*;
+
+    use super::*;
+
+    proptest! {
+        #[test]
+        fn test_convert_uint64_to_fqvar(
+            num in any::<u64>(),
+        ) {
+            let num_var: UInt64<Fq> = UInt64::constant(num);
+            let expected_field_element = FqVar::constant(Fq::from(num));
+            let field_element = convert_uint64_to_fqvar(&num_var);
+            assert_eq!(field_element.value().unwrap(), expected_field_element.value().unwrap());
+        }
+    }
 }
