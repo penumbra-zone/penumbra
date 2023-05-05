@@ -16,13 +16,7 @@ default = ["std", "parallel", "download-proving-keys"]
 download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
 sct-divergence-check = ["penumbra-view/sct-divergence-check"]
 std = ["ark-ff/std"]
-parallel = [
-    "penumbra-proof-params/parallel",
-    "decaf377/parallel",
-    "penumbra-crypto/parallel",
-    "penumbra-transaction/parallel",
-    "penumbra-wallet/parallel",
-]
+parallel = ["penumbra-proof-params/parallel", "decaf377/parallel", "penumbra-crypto/parallel", "penumbra-transaction/parallel", "penumbra-wallet/parallel"]
 
 [dependencies]
 # Workspace dependencies
@@ -87,6 +81,8 @@ colored_json = "2.1"
 toml = { version = "0.7", features = ["preserve_order"] }
 walkdir = "2"
 once_cell = "1"
+ndarray = "0.15.6"
+# ndarray-linalg = { version = "0.16.0", features = ["openblas-static"] }
 
 [build-dependencies]
 vergen = "5"

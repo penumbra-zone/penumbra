@@ -40,8 +40,6 @@ impl Component for Dex {
         let current_epoch = state.epoch().await.unwrap();
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
         for (trading_pair, swap_flows) in state.swap_flows() {
-            // Arc::get_mut(state)
-            //     .expect("one state ref only")
             state
                 .handle_batch_swaps(
                     trading_pair,
