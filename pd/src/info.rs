@@ -8,7 +8,10 @@ use std::{
 
 use anyhow::Context as _;
 use futures::FutureExt;
-use ibc_proto::ibc::core::channel::v1::{QueryChannelsRequest, QueryChannelsResponse};
+use ibc_proto::ibc::core::{
+    channel::v1::{QueryChannelsRequest, QueryChannelsResponse},
+    client::v1::{IdentifiedClientState, QueryClientStatesRequest, QueryClientStatesResponse},
+};
 use ibc_proto::ibc::core::{
     channel::v1::{QueryConnectionChannelsRequest, QueryConnectionChannelsResponse},
     connection::v1::{QueryConnectionsRequest, QueryConnectionsResponse},
@@ -16,10 +19,11 @@ use ibc_proto::ibc::core::{
 use ibc_types::core::{
     ics03_connection::connection::IdentifiedConnectionEnd,
     ics04_channel::channel::IdentifiedChannelEnd,
-    ics24_host::identifier::{ChannelId, ConnectionId, PortId},
+    ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 };
 use penumbra_chain::component::AppHashRead;
 use penumbra_ibc::component::ChannelStateReadExt as _;
+use penumbra_ibc::component::ClientStateReadExt as _;
 use penumbra_ibc::component::ConnectionStateReadExt as _;
 use penumbra_storage::Storage;
 use prost::Message;
@@ -229,7 +233,7 @@ impl Info {
                     .await?;
 
                 let request = QueryConnectionChannelsRequest::decode(query.data.clone())
-                    .context("failed to decode QueryConnectionsRequest")?;
+                    .context("failed to decode QueryConnectionChannelsRequest")?;
 
                 let connection_id: ConnectionId = ConnectionId::from_str(&request.connection)
                     .context("couldn't decode connection id from request")?;
@@ -273,8 +277,48 @@ impl Info {
                     index: 0,
                 })
             }
+            "ibc.core.client.v1.Query/ClientStates" => {
+                let (snapshot, height) = self
+                    .get_snapshot_for_height(u64::from(query.height))
+                    .await?;
+
+                // TODO; handle request.pagination
+                let _request = QueryClientStatesRequest::decode(query.data.clone())
+                    .context("failed to decode QueryClientStatesRequest")?;
+
+                let client_counter = snapshot.client_counter().await?.0;
+
+                let mut client_states = vec![];
+                for client_idx in 0..client_counter {
+                    // NOTE: currently, we only look up tendermint clients, because we only support tendermint clients.
+                    let client_id = ClientId(format!("07-tendermint-{}", client_idx));
+                    let client_state = snapshot.get_client_state(&client_id).await;
+                    let id_client = IdentifiedClientState {
+                        client_id: client_id.to_string(),
+                        client_state: client_state.ok().map(|state| state.into()), // send None if we couldn't find the client state
+                    };
+                    client_states.push(id_client);
+                }
+
+                let res_value = QueryClientStatesResponse {
+                    client_states,
+                    pagination: None,
+                }
+                .encode_to_vec();
+
+                Ok(abci::response::Query {
+                    code: 0.into(),
+                    key: query.data,
+                    log: "".to_string(),
+                    value: res_value.into(),
+                    proof: None,
+                    height: height.try_into().unwrap(),
+                    codespace: "".to_string(),
+                    info: "".to_string(),
+                    index: 0,
+                })
+            }
             _ => {
-                // TODO: handle unrecognized path
                 Err(anyhow::anyhow!(
                     "requested unrecognized path in ABCI query: {}. currently only state/key is supported.",
                     query.path
