@@ -7,10 +7,10 @@ mod ops;
 #[cfg(test)]
 mod tests;
 
-use ark_ff::{BigInteger, Field, PrimeField};
+use ark_ff::{BigInteger, Field, PrimeField, ToConstraintField, Zero};
+use ark_r1cs_std::bits::uint64::UInt64;
 use ark_r1cs_std::fields::fp::FpVar;
 use ark_r1cs_std::prelude::*;
-use ark_r1cs_std::{bits::uint64::UInt64, ToConstraintFieldGadget};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
 use decaf377::{r1cs::FqVar, FieldExt, Fq};
@@ -202,19 +202,28 @@ impl AllocVar<U128x128, Fq> for U128x128Var {
         let ns = cs.into();
         let cs = ns.cs();
         let inner: U128x128 = *f()?.borrow();
-        // let (lo, hi) = inner.0.into_words();
 
-        // let mut lo_bytes = [0u8; 32];
-        // lo_bytes.copy_from_slice(&lo.to_le_bytes()[..]);
-        // let lo_fq = Fq::from_bytes(lo_bytes).expect("can form field element from bytes");
-        // let lo_var = FqVar::new_variable(cs.clone(), || Ok(lo_fq), mode)?;
+        let (lo, hi) = inner.0.into_words();
 
-        // let mut hi_bytes = [0u8; 32];
-        // hi_bytes.copy_from_slice(&hi.to_le_bytes()[..]);
-        // let hi_fq = Fq::from_bytes(hi_bytes).expect("can form field element from bytes");
-        // let hi_var = FqVar::new_variable(cs, || Ok(hi_fq), mode)?;
-        // Ok(Self { lo_var, hi_var })
-        todo!()
+        let mut lo_bytes = [0u8; 16];
+        lo_bytes.copy_from_slice(&lo.to_le_bytes()[..]);
+        let limb_0 = u64::from_le_bytes(lo_bytes[0..8].try_into().expect("can fit in 8 bytes"));
+        let limb_1 = u64::from_le_bytes(lo_bytes[8..16].try_into().expect("can fit in 8 bytes"));
+
+        let limb_0_var = UInt64::new_variable(cs.clone(), || Ok(limb_0), mode)?;
+        let limb_1_var = UInt64::new_variable(cs.clone(), || Ok(limb_1), mode)?;
+
+        let mut hi_bytes = [0u8; 16];
+        hi_bytes.copy_from_slice(&hi.to_le_bytes()[..]);
+        let limb_2 = u64::from_le_bytes(hi_bytes[0..8].try_into().expect("can fit in 8 bytes"));
+        let limb_3 = u64::from_le_bytes(hi_bytes[8..16].try_into().expect("can fit in 8 bytes"));
+
+        let limb_2_var = UInt64::new_variable(cs.clone(), || Ok(limb_2), mode)?;
+        let limb_3_var = UInt64::new_variable(cs, || Ok(limb_3), mode)?;
+
+        Ok(Self {
+            limbs: [limb_0_var, limb_1_var, limb_2_var, limb_3_var],
+        })
     }
 }
 
@@ -226,17 +235,17 @@ impl R1CSVar<Fq> for U128x128Var {
     }
 
     fn value(&self) -> Result<Self::Value, ark_relations::r1cs::SynthesisError> {
-        // let lo = self.lo_var.value()?;
-        // let lo_bytes = lo.to_bytes();
-        // let hi = self.hi_var.value()?;
-        // let hi_bytes = hi.to_bytes();
+        let mut bytes = [0u8; 32];
+        let x0 = convert_uint64_to_fqvar(&self.limbs[0]);
+        let x1 = convert_uint64_to_fqvar(&self.limbs[1]);
+        let x2 = convert_uint64_to_fqvar(&self.limbs[2]);
+        let x3 = convert_uint64_to_fqvar(&self.limbs[3]);
 
-        // let mut bytes = [0u8; 32];
-        // bytes.copy_from_slice(&lo_bytes[..]);
-        // bytes.copy_from_slice(&hi_bytes[..]);
-
-        // Ok(Self::Value::from_bytes(bytes))
-        todo!()
+        bytes[0..8].copy_from_slice(&x0.value().expect("value exists").to_bytes()[..]);
+        bytes[8..16].copy_from_slice(&x1.value().expect("value exists").to_bytes()[..]);
+        bytes[16..24].copy_from_slice(&x2.value().expect("value exists").to_bytes()[..]);
+        bytes[24..32].copy_from_slice(&x3.value().expect("value exists").to_bytes()[..]);
+        Ok(Self::Value::from_bytes(bytes))
     }
 }
 
@@ -246,7 +255,7 @@ impl U128x128Var {
         rhs: &Self,
         cs: ConstraintSystemRef<Fq>,
     ) -> Result<U128x128Var, SynthesisError> {
-        todo!()
+        todo!();
     }
 
     pub fn checked_sub(
@@ -298,47 +307,45 @@ impl U128x128Var {
         //
         // ti represents some temporary value (indices not necessarily meaningful)
         let t0 = z0 + z1 * Fq::from(1u128 << 64);
-        let t0_bits = fqvar_to_bits(t0, 193)?;
-        // t0 fits in 193 bits
-        // t0 we bit constrain to be 193 bits or less
+        let t0_bits = bit_constrain(t0, 193)?;
+        // Constrain: t0 fits in 193 bits
 
         // t1 = (t0 >> 128) + z2
         let t1 = z2 + convert_le_bits_to_fqvar(&t0_bits[128..193]);
-        // t1 fits in 129 bits
-        let t1_bits = fqvar_to_bits(t1, 129)?;
+        // Constrain: t1 fits in 129 bits
+        let t1_bits = bit_constrain(t1, 129)?;
 
         // w0 = t0 & 2^64 - 1
         let w0 = UInt64::from_bits_le(&t0_bits[0..64]);
 
         // t2 = (t1 >> 64) + z3
         let t2 = z3 + convert_le_bits_to_fqvar(&t1_bits[64..129]);
-        // t2 fits in 129 bits
-        let t2_bits = fqvar_to_bits(t2, 129)?;
+        // Constrain: t2 fits in 129 bits
+        let t2_bits = bit_constrain(t2, 129)?;
 
         // w1 = t2 & 2^64 - 1
         let w1 = UInt64::from_bits_le(&t2_bits[0..64]);
 
         // t3 = (t2 >> 64) + z4
         let t3 = z4 + convert_le_bits_to_fqvar(&t2_bits[64..129]);
-        // t3 fits in 129 bits
-        let t3_bits = fqvar_to_bits(t3, 129)?;
+        // Constrain: t3 fits in 129 bits
+        let t3_bits = bit_constrain(t3, 129)?;
 
         // w2 = t3 & 2^64 - 1
         let w2 = UInt64::from_bits_le(&t3_bits[0..64]);
 
         // t4 = (t3 >> 64) + z5
         let t4 = z5 + convert_le_bits_to_fqvar(&t3_bits[64..129]);
-        // t4 fits in 64 bits
-        let t4_bits = fqvar_to_bits(t4, 64)?;
+        // Constrain: t4 fits in 64 bits
+        let t4_bits = bit_constrain(t4, 64)?;
         // If we didn't overflow, it will fit in 64 bits.
 
         // w3 = t4 & 2^64 - 1
         let w3 = UInt64::from_bits_le(&t4_bits[0..64]);
 
-        // Overflow condition. Constrain z6 = 0.
+        // Overflow condition. Constrain: z6 = 0.
         z6.enforce_equal(&FqVar::zero())?;
 
-        // Internal rep: 4 Uint64
         Ok(U128x128Var {
             limbs: [w0, w1, w2, w3],
         })
@@ -380,6 +387,44 @@ impl U128x128Var {
     }
 }
 
+impl EqGadget<Fq> for U128x128Var {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
+        let limb_1_eq = self.limbs[0].is_eq(&other.limbs[0])?;
+        let limb_2_eq = self.limbs[1].is_eq(&other.limbs[1])?;
+        let limb_3_eq = self.limbs[2].is_eq(&other.limbs[2])?;
+        let limb_4_eq = self.limbs[3].is_eq(&other.limbs[3])?;
+
+        let limb_12_eq = limb_1_eq.and(&limb_2_eq)?;
+        let limb_34_eq = limb_3_eq.and(&limb_4_eq)?;
+
+        limb_12_eq.and(&limb_34_eq)
+    }
+}
+
+impl ToConstraintField<Fq> for U128x128 {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let (lo, hi) = self.0.into_words();
+
+        let mut lo_bytes = [0u8; 16];
+        lo_bytes.copy_from_slice(&lo.to_le_bytes()[..]);
+        let limb_0 = u64::from_le_bytes(lo_bytes[0..8].try_into().expect("can fit in 8 bytes"));
+        let limb_1 = u64::from_le_bytes(lo_bytes[8..16].try_into().expect("can fit in 8 bytes"));
+
+        let mut hi_bytes = [0u8; 16];
+        hi_bytes.copy_from_slice(&hi.to_le_bytes()[..]);
+        let limb_2 = u64::from_le_bytes(hi_bytes[0..8].try_into().expect("can fit in 8 bytes"));
+        let limb_3 = u64::from_le_bytes(hi_bytes[8..16].try_into().expect("can fit in 8 bytes"));
+
+        let field_elements = vec![
+            Fq::from(limb_0),
+            Fq::from(limb_1),
+            Fq::from(limb_2),
+            Fq::from(limb_3),
+        ];
+        Some(field_elements)
+    }
+}
+
 /// Convert Uint64 into an FqVar
 pub fn convert_uint64_to_fqvar<F: PrimeField>(value: &UInt64<F>) -> FpVar<F> {
     convert_le_bits_to_fqvar(&value.to_bits_le())
@@ -403,10 +448,9 @@ pub fn convert_le_bits_to_fqvar<F: PrimeField>(value: &[Boolean<F>]) -> FpVar<F>
     acc
 }
 
-/// Bit constrain for FqVar and number of bits
-pub fn fqvar_to_bits(value: FqVar, n: usize) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
-    // Figure out what to do for setup phase in the below
-    let inner = value.value()?;
+/// Bit constrain for FqVar and return number of bits
+pub fn bit_constrain(value: FqVar, n: usize) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
+    let inner = value.value().unwrap_or(Fq::zero());
 
     // Get only first n bits based on that value (OOC)
     let inner_bigint = inner.into_bigint();
@@ -428,9 +472,20 @@ pub fn fqvar_to_bits(value: FqVar, n: usize) -> Result<Vec<Boolean<Fq>>, Synthes
 
 #[cfg(test)]
 mod test {
+    use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, ProvingKey, VerifyingKey};
+    use ark_relations::r1cs::ConstraintSynthesizer;
+    use ark_snark::SNARK;
+    use decaf377::Bls12_377;
     use proptest::prelude::*;
+    use rand_core::OsRng;
+
+    use crate::proofs::groth16::ParameterSetup;
 
     use super::*;
+
+    fn u128x128_strategy() -> BoxedStrategy<U128x128> {
+        any::<[u8; 32]>().prop_map(U128x128::from_bytes).boxed()
+    }
 
     proptest! {
         #[test]
@@ -441,6 +496,152 @@ mod test {
             let expected_field_element = FqVar::constant(Fq::from(num));
             let field_element = convert_uint64_to_fqvar(&num_var);
             assert_eq!(field_element.value().unwrap(), expected_field_element.value().unwrap());
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn multiply(
+            a in u128x128_strategy(),
+            b in u128x128_strategy(),
+        ) {
+            let result = a.checked_mul(&b);
+            // If the result overflows, the circuit will be unsatisfiable at proving time.
+            if result.is_none() {
+                return Ok(());
+            }
+
+            let circuit = TestMultiplicationCircuit {
+                a,
+                b,
+                c: result.unwrap(),
+            };
+
+            let (pk, vk) = TestMultiplicationCircuit::generate_prepared_test_parameters();
+            let mut rng = OsRng;
+
+            let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+            .expect("should be able to form proof");
+
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+                &vk,
+                &result.unwrap().to_field_elements().unwrap(),
+                &proof,
+            );
+            assert!(proof_result.is_ok());
+        }
+    }
+
+    struct TestMultiplicationCircuit {
+        a: U128x128,
+        b: U128x128,
+
+        // c = a * b
+        pub c: U128x128,
+    }
+
+    impl ConstraintSynthesizer<Fq> for TestMultiplicationCircuit {
+        fn generate_constraints(
+            self,
+            cs: ConstraintSystemRef<Fq>,
+        ) -> ark_relations::r1cs::Result<()> {
+            let a_var = U128x128Var::new_witness(cs.clone(), || Ok(self.a))?;
+            let b_var = U128x128Var::new_witness(cs.clone(), || Ok(self.b))?;
+            let c_public_var = U128x128Var::new_input(cs.clone(), || Ok(self.c))?;
+            let c_var = a_var.checked_mul(&b_var, cs)?;
+            c_var.enforce_equal(&c_public_var)?;
+            Ok(())
+        }
+    }
+
+    impl ParameterSetup for TestMultiplicationCircuit {
+        fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+            let num: [u8; 32] = [1u8; 32];
+            let a = U128x128::from_bytes(num);
+            let b = U128x128::from_bytes(num);
+            let circuit = TestMultiplicationCircuit {
+                a,
+                b,
+                c: a.checked_mul(&b).unwrap(),
+            };
+            let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
+                circuit, &mut OsRng,
+            )
+            .expect("can perform circuit specific setup");
+            (pk, vk)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn add(
+            a in u128x128_strategy(),
+            b in u128x128_strategy(),
+        ) {
+            let result = a.checked_add(&b);
+            // If the addition overflows, the circuit will be unsatisfiable at proving time.
+            if result.is_none() {
+                return Ok(());
+            }
+
+            let circuit = TestAdditionCircuit {
+                a,
+                b,
+                c: result.unwrap(),
+            };
+
+            let (pk, vk) = TestAdditionCircuit::generate_prepared_test_parameters();
+            let mut rng = OsRng;
+
+            let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+            .expect("should be able to form proof");
+
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+                &vk,
+                &result.unwrap().to_field_elements().unwrap(),
+                &proof,
+            );
+            assert!(proof_result.is_ok());
+        }
+    }
+
+    struct TestAdditionCircuit {
+        a: U128x128,
+        b: U128x128,
+
+        // c = a + b
+        pub c: U128x128,
+    }
+
+    impl ConstraintSynthesizer<Fq> for TestAdditionCircuit {
+        fn generate_constraints(
+            self,
+            cs: ConstraintSystemRef<Fq>,
+        ) -> ark_relations::r1cs::Result<()> {
+            let a_var = U128x128Var::new_witness(cs.clone(), || Ok(self.a))?;
+            let b_var = U128x128Var::new_witness(cs.clone(), || Ok(self.b))?;
+            let c_public_var = U128x128Var::new_input(cs.clone(), || Ok(self.c))?;
+            let c_var = a_var.checked_add(&b_var, cs)?;
+            c_var.enforce_equal(&c_public_var)?;
+            Ok(())
+        }
+    }
+
+    impl ParameterSetup for TestAdditionCircuit {
+        fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+            let num: [u8; 32] = [1u8; 32];
+            let a = U128x128::from_bytes(num);
+            let b = U128x128::from_bytes(num);
+            let circuit = TestAdditionCircuit {
+                a,
+                b,
+                c: a.checked_add(&b).unwrap(),
+            };
+            let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
+                circuit, &mut OsRng,
+            )
+            .expect("can perform circuit specific setup");
+            (pk, vk)
         }
     }
 }
