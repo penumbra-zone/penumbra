@@ -12,6 +12,9 @@ use ethnum::U256;
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct U128x128(U256);
 
+// binary repr of 2^128
+const BASE: u64 = 0x47f0000000000000;
+
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("attempted to convert non-integral value {value:?} to an integer")]
