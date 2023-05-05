@@ -17,6 +17,7 @@ pub trait FillRoute: StateWrite + Sized {
     /// and returns a tuple consisting of:
     ///     - an ordered list of `Position` and their respective saturating input
     ///     - the best `Position` for each hop of the route
+    #[instrument(skip(self, input, hops))]
     async fn find_constraints(
         &mut self,
         input: Value,

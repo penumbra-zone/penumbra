@@ -16,7 +16,7 @@ use penumbra_crypto::Value;
 
 use crate::dex::{
     position_manager::PositionManager,
-    router::{limit_buy, RouteAndFill},
+    router::{limit_buy, limit_sell, RouteAndFill},
     StateWriteExt,
 };
 use crate::dex::{position_manager::PositionRead, StateReadExt};
@@ -477,7 +477,6 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
     let pair_gn_penumbra = Market::new(gn.clone(), penumbra.clone());
-    let pair_penumbra_gn = Market::new(gn.clone(), penumbra.clone());
 
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
     let buy_1 = limit_buy(pair_gn_penumbra.clone(), 1u64.into(), 1u64.into());
@@ -492,8 +491,8 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     assert!(trading_pair.asset_1() == penumbra.id());
 
     // Add the amount of each asset being swapped to the batch swap flow.
-    swap_flow.0 += MockFlowCiphertext::new(Amount::from(0u32) * penumbra.unit_amount());
-    swap_flow.1 += MockFlowCiphertext::new(Amount::from(1u32) * gn.unit_amount());
+    swap_flow.0 += MockFlowCiphertext::new(0u32.into());
+    swap_flow.1 += MockFlowCiphertext::new(gn.value(1u32.into()).amount);
 
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)
@@ -503,7 +502,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .handle_batch_swaps(
             trading_pair,
             swap_flow,
-            0u32.into(),
+            0,
             0,
             super::router::hardcoded_candidates(),
         )
@@ -515,16 +514,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
 
     assert_eq!(
         swap_execution.traces,
-        vec![vec![
-            Value {
-                asset_id: gn.id(),
-                amount: Amount::from(1u32) * gn.unit_amount(),
-            },
-            Value {
-                asset_id: penumbra.id(),
-                amount: Amount::from(1u32) * penumbra.unit_amount(),
-            }
-        ]]
+        vec![vec![gn.value(1u32.into()), penumbra.value(1u32.into()),]]
     );
 
     // Now do a more complicated swap execution through a few positions
@@ -553,31 +543,37 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     tracing::info!(pusd_id = ?pusd.id());
     tracing::info!(penumbra_id = ?penumbra.id());
 
-    let pair_gm_gn = Market::new(gm.clone(), gn.clone());
-    let pair_gm_pusd = Market::new(gm.clone(), pusd.clone());
-    let pair_penumbra_gm = Market::new(penumbra.clone(), gm.clone());
-    let pair_penumbra_pusd = Market::new(penumbra.clone(), pusd.clone());
+    // Working backwards through the graph:
 
-    // Create a 1:1 gm:penumbra position (i.e. sell 5 gm at 1 penumbra each).
-    let buy_1 = limit_buy(pair_penumbra_gm.clone(), 5u64.into(), 1u64.into());
-    state_tx.put_position(buy_1);
-
-    // Create a 5:1 pusd:penumbra position (i.e. sell 1 pusd at 5 penumbra each).
-    let buy_2 = limit_buy(pair_penumbra_pusd.clone(), 1u64.into(), 5u64.into());
-    state_tx.put_position(buy_2);
-
-    // Create a 1:1 gm:gn position (i.e. sell 25 gn at 1 gm each).
-    let buy_3 = limit_buy(pair_gm_gn.clone(), 25u64.into(), 1u64.into());
-    state_tx.put_position(buy_3);
-
-    // Create a 1:20 pusd:gm position (i.e. sell 1 pusd at 20 gm each).
-    let buy_4 = limit_buy(pair_gm_pusd.clone(), 20u64.into(), 1u64.into());
-    state_tx.put_position(buy_4);
+    // Sell 25 gn at 1 gm each.
+    state_tx.put_position(limit_sell(
+        Market::new(gn.clone(), gm.clone()),
+        25u64.into(),
+        1u64.into(),
+    ));
+    // Buy 1 pusd at 20 gm each.
+    state_tx.put_position(limit_buy(
+        Market::new(pusd.clone(), gm.clone()),
+        1u64.into(),
+        20u64.into(),
+    ));
+    // Buy 5 penumbra at 1 gm each.
+    state_tx.put_position(limit_buy(
+        Market::new(penumbra.clone(), gm.clone()),
+        5u64.into(),
+        1u64.into(),
+    ));
+    // Sell 1pusd at 5 penumbra each.
+    state_tx.put_position(limit_sell(
+        Market::new(pusd.clone(), penumbra.clone()),
+        1u64.into(),
+        5u64.into(),
+    ));
 
     state_tx.apply();
 
     // Now we should be able to fill a 10penumbra into 25gn swap.
-    let trading_pair = pair_penumbra_gn.into_directed_trading_pair().into();
+    let trading_pair = pair_gn_penumbra.into_directed_trading_pair().into();
 
     let mut swap_flow = state.swap_flow(&trading_pair);
 
@@ -598,8 +594,8 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
             0u32.into(),
             0,
             // Create a candidate set that includes all relevant asset IDs.
-            //Arc::new(vec![penumbra.id(), gn.id(), pusd.id(), gm.id()]),
-            super::router::hardcoded_candidates(),
+            Arc::new(vec![penumbra.id(), gn.id(), pusd.id(), gm.id()]),
+            //super::router::hardcoded_candidates(),
         )
         .await
         .expect("unable to process batch swaps");
@@ -609,11 +605,11 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     assert_eq!(
         output_data,
         BatchSwapOutputData {
-            delta_1: Amount::from(10u32) * penumbra.unit_amount(),
+            delta_1: penumbra.value(10u32.into()).amount,
             delta_2: 0u32.into(),
             lambda_1_1: 0u32.into(),
             lambda_1_2: 0u32.into(),
-            lambda_2_1: Amount::from(25u32) * gn.unit_amount(),
+            lambda_2_1: gn.value(25u32.into()).amount,
             lambda_2_2: 0u32.into(),
             height: 0,
             epoch_height: 0,
@@ -621,23 +617,25 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         }
     );
 
-    // Output data should have 10 penumbra in and 25gn out
-    assert_eq!(
-        output_data.delta_1,
-        Amount::from(10u32) * penumbra.unit_amount()
-    );
-    assert_eq!(output_data.delta_1, Amount::from(25u32) * gn.unit_amount());
-
     // Swap execution should have two traces.
     let swap_execution = state.swap_execution(0, trading_pair).await?.unwrap();
 
-    assert_eq!(swap_execution.traces.len(), 2);
-    assert_eq!(swap_execution.traces[0].len(), 2);
-
-    // assert_eq!(swap_execution.traces[0][0].asset_id, gn.id());
-    // assert_eq!(swap_execution.traces[0][1].asset_id, penumbra.id());
-    // assert_eq!(swap_execution.traces[0][0].amount, 1u32.into());
-    // assert_eq!(swap_execution.traces[0][1].amount, 1u32.into());
+    assert_eq!(
+        swap_execution.traces,
+        vec![
+            vec![
+                penumbra.value(5u32.into()),
+                pusd.value(1u32.into()),
+                gm.value(20u32.into()),
+                gn.value(20u32.into()),
+            ],
+            vec![
+                penumbra.value(5u32.into()),
+                gm.value(5u32.into()),
+                gn.value(5u32.into()),
+            ],
+        ]
+    );
 
     Ok(())
 }
