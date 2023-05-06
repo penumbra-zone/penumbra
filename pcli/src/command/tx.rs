@@ -1104,6 +1104,15 @@ impl TxCmd {
                     )?;
 
                     if let Some(file) = debug_file {
+                        let canonical_pair_str =
+                            if market.into_directed_trading_pair().to_canonical().asset_1()
+                                == market.start.id()
+                            {
+                                format!("{}:{}", market.start.to_string(), market.end.to_string())
+                            } else {
+                                format!("{}:{}", market.end.to_string(), market.start.to_string())
+                            };
+
                         let debug_positions: Vec<utils::PayoffPositionEntry> = positions
                             .iter()
                             .enumerate()
@@ -1111,11 +1120,7 @@ impl TxCmd {
                                 payoff: Into::into(pos.clone()),
                                 current_price,
                                 index: idx,
-                                pair: format!(
-                                    "{}:{}",
-                                    market.start.to_string(),
-                                    market.end.to_string()
-                                ),
+                                canonical_pair: canonical_pair_str.clone(),
                             })
                             .collect();
                         let mut fd = File::create(&file).map_err(|e| {
