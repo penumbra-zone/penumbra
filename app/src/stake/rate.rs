@@ -2,7 +2,7 @@
 
 use penumbra_crypto::{stake::Penalty, Amount};
 use penumbra_proto::{
-    client::v1alpha1::NextValidatorRateResponse, core::stake::v1alpha1 as pb, DomainType,
+    client::v1alpha1::NextValidatorRateResponse, core::stake::v1alpha1 as pb, DomainType, TypeUrl
 };
 use penumbra_transaction::action::{Delegate, Undelegate};
 use serde::{Deserialize, Serialize};
@@ -197,6 +197,10 @@ impl BaseRateData {
     }
 }
 
+impl TypeUrl for RateData {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.RateData";
+}
+
 impl DomainType for RateData {
     type Proto = pb::RateData;
 }
@@ -225,6 +229,10 @@ impl TryFrom<pb::RateData> for RateData {
             validator_exchange_rate: v.validator_exchange_rate,
         })
     }
+}
+
+impl TypeUrl for BaseRateData {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.BaseRateData";
 }
 
 impl DomainType for BaseRateData {

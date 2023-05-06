@@ -1,5 +1,5 @@
 use penumbra_crypto::Address;
-use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::stake::rate::BaseRateData;
@@ -66,6 +66,10 @@ impl FundingStream {
 
         r as u64
     }
+}
+
+impl TypeUrl for FundingStream {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.FundingStream";
 }
 
 impl DomainType for FundingStream {

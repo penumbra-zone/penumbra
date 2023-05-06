@@ -4,7 +4,7 @@ use std::convert::{From, TryFrom};
 pub trait DomainType
 where
     // Self: TypeUrl will be required once TypeUrl is implemented for all domain types.
-    Self: Clone + Sized + TryFrom<Self::Proto>,
+    Self: TypeUrl + Clone + Sized + TryFrom<Self::Proto>,
     Self::Proto: prost::Message + Default + From<Self> + Send + Sync + 'static,
     <Self as TryFrom<Self::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
 {

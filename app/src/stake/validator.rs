@@ -1,7 +1,7 @@
 //! Penumbra validators and related structures.
 
 use penumbra_crypto::{Address, GovernanceKey};
-use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use serde_unit_struct::{Deserialize_unit_struct, Serialize_unit_struct};
 use serde_with::DisplayFromStr;
@@ -197,6 +197,10 @@ impl From<FundingStreamToml> for FundingStream {
             FundingStreamToml::Dao { rate_bps, .. } => FundingStream::ToDao { rate_bps },
         }
     }
+}
+
+impl TypeUrl for Validator {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.Validator";
 }
 
 impl DomainType for Validator {

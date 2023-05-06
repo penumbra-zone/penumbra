@@ -1,5 +1,5 @@
 use anyhow::Result;
-use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_transaction::action::{Delegate, Undelegate};
 use serde::{Deserialize, Serialize};
 
@@ -10,6 +10,10 @@ use serde::{Deserialize, Serialize};
 pub struct DelegationChanges {
     pub delegations: Vec<Delegate>,
     pub undelegations: Vec<Undelegate>,
+}
+
+impl TypeUrl for DelegationChanges {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.DelegationChanges";
 }
 
 impl DomainType for DelegationChanges {

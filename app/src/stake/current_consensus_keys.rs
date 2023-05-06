@@ -1,5 +1,5 @@
 use anyhow::Result;
-use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use tendermint::PublicKey;
 
@@ -12,6 +12,10 @@ use tendermint::PublicKey;
 )]
 pub struct CurrentConsensusKeys {
     pub consensus_keys: Vec<PublicKey>,
+}
+
+impl TypeUrl for CurrentConsensusKeys {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.CurrentConsensusKeys";
 }
 
 impl DomainType for CurrentConsensusKeys {

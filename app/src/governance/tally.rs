@@ -3,7 +3,7 @@ use std::ops::{Add, AddAssign};
 use serde::{Deserialize, Serialize};
 
 use penumbra_chain::params::{ChainParameters, Ratio};
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_transaction::{
     action::Vote,
     proposal::{self, Withdrawn},
@@ -53,6 +53,10 @@ impl From<pb::Tally> for Tally {
             abstain: tally.abstain,
         }
     }
+}
+
+impl TypeUrl for Tally {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.Tally";
 }
 
 impl DomainType for Tally {

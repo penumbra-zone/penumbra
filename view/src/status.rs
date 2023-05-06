@@ -1,9 +1,13 @@
-use penumbra_proto::{view::v1alpha1 as pb, DomainType};
+use penumbra_proto::{view::v1alpha1 as pb, DomainType, TypeUrl};
 
 #[derive(Clone, Copy, Debug)]
 pub struct StatusStreamResponse {
     pub latest_known_block_height: u64,
     pub sync_height: u64,
+}
+
+impl TypeUrl for StatusStreamResponse {
+    const TYPE_URL: &'static str = "/penumbra.view.v1alpha1.StatusStreamResponse";
 }
 
 impl DomainType for StatusStreamResponse {
