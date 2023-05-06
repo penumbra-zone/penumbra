@@ -1112,3 +1112,301 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+/// Reproduce the dust constraint creating `current_input = 0`
+async fn fill_dust_route() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+
+    let pair_1 = Market::new(gm.clone(), gn.clone());
+    let pair_2 = Market::new(gn.clone(), penumbra.clone());
+
+    let traces: im::Vector<Vec<Value>> = im::Vector::new();
+    state_tx.object_put("swap_execution", traces);
+
+    let one = 1u64.into();
+    let price1 = one;
+    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+    let dust_constraint = Position::new(
+        OsRng,
+        pair_2.into_directed_trading_pair(),
+        100u32,
+        1000000u64.into(),
+        3000000u64.into(),
+        Reserves {
+            r1: 90909090u64.into(),
+            r2: 1u64.into(),
+        },
+    );
+    state_tx.put_position(dust_constraint);
+
+    let delta_1 = Value {
+        asset_id: gm.id(),
+        amount: Amount::from(3u64),
+    };
+
+    let route = vec![gn.id(), penumbra.id()];
+
+    let spill_price =
+        (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
+
+    let (unfilled, output) =
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+            .await
+            .unwrap();
+
+    println!("unfilled: {unfilled:?}");
+    println!("output: {output:?}");
+    Ok(())
+}
+
+#[tokio::test]
+/// Reproduce the dust constraint creating `current_input = 0`
+async fn fill_route_dust() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+
+    let pair_1 = Market::new(gm.clone(), gn.clone());
+    let pair_2 = Market::new(gn.clone(), penumbra.clone());
+
+    let traces: im::Vector<Vec<Value>> = im::Vector::new();
+    state_tx.object_put("swap_execution", traces);
+
+    let one = 1u64.into();
+    let price1 = one;
+    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+    let dust_constraint = Position::new(
+        OsRng,
+        pair_2.into_directed_trading_pair(),
+        100u32,
+        1000000u64.into(),
+        3000000u64.into(),
+        Reserves {
+            r1: 90909090u64.into(),
+            r2: 1u64.into(),
+        },
+    );
+    state_tx.put_position(dust_constraint);
+
+    let delta_1 = Value {
+        asset_id: gm.id(),
+        amount: Amount::from(3u64),
+    };
+
+    let route = vec![gn.id(), penumbra.id()];
+
+    let spill_price =
+        (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
+
+    let (unfilled, output) =
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+            .await
+            .unwrap();
+
+    println!("unfilled: {unfilled:?}");
+    println!("output: {output:?}");
+    Ok(())
+}
+
+#[tokio::test]
+/// Reproduce dust fill constraint that occurs when a constraint is
+/// also a dust position.
+async fn fill_route_with_dust_constraint() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let pusd = asset::REGISTRY.parse_unit("test_usd");
+
+    let pair_1 = Market::new(gm.clone(), gn.clone());
+    let pair_2 = Market::new(gn.clone(), penumbra.clone());
+    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+
+    let traces: im::Vector<Vec<Value>> = im::Vector::new();
+    state_tx.object_put("swap_execution", traces);
+
+    let one = 1u64.into();
+    let price1 = one;
+    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+
+    let dust_constraint = Position::new(
+        OsRng,
+        pair_2.into_directed_trading_pair(),
+        100u32,
+        1000000u64.into(),
+        3000000u64.into(),
+        Reserves {
+            r1: 90909090u64.into(),
+            r2: 1u64.into(),
+        },
+    );
+
+    let normal_order = Position::new(
+        OsRng,
+        pair_2.into_directed_trading_pair(),
+        150u32,
+        Amount::from(1u64) * pair_1.start.unit_amount(),
+        Amount::from(3u64) * pair_2.end.unit_amount(),
+        Reserves {
+            r1: 0u64.into(),
+            r2: Amount::from(100u64) * pair_2.end.unit_amount(),
+        },
+    );
+
+    state_tx.put_position(dust_constraint);
+    state_tx.put_position(normal_order);
+    let buy_1 = limit_buy(pair_3, 100u64.into(), 1400u64.into());
+    state_tx.put_position(buy_1);
+
+    let delta_1 = Value {
+        asset_id: gm.id(),
+        amount: Amount::from(3u64) * gm.unit_amount(),
+    };
+
+    let route = vec![gn.id(), penumbra.id(), pusd.id()];
+
+    let spill_price =
+        (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
+
+    let (unfilled, output) =
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+            .await
+            .unwrap();
+
+    println!("unfilled: {unfilled:?}");
+    println!("output: {output:?}");
+    Ok(())
+}
+
+#[tokio::test]
+/// Reproduce dust fill constraint that occurs when a constraint is
+/// also a dust position.
+async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let pusd = asset::REGISTRY.parse_unit("test_usd");
+    let btc = asset::REGISTRY.parse_unit("test_btc");
+
+    let pair_1 = Market::new(gm.clone(), gn.clone());
+    let pair_2 = Market::new(gn.clone(), penumbra.clone());
+    let pair_3 = Market::new(penumbra.clone(), btc.clone());
+    let pair_4 = Market::new(btc.clone(), pusd.clone());
+
+    let traces: im::Vector<Vec<Value>> = im::Vector::new();
+    state_tx.object_put("swap_execution", traces);
+
+    let one = 1u64.into();
+    let price1 = one;
+    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+
+    let dust_constraint_p2 = Position::new(
+        OsRng,
+        pair_2.into_directed_trading_pair(),
+        100u32,
+        1000000u64.into(),
+        3000000u64.into(),
+        Reserves {
+            r1: 90909090u64.into(),
+            r2: 1u64.into(),
+        },
+    );
+
+    let normal_order_p2 = Position::new(
+        OsRng,
+        pair_2.into_directed_trading_pair(),
+        150u32,
+        1000000u64.into(),
+        3000000u64.into(),
+        Reserves {
+            r1: 0u64.into(),
+            r2: Amount::from(100u64) * pair_2.end.unit_amount(),
+        },
+    );
+
+    state_tx.put_position(dust_constraint_p2);
+    state_tx.put_position(normal_order_p2);
+
+    let dust_constraint_p3 = Position::new(
+        OsRng,
+        pair_3.into_directed_trading_pair(),
+        100u32,
+        1000000u64.into(),
+        3000000u64.into(),
+        Reserves {
+            r1: 9090u64.into(),
+            r2: 1u64.into(),
+        },
+    );
+
+    let normal_order_p3 = Position::new(
+        OsRng,
+        pair_3.into_directed_trading_pair(),
+        150u32,
+        1000000u64.into(),
+        3000000u64.into(),
+        Reserves {
+            r1: 0u64.into(),
+            r2: Amount::from(100u64) * pair_3.end.unit_amount(),
+        },
+    );
+
+    state_tx.put_position(dust_constraint_p3);
+    state_tx.put_position(normal_order_p3);
+
+    let buy_1 = limit_buy(pair_4, 100u64.into(), 1400u64.into());
+    state_tx.put_position(buy_1);
+
+    let delta_1 = Value {
+        asset_id: gm.id(),
+        amount: Amount::from(3u64) * gm.unit_amount(),
+    };
+
+    let route = vec![gn.id(), penumbra.id(), btc.id(), pusd.id()];
+
+    let spill_price =
+        (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
+
+    let (unfilled, output) =
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+            .await
+            .unwrap();
+
+    println!("unfilled: {unfilled:?}");
+    println!("output: {output:?}");
+    Ok(())
+}
