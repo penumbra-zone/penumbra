@@ -1,5 +1,5 @@
 use penumbra_proto::{
-    client::v1alpha1::ValidatorInfoResponse, core::stake::v1alpha1 as pb, DomainType,
+    client::v1alpha1::ValidatorInfoResponse, core::stake::v1alpha1 as pb, DomainType, TypeUrl
 };
 use serde::{Deserialize, Serialize};
 
@@ -12,6 +12,10 @@ pub struct Info {
     pub validator: Validator,
     pub status: Status,
     pub rate_data: RateData,
+}
+
+impl TypeUrl for Info {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.ValidatorInfo";
 }
 
 impl DomainType for Info {

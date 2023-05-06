@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 /// The state of a validator in the validator state machine.
@@ -32,6 +32,10 @@ impl std::fmt::Display for State {
             State::Disabled => write!(f, "Disabled"),
         }
     }
+}
+
+impl TypeUrl for State {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.ValidatorState";
 }
 
 impl DomainType for State {
