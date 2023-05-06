@@ -304,6 +304,14 @@ impl Unit {
     pub fn unit_amount(&self) -> asset::Amount {
         10u128.pow(self.exponent().into()).into()
     }
+
+    /// Create a value of this unit, applying the correct exponent.
+    pub fn value(&self, amount: asset::Amount) -> Value {
+        Value {
+            asset_id: self.id(),
+            amount: amount * self.unit_amount(),
+        }
+    }
 }
 
 impl Hash for Unit {

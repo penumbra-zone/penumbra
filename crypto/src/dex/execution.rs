@@ -88,7 +88,7 @@ impl From<Path> for pb::Path {
 }
 
 /// Contains the summary data of a trade, for client consumption.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::SwapExecution", into = "pb::SwapExecution")]
 pub struct SwapExecution {
     pub traces: Vec<Vec<Value>>,

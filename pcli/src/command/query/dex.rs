@@ -7,6 +7,7 @@ use futures::{Future, FutureExt, Stream, StreamExt, TryStreamExt};
 use penumbra_crypto::{
     asset,
     dex::{
+        execution::SwapExecution,
         lp::{position::Position, Reserves},
         BatchSwapOutputData, TradingPair,
     },
@@ -15,6 +16,7 @@ use penumbra_crypto::{
 use penumbra_proto::client::v1alpha1::{
     specific_query_service_client::SpecificQueryServiceClient, AssetInfoRequest,
     BatchSwapOutputDataRequest, LiquidityPositionsRequest, StubCpmmReservesRequest,
+    SwapExecutionRequest,
 };
 use penumbra_view::ViewClient;
 use tonic::transport::Channel;
@@ -34,6 +36,14 @@ pub enum DexCmd {
         #[clap(long)]
         height: u64,
         /// The trading pair to query for batch outputs.
+        trading_pair: TradingPair,
+    },
+    /// Display information about a specific trading pair & height's swap execution.
+    SwapExecution {
+        /// The height to query for the swap execution.
+        #[clap(long)]
+        height: u64,
+        /// The trading pair to query for the swap execution.
         trading_pair: TradingPair,
     },
     /// Display information about liquidity positions known to the chain.
@@ -130,6 +140,27 @@ impl DexCmd {
             .context("cannot parse batch swap output data")
     }
 
+    pub async fn get_swap_execution(
+        &self,
+        app: &mut App,
+        height: &u64,
+        trading_pair: &TradingPair,
+    ) -> Result<SwapExecution> {
+        let mut client = app.specific_client().await?;
+        client
+            .swap_execution(SwapExecutionRequest {
+                height: *height,
+                trading_pair: Some((*trading_pair).into()),
+                ..Default::default()
+            })
+            .await?
+            .into_inner()
+            .swap_execution
+            .ok_or_else(|| anyhow::anyhow!("proto response missing swap execution"))?
+            .try_into()
+            .context("cannot parse batch swap output data")
+    }
+
     pub async fn get_liquidity_positions(
         &self,
         mut client: SpecificQueryServiceClient<Channel>,
@@ -162,6 +193,30 @@ impl DexCmd {
                 .boxed())
         }
         .boxed()
+    }
+
+    pub async fn print_swap_execution(
+        &self,
+        app: &mut App,
+        height: &u64,
+        trading_pair: &TradingPair,
+    ) -> Result<()> {
+        let swap_execution = self.get_swap_execution(app, height, trading_pair).await?;
+
+        let cache = app.view().assets().await?;
+
+        for trace in swap_execution.traces {
+            println!(
+                "{}",
+                trace
+                    .iter()
+                    .map(|v| v.format(&cache))
+                    .collect::<Vec<_>>()
+                    .join(" => ")
+            );
+        }
+
+        Ok(())
     }
 
     pub async fn print_batch_outputs(
@@ -243,6 +298,12 @@ impl DexCmd {
                 trading_pair,
             } => {
                 self.print_batch_outputs(app, height, trading_pair).await?;
+            }
+            DexCmd::SwapExecution {
+                height,
+                trading_pair,
+            } => {
+                self.print_swap_execution(app, height, trading_pair).await?;
             }
             DexCmd::LiquidityPositions { only_open } => {
                 let client = app.specific_client().await?;

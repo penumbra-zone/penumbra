@@ -6,7 +6,7 @@ use penumbra_chain::component::StateReadExt as _;
 use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_component::Component;
 use penumbra_crypto::{
-    dex::{BatchSwapOutputData, TradingPair},
+    dex::{execution::SwapExecution, BatchSwapOutputData, TradingPair},
     SwapFlow,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
@@ -14,7 +14,10 @@ use penumbra_storage::{StateRead, StateWrite};
 use tendermint::abci;
 use tracing::instrument;
 
-use super::{router::RouteAndFill, state_key};
+use super::{
+    router::{self, RouteAndFill},
+    state_key,
+};
 
 pub struct Dex {}
 
@@ -46,6 +49,7 @@ impl Component for Dex {
                     swap_flows,
                     end_block.height.try_into().expect("missing height"),
                     current_epoch.start_height,
+                    router::hardcoded_candidates(),
                 )
                 .await
                 .expect("unable to process batch swaps");
@@ -70,6 +74,15 @@ pub trait StateReadExt: StateRead {
             .await
     }
 
+    async fn swap_execution(
+        &self,
+        height: u64,
+        trading_pair: TradingPair,
+    ) -> Result<Option<SwapExecution>> {
+        self.get(&state_key::swap_execution(height, trading_pair))
+            .await
+    }
+
     // Get the swap flow for the given trading pair accumulated in this block so far.
     fn swap_flow(&self, pair: &TradingPair) -> SwapFlow {
         self.swap_flows().get(pair).cloned().unwrap_or_default()
@@ -86,11 +99,16 @@ impl<T: StateRead> StateReadExt for T {}
 /// Extension trait providing write access to dex data.
 #[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {
-    fn set_output_data(&mut self, output_data: BatchSwapOutputData) {
+    fn set_output_data(&mut self, output_data: BatchSwapOutputData, swap_execution: SwapExecution) {
         // Write the output data to the state under a known key, for querying, ...
         let height = output_data.height;
         let trading_pair = output_data.trading_pair;
         self.put(state_key::output_data(height, trading_pair), output_data);
+        // Store the swap execution in the state as well.
+        self.put(
+            state_key::swap_execution(height, trading_pair),
+            swap_execution,
+        );
         // ... and also add it to the compact block to be pushed out to clients.
         let mut compact_block = self.stub_compact_block();
         compact_block.swap_outputs.insert(trading_pair, output_data);

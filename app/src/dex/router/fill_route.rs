@@ -7,6 +7,7 @@ use penumbra_crypto::{
     Amount, Value,
 };
 use penumbra_storage::{StateDelta, StateWrite};
+use tracing::instrument;
 
 use crate::dex::{PositionManager, PositionRead};
 
@@ -16,6 +17,7 @@ pub trait FillRoute: StateWrite + Sized {
     /// and returns a tuple consisting of:
     ///     - an ordered list of `Position` and their respective saturating input
     ///     - the best `Position` for each hop of the route
+    #[instrument(skip(self, input, hops))]
     async fn find_constraints(
         &mut self,
         input: Value,
@@ -104,17 +106,37 @@ pub trait FillRoute: StateWrite + Sized {
         }
     }
 
+    #[instrument(skip(self, input, hops, spill_price))]
     async fn fill_route(
         &mut self,
         mut input: Value,
         hops: &[asset::Id],
         spill_price: Option<U128x128>,
     ) -> Result<(Value, Value)> {
+        tracing::debug!(
+            ?input,
+            ?hops,
+            ?spill_price,
+            "filling along route up to spill price"
+        );
+
         let mut route = hops.to_vec();
         route.insert(0, input.asset_id);
 
         // Breakdown the route into a sequence of pairs to visit.
         let pairs = self.breakdown_route(&route)?;
+
+        // Record a trace of the execution along the current route,
+        // starting with all-zero amounts.
+        let mut trace: Vec<Value> = std::iter::once(Value {
+            amount: 0u64.into(),
+            asset_id: input.asset_id,
+        })
+        .chain(hops.iter().map(|asset_id| Value {
+            amount: 0u64.into(),
+            asset_id: asset_id.clone(),
+        }))
+        .collect();
 
         let mut output = Value {
             amount: 0u64.into(),
@@ -148,7 +170,7 @@ pub trait FillRoute: StateWrite + Sized {
                 },
             );
 
-            tracing::debug!(?effective_price, "effective price across the route");
+            tracing::debug!(%effective_price, "effective price across the route");
             tracing::debug!(num = constraining_hops.len(), "found constraints");
 
             //  Stop filling if the effective price exceeds the spill price.
@@ -184,10 +206,13 @@ pub trait FillRoute: StateWrite + Sized {
                 asset_id: input.asset_id,
             };
 
+            // Store the current value in the execution trace:
+            trace[0].amount += input_capacity;
+
             // Now, we can execute along the route knowing that the most limiting
             // constraint is lifted. This means that this specific input is exactly
             // the maximum flow for the composed positions.
-            for pair in pairs.iter() {
+            for (pair_idx, pair) in pairs.iter().enumerate() {
                 assert_eq!(current_value.asset_id, pair.start);
                 let position = self
                     .best_position(&DirectedTradingPair {
@@ -201,19 +226,24 @@ pub trait FillRoute: StateWrite + Sized {
                 // This should not happen, since the `current_capacity` is the
                 // saturating input for the route.
                 if unfilled.amount > 0u64.into() {
-                    tracing::error!(
-                        ?pair,
+                    tracing::warn!(
                         ?unfilled,
-                        ?position,
                         ?current_value,
-                        "residual unfilled amount here"
+                        ?position,
+                        ?pair,
+                        "burning unexpected residual unfilled amount"
                     );
+                    /*
                     return Err(anyhow::anyhow!(
                         "internal error: unfilled amount after filling against {:?}",
                         position.id(),
                     ));
+                    */
                 }
                 current_value = output;
+
+                // Add the amount we got as the output of the latest intermediate trade into the trace.
+                trace[pair_idx + 1].amount += current_value.amount;
             }
 
             if current_value.amount == 0u64.into() {
@@ -237,6 +267,13 @@ pub trait FillRoute: StateWrite + Sized {
             input.amount = input.amount - input_capacity;
             output.amount = output.amount + current_value.amount;
         }
+
+        // Add the trace to the object store:
+        tracing::debug!(?trace, "recording trace of filled route");
+        let mut swap_execution: im::Vector<Vec<Value>> =
+            self.object_get("swap_execution").unwrap_or_default();
+        swap_execution.push_back(trace);
+        self.object_put("swap_execution", swap_execution);
 
         Ok((input, output))
     }

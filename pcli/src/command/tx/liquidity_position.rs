@@ -174,14 +174,16 @@ impl OrderCmd {
                 // ... for the given amount of the price asset.
                 let p = buy_order.price.amount;
 
+                // TODO: p's and q's and r1's and r2's are all over the place here
+
                 // we want to end up with (r1, r2) = (0, desired)
                 // amm is p * r1 + q * r2 = k
                 // => k = q * desired (set r1 = 0)
                 // => when r2 = 0, p * r1 = q * desired
                 // =>              r1 = q * desired / p
-                let q_over_p = (U128x128::from(q) / U128x128::from(p))
+                let p_over_q = (U128x128::from(p) / U128x128::from(q))
                     .ok_or_else(|| anyhow::anyhow!("supplied zero buy price"))?;
-                let r1 = (U128x128::from(buy_order.desired.amount) * q_over_p)
+                let r1 = (U128x128::from(buy_order.desired.amount) * p_over_q)
                     .ok_or_else(|| anyhow::anyhow!("overflow computing r1"))?
                     .round_up()
                     .try_into()

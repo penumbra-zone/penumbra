@@ -298,6 +298,12 @@ impl ops::Add<Amount> for Amount {
     }
 }
 
+impl ops::AddAssign<Amount> for Amount {
+    fn add_assign(&mut self, rhs: Amount) {
+        self.inner += rhs.inner;
+    }
+}
+
 impl ops::Sub<Amount> for Amount {
     type Output = Amount;
 

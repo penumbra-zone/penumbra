@@ -35,12 +35,20 @@ async fn path_search_basic() {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
     tracing::info!(src = %gm, dst = %penumbra, "searching for path");
-    let (_path, _spill) = state.path_search(gm.id(), penumbra.id(), 4).await.unwrap();
+    let (_path, _spill) = state
+        .path_search(gm.id(), penumbra.id(), 4, super::hardcoded_candidates())
+        .await
+        .unwrap();
 
     // Now try routing from "penumbra" to "penumbra".
     tracing::info!(src = %penumbra, dst = %penumbra, "searching for path");
     let (_path, _spill) = state
-        .path_search(penumbra.id(), penumbra.id(), 8)
+        .path_search(
+            penumbra.id(),
+            penumbra.id(),
+            8,
+            super::hardcoded_candidates(),
+        )
         .await
         .unwrap();
 }
@@ -324,7 +332,7 @@ fn limit_buy_pq(market: Market, quantity: Amount, p: Amount, q: Amount, fee: u32
 
 /// Create a `Position` to buy `asset_1` using `asset_2`.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
-fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
+pub(crate) fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),
@@ -339,7 +347,7 @@ fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Po
 }
 
 /// Create a `Position` to sell `asset_1` into `asset_2`.
-fn limit_sell(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
+pub(crate) fn limit_sell(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),
@@ -508,6 +516,9 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     let price1 = one;
     let price2 = 2u64.into();
 
+    let traces: im::Vector<Vec<Value>> = im::Vector::new();
+    state_tx.object_put("swap_execution", traces);
+
     let buy_1 = limit_buy(pair_1.clone(), 3u64.into(), price2);
     let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
     state_tx.put_position(buy_1);
@@ -606,6 +617,9 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
 
+    let traces: im::Vector<Vec<Value>> = im::Vector::new();
+    state_tx.object_put("swap_execution", traces);
+
     let one: Amount = 1u64.into();
 
     let price1 = one;
@@ -702,6 +716,9 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
 
+    let traces: im::Vector<Vec<Value>> = im::Vector::new();
+    state_tx.object_put("swap_execution", traces);
+
     let one = 1u64.into();
     let price1 = one;
     let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
@@ -780,6 +797,9 @@ async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
     let pair_1 = Market::new(gm.clone(), gn.clone());
     let pair_2 = Market::new(gn.clone(), penumbra.clone());
     let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+
+    let traces: im::Vector<Vec<Value>> = im::Vector::new();
+    state_tx.object_put("swap_execution", traces);
 
     let one = 1u64.into();
     let price1 = one;
@@ -862,7 +882,10 @@ async fn simple_route() -> anyhow::Result<()> {
     state_tx.put_position(buy_1);
 
     // We should be able to call path_search and route through that position.
-    let (path, _spill) = state.path_search(gn.id(), penumbra.id(), 1).await.unwrap();
+    let (path, _spill) = state
+        .path_search(gn.id(), penumbra.id(), 1, super::hardcoded_candidates())
+        .await
+        .unwrap();
 
     assert!(path.is_some(), "path exists between gn<->penumbra");
     assert!(path.clone().unwrap().len() == 1, "path is of length 1");
@@ -889,7 +912,10 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     state_tx.apply();
 
     // We should be able to call path_search and route through that position.
-    let (path, _spill) = state.path_search(gn.id(), penumbra.id(), 4).await.unwrap();
+    let (path, _spill) = state
+        .path_search(gn.id(), penumbra.id(), 4, super::hardcoded_candidates())
+        .await
+        .unwrap();
 
     assert!(path.is_some(), "path exists between gn<->penumbra");
     assert!(path.clone().unwrap().len() == 1, "path is of length 1");
@@ -911,7 +937,13 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
         .unwrap()
         .put_swap_flow(&trading_pair, swap_flow.clone());
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0)
+        .handle_batch_swaps(
+            trading_pair,
+            swap_flow,
+            0u32.into(),
+            0,
+            super::hardcoded_candidates(),
+        )
         .await
         .expect("unable to process batch swaps");
 
@@ -1021,7 +1053,10 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     // Now if we swap 1000gm into penumbra, we should not get total execution, but we should
     // consume all penumbra liquidity on the direct gm:penumbra pairs, as well as route through the
     // gm:gn and gn:penumbra pairs to obtain penumbra.
-    let (path, _spill) = state.path_search(gm.id(), penumbra.id(), 4).await.unwrap();
+    let (path, _spill) = state
+        .path_search(gm.id(), penumbra.id(), 4, super::hardcoded_candidates())
+        .await
+        .unwrap();
 
     assert!(path.is_some(), "path exists between gm<->penumbra");
     assert!(path.unwrap()[0] == penumbra.id(), "path[0] is penumbra");
@@ -1041,7 +1076,13 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
         .unwrap()
         .put_swap_flow(&trading_pair, swap_flow.clone());
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0)
+        .handle_batch_swaps(
+            trading_pair,
+            swap_flow,
+            0u32.into(),
+            0,
+            super::hardcoded_candidates(),
+        )
         .await
         .expect("unable to process batch swaps");
 

@@ -18,7 +18,7 @@ pub use info::Info;
 struct CompactBlockConnectionCounter {}
 
 impl CompactBlockConnectionCounter {
-    pub fn new() -> Self {
+    pub fn _new() -> Self {
         metrics::increment_gauge!(
             metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_ACTIVE_CONNECTIONS,
             1.0

@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_crypto::{
     asset,
-    dex::{BatchSwapOutputData, TradingPair},
+    dex::{execution::SwapExecution, BatchSwapOutputData, TradingPair},
     Amount, SwapFlow, Value,
 };
 use penumbra_storage::StateWrite;
+use tracing::instrument;
 
 use crate::dex::{
     router::{FillRoute, PathSearch},
@@ -18,12 +19,22 @@ use crate::dex::{
 /// a block's batch swap flows.
 #[async_trait]
 pub trait RouteAndFill: StateWrite + Sized {
+    #[instrument(skip(
+        self,
+        trading_pair,
+        batch_data,
+        block_height,
+        epoch_height,
+        fixed_candidates
+    ))]
     async fn handle_batch_swaps(
         self: &mut Arc<Self>,
         trading_pair: TradingPair,
         batch_data: SwapFlow,
+        // TODO: why not read these 2 from the state?
         block_height: u64,
         epoch_height: u64,
+        fixed_candidates: Arc<Vec<asset::Id>>,
     ) -> Result<()>
     where
         Self: 'static,
@@ -32,22 +43,41 @@ pub trait RouteAndFill: StateWrite + Sized {
 
         tracing::debug!(?delta_1, ?delta_2, ?trading_pair);
 
+        // Since we store a single swap execution struct for the canonical trading pair,
+        // representing swaps in both directions, let's set that up now:
+        let traces: im::Vector<Vec<Value>> = im::Vector::new();
+        Arc::get_mut(self)
+            .expect("one mutable reference to state")
+            .object_put("swap_execution", traces);
+
         // Depending on the contents of the batch swap inputs, we might need to path search in either direction.
         let (lambda_2, unfilled_1) = if delta_1.value() > 0 {
             // There is input for asset 1, so we need to route for asset 1 -> asset 2
-            self.route_and_fill_inner(trading_pair.asset_1(), trading_pair.asset_2(), delta_1)
-                .await?
+            self.route_and_fill(
+                trading_pair.asset_1(),
+                trading_pair.asset_2(),
+                delta_1,
+                fixed_candidates.clone(),
+            )
+            .await?
         } else {
             // There was no input for asset 1, so there's 0 output for asset 2 from this side.
+            tracing::debug!("no input for asset 1, skipping 1=>2 execution");
             (0u64.into(), delta_1)
         };
 
         let (lambda_1, unfilled_2) = if delta_2.value() > 0 {
             // There is input for asset 2, so we need to route for asset 2 -> asset 1
-            self.route_and_fill_inner(trading_pair.asset_2(), trading_pair.asset_1(), delta_2)
-                .await?
+            self.route_and_fill(
+                trading_pair.asset_2(),
+                trading_pair.asset_1(),
+                delta_2,
+                fixed_candidates.clone(),
+            )
+            .await?
         } else {
             // There was no input for asset 2, so there's 0 output for asset 1 from this side.
+            tracing::debug!("no input for asset 2, skipping 2=>1 execution");
             (0u64.into(), delta_2)
         };
 
@@ -62,23 +92,48 @@ pub trait RouteAndFill: StateWrite + Sized {
             lambda_1_1: unfilled_1,
             lambda_2_2: unfilled_2,
         };
-        tracing::debug!(?output_data);
+
+        // Fetch the swap execution object that should have been modified during the routing and filling.
+        let swap_execution: im::Vector<Vec<Value>> = self
+            .object_get("swap_execution")
+            .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store2"))?;
+        tracing::debug!(?output_data, ?swap_execution);
         Arc::get_mut(self)
             .expect("expected state to have no other refs")
-            .set_output_data(output_data);
+            .set_output_data(
+                output_data,
+                SwapExecution {
+                    traces: swap_execution.into_iter().collect(),
+                },
+            );
+
+        // Clean up the swap execution object store now that it's been persisted.
+        Arc::get_mut(self)
+            .expect("expected state to have no other refs")
+            .object_delete("swap_execution");
+
         Ok(())
     }
+}
 
-    // TODO: this is publically exposed rn, but should be private
-    async fn route_and_fill_inner(
+impl<T: PositionManager> RouteAndFill for T {}
+
+/// Ties together the routing and filling logic, to process
+/// a block's batch swap flows.
+#[async_trait]
+trait RouteAndFillInner: StateWrite + Sized {
+    #[instrument(skip(self, asset_1, asset_2, delta_1, fixed_candidates))]
+    async fn route_and_fill(
         self: &mut Arc<Self>,
         asset_1: asset::Id,
         asset_2: asset::Id,
         delta_1: Amount,
+        fixed_candidates: Arc<Vec<asset::Id>>,
     ) -> Result<(Amount, Amount)>
     where
         Self: 'static,
     {
+        tracing::debug!(?delta_1, ?asset_1, ?asset_2, "starting route_and_fill");
         // Output of asset 2
         let mut outer_lambda_2 = 0u64.into();
         // Unfilled output of asset 1
@@ -91,18 +146,14 @@ pub trait RouteAndFill: StateWrite + Sized {
             // Find the best route between the two assets in the trading pair.
             let (path, spill_price) = self
                 // TODO: max hops should not be hardcoded
-                .path_search(asset_1, asset_2, 4)
+                .path_search(asset_1, asset_2, 4, fixed_candidates.clone())
                 .await
-                .unwrap();
+                .context("error finding best path")?;
 
-            tracing::debug!("path is some? {}", path.is_some());
-            if path.is_none() {
-                // No path found, so we can't fill any more.
+            let Some(path) = path else {
+                tracing::debug!("no path found, exiting route_and_fill");
                 break;
-            }
-
-            let path = path.unwrap();
-            tracing::debug!(?path);
+            };
 
             (outer_lambda_2, outer_unfilled_1) = {
                 // path found, fill as much as we can
@@ -110,22 +161,27 @@ pub trait RouteAndFill: StateWrite + Sized {
                     amount: outer_unfilled_1,
                     asset_id: asset_1,
                 };
+
+                tracing::debug!(?path, delta_1 = ?delta_1.amount, "found path, starting to fill up to spill price");
+
                 let (unfilled_1, lambda_2) = Arc::get_mut(self)
                     .expect("expected state to have no other refs")
                     .fill_route(delta_1, &path, spill_price)
-                    .await?;
+                    .await
+                    .context("error filling along best path")?;
+
+                tracing::debug!(lambda_2 = ?lambda_2.amount, unfilled_1 = ?unfilled_1.amount, "filled along best path");
+
                 assert_eq!(lambda_2.asset_id, asset_2);
                 assert_eq!(unfilled_1.asset_id, asset_1);
-                let lambda_2 = lambda_2.amount;
-                tracing::debug!(?lambda_2, ?unfilled_1);
 
                 // The output of asset 2 is the sum of all the `lambda_2` values,
                 // and the unfilled amount becomes the new `delta_1`.
-                (outer_lambda_2 + lambda_2, unfilled_1.amount)
+                (outer_lambda_2 + lambda_2.amount, unfilled_1.amount)
             };
 
             if outer_unfilled_1.value() == 0 {
-                // All of the `delta_1` was spent
+                tracing::debug!("filled all of delta_1, exiting route_and_fill");
                 break;
             }
         }
@@ -134,4 +190,4 @@ pub trait RouteAndFill: StateWrite + Sized {
     }
 }
 
-impl<T: PositionManager> RouteAndFill for T {}
+impl<T: RouteAndFill> RouteAndFillInner for T {}
