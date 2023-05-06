@@ -1084,6 +1084,7 @@ impl TxCmd {
                 market,
                 quantity,
                 current_price,
+                debug_file,
             })) => {
                 if quantity.asset_id != market.start.id() && quantity.asset_id != market.end.id() {
                     return Err(anyhow::anyhow!(
@@ -1094,18 +1095,49 @@ impl TxCmd {
                         "the quantity of liquidity supplied must be non-zero.",
                     ));
                 } else {
+                    use crate::dex_utils::approximate::utils;
                     let current_price = current_price.unwrap_or_else(|| 1f64);
-                    let _positions = crate::dex_utils::approximate::xyk::approximate(
+                    let positions = crate::dex_utils::approximate::xyk::approximate(
                         market,
                         quantity,
                         fixpoint::from_f64_unsafe(current_price),
-                    );
+                    )?;
+
+                    if let Some(file) = debug_file {
+                        let debug_positions: Vec<utils::PayoffPositionEntry> = positions
+                            .iter()
+                            .enumerate()
+                            .map(|(idx, pos)| utils::PayoffPositionEntry {
+                                payoff: Into::into(pos.clone()),
+                                current_price,
+                                index: idx,
+                                pair: format!(
+                                    "{}:{}",
+                                    market.start.to_string(),
+                                    market.end.to_string()
+                                ),
+                            })
+                            .collect();
+                        let mut fd = File::create(&file).map_err(|e| {
+                            anyhow!(
+                                "fs error opening debug file {}: {}",
+                                file.to_string_lossy(),
+                                e
+                            )
+                        })?;
+
+                        let json_data = serde_json::to_string(&debug_positions)
+                            .map_err(|e| anyhow!("error serializing PayoffPositionEntry: {}", e))?;
+
+                        fd.write_all(json_data.as_bytes()).map_err(|e| {
+                            anyhow!("error writing {}: {}", file.to_string_lossy(), e)
+                        })?;
+                        return Ok(());
+                    }
+
+                    // TODO(erwan): post positions.
                 }
-            } /*
-              ViewCmd::Approximate(_) => {
-                  println!("linear")
-              }
-               */
+            }
         }
         Ok(())
     }

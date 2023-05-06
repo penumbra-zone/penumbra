@@ -3,8 +3,6 @@
 const APPROXIMATION_TOLERANCE: f64 = 1e-8;
 
 pub mod xyk {
-    use std::thread::current;
-
     use crate::dex_utils::approximate::utils;
     use ndarray::Array;
     use penumbra_crypto::{
@@ -68,10 +66,11 @@ pub mod xyk {
             .map(|((i, k_i), alpha_i)| {
                 tracing::debug!(i, f64_current_price, k_i, alpha_i, "constructing pool");
 
-                // Tick is above the current price, so we want to create
-                // a one-sided position with price `alpha_i` that provisions
+                // Populating ticks that are below the current price, the intuition
+                // is that the positions accumulates the less valuable asset so as
+                // the price trends to \alpha_i, we must provision inventories of
                 // `asset_2`.
-                if alpha_i >= f64_current_price {
+                if alpha_i < f64_current_price {
                     let approx_p = alpha_i * market.end.unit_amount().value() as f64;
                     let p: Amount = fixpoint::from_f64_unsafe(approx_p)
                         .round_down()
@@ -95,7 +94,7 @@ pub mod xyk {
                         Reserves { r1, r2 },
                     )
                 } else {
-                    // Tick is below the current price, therefore we want
+                    // Tick is above the current price, therefore we want
                     // to create a one-sided position with price `alpha_i`
                     // that provisions `asset_1`.
                     let p = Amount::from(1u64) * market.end.unit_amount();
@@ -157,10 +156,12 @@ pub mod balancer {}
 
 pub mod volatility {}
 
-pub(crate) mod utils {
+pub mod utils {
     use ndarray::s;
     use ndarray::Array;
     use ndarray::Array2;
+    use penumbra_crypto::dex::lp::position::Position;
+    use serde::Serialize;
 
     /// Applies the Gaus-Seidel method to a square matrix A and returns
     /// a vector of solutions.
@@ -224,5 +225,36 @@ pub(crate) mod utils {
         }
 
         points
+    }
+
+    #[derive(Serialize)]
+    pub struct PayoffPositionEntry {
+        pub payoff: PayoffPosition,
+        pub current_price: f64,
+        pub index: usize,
+        pub pair: String,
+    }
+
+    /// For debugging purposes. We want to be able to serialize a position
+    /// to JSON so that we can pipe it into a Julia notebook. The reason why
+    /// this is a separate structure from [`position::Position`] is that we
+    /// might want to do extra processing, rounding, etc. and we'd rather note
+    /// clutter it with serializiation methods that are useful for narrow purposes.
+    #[derive(Serialize)]
+    pub struct PayoffPosition {
+        pub p: u128,
+        pub q: u128,
+        pub k: u128,
+    }
+
+    impl From<Position> for PayoffPosition {
+        fn from(value: Position) -> Self {
+            let p = value.phi.component.p.value();
+            let q = value.phi.component.q.value();
+            let r1 = value.reserves.r1.value();
+            let r2 = value.reserves.r2.value();
+            let k = p * r1 + q * r2;
+            Self { p, q, k }
+        }
     }
 }
