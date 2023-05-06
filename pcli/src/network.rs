@@ -62,7 +62,7 @@ impl App {
         let (id, detection_height) = self.view().broadcast_transaction(transaction, true).await?;
         if detection_height != 0 {
             println!(
-                "transaction confirmed and detected: {} @ {}",
+                "transaction confirmed and detected: {} @ height {}",
                 id, detection_height
             );
         } else {
