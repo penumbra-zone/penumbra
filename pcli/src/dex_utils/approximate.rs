@@ -52,8 +52,8 @@ pub mod xyk {
 
         let position_ks = solve(&alphas, xyk_invariant, NUM_POOLS_PRECISION)?.to_vec();
 
-        // TODO(erwan): it would be nice to have an option to output structured input
-        // so that a graph tool can pickup the solutions and they can be independently checked.
+        // TODO(erwan): we need an argument that will output structured position data
+        // that we can pipe into a julia notebook and check if the curve makes sense.
         position_ks
             .iter()
             .enumerate()
@@ -67,40 +67,60 @@ pub mod xyk {
             .zip(alphas)
             .map(|((i, k_i), alpha_i)| {
                 tracing::debug!(i, f64_current_price, k_i, alpha_i, "constructing pool");
-                let p: Amount = fixpoint::from_f64_unsafe(alpha_i)
-                    .round_down()
-                    .try_into()
-                    .expect("integral after truncating");
-                let mut p = p * market.start.unit_amount();
-                let mut q = Amount::from(1u64) * market.end.unit_amount();
 
-                let mut r1: Amount = fixpoint::from_f64_unsafe(*k_i)
-                    .round_down()
-                    .try_into()
-                    .expect("integral after truncating");
+                // Tick is above the current price, so we want to create
+                // a one-sided position with price `alpha_i` that provisions
+                // `asset_2`.
+                if alpha_i >= f64_current_price {
+                    let approx_p = alpha_i * market.end.unit_amount().value() as f64;
+                    let p: Amount = fixpoint::from_f64_unsafe(approx_p)
+                        .round_down()
+                        .try_into()
+                        .expect("integral after truncating");
+                    let q = Amount::from(1u64) * market.start.unit_amount();
 
-                let mut r2: Amount = Amount::from(0u64);
+                    let r1: Amount = Amount::from(0u64);
+                    let approx_r2 = *k_i * market.start.unit_amount().value() as f64;
+                    let r2: Amount = fixpoint::from_f64_unsafe(approx_r2)
+                        .round_down()
+                        .try_into()
+                        .expect("integral after truncating");
 
-                // LAST_NOTE(erwan): leaving it off here for tonight, check that this makes sense before picking this up next.
-                if alpha_i < f64_current_price {
+                    Position::new(
+                        OsRng,
+                        market.into_directed_trading_pair(),
+                        0u32,
+                        p,
+                        q,
+                        Reserves { r1, r2 },
+                    )
+                } else {
                     // Tick is below the current price, therefore we want
                     // to create a one-sided position with price `alpha_i`
                     // that provisions `asset_1`.
-                } else {
-                    // Tick is above the current price, so we want to create
-                    // a one-sided position with price `alpha_i` that provisions
-                    // `asset_2`.
-                    std::mem::swap(&mut p, &mut q);
-                    std::mem::swap(&mut r1, &mut r2);
+                    let p = Amount::from(1u64) * market.end.unit_amount();
+                    let approx_q = alpha_i * market.start.unit_amount().value() as f64;
+                    let q: Amount = fixpoint::from_f64_unsafe(approx_q)
+                        .round_down()
+                        .try_into()
+                        .expect("integral after truncating");
+
+                    let approx_r1 = *k_i * market.start.unit_amount().value() as f64;
+                    let r1: Amount = fixpoint::from_f64_unsafe(approx_r1)
+                        .round_down()
+                        .try_into()
+                        .expect("integral after truncating");
+                    let r2: Amount = Amount::from(0u64);
+
+                    Position::new(
+                        OsRng,
+                        market.into_directed_trading_pair(),
+                        0u32,
+                        p,
+                        q,
+                        Reserves { r1, r2 },
+                    )
                 }
-                Position::new(
-                    OsRng,
-                    market.into_directed_trading_pair(),
-                    0u32,
-                    p,
-                    q,
-                    Reserves { r1, r2 },
-                )
             })
             .collect();
         Ok(positions)
