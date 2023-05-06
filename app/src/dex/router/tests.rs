@@ -1170,8 +1170,6 @@ async fn fill_dust_route() -> anyhow::Result<()> {
     Ok(())
 }
 
-// TODO(erwan): narrow down on a set of properties we want to test
-// #[should_panic]
 #[tokio::test]
 /// Try filling a route with a dust position.
 async fn fill_route_dust() -> () {
@@ -1411,8 +1409,5 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
         FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
             .await
             .unwrap();
-
-    println!("unfilled: {unfilled:?}");
-    println!("output: {output:?}");
     Ok(())
 }
