@@ -1,5 +1,5 @@
 use penumbra_proto::{
-    client::v1alpha1::ValidatorInfoResponse, core::stake::v1alpha1 as pb, DomainType, TypeUrl
+    client::v1alpha1::ValidatorInfoResponse, core::stake::v1alpha1 as pb, DomainType, TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 
