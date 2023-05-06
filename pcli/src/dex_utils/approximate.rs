@@ -10,7 +10,7 @@ pub mod xyk {
             lp::{position::Position, Reserves},
             Market,
         },
-        fixpoint::{self, U128x128},
+        fixpoint::U128x128,
         Amount, Value,
     };
     use rand_core::OsRng;
@@ -36,7 +36,7 @@ pub mod xyk {
             anyhow::anyhow!("overflow computing the curve invariant: {fp_r1} * {fp_r2}")
         })?;
 
-        let xyk_invariant = fixpoint::to_f64_unsafe(&xyk_invariant);
+        let xyk_invariant: f64 = xyk_invariant.try_into()?;
 
         let alphas = utils::sample_points(NUM_POOLS_PRECISION);
 
@@ -57,7 +57,7 @@ pub mod xyk {
             .enumerate()
             .for_each(|(i, k)| println!("k_{i} = {k}"));
 
-        let f64_current_price = fixpoint::to_f64_unsafe(&current_price);
+        let f64_current_price: f64 = current_price.try_into()?;
 
         let positions: Vec<Position> = position_ks
             .iter()
@@ -71,16 +71,20 @@ pub mod xyk {
                 // the price trends to \alpha_i, we must provision inventories of
                 // `asset_2`.
                 if alpha_i < f64_current_price {
-                    let approx_p = alpha_i * market.end.unit_amount().value() as f64;
-                    let p: Amount = fixpoint::from_f64_unsafe(approx_p)
+                    let approx_p: U128x128 = (alpha_i * market.end.unit_amount().value() as f64)
+                        .try_into()
+                        .unwrap();
+                    let p: Amount = approx_p
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
                     let q = Amount::from(1u64) * market.start.unit_amount();
 
                     let r1: Amount = Amount::from(0u64);
-                    let approx_r2 = *k_i * market.start.unit_amount().value() as f64;
-                    let r2: Amount = fixpoint::from_f64_unsafe(approx_r2)
+                    let approx_r2: U128x128 = (*k_i * market.start.unit_amount().value() as f64)
+                        .try_into()
+                        .unwrap();
+                    let r2: Amount = approx_r2
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
@@ -98,14 +102,18 @@ pub mod xyk {
                     // to create a one-sided position with price `alpha_i`
                     // that provisions `asset_1`.
                     let p = Amount::from(1u64) * market.end.unit_amount();
-                    let approx_q = alpha_i * market.start.unit_amount().value() as f64;
-                    let q: Amount = fixpoint::from_f64_unsafe(approx_q)
+                    let approx_q: U128x128 = (alpha_i * market.start.unit_amount().value() as f64)
+                        .try_into()
+                        .unwrap();
+                    let q: Amount = approx_q
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
 
-                    let approx_r1 = *k_i * market.start.unit_amount().value() as f64;
-                    let r1: Amount = fixpoint::from_f64_unsafe(approx_r1)
+                    let approx_r1: U128x128 = (*k_i * market.start.unit_amount().value() as f64)
+                        .try_into()
+                        .unwrap();
+                    let r1: Amount = approx_r1
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
