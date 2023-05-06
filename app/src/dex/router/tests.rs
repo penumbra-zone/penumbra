@@ -1170,11 +1170,18 @@ async fn fill_dust_route() -> anyhow::Result<()> {
     Ok(())
 }
 
+// TODO(erwan): narrow down on a set of properties we want to test
+// #[should_panic]
 #[tokio::test]
-/// Reproduce the dust constraint creating `current_input = 0`
-async fn fill_route_dust() -> anyhow::Result<()> {
+/// Try filling a route with a dust position.
+async fn fill_route_dust() -> () {
     let _ = tracing_subscriber::fmt::try_init();
-    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let storage = TempStorage::new()
+        .await
+        .unwrap()
+        .apply_default_genesis()
+        .await
+        .unwrap();
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
@@ -1224,7 +1231,6 @@ async fn fill_route_dust() -> anyhow::Result<()> {
 
     println!("unfilled: {unfilled:?}");
     println!("output: {output:?}");
-    Ok(())
 }
 
 #[tokio::test]
