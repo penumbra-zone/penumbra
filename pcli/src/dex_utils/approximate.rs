@@ -61,17 +61,18 @@ pub mod xyk {
 
         let f64_current_price = fixpoint::to_f64_unsafe(&current_price);
 
-        let _positions: Vec<Position> = position_ks
+        let positions: Vec<Position> = position_ks
             .iter()
             .enumerate()
             .zip(alphas)
             .map(|((i, k_i), alpha_i)| {
                 tracing::debug!(i, f64_current_price, k_i, alpha_i, "constructing pool");
-                let mut p = fixpoint::from_f64_unsafe(alpha_i)
+                let p: Amount = fixpoint::from_f64_unsafe(alpha_i)
                     .round_down()
                     .try_into()
                     .expect("integral after truncating");
-                let mut q = Amount::from(1u64) * market.start.unit_amount();
+                let mut p = p * market.start.unit_amount();
+                let mut q = Amount::from(1u64) * market.end.unit_amount();
 
                 let mut r1: Amount = fixpoint::from_f64_unsafe(*k_i)
                     .round_down()
@@ -80,6 +81,7 @@ pub mod xyk {
 
                 let mut r2: Amount = Amount::from(0u64);
 
+                // LAST_NOTE(erwan): leaving it off here for tonight, check that this makes sense before picking this up next.
                 if alpha_i < f64_current_price {
                     // Tick is below the current price, therefore we want
                     // to create a one-sided position with price `alpha_i`
@@ -88,6 +90,8 @@ pub mod xyk {
                     // Tick is above the current price, so we want to create
                     // a one-sided position with price `alpha_i` that provisions
                     // `asset_2`.
+                    std::mem::swap(&mut p, &mut q);
+                    std::mem::swap(&mut r1, &mut r2);
                 }
                 Position::new(
                     OsRng,
@@ -99,7 +103,7 @@ pub mod xyk {
                 )
             })
             .collect();
-        Ok(vec![])
+        Ok(positions)
     }
 
     pub fn solve(
