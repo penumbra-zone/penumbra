@@ -18,6 +18,14 @@ pub mod xyk {
     /// The number of positions that is used to approximate the xyk CFMM.
     const NUM_POOLS_PRECISION: usize = 100;
 
+   pub(crate) fn sample_points(middle: f64, num_points: usize) -> Vec<f64> {
+        let start = middle - ((num_points as f64 - 1.0) / 2.0);
+        let step = 2.0 * ((num_points as f64 - 1.0) / 2.0) / (num_points - 1) as f64;
+        (0..num_points)
+            .map(|i| start + i as f64 * step)
+            .collect()
+    }
+    
     pub fn approximate(
         market: &Market,
         r1: &Value,
@@ -38,7 +46,7 @@ pub mod xyk {
 
         let xyk_invariant: f64 = xyk_invariant.try_into()?;
 
-        let alphas = utils::sample_points(NUM_POOLS_PRECISION);
+        let alphas = sample_points(current_price.into(), NUM_POOLS_PRECISION);
 
         // TODO(erwan): unused for now, but next refactor will rip out `solve` internals to
         // take this vector of solutions as an argument so that we can more easily recover from
@@ -226,21 +234,12 @@ pub mod utils {
         result
     }
 
-    pub(crate) fn sample_points(n: usize) -> Vec<f64> {
-        let mut points = vec![];
-        for i in 1..=n {
-            points.push(i as f64)
-        }
-
-        points
-    }
-
     #[derive(Serialize)]
     pub struct PayoffPositionEntry {
         pub payoff: PayoffPosition,
         pub current_price: f64,
         pub index: usize,
-        pub pair: String,
+        pub canonical_pair: String,
     }
 
     /// For debugging purposes. We want to be able to serialize a position
@@ -253,6 +252,8 @@ pub mod utils {
         pub p: u128,
         pub q: u128,
         pub k: u128,
+        pub r1: u128,
+        pub r2: u128,
     }
 
     impl From<Position> for PayoffPosition {
@@ -262,7 +263,7 @@ pub mod utils {
             let r1 = value.reserves.r1.value();
             let r2 = value.reserves.r2.value();
             let k = p * r1 + q * r2;
-            Self { p, q, k }
+            Self { p, q, k, r1, r2 }
         }
     }
 }
