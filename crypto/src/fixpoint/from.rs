@@ -65,17 +65,45 @@ impl From<U128x128> for f64 {
     }
 }
 
-impl TryFrom<&[u8]> for U128x128 {
-    type Error = super::Error;
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        Ok(<[u8; 32]>::try_from(value)
-            .map_err(|_| super::Error::SliceLength(value.len()))?
-            .into())
+impl TryFrom<f64> for U128x128 {
+    type Error = anyhow::Error;
+
+    fn try_from(value: f64) -> anyhow::Result<U128x128> {
+        if value < 0.0 {
+            Err(anyhow::anyhow!(
+                "U128x128 cannot represent negative numbers"
+            ))
+        } else if value.is_infinite() {
+            Err(anyhow::anyhow!("U128x128 cannot represent infinite values"))
+        } else if value.is_nan() {
+            Err(anyhow::anyhow!("U128x128 cannot represent NaN values"))
+        } else {
+            let integral = value as u128;
+            let fractional = value.fract();
+
+            // Convert the fractional part to an unsigned 128-bit integer.
+            // 1. Multiply the fractional part by 2^128 to move the significant bits to the left.
+            // 2. Round down the result to the nearest integer.
+            // 3. Convert the rounded result to an unsigned 128-bit integer.
+            let fractional_as_u128 =
+                (fractional * f64::from_bits(0x47f0000000000000)).trunc() as u128;
+            let combined = U256::from_words(integral, fractional_as_u128);
+            Ok(U128x128(combined))
+        }
     }
 }
 
 impl From<U128x128> for Vec<u8> {
     fn from(value: U128x128) -> Self {
         value.to_bytes().to_vec()
+    }
+}
+
+impl TryFrom<&[u8]> for U128x128 {
+    type Error = super::Error;
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        Ok(<[u8; 32]>::try_from(value)
+            .map_err(|_| super::Error::SliceLength(value.len()))?
+            .into())
     }
 }

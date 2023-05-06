@@ -1100,7 +1100,7 @@ impl TxCmd {
                     let positions = crate::dex_utils::approximate::xyk::approximate(
                         market,
                         quantity,
-                        fixpoint::from_f64_unsafe(current_price),
+                        current_price.try_into().expect("valid price"),
                     )?;
 
                     if let Some(file) = debug_file {
