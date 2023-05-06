@@ -36,17 +36,9 @@ impl Debug for U128x128 {
     }
 }
 
-// This is a hack to make the `Display` impl work.
-fn f64_from_secret(value: &U128x128) -> f64 {
-    let (hi, lo) = value.0.into_words();
-    // binary repr of 2^128
-    const BASE: u64 = 0x47f0000000000000;
-    (hi as f64) + (lo as f64) / f64::from_bits(BASE)
-}
-
 impl Display for U128x128 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", f64_from_secret(self))
+        write!(f, "{}", f64::from(*self))
     }
 }
 

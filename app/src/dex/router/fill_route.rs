@@ -22,7 +22,7 @@ pub trait FillRoute: StateWrite + Sized {
         &mut self,
         input: Value,
         hops: &[asset::Id],
-    ) -> Result<(Vec<(position::Position, Amount)>, Vec<position::Position>)> {
+    ) -> Result<Option<(Vec<(position::Position, Amount)>, Vec<position::Position>)>> {
         let mut route = hops.to_vec();
         route.insert(0, input.asset_id);
         let pairs = self.breakdown_route(&route)?;
@@ -38,7 +38,7 @@ pub trait FillRoute: StateWrite + Sized {
             let Some(position) = tmp_state
                 .best_position(&pair)
                 .await? else {
-                    return Ok((vec![], vec![]));
+                    return Ok(None);
                     // return Err(anyhow!("exhausted positions on hop {}-{}", current_input.asset_id, pair.end))
                 };
 
@@ -87,7 +87,7 @@ pub trait FillRoute: StateWrite + Sized {
             current_input = output;
         }
 
-        Ok((constraining_positions, best_positions))
+        Ok(Some((constraining_positions, best_positions)))
     }
 
     /// Breaksdown a route into a collection of `DirectedTradingPair`, this is mostly useful
@@ -157,11 +157,9 @@ pub trait FillRoute: StateWrite + Sized {
             // are limiting the flow aka. "constraints". For every such constraint,
             // there's an input capacity that maximize its output without causing an
             // overflow.
-            let (constraining_hops, best_positions) = self.find_constraints(input, hops).await?;
-            if best_positions.is_empty() {
-                // If we run out of positions, we can't fill anymore.
+            let Some((constraining_hops, best_positions)) = self.find_constraints(input, hops).await? else {
                 break;
-            }
+            };
 
             let effective_price = best_positions.clone().into_iter().zip(pairs.clone()).fold(
                 U128x128::from(1u64),
@@ -171,7 +169,13 @@ pub trait FillRoute: StateWrite + Sized {
             );
 
             tracing::debug!(%effective_price, "effective price across the route");
-            tracing::debug!(num = constraining_hops.len(), "found constraints");
+            if constraining_hops.len() != 0 {
+                tracing::debug!(
+                    num = constraining_hops.len(),
+                    ?constraining_hops,
+                    "found constraints!"
+                );
+            }
 
             //  Stop filling if the effective price exceeds the spill price.
             if spill_price.map(|s| effective_price > s).unwrap_or(false) {
@@ -221,7 +225,14 @@ pub trait FillRoute: StateWrite + Sized {
                     })
                     .await?
                     .ok_or_else(|| anyhow::anyhow!("unexpectedly missing position"))?;
+                tracing::debug!(
+                    ?position,
+                    ?current_value,
+                    ?pair,
+                    "ready to call fill_against!"
+                );
                 let (unfilled, output) = self.fill_against(current_value, &position.id()).await?;
+                tracing::debug!(?unfilled, ?output, ?position, "filled");
 
                 // This should not happen, since the `current_capacity` is the
                 // saturating input for the route.
@@ -260,7 +271,8 @@ pub trait FillRoute: StateWrite + Sized {
                 // direction.
                 // + accumulated_effective_price != 0, because for each position
                 //   we have p, q != 0.
-                unreachable!("current_value is nonzero")
+                // unreachable!("current_value is nonzero")
+                tracing::error!("current_value == 0");
             }
 
             // Now record the input we consumed and the output we gained:

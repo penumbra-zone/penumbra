@@ -28,7 +28,7 @@ use penumbra_chain::test_keys::{ADDRESS_0_STR, ADDRESS_1_STR, SEED_PHRASE};
 
 // The number "20" is chosen so that this is bigger than u64::MAX
 // when accounting for the 10e18 scaling factor from the base denom.
-const TEST_ASSET: &str = "20pusd";
+const TEST_ASSET: &str = "20test_usd";
 
 // The maximum amount of time any command is allowed to take before we error.
 const TIMEOUT_COMMAND_SECONDS: u64 = 20;
@@ -268,6 +268,140 @@ fn delegate_and_undelegate() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     undelegate_claim_cmd.assert().success();
     sync(&tmpdir);
+}
+
+#[ignore]
+#[test]
+fn lp_management() {
+    let tmpdir = load_wallet_into_tmpdir();
+
+    // Create a liquidity position selling 1cube for 1penumbra each.
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1penumbra@1gm",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
+
+    println!("1: {}", output);
+
+    // Address 0 has an opened LPNFT.
+    assert!(output.contains("1lpnft_opened"));
+
+    // Get the asset id for the LPNFT so we can close it:
+    let asset_id = output
+        .split_whitespace()
+        .find(|s| s.contains("1lpnft_opened"))
+        .unwrap()
+        .split(' ')
+        .next()
+        .unwrap()
+        .replace("1lpnft_opened_", "");
+    println!("opened asset_id: {}", asset_id);
+
+    // Close the LP.
+    let mut close_cmd = Command::cargo_bin("pcli").unwrap();
+    close_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "close",
+            &asset_id,
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    close_cmd.assert().success();
+
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
+
+    println!("2: {}", output);
+
+    // Address 0 has a closed LPNFT.
+    assert!(output.contains("1lpnft_closed"));
+
+    // Get the asset id for the LPNFT so we can withdraw it:
+    let asset_id = output
+        .split_whitespace()
+        .find(|s| s.contains("1lpnft_closed"))
+        .unwrap()
+        .split(' ')
+        .next()
+        .unwrap()
+        .replace("1lpnft_closed_", "");
+    println!("closed asset_id: {}", asset_id);
+
+    // Withdraw the LP.
+    let mut close_cmd = Command::cargo_bin("pcli").unwrap();
+    close_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "withdraw",
+            &asset_id,
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    close_cmd.assert().success();
+
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
+
+    println!("3: {}", output);
+
+    // Address 0 has a withdrawn LPNFT.
+    assert!(output.contains("1lpnft_withdrawn"));
 }
 
 #[ignore]

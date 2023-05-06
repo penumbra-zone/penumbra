@@ -163,7 +163,7 @@ impl Hash {
         // Definition of hash of node without cache optimization
         fn hash_node(height: u8, a: Hash, b: Hash, c: Hash, d: Hash) -> Hash {
             let height = Fq::from_le_bytes_mod_order(&height.to_le_bytes());
-            Self(hash_4(&(*DOMAIN_SEPARATOR + height), (a.0, b.0, c.0, d.0)))
+            Hash(hash_4(&(*DOMAIN_SEPARATOR + height), (a.0, b.0, c.0, d.0)))
         }
 
         // The range of hashes to precompute: this captures hashes starting at the first internal node

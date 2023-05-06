@@ -12,13 +12,15 @@ use penumbra_chain::component::StateReadExt as _;
 use penumbra_crypto::asset::{self, Asset};
 use penumbra_crypto::dex::lp::position;
 use penumbra_crypto::dex::lp::position::Position;
+use penumbra_crypto::dex::DirectedTradingPair;
+use penumbra_crypto::dex::TradingPair;
 use penumbra_proto::{
     self as proto,
     client::v1alpha1::{
         specific_query_service_server::SpecificQueryService, AssetInfoRequest, AssetInfoResponse,
         BatchSwapOutputDataRequest, KeyValueRequest, KeyValueResponse, ProposalInfoRequest,
         ProposalInfoResponse, ProposalRateDataRequest, ProposalRateDataResponse,
-        StubCpmmReservesRequest, ValidatorStatusRequest,
+        ValidatorStatusRequest,
     },
     StateReadProto as _,
 };
@@ -28,13 +30,16 @@ use penumbra_storage::StateRead;
 use proto::client::v1alpha1::BatchSwapOutputDataResponse;
 use proto::client::v1alpha1::LiquidityPositionByIdRequest;
 use proto::client::v1alpha1::LiquidityPositionByIdResponse;
+use proto::client::v1alpha1::LiquidityPositionsByPriceRequest;
+use proto::client::v1alpha1::LiquidityPositionsByPriceResponse;
 use proto::client::v1alpha1::LiquidityPositionsRequest;
 use proto::client::v1alpha1::LiquidityPositionsResponse;
 use proto::client::v1alpha1::NextValidatorRateRequest;
 use proto::client::v1alpha1::NextValidatorRateResponse;
 use proto::client::v1alpha1::PrefixValueRequest;
 use proto::client::v1alpha1::PrefixValueResponse;
-use proto::client::v1alpha1::StubCpmmReservesResponse;
+use proto::client::v1alpha1::SpreadRequest;
+use proto::client::v1alpha1::SpreadResponse;
 use proto::client::v1alpha1::SwapExecutionRequest;
 use proto::client::v1alpha1::SwapExecutionResponse;
 use proto::client::v1alpha1::TransactionByNoteRequest;
@@ -58,6 +63,127 @@ impl SpecificQueryService for Info {
     type LiquidityPositionsStream = Pin<
         Box<dyn futures::Stream<Item = Result<LiquidityPositionsResponse, tonic::Status>> + Send>,
     >;
+    type LiquidityPositionsByPriceStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<LiquidityPositionsByPriceResponse, tonic::Status>>
+                + Send,
+        >,
+    >;
+
+    async fn spread(
+        &self,
+        request: tonic::Request<SpreadRequest>,
+    ) -> Result<tonic::Response<SpreadResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+        let request = request.into_inner();
+
+        let pair: TradingPair = request
+            .trading_pair
+            .ok_or_else(|| tonic::Status::invalid_argument(format!("missing trading pair")))?
+            .try_into()
+            .map_err(|e| {
+                tonic::Status::invalid_argument(format!("error parsing trading pair: {:#}", e))
+            })?;
+
+        let pair12 = DirectedTradingPair {
+            start: pair.asset_1(),
+            end: pair.asset_2(),
+        };
+        let pair21 = DirectedTradingPair {
+            start: pair.asset_2(),
+            end: pair.asset_1(),
+        };
+        let best_1_to_2_position = state.best_position(&pair12).await.map_err(|e| {
+            tonic::Status::internal(format!(
+                "error finding best position for {:?}: {:#}",
+                pair12, e
+            ))
+        })?;
+        let best_2_to_1_position = state.best_position(&pair12).await.map_err(|e| {
+            tonic::Status::internal(format!(
+                "error finding best position for {:?}: {:#}",
+                pair21, e
+            ))
+        })?;
+
+        let approx_effective_price_1_to_2 = best_1_to_2_position
+            .as_ref()
+            .map(|p| {
+                p.phi
+                    .orient_start(pair.asset_1())
+                    .expect("position has one end = asset 1")
+                    .effective_price()
+                    .into()
+            })
+            .unwrap_or_default();
+
+        let approx_effective_price_2_to_1 = best_2_to_1_position
+            .as_ref()
+            .map(|p| {
+                p.phi
+                    .orient_start(pair.asset_2())
+                    .expect("position has one end = asset 2")
+                    .effective_price()
+                    .into()
+            })
+            .unwrap_or_default();
+
+        Ok(tonic::Response::new(SpreadResponse {
+            best_1_to_2_position: best_1_to_2_position.map(Into::into),
+            best_2_to_1_position: best_2_to_1_position.map(Into::into),
+            approx_effective_price_1_to_2,
+            approx_effective_price_2_to_1,
+        }))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn liquidity_positions_by_price(
+        &self,
+        request: tonic::Request<LiquidityPositionsByPriceRequest>,
+    ) -> Result<tonic::Response<Self::LiquidityPositionsByPriceStream>, Status> {
+        let state = self.storage.latest_snapshot();
+        let request = request.into_inner();
+
+        let pair: DirectedTradingPair = request
+            .trading_pair
+            .ok_or_else(|| {
+                tonic::Status::invalid_argument(format!("missing directed trading pair"))
+            })?
+            .try_into()
+            .map_err(|e| {
+                tonic::Status::invalid_argument(format!(
+                    "error parsing directed trading pair: {:#}",
+                    e
+                ))
+            })?;
+
+        let limit = if request.limit != 0 {
+            request.limit as usize
+        } else {
+            usize::MAX
+        };
+
+        let s = state
+            .positions_by_price(&pair)
+            .take(limit)
+            .and_then(move |id| {
+                let state2 = state.clone();
+                async move {
+                    let position = state2.position_by_id(&id).await?.ok_or_else(|| {
+                        anyhow::anyhow!("indexed position not found in state: {}", id)
+                    })?;
+                    anyhow::Ok(position)
+                }
+            })
+            .map_ok(|position| LiquidityPositionsByPriceResponse {
+                data: Some(position.into()),
+            })
+            .map_err(|e: anyhow::Error| {
+                tonic::Status::internal(format!("error retrieving positions: {:#}", e))
+            });
+        // TODO: how do we instrument a Stream
+        Ok(tonic::Response::new(s.boxed()))
+    }
 
     #[instrument(skip(self, request))]
     async fn liquidity_positions(
@@ -66,21 +192,22 @@ impl SpecificQueryService for Info {
     ) -> Result<tonic::Response<Self::LiquidityPositionsStream>, Status> {
         let state = self.storage.latest_snapshot();
 
-        let only_open = request.get_ref().only_open;
+        let include_closed = request.get_ref().include_closed;
         let s = state.all_positions();
         Ok(tonic::Response::new(
             s.filter(move |item| {
-                if item.is_err() {
-                    return futures::future::ready(false);
-                }
-                let item = item.as_ref().unwrap();
-                if (only_open && item.state == penumbra_crypto::dex::lp::position::State::Opened)
-                    || only_open == false
-                {
-                    futures::future::ready(true)
-                } else {
-                    futures::future::ready(false)
-                }
+                use penumbra_crypto::dex::lp::position::State;
+                let keep = match item {
+                    Ok(position) => {
+                        if position.state == State::Opened {
+                            true
+                        } else {
+                            include_closed
+                        }
+                    }
+                    Err(_) => false,
+                };
+                futures::future::ready(keep)
             })
             .map_ok(|i: Position| LiquidityPositionsResponse {
                 data: Some(i.into()),
@@ -299,15 +426,6 @@ impl SpecificQueryService for Info {
             })),
             None => Err(Status::not_found("batch swap output data not found")),
         }
-    }
-
-    #[instrument(skip(self, _request))]
-    /// TODO: remove in followup
-    async fn stub_cpmm_reserves(
-        &self,
-        _request: tonic::Request<StubCpmmReservesRequest>,
-    ) -> Result<tonic::Response<StubCpmmReservesResponse>, Status> {
-        Err(tonic::Status::internal("stub cpmm disabled".to_string()))
     }
 
     #[instrument(skip(self, request))]
