@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use penumbra_crypto::dex::Market;
 use penumbra_crypto::Value;
 
@@ -10,6 +12,8 @@ pub enum ApproximateCmd {
         quantity: Value,
         #[clap(short, long)]
         current_price: Option<f64>,
+        #[clap(short, long, hide(true))]
+        debug_file: Option<PathBuf>,
     },
 }
 
