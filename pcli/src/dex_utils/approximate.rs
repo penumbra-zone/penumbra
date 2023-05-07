@@ -14,6 +14,7 @@ pub mod xyk {
         Amount, Value,
     };
     use rand_core::OsRng;
+    use sha2::digest::consts::U1;
 
     /// The number of positions that is used to approximate the xyk CFMM.
     pub(crate) const NUM_POOLS_PRECISION: usize = 10;
@@ -38,6 +39,9 @@ pub mod xyk {
                 fp_r1
             )
         })?;
+
+        let unit_scale_r2_fp: U128x128 = market.end.unit_amount().value().into();
+        let fp_r2 = (fp_r2 * unit_scale_r2_fp).unwrap();
 
         let xyk_invariant = (fp_r1 * fp_r2).ok_or_else(|| {
             anyhow::anyhow!("overflow computing the curve invariant: {fp_r1} * {fp_r2}")
@@ -84,8 +88,8 @@ pub mod xyk {
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
-                    let p = p * market.end.unit_amount();
-                    let q = Amount::from(1u64) * market.start.unit_amount();
+                    let p = p;
+                    let q = Amount::from(1u64);
 
                     let r1: Amount = Amount::from(0u64);
                     let approx_r2: U128x128 = (*k_i * market.end.unit_amount().value() as f64)
@@ -108,13 +112,13 @@ pub mod xyk {
                     // Tick is above the current price, therefore we want
                     // to create a one-sided position with price `alpha_i`
                     // that provisions `asset_1`.
-                    let p = Amount::from(1u64) * market.end.unit_amount();
+                    let p = Amount::from(1u64);
                     let approx_q: U128x128 = alpha_i.try_into().unwrap();
                     let q: Amount = approx_q
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
-                    let q = q * market.start.unit_amount();
+                    let q = q;
 
                     let approx_r1: U128x128 = (*k_i * market.start.unit_amount().value() as f64)
                         .try_into()
