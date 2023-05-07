@@ -16,16 +16,15 @@ pub mod xyk {
     use rand_core::OsRng;
 
     /// The number of positions that is used to approximate the xyk CFMM.
-    const NUM_POOLS_PRECISION: usize = 100;
+    pub(crate) const NUM_POOLS_PRECISION: usize = 10;
 
-   pub(crate) fn sample_points(middle: f64, num_points: usize) -> Vec<f64> {
-        let start = middle - ((num_points as f64 - 1.0) / 2.0);
-        let step = 2.0 * ((num_points as f64 - 1.0) / 2.0) / (num_points - 1) as f64;
-        (0..num_points)
-            .map(|i| start + i as f64 * step)
-            .collect()
+    pub(crate) fn sample_points(middle: f64, num_points: usize) -> Vec<f64> {
+        let step = middle / (num_points as f64 / 2.0);
+        let start = middle - (num_points as f64 / 2.0 - 1.0) * step;
+
+        (0..num_points).map(|i| start + (i as f64) * step).collect()
     }
-    
+
     pub fn approximate(
         market: &Market,
         r1: &Value,
@@ -48,6 +47,7 @@ pub mod xyk {
 
         let alphas = sample_points(current_price.into(), NUM_POOLS_PRECISION);
 
+        alphas.iter().for_each(|a| println!("alpha: {a}"));
         // TODO(erwan): unused for now, but next refactor will rip out `solve` internals to
         // take this vector of solutions as an argument so that we can more easily recover from
         // working with non-singular matrices etc.
@@ -79,17 +79,16 @@ pub mod xyk {
                 // the price trends to \alpha_i, we must provision inventories of
                 // `asset_2`.
                 if alpha_i < f64_current_price {
-                    let approx_p: U128x128 = (alpha_i * market.end.unit_amount().value() as f64)
-                        .try_into()
-                        .unwrap();
+                    let approx_p: U128x128 = alpha_i.try_into().unwrap();
                     let p: Amount = approx_p
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
+                    let p = p * market.end.unit_amount();
                     let q = Amount::from(1u64) * market.start.unit_amount();
 
                     let r1: Amount = Amount::from(0u64);
-                    let approx_r2: U128x128 = (*k_i * market.start.unit_amount().value() as f64)
+                    let approx_r2: U128x128 = (*k_i * market.end.unit_amount().value() as f64)
                         .try_into()
                         .unwrap();
                     let r2: Amount = approx_r2
@@ -110,13 +109,12 @@ pub mod xyk {
                     // to create a one-sided position with price `alpha_i`
                     // that provisions `asset_1`.
                     let p = Amount::from(1u64) * market.end.unit_amount();
-                    let approx_q: U128x128 = (alpha_i * market.start.unit_amount().value() as f64)
-                        .try_into()
-                        .unwrap();
+                    let approx_q: U128x128 = alpha_i.try_into().unwrap();
                     let q: Amount = approx_q
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
+                    let q = q * market.start.unit_amount();
 
                     let approx_r1: U128x128 = (*k_i * market.start.unit_amount().value() as f64)
                         .try_into()
@@ -160,7 +158,7 @@ pub mod xyk {
             }
         }
 
-        utils::gauss_seidel(A, b, 1000, super::APPROXIMATION_TOLERANCE)
+        utils::gauss_seidel(A, b, 10000, super::APPROXIMATION_TOLERANCE)
     }
 
     pub fn portfolio_value_function(invariant_k: f64, price: f64) -> f64 {
@@ -240,6 +238,9 @@ pub mod utils {
         pub current_price: f64,
         pub index: usize,
         pub canonical_pair: String,
+        // for debugging.
+        pub alpha: f64,
+        pub total_k: f64,
     }
 
     /// For debugging purposes. We want to be able to serialize a position
