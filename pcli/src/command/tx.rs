@@ -38,7 +38,7 @@ use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};
 use rand_core::OsRng;
 
-use crate::App;
+use crate::{App, dex_utils};
 
 mod proposal;
 use proposal::ProposalCmd;
@@ -1113,14 +1113,20 @@ impl TxCmd {
                                 format!("{}:{}", market.end.to_string(), market.start.to_string())
                             };
 
+                        let alphas = dex_utils::approximate::xyk::sample_points(current_price, dex_utils::approximate::xyk::NUM_POOLS_PRECISION);
+                        let total_k = (current_price*quantity.amount.value() as f64) * quantity.amount.value() as f64;
+
                         let debug_positions: Vec<utils::PayoffPositionEntry> = positions
                             .iter()
+                            .zip(alphas)
                             .enumerate()
-                            .map(|(idx, pos)| utils::PayoffPositionEntry {
+                            .map(|(idx, (pos, alpha))| utils::PayoffPositionEntry {
                                 payoff: Into::into(pos.clone()),
                                 current_price,
                                 index: idx,
                                 canonical_pair: canonical_pair_str.clone(),
+                                alpha,
+                                total_k,
                             })
                             .collect();
                         let mut fd = File::create(&file).map_err(|e| {
