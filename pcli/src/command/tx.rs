@@ -13,9 +13,8 @@ use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
-    asset::{self, Denom},
+    asset::Denom,
     dex::lp::position,
-    fixpoint,
     keys::AddressIndex,
     memo::MemoPlaintext,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
@@ -38,7 +37,7 @@ use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};
 use rand_core::OsRng;
 
-use crate::{App, dex_utils};
+use crate::{dex_utils, App};
 
 mod proposal;
 use proposal::ProposalCmd;
@@ -1113,8 +1112,14 @@ impl TxCmd {
                                 format!("{}:{}", market.end.to_string(), market.start.to_string())
                             };
 
-                        let alphas = dex_utils::approximate::xyk::sample_points(current_price, dex_utils::approximate::xyk::NUM_POOLS_PRECISION);
-                        let total_k = (current_price*quantity.amount.value() as f64) * quantity.amount.value() as f64;
+                        let alphas = dex_utils::approximate::xyk::sample_points(
+                            current_price,
+                            dex_utils::approximate::xyk::NUM_POOLS_PRECISION,
+                        );
+                        let r1 = quantity.amount.value() as f64;
+                        let r2 = r1 * current_price;
+                        let denom_scaler = market.end.unit_amount().value() as f64;
+                        let total_k = r1 * r2 * denom_scaler;
 
                         let debug_positions: Vec<utils::PayoffPositionEntry> = positions
                             .iter()
