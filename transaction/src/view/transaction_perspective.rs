@@ -5,7 +5,10 @@ use penumbra_crypto::{
 use penumbra_proto::core::transaction::v1alpha1::{
     self as pb, NullifierWithNote, PayloadKeyWithCommitment,
 };
+
 use std::collections::BTreeMap;
+
+use crate::Id;
 
 /// This represents the data to understand an individual transaction without
 /// disclosing viewing keys.
@@ -34,6 +37,8 @@ pub struct TransactionPerspective {
     pub address_views: Vec<AddressView>,
     /// Any relevant denoms for viewed assets.
     pub denoms: asset::Cache,
+    /// The transaction ID associated with this TransactionPerspective
+    pub transaction_id: Id,
 }
 
 impl TransactionPerspective {
@@ -100,6 +105,7 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
             advice_notes,
             address_views,
             denoms,
+            transaction_id: Some(msg.transaction_id.into()),
         }
     }
 }
@@ -143,12 +149,18 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
             denoms.push(Denom::try_from(denom)?);
         }
 
+        let transaction_id: crate::Id = match msg.transaction_id {
+            Some(tx_id) => tx_id.try_into()?,
+            None => Id::default(),
+        };
+
         Ok(Self {
             payload_keys,
             spend_nullifiers,
             advice_notes,
             address_views,
             denoms: denoms.into_iter().collect(),
+            transaction_id,
         })
     }
 }
