@@ -53,7 +53,7 @@ tonic-web = "0.4.0"
 tower = { version = "0.4", features = ["full"] }
 tower-service = "0.3.2"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "ansi"] }
+tracing-subscriber = { version = "0.3.17", features = ["env-filter", "ansi"] }
 url = "2"
 atty = "0.2"
 

@@ -29,7 +29,7 @@ ibc-proto = { git = "https://github.com/penumbra-zone/ibc-proto-rs", branch = "p
 ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
 
 ics23 = "0.10.1"
-tendermint = "0.30.0"
+tendermint = "0.31.1"
 
 [build-dependencies]
 anyhow = "1"
