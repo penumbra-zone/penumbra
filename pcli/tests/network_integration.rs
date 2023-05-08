@@ -409,6 +409,7 @@ fn lp_management() {
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     sell_cmd.assert().success();
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
     sell_cmd
         .args([
             "--data-path",
@@ -421,6 +422,7 @@ fn lp_management() {
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     sell_cmd.assert().success();
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
     sell_cmd
         .args([
             "--data-path",
