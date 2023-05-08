@@ -128,12 +128,11 @@ impl Storage {
                 span.in_scope(|| {
                     let snap = inner.snapshots.read().latest();
                     let jmt = Sha256Jmt::new(&*snap.0);
-
+                    tracing::debug!("collecting unwritten changes");
                     let unwritten_changes: Vec<_> = cache
                         .unwritten_changes
                         .into_iter()
-                        // Pre-calculate all KeyHashes for later storage in `jmt_keys`
-                        .map(|x| (KeyHash::with::<Sha256>(&x.0), x.0, x.1))
+                        .map(|(key, value)| (KeyHash::with::<Sha256>(&key), key, value))
                         .collect();
 
                     // Maintain a two-way index of the JMT keys and their hashes in RocksDB.
@@ -149,16 +148,20 @@ impl Storage {
                         .cf_handle("jmt_keys_by_keyhash")
                         .expect("jmt_keys_by_keyhash family not found");
 
+                    tracing::debug!("iterating over key hashes and preimages");
+
+                    /* Update the indexes */
                     for (keyhash, key_preimage, v) in unwritten_changes.iter() {
+                        tracing::debug!(?keyhash, key_preimage, value=?v);
                         match v {
-                            // Key still exists, so we need to index its hash, and vice-versa.
+                            // The entry exists, so we make sure to index its key and keyhash.
                             Some(_) => {
                                 inner.db.put_cf(jmt_keys_cf, key_preimage, keyhash.0)?;
                                 inner
                                     .db
                                     .put_cf(jmt_keys_by_keyhash_cf, keyhash.0, key_preimage)?
                             }
-                            // Key was deleted, so delete the key preimage, and its keyhash index.
+                            // The entry was deleted, so we deindex it.
                             None => {
                                 inner.db.delete_cf(jmt_keys_cf, key_preimage)?;
                                 inner.db.delete_cf(jmt_keys_by_keyhash_cf, keyhash.0)?;
@@ -166,15 +169,20 @@ impl Storage {
                         };
                     }
 
+                    tracing::debug!("apply the unwritten state changes to the JMT");
+
                     // Apply the unwritten state changes to the JMT.
                     let (root_hash, batch) = jmt.put_value_set(
-                        unwritten_changes.into_iter().map(|x| (x.0, x.2)),
+                        unwritten_changes.into_iter().map(|(keyhash, _key, value)| (keyhash, value)),
                         new_version,
                     )?;
 
+                    tracing::debug!("about to write node batch to backing store!");
                     // Persist JMT structure changes to RocksDB.
                     inner.write_node_batch(&batch.node_batch)?;
                     tracing::trace!(?root_hash, "wrote node batch to backing store");
+
+                    tracing::debug!("wrote node batch to backing store!");
 
                     // Record the node values in RocksDB: the value of jmt [`jmt::LeafNode`] must be
                     // persisted separately.
@@ -183,6 +191,7 @@ impl Storage {
                         .cf_handle("jmt_values")
                         .expect("jmt_values column family not found");
 
+                    tracing::debug!("iterate through the node batch values!");
                     for ((version, key_hash), some_value) in batch.node_batch.values() {
                         let value = match some_value {
                             Some(v) => v,
@@ -309,7 +318,7 @@ impl TreeWriter for Inner {
         for (node_key, node) in node_batch.nodes() {
             let key_bytes = &node_key.try_to_vec()?;
             let node_bytes = &node.try_to_vec()?;
-            tracing::trace!(?key_bytes, node_bytes = ?hex::encode(node_bytes));
+            tracing::trace!(?key_bytes, node_bytes = ?hex::encode(node_bytes), "writing to jmt cf");
             self.db.put_cf(jmt_cf, key_bytes, node_bytes)?;
         }
 

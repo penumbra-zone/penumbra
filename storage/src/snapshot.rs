@@ -359,7 +359,11 @@ impl TreeReader for Inner {
             };
 
             if let Some(v) = self.snapshot.get_cf(jmt_values_cf, k.encode())? {
-                return Ok(Some(v));
+                return Ok(if v == TOMBSTONED_VALUE.as_bytes().to_vec() {
+                    None
+                } else {
+                    Some(v)
+                });
             }
         }
 
@@ -384,6 +388,8 @@ impl TreeReader for Inner {
         let (_key, value) = tuple?;
         let value = value.into();
 
+        // TODO(erwan): this is of course, very ugly - I plan to follow-up with
+        // a prefix based approach.
         if value == TOMBSTONED_VALUE.as_bytes().to_vec() {
             Ok(None)
         } else {
