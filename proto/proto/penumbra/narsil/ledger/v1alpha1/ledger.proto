@@ -19,54 +19,56 @@ message InfoRequest {
   uint64 block_version = 2;
   // The Tendermint p2p protocol version.
   uint64 p2p_version = 3;
+  // The Tendermint ABCI semantic version.
+  string abci_version = 4;
 }
 
 // Contains information about the chain state as known by the node.
 message InfoResponse {
-    // Some arbitrary information.
-    bytes data = 1;
-    // The application software semantic version.
-    string version = 2;
-    // The application protocol version.
-    uint64 app_version = 3;
-    // The latest block for which the app has called [`Commit`](super::super::Request::Commit).
-    uint64 last_block_height = 4;
-    // The latest result of [`Commit`](super::super::Request::Commit).
-    bytes last_block_app_hash = 5;
+  // Some arbitrary information.
+  bytes data = 1;
+  // The application software semantic version.
+  string version = 2;
+  // The application protocol version.
+  uint64 app_version = 3;
+  // The latest block for which the app has called [`Commit`](super::super::Request::Commit).
+  uint64 last_block_height = 4;
+  // The latest result of [`Commit`](super::super::Request::Commit).
+  bytes last_block_app_hash = 5;
 }
 
 // The root identity key material for a shard operator.
 message ShardIdentityKey {
-    // An Ed25519 key.
-    bytes inner = 1;
+  // An Ed25519 key.
+  bytes inner = 1;
 }
 
 // The key that Tendermint will use to identify a validator.
 message ConsensusKey {
-    // An Ed25519 key.
-    bytes inner = 1;
+  // An Ed25519 key.
+  bytes inner = 1;
 }
 
 // A subkey a shard uses to sign messages sent to the ledger.
 message ShardMessageKey {
-    // An Ed25519 key.
-    bytes inner = 1;
+  // An Ed25519 key.
+  bytes inner = 1;
 }
 
 // The threshold key share controlled by a shard operator.
 message ShardKey {
-    // A decaf377 scalar.
-    bytes inner = 1;
+  // A decaf377 scalar.
+  bytes inner = 1;
 }
 
 // A signature over a message sent to the ledger by a shard.
 message ShardMessageSignature {
-    // An Ed25519 signature.
-    bytes inner = 1;
+  // An Ed25519 signature.
+  bytes inner = 1;
 }
 
 // A description of one of the operators of a threshold key share (shard).
-// 
+//
 // The `ShardOperator` message doesn't have the threshold key share itself,
 // because the workflow is that the set of operators is going to be configured
 // first, as part of the genesis / chain configuration, and then the shards
@@ -74,103 +76,103 @@ message ShardMessageSignature {
 // the DKG messages.  This means there's no interactive setup procedure for the
 // shard operators.
 message ShardDescription {
-    // The shard operator's offline identity key material which is the root of their authority.
-    ShardIdentityKey identity_key = 1;
-    // A subkey used for signing messages sent to the ledger.
-    ShardMessageKey message_key = 2;
-    // The validator's consensus pubkey for use in Tendermint (ed25519)
-    ConsensusKey consensus_key = 3;
-    // A label for the shard.
-    string label = 4;
+  // The shard operator's offline identity key material which is the root of their authority.
+  ShardIdentityKey identity_key = 1;
+  // A subkey used for signing messages sent to the ledger.
+  ShardMessageKey message_key = 2;
+  // The validator's consensus pubkey for use in Tendermint (ed25519)
+  ConsensusKey consensus_key = 3;
+  // A label for the shard.
+  string label = 4;
 }
 
 // A self-authenticating `ShardDescription`, signed with the `ShardIdentityKey`.
 message ShardOperator {
-    ShardDescription description = 1;
-    bytes sig = 2;
+  ShardDescription description = 1;
+  bytes sig = 2;
 }
 
 // The genesis data describing the set of shard operators who jointly control
 // the Narsil instance.
-// 
+//
 // The genesis data does not specify the threshold key shares themselves,
 // because these will be computed as the ledger boots up and the shard operators
 // perform the DKG to generate the shared key, described by the `ShardInfo`.
 message GenesisData {
-    // The set of shard operators (implicitly specifying the `n` in `t-of-n`).
-    repeated ShardOperator operators = 1;
-    // The number of shards required to sign a message (the `t` in `t-of-n`).
-    uint32 threshold = 2;
+  // The set of shard operators (implicitly specifying the `n` in `t-of-n`).
+  repeated ShardOperator operators = 1;
+  // The number of shards required to sign a message (the `t` in `t-of-n`).
+  uint32 threshold = 2;
 }
 
 // Describes the Penumbra account group jointly controlled by the Narsil instance.
 message AccountGroupInfo {
-    // The full viewing key for the shared account.
-    // 
-    // In the Penumbra key hierarchy, this is the highest-authority key below
-    // spend authority, and allows deriving all subkeys for all accounts in the
-    // account group.  It is replicated across all shards.
-    // 
-    // The spend verification key component is the `PK` in the FROST I-D.
-    core.crypto.v1alpha1.FullViewingKey full_viewing_key = 1;
-    // Describes the participants in the account group.
-    repeated ShardInfo participants = 2;
+  // The full viewing key for the shared account.
+  //
+  // In the Penumbra key hierarchy, this is the highest-authority key below
+  // spend authority, and allows deriving all subkeys for all accounts in the
+  // account group.  It is replicated across all shards.
+  //
+  // The spend verification key component is the `PK` in the FROST I-D.
+  core.crypto.v1alpha1.FullViewingKey full_viewing_key = 1;
+  // Describes the participants in the account group.
+  repeated ShardInfo participants = 2;
 }
 
 // Describes a single shard of the Narsil instance.
 message ShardInfo {
-    // The index of the shard, used for FROST accounting purposes.
-    uint32 index = 1;
-    // The shard verification key, corresponding to `PK_i` in the FROST I-D.
-    core.crypto.v1alpha1.SpendVerificationKey shard_verification_key = 2;
-    // The shard operator's identity key, used to identify the operator of this shard.
-    ShardIdentityKey identity_key = 3;
+  // The index of the shard, used for FROST accounting purposes.
+  uint32 index = 1;
+  // The shard verification key, corresponding to `PK_i` in the FROST I-D.
+  core.crypto.v1alpha1.SpendVerificationKey shard_verification_key = 2;
+  // The shard operator's identity key, used to identify the operator of this shard.
+  ShardIdentityKey identity_key = 3;
 }
 
 // Transaction authorization requests are identified by the proposed
 // transaction's effect hash.
-// 
+//
 // This acts as a form of content addressing, providing a number of useful
 // behaviors:
-// 
+//
 // - Multiple users can request authorization of the same `TransactionPlan`, and
 //   the ledger can stack their pre-authorizations until some threshold is met.
 // - Rather than having to hold open a connection, clients can re-request
 //   authorization of the same `TransactionPlan` after it has been signed, and the
 //   ledger can immediately return the already-existing authorization data.
 message RequestIndex {
-    core.transaction.v1alpha1.EffectHash effect_hash = 1;
+  core.transaction.v1alpha1.EffectHash effect_hash = 1;
 }
 
 // Identifies a particular signing ceremony.
-// 
+//
 // Ceremonies are identified first by request index and then by a sub-index for
 // the ceremony.  This allows failed or timed-out ceremonies to be repeated.
 message CeremonyIndex {
-    RequestIndex request_index = 1;
-    uint64 ceremony_index = 2;
+  RequestIndex request_index = 1;
+  uint64 ceremony_index = 2;
 }
 
 // A committee of shards assigned to carry out a particular signing ceremony.
 message Committee {
-    CeremonyIndex ceremony = 1;
-    repeated ShardInfo participants = 2;
+  CeremonyIndex ceremony = 1;
+  repeated ShardInfo participants = 2;
 }
 
 // Records a failed ceremony and the reason why it failed.
 //
 // TODO: consider filling these in with structured info about the failure
 message CeremonyFailure {
-    message Timeout {}
-    message BadCommitment {}
-    message BadShare {}
-    message Canceled {}
-    oneof failure {
-        Timeout timeout = 1;
-        BadCommitment bad_commitment = 2;
-        BadShare bad_share = 3;
-        Canceled canceled = 4;
-    }
+  message Timeout {}
+  message BadCommitment {}
+  message BadShare {}
+  message Canceled {}
+  oneof failure {
+    Timeout timeout = 1;
+    BadCommitment bad_commitment = 2;
+    BadShare bad_share = 3;
+    Canceled canceled = 4;
+  }
 }
 
 // The data recorded on-chain about the current state of a signing ceremony.
@@ -191,68 +193,68 @@ message CeremonyFailure {
 // The ceremony steps are described in the FROST I-D:
 // https://www.ietf.org/archive/id/draft-irtf-cfrg-frost-11.html
 message CeremonyState {
-    // A ceremony that has not yet started.
-    // 
-    // For instance, a request could be queued until sufficient pre-authorizations were recorded on the ledger.
-    message Pending { }
-    // A ceremony that has started round 1.
-    //
-    // The committee has been chosen and the ledger is waiting to record round 1 contributions from all committee members.
-    message StartedRound1 {
-        // The committee performing the ceremony.
-        Committee committee = 1;
-        // A list of commitment messages received so far (begins empty).
-        repeated AuthorizeCommitment commitments = 2;
-    }
-    // A ceremony that has started round 2.
-    //
-    // The committee has been chosen, all round 1 commitments have been recorded, and the ledger is waiting to record round 1 contributions from all committee members.
-    message StartedRound2 {
-        // The committee performing the ceremony.
-        Committee committee = 1;
-        // A list of commitment messages received in round 1.
-        repeated AuthorizeCommitment commitments = 2;
-        // A list of authorization share messages received so far (begins empty).
-        repeated AuthorizeShare shares = 3;
-    }
-    // A ceremony that has successfully finished.
-    //
-    // The transcript of the ceremony is recorded along with the resulting `AuthorizationData`.
-    message Finished {
-        // The committee performing the ceremony.
-        Committee committee = 1;
-        // A list of commitment messages received in round 1.
-        repeated AuthorizeCommitment commitments = 2;
-        // A list of authorization share messages received in round 2.
-        repeated AuthorizeShare shares = 3;
-        // The authorization data resulting from the ceremony.
-        core.transaction.v1alpha1.AuthorizationData auth_data = 4;
-    }
-    // A ceremony that failed.
-    //
-    // The transcript of the ceremony is recorded along with the reason for the failure.
-    message Failed {
-        // The committee performing the ceremony.
-        Committee committee = 1;
-        // A list of commitment messages received in round 1, if any.
-        repeated AuthorizeCommitment commitments = 2;
-        // A list of authorization share messages received in round 2, if any.
-        repeated AuthorizeShare shares = 3;
-        // A description of the failure.
-        CeremonyFailure failure = 4;
-    }
+  // A ceremony that has not yet started.
+  //
+  // For instance, a request could be queued until sufficient pre-authorizations were recorded on the ledger.
+  message Pending {}
+  // A ceremony that has started round 1.
+  //
+  // The committee has been chosen and the ledger is waiting to record round 1 contributions from all committee members.
+  message StartedRound1 {
+    // The committee performing the ceremony.
+    Committee committee = 1;
+    // A list of commitment messages received so far (begins empty).
+    repeated AuthorizeCommitment commitments = 2;
+  }
+  // A ceremony that has started round 2.
+  //
+  // The committee has been chosen, all round 1 commitments have been recorded, and the ledger is waiting to record round 1 contributions from all committee members.
+  message StartedRound2 {
+    // The committee performing the ceremony.
+    Committee committee = 1;
+    // A list of commitment messages received in round 1.
+    repeated AuthorizeCommitment commitments = 2;
+    // A list of authorization share messages received so far (begins empty).
+    repeated AuthorizeShare shares = 3;
+  }
+  // A ceremony that has successfully finished.
+  //
+  // The transcript of the ceremony is recorded along with the resulting `AuthorizationData`.
+  message Finished {
+    // The committee performing the ceremony.
+    Committee committee = 1;
+    // A list of commitment messages received in round 1.
+    repeated AuthorizeCommitment commitments = 2;
+    // A list of authorization share messages received in round 2.
+    repeated AuthorizeShare shares = 3;
+    // The authorization data resulting from the ceremony.
+    core.transaction.v1alpha1.AuthorizationData auth_data = 4;
+  }
+  // A ceremony that failed.
+  //
+  // The transcript of the ceremony is recorded along with the reason for the failure.
+  message Failed {
+    // The committee performing the ceremony.
+    Committee committee = 1;
+    // A list of commitment messages received in round 1, if any.
+    repeated AuthorizeCommitment commitments = 2;
+    // A list of authorization share messages received in round 2, if any.
+    repeated AuthorizeShare shares = 3;
+    // A description of the failure.
+    CeremonyFailure failure = 4;
+  }
 
-    oneof state {
-        Pending pending = 1;
-        StartedRound1 started_round_1 = 2;
-        StartedRound2 started_round_2 = 3;
-        Finished finished = 4;
-        Failed failed = 5;
-    }
+  oneof state {
+    Pending pending = 1;
+    StartedRound1 started_round_1 = 2;
+    StartedRound2 started_round_2 = 3;
+    Finished finished = 4;
+    Failed failed = 5;
+  }
 }
 
 // A packet of data sent to the Narsil ledger.
-// 
+//
 // This structure is what Narsil uses as a Tendermint transaction.  However, we
 // use the word "packet" rather than "transaction" here so that it's always
 // unambiguous whether we're referring to data posted to the Penumbra chain or
@@ -280,84 +282,84 @@ message NarsilPacket {
 // A wrapper around the FROST commitment message, exchanged in round 1 of the
 // signing protocol for a single signature.
 message FrostCommitment {
-    bytes payload = 1;
+  bytes payload = 1;
 }
 
 // A wrapper around the FROST signature share, exchanged in round 2 of the
 // signing protocol for a single signature.
 message FrostSignatureShare {
-    bytes payload = 1;
+  bytes payload = 1;
 }
 
 // A Narsil shard's commitment message for a single ceremony, which may perform
 // multiple signatures (one for each spend in the `AuthorizeRequest`'s
 // `TransactionPlan`).
-// 
+//
 // This bundle of messages is signed with the shard's `ShardMessageKey` to
 // prevent tampering (e.g., reordering of the internal FROST messages, etc).
 message AuthorizeCommitment {
-    message Body {
-        CeremonyIndex ceremony_index = 1;
-        repeated FrostCommitment commitments = 2;
-    }
-    Body body = 1;
-    ShardMessageKey signer = 2;
-    ShardMessageSignature signature = 3;
+  message Body {
+    CeremonyIndex ceremony_index = 1;
+    repeated FrostCommitment commitments = 2;
+  }
+  Body body = 1;
+  ShardMessageKey signer = 2;
+  ShardMessageSignature signature = 3;
 }
 
 // A Narsil shard's signature share message for a single ceremony, which may perform
 // multiple signatures (one for each spend in the `AuthorizeRequest`'s
 // `TransactionPlan`).
-// 
+//
 // This bundle of messages is signed with the shard's `ShardMessageKey` to
 // prevent tampering (e.g., reordering of the internal FROST messages, etc).
 message AuthorizeShare {
-    message Body {
-        CeremonyIndex ceremony_index = 1;
-        repeated FrostCommitment commitments = 2;
-    }
-    Body body = 1;
-    ShardMessageKey signer = 2;
-    ShardMessageSignature signature = 3;
+  message Body {
+    CeremonyIndex ceremony_index = 1;
+    repeated FrostCommitment commitments = 2;
+  }
+  Body body = 1;
+  ShardMessageKey signer = 2;
+  ShardMessageSignature signature = 3;
 }
 
 // A shard operator's round 1 contribution to the DKG ceremony.
 message DkgRound1 {
-    bytes payload = 1;
-    ShardMessageKey signer = 2;
-    ShardMessageSignature signature = 3;
+  bytes payload = 1;
+  ShardMessageKey signer = 2;
+  ShardMessageSignature signature = 3;
 }
 
 // A shard operator's round 2 contribution to the DKG ceremony.
 message DkgRound2 {
-    bytes payload = 1;
-    ShardMessageKey signer = 2;
-    ShardMessageSignature signature = 3;
+  bytes payload = 1;
+  ShardMessageKey signer = 2;
+  ShardMessageSignature signature = 3;
 }
 
 // The data recorded on-chain about the current state of the DKG ceremony.
 message DkgState {
-    // The DKG has started round 1, and the ledger is waiting to record contributions from shard operators.
-    message StartedRound1 {
-        // A list of round 1 messages received so far (begins empty).
-        repeated DkgRound1 round_1_messages = 1;
-    }
-    // The DKG has started round 2, and the ledger is waiting to record contributions from shard operators.
-    message StartedRound2 {
-        // A list of messages received during round 1.
-        repeated DkgRound1 round_1_messages = 1;
-        // A list of round 2 messages received so far (begins empty).
-        repeated DkgRound2 round_2_messages = 2;
-    }
-    // The DKG has finished successfully, producing the jointly-controlled `AccountGroupInfo`.
-    //
-    // Unlike the signing ceremony, we don't record a failure case here: if the DKG fails, we abort the entire ledger.
-    message Finished {
-        // A list of messages received during round 1.
-        repeated DkgRound1 round_1_messages = 1;
-        // A list of messages received during round 2.
-        repeated DkgRound2 round_2_messages = 2;
-        // The jointly-controlled `AccountGroupInfo` resulting from the DKG.
-        AccountGroupInfo account_group_info = 3; 
-    }
+  // The DKG has started round 1, and the ledger is waiting to record contributions from shard operators.
+  message StartedRound1 {
+    // A list of round 1 messages received so far (begins empty).
+    repeated DkgRound1 round_1_messages = 1;
+  }
+  // The DKG has started round 2, and the ledger is waiting to record contributions from shard operators.
+  message StartedRound2 {
+    // A list of messages received during round 1.
+    repeated DkgRound1 round_1_messages = 1;
+    // A list of round 2 messages received so far (begins empty).
+    repeated DkgRound2 round_2_messages = 2;
+  }
+  // The DKG has finished successfully, producing the jointly-controlled `AccountGroupInfo`.
+  //
+  // Unlike the signing ceremony, we don't record a failure case here: if the DKG fails, we abort the entire ledger.
+  message Finished {
+    // A list of messages received during round 1.
+    repeated DkgRound1 round_1_messages = 1;
+    // A list of messages received during round 2.
+    repeated DkgRound2 round_2_messages = 2;
+    // The jointly-controlled `AccountGroupInfo` resulting from the DKG.
+    AccountGroupInfo account_group_info = 3;
+  }
 }
