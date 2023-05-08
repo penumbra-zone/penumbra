@@ -90,6 +90,11 @@ function create_genesis() {
         $preserve_chain_opt \
         --validators-input-file "${CONTAINERHOME}/vals.json" > /dev/null
 
+    # Compress the genesis file, otherwise the Helm manifest will exceed the 1MB
+    # secret limit. See GH1783.
+    gzip -c "${WORKDIR}/.penumbra/testnet_data/node0/tendermint/config/genesis.json" \
+        > "${WORKDIR}/genesis.json.gz"
+
     # Clear out persistent peers. Will peer after services are bootstrapped.
     # The Helm chart requires that these local flat files exist, but we cannot
     # populate them with external IPs just yet. Make sure they're present,
