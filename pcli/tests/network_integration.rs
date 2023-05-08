@@ -394,6 +394,134 @@ fn lp_management() {
 
     // Address 0 has a withdrawn LPNFT.
     assert!(output.contains("1lpnft_withdrawn"));
+
+    // Test close-all: first open a few LPs
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1penumbra@1gm",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+    sell_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1penumbra@1gm",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+    sell_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1penumbra@1gm",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+
+    // Validate there are three opened position NFTs
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
+    let opened = output.matches("lpnft_opened").count();
+    assert_eq!(opened, 3);
+
+    // Close all the opened positions
+    let mut closeall_cmd = Command::cargo_bin("pcli").unwrap();
+    closeall_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "close-all",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    closeall_cmd.assert().success();
+
+    // Validate there are no longer any opened position NFTs
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
+    let opened = output.matches("lpnft_opened").count();
+    assert_eq!(opened, 0);
+    // Should be three closed positions
+    let closed = output.matches("lpnft_closed").count();
+    assert_eq!(closed, 3);
+
+    // Withdraw all the closed positions
+    let mut withdrawall_cmd = Command::cargo_bin("pcli").unwrap();
+    withdrawall_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "withdraw-all",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    withdrawall_cmd.assert().success();
+
+    // Validate there are no longer any closed position NFTs
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
+    let closed = output.matches("lpnft_closed").count();
+    assert_eq!(closed, 0);
+    // Should be three withdrawn positions
+    let withdrawn = output.matches("lpnft_withdrawn").count();
+    assert_eq!(withdrawn, 3);
 }
 
 #[ignore]
