@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 
 use penumbra_storage::StateWrite;
-use tendermint::abci;
+use tendermint::v0_34::abci;
 
 /// A component of the Penumbra application.
 #[async_trait]

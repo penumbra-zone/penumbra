@@ -20,8 +20,12 @@ penumbra-crypto = { path = "../../crypto", default-features = false }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 
 # Penumbra dependencies
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.1.x",  version = "0.1.1" }
-ibc-proto = { version = "0.26", default-features = false }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x"}
+ibc-proto = { git = "https://github.com/penumbra-zone/ibc-proto-rs", branch = "penumbra"}
+
+# Tendermint deps 
+tendermint = "0.31.1"
+tendermint-light-client-verifier = "0.31.1"
 
 # Crates.io deps
 ark-ff = { version = "0.4", default_features = false }
@@ -33,8 +37,6 @@ prost = "0.11"
 serde = { version = "1", features = ["derive"] }
 metrics = "0.19.0"
 pbjson-types = "0.5.1"
-tendermint = "0.29.0"
-tendermint-light-client-verifier = "0.29.0"
 sha2 = "0.10.6"
 once_cell = "1.17.1"
 base64 = "0.20"

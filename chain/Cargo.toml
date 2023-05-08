@@ -13,23 +13,11 @@ penumbra-crypto = { path = "../crypto", default-features = false }
 penumbra-tct = { path = "../tct" }
 
 # Penumbra dependencies
-<<<<<<< HEAD
 decaf377 = "0.4"
-=======
-decaf377 = "0.3.0"
-<<<<<<< HEAD
->>>>>>> 7f272cc7 (# This is a combination of 2 commits.)
-jmt = "0.4"
-
-tendermint = "0.29.0"
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.1.x",  version = "0.1.1" }
-=======
 jmt = "0.5"
 
-tendermint = "0.31.0"
+tendermint = "0.31.1"
 ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
->>>>>>> 0cf9ad68 (storage: tombstone deleted entries in the values cf)
-
 ics23 = "0.10.0"
 
 # Crates.io deps
