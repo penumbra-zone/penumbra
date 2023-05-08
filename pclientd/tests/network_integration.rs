@@ -29,6 +29,8 @@ use tokio::process::Command as TokioCommand;
 #[ignore]
 #[tokio::test]
 async fn transaction_send_flow() -> anyhow::Result<()> {
+    use ibc_proto::protobuf::Protobuf;
+
     tracing_subscriber::fmt::init();
     // Create a tempdir for the pclientd instance to run in.
     let data_dir = tempdir().unwrap();

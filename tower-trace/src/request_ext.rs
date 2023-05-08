@@ -1,7 +1,7 @@
 use sha2::{Digest, Sha256};
-use tendermint::abci::{
-    request::{BeginBlock, CheckTx, DeliverTx, EndBlock, InitChain, Query},
-    ConsensusRequest, InfoRequest, MempoolRequest, Request, SnapshotRequest,
+use tendermint::abci::{ConsensusRequest, InfoRequest, MempoolRequest, SnapshotRequest};
+use tendermint::v0_34::abci::request::{
+    BeginBlock, CheckTx, DeliverTx, EndBlock, InitChain, Query, Request,
 };
 use tracing::error_span;
 
@@ -28,6 +28,12 @@ impl RequestExt for ConsensusRequest {
             ConsensusRequest::Commit => error_span!(parent: &p, "Commit"),
             ConsensusRequest::InitChain(InitChain { chain_id, .. }) => {
                 error_span!(parent: &p, "InitChain", ?chain_id)
+            }
+            ConsensusRequest::PrepareProposal(_) => {
+                unimplemented!("unimplemented in Tendermint v0.34.x")
+            }
+            ConsensusRequest::ProcessProposal(_) => {
+                unimplemented!("unimplemented in Tendermint v0.34.x")
             }
         }
     }

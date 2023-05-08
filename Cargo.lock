@@ -2856,7 +2856,6 @@ dependencies = [
  "serde",
  "subtle-encoding",
  "tendermint-proto 0.29.1",
- "tonic 0.8.3",
 ]
 
 [[package]]
@@ -3158,29 +3157,6 @@ name = "itoa"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "453ad9f582a441959e5f0d088b02ce04cfe8d51a8eaf077f12ac6d3e94164ca6"
-
-[[package]]
-name = "jmt"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d1736471f9d78877060645b11d806e5ae376996257f861006771160225b8e93"
-dependencies = [
- "anyhow",
- "borsh",
- "hashbrown 0.13.2",
- "hex",
- "ics23 0.10.1",
- "itertools",
- "mirai-annotations",
- "num-derive",
- "num-traits",
- "once_cell",
- "prometheus",
- "serde",
- "sha2 0.10.6",
- "thiserror",
- "tracing",
-]
 
 [[package]]
 name = "jmt"
@@ -4049,10 +4025,10 @@ dependencies = [
  "futures",
  "hex",
  "http-body",
- "ibc-proto 0.26.0",
+ "ibc-proto 0.30.0",
  "ibc-types 0.2.0",
  "indicatif",
- "jmt 0.4.2",
+ "jmt",
  "ndarray",
  "once_cell",
  "penumbra-app",
@@ -4082,7 +4058,7 @@ dependencies = [
  "serde_with 1.14.0",
  "sha2 0.9.9",
  "tempfile",
- "tendermint 0.29.1",
+ "tendermint 0.31.1",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.8",
@@ -4114,7 +4090,7 @@ dependencies = [
  "hex",
  "http",
  "http-body",
- "ibc-proto 0.26.0",
+ "ibc-proto 0.30.0",
  "ibc-types 0.2.0",
  "metrics",
  "parking_lot 0.12.1",
@@ -4174,7 +4150,7 @@ dependencies = [
  "ibc-proto 0.30.0",
  "ibc-types 0.2.0",
  "ics23 0.10.1",
- "jmt 0.5.0",
+ "jmt",
  "metrics",
  "metrics-exporter-prometheus",
  "metrics-tracing-context",
@@ -4294,7 +4270,7 @@ dependencies = [
  "ibc-proto 0.30.0",
  "ibc-types 0.2.0",
  "im",
- "jmt 0.5.0",
+ "jmt",
  "metrics",
  "once_cell",
  "parking_lot 0.12.1",
@@ -4346,7 +4322,7 @@ dependencies = [
  "hex",
  "ibc-types 0.2.0",
  "ics23 0.10.1",
- "jmt 0.5.0",
+ "jmt",
  "once_cell",
  "penumbra-component",
  "penumbra-crypto",
@@ -4632,7 +4608,7 @@ dependencies = [
  "prost",
  "serde",
  "subtle-encoding",
- "tendermint 0.30.0",
+ "tendermint 0.31.1",
  "tonic 0.8.3",
  "tracing",
 ]
@@ -4739,7 +4715,7 @@ dependencies = [
  "futures",
  "hex",
  "ics23 0.10.1",
- "jmt 0.5.0",
+ "jmt",
  "metrics",
  "parking_lot 0.12.1",
  "pin-project",
@@ -4869,8 +4845,8 @@ dependencies = [
  "pin-project",
  "pin-project-lite",
  "sha2 0.9.9",
- "tendermint 0.29.1",
- "tendermint-proto 0.29.1",
+ "tendermint 0.31.1",
+ "tendermint-proto 0.31.1",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.8",
@@ -6826,35 +6802,6 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b90c3c1e32352551f0f1639ce765e4c66ce250c733d4b9ba1aff81130437465c"
-dependencies = [
- "bytes",
- "digest 0.10.7",
- "ed25519 1.5.3",
- "ed25519-consensus",
- "flex-error",
- "futures",
- "num-traits",
- "once_cell",
- "prost",
- "prost-types",
- "serde",
- "serde_bytes",
- "serde_json",
- "serde_repr",
- "sha2 0.10.6",
- "signature 1.6.4",
- "subtle",
- "subtle-encoding",
- "tendermint-proto 0.30.0",
- "time 0.3.19",
- "zeroize",
-]
-
-[[package]]
-name = "tendermint"
 version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1b58bdb6c44a2621b8b6bd0585d5912ba32546317604130a42410bcc813ef16"
@@ -6941,24 +6888,6 @@ name = "tendermint-proto"
 version = "0.29.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c943f78c929cdf14553842f705f2c30324bc35b9179caaa5c9b80620f60652e6"
-dependencies = [
- "bytes",
- "flex-error",
- "num-derive",
- "num-traits",
- "prost",
- "prost-types",
- "serde",
- "serde_bytes",
- "subtle-encoding",
- "time 0.3.19",
-]
-
-[[package]]
-name = "tendermint-proto"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e553ed65874c3f35a71eb60d255edfea956274b5af37a0297d54bba039fe45e3"
 dependencies = [
  "bytes",
  "flex-error",

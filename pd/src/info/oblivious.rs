@@ -89,6 +89,7 @@ impl ObliviousQueryService for Info {
                 version: request.get_ref().version.clone(),
                 block_version: request.get_ref().block_version,
                 p2p_version: request.get_ref().p2p_version,
+                abci_version: request.get_ref().abci_version,
             })
             .await
             .map_err(|e| tonic::Status::unknown(format!("error getting ABCI info: {e}")))?;
