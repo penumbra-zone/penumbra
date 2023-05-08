@@ -11,6 +11,9 @@ pub struct InfoRequest {
     /// The Tendermint p2p protocol version.
     #[prost(uint64, tag = "3")]
     pub p2p_version: u64,
+    /// The Tendermint ABCI semantic version.
+    #[prost(string, tag = "4")]
+    pub abci_version: ::prost::alloc::string::String,
 }
 /// Contains information about the chain state as known by the node.
 #[allow(clippy::derive_partial_eq_without_eq)]

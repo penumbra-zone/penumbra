@@ -2,6 +2,7 @@
 use penumbra_proto::narsil::v1alpha1::ledger::ledger_service_server::LedgerService;
 use tonic::Status;
 use tracing::instrument;
+use tendermint::v0_34::abci;
 
 use crate::metrics;
 
@@ -45,12 +46,11 @@ impl LedgerService for Info {
     ) -> Result<tonic::Response<penumbra_proto::narsil::v1alpha1::ledger::InfoResponse>, Status>
     {
         let info = self
-            .info(tendermint::abci::request::Info {
+            .info(abci::request::Info {
                 version: request.get_ref().version.clone(),
                 block_version: request.get_ref().block_version,
                 p2p_version: request.get_ref().p2p_version,
-                abci_version: "TODO(erwan): need an enum here, it's unclear what this abci version string should be."
-                    .to_string(),
+                abci_version: request.get_ref().abci_version.clone(),
             })
             .await
             .map_err(|e| tonic::Status::unknown(format!("error getting ABCI info: {e}")))?;
