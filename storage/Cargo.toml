@@ -23,7 +23,7 @@ smallvec = { version = "1.10" , features = ["union" , "const_generics"] }
 
 # Tendermint/IBC crates 
 ics23 = "0.10.0"
-tendermint = { version = "0.29.0", default-features = false }
+tendermint = { version = "0.31.0", default-features = false }
 sha2 = "0.10.6"
 borsh = "0.10.3"
 

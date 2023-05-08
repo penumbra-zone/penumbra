@@ -2875,6 +2875,7 @@ dependencies = [
  "serde",
  "subtle-encoding",
  "tendermint-proto 0.31.1",
+ "tonic 0.9.2",
 ]
 
 [[package]]
@@ -3602,17 +3603,17 @@ dependencies = [
  "penumbra-tower-trace",
  "serde",
  "serde_json",
- "tendermint 0.29.1",
- "tendermint-config",
- "tendermint-light-client-verifier 0.29.1",
- "tendermint-proto 0.29.1",
+ "tendermint 0.31.1",
+ "tendermint-config 0.31.1",
+ "tendermint-light-client-verifier 0.31.1",
+ "tendermint-proto 0.31.1",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.8",
  "tonic 0.8.3",
  "tonic-web",
  "tower",
- "tower-abci",
+ "tower-abci 0.7.0 (git+https://github.com/penumbra-zone/tower-abci?branch=tendermint-31)",
  "tower-actor",
  "tower-service",
  "tracing",
@@ -4133,7 +4134,7 @@ dependencies = [
  "serde_with 1.14.0",
  "sha2 0.10.6",
  "tempfile",
- "tendermint 0.29.1",
+ "tendermint 0.31.1",
  "tokio",
  "tokio-stream",
  "toml 0.5.11",
@@ -4170,7 +4171,7 @@ dependencies = [
  "futures",
  "hex",
  "http",
- "ibc-proto 0.26.0",
+ "ibc-proto 0.30.0",
  "ibc-types 0.2.0",
  "ics23 0.10.1",
  "jmt 0.5.0",
@@ -4210,11 +4211,11 @@ dependencies = [
  "serde_with 1.14.0",
  "sha2 0.9.9",
  "tempfile",
- "tendermint 0.29.1",
- "tendermint-config",
- "tendermint-light-client-verifier 0.29.1",
- "tendermint-proto 0.29.1",
- "tendermint-rpc",
+ "tendermint 0.31.1",
+ "tendermint-config 0.31.1",
+ "tendermint-light-client-verifier 0.31.1",
+ "tendermint-proto 0.31.1",
+ "tendermint-rpc 0.29.1",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.8",
@@ -4223,7 +4224,7 @@ dependencies = [
  "tonic-reflection",
  "tonic-web",
  "tower",
- "tower-abci",
+ "tower-abci 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tower-actor",
  "tower-service",
  "tracing",
@@ -4290,10 +4291,10 @@ dependencies = [
  "ed25519-consensus",
  "futures",
  "hex",
- "ibc-proto 0.26.0",
+ "ibc-proto 0.30.0",
  "ibc-types 0.2.0",
  "im",
- "jmt 0.4.2",
+ "jmt 0.5.0",
  "metrics",
  "once_cell",
  "parking_lot 0.12.1",
@@ -4322,9 +4323,9 @@ dependencies = [
  "serde_with 2.3.3",
  "sha2 0.9.9",
  "tempfile",
- "tendermint 0.29.1",
- "tendermint-light-client-verifier 0.29.1",
- "tendermint-proto 0.29.1",
+ "tendermint 0.31.1",
+ "tendermint-light-client-verifier 0.31.1",
+ "tendermint-proto 0.31.1",
  "tokio",
  "tonic 0.8.3",
  "tracing",
@@ -4354,7 +4355,7 @@ dependencies = [
  "penumbra-tct",
  "serde",
  "sha2 0.9.9",
- "tendermint 0.30.0",
+ "tendermint 0.31.1",
  "tracing",
 ]
 
@@ -4621,7 +4622,7 @@ dependencies = [
  "decaf377-rdsa",
  "futures",
  "hex",
- "ibc-proto 0.26.0",
+ "ibc-proto 0.30.0",
  "ibc-types 0.2.0",
  "ics23 0.10.1",
  "pbjson",
@@ -4631,7 +4632,7 @@ dependencies = [
  "prost",
  "serde",
  "subtle-encoding",
- "tendermint 0.29.1",
+ "tendermint 0.30.0",
  "tonic 0.8.3",
  "tracing",
 ]
@@ -4746,7 +4747,7 @@ dependencies = [
  "sha2 0.10.6",
  "smallvec",
  "tempfile",
- "tendermint 0.29.1",
+ "tendermint 0.31.1",
  "tokio",
  "tokio-stream",
  "tracing",
@@ -4843,11 +4844,11 @@ dependencies = [
  "pin-project",
  "pin-project-lite",
  "sha2 0.9.9",
- "tendermint 0.29.1",
- "tendermint-config",
- "tendermint-light-client-verifier 0.29.1",
- "tendermint-proto 0.29.1",
- "tendermint-rpc",
+ "tendermint 0.31.1",
+ "tendermint-config 0.31.1",
+ "tendermint-light-client-verifier 0.31.1",
+ "tendermint-proto 0.31.1",
+ "tendermint-rpc 0.31.1",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.8",
@@ -4899,7 +4900,7 @@ dependencies = [
  "decaf377-rdsa",
  "derivative",
  "hex",
- "ibc-proto 0.26.0",
+ "ibc-proto 0.30.0",
  "ibc-types 0.2.0",
  "num-bigint",
  "once_cell",
@@ -4966,7 +4967,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.6",
- "tendermint 0.29.1",
+ "tendermint 0.31.1",
  "tokio",
  "tokio-stream",
  "tonic 0.8.3",
@@ -6896,6 +6897,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "tendermint-config"
+version = "0.31.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "088bac81db392e66eedb508c400ebb2096d1e21cc40d71e3739a9bbd6838809a"
+dependencies = [
+ "flex-error",
+ "serde",
+ "serde_json",
+ "tendermint 0.31.1",
+ "toml 0.5.11",
+ "url",
+]
+
+[[package]]
 name = "tendermint-light-client-verifier"
 version = "0.29.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6998,7 +7013,41 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint 0.29.1",
- "tendermint-config",
+ "tendermint-config 0.29.1",
+ "thiserror",
+ "time 0.3.19",
+ "tokio",
+ "tracing",
+ "url",
+ "uuid",
+ "walkdir",
+]
+
+[[package]]
+name = "tendermint-rpc"
+version = "0.31.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "120ccb296a0ec4485ddb78eb842e481d7a859d5659e0f1881456f8c127d5e950"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "flex-error",
+ "futures",
+ "getrandom 0.2.9",
+ "http",
+ "hyper",
+ "hyper-proxy",
+ "hyper-rustls",
+ "peg",
+ "pin-project",
+ "semver 1.0.17",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "subtle",
+ "subtle-encoding",
+ "tendermint 0.31.1",
+ "tendermint-config 0.31.1",
  "thiserror",
  "time 0.3.19",
  "tokio",
@@ -7447,16 +7496,34 @@ dependencies = [
 
 [[package]]
 name = "tower-abci"
-version = "0.5.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "683d5d8d6eb9c79cbb72e1acf366f01267ec076823d3faadb2d228407fc375b9"
+checksum = "aaddfcab2a1c77ba634491e710b04653c4b53ae1a541c56a02c5c3fc9facc80c"
 dependencies = [
  "bytes",
  "futures",
  "pin-project",
  "prost",
- "tendermint 0.29.1",
- "tendermint-proto 0.29.1",
+ "tendermint 0.31.1",
+ "tendermint-proto 0.31.1",
+ "tokio",
+ "tokio-stream",
+ "tokio-util 0.6.10",
+ "tower",
+ "tracing",
+]
+
+[[package]]
+name = "tower-abci"
+version = "0.7.0"
+source = "git+https://github.com/penumbra-zone/tower-abci?branch=tendermint-31#afdaa15aabf40228f0b7aedddccae50b651394e8"
+dependencies = [
+ "bytes",
+ "futures",
+ "pin-project",
+ "prost",
+ "tendermint 0.31.1",
+ "tendermint-proto 0.31.1",
  "tokio",
  "tokio-stream",
  "tokio-util 0.6.10",
