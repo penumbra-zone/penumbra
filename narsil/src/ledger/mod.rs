@@ -1,8 +1,8 @@
 //! Logic for enabling `narsild` to interact with chain state.
 use penumbra_proto::narsil::v1alpha1::ledger::ledger_service_server::LedgerService;
+use tendermint::v0_34::abci;
 use tonic::Status;
 use tracing::instrument;
-use tendermint::v0_34::abci;
 
 use crate::metrics;
 
