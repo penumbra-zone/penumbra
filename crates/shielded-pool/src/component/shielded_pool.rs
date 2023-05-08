@@ -10,7 +10,7 @@ use penumbra_crypto::{asset, Value};
 use penumbra_proto::StateReadProto;
 use penumbra_storage::StateRead;
 use penumbra_storage::StateWrite;
-use tendermint::abci;
+use tendermint::v0_34::abci;
 
 use crate::state_key;
 
