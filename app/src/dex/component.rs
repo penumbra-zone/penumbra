@@ -11,7 +11,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
-use tendermint::abci;
+use tendermint::v0_34::abci;
 use tracing::instrument;
 
 use super::{

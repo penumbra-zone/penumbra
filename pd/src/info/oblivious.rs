@@ -15,7 +15,9 @@ use penumbra_proto::{
     },
     DomainType,
 };
+
 use penumbra_stake::{validator, StateReadExt as _};
+use tendermint::v0_34::abci;
 use tokio::sync::mpsc;
 use tonic::Status;
 use tracing::{instrument, Instrument};
@@ -85,7 +87,7 @@ impl ObliviousQueryService for Info {
         request: tonic::Request<penumbra_proto::client::v1alpha1::InfoRequest>,
     ) -> Result<tonic::Response<penumbra_proto::client::v1alpha1::InfoResponse>, Status> {
         let info = self
-            .info(tendermint::abci::request::Info {
+            .info(abci::request::Info {
                 version: request.get_ref().version.clone(),
                 block_version: request.get_ref().block_version,
                 p2p_version: request.get_ref().p2p_version,
