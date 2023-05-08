@@ -521,9 +521,9 @@ fn lp_management() {
     let output = String::from_utf8_lossy(&o);
     let closed = output.matches("lpnft_closed").count();
     assert_eq!(closed, 0);
-    // Should be three withdrawn positions
+    // Should be four total withdrawn positions now
     let withdrawn = output.matches("lpnft_withdrawn").count();
-    assert_eq!(withdrawn, 3);
+    assert_eq!(withdrawn, 4);
 }
 
 #[ignore]
