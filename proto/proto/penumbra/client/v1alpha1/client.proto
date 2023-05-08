@@ -2,15 +2,14 @@ syntax = "proto3";
 
 package penumbra.client.v1alpha1;
 
+import "google/protobuf/timestamp.proto";
 import "ibc/core/commitment/v1/commitment.proto";
 import "penumbra/core/chain/v1alpha1/chain.proto";
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
 import "penumbra/core/dex/v1alpha1/dex.proto";
 import "penumbra/core/stake/v1alpha1/stake.proto";
-
-import "google/protobuf/timestamp.proto";
-import "tendermint/p2p/types.proto";
 import "tendermint/crypto/proof.proto";
+import "tendermint/p2p/types.proto";
 import "tendermint/types/block.proto";
 import "tendermint/types/types.proto";
 import "tendermint/types/validator.proto";
@@ -38,20 +37,22 @@ message InfoRequest {
   uint64 block_version = 2;
   // The Tendermint p2p protocol version.
   uint64 p2p_version = 3;
+  // The ABCI semantic version.
+  string abci_version = 4;
 }
 
 // Contains information about the chain state as known by the node.
 message InfoResponse {
-    // Some arbitrary information.
-    bytes data = 1;
-    // The application software semantic version.
-    string version = 2;
-    // The application protocol version.
-    uint64 app_version = 3;
-    // The latest block for which the app has called [`Commit`](super::super::Request::Commit).
-    uint64 last_block_height = 4;
-    // The latest result of [`Commit`](super::super::Request::Commit).
-    bytes last_block_app_hash = 5;
+  // Some arbitrary information.
+  bytes data = 1;
+  // The application software semantic version.
+  string version = 2;
+  // The application protocol version.
+  uint64 app_version = 3;
+  // The latest block for which the app has called [`Commit`](super::super::Request::Commit).
+  uint64 last_block_height = 4;
+  // The latest result of [`Commit`](super::super::Request::Commit).
+  bytes last_block_app_hash = 5;
 }
 
 // Requests a range of compact block data.
@@ -78,11 +79,11 @@ message ChainParametersRequest {
 }
 
 message EpochByHeightRequest {
-    uint64 height = 1;
+  uint64 height = 1;
 }
 
 message EpochByHeightResponse {
-    core.chain.v1alpha1.Epoch epoch = 1;
+  core.chain.v1alpha1.Epoch epoch = 1;
 }
 
 message ChainParametersResponse {
@@ -325,48 +326,42 @@ message PrefixValueResponse {
 // Defines the gRPC query service for proxying requests to an upstream Tendermint RPC.
 service TendermintProxyService {
   // Status queries the current status.
-  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse) {
-  }
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse) {}
 
   // Broadcast a transaction asynchronously.
-  rpc BroadcastTxAsync(BroadcastTxAsyncRequest) returns (BroadcastTxAsyncResponse) {
-  }
+  rpc BroadcastTxAsync(BroadcastTxAsyncRequest) returns (BroadcastTxAsyncResponse) {}
 
   // Broadcast a transaction synchronously.
-  rpc BroadcastTxSync(BroadcastTxSyncRequest) returns (BroadcastTxSyncResponse) {
-  }
+  rpc BroadcastTxSync(BroadcastTxSyncRequest) returns (BroadcastTxSyncResponse) {}
 
   // Fetch a transaction by hash.
-  rpc GetTx(GetTxRequest) returns (GetTxResponse) {
-  }
+  rpc GetTx(GetTxRequest) returns (GetTxResponse) {}
 
   // ABCIQuery defines a query handler that supports ABCI queries directly to the
   // application, bypassing Tendermint completely. The ABCI query must contain
   // a valid and supported path, including app, custom, p2p, and store.
-  rpc ABCIQuery(ABCIQueryRequest) returns (ABCIQueryResponse) {
-  }
+  rpc ABCIQuery(ABCIQueryRequest) returns (ABCIQueryResponse) {}
 
   // GetBlockByHeight queries block for given height.
-  rpc GetBlockByHeight(GetBlockByHeightRequest) returns (GetBlockByHeightResponse) {
-  }
+  rpc GetBlockByHeight(GetBlockByHeightRequest) returns (GetBlockByHeightResponse) {}
 }
 
 // GetTxRequest is the request type for the GetTx RPC method.
 message GetTxRequest {
-    // Hash of transaction to retrieve
-    bytes hash = 1;
-    // Include proofs of the transaction's inclusion in the block
-    bool prove = 2;
+  // Hash of transaction to retrieve
+  bytes hash = 1;
+  // Include proofs of the transaction's inclusion in the block
+  bool prove = 2;
 }
 
 // GetTxResponse is the response type for the GetTx RPC method.
 message GetTxResponse {
-    // Hash of transaction
-    bytes hash = 1;
-    uint64 height = 2;
-    uint64 index = 3;
-    TxResult tx_result = 4;
-    bytes tx = 5;
+  // Hash of transaction
+  bytes hash = 1;
+  uint64 height = 2;
+  uint64 index = 3;
+  TxResult tx_result = 4;
+  bytes tx = 5;
 }
 
 message TxResult {
@@ -384,35 +379,34 @@ message Tag {
 
 // BroadcastTxAsyncRequest is the request type for the BroadcastTxAsync RPC method.
 message BroadcastTxAsyncRequest {
-    bytes params = 1;
-    uint64 req_id = 2;
+  bytes params = 1;
+  uint64 req_id = 2;
 }
 
 // BroadcastTxAsyncResponse is the response type for the BroadcastTxAsync RPC method.
 message BroadcastTxAsyncResponse {
-    uint64 code = 1;
-    bytes data = 2;
-    string log = 3;
-    bytes hash = 4;
+  uint64 code = 1;
+  bytes data = 2;
+  string log = 3;
+  bytes hash = 4;
 }
 
 // BroadcastTxSyncRequest is the request type for the BroadcastTxSync RPC method.
 message BroadcastTxSyncRequest {
-    bytes params = 1;
-    uint64 req_id = 2;
+  bytes params = 1;
+  uint64 req_id = 2;
 }
 
 // BroadcastTxSyncResponse is the response type for the BroadcastTxSync RPC method.
 message BroadcastTxSyncResponse {
-    uint64 code = 1;
-    bytes data = 2;
-    string log = 3;
-    bytes hash = 4;
+  uint64 code = 1;
+  bytes data = 2;
+  string log = 3;
+  bytes hash = 4;
 }
 
 // GetStatusRequest is the request type for the Query/GetStatus RPC method.
-message GetStatusRequest {
-}
+message GetStatusRequest {}
 
 // GetStatusResponse is the response type for the Query/GetStatus RPC method.
 message GetStatusResponse {
@@ -422,25 +416,25 @@ message GetStatusResponse {
 }
 
 message SyncInfo {
-    bytes latest_block_hash = 1;
-    bytes latest_app_hash = 2;
-    uint64 latest_block_height = 3;
-    google.protobuf.Timestamp latest_block_time = 4;
-    // These are implemented in tendermint, but not
-    // in tendermint-rpc.
-    // bytes earliest_block_hash = 5;
-    // bytes earliest_app_hash = 6;
-    // uint64 earliest_block_height = 7;
-    // google.protobuf.Timestamp earliest_block_time = 8;
-    bool catching_up = 9;
+  bytes latest_block_hash = 1;
+  bytes latest_app_hash = 2;
+  uint64 latest_block_height = 3;
+  google.protobuf.Timestamp latest_block_time = 4;
+  // These are implemented in tendermint, but not
+  // in tendermint-rpc.
+  // bytes earliest_block_hash = 5;
+  // bytes earliest_app_hash = 6;
+  // uint64 earliest_block_height = 7;
+  // google.protobuf.Timestamp earliest_block_time = 8;
+  bool catching_up = 9;
 }
 
 // ABCIQueryRequest defines the request structure for the ABCIQuery gRPC query.
 message ABCIQueryRequest {
-  bytes  data   = 1;
-  string path   = 2;
-  int64  height = 3;
-  bool   prove  = 4;
+  bytes data = 1;
+  string path = 2;
+  int64 height = 3;
+  bool prove = 4;
 }
 
 // ABCIQueryResponse defines the response structure for the ABCIQuery gRPC query.
@@ -451,14 +445,14 @@ message ABCIQueryResponse {
   uint32 code = 1;
   // DEPRECATED: use "value" instead
   reserved 2;
-  string   log       = 3; // nondeterministic
-  string   info      = 4; // nondeterministic
-  int64    index     = 5;
-  bytes    key       = 6;
-  bytes    value     = 7;
+  string log = 3; // nondeterministic
+  string info = 4; // nondeterministic
+  int64 index = 5;
+  bytes key = 6;
+  bytes value = 7;
   .tendermint.crypto.ProofOps proof_ops = 8;
-  int64    height    = 9;
-  string   codespace = 10;
+  int64 height = 9;
+  string codespace = 10;
 }
 
 // GetBlockByHeightRequest is the request type for the Query/GetBlockByHeight RPC method.
