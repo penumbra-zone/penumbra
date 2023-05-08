@@ -46,6 +46,24 @@ pub enum PositionCmd {
     /// Debits a withdrawn position NFT and credits a claimed position NFT and any liquidity incentives.
     #[clap(hide(true))] // remove when reward claims exist
     RewardClaim {},
+    /// Close all positions
+    CloseAll {
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
+    },
+    /// Withdraw all positions
+    WithdrawAll {
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
+    },
 }
 
 impl PositionCmd {
@@ -55,6 +73,8 @@ impl PositionCmd {
             PositionCmd::Close { .. } => false,
             PositionCmd::Withdraw { .. } => false,
             PositionCmd::RewardClaim { .. } => false,
+            PositionCmd::CloseAll { .. } => false,
+            PositionCmd::WithdrawAll { .. } => false,
         }
     }
 }

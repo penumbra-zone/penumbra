@@ -9,10 +9,12 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::Fr;
+use futures::TryStreamExt;
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
+    dex::lp::position::Position,
     keys::AddressIndex,
     memo::MemoPlaintext,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
@@ -21,8 +23,9 @@ use penumbra_crypto::{
 use penumbra_ibc::Ics20Withdrawal;
 use penumbra_proto::{
     client::v1alpha1::{
-        EpochByHeightRequest, LiquidityPositionByIdRequest, ProposalInfoRequest,
-        ProposalInfoResponse, ProposalRateDataRequest, ValidatorPenaltyRequest,
+        EpochByHeightRequest, LiquidityPositionByIdRequest, LiquidityPositionsRequest,
+        ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
+        ValidatorPenaltyRequest,
     },
     core::dex::v1alpha1::PositionId,
 };
@@ -378,20 +381,19 @@ impl TxCmd {
 
                 let asset_cache = app.view().assets().await?;
 
-                let pro_rata_outputs = swap_record.output_data.pro_rata_outputs((
-                    swap_plaintext.delta_1_i.into(),
-                    swap_plaintext.delta_2_i.into(),
-                ));
+                let pro_rata_outputs = swap_record
+                    .output_data
+                    .pro_rata_outputs((swap_plaintext.delta_1_i, swap_plaintext.delta_2_i));
                 println!("Swap submitted and batch confirmed!");
                 println!(
                     "You will receive outputs of {} and {}. Claiming now...",
                     Value {
-                        amount: pro_rata_outputs.0.into(),
+                        amount: pro_rata_outputs.0,
                         asset_id: swap_record.output_data.trading_pair.asset_1()
                     }
                     .format(&asset_cache),
                     Value {
-                        amount: pro_rata_outputs.1.into(),
+                        amount: pro_rata_outputs.1,
                         asset_id: swap_record.output_data.trading_pair.asset_2()
                     }
                     .format(&asset_cache),
@@ -911,6 +913,89 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::RewardClaim {}) => todo!(),
+            TxCmd::Position(PositionCmd::CloseAll { fee, source }) => {
+                let mut specific_client = app.specific_client().await?;
+                let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
+                let params = view.chain_params().await?;
+                let request = LiquidityPositionsRequest {
+                    chain_id: params.chain_id,
+                    include_closed: false,
+                };
+
+                let lp_stream = specific_client
+                    .liquidity_positions(request)
+                    .await?
+                    .into_inner();
+
+                let positions = lp_stream.try_collect::<Vec<_>>().await?;
+
+                for position in positions {
+                    let position: Position =
+                        position.data.expect("missing position data").try_into()?;
+
+                    let fee = Fee::from_staking_token_amount((*fee).into());
+
+                    let plan = Planner::new(OsRng)
+                        .position_close(position.id())
+                        .fee(fee)
+                        .plan(
+                            app.view.as_mut().unwrap(),
+                            app.fvk.account_group_id(),
+                            AddressIndex::new(*source),
+                        )
+                        .await?;
+                    app.build_and_submit_transaction(plan).await?;
+                }
+            }
+            TxCmd::Position(PositionCmd::WithdrawAll { fee, source }) => {
+                let mut specific_client = app.specific_client().await?;
+                let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
+                let params = view.chain_params().await?;
+                let request = LiquidityPositionsRequest {
+                    chain_id: params.chain_id,
+                    include_closed: false,
+                };
+
+                let lp_stream = specific_client
+                    .liquidity_positions(request)
+                    .await?
+                    .into_inner();
+
+                let positions = lp_stream.try_collect::<Vec<_>>().await?;
+
+                for position in positions {
+                    let reserves = position
+                        .data
+                        .clone()
+                        .expect("missing position metadata")
+                        .reserves
+                        .expect("missing position reserves");
+                    let pair = position
+                        .data
+                        .clone()
+                        .expect("missing position")
+                        .phi
+                        .expect("missing position trading function")
+                        .pair
+                        .expect("missing trading function pair");
+
+                    let position: Position =
+                        position.data.expect("missing position data").try_into()?;
+
+                    let fee = Fee::from_staking_token_amount((*fee).into());
+
+                    let plan = Planner::new(OsRng)
+                        .position_withdraw(position.id(), reserves.try_into()?, pair.try_into()?)
+                        .fee(fee)
+                        .plan(
+                            app.view.as_mut().unwrap(),
+                            app.fvk.account_group_id(),
+                            AddressIndex::new(*source),
+                        )
+                        .await?;
+                    app.build_and_submit_transaction(plan).await?;
+                }
+            }
         }
         Ok(())
     }
