@@ -25,7 +25,7 @@ decaf377-rdsa = { version = "0.6" }
 poseidon377 = { version = "0.4", features = ["r1cs"] }
 ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
 
-ibc-proto = { version = "0.26", default-features = false, features = ["std"] }
+ibc-proto = { git = "https://github.com/penumbra-zone/ibc-proto-rs", branch = "penumbra", version = "0.30.0"}
 
 # Crates.io deps
 base64 = "0.21"

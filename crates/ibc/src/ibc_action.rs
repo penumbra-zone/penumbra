@@ -205,63 +205,63 @@ impl From<IbcAction> for pb::IbcAction {
         let raw_action = match value {
             IbcAction::CreateClient(msg) => pbjson_types::Any {
                 type_url: CREATE_CLIENT.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::UpdateClient(msg) => pbjson_types::Any {
                 type_url: UPDATE_CLIENT.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::ConnectionOpenInit(msg) => pbjson_types::Any {
                 type_url: CONNECTION_OPEN_INIT.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::ConnectionOpenTry(msg) => pbjson_types::Any {
                 type_url: CONNECTION_OPEN_TRY.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::ConnectionOpenAck(msg) => pbjson_types::Any {
                 type_url: CONNECTION_OPEN_ACK.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::ConnectionOpenConfirm(msg) => pbjson_types::Any {
                 type_url: CONNECTION_OPEN_CONFIRM.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::Acknowledgement(msg) => pbjson_types::Any {
                 type_url: ACKNOWLEDGEMENT.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::ChannelOpenInit(msg) => pbjson_types::Any {
                 type_url: CHANNEL_OPEN_INIT.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::ChannelOpenTry(msg) => pbjson_types::Any {
                 type_url: CHANNEL_OPEN_TRY.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::ChannelOpenAck(msg) => pbjson_types::Any {
                 type_url: CHANNEL_OPEN_ACK.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::ChannelOpenConfirm(msg) => pbjson_types::Any {
                 type_url: CHANNEL_OPEN_CONFIRM.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::ChannelCloseInit(msg) => pbjson_types::Any {
                 type_url: CHANNEL_CLOSE_INIT.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::ChannelCloseConfirm(msg) => pbjson_types::Any {
                 type_url: CHANNEL_CLOSE_CONFIRM.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::RecvPacket(msg) => pbjson_types::Any {
                 type_url: RECV_PACKET.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::Timeout(msg) => pbjson_types::Any {
                 type_url: TIMEOUT.to_string(),
-                value: msg.encode_vec().unwrap().into(),
+                value: msg.encode_vec().into(),
             },
             IbcAction::Unknown(raw_action) => raw_action,
         };

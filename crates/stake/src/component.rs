@@ -28,14 +28,11 @@ use penumbra_proto::{
 use penumbra_shielded_pool::component::{NoteManager, SupplyRead, SupplyWrite};
 use penumbra_storage::{StateRead, StateWrite};
 use sha2::{Digest, Sha256};
+use tendermint::abci;
 use tendermint::validator::Update;
-use tendermint::{
-    abci::{
-        self,
-        types::{Evidence, LastCommitInfo},
-    },
-    block, PublicKey,
-};
+
+use tendermint::abci::types::Misbehavior;
+use tendermint::{abci::types::CommitInfo, block, PublicKey};
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
@@ -644,7 +641,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
     }
 
     #[instrument(skip(self, last_commit_info))]
-    async fn track_uptime(&mut self, last_commit_info: &LastCommitInfo) -> Result<()> {
+    async fn track_uptime(&mut self, last_commit_info: &CommitInfo) -> Result<()> {
         // Note: this probably isn't the correct height for the LastCommitInfo,
         // which is about the *last* commit, but at least it'll be consistent,
         // which is all we need to count signatures.
@@ -859,9 +856,11 @@ pub(crate) trait StakingImpl: StateWriteExt {
         Ok(())
     }
 
-    async fn process_evidence(&mut self, evidence: &Evidence) -> Result<()> {
+    async fn process_misbehavior(&mut self, misbehavior: &Misbehavior) -> Result<()> {
+        // TODO(erwan): noticed during the tendermints-rs@0.31 upgrade that lightclient attack
+        // detection is WIP.
         let validator = self
-            .validator_by_tendermint_address(&evidence.validator.address)
+            .validator_by_tendermint_address(&misbehavior.validator.address)
             .await?
             .ok_or_else(|| anyhow::anyhow!("attempted to slash unknown validator"))?;
 
@@ -944,7 +943,7 @@ impl Component for Staking {
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed
         for evidence in begin_block.byzantine_validators.iter() {
-            state.process_evidence(evidence).await.unwrap();
+            state.process_misbehavior(evidence).await.unwrap();
         }
 
         state
