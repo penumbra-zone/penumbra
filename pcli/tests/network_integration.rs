@@ -306,8 +306,6 @@ fn lp_management() {
         .stdout;
     let output = String::from_utf8_lossy(&o);
 
-    println!("1: {}", output);
-
     // Address 0 has an opened LPNFT.
     assert!(output.contains("1lpnft_opened"));
 
@@ -320,7 +318,6 @@ fn lp_management() {
         .next()
         .unwrap()
         .replace("1lpnft_opened_", "");
-    println!("opened asset_id: {}", asset_id);
 
     // Close the LP.
     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
@@ -352,8 +349,6 @@ fn lp_management() {
         .stdout;
     let output = String::from_utf8_lossy(&o);
 
-    println!("2: {}", output);
-
     // Address 0 has a closed LPNFT.
     assert!(output.contains("1lpnft_closed"));
 
@@ -366,7 +361,6 @@ fn lp_management() {
         .next()
         .unwrap()
         .replace("1lpnft_closed_", "");
-    println!("closed asset_id: {}", asset_id);
 
     // Withdraw the LP.
     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
@@ -397,8 +391,6 @@ fn lp_management() {
         .expect("unable to fetch balance")
         .stdout;
     let output = String::from_utf8_lossy(&o);
-
-    println!("3: {}", output);
 
     // Address 0 has a withdrawn LPNFT.
     assert!(output.contains("1lpnft_withdrawn"));
