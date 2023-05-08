@@ -67,13 +67,14 @@ The basic commands for opening liquidity positions are `tx position order buy` a
 To open an order buying `10cube` at a price of `1penumbra` each, with no fee, you'd do the following:
 
 ```bash
-cargo run --release --bin pcli -- tx position order buy 10cube@1penumbra --fee 0
+cargo run --release --bin pcli -- tx position order buy 10cube@1penumbra --spread 0
 ```
 
-Similarly, to open an order selling `100penumbra` at a price of `5gm` each, with a `20bps` fee, you'd do the following:
+Similarly, to open an order selling `100penumbra` at a price of `5gm` each, with a `20bps` fee on transactions
+against the liquidity position, you'd do the following:
 
 ```bash
-cargo run --release --bin pcli -- tx position order sell 100penumbra@5gm --fee 20
+cargo run --release --bin pcli -- tx position order sell 100penumbra@5gm --spread 20
 ```
 
 After opening the position, you'll see that your account has been deposited an "LPNFT" representing the open position:
@@ -102,6 +103,13 @@ $ cargo run --release --bin pcli -- view balance
  0        1lpnft_closed_plpid1hzrzr2myjw508nf0hyzehl0w0x2xzr4t8vwe6t3qtnfhsqzf5lzsufscqr
 ```
 
+You also have the option to close **all** liquidity positions associated with an address at once. This is useful if you have many individual positions, e.g. due to
+trading function approximation:
+
+```bash
+cargo run --release --bin pcli -- tx position close-all
+```
+
 ### Withdrawing a Liquidity Position
 
 If you have a closed liquidity position, you may withdraw it, depositing the reserves in the trading position into your balance.
@@ -118,6 +126,13 @@ $ cargo run --release --bin pcli -- view balance
  Account  Amount
  0        1lpnft_withdrawn_plpid1hzrzr2myjw508nf0hyzehl0w0x2xzr4t8vwe6t3qtnfhsqzf5lzsufscqr
  0        1cube
+```
+
+You also have the option to withdraw **all** liquidity positions associated with an address at once. This is useful if you have many individual positions, e.g. due to
+trading function approximation:
+
+```bash
+cargo run --release --bin pcli -- tx position withdraw-all
 ```
 
 ## Swapping Assets

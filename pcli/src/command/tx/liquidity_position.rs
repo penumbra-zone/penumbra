@@ -21,6 +21,15 @@ pub enum PositionCmd {
     /// Open a new liquidity position based on order details and credits an open position NFT.
     #[clap(display_order = 100, subcommand)]
     Order(OrderCmd),
+    /// Debits an all opened position NFTs associated with a specific source and credits closed position NFTs.
+    CloseAll {
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
+    },
     /// Debits an opened position NFT and credits a closed position NFT.
     Close {
         /// The transaction fee (paid in upenumbra).
@@ -31,6 +40,15 @@ pub enum PositionCmd {
         source: u32,
         /// The [`position::Id`] of the position to close.
         position_id: position::Id,
+    },
+    /// Debits all closed position NFTs associated with a specific account and credits withdrawn position NFTs and the final reserves.
+    WithdrawAll {
+        /// The transaction fee (paid in upenumbra).
+        #[clap(long, default_value = "0")]
+        fee: u64,
+        /// Only spend funds originally received by the given address index.
+        #[clap(long, default_value = "0")]
+        source: u32,
     },
     /// Debits a closed position NFT and credits a withdrawn position NFT and the final reserves.
     Withdraw {
@@ -53,7 +71,9 @@ impl PositionCmd {
         match self {
             PositionCmd::Order(_) => false,
             PositionCmd::Close { .. } => false,
+            PositionCmd::CloseAll { .. } => false,
             PositionCmd::Withdraw { .. } => false,
+            PositionCmd::WithdrawAll { .. } => false,
             PositionCmd::RewardClaim { .. } => false,
         }
     }
