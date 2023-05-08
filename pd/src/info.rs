@@ -31,13 +31,13 @@ use penumbra_ibc::component::ChannelStateReadExt as _;
 use penumbra_ibc::component::ClientStateReadExt as _;
 use penumbra_ibc::component::ConnectionStateReadExt as _;
 use penumbra_storage::Storage;
+use penumbra_tower_trace::RequestExt;
 use prost::Message;
 use std::str::FromStr;
-use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
+use tendermint::abci::{InfoRequest, InfoResponse};
+use tendermint::v0_34::abci;
 use tower_abci::BoxError;
 use tracing::Instrument;
-
-use penumbra_tower_trace::RequestExt;
 
 mod oblivious;
 mod specific;
@@ -575,7 +575,7 @@ impl tower_service::Service<InfoRequest> for Info {
                         ..Default::default()
                     })),
                 },
-                InfoRequest::Echo(echo) => Ok(InfoResponse::Echo(Echo {
+                InfoRequest::Echo(echo) => Ok(InfoResponse::Echo(abci::response::Echo {
                     message: echo.message,
                 })),
                 InfoRequest::SetOption(_) => todo!(),

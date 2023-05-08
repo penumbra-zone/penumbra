@@ -113,6 +113,7 @@ impl ChainCmd {
                 version: "".to_string(),
                 block_version: 0,
                 p2p_version: 0,
+                abci_version: "".to_string(),
             })
             .await?
             .into_inner();

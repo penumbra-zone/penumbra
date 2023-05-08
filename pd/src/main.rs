@@ -268,7 +268,7 @@ async fn main() -> anyhow::Result<()> {
             let abci_server = tokio::task::Builder::new()
                 .name("abci_server")
                 .spawn(
-                    tower_abci::Server::builder()
+                    tower_abci::v034::Server::builder()
                         .consensus(consensus)
                         .snapshot(snapshot)
                         .mempool(mempool)
