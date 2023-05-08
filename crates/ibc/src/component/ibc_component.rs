@@ -8,7 +8,7 @@ use ibc_types::{
 };
 use penumbra_component::Component;
 use penumbra_storage::StateWrite;
-use tendermint::abci;
+use tendermint::v0_34::abci;
 use tracing::instrument;
 
 use crate::component::{client::StateWriteExt as _, client_counter::ClientCounter};
