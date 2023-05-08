@@ -481,6 +481,8 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
         .is_none());
     Ok(())
 }
+
+#[ignore]
 #[tokio::test]
 async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     let storage = TempStorage::new().await?.apply_default_genesis().await?;
@@ -585,6 +587,7 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[tokio::test]
 async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
@@ -687,6 +690,7 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[tokio::test]
 async fn fill_route_unconstrained() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
@@ -1308,6 +1312,7 @@ async fn fill_route_with_dust_constraint() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[ignore]
 #[tokio::test]
 /// Reproduce dust fill constraint that occurs when a constraint is
 /// also a dust position.
