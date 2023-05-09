@@ -30,7 +30,6 @@ pdcli/vals.json
 
 pdcli/.penumbra/testnet_data/node0/tendermint/data/
 pdcli/.penumbra/testnet_data/node0/tendermint/config/config.toml
-pdcli/.penumbra/testnet_data/node0/tendermint/config/genesis.json
 pdcli/.penumbra/testnet_data/node0/pd/
 
 pdcli/.penumbra/testnet_data/node1/tendermint/data/

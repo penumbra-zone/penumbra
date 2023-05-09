@@ -5,5 +5,5 @@ metadata:
   labels:
     {{- include "penumbra.labels" . | nindent 4 }}
 binaryData:
-{{ $path := "pdcli/genesis.json.gz" }}
-{{- "genesis.json.gz" | indent 2 }}{{ print ": "}}{{ $.Files.Get $path | b64enc -}}
+{{ $path := "pdcli/.penumbra/testnet_data/node0/tendermint/config/genesis.json" }}
+{{- "genesis.json" | indent 2 }}{{ print ": "}}{{ $.Files.Get $path | b64enc -}}
