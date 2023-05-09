@@ -99,13 +99,14 @@ impl TradingFunction {
                     )
                 }))
         } else if output.asset_id == self.pair.asset_1() {
+            // Flip the reserves and the trading function...
             let flipped_reserves = reserves.flip();
-            Ok(self
-                .component
-                .flip()
+            let flipped_function = self.component.flip();
+            Ok(flipped_function
                 .fill_output(&flipped_reserves, output.amount)
                 .map(|(new_reserves, input)| {
                     (
+                        // ... then flip the reserves back.
                         new_reserves.flip(),
                         Value {
                             amount: input,
