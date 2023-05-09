@@ -1101,7 +1101,8 @@ impl TxCmd {
                         quantity,
                         current_price.try_into().expect("valid price"),
                     )?;
-
+                    // TODO(erwan): factor out into `approximate.rs`
+                    // -> s/Market/DirectedUnitPair
                     if let Some(file) = debug_file {
                         let canonical_pair_str =
                             if market.into_directed_trading_pair().to_canonical().asset_1()
@@ -1112,15 +1113,28 @@ impl TxCmd {
                                 format!("{}:{}", market.end.to_string(), market.start.to_string())
                             };
 
+                        // Ad-hoc denom scaling for debug data:
                         let alphas = dex_utils::approximate::xyk::sample_points(
                             current_price,
                             dex_utils::approximate::xyk::NUM_POOLS_PRECISION,
                         );
+
+                        // R1 is already scaled.
                         let r1 = quantity.amount.value() as f64;
+                        // R2 scaled because the current_price is a ratio.
                         let r2 = r1 * current_price;
                         let denom_scaler = market.end.unit_amount().value() as f64;
                         let total_k = r1 * r2 * denom_scaler;
 
+                        println!("r1: {r1}");
+                        println!("r2: {r2}");
+                        println!("current_price: {current_price}");
+
+                        println!("r1*r2: {}", r1*r2);
+                        println!("denom scaler: {denom_scaler}");
+                        println!("total_k: {}", total_k);
+
+                        // TODO(erwan): if we make `approximate` return a `Vec<PayoffPositionEntry>` we can `Into` directly
                         let debug_positions: Vec<utils::PayoffPositionEntry> = positions
                             .iter()
                             .zip(alphas)
@@ -1151,7 +1165,10 @@ impl TxCmd {
                         return Ok(());
                     }
 
-                    // TODO(erwan): post positions.
+                    // TODO(erwan): post positions? batched? ux?
+                    // Print a summary,
+                    //    for each position here's the price ( of asset 1 in terms of asset 2), here's the reserves of each asset, and position id.
+                    //  use planner -> add all positions -> planner solves for the Spend/Output
                 }
             }
         }
