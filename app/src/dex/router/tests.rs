@@ -704,7 +704,6 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore]
 #[tokio::test]
 async fn fill_route_unconstrained() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
@@ -717,8 +716,8 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
             ------------------------------------------------------------------------------------------------------------
             |                              |                                     |                                     |
             | ^-bids---------asks-v        |   ^-bids---------asks-v             |   ^-bids---------asks-v             |
-            |        1gm@1                 |          1gn@2                      |         1penumbra@1500              |
-            |        1gm@1                 |          1gn@2                      |         1penumbra@1500              |
+            |        1gm@1                 |          1gn@1                      |         1penumbra@1500              |
+            |        1gm@1                 |          1gn@1                      |         1penumbra@1500              |
             |                              |                                     |         1penumbra@1500              |
             |                              |                                     |         1penumbra@1500              |
             |                              |                                     |         1penumbra@1500              |
@@ -744,9 +743,8 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     state_tx.put_position(buy_1);
     state_tx.put_position(buy_2);
 
-    let price2 = 2u64.into();
-    let buy_1 = limit_buy(pair_2.clone(), 1u64.into(), price2);
-    let buy_2 = limit_buy(pair_2.clone(), 1u64.into(), price2);
+    let buy_1 = limit_buy(pair_2.clone(), 1u64.into(), price1);
+    let buy_2 = limit_buy(pair_2.clone(), 1u64.into(), price1);
     state_tx.put_position(buy_1);
     state_tx.put_position(buy_2);
 
@@ -777,12 +775,12 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
             .await
             .unwrap();
 
-    let desired_output = Amount::from(3000u64) * pusd.unit_amount();
+    let desired_output = Amount::from(1500u64) * pusd.unit_amount();
 
-    assert_eq!(unfilled.amount, Amount::zero());
-    assert_eq!(unfilled.asset_id, gm.id());
-    assert_eq!(output.amount, desired_output);
-    assert_eq!(output.asset_id, pusd.id());
+    assert_eq!(unfilled.asset_id, gm.id(), "the unfilled asset id is correct");
+    assert_eq!(output.asset_id, pusd.id(), "the output asset id is correct");
+    assert_eq!(unfilled.amount, Amount::zero(), "there is no unfilled amount");
+    assert_eq!(output.amount, desired_output, "the output amount is correct");
 
     Ok(())
 }
