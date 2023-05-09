@@ -103,6 +103,8 @@ pub trait FillRoute2: StateWrite {
             }
         }
 
+        tracing::debug!(?frontier, "assembled initial frontier");
+
         'filling: loop {
             // INVARIANT: we must ensure that in each iteration of the loop, either:
             //
@@ -239,6 +241,15 @@ pub trait FillRoute2: StateWrite {
                     .expect("asset ids should match")
                     .expect("working backwards from most-constraining position should not exceed reserves");
 
+                tracing::debug!(
+                    i,
+                    current_value = ?current_value.amount,
+                    prev_input = ?prev_input.amount,
+                    old_reserves = ?frontier[i].reserves,
+                    new_reserves = ?new_reserves,
+                    "found previous input for current value"
+                );
+
                 frontier[i].reserves = new_reserves;
                 current_value = prev_input;
             }
@@ -275,12 +286,6 @@ pub trait FillRoute2: StateWrite {
 
             // Phase 3: update the frontier and prepare for the next iteration.
 
-            // We're going to discard the constraining position we just consumed,
-            // so write its updated reserves before we replace it on the frontier.
-            // The other positions will be written out either when they're fully
-            // consumed, or when we finish filling.
-            self.put_position(frontier[constraining_index].clone());
-
             // Update the input and output amounts tracked outside of the loop:
             input.amount = input.amount - current_input.amount;
             output.amount = output.amount + current_output.amount;
@@ -290,8 +295,14 @@ pub trait FillRoute2: StateWrite {
                 current_output = ?current_output.amount,
                 input = ?input.amount,
                 output = ?output.amount,
-                "completed fill iteration"
+                "completed fill iteration, updating frontier"
             );
+
+            // We're going to discard the constraining position we just consumed,
+            // so write its updated reserves before we replace it on the frontier.
+            // The other positions will be written out either when they're fully
+            // consumed, or when we finish filling.
+            self.put_position(frontier[constraining_index].clone());
 
             let current_effective_price =
                 U128x128::from(current_input.amount) / U128x128::from(current_output.amount);
@@ -300,7 +311,7 @@ pub trait FillRoute2: StateWrite {
             // TODO: is comparing Options the right behavior here? can we
             // continue rolling over dust positions without allowing arbitrarily
             // higher prices than the requested spill price?
-            if current_effective_price > spill_price {
+            if spill_price.is_some() && current_effective_price > spill_price {
                 tracing::debug!(
                     // HACK: render infinite price as 0
                     spill_price = %spill_price.unwrap_or_default(),
@@ -334,13 +345,23 @@ pub trait FillRoute2: StateWrite {
                         position_id
                     }
                     // Otherwise, continue to the next position in the stream.
-                    Some(_) => continue 'next_position,
+                    Some(position_id) => {
+                        tracing::debug!(?position_id, "skipping position already in frontier");
+                        continue 'next_position;
+                    }
                 };
 
                 let next_position = self
                     .position_by_id(&next_position_id)
                     .await?
                     .expect("indexed position should exist");
+
+                tracing::debug!(
+                    constraining_index,
+                    ?next_position_id,
+                    ?next_position,
+                    "replacing constraining position in frontier",
+                );
 
                 frontier_position_ids.insert(next_position_id);
                 frontier[constraining_index] = next_position;
