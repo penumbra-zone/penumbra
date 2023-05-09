@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 
 use crate::asset;
 use crate::dex::TradingPair;
@@ -218,8 +219,10 @@ impl BareTradingFunction {
 
     /// Determines the amount of asset 1 that can be filled for a given amount of asset 2,
     /// propagating rounding error to the input amount `delta_1` rather than the output amount `lambda_2`.
+    #[instrument(skip(self, reserves, lambda_2))]
     pub fn fill_output(&self, reserves: &Reserves, lambda_2: Amount) -> Option<(Reserves, Amount)> {
         if lambda_2 > reserves.r2 {
+            tracing::debug!(?reserves, ?lambda_2, "lambda_2 > r2, no fill possible");
             return None;
         }
         // We must work backwards to infer what `delta_1` (input) correspond
@@ -242,6 +245,14 @@ impl BareTradingFunction {
             // We checked that lambda_2 <= reserves.r2 above.
             r2: reserves.r2 - lambda_2,
         };
+        tracing::debug!(
+            ?reserves,
+            ?lambda_2,
+            %fillable_delta_1,
+            ?fillable_delta_1_exact,
+            ?new_reserves,
+            "computed reverse fill"
+        );
         Some((new_reserves, fillable_delta_1_exact))
     }
 

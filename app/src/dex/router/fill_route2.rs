@@ -123,7 +123,7 @@ pub trait FillRoute2: StateWrite {
             tracing::debug!(current_input = ?current_input, "sensing frontier capacity with test amount");
 
             for (i, position) in frontier.iter().enumerate() {
-                let (unfilled, _new_reserves, output) = position
+                let (unfilled, new_reserves, output) = position
                     .phi
                     .fill(current_input, &position.reserves)
                     .expect("asset ids should match");
@@ -134,6 +134,8 @@ pub trait FillRoute2: StateWrite {
                         current_input = ?current_input.amount,
                         unfilled = ?unfilled.amount,
                         output = ?output.amount,
+                        old_reserves = ?position.reserves,
+                        new_reserves = ?new_reserves,
                         "could not completely fill input amount, marking as constraining"
                     );
                     // We found a pair that constrains how much we can fill along this frontier.
@@ -144,6 +146,8 @@ pub trait FillRoute2: StateWrite {
                         current_input = ?current_input.amount,
                         unfilled = ?unfilled.amount,
                         output = ?output.amount,
+                        old_reserves = ?position.reserves,
+                        new_reserves = ?new_reserves,
                         "completely filled "
                     );
                 }
