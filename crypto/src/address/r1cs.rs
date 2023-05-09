@@ -36,32 +36,31 @@ impl AllocVar<Address, Fq> for AddressVar {
         let ns = cs.into();
         let cs = ns.cs();
         let address: Address = *f()?.borrow();
-        match mode {
-            AllocationMode::Constant => unimplemented!(),
-            AllocationMode::Input => unimplemented!(),
-            AllocationMode::Witness => {
-                let diversified_generator: ElementVar =
-                    AllocVar::<Element, Fq>::new_witness(cs.clone(), || {
-                        Ok(address.diversified_generator().clone())
-                    })?;
-                let element_transmission_key = decaf377::Encoding(address.transmission_key().0)
-                    .vartime_decompress()
-                    .map_err(|_| SynthesisError::AssignmentMissing)?;
-                let transmission_key: ElementVar =
-                    AllocVar::<Element, Fq>::new_witness(cs.clone(), || {
-                        Ok(element_transmission_key)
-                    })?;
-                let clue_key = FqVar::new_witness(cs, || {
-                    Ok(Fq::from_le_bytes_mod_order(&address.clue_key().0[..]))
-                })?;
 
-                Ok(Self {
-                    diversified_generator,
-                    transmission_key,
-                    clue_key,
-                })
-            }
-        }
+        let diversified_generator: ElementVar = AllocVar::<Element, Fq>::new_variable(
+            cs.clone(),
+            || Ok(address.diversified_generator().clone()),
+            mode,
+        )?;
+        let element_transmission_key = decaf377::Encoding(address.transmission_key().0)
+            .vartime_decompress()
+            .map_err(|_| SynthesisError::AssignmentMissing)?;
+        let transmission_key: ElementVar = AllocVar::<Element, Fq>::new_variable(
+            cs.clone(),
+            || Ok(element_transmission_key),
+            mode,
+        )?;
+        let clue_key = FqVar::new_variable(
+            cs,
+            || Ok(Fq::from_le_bytes_mod_order(&address.clue_key().0[..])),
+            mode,
+        )?;
+
+        Ok(Self {
+            diversified_generator,
+            transmission_key,
+            clue_key,
+        })
     }
 }
 
