@@ -54,8 +54,8 @@ spec:
           configMap:
             name: {{ include "penumbra.fullname" $ }}-genesis-config
             items:
-              - key: "genesis.json"
-                path: "genesis.json"
+              - key: "genesis.json.gz"
+                path: "genesis.json.gz"
         - name: val-secrets
           secret:
             secretName: {{ include "penumbra.fullname" $ }}-val-secrets-{{$i}}
@@ -124,7 +124,7 @@ spec:
               mkdir $MERGE_DIR
               config-merge -f toml $CONFIG_DIR/config.toml $OVERLAY_DIR/config.toml > $MERGE_DIR/config.toml
               mv $MERGE_DIR/* $CONFIG_DIR/
-              cp /genesis/genesis.json $CONFIG_DIR/
+              gzip -d -c /genesis/genesis.json.gz > $CONFIG_DIR/genesis.json
               cp /val/priv_validator_key.json $CONFIG_DIR/
               cp /val/node_key.json $CONFIG_DIR/
               cp /val/validator_custody.json $CONFIG_DIR/
