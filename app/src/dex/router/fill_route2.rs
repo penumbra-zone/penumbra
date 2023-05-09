@@ -1,13 +1,13 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap};
 
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use futures::{StreamExt, TryStreamExt};
+use futures::StreamExt;
 use penumbra_crypto::{asset, dex::DirectedTradingPair, fixpoint::U128x128, Amount, Value};
 use penumbra_storage::StateWrite;
 use tracing::instrument;
 
-use crate::dex::{state_key::position_by_id, PositionManager, PositionRead};
+use crate::dex::{PositionManager, PositionRead};
 
 #[async_trait]
 pub trait FillRoute2: StateWrite {
@@ -157,9 +157,11 @@ pub trait FillRoute2: StateWrite {
             let Some(constraining_index) = constraining_index else {
                 tracing::debug!("no constraining index found, completely filling input amount");
 
-                let mut current_value = input;
-                trace[0].amount += current_value.amount;
+                // Because there's no constraint, we can completely fill the entire input amount.
+                let current_input = input;
+                trace[0].amount += current_input.amount;
 
+                let mut current_value = current_input;
                 for (i, position) in frontier.iter_mut().enumerate() {
                     let (unfilled, new_reserves, output) = position
                         .phi
@@ -176,8 +178,20 @@ pub trait FillRoute2: StateWrite {
                     current_value = output;
                     trace[i + 1].amount += output.amount;
                 }
+                let current_output = current_value;
 
-                tracing::debug!("filled input amount completely, breaking loop");
+                // Update the input and output amounts tracked outside of the loop:
+                input.amount = input.amount - current_input.amount;
+                output.amount = output.amount + current_output.amount;
+
+                tracing::debug!(
+                    current_input = ?current_input.amount,
+                    current_output = ?current_output.amount,
+                    input = ?input.amount,
+                    output = ?output.amount,
+                    "filled input amount completely, breaking loop"
+                );
+
                 break 'filling;
             };
 
