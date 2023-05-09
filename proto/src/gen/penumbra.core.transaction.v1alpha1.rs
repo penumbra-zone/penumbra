@@ -139,7 +139,7 @@ pub struct TransactionPerspective {
     >,
     /// Any relevant denoms for viewed assets.
     #[prost(message, repeated, tag = "5")]
-    pub denoms: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::Denom>,
+    pub denoms: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::DenomMetadata>,
     /// The transaction ID associated with this TransactionPerspective
     #[prost(message, optional, tag = "6")]
     pub transaction_id: ::core::option::Option<Id>,

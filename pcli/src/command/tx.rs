@@ -12,8 +12,7 @@ use decaf377::Fr;
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
-    asset,
-    asset::Denom,
+    asset::{self, DenomMetadata},
     dex::lp::position,
     keys::AddressIndex,
     memo::MemoPlaintext,
@@ -877,6 +876,12 @@ impl TxCmd {
                     .unspent_notes_by_address_and_asset(app.fvk.account_group_id())
                     .await?;
 
+                fn is_opened_position_nft(denom: &DenomMetadata) -> bool {
+                    let prefix = format!("lpnft_opened_");
+
+                    denom.starts_with(&prefix)
+                }
+
                 let asset_cache = app.view().assets().await?;
                 let opened_notes: Vec<String> = notes
                     .iter()
@@ -937,7 +942,7 @@ impl TxCmd {
                     .unspent_notes_by_address_and_asset(app.fvk.account_group_id())
                     .await?;
 
-                fn is_closed_position_nft(denom: &Denom) -> bool {
+                fn is_closed_position_nft(denom: &DenomMetadata) -> bool {
                     let prefix = format!("lpnft_closed_");
 
                     denom.starts_with(&prefix)

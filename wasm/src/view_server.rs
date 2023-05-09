@@ -1,6 +1,6 @@
 use anyhow::Context;
 use penumbra_compact_block::{CompactBlock, StatePayload};
-use penumbra_crypto::asset::{Denom, Id};
+use penumbra_crypto::asset::{DenomMetadata, Id};
 use penumbra_crypto::{note, FullViewingKey, Nullifier};
 use penumbra_proto::core::transaction;
 use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
@@ -74,7 +74,7 @@ pub struct ViewServer {
     notes: BTreeMap<note::Commitment, SpendableNoteRecord>,
     notes_by_nullifier: BTreeMap<Nullifier, SpendableNoteRecord>,
     swaps: BTreeMap<tct::Commitment, SwapRecord>,
-    denoms: BTreeMap<Id, Denom>,
+    denoms: BTreeMap<Id, DenomMetadata>,
     nct: penumbra_tct::Tree,
 }
 

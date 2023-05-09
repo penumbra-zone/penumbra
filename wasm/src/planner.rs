@@ -10,7 +10,7 @@ use crate::note_record::SpendableNoteRecord;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
     asset::Amount,
-    asset::Denom,
+    asset::DenomMetadata,
     dex::{swap::SwapPlaintext, TradingPair},
     keys::AddressIndex,
     stake::IdentityKey,
@@ -161,7 +161,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub fn swap(
         &mut self,
         input_value: Value,
-        into_denom: Denom,
+        into_denom: DenomMetadata,
         swap_claim_fee: Fee,
         claim_address: Address,
     ) -> Result<&mut Self> {

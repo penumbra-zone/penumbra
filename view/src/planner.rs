@@ -10,7 +10,7 @@ use penumbra_app::stake::{rate::RateData, validator};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
     asset::Amount,
-    asset::Denom,
+    asset::DenomMetadata,
     dex::{
         lp::position::{self, Position},
         swap::SwapPlaintext,
@@ -209,7 +209,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub fn swap(
         &mut self,
         input_value: Value,
-        into_denom: Denom,
+        into_denom: DenomMetadata,
         swap_claim_fee: Fee,
         claim_address: Address,
     ) -> Result<&mut Self> {

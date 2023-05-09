@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::KnownAssets;
 use penumbra_crypto::{
-    asset::{self, Asset, Denom},
+    asset::{self, Asset, DenomMetadata},
     Amount,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
@@ -26,7 +26,7 @@ pub trait SupplyRead: StateRead {
             .unwrap_or_default())
     }
 
-    async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<Denom>> {
+    async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<DenomMetadata>> {
         self.get(&state_key::denom_by_asset(asset_id)).await
     }
 }
@@ -37,7 +37,7 @@ impl<T: StateRead + ?Sized> SupplyRead for T {}
 pub trait SupplyWrite: StateWrite {
     // TODO: refactor for new state model -- no more list of known asset IDs with fixed key
     #[instrument(skip(self))]
-    async fn register_denom(&mut self, denom: &Denom) -> Result<()> {
+    async fn register_denom(&mut self, denom: &DenomMetadata) -> Result<()> {
         let id = denom.id();
         if self.denom_by_asset(&id).await?.is_some() {
             tracing::debug!(?denom, ?id, "skipping existing denom");

@@ -18,7 +18,7 @@ use ibc_types::{
         ics24_host::identifier::{ChannelId, PortId},
     },
 };
-use penumbra_crypto::{asset, asset::Denom, Address, Amount, Value};
+use penumbra_crypto::{asset, asset::DenomMetadata, Address, Amount, Value};
 use penumbra_proto::{
     core::ibc::v1alpha1::FungibleTokenPacketData, StateReadProto, StateWriteProto,
 };
@@ -47,7 +47,7 @@ use crate::{
 //
 // A simple way of doing this is by parsing the denom, looking for a prefix that is only
 // appended in the case of a bridged token. That is what this logic does.
-fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &Denom) -> bool {
+fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &DenomMetadata) -> bool {
     let prefix = format!("{source_port}/{source_channel}/");
 
     !denom.starts_with(&prefix)
@@ -190,7 +190,7 @@ impl AppHandlerCheck for Ics20Transfer {
 
     async fn timeout_packet_check<S: StateRead>(state: S, msg: &MsgTimeout) -> Result<()> {
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
-        let denom: asset::Denom = packet_data.denom.as_str().try_into()?;
+        let denom: asset::DenomMetadata = packet_data.denom.as_str().try_into()?;
 
         if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom) {
             // check if we have enough balance to refund tokens to sender
@@ -233,7 +233,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
     // https://github.com/cosmos/ibc/tree/main/spec/app/ics-020-fungible-token-transfer (onRecvPacket)
     //
     let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
-    let denom: asset::Denom = packet_data
+    let denom: asset::DenomMetadata = packet_data
         .denom
         .as_str()
         .try_into()
@@ -256,7 +256,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             source_chan = msg.packet.chan_on_a
         );
 
-        let unprefixed_denom: asset::Denom = packet_data
+        let unprefixed_denom: asset::DenomMetadata = packet_data
             .denom
             .replace(&prefix, "")
             .as_str()
@@ -320,7 +320,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             msg.packet.port_on_b, msg.packet.chan_on_b, packet_data.denom
         );
 
-        let denom: asset::Denom = prefixed_denomination.as_str().try_into().unwrap();
+        let denom: asset::DenomMetadata = prefixed_denomination.as_str().try_into().unwrap();
         let value = Value {
             amount: receiver_amount,
             asset_id: denom.id(),
@@ -342,7 +342,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
 // see: https://github.com/cosmos/ibc/blob/8326e26e7e1188b95c32481ff00348a705b23700/spec/app/ics-020-fungible-token-transfer/README.md?plain=1#L297
 async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> Result<()> {
     let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
-    let denom: asset::Denom = packet_data // CRITICAL: verify that this denom is validated in upstream timeout handling
+    let denom: asset::DenomMetadata = packet_data // CRITICAL: verify that this denom is validated in upstream timeout handling
         .denom
         .as_str()
         .try_into()
