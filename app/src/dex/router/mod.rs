@@ -11,7 +11,8 @@ mod route_and_fill;
 use path::Path;
 use path_cache::{PathCache, PathEntry, SharedPathCache};
 
-pub use fill_route::FillRoute;
+//pub use fill_route::FillRoute;
+pub use fill_route2::FillRoute2;
 pub use path_search::PathSearch;
 pub use route_and_fill::RouteAndFill;
 

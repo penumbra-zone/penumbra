@@ -11,7 +11,7 @@ use penumbra_storage::StateWrite;
 use tracing::instrument;
 
 use crate::dex::{
-    router::{FillRoute, PathSearch},
+    router::{FillRoute2, PathSearch},
     PositionManager, StateWriteExt,
 };
 
