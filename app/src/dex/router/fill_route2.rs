@@ -115,12 +115,7 @@ pub trait FillRoute2: StateWrite {
 
             let mut constraining_index = None;
             let mut current_input = Value {
-                amount: std::cmp::min(
-                    frontier[0]
-                        .reserves_for(input.asset_id)
-                        .expect("pair is for input asset"),
-                    input.amount,
-                ),
+                amount: input.amount,
                 asset_id: input.asset_id,
             };
             tracing::debug!(current_input = ?current_input, "sensing frontier capacity with test amount");
