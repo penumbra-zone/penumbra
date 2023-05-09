@@ -120,10 +120,26 @@ function helm_uninstall() {
     kubectl delete pvc -l app.kubernetes.io/instance="$HELM_RELEASE" > /dev/null 2>&1
 }
 
+# We manually munge the ConfigMap for genesis data, rather than using Helm
+# to generate the template, to avoid the large filesize from exceeding
+# the 1MB Secret limit for Helm manifests.
+function create_config_map() {
+    if [[ -z "$HELM_RELEASE" ]] ; then
+        >&2 echo "Error: HELM_RELEASE not defined, cannot generate ConfigMap for genesis"
+        return 1
+    fi
+    repo_root="$(git rev-parse --show-toplevel)"
+    config_map_name="${HELM_RELEASE}-genesis-config"
+    kubectl delete configmap "$config_map_name" --ignore-not-found=true --wait
+    sleep 2
+    kubectl create configmap "$config_map_name" --from-file="${repo_root}/deployments/charts/penumbra/pdcli/genesis.json.gz"
+}
+
 # Apply the Helm configuration to the cluster. Will overwrite resources
 # as necessary. Will *not* replace certain durable resources like
 # the ManagedCertificate, which is annotated with helm.sh/resource-policy=keep.
 function helm_install() {
+    create_config_map
     helm upgrade --install "$HELM_RELEASE" ./charts/penumbra \
         --set "numValidators=$NVALS" \
         --set "numFullNodes=$NFULLNODES" \
