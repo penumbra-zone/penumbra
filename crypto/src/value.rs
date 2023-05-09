@@ -225,18 +225,13 @@ impl AllocVar<Value, Fq> for ValueVar {
         let ns = cs.into();
         let cs = ns.cs();
         let inner: Value = *f()?.borrow();
-        match mode {
-            AllocationMode::Constant => unimplemented!(),
-            AllocationMode::Input => unimplemented!(),
-            AllocationMode::Witness => {
-                let amount_var = asset::AmountVar::new_witness(cs.clone(), || Ok(inner.amount))?;
-                let asset_id_var = asset::AssetIdVar::new_witness(cs, || Ok(inner.asset_id))?;
-                Ok(Self {
-                    amount: amount_var,
-                    asset_id: asset_id_var,
-                })
-            }
-        }
+
+        let amount_var = asset::AmountVar::new_variable(cs.clone(), || Ok(inner.amount), mode)?;
+        let asset_id_var = asset::AssetIdVar::new_variable(cs, || Ok(inner.asset_id), mode)?;
+        Ok(Self {
+            amount: amount_var,
+            asset_id: asset_id_var,
+        })
     }
 }
 

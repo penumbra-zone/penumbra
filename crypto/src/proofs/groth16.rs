@@ -8,7 +8,7 @@ mod traits;
 mod undelegate;
 
 pub use delegator_vote::{DelegatorVoteCircuit, DelegatorVoteProof};
-pub use nullifier_derivation::NullifierDerivationCircuit;
+pub use nullifier_derivation::{NullifierDerivationCircuit, NullifierDerivationProof};
 pub use output::{OutputCircuit, OutputProof};
 pub use spend::{SpendCircuit, SpendProof};
 pub use swap::{SwapCircuit, SwapProof};
@@ -155,6 +155,51 @@ mod tests {
             let proof_result = proof.verify(&vk, balance_commitment, unbonding_id, penalty);
 
             assert!(proof_result.is_ok());
+        }
+    }
+
+    proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2))]
+    #[test]
+    fn nullifier_derivation_proof_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), value_amount in 2..200u64) {
+            let (pk, vk) = NullifierDerivationCircuit::generate_prepared_test_parameters();
+
+            let mut rng = OsRng;
+
+            let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+            let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+            let fvk_sender = sk_sender.full_viewing_key();
+            let ivk_sender = fvk_sender.incoming();
+            let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
+
+            let value_to_send = Value {
+                amount: value_amount.into(),
+                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            };
+
+            let note = Note::generate(&mut rng, &sender, value_to_send);
+            let note_commitment = note.commit();
+            let nk = *sk_sender.nullifier_key();
+            let mut sct = tct::Tree::new();
+
+            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let position = state_commitment_proof.position();
+            let nullifier = nk.derive_nullifier(state_commitment_proof.position(), &note_commitment);
+
+                let proof = NullifierDerivationProof::prove(
+                    &mut rng,
+                    &pk,
+                    position,
+                    note.clone(),
+                    nk,
+                    nullifier,
+                )
+                .expect("can create proof");
+
+                let proof_result = proof.verify(&vk, position, note, nullifier);
+
+                assert!(proof_result.is_ok());
         }
     }
 
