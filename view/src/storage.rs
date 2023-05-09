@@ -22,7 +22,7 @@ use r2d2_sqlite::{
     SqliteConnectionManager,
 };
 use sha2::{Digest, Sha256};
-use std::{collections::BTreeMap, num::NonZeroU64, str::FromStr, sync::Arc};
+use std::{collections::BTreeMap, num::NonZeroU64, str::FromStr, sync::Arc, time::Duration};
 use tct::Commitment;
 use tokio::{
     sync::broadcast::{self, error::RecvError},
@@ -90,8 +90,8 @@ impl Storage {
     fn connect(
         path: Option<impl AsRef<Utf8Path>>,
     ) -> anyhow::Result<r2d2::Pool<SqliteConnectionManager>> {
-        let manager = if let Some(path) = path {
-            SqliteConnectionManager::file(path.as_ref())
+        if let Some(path) = path {
+            let manager = SqliteConnectionManager::file(path.as_ref())
                 .with_flags(
                     // Don't allow opening URIs, because they can change the behavior of the database; we
                     // just want to open normal filepaths.
@@ -102,12 +102,22 @@ impl Storage {
                     // of cached prepared statements likely to be used.
                     conn.set_prepared_statement_cache_capacity(32);
                     Ok(())
-                })
+                });
+            Ok(r2d2::Pool::new(manager)?)
         } else {
-            SqliteConnectionManager::memory()
-        };
-
-        Ok(r2d2::Pool::new(manager)?)
+            let manager = SqliteConnectionManager::memory();
+            // Max size needs to be set to 1, otherwise a new in-memory database is created for each
+            // connection to the pool, which results in very confusing errors.
+            //
+            // Lifetimes and timeouts are likewise configured to their maximum values, since
+            // the in-memory database will disappear on connection close.
+            Ok(r2d2::Pool::builder()
+                .max_size(1)
+                .min_idle(Some(1))
+                .max_lifetime(Some(Duration::MAX))
+                .idle_timeout(Some(Duration::MAX))
+                .build(manager)?)
+        }
     }
 
     pub async fn load(path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
