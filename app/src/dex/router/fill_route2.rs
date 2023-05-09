@@ -370,6 +370,9 @@ pub trait FillRoute2: StateWrite {
                 frontier_position_ids.insert(next_position_id);
                 frontier[constraining_index] = next_position;
                 // TODO: should we remove the old position's ID from the ID set?
+
+                // Having updated the frontier, it's time to break out of the loop.
+                break 'next_position;
             }
         }
 
