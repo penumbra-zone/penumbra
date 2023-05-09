@@ -10,7 +10,7 @@ use penumbra_crypto::{
     asset,
     dex::{
         lp::{position, Reserves},
-        DirectedTradingPair, Market,
+        DirectedTradingPair, DirectedUnitPair,
     },
     fixpoint::U128x128,
     Amount, Value,
@@ -316,7 +316,7 @@ fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
 
 /// Create a `Position` to buy `asset_1` using `asset_2` with explicit p/q.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
-fn limit_buy_pq(market: Market, quantity: Amount, p: Amount, q: Amount, fee: u32) -> Position {
+fn limit_buy_pq(market: DirectedUnitPair, quantity: Amount, p: Amount, q: Amount, fee: u32) -> Position {
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),
@@ -332,7 +332,7 @@ fn limit_buy_pq(market: Market, quantity: Amount, p: Amount, q: Amount, fee: u32
 
 /// Create a `Position` to buy `asset_1` using `asset_2`.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
-pub(crate) fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
+pub(crate) fn limit_buy(market: DirectedUnitPair, quantity: Amount, price_in_numeraire: Amount) -> Position {
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),
@@ -347,7 +347,7 @@ pub(crate) fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Am
 }
 
 /// Create a `Position` to sell `asset_1` into `asset_2`.
-pub(crate) fn limit_sell(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
+pub(crate) fn limit_sell(market: DirectedUnitPair, quantity: Amount, price_in_numeraire: Amount) -> Position {
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),
@@ -445,7 +445,7 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
     let gm = asset::REGISTRY.parse_unit("gm");
     let gn = asset::REGISTRY.parse_unit("gn");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
 
     let one = 1u64.into();
     let price1 = one;
@@ -509,9 +509,9 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("test_usd");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
-    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
+    let pair_3 = DirectedUnitPair::new(penumbra.clone(), pusd.clone());
 
     let one: Amount = 1u64.into();
 
@@ -616,9 +616,9 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("test_usd");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
-    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
+    let pair_3 = DirectedUnitPair::new(penumbra.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
     state_tx.object_put("swap_execution", traces);
@@ -716,9 +716,9 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("test_usd");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
-    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
+    let pair_3 = DirectedUnitPair::new(penumbra.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
     state_tx.object_put("swap_execution", traces);
@@ -798,9 +798,9 @@ async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("test_usd");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
-    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
+    let pair_3 = DirectedUnitPair::new(penumbra.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
     state_tx.object_put("swap_execution", traces);
@@ -879,7 +879,7 @@ async fn simple_route() -> anyhow::Result<()> {
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
-    let pair_1 = Market::new(gn.clone(), penumbra.clone());
+    let pair_1 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
     let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), 1u64.into());
@@ -908,7 +908,7 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
-    let pair_1 = Market::new(gn.clone(), penumbra.clone());
+    let pair_1 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
     let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), 1u64.into());
@@ -981,10 +981,10 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
-    let pair_gn_penumbra = Market::new(gn.clone(), penumbra.clone());
-    let pair_gm_gn = Market::new(gm.clone(), gn.clone());
-    let pair_gn_gm = Market::new(gn.clone(), gm.clone());
-    let pair_gm_penumbra = Market::new(gm.clone(), penumbra.clone());
+    let pair_gn_penumbra = DirectedUnitPair::new(gn.clone(), penumbra.clone());
+    let pair_gm_gn = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_gn_gm = DirectedUnitPair::new(gn.clone(), gm.clone());
+    let pair_gm_penumbra = DirectedUnitPair::new(gm.clone(), penumbra.clone());
 
     // Create a 2:1 penumbra:gm position (i.e. buy 20 gm at 2 penumbra each).
     let buy_1 = limit_buy_pq(
@@ -1129,8 +1129,8 @@ async fn fill_dust_route() -> anyhow::Result<()> {
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
     state_tx.object_put("swap_execution", traces);
@@ -1191,8 +1191,8 @@ async fn fill_route_dust() -> () {
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
     state_tx.object_put("swap_execution", traces);
@@ -1249,9 +1249,9 @@ async fn fill_route_with_dust_constraint() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("test_usd");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
-    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
+    let pair_3 = DirectedUnitPair::new(penumbra.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
     state_tx.object_put("swap_execution", traces);
@@ -1328,10 +1328,10 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
     let pusd = asset::REGISTRY.parse_unit("test_usd");
     let btc = asset::REGISTRY.parse_unit("test_btc");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
-    let pair_3 = Market::new(penumbra.clone(), btc.clone());
-    let pair_4 = Market::new(btc.clone(), pusd.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
+    let pair_3 = DirectedUnitPair::new(penumbra.clone(), btc.clone());
+    let pair_4 = DirectedUnitPair::new(btc.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
     state_tx.object_put("swap_execution", traces);

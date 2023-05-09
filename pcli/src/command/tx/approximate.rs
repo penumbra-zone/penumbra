@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use penumbra_crypto::dex::Market;
+use penumbra_crypto::dex::DirectedUnitPair;
 use penumbra_crypto::Value;
 
 /// Queries the chain for a transaction by hash.
@@ -8,7 +8,7 @@ use penumbra_crypto::Value;
 pub enum ApproximateCmd {
     #[clap(visible_alias = "xyk")]
     ConstantProduct {
-        market: Market,
+        market: DirectedUnitPair,
         quantity: Value,
         #[clap(short, long)]
         current_price: Option<f64>,

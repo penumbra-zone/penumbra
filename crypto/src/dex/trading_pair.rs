@@ -203,12 +203,12 @@ impl fmt::Display for TradingPair {
 /// A directed tuple of `Unit`s, similar to a `DirectedTradingPair` but embedding
 /// useful denom data.
 #[derive(Clone, Debug)]
-pub struct Market {
+pub struct DirectedUnitPair {
     pub start: Unit,
     pub end: Unit,
 }
 
-impl Market {
+impl DirectedUnitPair {
     pub fn new(start: Unit, end: Unit) -> Self {
         Self { start, end }
     }
@@ -220,7 +220,7 @@ impl Market {
     }
 }
 
-impl FromStr for Market {
+impl FromStr for DirectedUnitPair {
     type Err = anyhow::Error;
 
     /// Takes an input of the form DENOM1:DENOM2,

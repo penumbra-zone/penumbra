@@ -4,7 +4,7 @@ use penumbra_crypto::{
     asset,
     dex::{
         lp::{position::Position, Reserves},
-        BatchSwapOutputData, DirectedTradingPair, Market,
+        BatchSwapOutputData, DirectedTradingPair, DirectedUnitPair,
     },
     Amount, MockFlowCiphertext,
 };
@@ -476,7 +476,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
-    let pair_gn_penumbra = Market::new(gn.clone(), penumbra.clone());
+    let pair_gn_penumbra = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
     let buy_1 = limit_buy(pair_gn_penumbra.clone(), 1u64.into(), 1u64.into());
@@ -547,25 +547,25 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
 
     // Sell 25 gn at 1 gm each.
     state_tx.put_position(limit_sell(
-        Market::new(gn.clone(), gm.clone()),
+        DirectedUnitPair::new(gn.clone(), gm.clone()),
         25u64.into(),
         1u64.into(),
     ));
     // Buy 1 pusd at 20 gm each.
     state_tx.put_position(limit_buy(
-        Market::new(pusd.clone(), gm.clone()),
+        DirectedUnitPair::new(pusd.clone(), gm.clone()),
         1u64.into(),
         20u64.into(),
     ));
     // Buy 5 penumbra at 1 gm each.
     state_tx.put_position(limit_buy(
-        Market::new(penumbra.clone(), gm.clone()),
+        DirectedUnitPair::new(penumbra.clone(), gm.clone()),
         5u64.into(),
         1u64.into(),
     ));
     // Sell 1pusd at 5 penumbra each.
     state_tx.put_position(limit_sell(
-        Market::new(pusd.clone(), penumbra.clone()),
+        DirectedUnitPair::new(pusd.clone(), penumbra.clone()),
         1u64.into(),
         5u64.into(),
     ));

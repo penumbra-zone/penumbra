@@ -8,13 +8,12 @@ pub mod xyk {
     use penumbra_crypto::{
         dex::{
             lp::{position::Position, Reserves},
-            Market,
+            DirectedUnitPair,
         },
         fixpoint::U128x128,
         Amount, Value,
     };
     use rand_core::OsRng;
-    use sha2::digest::consts::U1;
 
     /// The number of positions that is used to approximate the xyk CFMM.
     pub(crate) const NUM_POOLS_PRECISION: usize = 10;
@@ -27,10 +26,12 @@ pub mod xyk {
     }
 
     pub fn approximate(
-        market: &Market,
+        market: &DirectedUnitPair,
         r1: &Value,
         current_price: U128x128,
     ) -> anyhow::Result<Vec<Position>> {
+        // TODO(erwan): Henry: it could be interactive by default, --accept, --YES! that would
+        // skip interactivity.
         let fp_r1 = U128x128::from(r1.amount.value());
         let fp_r2 = (current_price * fp_r1).ok_or_else(|| {
             anyhow::anyhow!(
@@ -62,13 +63,6 @@ pub mod xyk {
 
         let position_ks = solve(&alphas, xyk_invariant, NUM_POOLS_PRECISION)?.to_vec();
 
-        // TODO(erwan): we need an argument that will output structured position data
-        // that we can pipe into a julia notebook and check if the curve makes sense.
-        position_ks
-            .iter()
-            .enumerate()
-            .for_each(|(i, k)| println!("k_{i} = {k}"));
-
         let f64_current_price: f64 = current_price.try_into()?;
 
         let positions: Vec<Position> = position_ks
@@ -88,8 +82,8 @@ pub mod xyk {
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
-                    let p = p;
-                    let q = Amount::from(1u64);
+                    let p = p * market.end.unit_amount();
+                    let q = Amount::from(1u64) * market.start.unit_amount();
 
                     let r1: Amount = Amount::from(0u64);
                     let approx_r2: U128x128 = (*k_i * market.end.unit_amount().value() as f64)
@@ -112,13 +106,13 @@ pub mod xyk {
                     // Tick is above the current price, therefore we want
                     // to create a one-sided position with price `alpha_i`
                     // that provisions `asset_1`.
-                    let p = Amount::from(1u64);
+                    let p = Amount::from(1u64) * market.end.unit_amount();
                     let approx_q: U128x128 = alpha_i.try_into().unwrap();
                     let q: Amount = approx_q
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
-                    let q = q;
+                    let q = q * market.start.unit_amount();
 
                     let approx_r1: U128x128 = (*k_i * market.start.unit_amount().value() as f64)
                         .try_into()
@@ -162,7 +156,7 @@ pub mod xyk {
             }
         }
 
-        utils::gauss_seidel(A, b, 10000, super::APPROXIMATION_TOLERANCE)
+        utils::gauss_seidel(A, b, 1000, super::APPROXIMATION_TOLERANCE)
     }
 
     pub fn portfolio_value_function(invariant_k: f64, price: f64) -> f64 {
