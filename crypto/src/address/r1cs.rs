@@ -1,10 +1,10 @@
 use crate::Address;
-use ark_ff::PrimeField;
+use ark_ff::{PrimeField, ToConstraintField};
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{
     r1cs::{ElementVar, FqVar},
-    Element, Fq,
+    Element, FieldExt, Fq,
 };
 
 pub struct AddressVar {
@@ -67,3 +67,16 @@ impl AllocVar<Address, Fq> for AddressVar {
 
 // We do not implement the R1CSVar trait for AddressVar since we do not have the
 // diversifier in-circuit in order to construct an Address.
+
+impl ToConstraintField<Fq> for Address {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let mut elements = Vec::new();
+        elements.extend(self.diversified_generator().to_field_elements()?);
+        let transmission_key_fq = decaf377::Encoding(self.transmission_key().0)
+            .vartime_decompress()
+            .expect("transmission key is valid decaf377 Element");
+        elements.extend([transmission_key_fq.vartime_compress_to_field()]);
+        elements.extend(Fq::from_bytes(self.clue_key().0));
+        Some(elements)
+    }
+}

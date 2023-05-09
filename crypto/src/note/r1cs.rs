@@ -1,4 +1,5 @@
 use crate::{address::AddressVar, note, value::ValueVar, Note};
+use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{
@@ -75,6 +76,17 @@ impl AllocVar<Note, Fq> for NoteVar {
                 })
             }
         }
+    }
+}
+
+impl ToConstraintField<Fq> for Note {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let mut elements = Vec::new();
+        let note_blinding = self.note_blinding();
+        elements.extend([note_blinding]);
+        elements.extend(self.value().to_field_elements()?);
+        elements.extend(self.address().to_field_elements()?);
+        Some(elements)
     }
 }
 
