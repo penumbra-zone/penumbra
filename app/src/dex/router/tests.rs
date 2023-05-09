@@ -496,7 +496,6 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore]
 #[tokio::test]
 async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     let storage = TempStorage::new().await?.apply_default_genesis().await?;
@@ -601,7 +600,6 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore]
 #[tokio::test]
 async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
@@ -777,10 +775,21 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
 
     let desired_output = Amount::from(1500u64) * pusd.unit_amount();
 
-    assert_eq!(unfilled.asset_id, gm.id(), "the unfilled asset id is correct");
+    assert_eq!(
+        unfilled.asset_id,
+        gm.id(),
+        "the unfilled asset id is correct"
+    );
     assert_eq!(output.asset_id, pusd.id(), "the output asset id is correct");
-    assert_eq!(unfilled.amount, Amount::zero(), "there is no unfilled amount");
-    assert_eq!(output.amount, desired_output, "the output amount is correct");
+    assert_eq!(
+        unfilled.amount,
+        Amount::zero(),
+        "there is no unfilled amount"
+    );
+    assert_eq!(
+        output.amount, desired_output,
+        "the output amount is correct"
+    );
 
     Ok(())
 }
@@ -880,7 +889,6 @@ async fn fill_route_underflow_effective_price() -> anyhow::Result<()> {
 }
 
 // TODO: remove this ignore once the test passes
-#[ignore]
 #[tokio::test]
 async fn simple_route() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
@@ -1324,7 +1332,6 @@ async fn fill_route_with_dust_constraint() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[ignore]
 #[tokio::test]
 /// Reproduce dust fill constraint that occurs when a constraint is
 /// also a dust position.
