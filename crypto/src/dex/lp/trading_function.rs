@@ -247,13 +247,11 @@ impl BareTradingFunction {
             //
             // Normally, we would have:
             //
-            // lambda_2 = bid_price * delta_1
+            // lambda_2 = effective_price * delta_1
             // since lambda_2 = r2, we have:
             //
-            // r2 = bid_price * delta_1, and since bid_price != 0:
-            // delta_1 = r2 * bid_price^-1
-            // since bid_price= (1/ask_price), we have:
-            // delta_1 = r2 * ask_price
+            // r2 = effective_price * delta_1, and since p,q != 0, effective_price != 0:
+            // delta_1 = r2 * effective_price^-1
             let r2 = U128x128::from(r2);
             let fillable_delta_1 = self.convert_to_delta_1(r2);
 

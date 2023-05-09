@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 
 mod fill_route;
+mod fill_route2;
 mod path;
 mod path_cache;
 mod path_search;

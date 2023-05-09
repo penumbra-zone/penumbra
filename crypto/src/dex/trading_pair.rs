@@ -6,7 +6,7 @@ use std::{fmt, str::FromStr};
 
 use crate::asset::{self, Unit, REGISTRY};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
 #[serde(try_from = "pb::DirectedTradingPair", into = "pb::DirectedTradingPair")]
 pub struct DirectedTradingPair {
     pub start: asset::Id,
