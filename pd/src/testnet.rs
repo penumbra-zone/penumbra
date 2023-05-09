@@ -56,7 +56,6 @@ pub fn generate_tm_config(
         tm_config.p2p.laddr =
             parse_tm_address(None, &Url::parse(format!("tcp://{}", p2p).as_str())?)?;
     }
-    //Ok(toml::to_string(&tm_config)?)
     Ok(tm_config)
 }
 

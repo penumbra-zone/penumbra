@@ -24,6 +24,7 @@ export RUSTDOCFLAGS="--enable-index-page -Zunstable-options --cfg docsrs"
 # shellcheck disable=SC2086
 cargo +nightly doc --no-deps \
   -p tendermint \
+  -p tendermint-config \
   -p tower-abci \
   -p jmt@0.3.0 \
   -p ark-ff \
