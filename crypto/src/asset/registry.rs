@@ -3,7 +3,7 @@ use std::sync::Arc;
 use once_cell::sync::Lazy;
 use regex::{Regex, RegexSet};
 
-use crate::asset::{denom, Denom, Unit};
+use crate::asset::{denom_metadata, DenomMetadata, Unit};
 
 /// A registry of known assets, providing metadata related to a denomination string.
 ///
@@ -34,7 +34,7 @@ pub struct Registry {
     // If we wanted to load registry data from a file in the future (would
     // require working out how to write closures), we could use boxed closures
     // instead of a function.
-    constructors: Vec<fn(&str) -> denom::Inner>,
+    constructors: Vec<fn(&str) -> denom_metadata::Inner>,
 }
 
 impl Registry {
@@ -47,7 +47,7 @@ impl Registry {
     ///
     /// If the denomination is unknown, returns `Some` with the parsed base
     /// denomination and default display denomination (base = display).
-    pub fn parse_denom(&self, raw_denom: &str) -> Option<Denom> {
+    pub fn parse_denom(&self, raw_denom: &str) -> Option<DenomMetadata> {
         // We hope that our regexes are disjoint (TODO: add code to test this)
         // so that there will only ever be one match from the RegexSet.
 
@@ -62,7 +62,7 @@ impl Registry {
                 .map(|m| m.as_str())
                 .unwrap_or("");
 
-            Some(Denom {
+            Some(DenomMetadata {
                 inner: Arc::new(self.constructors[base_index](data)),
             })
         } else if self.display_set.matches(raw_denom).iter().next().is_some() {
@@ -70,8 +70,11 @@ impl Registry {
             None
         } else {
             // 3. Fallthrough: create default base denom
-            Some(Denom {
-                inner: Arc::new(denom::Inner::new(raw_denom.to_string(), Vec::new())),
+            Some(DenomMetadata {
+                inner: Arc::new(denom_metadata::Inner::new(
+                    raw_denom.to_string(),
+                    Vec::new(),
+                )),
             })
         }
     }
@@ -108,7 +111,7 @@ impl Registry {
 #[derive(Default)]
 struct Builder {
     base_regexes: Vec<&'static str>,
-    constructors: Vec<fn(&str) -> denom::Inner>,
+    constructors: Vec<fn(&str) -> denom_metadata::Inner>,
     unit_regexes: Vec<Vec<&'static str>>,
 }
 
@@ -128,7 +131,7 @@ impl Builder {
         mut self,
         base_regex: &'static str,
         unit_regexes: &[&'static str],
-        constructor: fn(&str) -> denom::Inner,
+        constructor: fn(&str) -> denom_metadata::Inner,
     ) -> Self {
         self.base_regexes.push(base_regex);
         self.constructors.push(constructor);
@@ -175,14 +178,14 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             &["^penumbra$", "^mpenumbra$"],
             (|data: &str| {
                 assert!(data.is_empty());
-                denom::Inner::new(
+                denom_metadata::Inner::new(
                     "upenumbra".to_string(),
                     vec![
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 6,
                             denom: "penumbra".to_string(),
                         },
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 3,
                             denom: "mpenumbra".to_string(),
                         },
@@ -195,14 +198,14 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             &["^gm$", "^mgm$"],
             (|data: &str| {
                 assert!(data.is_empty());
-                denom::Inner::new(
+                denom_metadata::Inner::new(
                     "ugm".to_string(),
                     vec![
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 6,
                             denom: "gm".to_string(),
                         },
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 3,
                             denom: "mgm".to_string(),
                         },
@@ -215,14 +218,14 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             &["^gn$", "^mgn$"],
             (|data: &str| {
                 assert!(data.is_empty());
-                denom::Inner::new(
+                denom_metadata::Inner::new(
                     "ugn".to_string(),
                     vec![
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 6,
                             denom: "gn".to_string(),
                         },
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 3,
                             denom: "mgn".to_string(),
                         },
@@ -235,10 +238,10 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             &["^test_usd$"],
             (|data: &str| {
                 assert!(data.is_empty());
-                denom::Inner::new(
+                denom_metadata::Inner::new(
                     "wtest_usd".to_string(),
                     vec![
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             // TODO(erwan): temporarily reduced to 1e6 (see #2560)
                             exponent: 6,
                             denom: "test_usd".to_string(),
@@ -269,10 +272,10 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             &["^test_btc$"],
             (|data: &str| {
                 assert!(data.is_empty());
-                denom::Inner::new(
+                denom_metadata::Inner::new(
                     "test_sat".to_string(),
                     vec![
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 8,
                             denom: "test_btc".to_string(),
                         },
@@ -285,14 +288,14 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             &["^test_atom$", "^mtest_atom$"],
             (|data: &str| {
                 assert!(data.is_empty());
-                denom::Inner::new(
+                denom_metadata::Inner::new(
                     "utest_atom".to_string(),
                     vec![
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 6,
                             denom: "test_atom".to_string(),
                         },
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 3,
                             denom: "mtest_atom".to_string(),
                         },
@@ -305,14 +308,14 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             &["^test_osmo$", "^mtest_osmo$"],
             (|data: &str| {
                 assert!(data.is_empty());
-                denom::Inner::new(
+                denom_metadata::Inner::new(
                     "utest_osmo".to_string(),
                     vec![
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 6,
                             denom: "test_osmo".to_string(),
                         },
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 3,
                             denom: "mtest_osmo".to_string(),
                         },
@@ -331,14 +334,14 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             ],
             (|data: &str| {
                 assert!(!data.is_empty());
-                denom::Inner::new(
+                denom_metadata::Inner::new(
                     format!("udelegation_{data}"),
                     vec![
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 6,
                             denom: format!("delegation_{data}"),
                         },
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 3,
                             denom: format!("mdelegation_{data}"),
                         },
@@ -357,14 +360,14 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             ],
             (|data: &str| {
                 assert!(!data.is_empty());
-                denom::Inner::new(
+                denom_metadata::Inner::new(
                     format!("uunbonding_{data}"),
                     vec![
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 6,
                             denom: format!("unbonding_{data}"),
                         },
-                        denom::UnitData {
+                        denom_metadata::UnitData {
                             exponent: 3,
                             denom: format!("munbonding_{data}"),
                         },
@@ -380,7 +383,7 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             &[ /* no display units - nft, unit 1 */ ],
             (|data: &str| {
                 assert!(!data.is_empty());
-                denom::Inner::new(format!("lpnft_{data}"), vec![])
+                denom_metadata::Inner::new(format!("lpnft_{data}"), vec![])
             }) as for<'r> fn(&'r str) -> _,
         )
         .add_asset(
@@ -389,7 +392,7 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             &[ /* no display units - nft, unit 1 */ ],
             (|data: &str| {
                 assert!(!data.is_empty());
-                denom::Inner::new(format!("proposal_{data}"), vec![])
+                denom_metadata::Inner::new(format!("proposal_{data}"), vec![])
             }) as for<'r> fn(&'r str) -> _,
         )
         // Note: this regex must be in sync with VoteReceiptToken::try_from
@@ -400,12 +403,12 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             ],
             (|data: &str| {
                 assert!(!data.is_empty());
-                denom::Inner::new(format!("uvoted_on_{data}"), vec![
-                    denom::UnitData {
+                denom_metadata::Inner::new(format!("uvoted_on_{data}"), vec![
+                    denom_metadata::UnitData {
                         exponent: 6,
                         denom: format!("voted_on_{data}"),
                     },
-                    denom::UnitData {
+                    denom_metadata::UnitData {
                         exponent: 3,
                         denom: format!("mvoted_on_{data}"),
                     },

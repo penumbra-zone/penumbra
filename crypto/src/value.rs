@@ -38,7 +38,7 @@ pub struct Value {
 pub enum ValueView {
     KnownDenom {
         amount: asset::Amount,
-        denom: asset::Denom,
+        denom: asset::DenomMetadata,
     },
     UnknownDenom {
         amount: asset::Amount,
@@ -60,7 +60,7 @@ impl ValueView {
 
 impl Value {
     /// Convert this `Value` into a `ValueView` with the given `Denom`.
-    pub fn view_with_denom(&self, denom: asset::Denom) -> anyhow::Result<ValueView> {
+    pub fn view_with_denom(&self, denom: asset::DenomMetadata) -> anyhow::Result<ValueView> {
         if self.asset_id == denom.id() {
             Ok(ValueView::KnownDenom {
                 amount: self.amount,
