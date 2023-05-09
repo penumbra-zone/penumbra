@@ -130,9 +130,12 @@ function create_config_map() {
     fi
     repo_root="$(git rev-parse --show-toplevel)"
     config_map_name="${HELM_RELEASE}-genesis-config"
+    # The smelly sleeps ensure that the ConfigMap exists prior to creation of PVs which
+    # mount in the contents of the CM; otherwise, pods get stuck in init state.
     kubectl delete configmap "$config_map_name" --ignore-not-found=true --wait
     sleep 2
     kubectl create configmap "$config_map_name" --from-file="${repo_root}/deployments/charts/penumbra/pdcli/genesis.json.gz"
+    sleep 3
 }
 
 # Apply the Helm configuration to the cluster. Will overwrite resources
