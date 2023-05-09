@@ -71,6 +71,19 @@ pub mod delegator_vote {
     include!("gen/delegator_vote_id.rs");
 }
 
+#[cfg(feature = "proving-keys")]
+/// Proving key for the nullifier derivation proof.
+pub static NULLIFIER_DERIVATION_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
+    Lazy::new(proving_keys::nullifier_derivation_proving_parameters);
+
+/// Verification key for the delegator vote proof.
+pub static NULLIFIER_DERIVATION_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> =
+    Lazy::new(|| nullifier_derivation_verification_parameters().into());
+
+pub mod nullifier_derivation {
+    include!("gen/nullifier_derivation_id.rs");
+}
+
 // Note: Here we are using `CanonicalDeserialize::deserialize_uncompressed_unchecked` as the
 // parameters are being loaded from a trusted source (our source code).
 // TODO: Migrate to `CanonicalDeserialize::deserialize_compressed_unchecked` to save space.
@@ -101,6 +114,12 @@ fn undelegateclaim_verification_parameters() -> VerifyingKey<Bls12_377> {
 
 fn delegator_vote_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/delegator_vote_vk.param");
+    VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
+        .expect("can deserialize VerifyingKey")
+}
+
+fn nullifier_derivation_verification_parameters() -> VerifyingKey<Bls12_377> {
+    let vk_params = include_bytes!("gen/nullifier_derivation_vk.param");
     VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
         .expect("can deserialize VerifyingKey")
 }

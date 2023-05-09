@@ -29,6 +29,11 @@ pub fn delegator_vote_proving_parameters() -> ProvingKey<Bls12_377> {
     load_proving_parameters(pk_params, crate::delegator_vote::PROVING_KEY_ID)
 }
 
+pub fn nullifier_derivation_proving_parameters() -> ProvingKey<Bls12_377> {
+    let pk_params = include_bytes!("gen/nullifier_derivation_pk.bin");
+    load_proving_parameters(pk_params, crate::nullifier_derivation::PROVING_KEY_ID)
+}
+
 /// Given a byte slice, deserialize it into a proving key.
 pub fn load_proving_parameters(bytes: &[u8], expected_id: &str) -> ProvingKey<Bls12_377> {
     let pk =

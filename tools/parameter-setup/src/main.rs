@@ -8,8 +8,8 @@ use ark_groth16::{ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalSerialize;
 use decaf377::Bls12_377;
 use penumbra_crypto::proofs::groth16::{
-    DelegatorVoteCircuit, OutputCircuit, ParameterSetup, ProvingKeyExt, SpendCircuit, SwapCircuit,
-    UndelegateClaimCircuit, VerifyingKeyExt,
+    DelegatorVoteCircuit, NullifierDerivationCircuit, OutputCircuit, ParameterSetup, ProvingKeyExt,
+    SpendCircuit, SwapCircuit, UndelegateClaimCircuit, VerifyingKeyExt,
 };
 
 fn main() -> Result<()> {
@@ -46,6 +46,14 @@ fn main() -> Result<()> {
         &delegator_vote_pk,
         &delegator_vote_vk,
     )?;
+    let (nullifier_derivation_pk, nullifier_derivation_vk) =
+        NullifierDerivationCircuit::generate_test_parameters();
+    write_params(
+        &target_dir,
+        "nullifier_derivation",
+        &nullifier_derivation_pk,
+        &nullifier_derivation_vk,
+    )?;
     // NOTE: New proofs go here following the approach above.
 
     Ok(())
@@ -67,8 +75,8 @@ fn write_params(
     let pk_writer = BufWriter::new(pk_file);
     let vk_writer = BufWriter::new(vk_file);
 
-    ProvingKey::serialize_unchecked(pk, pk_writer).expect("can serialize ProvingKey");
-    VerifyingKey::serialize_unchecked(vk, vk_writer).expect("can serialize VerifyingKey");
+    ProvingKey::serialize_uncompressed(pk, pk_writer).expect("can serialize ProvingKey");
+    VerifyingKey::serialize_uncompressed(vk, vk_writer).expect("can serialize VerifyingKey");
 
     let pk_id = pk.debug_id();
     let vk_id = vk.debug_id();
