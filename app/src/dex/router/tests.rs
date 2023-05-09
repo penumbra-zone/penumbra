@@ -904,6 +904,7 @@ async fn simple_route() -> anyhow::Result<()> {
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
     let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), 1u64.into());
     state_tx.put_position(buy_1);
+    state_tx.apply();
 
     // We should be able to call path_search and route through that position.
     let (path, _spill) = state
