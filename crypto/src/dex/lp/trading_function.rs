@@ -101,6 +101,7 @@ impl TradingFunction {
             let flipped_reserves = reserves.flip();
             Ok(self
                 .component
+                .flip()
                 .fill_output(&flipped_reserves, output.amount)
                 .map(|(new_reserves, input)| {
                     (
