@@ -73,26 +73,44 @@ impl TradingFunction {
         }
     }
 
-    pub fn backfill(&self, output: Value) -> anyhow::Result<Value> {
-        if output.asset_id == self.pair.asset_1() {
-            let f = self
+    /// Attempts to compute the input value required to produce the given output
+    /// value, returning the input value and updated reserves if successful.
+    ///
+    /// Errors if the asset type of the input does not match either end of this
+    /// `TradingFunction`'s `TradingPair`.  Returns `None` if the output value
+    /// exceeds the liquidity of the reserves.
+    pub fn fill_output(
+        &self,
+        reserves: &Reserves,
+        output: Value,
+    ) -> anyhow::Result<Option<(Reserves, Value)>> {
+        if output.asset_id == self.pair.asset_2() {
+            Ok(self
                 .component
-                .convert_to_lambda_2(U128x128::from(output.amount));
-            let f = f.round_up().try_into()?;
-            Ok(Value {
-                amount: f,
-                asset_id: self.pair.asset_2(),
-            })
-        } else if output.asset_id == self.pair.asset_2() {
-            let fillable_delta_1 = self
+                .fill_output(reserves, output.amount)
+                .map(|(new_reserves, input)| {
+                    (
+                        new_reserves,
+                        Value {
+                            amount: input,
+                            asset_id: self.pair.asset_1(),
+                        },
+                    )
+                }))
+        } else if output.asset_id == self.pair.asset_1() {
+            let flipped_reserves = reserves.flip();
+            Ok(self
                 .component
-                .convert_to_delta_1(U128x128::from(output.amount));
-
-            let fillable_delta_1 = fillable_delta_1.round_up().try_into()?;
-            Ok(Value {
-                amount: fillable_delta_1,
-                asset_id: self.pair.asset_1(),
-            })
+                .fill_output(&flipped_reserves, output.amount)
+                .map(|(new_reserves, input)| {
+                    (
+                        new_reserves.flip(),
+                        Value {
+                            amount: input,
+                            asset_id: self.pair.asset_2(),
+                        },
+                    )
+                }))
         } else {
             Err(anyhow!(
                 "output asset id {:?} did not match either end of trading pair {:?}",
@@ -192,6 +210,51 @@ impl BareTradingFunction {
             q: self.p,
         }
     }
+
+    pub fn fill_input(&self, _reserves: &Reserves, _delta_1: Amount) -> Option<(Reserves, Amount)> {
+        todo!()
+    }
+
+    /// Determines the amount of asset 1 that can be filled for a given amount of asset 2,
+    /// propagating rounding error to the input amount `delta_1` rather than the output amount `lambda_2`.
+    pub fn fill_output(&self, reserves: &Reserves, lambda_2: Amount) -> Option<(Reserves, Amount)> {
+        if lambda_2 > reserves.r2 {
+            return None;
+        }
+        // We must work backwards to infer what `delta_1` (input) correspond
+        // exactly to a fill of `lambda_2 = r2`.
+        // lambda_2 = effective_price * delta_1
+        // and since p,q != 0, effective_price != 0:
+        // delta_1 = r2 * effective_price^-1
+        let fillable_delta_1 = self.convert_to_delta_1(lambda_2.into());
+
+        // We burn the rouding error by apply `ceil` to delta_1:
+        //
+        // delta_1_star = Ceil(delta_1)
+        let fillable_delta_1_exact: Amount = fillable_delta_1
+            .round_up()
+            .try_into()
+            .expect("rounded up to integral value");
+
+        let new_reserves = Reserves {
+            r1: reserves.r1 + fillable_delta_1_exact,
+            // We checked that lambda_2 <= reserves.r2 above.
+            r2: reserves.r2 - lambda_2,
+        };
+        Some((new_reserves, fillable_delta_1_exact))
+    }
+
+    /*
+       pub fn fill2(&self, reserves: &Reserves, delta_1: Amount) -> (Amount, Reserves, Amount) {
+           if let Some((reserves, lambda_2)) = self.fill_input(reserves, delta_1) {
+               (0u64.into(), reserves, lambda_2)
+           } else {
+               let (reserves, fillable_delta_1) = self.fill_output(reserves, lambda_2);
+               let unfilled_amount = delta_1 - fillable_delta_1_exact;
+               (unfilled_amount, reserves, lambda_2)
+           }
+       }
+    */
 
     /// Fills a trade of asset 1 to asset 2 against the given reserves,
     /// returning the unfilled amount of asset 1, the updated reserves, and the
