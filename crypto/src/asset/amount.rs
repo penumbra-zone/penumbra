@@ -1,3 +1,4 @@
+use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
@@ -49,6 +50,14 @@ impl Amount {
 #[derive(Clone)]
 pub struct AmountVar {
     pub amount: FqVar,
+}
+
+impl ToConstraintField<Fq> for Amount {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let mut elements = Vec::new();
+        elements.extend_from_slice(&[Fq::from(self.inner)]);
+        Some(elements)
+    }
 }
 
 impl AmountVar {

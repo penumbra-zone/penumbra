@@ -1,5 +1,6 @@
 //! Values (?)
 
+use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{r1cs::FqVar, Fq};
@@ -236,6 +237,15 @@ impl AllocVar<Value, Fq> for ValueVar {
                 })
             }
         }
+    }
+}
+
+impl ToConstraintField<Fq> for Value {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let mut elements = Vec::new();
+        elements.extend_from_slice(&self.amount.to_field_elements()?);
+        elements.extend_from_slice(&self.asset_id.to_field_elements()?);
+        Some(elements)
     }
 }
 

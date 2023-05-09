@@ -1,5 +1,6 @@
 mod delegator_vote;
 mod gadgets;
+mod nullifier_derivation;
 mod output;
 mod spend;
 mod swap;
@@ -7,6 +8,7 @@ mod traits;
 mod undelegate;
 
 pub use delegator_vote::{DelegatorVoteCircuit, DelegatorVoteProof};
+pub use nullifier_derivation::NullifierDerivationCircuit;
 pub use output::{OutputCircuit, OutputProof};
 pub use spend::{SpendCircuit, SpendProof};
 pub use swap::{SwapCircuit, SwapProof};
