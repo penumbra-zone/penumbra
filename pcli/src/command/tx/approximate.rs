@@ -56,13 +56,17 @@ impl ConstantProduct {
                     dex_utils::approximate::xyk::NUM_POOLS_PRECISION,
                 );
 
+                alphas
+                    .iter()
+                    .enumerate()
+                    .for_each(|(i, alpha)| tracing::debug!(i, alpha, "sampled tick"));
+
                 let r1 = self.input.amount.value() as f64;
                 // R2 scaled because the current_price is a ratio.
                 let r2 = r1 * current_price;
-                let denom_scaler = self.pair.end.unit_amount().value() as f64;
-                let total_k = r1 * r2 * denom_scaler;
+                let total_k = r1 * r2;
+                tracing::debug!(r1, r2, total_k, current_price);
 
-                // TODO(erwan): if we make `approximate` return a `Vec<PayoffPositionEntry>` we can `Into` directly
                 let debug_positions: Vec<utils::PayoffPositionEntry> = positions
                     .iter()
                     .zip(alphas)
