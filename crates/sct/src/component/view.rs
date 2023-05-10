@@ -1,11 +1,11 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
+use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
 
 // TODO: make epoch management the responsibility of this component
-use penumbra_chain::component::StateReadExt as _;
 
 use crate::state_key;
 
@@ -17,7 +17,7 @@ use crate::state_key;
 //#[async_trait(?Send)]
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    async fn stub_state_commitment_tree(&self) -> tct::Tree {
+    async fn state_commitment_tree(&self) -> tct::Tree {
         match self
             .nonconsensus_get_raw(state_key::stub_state_commitment_tree().as_bytes())
             .await
@@ -54,6 +54,32 @@ pub trait StateReadExt: StateRead {
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
 
+#[async_trait]
+pub trait SctManager: StateWrite {
+    async fn add_sct_commitment(&mut self, commitment: tct::Commitment) -> Result<tct::Position> {
+        let mut tree = self.state_commitment_tree().await;
+        let position = tree.insert(tct::Witness::Forget, commitment)?;
+        self.put_state_commitment_tree(&tree);
+        Ok(position)
+    }
+
+    async fn end_sct_block(&mut self) -> Result<()> {
+        let mut tree = self.state_commitment_tree().await;
+        tree.end_block()?;
+        self.put_state_commitment_tree(&tree);
+        Ok(())
+    }
+
+    async fn end_sct_epoch(&mut self) -> Result<()> {
+        let mut tree = self.state_commitment_tree().await;
+        tree.end_epoch()?;
+        self.put_state_commitment_tree(&tree);
+        Ok(())
+    }
+}
+
+impl<T: StateWrite + ?Sized> SctManager for T {}
+
 /// This trait provides write access to common parts of the Penumbra
 /// state store.
 ///
@@ -62,7 +88,7 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 //#[async_trait(?Send)]
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
-    fn stub_put_state_commitment_tree(&mut self, tree: &tct::Tree) {
+    fn put_state_commitment_tree(&mut self, tree: &tct::Tree) {
         let bytes = bincode::serialize(&tree).unwrap();
         self.nonconsensus_put_raw(
             state_key::stub_state_commitment_tree().as_bytes().to_vec(),
@@ -107,7 +133,7 @@ pub trait StateWriteExt: StateWrite {
             self.set_sct_epoch_anchor(index, epoch_root);
         }
 
-        self.stub_put_state_commitment_tree(&sct);
+        self.put_state_commitment_tree(&sct);
     }
 }
 
