@@ -97,11 +97,12 @@ pub mod xyk {
                 // `asset_2`.
                 if alpha_i < f64_current_price {
                     let approx_p: U128x128 = alpha_i.try_into().unwrap();
-                    let p: Amount = approx_p
+                    let unit_scale = U128x128::from(pair.end.unit_amount());
+                    let p = (approx_p * unit_scale).unwrap();
+                    let p: Amount = p
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
-                    let p = p * pair.end.unit_amount();
                     let q = Amount::from(1u64) * pair.start.unit_amount();
 
                     let r1: Amount = Amount::from(0u64);
@@ -143,7 +144,9 @@ pub mod xyk {
                     // that provisions `asset_1`.
                     let p = Amount::from(1u64) * pair.end.unit_amount();
                     let approx_q: U128x128 = alpha_i.try_into().unwrap();
-                    let q: Amount = approx_q
+                    let unit_scale = U128x128::from(pair.start.unit_amount());
+                    let q = (approx_q * unit_scale).unwrap();
+                    let q: Amount = q
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
