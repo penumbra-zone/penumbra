@@ -163,9 +163,9 @@ impl ParameterSetup for SpendCircuit {
         let rk: VerificationKey<SpendAuth> = rsk.into();
         let nullifier = Nullifier(Fq::from(1));
         let mut sct = tct::Tree::new();
+        let anchor: tct::Root = sct.root();
         let note_commitment = note.commit();
         sct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let anchor = sct.root();
         let state_commitment_proof = sct.witness(note_commitment).unwrap();
 
         let circuit = SpendCircuit {
@@ -236,7 +236,7 @@ impl SpendProof {
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<()> {
         let mut public_inputs = Vec::new();
-        public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
+        public_inputs.extend([Fq::from(anchor.0)]);
         public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
         public_inputs.extend(nullifier.0.to_field_elements().unwrap());
         let element_rk = decaf377::Encoding(rk.to_bytes())
