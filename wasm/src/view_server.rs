@@ -288,7 +288,7 @@ impl ViewServer {
                                 source,
                             };
                             new_notes.push(note_record.clone());
-                            self.notes.insert(payload.note_commitment, note_recor.clone());
+                            self.notes.insert(payload.note_commitment, note_record.clone());
                             self.notes_by_nullifier.insert(nullifier, note_record.clone());
 
                         }
