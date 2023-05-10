@@ -4,7 +4,6 @@ use penumbra_crypto::asset::{Denom, Id};
 use penumbra_crypto::{note, FullViewingKey, Nullifier};
 use penumbra_tct as tct;
 use penumbra_tct::Witness::*;
-use penumbra_transaction::{Transaction, TransactionPerspective, TransactionView};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::convert::TryInto;
@@ -14,6 +13,10 @@ use tct::{Forgotten, Tree};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 use web_sys::console as web_console;
+use penumbra_proto::core::transaction;
+use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
+use penumbra_proto::view::v1alpha1::{TransactionInfo, TransactionInfoResponse};
+use penumbra_transaction::Transaction;
 
 use crate::note_record::SpendableNoteRecord;
 use crate::swap_record::SwapRecord;
@@ -47,6 +50,24 @@ impl ScanBlockResult {
             nct_updates,
             new_notes,
             new_swaps,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TxInfoResponse {
+    txp: TransactionPerspective,
+    txv: TransactionView,
+}
+
+impl TxInfoResponse {
+    pub fn new(
+        txp: TransactionPerspective,
+        txv: TransactionView,
+    ) -> TxInfoResponse {
+        Self {
+            txp,
+            txv
         }
     }
 }
@@ -142,7 +163,9 @@ impl ViewServer {
                                 source,
                             };
                             new_notes.push(note_record.clone());
-                            self.notes.insert(payload.note_commitment, note_record);
+                            self.notes.insert(payload.note_commitment, note_record.clone());
+                            self.notes_by_nullifier.insert(nullifier, note_record.clone());
+
                         }
                         None => {
                             self.nct.insert(Forget, payload.note_commitment).unwrap();
@@ -265,7 +288,9 @@ impl ViewServer {
                                 source,
                             };
                             new_notes.push(note_record.clone());
-                            self.notes.insert(payload.note_commitment, note_record);
+                            self.notes.insert(payload.note_commitment, note_recor.clone());
+                            self.notes_by_nullifier.insert(nullifier, note_record.clone());
+
                         }
                         None => {
                             self.nct.insert(Forget, payload.note_commitment).unwrap();
@@ -362,17 +387,30 @@ impl ViewServer {
     }
 
     pub fn transaction_info(&mut self, tx: JsValue) -> JsValue {
-        unimplemented!();
+        let transaction = serde_wasm_bindgen::from_value(tx).unwrap();
+        let (txp, txv) = self.transaction_info_inner(transaction);
+
+
+        let txp_proto = TransactionPerspective::try_from(txp).unwrap();
+        let txv_proto = TransactionView::try_from(txv).unwrap();
+
+        let response = TxInfoResponse {
+            txp:txp_proto,
+            txv: txv_proto
+
+        };
+        serde_wasm_bindgen::to_value(&response).unwrap()
     }
 }
+
 impl ViewServer {
     pub fn transaction_info_inner(
         &self,
         tx: Transaction,
-    ) -> (TransactionPerspective, TransactionView) {
+    ) -> (penumbra_transaction::TransactionPerspective, penumbra_transaction::TransactionView) {
         // First, create a TxP with the payload keys visible to our FVK and no other data.
 
-        let mut txp = TransactionPerspective {
+        let mut txp = penumbra_transaction::TransactionPerspective {
             payload_keys: tx
                 .payload_keys(&self.fvk)
                 .expect("Error generating payload keys"),
@@ -440,8 +478,8 @@ impl ViewServer {
                     asset_ids.insert(swap_plaintext.trading_pair.asset_2());
                 }
                 ActionView::SwapClaim(SwapClaimView::Visible {
-                    output_1, output_2, ..
-                }) => {
+                                          output_1, output_2, ..
+                                      }) => {
                     // Both will be sent to the same address so this only needs to be added once
                     let address = output_1.address();
                     address_views.insert(address, self.fvk.view_address(address));
