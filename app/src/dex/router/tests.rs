@@ -316,7 +316,13 @@ fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
 
 /// Create a `Position` to buy `asset_1` using `asset_2` with explicit p/q.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
-fn limit_buy_pq(market: DirectedUnitPair, quantity: Amount, p: Amount, q: Amount, fee: u32) -> Position {
+fn limit_buy_pq(
+    market: DirectedUnitPair,
+    quantity: Amount,
+    p: Amount,
+    q: Amount,
+    fee: u32,
+) -> Position {
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),
@@ -332,7 +338,11 @@ fn limit_buy_pq(market: DirectedUnitPair, quantity: Amount, p: Amount, q: Amount
 
 /// Create a `Position` to buy `asset_1` using `asset_2`.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
-pub(crate) fn limit_buy(market: DirectedUnitPair, quantity: Amount, price_in_numeraire: Amount) -> Position {
+pub(crate) fn limit_buy(
+    market: DirectedUnitPair,
+    quantity: Amount,
+    price_in_numeraire: Amount,
+) -> Position {
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),
@@ -347,7 +357,11 @@ pub(crate) fn limit_buy(market: DirectedUnitPair, quantity: Amount, price_in_num
 }
 
 /// Create a `Position` to sell `asset_1` into `asset_2`.
-pub(crate) fn limit_sell(market: DirectedUnitPair, quantity: Amount, price_in_numeraire: Amount) -> Position {
+pub(crate) fn limit_sell(
+    market: DirectedUnitPair,
+    quantity: Amount,
+    price_in_numeraire: Amount,
+) -> Position {
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),
