@@ -1133,8 +1133,10 @@ impl TxCmd {
                 let amount_start = pair.start.format_value(amount_start);
                 let amount_end = pair.end.format_value(amount_end);
 
-                println!("#################################################################");
+                println!("#########################ddk########################################");
                 println!("                  PASSIVE LIQUIDITY                             ");
+                println!("#########################ddk########################################");
+                println!("");
                 println!(
                     "You want to provide liquidity on the pair {}",
                     pair.to_string()
