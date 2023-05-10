@@ -52,7 +52,6 @@ pub mod xyk {
 
         let alphas = sample_points(current_price.into(), NUM_POOLS_PRECISION);
 
-        alphas.iter().for_each(|a| println!("alpha: {a}"));
         // TODO(erwan): unused for now, but next refactor will rip out `solve` internals to
         // take this vector of solutions as an argument so that we can more easily recover from
         // working with non-singular matrices etc.

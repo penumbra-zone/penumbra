@@ -2,6 +2,7 @@ mod debug;
 mod keys;
 mod query;
 mod tx;
+mod utils;
 mod validator;
 mod view;
 

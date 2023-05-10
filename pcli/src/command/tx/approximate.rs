@@ -2,9 +2,10 @@ use std::path::PathBuf;
 
 use crate::dex_utils;
 use anyhow::anyhow;
-use penumbra_crypto::dex::{lp::position::Position, DirectedUnitPair};
+use penumbra_crypto::dex::lp::position::Position;
+use penumbra_crypto::dex::DirectedUnitPair;
 use penumbra_crypto::Value;
-use std::{io::Write, time::UNIX_EPOCH};
+use std::io::Write;
 
 /// Queries the chain for a transaction by hash.
 #[derive(Debug, clap::Subcommand)]
