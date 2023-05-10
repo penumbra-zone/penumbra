@@ -768,7 +768,6 @@ mod tests {
             let sct = tct::Tree::new();
             let anchor = sct.root();
             let state_commitment_proof = tct::Proof::dummy(&mut OsRng, note_commitment);
-            let dummy_anchor = state_commitment_proof.root();
             // Using a random blinding factor here, but the proof will verify
             // since for dummies we only check if the value is zero, and choose
             // not to enforce the other equality constraint.
@@ -785,7 +784,7 @@ mod tests {
                 spend_auth_randomizer,
                 ak,
                 nk,
-                dummy_anchor,
+                anchor,
                 balance_commitment,
                 nf,
                 rk,

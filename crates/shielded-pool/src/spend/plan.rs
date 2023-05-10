@@ -61,11 +61,12 @@ impl SpendPlan {
         fvk: &FullViewingKey,
         auth_sig: Signature<SpendAuth>,
         auth_path: tct::Proof,
+        anchor: tct::Root,
     ) -> Spend {
         Spend {
             body: self.spend_body(fvk),
             auth_sig,
-            proof: self.spend_proof(fvk, auth_path),
+            proof: self.spend_proof(fvk, auth_path, anchor),
         }
     }
 
@@ -95,6 +96,7 @@ impl SpendPlan {
         &self,
         fvk: &FullViewingKey,
         state_commitment_proof: tct::Proof,
+        anchor: tct::Root,
     ) -> SpendProof {
         SpendProof::prove(
             &mut OsRng,
@@ -105,7 +107,7 @@ impl SpendPlan {
             self.randomizer,
             *fvk.spend_verification_key(),
             *fvk.nullifier_key(),
-            state_commitment_proof.root(),
+            anchor,
             self.balance().commit(self.value_blinding),
             self.nullifier(fvk),
             self.rk(fvk),
