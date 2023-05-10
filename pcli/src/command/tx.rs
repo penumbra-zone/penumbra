@@ -9,6 +9,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::Fr;
+use ibc_proto::cosmos::upgrade::v1beta1::Plan;
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
@@ -24,20 +25,24 @@ use penumbra_ibc::Ics20Withdrawal;
 use penumbra_proto::{
     client::v1alpha1::{
         EpochByHeightRequest, LiquidityPositionByIdRequest, ProposalInfoRequest,
-        ProposalInfoResponse, ProposalRateDataRequest, ValidatorPenaltyRequest,
+        ProposalInfoResponse, ProposalRateDataRequest, SpreadRequest, ValidatorPenaltyRequest,
     },
-    core::dex::v1alpha1::PositionId,
+    core::{dex::v1alpha1::PositionId, transaction},
 };
 use penumbra_transaction::{
-    plan::{SwapClaimPlan, UndelegateClaimPlan},
+    plan::{SwapClaimPlan, TransactionPlan, UndelegateClaimPlan},
     proposal::ProposalToml,
     vote::Vote,
+    Transaction,
 };
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};
 use rand_core::OsRng;
 
-use crate::{dex_utils, App};
+use crate::{
+    dex_utils::{self, approximate::xyk},
+    App,
+};
 
 mod proposal;
 use proposal::ProposalCmd;
@@ -47,6 +52,8 @@ use liquidity_position::PositionCmd;
 
 mod approximate;
 use approximate::ApproximateCmd;
+
+use self::approximate::ConstantProduct;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
@@ -1079,97 +1086,55 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::RewardClaim {}) => todo!(),
-            TxCmd::Position(PositionCmd::Approximate(ApproximateCmd::ConstantProduct {
-                market,
-                quantity,
-                current_price,
-                debug_file,
-            })) => {
-                if quantity.asset_id != market.start.id() && quantity.asset_id != market.end.id() {
-                    return Err(anyhow::anyhow!(
-                        "you must supply liquidity with an asset that's part of the market"
-                    ));
-                } else if quantity.amount == 0u64.into() {
-                    return Err(anyhow::anyhow!(
-                        "the quantity of liquidity supplied must be non-zero.",
-                    ));
-                } else {
-                    use crate::dex_utils::approximate::utils;
-                    let current_price = current_price.unwrap_or_else(|| 1f64);
-                    let positions = crate::dex_utils::approximate::xyk::approximate(
-                        market,
-                        quantity,
-                        current_price.try_into().expect("valid price"),
-                    )?;
-                    // TODO(erwan): factor out into `approximate.rs`
-                    // -> s/Market/DirectedUnitPair
-                    if let Some(file) = debug_file {
-                        let canonical_pair_str =
-                            if market.into_directed_trading_pair().to_canonical().asset_1()
-                                == market.start.id()
-                            {
-                                format!("{}:{}", market.start.to_string(), market.end.to_string())
-                            } else {
-                                format!("{}:{}", market.end.to_string(), market.start.to_string())
-                            };
+            TxCmd::Position(PositionCmd::Approximate(ApproximateCmd::ConstantProduct(xyk_cmd))) => {
+                let current_price = match xyk_cmd.current_price {
+                    Some(user_supplied_price) => user_supplied_price,
+                    None => {
+                        let mut specific_client = app.specific_client().await?;
 
-                        // Ad-hoc denom scaling for debug data:
-                        let alphas = dex_utils::approximate::xyk::sample_points(
-                            current_price,
-                            dex_utils::approximate::xyk::NUM_POOLS_PRECISION,
-                        );
-
-                        // R1 is already scaled.
-                        let r1 = quantity.amount.value() as f64;
-                        // R2 scaled because the current_price is a ratio.
-                        let r2 = r1 * current_price;
-                        let denom_scaler = market.end.unit_amount().value() as f64;
-                        let total_k = r1 * r2 * denom_scaler;
-
-                        println!("r1: {r1}");
-                        println!("r2: {r2}");
-                        println!("current_price: {current_price}");
-
-                        println!("r1*r2: {}", r1*r2);
-                        println!("denom scaler: {denom_scaler}");
-                        println!("total_k: {}", total_k);
-
-                        // TODO(erwan): if we make `approximate` return a `Vec<PayoffPositionEntry>` we can `Into` directly
-                        let debug_positions: Vec<utils::PayoffPositionEntry> = positions
-                            .iter()
-                            .zip(alphas)
-                            .enumerate()
-                            .map(|(idx, (pos, alpha))| utils::PayoffPositionEntry {
-                                payoff: Into::into(pos.clone()),
-                                current_price,
-                                index: idx,
-                                canonical_pair: canonical_pair_str.clone(),
-                                alpha,
-                                total_k,
+                        let pair = xyk_cmd.pair.clone();
+                        let spread_data = specific_client
+                            .spread(SpreadRequest {
+                                chain_id: "".to_string(),
+                                trading_pair: Some(
+                                    pair.into_directed_trading_pair().to_canonical().into(),
+                                ),
                             })
-                            .collect();
-                        let mut fd = File::create(&file).map_err(|e| {
-                            anyhow!(
-                                "fs error opening debug file {}: {}",
-                                file.to_string_lossy(),
-                                e
-                            )
-                        })?;
+                            .await?
+                            .into_inner();
 
-                        let json_data = serde_json::to_string(&debug_positions)
-                            .map_err(|e| anyhow!("error serializing PayoffPositionEntry: {}", e))?;
-
-                        fd.write_all(json_data.as_bytes()).map_err(|e| {
-                            anyhow!("error writing {}: {}", file.to_string_lossy(), e)
-                        })?;
-                        return Ok(());
+                        let current_price = if xyk_cmd.input.asset_id == pair.start.id() {
+                            spread_data.approx_effective_price_1_to_2
+                        } else if xyk_cmd.input.asset_id == pair.end.id() {
+                            spread_data.approx_effective_price_2_to_1
+                        } else {
+                            anyhow::bail!("the supplied liquidity must be on the pair")
+                        };
+                        current_price
                     }
+                };
 
-                    // TODO(erwan): post positions? batched? ux?
-                    // Print a summary,
-                    //    for each position here's the price ( of asset 1 in terms of asset 2), here's the reserves of each asset, and position id.
-                    //  use planner -> add all positions -> planner solves for the Spend/Output
-                }
+                let positions = xyk_cmd.exec(current_price)?;
+
+                // TODO(erwan): post positions? batched? ux?
+                // Print a summary (comfy_table or whatever table library we use?)
+                //    for each position here's the price ( of asset 1 in terms of asset 2), here's the reserves of each asset, and position id.
+                //    summary row with total amount of reserves of asset 1 and asset 2
+                //  use planner -> add all positions -> planner solves for the Spend/Output
+                let mut planner = Planner::new(OsRng);
+                positions.iter().for_each(|position| {
+                    planner.position_open(position.clone());
+                });
+
+                let plan = planner
+                    .plan(
+                        app.view.as_mut().unwrap(),
+                        app.fvk.account_group_id(),
+                        AddressIndex::new(xyk_cmd.source),
+                    )
+                    .await?;
+                let tx_id = app.build_and_submit_transaction(plan).await?;
+                // TODO(erwan): display transaction id.
             }
         }
         Ok(())

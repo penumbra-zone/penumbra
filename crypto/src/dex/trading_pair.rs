@@ -212,10 +212,34 @@ impl DirectedUnitPair {
     pub fn new(start: Unit, end: Unit) -> Self {
         Self { start, end }
     }
+
+    pub fn to_string(&self) -> String {
+        format!("{}:{}", self.start.to_string(), self.end.to_string())
+    }
+
+    pub fn to_canonical_string(&self) -> String {
+        if self.match_canonical_ordering() {
+            self.to_string()
+        } else {
+            self.flip().to_string()
+        }
+    }
+
+    pub fn match_canonical_ordering(&self) -> bool {
+        self.start.id() > self.end.id()
+    }
+
     pub fn into_directed_trading_pair(&self) -> DirectedTradingPair {
         DirectedTradingPair {
             start: self.start.id(),
             end: self.end.id(),
+        }
+    }
+
+    pub fn flip(&self) -> Self {
+        DirectedUnitPair {
+            start: self.end.clone(),
+            end: self.start.clone(),
         }
     }
 }

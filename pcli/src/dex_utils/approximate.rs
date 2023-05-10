@@ -30,7 +30,7 @@ pub mod xyk {
         r1: &Value,
         current_price: U128x128,
     ) -> anyhow::Result<Vec<Position>> {
-        // TODO(erwan): Henry: it could be interactive by default, --accept, --YES! that would
+        // Henry: it could be interactive by default, --accept, --YES! that would
         // skip interactivity.
         let fp_r1 = U128x128::from(r1.amount.value());
         let fp_r2 = (current_price * fp_r1).ok_or_else(|| {
@@ -184,6 +184,9 @@ pub mod utils {
         tolerance: f64,
     ) -> anyhow::Result<Array<f64, ndarray::Dim<[usize; 1]>>> {
         let n = A.shape()[0];
+
+        // First, we decompose the matrix into a lower triangular (L),
+        // and an off-diagonal upper triangular matrix (D) st. A = L + D
         let L = lower_triangular(&A);
         let D = &A - &L;
 
@@ -192,9 +195,6 @@ pub mod utils {
             let k_old = k.clone();
 
             for i in 0..n {
-                // This looks more gnarly than it actually is, TODO(erwan): link to the spec.
-                // The goal here is to take advantage of the fact that L is lower triangular,
-                // it's essentially doing forward subsitution. TODO(erwan): write performance argument.
                 let partial_off_diagonal_solution = D.slice(s![i, ..]).dot(&k);
                 let partial_lower_triangular_solution = L.slice(s![i, ..i]).dot(&k.slice(s![..i]));
                 let sum_ld = partial_off_diagonal_solution + partial_lower_triangular_solution;
