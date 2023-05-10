@@ -18,8 +18,16 @@ pub enum ApproximateCmd {
 pub struct ConstantProduct {
     pub pair: DirectedUnitPair,
     pub input: Value,
+
     #[clap(short, long)]
     pub current_price: Option<f64>,
+
+    #[clap(short, long, default_value_t = 0u32)]
+    pub fee_bps: u32,
+    /// `--yes` means all prompt interaction are skipped and agreed.
+    #[clap(short, long)]
+    pub yes: bool,
+
     #[clap(short, long, hide(true))]
     pub debug_file: Option<PathBuf>,
     #[clap(long, default_value = "0", hide(true))]
@@ -39,12 +47,15 @@ impl ConstantProduct {
             anyhow::bail!("you must supply liquidity with an asset that's part of the market")
         } else if self.input.amount == 0u64.into() {
             anyhow::bail!("the quantity of liquidity supplied must be non-zero.",)
+        } else if self.fee_bps > 5000 {
+            anyhow::bail!("the maximum fee is 5000bps (50%)")
         } else {
             use crate::dex_utils::approximate::utils;
             let positions = crate::dex_utils::approximate::xyk::approximate(
                 &self.pair,
                 &self.input,
                 current_price.try_into().expect("valid price"),
+                self.fee_bps,
             )?;
 
             if let Some(file) = &self.debug_file {
