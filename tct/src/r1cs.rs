@@ -1,12 +1,11 @@
 //! This module defines how to verify TCT auth paths in a rank-1 constraint system.
-use ark_ff::Zero;
 use ark_r1cs_std::prelude::*;
-use ark_r1cs_std::ToConstraintFieldGadget;
+use ark_r1cs_std::uint64::UInt64;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
 use decaf377::{r1cs::FqVar, FieldExt, Fq};
 
-use crate::{internal::hash::DOMAIN_SEPARATOR, prelude::WhichWay, Position, Proof};
+use crate::{internal::hash::DOMAIN_SEPARATOR, Position, Proof};
 
 #[derive(Clone, Debug)]
 /// Represents the position of a leaf in the TCT represented in R1CS.
@@ -33,6 +32,34 @@ impl AllocVar<Position, Fq> for PositionVar {
 //             let epoch = (position >> 32) as u16;
 //let block = (position >> 16) as u16;
 //let commitment = position as u16;
+
+#[derive(Clone, Debug)]
+/// Represents the position of a leaf in the TCT represented in R1CS.
+pub struct PositionBitsVar {
+    /// Inner variable consisting of boolean constraints.
+    pub inner: UInt64<Fq>,
+}
+
+impl AllocVar<Position, Fq> for PositionBitsVar {
+    fn new_variable<T: std::borrow::Borrow<Position>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let inner: Position = *f()?.borrow();
+        Ok(Self {
+            inner: UInt64::new_variable(cs, || Ok(u64::from(inner)), mode)?,
+        })
+    }
+}
+
+impl ToBitsGadget<Fq> for PositionBitsVar {
+    fn to_bits_le(&self) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
+        Ok(self.inner.to_bits_le())
+    }
+}
 
 impl PositionVar {
     /// Witness the commitment index by taking the last 16 bytes of the position.

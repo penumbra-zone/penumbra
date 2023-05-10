@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use ark_r1cs_std::{
     prelude::{EqGadget, FieldVar},
-    uint64::UInt64,
     uint8::UInt8,
     ToBitsGadget,
 };
@@ -106,9 +105,10 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof.position())
         })?;
-        let position_u64: u64 = self.state_commitment_proof.position().into();
-        let position_u64_var = UInt64::new_witness(cs.clone(), || Ok(position_u64))?;
-        let position_bits = position_u64_var.to_bits_le();
+        let position_bits = tct::r1cs::PositionBitsVar::new_witness(cs.clone(), || {
+            Ok(self.state_commitment_proof.position())
+        })?
+        .to_bits_le()?;
         let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof)
         })?;
