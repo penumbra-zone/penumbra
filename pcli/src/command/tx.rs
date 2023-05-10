@@ -1097,6 +1097,12 @@ impl TxCmd {
                             .await?
                             .into_inner();
 
+                        tracing::debug!(
+                            ?spread_data,
+                            pair = pair.to_string(),
+                            "fetched spread for pair"
+                        );
+
                         if spread_data.best_1_to_2_position.is_none()
                             || spread_data.best_2_to_1_position.is_none()
                         {
@@ -1114,8 +1120,6 @@ impl TxCmd {
                     }
                 };
 
-                // TODO(erwan): there is a problem with the prices with diff denoms.
-                // + add a `fee` option
                 let positions = xyk_cmd.exec(current_price)?;
                 let (amount_start, amount_end) =
                     positions
@@ -1129,18 +1133,22 @@ impl TxCmd {
                 let amount_start = pair.start.format_value(amount_start);
                 let amount_end = pair.end.format_value(amount_end);
 
-                println!("List of positions to be created:");
+                println!("#################################################################");
+                println!("                  PASSIVE LIQUIDITY                             ");
+                println!(
+                    "You want to provide liquidity on the pair {}",
+                    pair.to_string()
+                );
+                println!("You will need:",);
+                println!(" -> {amount_start}{}", pair.start.to_string());
+                println!(" -> {amount_end}{}", pair.end.to_string());
+                // TODO(erwan): would be nice to print current balance?
+
+                println!("You will create the following pools:");
                 println!(
                     "{}",
                     crate::command::utils::render_xyk_approximation(pair.clone(), &positions)
                 );
-
-                println!(
-                    "To supply passive liquidity on the pair {}, you will need a total of:",
-                    pair.to_string()
-                );
-                println!(" -> {amount_start}{}", pair.start.to_string());
-                println!(" -> {amount_end}{}", pair.end.to_string());
 
                 if !xyk_cmd.yes
                     && !Confirm::new()
