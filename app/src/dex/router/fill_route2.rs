@@ -4,13 +4,13 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::StreamExt;
 use penumbra_crypto::{asset, dex::DirectedTradingPair, fixpoint::U128x128, Amount, Value};
-use penumbra_storage::StateWrite;
+use penumbra_storage::{StateDelta, StateRead, StateWrite};
 use tracing::instrument;
 
 use crate::dex::{PositionManager, PositionRead};
 
 #[async_trait]
-pub trait FillRoute2: StateWrite {
+pub trait FillRoute2: StateWrite + Sized {
     ///
     ///
     /// # Invariants
@@ -23,6 +23,13 @@ pub trait FillRoute2: StateWrite {
         hops: &[asset::Id],
         spill_price: Option<U128x128>,
     ) -> Result<(Value, Value)> {
+        // Build a transaction for this execution, so if we error out at any
+        // point we don't leave the state in an inconsistent state.  This is
+        // particularly important for this method, because we lift position data
+        // out of the state and modify it in-memory, writing it only as we fully
+        // consume positions.
+        let mut this = StateDelta::new(self);
+
         // Switch from representing hops implicitly as a sequence of asset IDs to
         // representing them explicitly as a sequence of directed trading pairs.
         let route = std::iter::once(input.asset_id)
@@ -44,7 +51,7 @@ pub trait FillRoute2: StateWrite {
         for pair in &pairs {
             positions_by_price
                 .entry(pair.clone())
-                .or_insert_with(|| self.positions_by_price(&pair));
+                .or_insert_with(|| this.positions_by_price(&pair));
         }
 
         // Record a trace of the execution along the current route,
@@ -90,7 +97,7 @@ pub trait FillRoute2: StateWrite {
 
                 // Check that the position is not already part of the frontier.
                 if !frontier_position_ids.contains(&id) {
-                    let position = self
+                    let position = this
                         .position_by_id(&id)
                         .await?
                         .ok_or_else(|| anyhow!("position with indexed id {:?} not found", id))?;
@@ -306,7 +313,7 @@ pub trait FillRoute2: StateWrite {
             // so write its updated reserves before we replace it on the frontier.
             // The other positions will be written out either when they're fully
             // consumed, or when we finish filling.
-            self.put_position(frontier[constraining_index].clone());
+            this.put_position(frontier[constraining_index].clone());
 
             let current_effective_price =
                 U128x128::from(current_input.amount) / U128x128::from(current_output.amount);
@@ -355,7 +362,7 @@ pub trait FillRoute2: StateWrite {
                     }
                 };
 
-                let next_position = self
+                let next_position = this
                     .position_by_id(&next_position_id)
                     .await?
                     .expect("indexed position should exist");
@@ -379,21 +386,24 @@ pub trait FillRoute2: StateWrite {
         // We need to save these positions, because we mutated their state, even
         // if we didn't fully consume their reserves.
         for position in frontier {
-            self.put_position(position);
+            this.put_position(position);
         }
         // Add the trace to the object store:
         tracing::debug!(?trace, "recording trace of filled route");
         let mut swap_execution: im::Vector<Vec<Value>> =
-            self.object_get("swap_execution").unwrap_or_default();
+            this.object_get("swap_execution").unwrap_or_default();
         swap_execution.push_back(trace);
-        self.object_put("swap_execution", swap_execution);
+        this.object_put("swap_execution", swap_execution);
+
+        // Apply the state transaction now that we've reached the end without errors.
+        this.apply();
 
         // cleanup / finalization
         Ok((input, output))
     }
 }
 
-impl<S: StateWrite + ?Sized> FillRoute2 for S {}
+impl<S: StateWrite> FillRoute2 for S {}
 
 /// Breaksdown a route into a collection of `DirectedTradingPair`, this is mostly useful
 /// for debugging right now.
