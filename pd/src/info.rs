@@ -9,7 +9,11 @@ use std::{
 use anyhow::Context as _;
 use futures::FutureExt;
 use ibc_proto::ibc::core::{
-    channel::v1::{QueryChannelsRequest, QueryChannelsResponse},
+    channel::v1::{
+        PacketState, QueryChannelsRequest, QueryChannelsResponse,
+        QueryPacketAcknowledgementsRequest, QueryPacketAcknowledgementsResponse,
+        QueryUnreceivedPacketsRequest, QueryUnreceivedPacketsResponse,
+    },
     client::v1::{IdentifiedClientState, QueryClientStatesRequest, QueryClientStatesResponse},
 };
 use ibc_proto::ibc::core::{
@@ -318,12 +322,127 @@ impl Info {
                     index: 0,
                 })
             }
+            "/ibc.core.channel.v1.Query/PacketAcknowledgements" => {
+                let (snapshot, height) = self
+                    .get_snapshot_for_height(u64::from(query.height))
+                    .await?;
+
+                let request = QueryPacketAcknowledgementsRequest::decode(query.data.clone())
+                    .context("failed to decode QueryPacketAcknowledgementsRequest")?;
+
+                let chan_id: ChannelId =
+                    ChannelId::from_str(&request.channel_id).context("invalid channel id")?;
+                let port_id: PortId =
+                    PortId::from_str(&request.port_id).context("invalid port id")?;
+
+                let ack_counter = snapshot.get_ack_sequence(&chan_id, &port_id).await?;
+
+                let mut acks = vec![];
+                for ack_idx in 0..ack_counter {
+                    let ack = snapshot
+                        .get_packet_acknowledgement(&port_id, &chan_id, ack_idx)
+                        .await?
+                        .ok_or(anyhow::anyhow!("couldn't find ack"))?;
+
+                    let ack_state = PacketState {
+                        port_id: request.port_id.clone(),
+                        channel_id: request.channel_id.clone(),
+                        sequence: ack_idx,
+                        data: ack.clone(),
+                    };
+
+                    acks.push(ack_state);
+                }
+
+                let res_value = QueryPacketAcknowledgementsResponse {
+                    acknowledgements: acks,
+                    pagination: None,
+                    height: None,
+                }
+                .encode_to_vec();
+
+                Ok(abci::response::Query {
+                    code: 0.into(),
+                    key: query.data,
+                    log: "".to_string(),
+                    value: res_value.into(),
+                    proof: None,
+                    height: height.try_into().unwrap(),
+                    codespace: "".to_string(),
+                    info: "".to_string(),
+                    index: 0,
+                })
+            }
+
+            // docstring from ibc-go:
+            //
+            // UnreceivedPackets implements the Query/UnreceivedPackets gRPC method. Given
+            // a list of counterparty packet commitments, the querier checks if the packet
+            // has already been received by checking if a receipt exists on this
+            // chain for the packet sequence. All packets that haven't been received yet
+            // are returned in the response
+            // Usage: To use this method correctly, first query all packet commitments on
+            // the sending chain using the Query/PacketCommitments gRPC method.
+            // Then input the returned sequences into the QueryUnreceivedPacketsRequest
+            // and send the request to this Query/UnreceivedPackets on the **receiving**
+            // chain. This gRPC method will then return the list of packet sequences that
+            // are yet to be received on the receiving chain.
+            //
+            // NOTE: The querier makes the assumption that the provided list of packet
+            // commitments is correct and will not function properly if the list
+            // is not up to date. Ideally the query height should equal the latest height
+            // on the counterparty's client which represents this chain
+            "/ibc.core.channel.v1.Query/UnreceivedPackets" => {
+                let (snapshot, height) = self
+                    .get_snapshot_for_height(u64::from(query.height))
+                    .await?;
+
+                let request = QueryUnreceivedPacketsRequest::decode(query.data.clone())
+                    .context("failed to decode QueryUnreceivedPacketsRequest")?;
+
+                let chan_id: ChannelId =
+                    ChannelId::from_str(&request.channel_id).context("invalid channel id")?;
+                let port_id: PortId =
+                    PortId::from_str(&request.port_id).context("invalid port id")?;
+
+                let mut unreceived_seqs = vec![];
+
+                for seq in request.packet_commitment_sequences {
+                    if seq == 0 {
+                        return Err(anyhow::anyhow!("packet sequence {} cannot be 0", seq));
+                    }
+
+                    if snapshot
+                        .seen_packet_by_channel(&chan_id, &port_id, seq)
+                        .await?
+                    {
+                        unreceived_seqs.push(seq);
+                    }
+                }
+
+                let res_value = QueryUnreceivedPacketsResponse {
+                    sequences: unreceived_seqs,
+                    height: None,
+                }
+                .encode_to_vec();
+
+                Ok(abci::response::Query {
+                    code: 0.into(),
+                    key: query.data,
+                    log: "".to_string(),
+                    value: res_value.into(),
+                    proof: None,
+                    height: height.try_into().unwrap(),
+                    codespace: "".to_string(),
+                    info: "".to_string(),
+                    index: 0,
+                })
+            }
             _ => Err(anyhow::anyhow!(
                 "requested unrecognized path in ABCI query: {}",
                 query.path
             )),
         }
-        // TODO: implement (#22)
     }
 }
 
