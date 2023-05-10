@@ -1136,7 +1136,7 @@ impl TxCmd {
                 println!("List of positions to be created:");
                 println!(
                     "{}",
-                    crate::command::utils::render_positions(&asset_cache, &positions)
+                    crate::command::utils::render_xyk_approximation(pair.clone(), &positions)
                 );
 
                 println!(
