@@ -159,6 +159,28 @@ pub trait StateReadExt: StateRead {
         Ok(commitment)
     }
 
+    async fn get_packet_commitment_by_id(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        sequence: u64,
+    ) -> Result<Option<Vec<u8>>> {
+        let commitment = self
+            .get_proto::<Vec<u8>>(&state_key::packet_commitment_by_port(
+                port_id, channel_id, sequence,
+            ))
+            .await?;
+
+        // this is for the special case where the commitment is empty, we consider this None.
+        if let Some(commitment) = commitment.as_ref() {
+            if commitment.is_empty() {
+                return Ok(None);
+            }
+        }
+
+        Ok(commitment)
+    }
+
     async fn get_packet_acknowledgement(
         &self,
         port_id: &PortId,
