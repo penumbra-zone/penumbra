@@ -1,8 +1,8 @@
-use std::pin::Pin;
-
+use crate::command::utils;
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use futures::{Stream, StreamExt, TryStreamExt};
+use std::pin::Pin;
 
 use penumbra_crypto::{
     asset,
@@ -262,7 +262,7 @@ impl DexCmd {
 
                 let positions = positions_stream.try_collect::<Vec<_>>().await?;
 
-                println!("{}", render_positions(&asset_cache, &positions));
+                println!("{}", utils::render_positions(&asset_cache, &positions));
             }
             DexCmd::Positions {
                 trading_pair,

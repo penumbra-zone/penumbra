@@ -9,7 +9,6 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::Fr;
-use ibc_proto::cosmos::upgrade::v1beta1::Plan;
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
@@ -27,22 +26,19 @@ use penumbra_proto::{
         EpochByHeightRequest, LiquidityPositionByIdRequest, ProposalInfoRequest,
         ProposalInfoResponse, ProposalRateDataRequest, SpreadRequest, ValidatorPenaltyRequest,
     },
-    core::{dex::v1alpha1::PositionId, transaction},
+    core::dex::v1alpha1::PositionId,
 };
 use penumbra_transaction::{
-    plan::{SwapClaimPlan, TransactionPlan, UndelegateClaimPlan},
+    plan::{SwapClaimPlan, UndelegateClaimPlan},
     proposal::ProposalToml,
     vote::Vote,
-    Transaction,
 };
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};
 use rand_core::OsRng;
 
-use crate::{
-    dex_utils::{self, approximate::xyk},
-    App,
-};
+use crate::dex_utils;
+use crate::App;
 
 mod proposal;
 use proposal::ProposalCmd;
@@ -52,8 +48,6 @@ use liquidity_position::PositionCmd;
 
 mod approximate;
 use approximate::ApproximateCmd;
-
-use self::approximate::ConstantProduct;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
@@ -1114,13 +1108,15 @@ impl TxCmd {
                     }
                 };
 
+                let asset_cache = app.view().assets().await?;
+                // TODO(erwan): this will do for now, will update after a round
+                // of testing on the devnet.
                 let positions = xyk_cmd.exec(current_price)?;
+                println!(
+                    "{}",
+                    crate::command::utils::render_positions(&asset_cache, &positions)
+                );
 
-                // TODO(erwan): post positions? batched? ux?
-                // Print a summary (comfy_table or whatever table library we use?)
-                //    for each position here's the price ( of asset 1 in terms of asset 2), here's the reserves of each asset, and position id.
-                //    summary row with total amount of reserves of asset 1 and asset 2
-                //  use planner -> add all positions -> planner solves for the Spend/Output
                 let mut planner = Planner::new(OsRng);
                 positions.iter().for_each(|position| {
                     planner.position_open(position.clone());
@@ -1134,7 +1130,7 @@ impl TxCmd {
                     )
                     .await?;
                 let tx_id = app.build_and_submit_transaction(plan).await?;
-                // TODO(erwan): display transaction id.
+                println!("posted with transaction id: {tx_id}");
             }
         }
         Ok(())
