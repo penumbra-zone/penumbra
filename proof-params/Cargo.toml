@@ -30,6 +30,7 @@ ark-relations = "0.4"
 
 [dev-dependencies]
 penumbra-tct = { path = "../tct/", features = ["r1cs"] }
+criterion = { version = "0.4", features = ["html_reports"] }
 
 [build-dependencies]
 regex = {version = "1", optional=true }
@@ -43,3 +44,8 @@ anyhow = "1"
 proving-keys = []
 download-proving-keys = ["regex", "reqwest", "serde_json", "sha2", "hex"]
 parallel = ["ark-ff/parallel", "decaf377/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel"]
+
+[[bench]]
+name = "nullifier_derivation"
+harness = false
+required-features = ["proving-keys"]
