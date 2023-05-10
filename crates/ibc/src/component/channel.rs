@@ -131,6 +131,19 @@ pub trait StateReadExt: StateRead {
             .map(|res| res.is_some())
     }
 
+    async fn seen_packet_by_channel(
+        &self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        sequence: u64,
+    ) -> Result<bool> {
+        self.get_proto::<String>(&state_key::receipt_by_channel(
+            port_id, channel_id, sequence,
+        ))
+        .await
+        .map(|res| res.is_some())
+    }
+
     async fn get_packet_commitment(&self, packet: &Packet) -> Result<Option<Vec<u8>>> {
         let commitment = self
             .get_proto::<Vec<u8>>(&state_key::packet_commitment(packet))
