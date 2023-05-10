@@ -62,7 +62,7 @@ impl ConstantProduct {
                 let canonical_pair_str = self.pair.to_canonical_string();
 
                 // Ad-hoc denom scaling for debug data:
-                let alphas = dex_utils::approximate::xyk::sample_points(
+                let alphas = dex_utils::approximate::xyk::sample_full_range(
                     current_price,
                     dex_utils::approximate::xyk::NUM_POOLS_PRECISION,
                 );
