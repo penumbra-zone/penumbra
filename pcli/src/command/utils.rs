@@ -2,7 +2,6 @@ use comfy_table::{presets, Table};
 use penumbra_crypto::{
     asset,
     dex::{lp::position::Position, DirectedUnitPair},
-    Amount,
 };
 
 pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position]) -> String {
@@ -55,37 +54,31 @@ pub(crate) fn render_xyk_approximation(pair: DirectedUnitPair, positions: &[Posi
     table.set_header(vec![
         "ID",
         "Trading Pair",
-        "State",
         "Reserves",
-        "Trading Function",
+        "Pool fee",
+        "Price summary",
+        "Buy price",
+        "Sell price",
     ]);
 
     for position in positions {
+        let fee = position.phi.component.fee;
         let well_directed_phi = position.phi.orient_end(pair.end.id()).unwrap();
         let price_a_to_b = well_directed_phi.effective_price();
         let price_b_to_a = well_directed_phi.effective_price_inv();
 
-        let price_and_pair_entry =
-            if position.reserves_for(pair.start.id()).unwrap() == Amount::zero() {
-                format!(
-                    "{}: {:.5}, fee: {}bps",
-                    pair.flip().to_string(),
-                    price_b_to_a,
-                    position.phi.component.fee
-                )
-            } else {
-                format!(
-                    "{}: {:.5}, fee: {}bps",
-                    pair.to_string(),
-                    price_a_to_b,
-                    position.phi.component.fee
-                )
-            };
+        let buy_at_str = format!("buy  @ {:>10.05}", price_a_to_b);
+        let sell_at_str = format!("sell @ {:>10.05}", price_b_to_a);
+
+        let price_summary = if position.reserves_for(pair.start.id()).unwrap() == 0u64.into() {
+            sell_at_str.clone()
+        } else {
+            buy_at_str.clone()
+        };
 
         table.add_row(vec![
             format!("{}", position.id()),
             format!("{}", pair.to_string()),
-            position.state.to_string(),
             format!(
                 "({}, {})",
                 pair.start
@@ -93,7 +86,10 @@ pub(crate) fn render_xyk_approximation(pair: DirectedUnitPair, positions: &[Posi
                 pair.end
                     .format_value(position.reserves_for(pair.end.id()).unwrap()),
             ),
-            price_and_pair_entry,
+            format!("{fee:>5}bps"),
+            price_summary,
+            buy_at_str,
+            sell_at_str,
         ]);
     }
 
