@@ -129,6 +129,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
         let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.rk.clone()))?;
         let start_position = PositionVar::new_input(cs.clone(), || Ok(self.start_position))?;
+        let start_position_bits = start_position.to_position_bits_var()?;
 
         // Note commitment integrity.
         let note_commitment_var = note_var.commit()?;
@@ -172,7 +173,8 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         // Additionally, check that the start position has a zero commitment index, since this is
         // the only sensible start time for a vote.
         let zero_constant = FqVar::constant(Fq::from(0u64));
-        start_position.commitment()?.enforce_equal(&zero_constant)?;
+        let commitment = start_position_bits.commitment()?;
+        commitment.enforce_equal(&zero_constant)?;
 
         // Additionally, check that the position of the spend proof is before the start
         // start_height, which ensures that the note being voted with was created before voting
