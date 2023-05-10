@@ -55,16 +55,6 @@ pub trait FillRoute: StateWrite + Sized {
             ?spill_price,
         );
 
-        // We want to ensure that any particular position is used at most once over the route,
-        // even if the route has cycles at the macro-scale. To do this, we store the streams
-        // of positions for each pair, taking care to only construct one stream per distinct pair.
-        let mut positions_by_price = HashMap::new();
-        for pair in &pairs {
-            positions_by_price
-                .entry(pair.clone())
-                .or_insert_with(|| this.positions_by_price(&pair));
-        }
-
         // Record a trace of the execution along the current route,
         // starting with all-zero amounts.
         let mut trace: Vec<Value> = std::iter::once(Value {
@@ -85,7 +75,7 @@ pub trait FillRoute: StateWrite + Sized {
                 .ok_or_else(|| anyhow::anyhow!("called fill_route with empty route"))?,
         };
 
-        let mut frontier = Frontier::load(&this, &mut positions_by_price, &pairs).await?;
+        let mut frontier = Frontier::load(&mut this, pairs).await?;
         tracing::debug!(?frontier, "assembled initial frontier");
 
         'filling: loop {
@@ -151,9 +141,9 @@ pub trait FillRoute: StateWrite + Sized {
 
             let exactly_consumed_reserves = Value {
                 amount: frontier.positions[constraining_index]
-                    .reserves_for(pairs[constraining_index].end)
+                    .reserves_for(frontier.pairs[constraining_index].end)
                     .expect("asset ids should match"),
-                asset_id: pairs[constraining_index].end,
+                asset_id: frontier.pairs[constraining_index].end,
             };
 
             tracing::debug!(
@@ -196,15 +186,7 @@ pub trait FillRoute: StateWrite + Sized {
             );
 
             // Try to find a new position to replace the one we just filled.
-            if !frontier
-                .replace_position(
-                    constraining_index,
-                    &pairs,
-                    &mut this,
-                    &mut positions_by_price,
-                )
-                .await?
-            {
+            if !frontier.replace_position(constraining_index).await? {
                 tracing::debug!("no more positions to replace, breaking loop");
                 break 'filling;
             };
@@ -229,7 +211,7 @@ pub trait FillRoute: StateWrite + Sized {
 
         // We need to save these positions, because we mutated their state, even
         // if we didn't fully consume their reserves.
-        frontier.save(&mut this);
+        frontier.save();
 
         // Add the trace to the object store:
         tracing::debug!(?trace, "recording trace of filled route");
@@ -268,8 +250,9 @@ type PositionsByPrice =
     HashMap<DirectedTradingPair, Pin<Box<dyn Stream<Item = Result<position::Id>> + Send>>>;
 
 /// A frontier of least-priced positions along a route.
-#[derive(Debug)]
-struct Frontier {
+struct Frontier<S> {
+    /// The list of trading pairs this frontier is for.
+    pub pairs: Vec<DirectedTradingPair>,
     /// A list of the positions on the route.
     pub positions: Vec<Position>,
     /// A set of position IDs of positions contained in the frontier.
@@ -278,18 +261,38 @@ struct Frontier {
     /// in opposite directions, and a position has nonzero reserves of both assets
     /// and shows up in both position streams (even though we must only use it once).
     pub position_ids: BTreeSet<position::Id>,
+    /// The underlying state.
+    pub state: S,
+    /// A stream of positions for each pair on the route, ordered by price.
+    pub positions_by_price: PositionsByPrice,
 }
 
-impl Frontier {
-    async fn load(
-        state: impl StateRead,
-        positions_by_price: &mut PositionsByPrice,
-        pairs: &[DirectedTradingPair],
-    ) -> Result<Frontier> {
+impl<S> std::fmt::Debug for Frontier<S> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Frontier")
+            .field("pairs", &self.pairs)
+            .field("positions", &self.positions)
+            .field("position_ids", &self.position_ids)
+            .finish_non_exhaustive()
+    }
+}
+
+impl<S: StateRead + StateWrite> Frontier<S> {
+    async fn load(state: S, pairs: Vec<DirectedTradingPair>) -> Result<Frontier<S>> {
         let mut positions = Vec::new();
         let mut position_ids = BTreeSet::new();
 
-        for pair in pairs {
+        // We want to ensure that any particular position is used at most once over the route,
+        // even if the route has cycles at the macro-scale. To do this, we store the streams
+        // of positions for each pair, taking care to only construct one stream per distinct pair.
+        let mut positions_by_price = HashMap::new();
+        for pair in &pairs {
+            positions_by_price
+                .entry(pair.clone())
+                .or_insert_with(|| state.positions_by_price(&pair));
+        }
+
+        for pair in &pairs {
             'next_position: loop {
                 let id = positions_by_price
                     .get_mut(pair)
@@ -321,25 +324,22 @@ impl Frontier {
         Ok(Frontier {
             positions,
             position_ids,
+            pairs,
+            state,
+            positions_by_price,
         })
     }
 
-    fn save(&self, mut state: impl StateWrite) {
+    fn save(&mut self) {
         for position in &self.positions {
-            state.put_position(position.clone());
+            self.state.put_position(position.clone());
         }
     }
 
     // Returns Ok(true) if a new position was found to replace the given one,
     // or Ok(false) if there are no more positions available for the given pair.
-    #[instrument(skip(self, pairs, state, positions_by_price))]
-    async fn replace_position(
-        &mut self,
-        index: usize,
-        pairs: &[DirectedTradingPair],
-        mut state: impl StateWrite,
-        positions_by_price: &mut PositionsByPrice,
-    ) -> Result<bool> {
+    #[instrument(skip(self))]
+    async fn replace_position(&mut self, index: usize) -> Result<bool> {
         let replaced_position_id = self.positions[index].id();
         tracing::debug!(?replaced_position_id, "replacing position");
 
@@ -347,11 +347,12 @@ impl Frontier {
         // discard it, so write its updated reserves before we replace it on the
         // frontier.  The other positions will be written out either when
         // they're fully consumed, or when we finish filling.
-        state.put_position(self.positions[index].clone());
+        self.state.put_position(self.positions[index].clone());
 
         loop {
-            let pair = &pairs[index];
-            let next_position_id = match positions_by_price
+            let pair = &self.pairs[index];
+            let next_position_id = match self
+                .positions_by_price
                 .get_mut(pair)
                 .unwrap()
                 .as_mut()
@@ -374,7 +375,8 @@ impl Frontier {
                 }
             };
 
-            let next_position = state
+            let next_position = self
+                .state
                 .position_by_id(&next_position_id)
                 .await?
                 .expect("indexed position should exist");
