@@ -10,7 +10,7 @@ use tracing::instrument;
 use crate::dex::{PositionManager, PositionRead};
 
 #[async_trait]
-pub trait FillRoute2: StateWrite + Sized {
+pub trait FillRoute: StateWrite + Sized {
     ///
     ///
     /// # Invariants
@@ -403,7 +403,7 @@ pub trait FillRoute2: StateWrite + Sized {
     }
 }
 
-impl<S: StateWrite> FillRoute2 for S {}
+impl<S: StateWrite> FillRoute for S {}
 
 /// Breaksdown a route into a collection of `DirectedTradingPair`, this is mostly useful
 /// for debugging right now.

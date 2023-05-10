@@ -1,6 +1,6 @@
 use crate::dex::position_manager::PositionRead;
 use crate::dex::router::RouteAndFill;
-use crate::dex::{router::path::Path, router::FillRoute2, PositionManager};
+use crate::dex::{router::path::Path, router::FillRoute, PositionManager};
 use crate::dex::{StateReadExt, StateWriteExt};
 use crate::temp_storage_ext::TempStorageExt;
 use futures::StreamExt;
@@ -581,7 +581,7 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     let spill_price = U128x128::from(Amount::from(1_000_000_000u64) * pusd.unit_amount());
 
     let (unfilled, output) =
-        FillRoute2::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
             .await
             .unwrap();
 
@@ -684,7 +684,7 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let spill_price = U128x128::from(Amount::from(1_000_000_000u64) * pusd.unit_amount());
 
     let (unfilled, output) =
-        FillRoute2::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
             .await
             .unwrap();
 
@@ -769,7 +769,7 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(pusd.unit_amount())).unwrap();
 
     let (unfilled, output) =
-        FillRoute2::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
             .await
             .unwrap();
 
@@ -866,7 +866,7 @@ async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
     let spill_price = U128x128::ratio(valuation_gm, valuation_penumbra).unwrap();
 
     let (unfilled, output) =
-        FillRoute2::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
             .await
             .unwrap();
 
@@ -1188,7 +1188,7 @@ async fn fill_dust_route() -> anyhow::Result<()> {
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
 
     let (unfilled, output) =
-        FillRoute2::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
             .await
             .unwrap();
 
@@ -1250,7 +1250,7 @@ async fn fill_route_dust() -> () {
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
 
     let (unfilled, output) =
-        FillRoute2::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
             .await
             .unwrap();
 
@@ -1326,7 +1326,7 @@ async fn fill_route_with_dust_constraint() -> anyhow::Result<()> {
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
 
     let (unfilled, output) =
-        FillRoute2::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
             .await
             .unwrap();
 
@@ -1433,7 +1433,7 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
 
     let (_unfilled, _output) =
-        FillRoute2::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
             .await
             .unwrap();
     Ok(())
