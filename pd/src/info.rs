@@ -12,7 +12,8 @@ use ibc_proto::ibc::core::{
     channel::v1::{
         PacketState, QueryChannelsRequest, QueryChannelsResponse,
         QueryPacketAcknowledgementsRequest, QueryPacketAcknowledgementsResponse,
-        QueryUnreceivedPacketsRequest, QueryUnreceivedPacketsResponse,
+        QueryUnreceivedAcksRequest, QueryUnreceivedAcksResponse, QueryUnreceivedPacketsRequest,
+        QueryUnreceivedPacketsResponse,
     },
     client::v1::{IdentifiedClientState, QueryClientStatesRequest, QueryClientStatesResponse},
 };
@@ -22,7 +23,7 @@ use ibc_proto::ibc::core::{
 };
 use ibc_types::core::{
     ics03_connection::connection::IdentifiedConnectionEnd,
-    ics04_channel::channel::IdentifiedChannelEnd,
+    ics04_channel::{channel::IdentifiedChannelEnd, packet::Packet},
     ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 };
 use penumbra_chain::component::AppHashRead;
@@ -438,6 +439,55 @@ impl Info {
                     index: 0,
                 })
             }
+
+            "/ibc.core.channel.v1.Query/UnreceivedAcks" => {
+                let (snapshot, height) = self
+                    .get_snapshot_for_height(u64::from(query.height))
+                    .await?;
+
+                let request = QueryUnreceivedAcksRequest::decode(query.data.clone())
+                    .context("failed to decode QueryUnreceivedAcksRequest")?;
+
+                let chan_id: ChannelId =
+                    ChannelId::from_str(&request.channel_id).context("invalid channel id")?;
+                let port_id: PortId =
+                    PortId::from_str(&request.port_id).context("invalid port id")?;
+
+                let mut unreceived_seqs = vec![];
+
+                for seq in request.packet_ack_sequences {
+                    if seq == 0 {
+                        return Err(anyhow::anyhow!("packet sequence {} cannot be 0", seq));
+                    }
+
+                    if snapshot
+                        .get_packet_commitment_by_id(&chan_id, &port_id, seq)
+                        .await?
+                        .is_some()
+                    {
+                        unreceived_seqs.push(seq);
+                    }
+                }
+
+                let res_value = QueryUnreceivedAcksResponse {
+                    sequences: unreceived_seqs,
+                    height: None,
+                }
+                .encode_to_vec();
+
+                Ok(abci::response::Query {
+                    code: 0.into(),
+                    key: query.data,
+                    log: "".to_string(),
+                    value: res_value.into(),
+                    proof: None,
+                    height: height.try_into().unwrap(),
+                    codespace: "".to_string(),
+                    info: "".to_string(),
+                    index: 0,
+                })
+            }
+
             _ => Err(anyhow::anyhow!(
                 "requested unrecognized path in ABCI query: {}",
                 query.path
