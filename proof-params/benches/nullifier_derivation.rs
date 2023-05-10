@@ -1,9 +1,12 @@
 use std::str::FromStr;
 
+use ark_relations::r1cs::{
+    ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
+};
 use decaf377::Fq;
 use penumbra_crypto::{
     keys::{NullifierKey, SeedPhrase, SpendKey},
-    proofs::groth16::NullifierDerivationProof,
+    proofs::groth16::{NullifierDerivationCircuit, NullifierDerivationProof},
     Note, Nullifier, Rseed, Value,
 };
 use penumbra_proof_params::NULLIFIER_DERIVATION_PROOF_PROVING_KEY;
@@ -48,6 +51,20 @@ fn nullifier_derivation_proving_time(c: &mut Criterion) {
     c.bench_function("nullifier derivation proving time", |b| {
         b.iter(|| prove(position, note.clone(), nk, nullifier))
     });
+
+    // Also print out the number of constraints.
+    let circuit = NullifierDerivationCircuit::new(nk, note, nullifier, position);
+
+    let cs = ConstraintSystem::new_ref();
+    cs.set_optimization_goal(OptimizationGoal::Constraints);
+    cs.set_mode(SynthesisMode::Setup);
+
+    circuit
+        .generate_constraints(cs.clone())
+        .expect("can generate constraints");
+    cs.finalize();
+    let num_constraints = cs.num_constraints();
+    println!("Number of constraints: {}", num_constraints);
 }
 
 criterion_group!(benches, nullifier_derivation_proving_time);

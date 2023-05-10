@@ -41,6 +41,22 @@ pub struct NullifierDerivationCircuit {
     pub position: tct::Position,
 }
 
+impl NullifierDerivationCircuit {
+    pub fn new(
+        nk: NullifierKey,
+        note: Note,
+        nullifier: Nullifier,
+        position: tct::Position,
+    ) -> Self {
+        Self {
+            nk,
+            note,
+            nullifier,
+            position,
+        }
+    }
+}
+
 impl ConstraintSynthesizer<Fq> for NullifierDerivationCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
