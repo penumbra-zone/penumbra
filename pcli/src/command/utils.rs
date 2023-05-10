@@ -75,8 +75,6 @@ pub(crate) fn render_xyk_approximation(pair: DirectedUnitPair, positions: &[Posi
     ]);
 
     for position in positions {
-        let trading_pair = position.phi.pair;
-
         let well_directed_phi = position.phi.orient_end(pair.end.id()).unwrap();
         let price_a_to_b = well_directed_phi.effective_price();
         let price_b_to_a = well_directed_phi.effective_price_inv();
