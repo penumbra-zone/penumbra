@@ -23,14 +23,14 @@ pub mod xyk {
     const MYSTERIOUS_SCALING_FACTOR: u64 = 1_000_000;
 
     pub(crate) fn sample_full_range(middle: f64, num_points: usize) -> Vec<f64> {
-        let step = middle / (num_points as f64);
+        let step = 2.0 * middle / (num_points as f64);
 
         (1..=num_points).map(|i| (i as f64) * step).collect()
     }
 
     #[allow(dead_code)]
     pub(crate) fn sample_points(middle: f64, num_points: usize) -> Vec<f64> {
-        let step = 2.0 * middle / (num_points as f64 / 2.0);
+        let step = middle / (num_points as f64 / 2.0);
         let start = middle - (num_points as f64 / 2.0 - 1.0) * step;
 
         (0..num_points).map(|i| start + (i as f64) * step).collect()
