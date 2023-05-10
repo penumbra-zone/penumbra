@@ -126,7 +126,7 @@ impl MerkleAuthPathVar {
         &self,
         cs: ConstraintSystemRef<Fq>,
         enforce: &Boolean<Fq>,
-        position_var: FqVar,
+        position_bits: &Vec<Boolean<Fq>>,
         anchor_var: FqVar,
         commitment_var: FqVar,
     ) -> Result<(), SynthesisError> {
@@ -134,8 +134,6 @@ impl MerkleAuthPathVar {
         // and leaf.
         let domain_separator = FqVar::new_constant(cs.clone(), *DOMAIN_SEPARATOR)?;
         let leaf_var = poseidon377::r1cs::hash_1(cs.clone(), &domain_separator, commitment_var)?;
-        // Make UInt64?
-        let position_bits = &position_var.to_bits_le()?;
 
         // Height 0 is the commitment.
         let mut previous_level = leaf_var;

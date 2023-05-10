@@ -64,11 +64,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
         let claimed_balance_commitment =
             BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
 
-        gadgets::element_not_identity(
-            cs.clone(),
-            &Boolean::TRUE,
-            note_var.diversified_generator(),
-        )?;
+        gadgets::element_not_identity(cs, &Boolean::TRUE, note_var.diversified_generator())?;
         // Check integrity of balance commitment.
         let balance_commitment =
             BalanceVar::from_negative_value_var(note_var.value()).commit(v_blinding_vars)?;
