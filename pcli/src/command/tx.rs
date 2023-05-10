@@ -1142,9 +1142,10 @@ impl TxCmd {
                 println!(" -> {amount_start}{}", pair.start.to_string());
                 println!(" -> {amount_end}{}", pair.end.to_string());
 
-                if !Confirm::new()
-                    .with_prompt("Open those liquidity positions on-chain?")
-                    .interact()?
+                if !xyk_cmd.yes
+                    && !Confirm::new()
+                        .with_prompt("Do you want to open those liquidity positions on-chain?")
+                        .interact()?
                 {
                     return Ok(());
                 }

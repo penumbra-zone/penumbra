@@ -19,6 +19,9 @@ pub mod xyk {
     /// The number of positions that is used to approximate the xyk CFMM.
     pub(crate) const NUM_POOLS_PRECISION: usize = 10;
 
+    /// Experimental scaling factor for spot valuations
+    const MYSTERIOUS_SCALING_FACTOR: u64 = 1_000_000;
+
     pub(crate) fn sample_points(middle: f64, num_points: usize) -> Vec<f64> {
         let step = middle / (num_points as f64 / 2.0);
         let start = middle - (num_points as f64 / 2.0 - 1.0) * step;
@@ -30,6 +33,7 @@ pub mod xyk {
         pair: &DirectedUnitPair,
         r1: &Value,
         current_price: U128x128,
+        fee_bps: u32,
     ) -> anyhow::Result<Vec<Position>> {
         // Henry: it could be interactive by default, --accept, --YES! that would
         // skip interactivity.
@@ -84,6 +88,9 @@ pub mod xyk {
 
         let f64_current_price: f64 = current_price.try_into()?;
 
+        let scaling_factor = Amount::from(MYSTERIOUS_SCALING_FACTOR);
+        let fp_scaling_factor: U128x128 = scaling_factor.into();
+
         let positions: Vec<Position> = position_ks
             .iter()
             .enumerate()
@@ -97,13 +104,14 @@ pub mod xyk {
                 // `asset_2`.
                 if alpha_i < f64_current_price {
                     let approx_p: U128x128 = alpha_i.try_into().unwrap();
-                    let unit_scale = U128x128::from(pair.end.unit_amount());
-                    let p = (approx_p * unit_scale).unwrap();
-                    let p: Amount = p
+                    let scaled_p = (approx_p * fp_scaling_factor).unwrap();
+                    let p: Amount = scaled_p
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
-                    let q = Amount::from(1u64) * pair.start.unit_amount();
+
+                    let unscaled_q = Amount::from(1u64);
+                    let q = unscaled_q * scaling_factor;
 
                     let r1: Amount = Amount::from(0u64);
                     let approx_r2: U128x128 = (*k_i * pair.end.unit_amount().value() as f64)
@@ -133,7 +141,7 @@ pub mod xyk {
                     Position::new(
                         OsRng,
                         pair.into_directed_trading_pair(),
-                        0u32,
+                        fee_bps,
                         p,
                         q,
                         Reserves { r1, r2 },
@@ -142,15 +150,15 @@ pub mod xyk {
                     // Tick is above the current price, therefore we want
                     // to create a one-sided position with price `alpha_i`
                     // that provisions `asset_1`.
-                    let p = Amount::from(1u64) * pair.end.unit_amount();
+                    let unscaled_p = Amount::from(1u64);
+                    let p = unscaled_p * scaling_factor;
+
                     let approx_q: U128x128 = alpha_i.try_into().unwrap();
-                    let unit_scale = U128x128::from(pair.start.unit_amount());
-                    let q = (approx_q * unit_scale).unwrap();
-                    let q: Amount = q
+                    let scaled_q = (approx_q * fp_scaling_factor).unwrap();
+                    let q: Amount = scaled_q
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
-                    let q = q * pair.start.unit_amount();
 
                     let approx_r1: U128x128 = (*k_i * pair.start.unit_amount().value() as f64)
                         .try_into()
@@ -180,7 +188,7 @@ pub mod xyk {
                     Position::new(
                         OsRng,
                         pair.into_directed_trading_pair(),
-                        0u32,
+                        fee_bps,
                         p,
                         q,
                         Reserves { r1, r2 },
