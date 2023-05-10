@@ -29,15 +29,11 @@ impl AllocVar<Position, Fq> for PositionVar {
     }
 }
 
-//             let epoch = (position >> 32) as u16;
-//let block = (position >> 16) as u16;
-//let commitment = position as u16;
-
 #[derive(Clone, Debug)]
 /// Represents the position of a leaf in the TCT represented in R1CS.
 pub struct PositionBitsVar {
     /// Inner variable consisting of boolean constraints.
-    pub inner: UInt64<Fq>,
+    pub inner: Vec<Boolean<Fq>>,
 }
 
 impl AllocVar<Position, Fq> for PositionBitsVar {
@@ -49,38 +45,66 @@ impl AllocVar<Position, Fq> for PositionBitsVar {
         let ns = cs.into();
         let cs = ns.cs();
         let inner: Position = *f()?.borrow();
+        let var = UInt64::new_variable(cs, || Ok(u64::from(inner)), mode)?;
         Ok(Self {
-            inner: UInt64::new_variable(cs, || Ok(u64::from(inner)), mode)?,
+            inner: var.to_bits_le(),
         })
     }
 }
 
 impl ToBitsGadget<Fq> for PositionBitsVar {
     fn to_bits_le(&self) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
-        Ok(self.inner.to_bits_le())
+        Ok(self.inner.clone())
     }
 }
 
 impl PositionVar {
+    /// Get bits of the position.
+    pub fn to_position_bits_var(&self) -> Result<PositionBitsVar, SynthesisError> {
+        Ok(PositionBitsVar {
+            inner: self.inner.to_bits_le()?,
+        })
+    }
+}
+
+impl ToBitsGadget<Fq> for PositionVar {
+    fn to_bits_le(&self) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
+        self.inner.to_bits_le()
+    }
+}
+
+/// Raise f to the power of `exp`
+pub fn mul_exp(f: Fq, exp: usize) -> Fq {
+    let mut acc = Fq::from(1);
+    for _ in 0..exp {
+        acc *= f;
+    }
+    acc
+}
+
+/// Convert a vector of bits in little-endian order to an FqVar.
+pub fn convert_le_bits_to_fqvar(value: &[Boolean<Fq>]) -> FqVar {
+    let mut acc = FqVar::zero();
+    for (i, bit) in value.iter().enumerate() {
+        acc += FqVar::from(bit.clone()) * FqVar::constant(mul_exp(Fq::from(2_i32), i));
+    }
+    acc
+}
+
+impl PositionBitsVar {
     /// Witness the commitment index by taking the last 16 bytes of the position.
     pub fn commitment(&self) -> Result<FqVar, SynthesisError> {
-        let position = self.value().unwrap_or_default();
-        let commitment = position.commitment();
-        FqVar::new_witness(self.cs(), || Ok(Fq::from(commitment)))
+        Ok(convert_le_bits_to_fqvar(&self.inner[48..64]))
     }
 
     /// Witness the block.
     pub fn block(&self) -> Result<FqVar, SynthesisError> {
-        let position = self.value().unwrap_or_default();
-        let block = position.block();
-        FqVar::new_witness(self.cs(), || Ok(Fq::from(block)))
+        Ok(convert_le_bits_to_fqvar(&self.inner[32..48]))
     }
 
     /// Witness the epoch by taking the first 32 bytes of the position.
     pub fn epoch(&self) -> Result<FqVar, SynthesisError> {
-        let position = self.value().unwrap_or_default();
-        let epoch = position.epoch();
-        FqVar::new_witness(self.cs(), || Ok(Fq::from(epoch)))
+        Ok(convert_le_bits_to_fqvar(&self.inner[0..32]))
     }
 }
 
@@ -205,22 +229,6 @@ pub struct WhichWayVar {
     /// The node is the rightmost (3rd) child.
     pub is_rightmost: Boolean<Fq>,
 }
-
-// pub fn mul_exp(f: Fq, exp: usize) -> Fq {
-//     let mut acc = Fq::from(1);
-//     for _ in 0..exp {
-//         acc *= f;
-//     }
-//     acc
-// }
-
-// pub fn convert_le_bits_to_fqvar(value: &[Boolean<Fq>]) -> FqVar {
-//     let mut acc = FqVar::zero();
-//     for (i, bit) in value.iter().enumerate() {
-//         acc += FqVar::from(bit.clone()) * FqVar::constant(mul_exp(Fq::from(2_i32), i));
-//     }
-//     acc
-// }
 
 impl WhichWayVar {
     /// Given a height and an index of a leaf, determine which direction the path down to that leaf
