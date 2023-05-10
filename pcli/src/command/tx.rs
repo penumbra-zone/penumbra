@@ -38,7 +38,6 @@ use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};
 use rand_core::OsRng;
 
-use crate::dex_utils;
 use crate::App;
 
 mod proposal;
