@@ -35,9 +35,6 @@ pub mod xyk {
         current_price: U128x128,
         fee_bps: u32,
     ) -> anyhow::Result<Vec<Position>> {
-        // Henry: it could be interactive by default, --accept, --YES! that would
-        // skip interactivity.
-
         // Note: we solve over the human-friendly display price and proceed with denom scaling
         // and cross-multiplication right before posting the positions. So here we need to rescale
         // the `r1` quantity.
