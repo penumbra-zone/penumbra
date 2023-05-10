@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use ark_groth16::r1cs_to_qap::LibsnarkReduction;
+use ark_r1cs_std::uint64::UInt64;
 use ark_r1cs_std::{prelude::*, uint8::UInt8};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use decaf377::FieldExt;
@@ -105,6 +106,9 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof.position())
         })?;
+        let position_u64: u64 = self.state_commitment_proof.position().into();
+        let position_u64_var = UInt64::new_witness(cs.clone(), || Ok(position_u64))?;
+        let position_bits = position_u64_var.to_bits_le();
         let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof)
         })?;
@@ -138,7 +142,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         merkle_path_var.verify(
             cs.clone(),
             &Boolean::TRUE,
-            position_var.clone().inner,
+            &position_bits,
             anchor_var,
             claimed_note_commitment.inner(),
         )?;
