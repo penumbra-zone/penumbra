@@ -12,8 +12,8 @@ use ibc_proto::ibc::core::{
     channel::v1::{
         PacketState, QueryChannelsRequest, QueryChannelsResponse,
         QueryPacketAcknowledgementsRequest, QueryPacketAcknowledgementsResponse,
-        QueryUnreceivedAcksRequest, QueryUnreceivedAcksResponse, QueryUnreceivedPacketsRequest,
-        QueryUnreceivedPacketsResponse,
+        QueryPacketCommitmentsRequest, QueryPacketCommitmentsResponse, QueryUnreceivedAcksRequest,
+        QueryUnreceivedAcksResponse, QueryUnreceivedPacketsRequest, QueryUnreceivedPacketsResponse,
     },
     client::v1::{IdentifiedClientState, QueryClientStatesRequest, QueryClientStatesResponse},
 };
@@ -23,7 +23,7 @@ use ibc_proto::ibc::core::{
 };
 use ibc_types::core::{
     ics03_connection::connection::IdentifiedConnectionEnd,
-    ics04_channel::{channel::IdentifiedChannelEnd, packet::Packet},
+    ics04_channel::channel::IdentifiedChannelEnd,
     ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 };
 use penumbra_chain::component::AppHashRead;
@@ -308,6 +308,57 @@ impl Info {
                 let res_value = QueryClientStatesResponse {
                     client_states,
                     pagination: None,
+                }
+                .encode_to_vec();
+
+                Ok(abci::response::Query {
+                    code: 0.into(),
+                    key: query.data,
+                    log: "".to_string(),
+                    value: res_value.into(),
+                    proof: None,
+                    height: height.try_into().unwrap(),
+                    codespace: "".to_string(),
+                    info: "".to_string(),
+                    index: 0,
+                })
+            }
+            "/ibc.core.channel.v1.Query/PacketCommitments" => {
+                let (snapshot, height) = self
+                    .get_snapshot_for_height(u64::from(query.height))
+                    .await?;
+
+                let request = QueryPacketCommitmentsRequest::decode(query.data.clone())
+                    .context("failed to decode QueryPacketCommitmentsRequest")?;
+
+                let chan_id: ChannelId =
+                    ChannelId::from_str(&request.channel_id).context("invalid channel id")?;
+                let port_id: PortId =
+                    PortId::from_str(&request.port_id).context("invalid port id")?;
+
+                let mut commitment_states = vec![];
+                let commitment_counter = snapshot.get_send_sequence(&chan_id, &port_id).await?;
+
+                for commitment_idx in 0..commitment_counter {
+                    let commitment = snapshot
+                        .get_packet_commitment_by_id(&chan_id, &port_id, commitment_idx)
+                        .await?
+                        .ok_or(anyhow::anyhow!("couldnt find commitment"))?;
+
+                    let commitment_state = PacketState {
+                        port_id: request.port_id.clone(),
+                        channel_id: request.channel_id.clone(),
+                        sequence: commitment_idx,
+                        data: commitment.clone(),
+                    };
+
+                    commitment_states.push(commitment_state);
+                }
+
+                let res_value = QueryPacketCommitmentsResponse {
+                    commitments: commitment_states,
+                    pagination: None,
+                    height: None,
                 }
                 .encode_to_vec();
 
