@@ -1115,10 +1115,7 @@ impl TxCmd {
                     }
                 };
 
-                let asset_cache = app.view().assets().await?;
-                // TODO(erwan): there is a problem with the prices
-                // + replace p/q with "asset 1 to asset 2"
-                // + provide a summary of the required inventory
+                // TODO(erwan): there is a problem with the prices with diff denoms.
                 // + add a `fee` option
                 let positions = xyk_cmd.exec(current_price)?;
                 let (amount_start, amount_end) =
