@@ -4899,7 +4899,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-wasm"
-version = "0.51.0"
+version = "0.51.1"
 dependencies = [
  "anyhow",
  "base64 0.20.0",
