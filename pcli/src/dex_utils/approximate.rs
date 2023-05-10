@@ -14,6 +14,7 @@ pub mod xyk {
         Amount, Value,
     };
     use rand_core::OsRng;
+    use tracing::field;
 
     /// The number of positions that is used to approximate the xyk CFMM.
     pub(crate) const NUM_POOLS_PRECISION: usize = 10;
@@ -26,13 +27,19 @@ pub mod xyk {
     }
 
     pub fn approximate(
-        market: &DirectedUnitPair,
+        pair: &DirectedUnitPair,
         r1: &Value,
         current_price: U128x128,
     ) -> anyhow::Result<Vec<Position>> {
         // Henry: it could be interactive by default, --accept, --YES! that would
         // skip interactivity.
+
+        // Note: we solve over the human-friendly display price and proceed with denom scaling
+        // and cross-multiplication right before posting the positions. So here we need to rescale
+        // the `r1` quantity.
         let fp_r1 = U128x128::from(r1.amount.value());
+        let r1_scaling = U128x128::from(pair.start.unit_amount());
+        let fp_r1 = U128x128::ratio(fp_r1, r1_scaling).unwrap();
         let fp_r2 = (current_price * fp_r1).ok_or_else(|| {
             anyhow::anyhow!(
                 "current_price: {} * fp_r1: {} caused overflow.",
@@ -41,16 +48,25 @@ pub mod xyk {
             )
         })?;
 
-        let unit_scale_r2_fp: U128x128 = market.end.unit_amount().value().into();
-        let fp_r2 = (fp_r2 * unit_scale_r2_fp).unwrap();
+        tracing::debug!(
+            r1 = field::display(fp_r1),
+            r2 = field::display(fp_r2),
+            "computed respective quantities"
+        );
 
         let xyk_invariant = (fp_r1 * fp_r2).ok_or_else(|| {
             anyhow::anyhow!("overflow computing the curve invariant: {fp_r1} * {fp_r2}")
         })?;
 
         let xyk_invariant: f64 = xyk_invariant.try_into()?;
+        tracing::debug!(?xyk_invariant, "computed the total invariant for the PVF");
 
         let alphas = sample_points(current_price.into(), NUM_POOLS_PRECISION);
+
+        alphas
+            .iter()
+            .enumerate()
+            .for_each(|(i, alpha)| tracing::debug!(i, alpha, "sampled tick"));
 
         // TODO(erwan): unused for now, but next refactor will rip out `solve` internals to
         // take this vector of solutions as an argument so that we can more easily recover from
@@ -61,6 +77,10 @@ pub mod xyk {
             .collect();
 
         let position_ks = solve(&alphas, xyk_invariant, NUM_POOLS_PRECISION)?.to_vec();
+        position_ks
+            .iter()
+            .enumerate()
+            .for_each(|(i, pool_invariant)| tracing::debug!(i, pool_invariant, "found solution"));
 
         let f64_current_price: f64 = current_price.try_into()?;
 
@@ -81,11 +101,11 @@ pub mod xyk {
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
-                    let p = p * market.end.unit_amount();
-                    let q = Amount::from(1u64) * market.start.unit_amount();
+                    let p = p * pair.end.unit_amount();
+                    let q = Amount::from(1u64) * pair.start.unit_amount();
 
                     let r1: Amount = Amount::from(0u64);
-                    let approx_r2: U128x128 = (*k_i * market.end.unit_amount().value() as f64)
+                    let approx_r2: U128x128 = (*k_i * pair.end.unit_amount().value() as f64)
                         .try_into()
                         .unwrap();
                     let r2: Amount = approx_r2
@@ -93,9 +113,25 @@ pub mod xyk {
                         .try_into()
                         .expect("integral after truncating");
 
+                    tracing::debug!(
+                        i,
+                        k_i,
+                        alpha_i,
+                        f64_current_price,
+                        "create a position with a tick below the current price"
+                    );
+                    tracing::debug!(
+                        directed_pair = pair.to_string(),
+                        r1 = field::display(r1),
+                        r2 = field::display(r2),
+                        ?p,
+                        ?q,
+                        "creating position"
+                    );
+
                     Position::new(
                         OsRng,
-                        market.into_directed_trading_pair(),
+                        pair.into_directed_trading_pair(),
                         0u32,
                         p,
                         q,
@@ -105,15 +141,15 @@ pub mod xyk {
                     // Tick is above the current price, therefore we want
                     // to create a one-sided position with price `alpha_i`
                     // that provisions `asset_1`.
-                    let p = Amount::from(1u64) * market.end.unit_amount();
+                    let p = Amount::from(1u64) * pair.end.unit_amount();
                     let approx_q: U128x128 = alpha_i.try_into().unwrap();
                     let q: Amount = approx_q
                         .round_down()
                         .try_into()
                         .expect("integral after truncating");
-                    let q = q * market.start.unit_amount();
+                    let q = q * pair.start.unit_amount();
 
-                    let approx_r1: U128x128 = (*k_i * market.start.unit_amount().value() as f64)
+                    let approx_r1: U128x128 = (*k_i * pair.start.unit_amount().value() as f64)
                         .try_into()
                         .unwrap();
                     let r1: Amount = approx_r1
@@ -122,9 +158,25 @@ pub mod xyk {
                         .expect("integral after truncating");
                     let r2: Amount = Amount::from(0u64);
 
+                    tracing::debug!(
+                        i,
+                        k_i,
+                        alpha_i,
+                        f64_current_price,
+                        "create a position with a tick above the current price"
+                    );
+                    tracing::debug!(
+                        directed_pair = pair.to_string(),
+                        r1 = field::display(r1),
+                        r2 = field::display(r2),
+                        ?p,
+                        ?q,
+                        "creating position"
+                    );
+
                     Position::new(
                         OsRng,
-                        market.into_directed_trading_pair(),
+                        pair.into_directed_trading_pair(),
                         0u32,
                         p,
                         q,

@@ -6,9 +6,10 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::Fr;
+use dialoguer::Confirm;
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
@@ -1081,12 +1082,12 @@ impl TxCmd {
             }
             TxCmd::Position(PositionCmd::RewardClaim {}) => todo!(),
             TxCmd::Position(PositionCmd::Approximate(ApproximateCmd::ConstantProduct(xyk_cmd))) => {
+                let pair = xyk_cmd.pair.clone();
                 let current_price = match xyk_cmd.current_price {
                     Some(user_supplied_price) => user_supplied_price,
                     None => {
                         let mut specific_client = app.specific_client().await?;
 
-                        let pair = xyk_cmd.pair.clone();
                         let spread_data = specific_client
                             .spread(SpreadRequest {
                                 chain_id: "".to_string(),
@@ -1096,6 +1097,12 @@ impl TxCmd {
                             })
                             .await?
                             .into_inner();
+
+                        if spread_data.best_1_to_2_position.is_none()
+                            || spread_data.best_2_to_1_position.is_none()
+                        {
+                            bail!("couldn't find a market price for the specified assets, you can manually specify a price using --current-price <price>")
+                        }
 
                         let current_price = if xyk_cmd.input.asset_id == pair.start.id() {
                             spread_data.approx_effective_price_1_to_2
@@ -1109,13 +1116,42 @@ impl TxCmd {
                 };
 
                 let asset_cache = app.view().assets().await?;
-                // TODO(erwan): this will do for now, will update after a round
-                // of testing on the devnet.
+                // TODO(erwan): there is a problem with the prices
+                // + replace p/q with "asset 1 to asset 2"
+                // + provide a summary of the required inventory
+                // + add a `fee` option
                 let positions = xyk_cmd.exec(current_price)?;
+                let (amount_start, amount_end) =
+                    positions
+                        .iter()
+                        .fold((Amount::zero(), Amount::zero()), |acc, pos| {
+                            (
+                                acc.0 + pos.reserves_for(pair.start.id()).unwrap(),
+                                acc.1 + pos.reserves_for(pair.end.id()).unwrap(),
+                            )
+                        });
+                let amount_start = pair.start.format_value(amount_start);
+                let amount_end = pair.end.format_value(amount_end);
+
+                println!("List of positions to be created:");
                 println!(
                     "{}",
                     crate::command::utils::render_positions(&asset_cache, &positions)
                 );
+
+                println!(
+                    "To supply passive liquidity on the pair {}, you will need a total of:",
+                    pair.to_string()
+                );
+                println!(" -> {amount_start}{}", pair.start.to_string());
+                println!(" -> {amount_end}{}", pair.end.to_string());
+
+                if !Confirm::new()
+                    .with_prompt("Open those liquidity positions on-chain?")
+                    .interact()?
+                {
+                    return Ok(());
+                }
 
                 let mut planner = Planner::new(OsRng);
                 positions.iter().for_each(|position| {
