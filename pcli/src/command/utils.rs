@@ -14,25 +14,39 @@ pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position
 
     for position in positions {
         let trading_pair = position.phi.pair;
-        let denom_1 = asset_cache
-            .get(&trading_pair.asset_1())
-            .expect("asset should be known to view service");
-        let denom_2 = asset_cache
-            .get(&trading_pair.asset_2())
-            .expect("asset should be known to view service");
+        let denom_1 = asset_cache.get(&trading_pair.asset_1());
+        let denom_2 = asset_cache.get(&trading_pair.asset_2());
 
-        let display_denom_1 = denom_1.default_unit();
-        let display_denom_2 = denom_2.default_unit();
+        // if either of the assets is unknown, just show the asset IDs
+        let (d_display, v_display) = if denom_1.is_none() || denom_2.is_none() {
+            (
+                format!("({}, {})", trading_pair.asset_1(), trading_pair.asset_2()),
+                format!(
+                    "({} {}, {} {})",
+                    position.reserves.r1,
+                    trading_pair.asset_1(),
+                    position.reserves.r2,
+                    trading_pair.asset_2(),
+                ),
+            )
+        } else {
+            let display_denom_1 = denom_1.unwrap().default_unit();
+            let display_denom_2 = denom_2.unwrap().default_unit();
+            (
+                format!("({}, {})", display_denom_1, display_denom_2),
+                format!(
+                    "({}, {})",
+                    display_denom_1.format_value(position.reserves.r1),
+                    display_denom_2.format_value(position.reserves.r2)
+                ),
+            )
+        };
 
         table.add_row(vec![
             format!("{}", position.id()),
-            format!("({}, {})", display_denom_1, display_denom_2),
+            d_display,
             position.state.to_string(),
-            format!(
-                "({}, {})",
-                display_denom_1.format_value(position.reserves.r1),
-                display_denom_2.format_value(position.reserves.r2)
-            ),
+            v_display,
             format!(
                 "fee: {}bps, p/q: {:.6}, q/p: {:.6}",
                 position.phi.component.fee,
