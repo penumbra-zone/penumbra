@@ -72,6 +72,7 @@ impl ConstantProduct {
                     .enumerate()
                     .for_each(|(i, alpha)| tracing::debug!(i, alpha, "sampled tick"));
 
+                // TODO(erwan): this is wrong, i should rip this out anyway and not have two places that do the denom scaling logic.
                 let r1 = self.input.amount.value() as f64;
                 // R2 scaled because the current_price is a ratio.
                 let r2 = r1 * current_price;

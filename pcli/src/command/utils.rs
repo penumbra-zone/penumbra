@@ -81,13 +81,13 @@ pub(crate) fn render_xyk_approximation(pair: DirectedUnitPair, positions: &[Posi
         let price_a_to_b = well_directed_phi.effective_price();
         let price_b_to_a = well_directed_phi.effective_price_inv();
 
-        let buy_at_str = format!("buy  @ {:>10.05}", price_b_to_a);
-        let sell_at_str = format!("sell @ {:>10.05}", price_a_to_b);
+        let asset_1_to_2 = format!("{} @ {:>10.05}", pair.to_string(), price_a_to_b);
+        let asset_2_to_1 = format!("{} @ {:>10.05}", pair.flip().to_string(), price_b_to_a);
 
         let price_summary = if position.reserves_for(pair.start.id()).unwrap() == 0u64.into() {
-            buy_at_str.clone()
+            asset_2_to_1.clone()
         } else {
-            sell_at_str.clone()
+            asset_1_to_2.clone()
         };
 
         table.add_row(vec![
@@ -102,8 +102,8 @@ pub(crate) fn render_xyk_approximation(pair: DirectedUnitPair, positions: &[Posi
             ),
             format!("{fee:>5}bps"),
             price_summary,
-            buy_at_str,
-            sell_at_str,
+            asset_1_to_2,
+            asset_2_to_1,
         ]);
     }
 
