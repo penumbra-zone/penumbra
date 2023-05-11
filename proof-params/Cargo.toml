@@ -54,3 +54,8 @@ required-features = ["proving-keys"]
 name = "output"
 harness = false
 required-features = ["proving-keys"]
+
+[[bench]]
+name = "spend"
+harness = false
+required-features = ["proving-keys"]
