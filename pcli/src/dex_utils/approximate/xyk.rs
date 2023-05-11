@@ -12,7 +12,7 @@ use rand_core::OsRng;
 use tracing::field;
 
 /// The number of positions that is used to approximate the xyk CFMM.
-pub(crate) const NUM_POOLS_PRECISION: usize = 20;
+pub(crate) const NUM_POOLS_PRECISION: usize = 10;
 
 /// Experimental scaling factor for spot valuations
 const PRICE_SCALING_FACTOR: u64 = 1_000_000;
@@ -21,11 +21,9 @@ const PRICE_SCALING_FACTOR: u64 = 1_000_000;
 const GAUS_SEIDEL_MAX_ITERATION: usize = 10_000;
 
 pub(crate) fn sample_full_range(middle: f64, num_points: usize) -> Vec<f64> {
-    let step = middle / (num_points as f64);
+    let step = 3.0 * middle / (num_points as f64);
 
-    (0..=num_points)
-        .map(|i| (i as f64) * step + 0.00001)
-        .collect()
+    (1..=num_points).map(|i| (i as f64) * step).collect()
 }
 
 #[allow(dead_code)]
