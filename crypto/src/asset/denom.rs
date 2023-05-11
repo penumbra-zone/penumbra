@@ -156,6 +156,10 @@ impl Denom {
     /// This is defined as the largest unit smaller than the given value (so it
     /// has no leading zeros when formatted).
     pub fn best_unit_for(&self, amount: asset::Amount) -> Unit {
+        // Special case: use the default unit for 0
+        if amount == 0u64.into() {
+            return self.default_unit();
+        }
         for (unit_index, unit) in self.inner.units.iter().enumerate() {
             let unit_amount = asset::Amount::from(10u128.pow(unit.exponent as u32));
             if amount >= unit_amount {

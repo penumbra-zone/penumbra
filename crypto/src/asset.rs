@@ -137,7 +137,7 @@ mod tests {
 
         assert_eq!(
             base_denom.best_unit_for(0u64.into()).to_string(),
-            "upenumbra"
+            "penumbra"
         );
         assert_eq!(
             base_denom.best_unit_for(999u64.into()).to_string(),
