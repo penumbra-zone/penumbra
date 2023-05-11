@@ -118,12 +118,46 @@ pub trait PositionRead: StateRead {
         };
         self.position_by_id(&id).await
     }
+
+    /// Fetch the list of pending position closures.
+    fn pending_position_closures(&self) -> im::Vector<position::Id> {
+        self.object_get(state_key::pending_position_closures())
+            .unwrap_or_default()
+    }
 }
 impl<T: StateRead + ?Sized> PositionRead for T {}
 
 /// Manages liquidity positions within the chain state.
 #[async_trait]
 pub trait PositionManager: StateWrite + PositionRead {
+    /// Queues a position to be closed at the end of the block, after batch execution.
+    fn queue_close_position(&mut self, id: position::Id) {
+        let mut to_close = self.pending_position_closures();
+        to_close.push_back(id);
+        self.object_put(state_key::pending_position_closures(), to_close);
+    }
+
+    async fn close_queued_positions(&mut self) -> Result<()> {
+        let to_close = self.pending_position_closures();
+        for id in to_close {
+            let mut position = self
+                .position_by_id(&id)
+                .await?
+                .expect("value balance mechanism should have ensured position exists");
+
+            assert_eq!(
+                position.state,
+                position::State::Opened,
+                "value balance mechanism should have ensured position is Opened"
+            );
+
+            position.state = position::State::Closed;
+            self.put_position(position);
+        }
+        self.object_delete(state_key::pending_position_closures());
+        Ok(())
+    }
+
     /// Writes a position to the state, updating all necessary indexes.
     #[tracing::instrument(level = "debug", skip(self, position), fields(id = ?position.id()))]
     fn put_position(&mut self, position: position::Position) {

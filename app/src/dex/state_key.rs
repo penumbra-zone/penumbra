@@ -36,6 +36,10 @@ pub fn swap_flows() -> &'static str {
     "dex/swap_flows"
 }
 
+pub fn pending_position_closures() -> &'static str {
+    "dex/pending_position_closures"
+}
+
 /// Encompasses non-consensus state keys.
 pub(crate) mod internal {
     use super::*;

@@ -16,7 +16,7 @@ use tracing::instrument;
 
 use super::{
     router::{self, RouteAndFill},
-    state_key,
+    state_key, PositionManager,
 };
 
 pub struct Dex {}
@@ -41,6 +41,7 @@ impl Component for Dex {
         end_block: &abci::request::EndBlock,
     ) {
         let current_epoch = state.epoch().await.unwrap();
+
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
         for (trading_pair, swap_flows) in state.swap_flows() {
             state
@@ -54,6 +55,14 @@ impl Component for Dex {
                 .await
                 .expect("unable to process batch swaps");
         }
+
+        // Next, close all positions queued for closure at the end of the block.
+        // It's important to do this after execution, to allow block-scoped JIT liquidity.
+        Arc::get_mut(state)
+            .expect("state should be uniquely referenced after batch swaps complete")
+            .close_queued_positions()
+            .await
+            .unwrap();
     }
 
     #[instrument(name = "dex", skip(_state))]
