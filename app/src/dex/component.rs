@@ -6,8 +6,9 @@ use penumbra_chain::component::StateReadExt as _;
 use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_component::Component;
 use penumbra_crypto::{
+    asset,
     dex::{execution::SwapExecution, BatchSwapOutputData, TradingPair},
-    SwapFlow,
+    SwapFlow, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
@@ -16,7 +17,7 @@ use tracing::instrument;
 
 use super::{
     router::{HandleBatchSwaps, RoutingParams},
-    state_key, PositionManager,
+    state_key, Arbitrage, PositionManager,
 };
 
 pub struct Dex {}
@@ -60,6 +61,23 @@ impl Component for Dex {
                 .expect("unable to process batch swaps");
         }
 
+        // Then, perform arbitrage:
+        state
+            .arbitrage(
+                *STAKING_TOKEN_ASSET_ID,
+                vec![
+                    *STAKING_TOKEN_ASSET_ID,
+                    asset::REGISTRY.parse_unit("gm").id(),
+                    asset::REGISTRY.parse_unit("gn").id(),
+                    asset::REGISTRY.parse_unit("test_usd").id(),
+                    asset::REGISTRY.parse_unit("test_btc").id(),
+                    asset::REGISTRY.parse_unit("test_atom").id(),
+                    asset::REGISTRY.parse_unit("test_osmo").id(),
+                ],
+            )
+            .await
+            .expect("must be able to process arbitrage");
+
         // Next, close all positions queued for closure at the end of the block.
         // It's important to do this after execution, to allow block-scoped JIT liquidity.
         Arc::get_mut(state)
@@ -96,6 +114,10 @@ pub trait StateReadExt: StateRead {
             .await
     }
 
+    async fn arb_execution(&self, height: u64) -> Result<Option<SwapExecution>> {
+        self.get(&state_key::arb_execution(height)).await
+    }
+
     // Get the swap flow for the given trading pair accumulated in this block so far.
     fn swap_flow(&self, pair: &TradingPair) -> SwapFlow {
         self.swap_flows().get(pair).cloned().unwrap_or_default()
@@ -126,6 +148,10 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         let mut compact_block = self.stub_compact_block();
         compact_block.swap_outputs.insert(trading_pair, output_data);
         self.stub_put_compact_block(compact_block);
+    }
+
+    fn set_arb_execution(&mut self, height: u64, execution: SwapExecution) {
+        self.put(state_key::arb_execution(height), execution);
     }
 
     fn put_swap_flow(&mut self, trading_pair: &TradingPair, swap_flow: SwapFlow) {
