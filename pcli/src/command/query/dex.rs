@@ -191,17 +191,6 @@ impl DexCmd {
             .asset
             .unwrap()
             .try_into()?;
-
-        let display_denom_1 = asset_1.denom.best_unit_for(std::cmp::max(
-            outputs.delta_1,
-            outputs.lambda_1_1 + outputs.lambda_1_2,
-        ));
-
-        let (denom_1, input_amount_1, output_amount_1) = (
-            format!("{display_denom_1}"),
-            display_denom_1.format_value(outputs.delta_1),
-            display_denom_1.format_value(outputs.lambda_1_1 + outputs.lambda_1_2),
-        );
         let asset_2: Asset = client
             .asset_info(AssetInfoRequest {
                 asset_id: Some(trading_pair.asset_2().into()),
@@ -212,26 +201,42 @@ impl DexCmd {
             .asset
             .unwrap()
             .try_into()?;
-        let display_denom_2 = asset_2.denom.best_unit_for(std::cmp::max(
-            outputs.delta_2,
-            outputs.lambda_2_1 + outputs.lambda_2_2,
-        ));
 
-        let (denom_2, input_amount_2, output_amount_2) = (
-            format!("{display_denom_2}"),
-            display_denom_2.format_value(outputs.delta_2),
-            display_denom_2.format_value(outputs.lambda_2_1 + outputs.lambda_2_2),
-        );
+        let unit_1 = asset_1.denom.default_unit();
+        let unit_2 = asset_2.denom.default_unit();
+
+        let consumed_1 = outputs.delta_1 - outputs.unfilled_1;
+        let consumed_2 = outputs.delta_2 - outputs.unfilled_2;
 
         println!("Batch Swap Outputs for height {}:", outputs.height);
-        let mut table = Table::new();
-        table.load_preset(presets::NOTHING);
-        table
-            .set_header(vec!["Denomination", "Input Amount", "Output Amount"])
-            .add_row(vec![denom_1, input_amount_1, output_amount_1])
-            .add_row(vec![denom_2, input_amount_2, output_amount_2]);
-
-        println!("{table}");
+        println!(
+            "Trade {} => {}",
+            unit_1.format_value(outputs.delta_1),
+            unit_2
+        );
+        println!(
+            "\tOutput:         {} for {}",
+            unit_2.format_value(outputs.lambda_2),
+            unit_1.format_value(consumed_1)
+        );
+        println!(
+            "\tUnfilled Input: {}",
+            unit_1.format_value(outputs.unfilled_1)
+        );
+        println!(
+            "Trade {} => {}",
+            unit_2.format_value(outputs.delta_2),
+            unit_1
+        );
+        println!(
+            "\tOutput:         {} for {}",
+            unit_1.format_value(outputs.lambda_1),
+            unit_2.format_value(consumed_2)
+        );
+        println!(
+            "\tUnfilled Input: {}",
+            unit_2.format_value(outputs.unfilled_2)
+        );
 
         Ok(())
     }

@@ -251,18 +251,18 @@ pub struct BatchSwapOutputData {
     /// The total amount of asset 2 that was input to the batch swap.
     #[prost(message, optional, tag = "2")]
     pub delta_2: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
-    /// The total amount of asset 1 that was output from the batch swap for 1=>2 trades.
+    /// The total amount of asset 1 that was output from the batch swap for 2=>1 trades.
     #[prost(message, optional, tag = "3")]
-    pub lambda_1_1: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+    pub lambda_1: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
     /// The total amount of asset 2 that was output from the batch swap for 1=>2 trades.
     #[prost(message, optional, tag = "4")]
-    pub lambda_2_1: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
-    /// The total amount of asset 1 that was output from the batch swap for 2=>1 trades.
+    pub lambda_2: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+    /// The total amount of asset 1 that was returned unfilled from the batch swap for 1=>2 trades.
     #[prost(message, optional, tag = "5")]
-    pub lambda_1_2: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
-    /// The total amount of asset 2 that was output from the batch swap for 2=>1 trades.
+    pub unfilled_1: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+    /// The total amount of asset 2 that was returned unfilled from the batch swap for 2=>1 trades.
     #[prost(message, optional, tag = "6")]
-    pub lambda_2_2: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
+    pub unfilled_2: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
     /// The height for which the batch swap data is valid.
     #[prost(uint64, tag = "7")]
     pub height: u64,
