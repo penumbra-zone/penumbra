@@ -5,9 +5,11 @@ pub mod state_key;
 
 pub mod router;
 
+mod arb;
 mod position_manager;
 
 pub use self::metrics::register_metrics;
+pub use arb::Arbitrage;
 pub use component::{Dex, StateReadExt, StateWriteExt};
 pub use position_manager::{PositionManager, PositionRead};
 
