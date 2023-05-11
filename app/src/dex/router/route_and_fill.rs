@@ -155,6 +155,7 @@ pub trait RouteAndFill: StateWrite + Sized {
 
                 tracing::debug!(?path, delta_1 = ?delta_1.amount, "found path, starting to fill up to spill price");
 
+                // TODO: in what circumstances should we use fill_route_exact?
                 let (unfilled_1, lambda_2) = Arc::get_mut(self)
                     .expect("expected state to have no other refs")
                     .fill_route(delta_1, &path, spill_price)

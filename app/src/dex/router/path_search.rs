@@ -13,7 +13,9 @@ use super::{Path, PathCache, PathEntry, RoutingParams, SharedPathCache};
 
 #[async_trait]
 pub trait PathSearch: StateRead + Clone + 'static {
-    /// Find the best route from `src` to `dst`, also returning the spill price for the next-best route, if one exists.
+    /// Find the best route from `src` to `dst` with estimated price at most
+    /// `params.price_limit`, also returning the spill price for the next-best
+    /// route, if one exists.
     #[instrument(skip(self, src, dst, params), fields(max_hops = params.max_hops))]
     async fn path_search(
         &self,
@@ -24,7 +26,7 @@ pub trait PathSearch: StateRead + Clone + 'static {
         let RoutingParams {
             max_hops,
             fixed_candidates,
-            ..
+            price_limit,
         } = params;
 
         tracing::debug!(?src, ?dst, ?max_hops, "searching for path");
@@ -40,13 +42,20 @@ pub trait PathSearch: StateRead + Clone + 'static {
         }
 
         let entry = cache.lock().0.remove(&dst);
-        if let Some(PathEntry { path, spill, .. }) = entry {
-            let nodes = path.nodes;
-            let spill_price = spill.map(|p| p.price);
-            tracing::debug!(price = %path.price, spill_price = %spill_price.unwrap_or_else(|| 0u64.into()), ?src, ?nodes, "found path");
-            Ok((Some(nodes), spill_price))
-        } else {
-            Ok((None, None))
+        let Some(PathEntry { path, spill, .. }) = entry else {
+            return Ok((None, None));
+        };
+
+        let nodes = path.nodes;
+        let spill_price = spill.map(|p| p.price);
+        tracing::debug!(price = %path.price, spill_price = %spill_price.unwrap_or_else(|| 0u64.into()), ?src, ?nodes, "found path");
+
+        match price_limit {
+            Some(price_limit) if path.price > price_limit => {
+                tracing::debug!(price = %path.price, price_limit = %price_limit, "path too expensive");
+                Ok((None, None))
+            }
+            _ => Ok((Some(nodes), spill_price)),
         }
     }
 }
