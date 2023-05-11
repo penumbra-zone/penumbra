@@ -120,7 +120,10 @@ impl TryFrom<pb_chain::ChainParameters> for ChainParameters {
             inbound_ics20_transfers_enabled: msg.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: msg.outbound_ics20_transfers_enabled,
             proposal_voting_blocks: msg.proposal_voting_blocks,
-            proposal_deposit_amount: msg.proposal_deposit_amount.into(),
+            proposal_deposit_amount: msg
+                .proposal_deposit_amount
+                .ok_or_else(|| anyhow::anyhow!("missing proposal_deposit_amount"))?
+                .try_into()?,
             proposal_valid_quorum: msg
                 .proposal_valid_quorum
                 .parse()
@@ -176,7 +179,7 @@ impl From<ChainParameters> for pb_chain::ChainParameters {
             inbound_ics20_transfers_enabled: params.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: params.outbound_ics20_transfers_enabled,
             proposal_voting_blocks: params.proposal_voting_blocks,
-            proposal_deposit_amount: params.proposal_deposit_amount.into(),
+            proposal_deposit_amount: Some(params.proposal_deposit_amount.into()),
             proposal_valid_quorum: params.proposal_valid_quorum.to_string(),
             proposal_pass_threshold: params.proposal_pass_threshold.to_string(),
             proposal_slash_threshold: params.proposal_slash_threshold.to_string(),

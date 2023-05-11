@@ -767,7 +767,7 @@ impl Storage {
         include_spent: bool,
         asset_id: Option<asset::Id>,
         address_index: Option<penumbra_crypto::keys::AddressIndex>,
-        amount_to_spend: u128,
+        amount_to_spend: Option<Amount>,
     ) -> anyhow::Result<Vec<SpendableNoteRecord>> {
         // If set, return spent notes as well as unspent notes.
         // bool include_spent = 2;
@@ -799,7 +799,7 @@ impl Storage {
         // Ignored if `asset_id` is unset or if `include_spent` is set.
         // uint64 amount_to_spend = 5;
         //TODO: figure out a clever way to only return notes up to the sum using SQL
-        let amount_cutoff = (amount_to_spend != 0) && !(include_spent || asset_id.is_none());
+        let amount_cutoff = (amount_to_spend.is_some()) && !(include_spent || asset_id.is_none());
         let mut amount_total = Amount::zero();
 
         let pool = self.pool.clone();
@@ -845,16 +845,16 @@ impl Storage {
                 if amount_cutoff {
                     // We know all the notes are of the same type, so adding raw quantities makes sense.
                     amount_total = amount_total + amount;
-                    if amount_total >= amount_to_spend.into() {
+                    if amount_total >= amount_to_spend.unwrap_or_default() {
                         break;
                     }
                 }
             }
 
-            if amount_total < amount_to_spend.into() {
+            if amount_total < amount_to_spend.unwrap_or_default() {
                 return Err(anyhow!(
                     "requested amount of {} exceeds total of {}",
-                    amount_to_spend,
+                    amount_to_spend.unwrap_or_default(),
                     amount_total
                 ));
             }

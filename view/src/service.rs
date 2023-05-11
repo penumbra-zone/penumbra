@@ -810,31 +810,31 @@ impl ViewProtocolService for ViewService {
         self.check_account_group_id(request.get_ref().account_group_id.as_ref())
             .await?;
 
-        let include_spent = request.get_ref().include_spent;
+        let request = request.into_inner();
+
+        let include_spent = request.include_spent;
         let asset_id = request
-            .get_ref()
             .asset_id
             .to_owned()
             .map(asset::Id::try_from)
             .map_or(Ok(None), |v| v.map(Some))
             .map_err(|_| tonic::Status::invalid_argument("invalid asset id"))?;
         let address_index = request
-            .get_ref()
             .address_index
             .to_owned()
             .map(AddressIndex::try_from)
             .map_or(Ok(None), |v| v.map(Some))
             .map_err(|_| tonic::Status::invalid_argument("invalid address index"))?;
-        let amount_to_spend = request.get_ref().amount_to_spend;
+
+        let amount_to_spend = request
+            .amount_to_spend
+            .map(Amount::try_from)
+            .map_or(Ok(None), |v| v.map(Some))
+            .map_err(|_| tonic::Status::invalid_argument("invalid amount to spend"))?;
 
         let notes = self
             .storage
-            .notes(
-                include_spent,
-                asset_id,
-                address_index,
-                amount_to_spend.into(),
-            )
+            .notes(include_spent, asset_id, address_index, amount_to_spend)
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error fetching notes: {e}")))?;
 

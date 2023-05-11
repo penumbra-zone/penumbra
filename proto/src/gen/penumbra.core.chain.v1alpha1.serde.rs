@@ -194,7 +194,7 @@ impl serde::Serialize for ChainParameters {
         if self.proposal_voting_blocks != 0 {
             len += 1;
         }
-        if self.proposal_deposit_amount != 0 {
+        if self.proposal_deposit_amount.is_some() {
             len += 1;
         }
         if !self.proposal_valid_quorum.is_empty() {
@@ -249,8 +249,8 @@ impl serde::Serialize for ChainParameters {
         if self.proposal_voting_blocks != 0 {
             struct_ser.serialize_field("proposalVotingBlocks", ToString::to_string(&self.proposal_voting_blocks).as_str())?;
         }
-        if self.proposal_deposit_amount != 0 {
-            struct_ser.serialize_field("proposalDepositAmount", ToString::to_string(&self.proposal_deposit_amount).as_str())?;
+        if let Some(v) = self.proposal_deposit_amount.as_ref() {
+            struct_ser.serialize_field("proposalDepositAmount", v)?;
         }
         if !self.proposal_valid_quorum.is_empty() {
             struct_ser.serialize_field("proposalValidQuorum", &self.proposal_valid_quorum)?;
@@ -510,9 +510,7 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                             if proposal_deposit_amount__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalDepositAmount"));
                             }
-                            proposal_deposit_amount__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            proposal_deposit_amount__ = map.next_value()?;
                         }
                         GeneratedField::ProposalValidQuorum => {
                             if proposal_valid_quorum__.is_some() {
@@ -554,7 +552,7 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                     inbound_ics20_transfers_enabled: inbound_ics20_transfers_enabled__.unwrap_or_default(),
                     outbound_ics20_transfers_enabled: outbound_ics20_transfers_enabled__.unwrap_or_default(),
                     proposal_voting_blocks: proposal_voting_blocks__.unwrap_or_default(),
-                    proposal_deposit_amount: proposal_deposit_amount__.unwrap_or_default(),
+                    proposal_deposit_amount: proposal_deposit_amount__,
                     proposal_valid_quorum: proposal_valid_quorum__.unwrap_or_default(),
                     proposal_pass_threshold: proposal_pass_threshold__.unwrap_or_default(),
                     proposal_slash_threshold: proposal_slash_threshold__.unwrap_or_default(),
