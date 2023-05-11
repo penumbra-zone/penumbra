@@ -250,9 +250,9 @@ impl OrderCmd {
                     .default_unit();
 
                 // We're selling 1 unit of the selling asset...
-                let q = selling_unit.unit_amount();
+                let p = selling_unit.unit_amount();
                 // ... for the given amount of the price asset.
-                let p = sell_order.price.amount;
+                let q = sell_order.price.amount;
 
                 (
                     pair,
