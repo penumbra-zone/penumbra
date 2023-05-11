@@ -1,5 +1,5 @@
 use crate::dex::position_manager::PositionRead;
-use crate::dex::router::RouteAndFill;
+use crate::dex::router::HandleBatchSwaps;
 use crate::dex::{router::path::Path, router::FillRoute, PositionManager};
 use crate::dex::{StateReadExt, StateWriteExt};
 use crate::temp_storage_ext::TempStorageExt;
@@ -21,7 +21,7 @@ use penumbra_storage::{StateDelta, StateWrite};
 use rand_core::OsRng;
 use std::sync::Arc;
 
-use super::PathSearch;
+use super::{PathSearch, RoutingParams};
 
 #[tokio::test(flavor = "multi_thread")]
 async fn path_search_basic() {
@@ -36,7 +36,14 @@ async fn path_search_basic() {
 
     tracing::info!(src = %gm, dst = %penumbra, "searching for path");
     let (_path, _spill) = state
-        .path_search(gm.id(), penumbra.id(), 4, super::hardcoded_candidates())
+        .path_search(
+            gm.id(),
+            penumbra.id(),
+            RoutingParams {
+                max_hops: 4,
+                ..Default::default()
+            },
+        )
         .await
         .unwrap();
 
@@ -46,8 +53,10 @@ async fn path_search_basic() {
         .path_search(
             penumbra.id(),
             penumbra.id(),
-            8,
-            super::hardcoded_candidates(),
+            RoutingParams {
+                max_hops: 8,
+                ..Default::default()
+            },
         )
         .await
         .unwrap();
@@ -909,7 +918,14 @@ async fn simple_route() -> anyhow::Result<()> {
 
     // We should be able to call path_search and route through that position.
     let (path, _spill) = state
-        .path_search(gn.id(), penumbra.id(), 1, super::hardcoded_candidates())
+        .path_search(
+            gn.id(),
+            penumbra.id(),
+            RoutingParams {
+                max_hops: 1,
+                ..Default::default()
+            },
+        )
         .await
         .unwrap();
 
@@ -939,7 +955,7 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
 
     // We should be able to call path_search and route through that position.
     let (path, _spill) = state
-        .path_search(gn.id(), penumbra.id(), 4, super::hardcoded_candidates())
+        .path_search(gn.id(), penumbra.id(), RoutingParams::default())
         .await
         .unwrap();
 
@@ -968,7 +984,7 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
             swap_flow,
             0u32.into(),
             0,
-            super::hardcoded_candidates(),
+            RoutingParams::default(),
         )
         .await
         .expect("unable to process batch swaps");
@@ -1080,7 +1096,7 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     // consume all penumbra liquidity on the direct gm:penumbra pairs, as well as route through the
     // gm:gn and gn:penumbra pairs to obtain penumbra.
     let (path, _spill) = state
-        .path_search(gm.id(), penumbra.id(), 4, super::hardcoded_candidates())
+        .path_search(gm.id(), penumbra.id(), RoutingParams::default())
         .await
         .unwrap();
 
@@ -1107,7 +1123,7 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
             swap_flow,
             0u32.into(),
             0,
-            super::hardcoded_candidates(),
+            RoutingParams::default(),
         )
         .await
         .expect("unable to process batch swaps");

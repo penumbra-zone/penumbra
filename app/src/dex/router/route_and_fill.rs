@@ -11,22 +11,15 @@ use penumbra_storage::StateWrite;
 use tracing::instrument;
 
 use crate::dex::{
-    router::{FillRoute, PathSearch},
+    router::{FillRoute, PathSearch, RoutingParams},
     PositionManager, StateWriteExt,
 };
 
 /// Ties together the routing and filling logic, to process
 /// a block's batch swap flows.
 #[async_trait]
-pub trait RouteAndFill: StateWrite + Sized {
-    #[instrument(skip(
-        self,
-        trading_pair,
-        batch_data,
-        block_height,
-        epoch_height,
-        fixed_candidates
-    ))]
+pub trait HandleBatchSwaps: StateWrite + Sized {
+    #[instrument(skip(self, trading_pair, batch_data, block_height, epoch_height, params))]
     async fn handle_batch_swaps(
         self: &mut Arc<Self>,
         trading_pair: TradingPair,
@@ -34,7 +27,7 @@ pub trait RouteAndFill: StateWrite + Sized {
         // TODO: why not read these 2 from the state?
         block_height: u64,
         epoch_height: u64,
-        fixed_candidates: Arc<Vec<asset::Id>>,
+        params: RoutingParams,
     ) -> Result<()>
     where
         Self: 'static,
@@ -57,7 +50,7 @@ pub trait RouteAndFill: StateWrite + Sized {
                 trading_pair.asset_1(),
                 trading_pair.asset_2(),
                 delta_1,
-                fixed_candidates.clone(),
+                params.clone(),
             )
             .await?
         } else {
@@ -72,7 +65,7 @@ pub trait RouteAndFill: StateWrite + Sized {
                 trading_pair.asset_2(),
                 trading_pair.asset_1(),
                 delta_2,
-                fixed_candidates.clone(),
+                params.clone(),
             )
             .await?
         } else {
@@ -116,19 +109,18 @@ pub trait RouteAndFill: StateWrite + Sized {
     }
 }
 
-impl<T: PositionManager> RouteAndFill for T {}
+impl<T: PositionManager> HandleBatchSwaps for T {}
 
-/// Ties together the routing and filling logic, to process
-/// a block's batch swap flows.
+/// Lower-level trait that ties together the routing and filling logic.
 #[async_trait]
-trait RouteAndFillInner: StateWrite + Sized {
-    #[instrument(skip(self, asset_1, asset_2, delta_1, fixed_candidates))]
+pub trait RouteAndFill: StateWrite + Sized {
+    #[instrument(skip(self, asset_1, asset_2, delta_1, params))]
     async fn route_and_fill(
         self: &mut Arc<Self>,
         asset_1: asset::Id,
         asset_2: asset::Id,
         delta_1: Amount,
-        fixed_candidates: Arc<Vec<asset::Id>>,
+        params: RoutingParams,
     ) -> Result<(Amount, Amount)>
     where
         Self: 'static,
@@ -145,8 +137,7 @@ trait RouteAndFillInner: StateWrite + Sized {
         loop {
             // Find the best route between the two assets in the trading pair.
             let (path, spill_price) = self
-                // TODO: max hops should not be hardcoded
-                .path_search(asset_1, asset_2, 4, fixed_candidates.clone())
+                .path_search(asset_1, asset_2, params.clone())
                 .await
                 .context("error finding best path")?;
 
@@ -190,4 +181,4 @@ trait RouteAndFillInner: StateWrite + Sized {
     }
 }
 
-impl<T: RouteAndFill> RouteAndFillInner for T {}
+impl<T: HandleBatchSwaps> RouteAndFill for T {}

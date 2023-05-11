@@ -16,7 +16,7 @@ use penumbra_crypto::Value;
 
 use crate::dex::{
     position_manager::PositionManager,
-    router::{limit_buy, limit_sell, RouteAndFill},
+    router::{limit_buy, limit_sell, HandleBatchSwaps, RoutingParams},
     StateWriteExt,
 };
 use crate::dex::{position_manager::PositionRead, StateReadExt};
@@ -499,13 +499,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap()
         .put_swap_flow(&trading_pair, swap_flow.clone());
     state
-        .handle_batch_swaps(
-            trading_pair,
-            swap_flow,
-            0,
-            0,
-            super::router::hardcoded_candidates(),
-        )
+        .handle_batch_swaps(trading_pair, swap_flow, 0, 0, RoutingParams::default())
         .await
         .expect("unable to process batch swaps");
 
@@ -593,9 +587,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
             swap_flow,
             0u32.into(),
             0,
-            // Create a candidate set that includes all relevant asset IDs.
-            //Arc::new(vec![penumbra.id(), gn.id(), pusd.id(), gm.id()]),
-            super::router::hardcoded_candidates(),
+            RoutingParams::default(),
         )
         .await
         .expect("unable to process batch swaps");
