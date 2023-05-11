@@ -242,7 +242,6 @@ impl TxCmd {
         }
     }
 
-    #[tracing::instrument(name = "command")]
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
             TxCmd::Send {
