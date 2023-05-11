@@ -77,7 +77,7 @@ pub fn approximate(
     let xyk_invariant: f64 = xyk_invariant.try_into()?;
     tracing::debug!(?xyk_invariant, "computed the total invariant for the PVF");
 
-    let alphas = sample_to_upper(current_price.into(), NUM_POOLS_PRECISION);
+    let alphas = sample_full_range(current_price.into(), NUM_POOLS_PRECISION);
 
     alphas
         .iter()
@@ -161,16 +161,19 @@ pub fn approximate(
                 // to create a one-sided position with price `alpha_i`
                 // that provisions `asset_1`.
                 let unscaled_p = Amount::from(1u64);
-                let p = unscaled_p * price_scaling_factor;
+                let mut p = unscaled_p * price_scaling_factor;
 
                 let approx_q: U128x128 = alpha_i.try_into().unwrap();
                 let scaled_q = (approx_q * fp_price_scaling_factor).unwrap();
-                let q: Amount = scaled_q
+                let mut q: Amount = scaled_q
                     .round_down()
                     .try_into()
                     .expect("integral after truncating");
 
-                let approx_r1: U128x128 = (*k_i * pair.start.unit_amount().value() as f64)
+                std::mem::swap(&mut p, &mut q);
+
+                let approx_r1: U128x128 = (*k_i * pair.start.unit_amount().value() as f64
+                    / alpha_i)
                     .try_into()
                     .unwrap();
                 let r1: Amount = approx_r1
