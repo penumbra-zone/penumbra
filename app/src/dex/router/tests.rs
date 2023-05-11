@@ -452,6 +452,7 @@ async fn position_get_best_price() -> anyhow::Result<()> {
 /// Test that positions are fetched in-order and that updating reserves
 /// deindex them correctly.
 async fn test_multiple_similar_position() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
     let storage = TempStorage::new().await?.apply_default_genesis().await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
@@ -498,6 +499,7 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
     let storage = TempStorage::new().await?.apply_default_genesis().await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
