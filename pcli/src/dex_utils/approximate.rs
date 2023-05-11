@@ -45,9 +45,11 @@ pub mod xyk {
         // Note: we solve over the human-friendly display price and proceed with denom scaling
         // and cross-multiplication right before posting the positions. So here we need to rescale
         // the `r1` quantity.
-        let fp_r1 = U128x128::from(r1.amount.value());
+        // TODO(erwan): sort this mess..
+        let fp_scaled_r1 = U128x128::from(r1.amount.value());
         let r1_scaling = U128x128::from(pair.start.unit_amount());
-        let fp_r1 = U128x128::ratio(fp_r1, r1_scaling).unwrap();
+
+        let fp_r1 = U128x128::ratio(fp_scaled_r1, r1_scaling).unwrap();
         let fp_r2 = (current_price * fp_r1).ok_or_else(|| {
             anyhow::anyhow!(
                 "current_price: {} * fp_r1: {} caused overflow.",
@@ -85,6 +87,20 @@ pub mod xyk {
             .collect();
 
         let position_ks = solve(&alphas, xyk_invariant, NUM_POOLS_PRECISION)?.to_vec();
+
+        let sum: f64 = position_ks.iter().sum();
+
+        let position_ks2 =
+            crate::dex_utils::approximate::utils::solve(&alphas, xyk_invariant, alphas.len())?;
+
+        let vec_f64 = position_ks2.to_vec();
+        let sum2 = vec_f64.iter().sum::<f64>();
+
+        println!("sum: {}, sum2: {}", sum, sum2);
+
+        println!("position_ks: {:?}", position_ks);
+        println!("position_ks2: {:?}", position_ks2);
+
         position_ks
             .iter()
             .enumerate()
@@ -241,6 +257,32 @@ pub mod utils {
     use penumbra_crypto::dex::lp::position::Position;
     use serde::Serialize;
 
+    use ndarray_linalg::Solve;
+
+    use super::xyk::portfolio_value_function;
+
+    pub(crate) fn solve(
+        alpha: &[f64],
+        k: f64,
+        n: usize,
+    ) -> Result<Array<f64, ndarray::Dim<[usize; 1]>>, ndarray_linalg::error::LinalgError> {
+        let mut A = Array::zeros((n, n));
+        let mut b = Array::zeros(n);
+
+        for j in 0..n {
+            b[j] = portfolio_value_function(k, alpha[j]);
+
+            for i in 0..j {
+                A[[j, i]] = alpha[i];
+            }
+            for i in j..n {
+                A[[j, i]] = alpha[j];
+            }
+        }
+
+        A.solve_into(b)
+    }
+
     /// Applies the Gaus-Seidel method to a square matrix A and returns
     /// a vector of solutions.
     pub(crate) fn gauss_seidel(
@@ -278,6 +320,8 @@ pub mod utils {
                 break;
             }
         }
+
+        let sum_k = k.iter().sum::<f64>();
 
         Ok(k)
     }
