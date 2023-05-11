@@ -28,6 +28,24 @@ pub struct UndelegateClaimCircuit {
     pub penalty: Penalty,
 }
 
+impl UndelegateClaimCircuit {
+    pub fn new(
+        unbonding_amount: Amount,
+        balance_blinding: Fr,
+        balance_commitment: balance::Commitment,
+        unbonding_id: asset::Id,
+        penalty: Penalty,
+    ) -> Self {
+        Self {
+            unbonding_amount,
+            balance_blinding,
+            balance_commitment,
+            unbonding_id,
+            penalty,
+        }
+    }
+}
+
 impl ConstraintSynthesizer<Fq> for UndelegateClaimCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
