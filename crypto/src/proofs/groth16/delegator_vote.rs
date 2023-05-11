@@ -63,6 +63,37 @@ pub struct DelegatorVoteCircuit {
     pub start_position: tct::Position,
 }
 
+impl DelegatorVoteCircuit {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        state_commitment_proof: tct::Proof,
+        note: Note,
+        v_blinding: Fr,
+        spend_auth_randomizer: Fr,
+        ak: VerificationKey<SpendAuth>,
+        nk: NullifierKey,
+        anchor: tct::Root,
+        balance_commitment: balance::Commitment,
+        nullifier: Nullifier,
+        rk: VerificationKey<SpendAuth>,
+        start_position: tct::Position,
+    ) -> Self {
+        Self {
+            state_commitment_proof,
+            note,
+            v_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+            anchor,
+            balance_commitment,
+            nullifier,
+            rk,
+            start_position,
+        }
+    }
+}
+
 impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses

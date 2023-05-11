@@ -51,7 +51,7 @@ fn output_proving_time(c: &mut Criterion) {
     let balance_commitment = (-Balance::from(value_to_send)).commit(v_blinding);
     let note_commitment = note.commit();
 
-    c.bench_function("output proving time", |b| {
+    c.bench_function("output proving", |b| {
         b.iter(|| {
             prove(
                 note.clone(),

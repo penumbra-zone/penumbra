@@ -48,7 +48,7 @@ fn nullifier_derivation_proving_time(c: &mut Criterion) {
     let state_commitment_proof = sct.witness(note_commitment).unwrap();
     let position = state_commitment_proof.position();
 
-    c.bench_function("nullifier derivation proving time", |b| {
+    c.bench_function("nullifier derivation proving", |b| {
         b.iter(|| prove(position, note.clone(), nk, nullifier))
     });
 
