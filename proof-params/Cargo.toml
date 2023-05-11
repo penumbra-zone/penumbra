@@ -56,6 +56,11 @@ harness = false
 required-features = ["proving-keys"]
 
 [[bench]]
+name = "delegator_vote"
+harness = false
+required-features = ["proving-keys"]
+
+[[bench]]
 name = "spend"
 harness = false
 required-features = ["proving-keys"]

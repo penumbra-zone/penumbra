@@ -7,11 +7,11 @@ use decaf377::Fr;
 use penumbra_crypto::{
     balance,
     keys::{NullifierKey, SeedPhrase, SpendKey},
-    proofs::groth16::{SpendCircuit, SpendProof},
+    proofs::groth16::{DelegatorVoteCircuit, DelegatorVoteProof},
     rdsa::{SpendAuth, VerificationKey},
     Note, Nullifier, Value,
 };
-use penumbra_proof_params::SPEND_PROOF_PROVING_KEY;
+use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
 use penumbra_tct as tct;
 
 use criterion::{criterion_group, criterion_main, Criterion};
@@ -20,7 +20,6 @@ use rand_core::OsRng;
 fn prove(
     state_commitment_proof: tct::Proof,
     note: Note,
-    v_blinding: Fr,
     spend_auth_randomizer: Fr,
     ak: VerificationKey<SpendAuth>,
     nk: NullifierKey,
@@ -28,13 +27,13 @@ fn prove(
     balance_commitment: balance::Commitment,
     nullifier: Nullifier,
     rk: VerificationKey<SpendAuth>,
+    start_position: tct::Position,
 ) {
-    let _proof = SpendProof::prove(
+    let _proof = DelegatorVoteProof::prove(
         &mut OsRng,
-        &SPEND_PROOF_PROVING_KEY,
+        &DELEGATOR_VOTE_PROOF_PROVING_KEY,
         state_commitment_proof,
         note,
-        v_blinding,
         spend_auth_randomizer,
         ak,
         nk,
@@ -42,11 +41,12 @@ fn prove(
         balance_commitment,
         nullifier,
         rk,
+        start_position,
     )
     .expect("can create proof");
 }
 
-fn spend_proving_time(c: &mut Criterion) {
+fn delegator_vote_proving_time(c: &mut Criterion) {
     let value_to_send = Value::from_str("1upenumbra").expect("valid value");
 
     let seed_phrase = SeedPhrase::generate(OsRng);
@@ -70,13 +70,18 @@ fn spend_proving_time(c: &mut Criterion) {
     let balance_commitment = value_to_send.commit(v_blinding);
     let rk: VerificationKey<SpendAuth> = rsk.into();
     let nf = nk.derive_nullifier(state_commitment_proof.position(), &note_commitment);
+    sct.end_epoch().unwrap();
 
-    c.bench_function("spend proving", |b| {
+    let first_note_commitment = Note::generate(&mut OsRng, &sender, value_to_send).commit();
+    sct.insert(tct::Witness::Keep, first_note_commitment)
+        .unwrap();
+    let start_position = sct.witness(first_note_commitment).unwrap().position();
+
+    c.bench_function("delegator proving", |b| {
         b.iter(|| {
             prove(
                 state_commitment_proof.clone(),
                 note.clone(),
-                v_blinding,
                 spend_auth_randomizer,
                 ak,
                 nk,
@@ -84,12 +89,13 @@ fn spend_proving_time(c: &mut Criterion) {
                 balance_commitment,
                 nf,
                 rk,
+                start_position,
             )
         })
     });
 
     // Also print out the number of constraints.
-    let circuit = SpendCircuit::new(
+    let circuit = DelegatorVoteCircuit::new(
         state_commitment_proof,
         note,
         v_blinding,
@@ -100,6 +106,7 @@ fn spend_proving_time(c: &mut Criterion) {
         balance_commitment,
         nf,
         rk,
+        start_position,
     );
 
     let cs = ConstraintSystem::new_ref();
@@ -114,5 +121,5 @@ fn spend_proving_time(c: &mut Criterion) {
     println!("Number of constraints: {}", num_constraints);
 }
 
-criterion_group!(benches, spend_proving_time);
+criterion_group!(benches, delegator_vote_proving_time);
 criterion_main!(benches);
