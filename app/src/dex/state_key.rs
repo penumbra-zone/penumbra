@@ -16,7 +16,7 @@ pub fn all_positions() -> &'static str {
 
 pub fn output_data(height: u64, trading_pair: TradingPair) -> String {
     format!(
-        "dex/output/{}/{}/{}",
+        "dex/output/{:020}/{}/{}",
         height,
         &trading_pair.asset_1(),
         &trading_pair.asset_2()
@@ -25,7 +25,7 @@ pub fn output_data(height: u64, trading_pair: TradingPair) -> String {
 
 pub fn swap_execution(height: u64, trading_pair: TradingPair) -> String {
     format!(
-        "dex/swap_execution/{}/{}/{}",
+        "dex/swap_execution/{:020}/{}/{}",
         height,
         &trading_pair.asset_1(),
         &trading_pair.asset_2()
