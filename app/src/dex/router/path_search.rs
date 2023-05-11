@@ -9,26 +9,24 @@ use tracing::{instrument, Instrument};
 
 use crate::dex::PositionManager;
 
-use super::{Path, PathCache, PathEntry, SharedPathCache};
-
-pub(crate) fn hardcoded_candidates() -> Arc<Vec<asset::Id>> {
-    Arc::new(vec![
-        asset::REGISTRY.parse_unit("test_usd").id(),
-        asset::REGISTRY.parse_unit("penumbra").id(),
-    ])
-}
+use super::{Path, PathCache, PathEntry, RoutingParams, SharedPathCache};
 
 #[async_trait]
 pub trait PathSearch: StateRead + Clone + 'static {
     /// Find the best route from `src` to `dst`, also returning the spill price for the next-best route, if one exists.
-    #[instrument(skip(self, src, dst, fixed_candidates))]
+    #[instrument(skip(self, src, dst, params), fields(max_hops = params.max_hops))]
     async fn path_search(
         &self,
         src: asset::Id,
         dst: asset::Id,
-        max_hops: usize,
-        fixed_candidates: Arc<Vec<asset::Id>>,
+        params: RoutingParams,
     ) -> Result<(Option<Vec<asset::Id>>, Option<U128x128>)> {
+        let RoutingParams {
+            max_hops,
+            fixed_candidates,
+            ..
+        } = params;
+
         tracing::debug!(?src, ?dst, ?max_hops, "searching for path");
 
         // Work in a new stack of state changes, which we can completely discard

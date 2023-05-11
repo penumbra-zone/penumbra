@@ -15,7 +15,7 @@ use tendermint::abci;
 use tracing::instrument;
 
 use super::{
-    router::{self, RouteAndFill},
+    router::{HandleBatchSwaps, RoutingParams},
     state_key, PositionManager,
 };
 
@@ -50,7 +50,11 @@ impl Component for Dex {
                     swap_flows,
                     end_block.height.try_into().expect("missing height"),
                     current_epoch.start_height,
-                    router::hardcoded_candidates(),
+                    // Always include both ends of the target pair as fixed candidates.
+                    RoutingParams::default_with_extra_candidates([
+                        trading_pair.asset_1(),
+                        trading_pair.asset_2(),
+                    ]),
                 )
                 .await
                 .expect("unable to process batch swaps");
