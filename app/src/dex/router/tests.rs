@@ -543,7 +543,7 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     let price2 = 2u64.into();
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let buy_1 = limit_buy(pair_1.clone(), 3u64.into(), price2);
     let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
@@ -644,7 +644,7 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let pair_3 = DirectedUnitPair::new(penumbra.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let one: Amount = 1u64.into();
 
@@ -743,7 +743,7 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     let pair_3 = DirectedUnitPair::new(penumbra.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let one = 1u64.into();
     let price1 = one;
@@ -835,7 +835,7 @@ async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
     let pair_3 = DirectedUnitPair::new(penumbra.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let one = 1u64.into();
     let price1 = one;
@@ -1171,7 +1171,7 @@ async fn fill_dust_route() -> anyhow::Result<()> {
     let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let one = 1u64.into();
     let price1 = one;
@@ -1233,7 +1233,7 @@ async fn fill_route_dust() -> () {
     let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let one = 1u64.into();
     let price1 = one;
@@ -1292,7 +1292,7 @@ async fn fill_route_with_dust_constraint() -> anyhow::Result<()> {
     let pair_3 = DirectedUnitPair::new(penumbra.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let one = 1u64.into();
     let price1 = one;
@@ -1371,7 +1371,7 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
     let pair_4 = DirectedUnitPair::new(btc.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let one = 1u64.into();
     let price1 = one;
