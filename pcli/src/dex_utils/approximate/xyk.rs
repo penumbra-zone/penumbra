@@ -26,6 +26,14 @@ pub(crate) fn sample_full_range(middle: f64, num_points: usize) -> Vec<f64> {
     (1..=num_points).map(|i| (i as f64) * step).collect()
 }
 
+/// A function that returns a vector of length `num_points` covering the range 0 to `upper`,
+/// with equally spaced points.
+pub fn sample_to_upper(upper: f64, num_points: usize) -> Vec<f64> {
+    let step = upper / (num_points as f64);
+
+    (1..=num_points).map(|i| (i as f64) * step).collect()
+}
+
 #[allow(dead_code)]
 pub(crate) fn sample_points(middle: f64, num_points: usize) -> Vec<f64> {
     let step = middle / (num_points as f64 / 2.0);
@@ -34,6 +42,7 @@ pub(crate) fn sample_points(middle: f64, num_points: usize) -> Vec<f64> {
     (0..num_points).map(|i| start + (i as f64) * step).collect()
 }
 
+#[tracing::instrument(name = "approximate_xyk")]
 pub fn approximate(
     pair: &DirectedUnitPair,
     raw_r1: &Value,
@@ -68,7 +77,7 @@ pub fn approximate(
     let xyk_invariant: f64 = xyk_invariant.try_into()?;
     tracing::debug!(?xyk_invariant, "computed the total invariant for the PVF");
 
-    let alphas = sample_full_range(current_price.into(), NUM_POOLS_PRECISION);
+    let alphas = sample_to_upper(current_price.into(), NUM_POOLS_PRECISION);
 
     alphas
         .iter()
@@ -131,15 +140,12 @@ pub fn approximate(
                     k_i,
                     alpha_i,
                     f64_current_price,
-                    "create a position with a tick below the current price"
-                );
-                tracing::debug!(
                     directed_pair = pair.to_string(),
                     r1 = field::display(r1),
                     r2 = field::display(r2),
                     ?p,
                     ?q,
-                    "creating position"
+                    "creating position with a tick below the current price"
                 );
 
                 Position::new(
@@ -178,15 +184,12 @@ pub fn approximate(
                     k_i,
                     alpha_i,
                     f64_current_price,
-                    "create a position with a tick above the current price"
-                );
-                tracing::debug!(
                     directed_pair = pair.to_string(),
                     r1 = field::display(r1),
                     r2 = field::display(r2),
                     ?p,
                     ?q,
-                    "creating position"
+                    "creating position with a tick above the current price"
                 );
 
                 Position::new(
