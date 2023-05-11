@@ -181,20 +181,22 @@ async fn fill_route_inner<S: StateWrite + Sized>(
             "completed fill iteration, updating frontier"
         );
 
-        if let Some(constraining_index) = constraining_index {
-            // If we consumed a position, we need to update the frontier and
-            // continue, or exit if no more positions are available.
-            if !frontier.replace_position(constraining_index).await? {
-                tracing::debug!("no more positions to replace, breaking loop");
-                break 'filling;
-            } else {
-                continue 'filling;
-            }
-        } else {
-            // Otherwise, we should be done and it's time to break out of the filling loop.
+        // It's important to replace _any_ empty positions, not just the one we
+        // consumed, because we might have exhausted multiple positions at once,
+        // and we don't want to write empty positions into the state or process
+        // them in later iterations.
+        if !frontier.replace_empty_positions().await? {
+            tracing::debug!("ran out of positions, breaking loop");
+            break 'filling;
+        }
+
+        if constraining_index.is_none() {
+            // In this case, we should have fully consumed the input amount.
             assert_eq!(input.amount, 0u64.into());
             tracing::debug!("filled input amount completely, breaking loop");
             break 'filling;
+        } else {
+            continue 'filling;
         }
     }
 
@@ -390,6 +392,24 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             changes.trace.first().unwrap().unwrap(),
             changes.trace.last().unwrap().unwrap(),
         )
+    }
+
+    async fn replace_empty_positions(&mut self) -> Result<bool> {
+        for i in 0..self.pairs.len() {
+            let desired_reserves = self.positions[i]
+                .reserves_for(self.pairs[i].end)
+                .expect("asset ids should match");
+
+            // Replace any position that has been fully consumed.
+            if desired_reserves == 0u64.into() {
+                // If we can't find a replacement, report that failure upwards.
+                if !self.replace_position(i).await? {
+                    return Ok(false);
+                }
+            }
+        }
+
+        Ok(true)
     }
 
     // Returns Ok(true) if a new position was found to replace the given one,
