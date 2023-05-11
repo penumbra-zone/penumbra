@@ -49,3 +49,8 @@ parallel = ["ark-ff/parallel", "decaf377/parallel", "ark-groth16/parallel", "ark
 name = "nullifier_derivation"
 harness = false
 required-features = ["proving-keys"]
+
+[[bench]]
+name = "output"
+harness = false
+required-features = ["proving-keys"]
