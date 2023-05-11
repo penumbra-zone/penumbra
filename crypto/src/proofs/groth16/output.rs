@@ -51,6 +51,17 @@ pub struct OutputCircuit {
     pub note_commitment: note::Commitment,
 }
 
+impl OutputCircuit {
+    pub fn new(note: Note, v_blinding: Fr, balance_commitment: balance::Commitment) -> Self {
+        Self {
+            note: note.clone(),
+            v_blinding,
+            balance_commitment,
+            note_commitment: note.commit(),
+        }
+    }
+}
+
 impl ConstraintSynthesizer<Fq> for OutputCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
