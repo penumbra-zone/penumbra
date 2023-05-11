@@ -1,4 +1,3 @@
-
 use ndarray::s;
 use ndarray::Array;
 use ndarray::Array2;
