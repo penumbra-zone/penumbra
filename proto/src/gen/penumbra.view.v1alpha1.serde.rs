@@ -2037,7 +2037,7 @@ impl serde::Serialize for NotesRequest {
         if self.address_index.is_some() {
             len += 1;
         }
-        if self.amount_to_spend != 0 {
+        if self.amount_to_spend.is_some() {
             len += 1;
         }
         if self.account_group_id.is_some() {
@@ -2053,8 +2053,8 @@ impl serde::Serialize for NotesRequest {
         if let Some(v) = self.address_index.as_ref() {
             struct_ser.serialize_field("addressIndex", v)?;
         }
-        if self.amount_to_spend != 0 {
-            struct_ser.serialize_field("amountToSpend", ToString::to_string(&self.amount_to_spend).as_str())?;
+        if let Some(v) = self.amount_to_spend.as_ref() {
+            struct_ser.serialize_field("amountToSpend", v)?;
         }
         if let Some(v) = self.account_group_id.as_ref() {
             struct_ser.serialize_field("accountGroupId", v)?;
@@ -2162,9 +2162,7 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                             if amount_to_spend__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("amountToSpend"));
                             }
-                            amount_to_spend__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            amount_to_spend__ = map.next_value()?;
                         }
                         GeneratedField::AccountGroupId => {
                             if account_group_id__.is_some() {
@@ -2178,7 +2176,7 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                     include_spent: include_spent__.unwrap_or_default(),
                     asset_id: asset_id__,
                     address_index: address_index__,
-                    amount_to_spend: amount_to_spend__.unwrap_or_default(),
+                    amount_to_spend: amount_to_spend__,
                     account_group_id: account_group_id__,
                 })
             }

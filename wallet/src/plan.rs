@@ -289,7 +289,7 @@ where
 
             // Sort notes by amount, ascending, so the biggest notes are at the end...
             records.sort_by(|a, b| {
-                u64::from(a.note.value().amount).cmp(&u64::from(b.note.value().amount))
+                a.note.value().amount.cmp(&b.note.value().amount)
             });
             // ... so that when we use chunks_exact, we get SWEEP_COUNT sized
             // chunks, ignoring the biggest notes in the remainder.

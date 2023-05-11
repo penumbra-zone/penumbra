@@ -454,7 +454,8 @@ impl TxCmd {
                     app.view.as_mut().unwrap(),
                     OsRng,
                     rate_data,
-                    unbonded_amount.into(),
+                    // TODO: fix and also delete plan::delegate entirely!
+                    unbonded_amount.value() as u64,
                     fee,
                     AddressIndex::new(*source),
                 )

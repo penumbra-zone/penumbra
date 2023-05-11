@@ -161,7 +161,7 @@ impl RateData {
     /// undelegates `delegation_amount` of the validator's delegation tokens.
     pub fn build_undelegate(&self, delegation_amount: Amount) -> Undelegate {
         // TODO: port to amounts
-        let delegation_amount_u64 = u64::try_from(delegation_amount).unwrap();
+        let delegation_amount_u64 = delegation_amount.value() as u64;
         Undelegate {
             start_epoch_index: self.epoch_index,
             delegation_amount,

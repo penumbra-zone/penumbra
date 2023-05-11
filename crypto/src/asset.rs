@@ -196,17 +196,17 @@ mod tests {
     proptest! {
         #[test]
         fn displaydenom_parsing_formatting_roundtrip(
-            v: u32
+            v: u128
         ) {
             let penumbra_display_denom = REGISTRY.parse_unit("penumbra");
             let formatted = penumbra_display_denom.format_value(v.into());
             let parsed = penumbra_display_denom.parse_value(&formatted);
-            assert_eq!(v, u32::from(parsed.unwrap()));
+            assert_eq!(v, u128::from(parsed.unwrap()));
 
             let mpenumbra_display_denom = REGISTRY.parse_unit("mpenumbra");
             let formatted = mpenumbra_display_denom.format_value(v.into());
             let parsed = mpenumbra_display_denom.parse_value(&formatted);
-            assert_eq!(v, u32::from(parsed.unwrap()));
+            assert_eq!(v, u128::from(parsed.unwrap()));
         }
     }
 }

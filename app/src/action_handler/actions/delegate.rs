@@ -75,9 +75,10 @@ impl ActionHandler for Delegate {
         //
         // should give approximately the same results, they may not give
         // exactly the same results.
-        let expected_delegation_amount = next_rate_data.delegation_amount(d.unbonded_amount.into());
+        let expected_delegation_amount =
+            next_rate_data.delegation_amount(d.unbonded_amount.value() as u64);
 
-        if expected_delegation_amount != u64::from(d.delegation_amount) {
+        if expected_delegation_amount != d.delegation_amount.value() as u64 {
             return Err(anyhow::anyhow!(
                     "given {} unbonded stake, expected {} delegation tokens but description produces {}",
                     d.unbonded_amount,
