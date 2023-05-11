@@ -261,7 +261,8 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
             };
 
         // Check that the unbonded amount is correct relative to that exchange rate
-        if rate_data.unbonded_amount(value.amount.into()) != u64::from(*unbonded_amount) {
+        if rate_data.unbonded_amount(value.amount.value() as u64) != unbonded_amount.value() as u64
+        {
             anyhow::bail!(
                 "unbonded amount {}{} does not correspond to {} staked delegation tokens for validator {} using the exchange rate at the start of proposal {}",
                 unbonded_amount,
@@ -710,7 +711,7 @@ pub trait StateWriteExt: StateWrite {
         unbonded_amount: Amount,
     ) -> Result<()> {
         // Convert the unbonded amount into voting power
-        let power = u64::from(unbonded_amount);
+        let power = unbonded_amount.value() as u64;
         let tally: Tally = (vote, power).into();
 
         // Record the vote

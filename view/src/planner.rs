@@ -101,7 +101,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                     account_group_id: Some(account_group_id.into()),
                     asset_id: Some(asset_id.into()),
                     address_index: Some(source.into()),
-                    amount_to_spend: amount.into(),
+                    amount_to_spend: Some(amount.into()),
                     include_spent: false,
                     ..Default::default()
                 })
@@ -450,7 +450,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self.plan_with_spendable_and_votable_notes(
             &chain_params,
             &fmd_params,
-            source,
             spendable_notes,
             voting_notes,
             self_address,
@@ -463,12 +462,18 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// [`Planner::note_requests`].
     ///
     /// Clears the contents of the planner, which can be re-used.
-    #[instrument(skip(self, chain_params, fmd_params, self_address, spendable_notes))]
+    #[instrument(skip(
+        self,
+        chain_params,
+        fmd_params,
+        self_address,
+        spendable_notes,
+        votable_notes,
+    ))]
     pub fn plan_with_spendable_and_votable_notes(
         &mut self,
         chain_params: &ChainParameters,
         fmd_params: &FmdParameters,
-        source: AddressIndex,
         spendable_notes: Vec<SpendableNoteRecord>,
         votable_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
         self_address: Address,
@@ -515,7 +520,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 // and continue to the next one.
                 let Some(rate_data) = rate_data.get(&identity_key) else { continue };
                 let unbonded_amount = rate_data
-                    .unbonded_amount(record.note.amount().into())
+                    .unbonded_amount(record.note.amount().value() as u64)
                     .into();
 
                 // If the delegation token is unspent, "roll it over" by spending it (this will

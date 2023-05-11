@@ -2,6 +2,7 @@ use anyhow::Result;
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_app::stake::validator;
+use penumbra_chain::params::ChainParameters;
 use penumbra_proto::client::v1alpha1::{ChainParametersRequest, InfoRequest};
 
 // TODO: remove this subcommand and merge into `pcli q`
@@ -34,14 +35,15 @@ impl ChainCmd {
     pub async fn print_chain_params(&self, app: &mut App) -> Result<()> {
         let mut oblivious_client = app.oblivious_client().await?;
 
-        let params = oblivious_client
+        let params: ChainParameters = oblivious_client
             .chain_parameters(tonic::Request::new(ChainParametersRequest {
                 chain_id: "".to_string(),
             }))
             .await?
             .into_inner()
             .chain_parameters
-            .ok_or_else(|| anyhow::anyhow!("empty ChainParametersResponse message"))?;
+            .ok_or_else(|| anyhow::anyhow!("empty ChainParametersResponse message"))?
+            .try_into()?;
 
         println!("Chain Parameters:");
         let mut table = Table::new();

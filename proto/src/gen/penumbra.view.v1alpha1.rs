@@ -247,8 +247,10 @@ pub struct NotesRequest {
     /// If set, stop returning notes once the total exceeds this amount.
     ///
     /// Ignored if `asset_id` is unset or if `include_spent` is set.
-    #[prost(uint64, tag = "5")]
-    pub amount_to_spend: u64,
+    #[prost(message, optional, tag = "6")]
+    pub amount_to_spend: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::Amount,
+    >,
     /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<

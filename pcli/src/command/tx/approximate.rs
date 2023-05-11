@@ -36,6 +36,7 @@ pub struct ConstantProduct {
 }
 
 impl ApproximateCmd {
+    // TODO unused?
     pub fn _offline(&self) -> bool {
         false
     }
