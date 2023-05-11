@@ -78,13 +78,14 @@ pub(crate) fn render_xyk_approximation(pair: DirectedUnitPair, positions: &[Posi
     for position in positions {
         let fee = position.phi.component.fee;
         let well_directed_phi = position.phi.orient_end(pair.end.id()).unwrap();
-        let price_a_to_b = well_directed_phi.effective_price();
-        let price_b_to_a = well_directed_phi.effective_price_inv();
+        let price_a_to_b = well_directed_phi.effective_price_inv();
+        let price_b_to_a = well_directed_phi.effective_price();
 
         let asset_1_to_2 = format!("{} @ {:>10.05}", pair.to_string(), price_a_to_b);
         let asset_2_to_1 = format!("{} @ {:>10.05}", pair.flip().to_string(), price_b_to_a);
 
-        let price_summary = if position.reserves_for(pair.start.id()).unwrap() == 0u64.into() {
+        // We display a price summary that is the relevant cost of conversion (since one of the reserves is 0).
+        let price_summary = if position.reserves_for(pair.end.id()).unwrap() == 0u64.into() {
             asset_2_to_1.clone()
         } else {
             asset_1_to_2.clone()
