@@ -71,8 +71,8 @@ pub(crate) fn render_xyk_approximation(pair: DirectedUnitPair, positions: &[Posi
         "Reserves",
         "Pool fee",
         "Price summary",
-        "Buy price",
-        "Sell price",
+        format!("{} to {}", pair.start, pair.end).as_str(),
+        format!("{} to {}", pair.end, pair.start).as_str(),
     ]);
 
     for position in positions {
