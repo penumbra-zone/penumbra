@@ -997,13 +997,13 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     // 1 gn in
     assert_eq!(output_data.delta_2, 1u64.into());
     // 0 unfilled penumbra out
-    assert_eq!(output_data.lambda_1_1, 0u64.into());
+    assert_eq!(output_data.unfilled_1, 0u64.into());
     // 0 gn out for penumbra -> gn
-    assert_eq!(output_data.lambda_2_1, 0u64.into());
+    assert_eq!(output_data.lambda_2, 0u64.into());
     // 1 penumbra out for gn -> penumbra
-    assert_eq!(output_data.lambda_1_2, 1u64.into());
+    assert_eq!(output_data.lambda_1, 1u64.into());
     // 0 unfilled gn
-    assert_eq!(output_data.lambda_2_2, 0u64.into());
+    assert_eq!(output_data.unfilled_2, 0u64.into());
 
     Ok(())
 }
@@ -1136,7 +1136,7 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     // 0 penumbra in
     assert_eq!(output_data.delta_2, 0u64.into());
     // Some gm leftover
-    assert!(output_data.lambda_1_1 > 0u64.into());
+    assert!(output_data.unfilled_1 > 0u64.into());
 
     // Verify all positions that provided `penumbra` have had all their liquidity consumed.
     let mut s = state.all_positions();

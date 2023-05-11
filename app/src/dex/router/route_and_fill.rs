@@ -80,10 +80,10 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             trading_pair,
             delta_1,
             delta_2,
-            lambda_1_2: lambda_1,
-            lambda_2_1: lambda_2,
-            lambda_1_1: unfilled_1,
-            lambda_2_2: unfilled_2,
+            lambda_1,
+            lambda_2,
+            unfilled_1,
+            unfilled_2,
         };
 
         // TODO: how does this work when there are trades in both directions?

@@ -139,16 +139,16 @@ impl serde::Serialize for BatchSwapOutputData {
         if self.delta_2.is_some() {
             len += 1;
         }
-        if self.lambda_1_1.is_some() {
+        if self.lambda_1.is_some() {
             len += 1;
         }
-        if self.lambda_2_1.is_some() {
+        if self.lambda_2.is_some() {
             len += 1;
         }
-        if self.lambda_1_2.is_some() {
+        if self.unfilled_1.is_some() {
             len += 1;
         }
-        if self.lambda_2_2.is_some() {
+        if self.unfilled_2.is_some() {
             len += 1;
         }
         if self.height != 0 {
@@ -167,17 +167,17 @@ impl serde::Serialize for BatchSwapOutputData {
         if let Some(v) = self.delta_2.as_ref() {
             struct_ser.serialize_field("delta2", v)?;
         }
-        if let Some(v) = self.lambda_1_1.as_ref() {
-            struct_ser.serialize_field("lambda11", v)?;
+        if let Some(v) = self.lambda_1.as_ref() {
+            struct_ser.serialize_field("lambda1", v)?;
         }
-        if let Some(v) = self.lambda_2_1.as_ref() {
-            struct_ser.serialize_field("lambda21", v)?;
+        if let Some(v) = self.lambda_2.as_ref() {
+            struct_ser.serialize_field("lambda2", v)?;
         }
-        if let Some(v) = self.lambda_1_2.as_ref() {
-            struct_ser.serialize_field("lambda12", v)?;
+        if let Some(v) = self.unfilled_1.as_ref() {
+            struct_ser.serialize_field("unfilled1", v)?;
         }
-        if let Some(v) = self.lambda_2_2.as_ref() {
-            struct_ser.serialize_field("lambda22", v)?;
+        if let Some(v) = self.unfilled_2.as_ref() {
+            struct_ser.serialize_field("unfilled2", v)?;
         }
         if self.height != 0 {
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
@@ -202,14 +202,14 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
             "delta1",
             "delta_2",
             "delta2",
-            "lambda_1_1",
-            "lambda11",
-            "lambda_2_1",
-            "lambda21",
-            "lambda_1_2",
-            "lambda12",
-            "lambda_2_2",
-            "lambda22",
+            "lambda_1",
+            "lambda1",
+            "lambda_2",
+            "lambda2",
+            "unfilled_1",
+            "unfilled1",
+            "unfilled_2",
+            "unfilled2",
             "height",
             "trading_pair",
             "tradingPair",
@@ -221,10 +221,10 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
         enum GeneratedField {
             Delta1,
             Delta2,
-            Lambda11,
-            Lambda21,
-            Lambda12,
-            Lambda22,
+            Lambda1,
+            Lambda2,
+            Unfilled1,
+            Unfilled2,
             Height,
             TradingPair,
             EpochHeight,
@@ -251,10 +251,10 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
                         match value {
                             "delta1" | "delta_1" => Ok(GeneratedField::Delta1),
                             "delta2" | "delta_2" => Ok(GeneratedField::Delta2),
-                            "lambda11" | "lambda_1_1" => Ok(GeneratedField::Lambda11),
-                            "lambda21" | "lambda_2_1" => Ok(GeneratedField::Lambda21),
-                            "lambda12" | "lambda_1_2" => Ok(GeneratedField::Lambda12),
-                            "lambda22" | "lambda_2_2" => Ok(GeneratedField::Lambda22),
+                            "lambda1" | "lambda_1" => Ok(GeneratedField::Lambda1),
+                            "lambda2" | "lambda_2" => Ok(GeneratedField::Lambda2),
+                            "unfilled1" | "unfilled_1" => Ok(GeneratedField::Unfilled1),
+                            "unfilled2" | "unfilled_2" => Ok(GeneratedField::Unfilled2),
                             "height" => Ok(GeneratedField::Height),
                             "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
                             "epochHeight" | "epoch_height" => Ok(GeneratedField::EpochHeight),
@@ -279,10 +279,10 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
             {
                 let mut delta_1__ = None;
                 let mut delta_2__ = None;
-                let mut lambda_1_1__ = None;
-                let mut lambda_2_1__ = None;
-                let mut lambda_1_2__ = None;
-                let mut lambda_2_2__ = None;
+                let mut lambda_1__ = None;
+                let mut lambda_2__ = None;
+                let mut unfilled_1__ = None;
+                let mut unfilled_2__ = None;
                 let mut height__ = None;
                 let mut trading_pair__ = None;
                 let mut epoch_height__ = None;
@@ -300,29 +300,29 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
                             }
                             delta_2__ = map.next_value()?;
                         }
-                        GeneratedField::Lambda11 => {
-                            if lambda_1_1__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("lambda11"));
+                        GeneratedField::Lambda1 => {
+                            if lambda_1__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("lambda1"));
                             }
-                            lambda_1_1__ = map.next_value()?;
+                            lambda_1__ = map.next_value()?;
                         }
-                        GeneratedField::Lambda21 => {
-                            if lambda_2_1__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("lambda21"));
+                        GeneratedField::Lambda2 => {
+                            if lambda_2__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("lambda2"));
                             }
-                            lambda_2_1__ = map.next_value()?;
+                            lambda_2__ = map.next_value()?;
                         }
-                        GeneratedField::Lambda12 => {
-                            if lambda_1_2__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("lambda12"));
+                        GeneratedField::Unfilled1 => {
+                            if unfilled_1__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unfilled1"));
                             }
-                            lambda_1_2__ = map.next_value()?;
+                            unfilled_1__ = map.next_value()?;
                         }
-                        GeneratedField::Lambda22 => {
-                            if lambda_2_2__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("lambda22"));
+                        GeneratedField::Unfilled2 => {
+                            if unfilled_2__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unfilled2"));
                             }
-                            lambda_2_2__ = map.next_value()?;
+                            unfilled_2__ = map.next_value()?;
                         }
                         GeneratedField::Height => {
                             if height__.is_some() {
@@ -351,10 +351,10 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
                 Ok(BatchSwapOutputData {
                     delta_1: delta_1__,
                     delta_2: delta_2__,
-                    lambda_1_1: lambda_1_1__,
-                    lambda_2_1: lambda_2_1__,
-                    lambda_1_2: lambda_1_2__,
-                    lambda_2_2: lambda_2_2__,
+                    lambda_1: lambda_1__,
+                    lambda_2: lambda_2__,
+                    unfilled_1: unfilled_1__,
+                    unfilled_2: unfilled_2__,
                     height: height__.unwrap_or_default(),
                     trading_pair: trading_pair__,
                     epoch_height: epoch_height__.unwrap_or_default(),
