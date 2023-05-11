@@ -210,9 +210,9 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     // Add the trace to the object store:
     tracing::debug!(?trace, "recording trace of filled route");
     let mut swap_execution: im::Vector<Vec<Value>> =
-        this.object_get("swap_execution").unwrap_or_default();
+        this.object_get("trade_traces").unwrap_or_default();
     swap_execution.push_back(trace);
-    this.object_put("swap_execution", swap_execution);
+    this.object_put("trade_traces", swap_execution);
 
     // Apply the state transaction now that we've reached the end without errors.
     this.apply();

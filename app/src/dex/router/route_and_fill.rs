@@ -41,7 +41,7 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         let traces: im::Vector<Vec<Value>> = im::Vector::new();
         Arc::get_mut(self)
             .expect("one mutable reference to state")
-            .object_put("swap_execution", traces);
+            .object_put("trade_traces", traces);
 
         // Depending on the contents of the batch swap inputs, we might need to path search in either direction.
         let (lambda_2, unfilled_1) = if delta_1.value() > 0 {
@@ -86,24 +86,28 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             lambda_2_2: unfilled_2,
         };
 
+        // TODO: how does this work when there are trades in both directions?
+        // Won't that mix up the traces? Should the SwapExecution be indexed by
+        // the _DirectedTradingPair_?
+
         // Fetch the swap execution object that should have been modified during the routing and filling.
-        let swap_execution: im::Vector<Vec<Value>> = self
-            .object_get("swap_execution")
+        let trade_traces: im::Vector<Vec<Value>> = self
+            .object_get("trade_traces")
             .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store2"))?;
-        tracing::debug!(?output_data, ?swap_execution);
+        tracing::debug!(?output_data, ?trade_traces);
         Arc::get_mut(self)
             .expect("expected state to have no other refs")
             .set_output_data(
                 output_data,
                 SwapExecution {
-                    traces: swap_execution.into_iter().collect(),
+                    traces: trade_traces.into_iter().collect(),
                 },
             );
 
         // Clean up the swap execution object store now that it's been persisted.
         Arc::get_mut(self)
             .expect("expected state to have no other refs")
-            .object_delete("swap_execution");
+            .object_delete("trade_traces");
 
         Ok(())
     }
