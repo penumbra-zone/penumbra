@@ -242,7 +242,6 @@ impl TxCmd {
         }
     }
 
-
     #[tracing::instrument(name = "command")]
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
@@ -1118,6 +1117,7 @@ impl TxCmd {
                         } else {
                             anyhow::bail!("the supplied liquidity must be on the pair")
                         };
+
                         current_price
                     }
                 };

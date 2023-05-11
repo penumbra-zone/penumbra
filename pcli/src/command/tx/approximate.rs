@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use crate::dex_utils;
+use crate::dex_utils::approximate::debug;
 use anyhow::anyhow;
 use penumbra_crypto::dex::lp::position::Position;
 use penumbra_crypto::dex::DirectedUnitPair;
@@ -50,7 +51,6 @@ impl ConstantProduct {
         } else if self.fee_bps > 5000 {
             anyhow::bail!("the maximum fee is 5000bps (50%)")
         } else {
-            use crate::dex_utils::approximate::utils;
             let positions = crate::dex_utils::approximate::xyk::approximate(
                 &self.pair,
                 &self.input,
@@ -59,8 +59,6 @@ impl ConstantProduct {
             )?;
 
             if let Some(file) = &self.debug_file {
-                let canonical_pair_str = self.pair.to_canonical_string();
-
                 // Ad-hoc denom scaling for debug data:
                 let alphas = dex_utils::approximate::xyk::sample_full_range(
                     current_price,
@@ -79,15 +77,15 @@ impl ConstantProduct {
                 let total_k = r1 * r2;
                 tracing::debug!(r1, r2, total_k, current_price);
 
-                let debug_positions: Vec<utils::PayoffPositionEntry> = positions
+                let debug_positions: Vec<debug::PayoffPositionEntry> = positions
                     .iter()
                     .zip(alphas)
                     .enumerate()
-                    .map(|(idx, (pos, alpha))| utils::PayoffPositionEntry {
+                    .map(|(idx, (pos, alpha))| debug::PayoffPositionEntry {
                         payoff: Into::into(pos.clone()),
                         current_price,
                         index: idx,
-                        canonical_pair: canonical_pair_str.clone(),
+                        pair: self.pair.clone(),
                         alpha,
                         total_k,
                     })
