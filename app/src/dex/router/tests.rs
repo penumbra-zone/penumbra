@@ -797,8 +797,6 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-// TODO: re-enamble after correcting spill behavior.
-#[ignore]
 /// Test that we only fill up to the specified spill price.
 /// TODO(erwan): stub, fleshing this out later.
 async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
@@ -892,7 +890,6 @@ async fn fill_route_underflow_effective_price() -> anyhow::Result<()> {
     Ok(())
 }
 
-// TODO: remove this ignore once the test passes
 #[tokio::test]
 async fn simple_route() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
