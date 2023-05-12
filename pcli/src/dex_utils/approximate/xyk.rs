@@ -12,7 +12,7 @@ use rand_core::OsRng;
 use tracing::field;
 
 /// The number of positions that is used to approximate the xyk CFMM.
-pub(crate) const NUM_POOLS_PRECISION: usize = 10;
+pub(crate) const NUM_POOLS_PRECISION: usize = 30;
 
 /// Experimental scaling factor for spot valuations
 const PRICE_SCALING_FACTOR: u64 = 1_000_000;
@@ -127,7 +127,7 @@ pub fn approximate(
                 let q = unscaled_q * price_scaling_factor;
 
                 let r1: Amount = Amount::from(0u64);
-                let approx_r2: U128x128 = (*k_i * pair.end.unit_amount().value() as f64)
+                let approx_r2: U128x128 = (*k_i * pair.end.unit_amount().value() as f64 * alpha_i)
                     .try_into()
                     .unwrap();
                 let r2: Amount = approx_r2
@@ -172,8 +172,7 @@ pub fn approximate(
 
                 std::mem::swap(&mut p, &mut q);
 
-                let approx_r1: U128x128 = (*k_i * pair.start.unit_amount().value() as f64
-                    / alpha_i)
+                let approx_r1: U128x128 = (*k_i * pair.start.unit_amount().value() as f64)
                     .try_into()
                     .unwrap();
                 let r1: Amount = approx_r1
