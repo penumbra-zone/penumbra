@@ -138,7 +138,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
     // test_asset only by whitespace.
     balance_cmd
         .assert()
-        .stdout(predicate::str::is_match(format!(r"1\s*{TEST_ASSET}")).unwrap());
+        .stdout(predicate::str::is_match(format!(r"1\s*2020test_usd")).unwrap());
 
     // Cleanup: Send the asset back at the end of the test such that other tests begin
     // from the original state.
