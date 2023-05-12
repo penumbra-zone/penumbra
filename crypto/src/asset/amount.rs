@@ -102,14 +102,14 @@ impl AmountVar {
         let zero_var = AmountVar {
             amount: FqVar::new_constant(self.cs(), Fq::from(0))?,
         };
-        // First constrain: 0 <= rem
+        // Constrain: 0 <= rem
         zero_var
             .amount
             .enforce_cmp(&rem_var.amount, core::cmp::Ordering::Less, true)?;
-        // Next constrain: rem <= divisor
+        // Constrain: rem < divisor
         rem_var
             .amount
-            .enforce_cmp(&divisor_var.amount, core::cmp::Ordering::Less, true)?;
+            .enforce_cmp(&divisor_var.amount, core::cmp::Ordering::Less, false)?;
 
         Ok((quo_var, rem_var))
     }
