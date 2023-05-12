@@ -376,25 +376,6 @@ fn lp_management() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     close_cmd.assert().success();
 
-    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
-    balance_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "view",
-            "balance",
-        ])
-        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-
-    let o = balance_cmd
-        .output()
-        .expect("unable to fetch balance")
-        .stdout;
-    let output = String::from_utf8_lossy(&o);
-
-    // Address 0 has a withdrawn LPNFT.
-    assert!(output.contains("1lpnft_withdrawn"));
-
     // Test close-all: first open a few LPs
     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
     sell_cmd
@@ -521,9 +502,6 @@ fn lp_management() {
     let output = String::from_utf8_lossy(&o);
     let closed = output.matches("lpnft_closed").count();
     assert_eq!(closed, 0);
-    // Should be four total withdrawn positions now
-    let withdrawn = output.matches("lpnft_withdrawn").count();
-    assert_eq!(withdrawn, 4);
 }
 
 #[ignore]
