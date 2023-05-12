@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use penumbra_chain::component::StateReadExt as _;
+use penumbra_chain::{component::StateReadExt as _, NoteSource};
+use penumbra_crypto::note;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
@@ -18,6 +19,10 @@ use crate::state_key;
 //#[async_trait(?Send)]
 #[async_trait]
 pub trait StateReadExt: StateRead {
+    async fn note_source(&self, commitment: note::Commitment) -> Result<Option<NoteSource>> {
+        self.get(&state_key::note_source(&commitment)).await
+    }
+
     async fn state_commitment_tree(&self) -> tct::Tree {
         match self
             .nonconsensus_get_raw(state_key::stub_state_commitment_tree().as_bytes())
@@ -57,10 +62,21 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 #[async_trait]
 pub trait SctManager: StateWrite {
-    async fn add_sct_commitment(&mut self, commitment: tct::Commitment) -> Result<tct::Position> {
+    async fn add_sct_commitment(
+        &mut self,
+        commitment: tct::Commitment,
+        source: Option<NoteSource>,
+    ) -> Result<tct::Position> {
+        // Record in the SCT
         let mut tree = self.state_commitment_tree().await;
         let position = tree.insert(tct::Witness::Forget, commitment)?;
         self.put_state_commitment_tree(&tree);
+
+        // Record the note source, if any
+        if let Some(source) = source {
+            self.put(state_key::note_source(&commitment), source);
+        }
+
         Ok(position)
     }
 
