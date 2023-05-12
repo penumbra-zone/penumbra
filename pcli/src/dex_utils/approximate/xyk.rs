@@ -84,8 +84,8 @@ pub fn approximate(
         .enumerate()
         .for_each(|(i, pool_invariant)| tracing::debug!(i, pool_invariant, "found solution"));
 
-    let price_scaling_factor = Amount::from(PRICE_SCALING_FACTOR);
-    let fp_price_scaling_factor: U128x128 = price_scaling_factor.into();
+    let unit_start = pair.start.unit_amount();
+    let unit_end: U128x128 = pair.end.unit_amount().into();
 
     let positions: Vec<Position> = position_ks
         .iter()
@@ -106,14 +106,14 @@ pub fn approximate(
             // that provisions `asset_1`.
             // \phi(R) = alpha_i * (R_1 = k_i) + 1 * (R_2 = 0) = alpha_i * k_i
             let approx_p: U128x128 = alpha_i.try_into().unwrap();
-            let scaled_p = (approx_p * fp_price_scaling_factor).unwrap();
+            let scaled_p = (approx_p * unit_end).unwrap();
             let p: Amount = scaled_p
                 .round_down()
                 .try_into()
                 .expect("integral after truncating");
 
             let unscaled_q = Amount::from(1u64);
-            let q = unscaled_q * price_scaling_factor;
+            let q = unscaled_q * unit_start;
 
             if alpha_i < f64_current_price {
                 let r1: Amount = Amount::from(0u64);

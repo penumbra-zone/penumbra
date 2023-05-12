@@ -63,4 +63,3 @@ pub(crate) fn sample_to_upper(upper: f64, num_points: usize) -> Vec<f64> {
 
     (1..=num_points).map(|i| (i as f64) * step).collect()
 }
-
