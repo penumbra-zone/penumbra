@@ -56,3 +56,11 @@ pub(crate) fn lower_triangular(matrix: &Array2<f64>) -> Array2<f64> {
 
     result
 }
+
+/// Sample `num_points` up to a supplied `upper` limit.
+pub(crate) fn sample_to_upper(upper: f64, num_points: usize) -> Vec<f64> {
+    let step = upper / (num_points as f64);
+
+    (1..=num_points).map(|i| (i as f64) * step).collect()
+}
+
