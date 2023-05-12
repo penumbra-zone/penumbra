@@ -111,6 +111,10 @@ impl AmountVar {
             .amount
             .enforce_cmp(&divisor_var.amount, core::cmp::Ordering::Less, false)?;
 
+        // Finally, division is undefined if the divisor is 0.
+        // Constrain: divisor != 0
+        divisor_var.enforce_not_equal(&zero_var)?;
+
         Ok((quo_var, rem_var))
     }
 }
