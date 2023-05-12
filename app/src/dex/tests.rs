@@ -631,3 +631,61 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn swap_execution_advanced() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let test_usd = asset::REGISTRY.parse_unit("test_usd");
+    let test_eth = asset::REGISTRY.parse_unit("test_eth");
+
+    let pair_usd_eth = DirectedUnitPair::new(test_eth.clone(), test_usd.clone());
+
+    // Create a single 1:1788 usd:eth position (i.e. buy 1 eth at 1788 usd).
+    let buy_1 = limit_buy(
+        pair_usd_eth.clone(),
+        1u64.into(),
+        test_usd.value(1788u32.into()).amount,
+    );
+    state_tx.put_position(buy_1);
+    state_tx.apply();
+
+    // Now we should be able to fill a 1788:1 usd:eth swap.
+    let trading_pair = pair_usd_eth.into_directed_trading_pair().into();
+
+    let mut swap_flow = state.swap_flow(&trading_pair);
+
+    assert!(trading_pair.asset_1() == test_usd.id());
+
+    // Add the amount of each asset being swapped to the batch swap flow.
+    swap_flow.0 += MockFlowCiphertext::new(0u32.into());
+    swap_flow.1 += MockFlowCiphertext::new(test_eth.value(1u32.into()).amount);
+
+    // Set the batch swap flow for the trading pair.
+    Arc::get_mut(&mut state)
+        .unwrap()
+        .put_swap_flow(&trading_pair, swap_flow.clone());
+    state
+        .handle_batch_swaps(trading_pair, swap_flow, 0, 0, RoutingParams::default())
+        .await
+        .expect("unable to process batch swaps");
+
+    // Swap execution should have a single trace consisting of `[1eth, 1788usd]`.
+    let swap_execution = state.swap_execution(0, trading_pair).await?.unwrap();
+
+    assert_eq!(
+        swap_execution.traces,
+        vec![vec![
+            test_eth.value(1u32.into()),
+            test_usd.value(1788u32.into()),
+        ]]
+    );
+
+    // TODO: try trading in both directions against the position
+    // and with different input amounts.
+
+    Ok(())
+}
