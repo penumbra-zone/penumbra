@@ -125,7 +125,7 @@ impl RateData {
     /// unbonded_amount == rate_data.unbonded_amount(delegation_amount)
     /// ```
     /// but in general *not both*, because the computation involves rounding.
-    pub fn unbonded_amount(&self, delegation_amount: u64) -> u64 {
+    pub fn unbonded_amount(&self, delegation_amount: u128) -> u128 {
         // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
         // upconvert to u128 intermediates and panic if the result is too large (unlikely)
         ((delegation_amount as u128 * self.validator_exchange_rate as u128) / 1_0000_0000)
@@ -160,12 +160,10 @@ impl RateData {
     /// Uses this `RateData` to build an `Undelegate` transaction action that
     /// undelegates `delegation_amount` of the validator's delegation tokens.
     pub fn build_undelegate(&self, delegation_amount: Amount) -> Undelegate {
-        // TODO: port to amounts
-        let delegation_amount_u64 = delegation_amount.value() as u64;
         Undelegate {
             start_epoch_index: self.epoch_index,
             delegation_amount,
-            unbonded_amount: self.unbonded_amount(delegation_amount_u64).into(),
+            unbonded_amount: self.unbonded_amount(delegation_amount.into()).into(),
             validator_identity: self.identity_key.clone(),
         }
     }

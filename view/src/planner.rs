@@ -520,7 +520,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 // and continue to the next one.
                 let Some(rate_data) = rate_data.get(&identity_key) else { continue };
                 let unbonded_amount = rate_data
-                    .unbonded_amount(record.note.amount().value() as u64)
+                    .unbonded_amount(record.note.amount().value())
                     .into();
 
                 // If the delegation token is unspent, "roll it over" by spending it (this will

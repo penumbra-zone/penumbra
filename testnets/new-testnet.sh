@@ -17,7 +17,7 @@ echo "Setting up allocations for new testnet..."
 cut -d , -f 6 < discord_history.csv \
     | tail -n +2 | sort | uniq \
     | grep ^penumbrav \
-    | sed -e 's/^/"1_000__000_000","upenumbra","/; s/$/"/' \
+    | xargs -I{} printf '"1_000__000_000","upenumbra","{}"\n"1_000","test_usd","{}"\n' \
     | cat base_allocations.csv - > "$NEW_TESTNET_DIRECTORY/allocations.csv"
 
 echo "All done!"
