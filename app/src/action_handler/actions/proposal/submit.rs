@@ -246,9 +246,7 @@ impl ActionHandler for ProposalSubmit {
 
         // Since there was a proposal submitted, ensure we track this so that clients can retain
         // state needed to vote as delegators
-        let mut compact_block = state.stub_compact_block();
-        compact_block.proposal_started = true;
-        state.stub_put_compact_block(compact_block);
+        state.mark_proposal_started();
 
         tracing::debug!(proposal = %proposal_id, "created proposal");
 
