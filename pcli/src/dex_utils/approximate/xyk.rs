@@ -20,26 +20,9 @@ const PRICE_SCALING_FACTOR: u64 = 1_000_000;
 /// Maximum number of iteration that we allow GS to perform.
 const GAUS_SEIDEL_MAX_ITERATION: usize = 10_000;
 
-pub(crate) fn sample_full_range(middle: f64, num_points: usize) -> Vec<f64> {
-    let step = 3.0 * middle / (num_points as f64);
-
-    (1..=num_points).map(|i| (i as f64) * step).collect()
-}
-
-/// A function that returns a vector of length `num_points` covering the range 0 to `upper`,
-/// with equally spaced points.
-pub fn sample_to_upper(upper: f64, num_points: usize) -> Vec<f64> {
-    let step = upper / (num_points as f64);
-
-    (1..=num_points).map(|i| (i as f64) * step).collect()
-}
-
-#[allow(dead_code)]
-pub(crate) fn sample_points(middle: f64, num_points: usize) -> Vec<f64> {
-    let step = middle / (num_points as f64 / 2.0);
-    let start = middle - (num_points as f64 / 2.0 - 1.0) * step;
-
-    (0..num_points).map(|i| start + (i as f64) * step).collect()
+/// Sample a range of points around a given price
+pub fn sample_prices(current_price: f64, num_points: usize) -> Vec<f64> {
+    crate::dex_utils::approximate::math_utils::sample_to_upper(3.0 * current_price, num_points)
 }
 
 #[tracing::instrument(name = "approximate_xyk")]
@@ -77,7 +60,9 @@ pub fn approximate(
     let xyk_invariant: f64 = xyk_invariant.try_into()?;
     tracing::debug!(?xyk_invariant, "computed the total invariant for the PVF");
 
-    let alphas = sample_full_range(current_price.into(), NUM_POOLS_PRECISION);
+    let f64_current_price: f64 = current_price.try_into()?;
+
+    let alphas = sample_prices(f64_current_price, NUM_POOLS_PRECISION);
 
     alphas
         .iter()
@@ -98,8 +83,6 @@ pub fn approximate(
         .iter()
         .enumerate()
         .for_each(|(i, pool_invariant)| tracing::debug!(i, pool_invariant, "found solution"));
-
-    let f64_current_price: f64 = current_price.try_into()?;
 
     let price_scaling_factor = Amount::from(PRICE_SCALING_FACTOR);
     let fp_price_scaling_factor: U128x128 = price_scaling_factor.into();

@@ -6,10 +6,9 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::Fr;
-use dialoguer::Confirm;
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
@@ -25,7 +24,7 @@ use penumbra_ibc::Ics20Withdrawal;
 use penumbra_proto::{
     client::v1alpha1::{
         EpochByHeightRequest, LiquidityPositionByIdRequest, ProposalInfoRequest,
-        ProposalInfoResponse, ProposalRateDataRequest, SpreadRequest, ValidatorPenaltyRequest,
+        ProposalInfoResponse, ProposalRateDataRequest, ValidatorPenaltyRequest,
     },
     core::dex::v1alpha1::PositionId,
 };
@@ -47,7 +46,6 @@ mod liquidity_position;
 use liquidity_position::PositionCmd;
 
 mod approximate;
-use approximate::ApproximateCmd;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
@@ -1075,101 +1073,8 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::RewardClaim {}) => todo!(),
-            TxCmd::Position(PositionCmd::Approximate(ApproximateCmd::ConstantProduct(xyk_cmd))) => {
-                let pair = xyk_cmd.pair.clone();
-                let current_price = match xyk_cmd.current_price {
-                    Some(user_supplied_price) => user_supplied_price,
-                    None => {
-                        let mut specific_client = app.specific_client().await?;
-
-                        let spread_data = specific_client
-                            .spread(SpreadRequest {
-                                chain_id: "".to_string(),
-                                trading_pair: Some(
-                                    pair.into_directed_trading_pair().to_canonical().into(),
-                                ),
-                            })
-                            .await?
-                            .into_inner();
-
-                        tracing::debug!(
-                            ?spread_data,
-                            pair = pair.to_string(),
-                            "fetched spread for pair"
-                        );
-
-                        if spread_data.best_1_to_2_position.is_none()
-                            || spread_data.best_2_to_1_position.is_none()
-                        {
-                            bail!("couldn't find a market price for the specified assets, you can manually specify a price using --current-price <price>")
-                        }
-
-                        let current_price = if xyk_cmd.input.asset_id == pair.start.id() {
-                            spread_data.approx_effective_price_1_to_2
-                        } else if xyk_cmd.input.asset_id == pair.end.id() {
-                            spread_data.approx_effective_price_2_to_1
-                        } else {
-                            anyhow::bail!("the supplied liquidity must be on the pair")
-                        };
-
-                        current_price
-                    }
-                };
-
-                let positions = xyk_cmd.exec(current_price)?;
-                let (amount_start, amount_end) =
-                    positions
-                        .iter()
-                        .fold((Amount::zero(), Amount::zero()), |acc, pos| {
-                            (
-                                acc.0 + pos.reserves_for(pair.start.id()).unwrap(),
-                                acc.1 + pos.reserves_for(pair.end.id()).unwrap(),
-                            )
-                        });
-                let amount_start = pair.start.format_value(amount_start);
-                let amount_end = pair.end.format_value(amount_end);
-
-                println!("#########################ddk########################################");
-                println!("                  PASSIVE LIQUIDITY                             ");
-                println!("#########################ddk########################################");
-                println!("");
-                println!(
-                    "You want to provide liquidity on the pair {}",
-                    pair.to_string()
-                );
-                println!("You will need:",);
-                println!(" -> {amount_start}{}", pair.start.to_string());
-                println!(" -> {amount_end}{}", pair.end.to_string());
-                // TODO(erwan): would be nice to print current balance?
-
-                println!("You will create the following pools:");
-                println!(
-                    "{}",
-                    crate::command::utils::render_xyk_approximation(pair.clone(), &positions)
-                );
-
-                if !xyk_cmd.yes
-                    && !Confirm::new()
-                        .with_prompt("Do you want to open those liquidity positions on-chain?")
-                        .interact()?
-                {
-                    return Ok(());
-                }
-
-                let mut planner = Planner::new(OsRng);
-                positions.iter().for_each(|position| {
-                    planner.position_open(position.clone());
-                });
-
-                let plan = planner
-                    .plan(
-                        app.view.as_mut().unwrap(),
-                        app.fvk.account_group_id(),
-                        AddressIndex::new(xyk_cmd.source),
-                    )
-                    .await?;
-                let tx_id = app.build_and_submit_transaction(plan).await?;
-                println!("posted with transaction id: {tx_id}");
+            TxCmd::Position(PositionCmd::Approximate(approximate_cmd)) => {
+                approximate_cmd.exec(app).await?;
             }
         }
         Ok(())

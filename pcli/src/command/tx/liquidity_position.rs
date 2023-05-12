@@ -74,7 +74,7 @@ impl PositionCmd {
             PositionCmd::Withdraw { .. } => false,
             PositionCmd::WithdrawAll { .. } => false,
             PositionCmd::RewardClaim { .. } => false,
-            PositionCmd::Approximate(_) => false,
+            PositionCmd::Approximate(approximate) => approximate.offline(),
         }
     }
 }
