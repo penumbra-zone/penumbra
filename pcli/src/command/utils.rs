@@ -2,6 +2,7 @@ use comfy_table::{presets, Table};
 use penumbra_crypto::{
     asset::{self, Denom},
     dex::{lp::position::Position, DirectedUnitPair},
+    fixpoint::U128x128,
 };
 
 pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position]) -> String {
@@ -78,8 +79,15 @@ pub(crate) fn render_xyk_approximation(pair: DirectedUnitPair, positions: &[Posi
     for position in positions {
         let fee = position.phi.component.fee;
         let well_directed_phi = position.phi.orient_end(pair.end.id()).unwrap();
-        let price_a_to_b = well_directed_phi.effective_price_inv();
-        let price_b_to_a = well_directed_phi.effective_price();
+        // TODO(erwan): refactor with `BuyOrder`?
+        let start = pair.start.unit_amount();
+        let end = pair.end.unit_amount();
+        let fp_start: U128x128 = start.try_into().unwrap();
+        let fp_end: U128x128 = end.try_into().unwrap();
+        let cross = (fp_start / fp_end).unwrap();
+        let cross_inv = (fp_end / fp_start).unwrap();
+        let price_a_to_b = (well_directed_phi.effective_price_inv() * cross).unwrap();
+        let price_b_to_a = (well_directed_phi.effective_price() * cross_inv).unwrap();
 
         let asset_1_to_2 = format!("{} @ {:>10.05}", pair.to_string(), price_a_to_b);
         let asset_2_to_1 = format!("{} @ {:>10.05}", pair.flip().to_string(), price_b_to_a);
