@@ -122,17 +122,17 @@ pub fn approximate(
             // to create a one-sided position with price `alpha_i`
             // that provisions `asset_1`.
             // \phi(R) = alpha_i * (R_1 = k_i) + 1 * (R_2 = 0) = alpha_i * k_i
+            let approx_p: U128x128 = alpha_i.try_into().unwrap();
+            let scaled_p = (approx_p * fp_price_scaling_factor).unwrap();
+            let p: Amount = scaled_p
+                .round_down()
+                .try_into()
+                .expect("integral after truncating");
+
+            let unscaled_q = Amount::from(1u64);
+            let q = unscaled_q * price_scaling_factor;
+
             if alpha_i < f64_current_price {
-                let approx_p: U128x128 = alpha_i.try_into().unwrap();
-                let scaled_p = (approx_p * fp_price_scaling_factor).unwrap();
-                let p: Amount = scaled_p
-                    .round_down()
-                    .try_into()
-                    .expect("integral after truncating");
-
-                let unscaled_q = Amount::from(1u64);
-                let q = unscaled_q * price_scaling_factor;
-
                 let r1: Amount = Amount::from(0u64);
                 let approx_r2: U128x128 = (*k_i * pair.end.unit_amount().value() as f64 * alpha_i)
                     .try_into()
@@ -164,16 +164,6 @@ pub fn approximate(
                     Reserves { r1, r2 },
                 )
             } else {
-                let approx_p: U128x128 = alpha_i.try_into().unwrap();
-                let scaled_p = (approx_p * fp_price_scaling_factor).unwrap();
-                let p: Amount = scaled_p
-                    .round_down()
-                    .try_into()
-                    .expect("integral after truncating");
-
-                let unscaled_q = Amount::from(1u64);
-                let q = unscaled_q * price_scaling_factor;
-
                 let approx_r1: U128x128 = (*k_i * pair.start.unit_amount().value() as f64)
                     .try_into()
                     .unwrap();
