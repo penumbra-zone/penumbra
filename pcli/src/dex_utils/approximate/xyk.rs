@@ -111,10 +111,17 @@ pub fn approximate(
         .map(|((i, k_i), alpha_i)| {
             tracing::debug!(i, f64_current_price, k_i, alpha_i, "constructing pool");
 
+            // Case 1: \alpha_i < current_price
             // Populating ticks that are below the current price, the intuition
             // is that the positions accumulates the less valuable asset so as
             // the price trends to \alpha_i, we must provision inventories of
             // `asset_2`.
+            // \phi(R) = alpha_i * (R_1 = 0)  + 1 * (R_2 = k_i * alpha_i) = k_i * alpha_i
+            // Case 2: \alpha_i >= current_price
+            // Tick is above the current price, therefore we want
+            // to create a one-sided position with price `alpha_i`
+            // that provisions `asset_1`.
+            // \phi(R) = alpha_i * (R_1 = k_i) + 1 * (R_2 = 0) = alpha_i * k_i
             if alpha_i < f64_current_price {
                 let approx_p: U128x128 = alpha_i.try_into().unwrap();
                 let scaled_p = (approx_p * fp_price_scaling_factor).unwrap();
@@ -157,20 +164,15 @@ pub fn approximate(
                     Reserves { r1, r2 },
                 )
             } else {
-                // Tick is above the current price, therefore we want
-                // to create a one-sided position with price `alpha_i`
-                // that provisions `asset_1`.
-                let unscaled_p = Amount::from(1u64);
-                let mut p = unscaled_p * price_scaling_factor;
-
-                let approx_q: U128x128 = alpha_i.try_into().unwrap();
-                let scaled_q = (approx_q * fp_price_scaling_factor).unwrap();
-                let mut q: Amount = scaled_q
+                let approx_p: U128x128 = alpha_i.try_into().unwrap();
+                let scaled_p = (approx_p * fp_price_scaling_factor).unwrap();
+                let p: Amount = scaled_p
                     .round_down()
                     .try_into()
                     .expect("integral after truncating");
 
-                std::mem::swap(&mut p, &mut q);
+                let unscaled_q = Amount::from(1u64);
+                let q = unscaled_q * price_scaling_factor;
 
                 let approx_r1: U128x128 = (*k_i * pair.start.unit_amount().value() as f64)
                     .try_into()
