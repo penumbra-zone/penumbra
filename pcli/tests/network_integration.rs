@@ -1035,4 +1035,70 @@ fn test_orders() {
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     withdraw_cmd.assert().success();
+
+    // Create a liquidity position selling 5penumbra for 225test_usd each.
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "5penumbra@225test_usd",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+
+    for _ in 1..6 {
+        // Swap 225test_usd for some penumbra. We expect to receive 1penumbra for 225test_usd
+        // based on the position above. 1 fewer should remain in the position.
+        let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
+        swap_cmd
+            .args([
+                "--data-path",
+                tmpdir.path().to_str().unwrap(),
+                "tx",
+                "swap",
+                "225test_usd",
+                "--into",
+                "penumbra",
+            ])
+            .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+        swap_cmd
+            .assert()
+            .stdout(
+                predicate::str::is_match(
+                    "You will receive outputs of 0test_usd and 1penumbra. Claiming now...",
+                )
+                .unwrap(),
+            )
+            .success();
+    }
+
+    // There should be no more penumbra left in the position.
+    // Swap 225test_usd for some penumbra. We expect to receive 0penumbra for 225test_usd
+    // because there is no more penumbra remaining. The output will thus be 225test_usd and 0penumbra.
+    let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
+    swap_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "swap",
+            "225test_usd",
+            "--into",
+            "penumbra",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    swap_cmd
+        .assert()
+        .stdout(
+            predicate::str::is_match(
+                "You will receive outputs of 225test_usd and 0penumbra. Claiming now...",
+            )
+            .unwrap(),
+        )
+        .success();
 }
