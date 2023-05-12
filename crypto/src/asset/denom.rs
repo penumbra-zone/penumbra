@@ -175,6 +175,24 @@ impl Denom {
     pub fn starts_with(&self, prefix: &str) -> bool {
         self.inner.base_denom.starts_with(prefix)
     }
+
+    pub fn is_opened_position_nft(&self) -> bool {
+        let prefix = format!("lpnft_opened_");
+
+        self.starts_with(&prefix)
+    }
+
+    pub fn is_withdrawn_position_nft(&self) -> bool {
+        let prefix = format!("lpnft_withdrawn_");
+
+        self.starts_with(&prefix)
+    }
+
+    pub fn is_closed_position_nft(&self) -> bool {
+        let prefix = format!("lpnft_closed_");
+
+        self.starts_with(&prefix)
+    }
 }
 
 impl From<Denom> for asset::Id {

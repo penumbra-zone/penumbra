@@ -54,6 +54,11 @@ impl BalanceCmd {
                         (Some(*index), asset.value(sum.into()))
                     })
                 })
+                // Exclude withdrawn LPNFTs.
+                .filter(|(_, value)| match asset_cache.get(&value.asset_id) {
+                    None => true,
+                    Some(denom) => !denom.is_withdrawn_position_nft(),
+                })
                 .collect()
         };
 
