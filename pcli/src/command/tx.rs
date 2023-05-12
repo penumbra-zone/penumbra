@@ -879,12 +879,6 @@ impl TxCmd {
                     .unspent_notes_by_address_and_asset(app.fvk.account_group_id())
                     .await?;
 
-                fn is_opened_position_nft(denom: &Denom) -> bool {
-                    let prefix = format!("lpnft_opened_");
-
-                    denom.starts_with(&prefix)
-                }
-
                 let asset_cache = app.view().assets().await?;
                 let opened_notes: Vec<String> = notes
                     .iter()
@@ -899,7 +893,7 @@ impl TxCmd {
                                         return false;
                                     }
                                     (*index == AddressIndex::from(*source))
-                                        && is_opened_position_nft(base_denom.unwrap())
+                                        && base_denom.unwrap().is_opened_position_nft()
                                 })
                                 .map(|record| {
                                     asset_cache
