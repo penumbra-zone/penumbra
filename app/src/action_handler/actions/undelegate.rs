@@ -51,11 +51,10 @@ impl ActionHandler for Undelegate {
         //
         // should give approximately the same results, they may not give
         // exactly the same results.
-        let expected_unbonded_amount =
-            rate_data.unbonded_amount(u.delegation_amount.value() as u64);
+        let expected_unbonded_amount = rate_data.unbonded_amount(u.delegation_amount.value());
 
         ensure!(
-            u.unbonded_amount.value() as u64 == expected_unbonded_amount,
+            u.unbonded_amount.value() == expected_unbonded_amount,
             "undelegation amount {} does not match expected amount {}",
             u.unbonded_amount,
             expected_unbonded_amount,

@@ -83,7 +83,7 @@ impl StakedCmd {
                 amount: info
                     .rate_data
                     // TODO fix with new rate calcs
-                    .unbonded_amount(delegation.amount.value() as u64)
+                    .unbonded_amount(delegation.amount.value())
                     .into(),
                 asset_id: *STAKING_TOKEN_ASSET_ID,
             };

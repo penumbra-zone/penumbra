@@ -62,7 +62,7 @@ pub trait SupplyWrite: StateWrite {
 
     // TODO: should this really be separate from note management?
     // #[instrument(skip(self, change))]
-    async fn update_token_supply(&mut self, asset_id: &asset::Id, change: i64) -> Result<()> {
+    async fn update_token_supply(&mut self, asset_id: &asset::Id, change: i128) -> Result<()> {
         let key = state_key::token_supply(asset_id);
         let current_supply: Amount = self.get_proto(&key).await?.unwrap_or(0u64).into();
 
@@ -73,7 +73,8 @@ pub trait SupplyWrite: StateWrite {
                 .checked_sub(change.unsigned_abs().into())
                 .ok_or_else(|| {
                     anyhow::anyhow!(
-                        "underflow updating token supply {} with delta {}",
+                        "underflow updating token {} supply {} with delta {}",
+                        asset_id,
                         current_supply,
                         change
                     )
@@ -82,10 +83,11 @@ pub trait SupplyWrite: StateWrite {
         } else {
             current_supply
                 .value()
-                .checked_add((change as u64).into())
+                .checked_add((change as u128).into())
                 .ok_or_else(|| {
                     anyhow::anyhow!(
-                        "overflow updating token supply {} with delta {}",
+                        "overflow updating token {} supply {} with delta {}",
+                        asset_id,
                         current_supply,
                         change
                     )
