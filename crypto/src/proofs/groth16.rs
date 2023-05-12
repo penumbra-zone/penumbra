@@ -125,7 +125,7 @@ mod tests {
     proptest! {
     #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
-    fn undelegate_claim_proof_happy_path(validator_randomness in fr_strategy(), balance_blinding in fr_strategy(), value1_amount in 2..200u64, penalty_amount in 2..200u64) {
+    fn undelegate_claim_proof_happy_path(validator_randomness in fr_strategy(), balance_blinding in fr_strategy(), value1_amount in 2..200u64, penalty_amount in 0..200u64) {
             let (pk, vk) = UndelegateClaimCircuit::generate_prepared_test_parameters();
 
             let mut rng = OsRng;
@@ -206,7 +206,7 @@ mod tests {
     proptest! {
     #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
-    fn delegator_vote_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..2000000000u64, num_commitments in 1..2000u64) {
+    fn delegator_vote_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 1..2000000000u64, num_commitments in 0..2000u64) {
         let (pk, vk) = DelegatorVoteCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
 
