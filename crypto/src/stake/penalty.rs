@@ -108,8 +108,8 @@ impl PenaltyVar {
             ))
         })?;
 
-        // If the witnessed penalized amount is calculated correctly, then:
-        // penalized_amount = amount * (1_0000_0000 - penalty (public)) / 1_0000_0000
+        // Now we certify the witnessed penalized amount was calculated correctly.
+        // Constrain: penalized_amount = amount * (1_0000_0000 - penalty (public)) / 1_0000_0000
         let hundred_mil = AmountVar::new_constant(self.cs(), Amount::from(1_0000_0000u128))?; // 1_0000_0000
         let numerator = amount
             * (hundred_mil.clone()
