@@ -4142,6 +4142,7 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-ibc",
  "penumbra-proto",
+ "penumbra-sct",
  "penumbra-shielded-pool",
  "penumbra-storage",
  "penumbra-tendermint-proxy",
