@@ -339,6 +339,74 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
     Ok(())
 }
 
+// see: https://github.com/cosmos/ibc/blob/8326e26e7e1188b95c32481ff00348a705b23700/spec/app/ics-020-fungible-token-transfer/README.md?plain=1#L297
+async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> Result<()> {
+    let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
+    let denom: asset::Denom = packet_data // CRITICAL: verify that this denom is validated in upstream timeout handling
+        .denom
+        .as_str()
+        .try_into()
+        .context("couldn't decode denom in ics20 transfer timeout")?;
+    // receiver was source chain, mint vouchers back to sender
+    let amount: Amount = packet_data
+        .amount
+        .try_into()
+        .context("couldn't decode amount in ics20 transfer timeout")?;
+
+    let receiver = Address::from_str(&packet_data.receiver)
+        .context("couldn't decode receiver address in ics20 timeout")?;
+
+    let value: Value = Value {
+        amount,
+        asset_id: denom.id(),
+    };
+
+    if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom) {
+        // sender was source chain, unescrow tokens back to sender
+        let value_balance: Amount = state
+            .get(&state_key::ics20_value_balance(
+                &msg.packet.chan_on_a,
+                &denom.id(),
+            ))
+            .await?
+            .unwrap_or_else(Amount::zero);
+
+        if value_balance < amount {
+            return Err(anyhow::anyhow!(
+                "couldn't return coins in timeout: not enough value balance"
+            ));
+        }
+
+        state
+            .mint_note(value, &receiver, penumbra_chain::NoteSource::Ics20Transfer)
+            .await
+            .context("couldn't mint note in timeout_packet_inner")?;
+
+        // update the value balance
+        let value_balance: Amount = state
+            .get(&state_key::ics20_value_balance(
+                &msg.packet.chan_on_a,
+                &denom.id(),
+            ))
+            .await?
+            .unwrap_or_else(Amount::zero);
+
+        // note: this arithmetic was checked above, but we do it again anyway.
+        let new_value_balance = value_balance.checked_sub(&amount).unwrap();
+        state.put(
+            state_key::ics20_value_balance(&msg.packet.chan_on_a, &denom.id()),
+            new_value_balance,
+        );
+    } else {
+        state
+            .mint_note(value, &receiver, penumbra_chain::NoteSource::Ics20Transfer) // NOTE: should this be Ics20TransferTimeout?
+            .await
+            .context("failed to mint return voucher in ics20 transfer timeout")?;
+    }
+
+    Ok(())
+}
+
 // NOTE: should these be fallible, now that our enclosing state machine is fallible in execution?
 #[async_trait]
 impl AppHandlerExecute for Ics20Transfer {
@@ -367,7 +435,15 @@ impl AppHandlerExecute for Ics20Transfer {
             .context("critical: failed to write acknowledgement")
             .unwrap();
     }
-    async fn timeout_packet_execute<S: StateWrite>(_state: S, _msg: &MsgTimeout) {}
+
+    async fn timeout_packet_execute<S: StateWrite>(mut state: S, msg: &MsgTimeout) {
+        // timeouts should never fail
+        timeout_packet_inner(&mut state, msg)
+            .await
+            .context("critical: failed to timeout packet")
+            .unwrap();
+    }
+
     async fn acknowledge_packet_execute<S: StateWrite>(_state: S, _msg: &MsgAcknowledgement) {}
 }
 
