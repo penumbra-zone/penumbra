@@ -30,11 +30,6 @@ pub trait SwapManager: StateWrite {
         payloads.push_back((position, swap, source));
         self.object_put(state_key::pending_payloads(), payloads);
     }
-
-    async fn pending_swap_payloads(&self) -> im::Vector<(tct::Position, SwapPayload, NoteSource)> {
-        self.object_get(state_key::pending_payloads())
-            .unwrap_or_default()
-    }
 }
 
 impl<T: StateWrite + ?Sized> SwapManager for T {}
