@@ -250,7 +250,7 @@ impl<S: StateRead> StateRead for StateDelta<S> {
             .ephemeral_objects
             .get(key)
         {
-            return entry.as_ref().map(|v| std::any::Any::type_id(&**v));
+            return entry.as_ref().map(|v| v.type_id());
         }
 
         // Iterate through the stack, top to bottom, to see if we have a cache hit.
@@ -262,7 +262,7 @@ impl<S: StateRead> StateRead for StateDelta<S> {
                 .ephemeral_objects
                 .get(key)
             {
-                return entry.as_ref().map(|v| std::any::Any::type_id(&**v));
+                return entry.as_ref().map(|v| v.type_id());
             }
         }
 
