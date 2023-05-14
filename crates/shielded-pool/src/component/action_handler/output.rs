@@ -33,9 +33,9 @@ impl ActionHandler for Output {
         let source = state.object_get("source").unwrap_or_default();
 
         state
-            .add_note_state_payload(StatePayload::Note {
+            .add_state_payload(StatePayload {
                 source,
-                note: Box::new(self.body.note_payload.clone()),
+                note: self.body.note_payload.clone(),
             })
             .await;
 

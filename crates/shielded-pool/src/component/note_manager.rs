@@ -1,11 +1,10 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::{component::StateReadExt as _, NoteSource, SpendInfo};
-use penumbra_crypto::{note, Address, Note, NotePayload, Nullifier, Rseed, Value};
+use penumbra_crypto::{Address, Note, NotePayload, Nullifier, Rseed, Value};
 use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::{SctManager as _, StateReadExt as _};
 use penumbra_storage::StateWrite;
-use penumbra_tct as tct;
 use tracing::instrument;
 
 use crate::{event, state_key};
@@ -13,38 +12,16 @@ use crate::{event, state_key};
 use super::SupplyWrite;
 
 #[derive(Clone)]
-pub enum StatePayload {
-    RolledUp(note::Commitment),
-    Note {
-        source: NoteSource,
-        note: Box<NotePayload>,
-    },
-}
-
-impl StatePayload {
-    pub fn commitment(&self) -> &note::Commitment {
-        match self {
-            Self::RolledUp(commitment) => commitment,
-            Self::Note { note, .. } => &note.note_commitment,
-        }
-    }
-
-    pub fn source(&self) -> Option<&NoteSource> {
-        match self {
-            Self::RolledUp(_) => None,
-            Self::Note { source, .. } => Some(source),
-        }
-    }
+pub struct StatePayload {
+    pub source: NoteSource,
+    pub note: NotePayload,
 }
 
 pub struct StatePayloadDebugKind<'a>(pub &'a StatePayload);
 
 impl<'a> std::fmt::Debug for StatePayloadDebugKind<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.0 {
-            StatePayload::RolledUp(_) => f.debug_struct("RolledUp").finish_non_exhaustive(),
-            StatePayload::Note { .. } => f.debug_struct("Note").finish_non_exhaustive(),
-        }
+        f.debug_struct("Note").finish_non_exhaustive()
     }
 }
 
@@ -93,8 +70,8 @@ pub trait NoteManager: StateWrite {
         // Now record the note and update the total supply:
         self.update_token_supply(&value.asset_id, value.amount.value() as i128)
             .await?;
-        self.add_note_state_payload(StatePayload::Note {
-            note: Box::new(note.payload()),
+        self.add_state_payload(StatePayload {
+            note: note.payload(),
             source,
         })
         .await;
@@ -102,24 +79,30 @@ pub trait NoteManager: StateWrite {
         Ok(())
     }
 
-    #[instrument(skip(self, payload), fields(commitment = ?payload.commitment()))]
-    async fn add_note_state_payload(&mut self, payload: StatePayload) {
+    #[instrument(skip(self, payload), fields(commitment = ?payload.note.note_commitment))]
+    async fn add_state_payload(&mut self, payload: StatePayload) {
         tracing::debug!(payload = ?StatePayloadDebugKind(&payload));
 
         // 0. Record an ABCI event for transaction indexing.
         //self.record(event::state_payload(&payload));
 
-        // 1. Insert it into the SCT, recording its note source, if any:
-        let position = self.add_sct_commitment(*payload.commitment(), payload.source().cloned())
+        // 1. Insert it into the SCT
+        self.add_sct_commitment(payload.note.note_commitment)
             .await
             // TODO: why? can't we exceed the number of state commitments in a block?
             .expect("inserting into the state commitment tree should not fail because we should budget commitments per block (currently unimplemented)");
 
-        // 2. Finally, record it to be inserted into the compact block:
-        let mut payloads: im::Vector<(tct::Position, StatePayload)> = self
+        // 2. Record its source in the JMT
+        self.put(
+            state_key::note_source(&payload.note.note_commitment),
+            payload.source,
+        );
+
+        // 3. Finally, record it to be inserted into the compact block:
+        let mut payloads: im::Vector<StatePayload> = self
             .object_get(state_key::pending_payloads())
             .unwrap_or_default();
-        payloads.push_back((position, payload));
+        payloads.push_back(payload);
         self.object_put(state_key::pending_payloads(), payloads);
     }
 

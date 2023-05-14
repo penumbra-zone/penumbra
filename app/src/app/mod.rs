@@ -10,10 +10,9 @@ use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_component::Component;
 use penumbra_ibc::component::IBCComponent;
 use penumbra_proto::DomainType;
-use penumbra_sct::component::SctManager;
+use penumbra_sct::component::{SctManager, StateReadExt as _, StateWriteExt as _};
 use penumbra_shielded_pool::component::ShieldedPool;
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
-use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, Event};
 use tendermint::validator::Update;
@@ -349,40 +348,6 @@ impl App {
 
         // Put the epoch root, if any, in the compact block
         compact_block.epoch_root = epoch_root;
-
-        // Pull out all the pending state commitments
-        use penumbra_compact_block::StatePayload;
-        let note_payloads = state
-            .object_get::<im::Vector<(tct::Position, penumbra_shielded_pool::StatePayload)>>(
-                penumbra_shielded_pool::state_key::pending_payloads(),
-            )
-            .unwrap_or_default()
-            .into_iter()
-            .map(|(pos, payload)| {
-                use penumbra_shielded_pool as sp;
-                let payload = match payload {
-                    sp::StatePayload::Note { note, source } => StatePayload::Note { note, source },
-                    sp::StatePayload::RolledUp(c) => StatePayload::RolledUp(c),
-                };
-                (pos, payload)
-            });
-        let swap_payloads = state
-            .object_get::<im::Vector<(tct::Position, crate::dex::StatePayload)>>(
-                crate::dex::state_key::pending_payloads(),
-            )
-            .unwrap_or_default()
-            .into_iter()
-            .map(|(pos, crate::dex::StatePayload { source, swap })| {
-                (pos, StatePayload::Swap { source, swap })
-            });
-
-        // Sort the payloads by position and put them in the compact block
-        let mut state_payloads = note_payloads.chain(swap_payloads).collect::<Vec<_>>();
-        state_payloads.sort_by_key(|(pos, _)| *pos);
-        compact_block.state_payloads = state_payloads
-            .into_iter()
-            .map(|(_, payload)| payload)
-            .collect();
 
         state.set_compact_block(compact_block.clone());
     }
