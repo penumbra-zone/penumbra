@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use penumbra_chain::params::FmdParameters;
-use penumbra_chain::NoteSource;
 use penumbra_chain::{
     component::{AppHash, StateReadExt as _, StateWriteExt as _},
     genesis,
@@ -10,8 +9,6 @@ use penumbra_chain::{
 use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_compact_block::CompactBlock;
 use penumbra_component::Component;
-use penumbra_crypto::dex::swap::SwapPayload;
-use penumbra_crypto::NotePayload;
 use penumbra_ibc::component::IBCComponent;
 use penumbra_proto::DomainType;
 use penumbra_sct::component::SctManager;
@@ -347,33 +344,33 @@ impl App {
         );
 
         // Pull out all the pending state payloads (note and swap)
+        use penumbra_compact_block::StatePayload;
         let note_payloads = state
-            .object_get::<im::Vector<(tct::Position, NotePayload, NoteSource)>>(
-                penumbra_shielded_pool::state_key::pending_notes(),
+            .object_get::<im::Vector<(tct::Position, penumbra_shielded_pool::StatePayload)>>(
+                penumbra_shielded_pool::state_key::pending_payloads(),
             )
             .unwrap_or_default()
             .into_iter()
-            .map(|(pos, note, source)| (pos, (note, source).into()));
-        let rolled_up_payloads = state
-            .object_get::<im::Vector<(tct::Position, tct::Commitment)>>(
-                penumbra_shielded_pool::state_key::pending_rolled_up_notes(),
-            )
-            .unwrap_or_default()
-            .into_iter()
-            .map(|(pos, commitment)| (pos, commitment.into()));
+            .map(|(pos, payload)| {
+                use penumbra_shielded_pool as sp;
+                let payload = match payload {
+                    sp::StatePayload::Note { note, source } => StatePayload::Note { note, source },
+                    sp::StatePayload::RolledUp(c) => StatePayload::RolledUp(c),
+                };
+                (pos, payload)
+            });
         let swap_payloads = state
-            .object_get::<im::Vector<(tct::Position, SwapPayload, NoteSource)>>(
+            .object_get::<im::Vector<(tct::Position, crate::dex::StatePayload)>>(
                 crate::dex::state_key::pending_payloads(),
             )
             .unwrap_or_default()
             .into_iter()
-            .map(|(pos, swap, source)| (pos, (swap, source).into()));
+            .map(|(pos, crate::dex::StatePayload { source, swap })| {
+                (pos, StatePayload::Swap { source, swap })
+            });
 
         // Sort the payloads by position and put them in the compact block
-        let mut state_payloads = note_payloads
-            .chain(rolled_up_payloads)
-            .chain(swap_payloads)
-            .collect::<Vec<_>>();
+        let mut state_payloads = note_payloads.chain(swap_payloads).collect::<Vec<_>>();
         state_payloads.sort_by_key(|(pos, _)| *pos);
         let state_payloads = state_payloads
             .into_iter()

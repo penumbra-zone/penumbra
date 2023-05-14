@@ -9,7 +9,7 @@ use penumbra_transaction::{action::Swap, IsAction};
 
 use crate::{
     action_handler::ActionHandler,
-    dex::{StateReadExt, StateWriteExt, SwapManager},
+    dex::{StatePayload, StateReadExt, StateWriteExt, SwapManager},
 };
 
 #[async_trait]
@@ -53,7 +53,10 @@ impl ActionHandler for Swap {
         // Record the swap commitment in the state.
         let source = state.object_get("source").unwrap_or_default();
         state
-            .add_swap_payload(self.body.payload.clone(), source)
+            .add_swap_state_payload(StatePayload {
+                source,
+                swap: Box::new(self.body.payload.clone()),
+            })
             .await;
 
         Ok(())

@@ -53,30 +53,6 @@ impl StatePayload {
     }
 }
 
-impl From<note::Commitment> for StatePayload {
-    fn from(commitment: note::Commitment) -> Self {
-        Self::RolledUp(commitment)
-    }
-}
-
-impl From<(NotePayload, NoteSource)> for StatePayload {
-    fn from((note, source): (NotePayload, NoteSource)) -> Self {
-        Self::Note {
-            note: Box::new(note),
-            source,
-        }
-    }
-}
-
-impl From<(SwapPayload, NoteSource)> for StatePayload {
-    fn from((swap, source): (SwapPayload, NoteSource)) -> Self {
-        Self::Swap {
-            swap: Box::new(swap),
-            source,
-        }
-    }
-}
-
 impl From<StatePayload> for pb::StatePayload {
     fn from(msg: StatePayload) -> Self {
         match msg {
