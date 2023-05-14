@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use penumbra_compact_block::StatePayload;
 use penumbra_component::ActionHandler;
 use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
@@ -32,7 +33,10 @@ impl ActionHandler for Output {
         let source = state.object_get("source").unwrap_or_default();
 
         state
-            .add_note_payload(self.body.note_payload.clone(), source)
+            .add_state_payload(StatePayload::Note {
+                source,
+                note: self.body.note_payload.clone(),
+            })
             .await;
 
         Ok(())

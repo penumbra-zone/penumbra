@@ -236,7 +236,7 @@ impl ActionHandler for ProposalSubmit {
 
         // Compute the effective starting TCT position for the proposal, by rounding the current
         // position down to the start of the block.
-        let Some(sct_position) = state.state_commitment_tree().await.position() else {
+        let Some(sct_position) = state.stub_state_commitment_tree().await.position() else {
             anyhow::bail!("state commitment tree is full");
         };
         // All proposals start are considered to start at the beginning of the block, because this
@@ -246,7 +246,9 @@ impl ActionHandler for ProposalSubmit {
 
         // Since there was a proposal submitted, ensure we track this so that clients can retain
         // state needed to vote as delegators
-        state.mark_proposal_started();
+        let mut compact_block = state.stub_compact_block();
+        compact_block.proposal_started = true;
+        state.stub_put_compact_block(compact_block);
 
         tracing::debug!(proposal = %proposal_id, "created proposal");
 

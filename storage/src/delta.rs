@@ -240,46 +240,6 @@ impl<S: StateRead> StateRead for StateDelta<S> {
         )
     }
 
-    fn object_type(&self, key: &'static str) -> Option<std::any::TypeId> {
-        // Check if we have a cache hit in the leaf cache.
-        if let Some(entry) = self
-            .leaf_cache
-            .read()
-            .as_ref()
-            .expect("delta must not have been applied")
-            .ephemeral_objects
-            .get(key)
-        {
-            // We have to explicitly call `Any::type_id(&**v)` here because this ensures that we are
-            // asking for the type of the `Any` *inside* the `Box<dyn Any>`, rather than the type of
-            // `Box<dyn Any>` itself.
-            return entry.as_ref().map(|v| std::any::Any::type_id(&**v));
-        }
-
-        // Iterate through the stack, top to bottom, to see if we have a cache hit.
-        for layer in self.layers.iter().rev() {
-            if let Some(entry) = layer
-                .read()
-                .as_ref()
-                .expect("delta must not have been applied")
-                .ephemeral_objects
-                .get(key)
-            {
-                // We have to explicitly call `Any::type_id(&**v)` here because this ensures that we are
-                // asking for the type of the `Any` *inside* the `Box<dyn Any>`, rather than the type of
-                // `Box<dyn Any>` itself.
-                return entry.as_ref().map(|v| std::any::Any::type_id(&**v));
-            }
-        }
-
-        // Fall through to the underlying store.
-        self.state
-            .read()
-            .as_ref()
-            .expect("delta must not have been applied")
-            .object_type(key)
-    }
-
     fn object_get<T: std::any::Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T> {
         // Check if we have a cache hit in the leaf cache.
         if let Some(entry) = self
@@ -290,12 +250,7 @@ impl<S: StateRead> StateRead for StateDelta<S> {
             .ephemeral_objects
             .get(key)
         {
-            return entry
-                .as_ref()
-                .map(|v| {
-                    v.downcast_ref().unwrap_or_else(|| panic!("unexpected type for key \"{key}\" in `StateDelta::object_get`: expected type {}", std::any::type_name::<T>()))
-                })
-                .cloned();
+            return entry.as_ref().and_then(|v| v.downcast_ref()).cloned();
         }
 
         // Iterate through the stack, top to bottom, to see if we have a cache hit.
@@ -307,11 +262,7 @@ impl<S: StateRead> StateRead for StateDelta<S> {
                 .ephemeral_objects
                 .get(key)
             {
-                return entry
-                    .as_ref()
-                    .map(|v| {
-                    v.downcast_ref().unwrap_or_else(|| panic!("unexpected type for key \"{key}\" in `StateDelta::object_get`: expected type {}", std::any::type_name::<T>()))
-                }).cloned();
+                return entry.as_ref().and_then(|v| v.downcast_ref()).cloned();
             }
         }
 
@@ -414,15 +365,7 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
             .insert(key, Some(value));
     }
 
-    fn object_put<T: Clone + Any + Send + Sync>(&mut self, key: &'static str, value: T) {
-        if let Some(previous_type) = self.object_type(key) {
-            if std::any::TypeId::of::<T>() != previous_type {
-                panic!(
-                    "unexpected type for key \"{key}\" in `StateDelta::object_put`: expected type {expected}",
-                    expected = std::any::type_name::<T>(),
-                );
-            }
-        }
+    fn object_put<T: Any + Send + Sync>(&mut self, key: &'static str, value: T) {
         self.leaf_cache
             .write()
             .as_mut()

@@ -3,6 +3,7 @@ use std::{collections::BTreeMap, sync::Arc};
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::component::StateReadExt as _;
+use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_component::Component;
 use penumbra_crypto::{
     dex::{execution::SwapExecution, BatchSwapOutputData, TradingPair},
@@ -116,19 +117,15 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         let height = output_data.height;
         let trading_pair = output_data.trading_pair;
         self.put(state_key::output_data(height, trading_pair), output_data);
-
         // Store the swap execution in the state as well.
         self.put(
             state_key::swap_execution(height, trading_pair),
             swap_execution,
         );
-
-        // ... and also add it to the set in the compact block to be pushed out to clients.
-        let mut outputs: im::OrdMap<TradingPair, BatchSwapOutputData> = self
-            .object_get(state_key::pending_outputs())
-            .unwrap_or_default();
-        outputs.insert(trading_pair, output_data);
-        self.object_put(state_key::pending_outputs(), outputs);
+        // ... and also add it to the compact block to be pushed out to clients.
+        let mut compact_block = self.stub_compact_block();
+        compact_block.swap_outputs.insert(trading_pair, output_data);
+        self.stub_put_compact_block(compact_block);
     }
 
     fn put_swap_flow(&mut self, trading_pair: &TradingPair, swap_flow: SwapFlow) {

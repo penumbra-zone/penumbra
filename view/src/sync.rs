@@ -82,10 +82,10 @@ pub async fn scan_block(
     for payload in state_payloads.iter() {
         match payload {
             StatePayload::Note { note, .. } => {
-                note_decryptions.push(trial_decrypt_note((**note).clone()));
+                note_decryptions.push(trial_decrypt_note(note.clone()));
             }
             StatePayload::Swap { swap, .. } => {
-                swap_decryptions.push(trial_decrypt_swap((**swap).clone()));
+                swap_decryptions.push(trial_decrypt_swap(swap.clone()));
             }
             StatePayload::RolledUp(commitment) => unknown_commitments.push(*commitment),
         }

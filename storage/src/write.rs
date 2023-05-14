@@ -17,12 +17,7 @@ pub trait StateWrite: StateRead + Send + Sync {
     fn nonconsensus_delete(&mut self, key: Vec<u8>);
 
     /// Puts an object into the ephemeral object store with the given key.
-    ///
-    /// # Panics
-    ///
-    /// If the object is already present in the store, but its type is not the same as the type of
-    /// `value`.
-    fn object_put<T: Clone + Any + Send + Sync>(&mut self, key: &'static str, value: T);
+    fn object_put<T: Any + Send + Sync>(&mut self, key: &'static str, value: T);
 
     /// Deletes a key from the ephemeral object store.
     fn object_delete(&mut self, key: &'static str);
@@ -53,7 +48,7 @@ impl<'a, S: StateWrite + Send + Sync> StateWrite for &'a mut S {
         (**self).nonconsensus_put_raw(key, value)
     }
 
-    fn object_put<T: Clone + Any + Send + Sync>(&mut self, key: &'static str, value: T) {
+    fn object_put<T: Any + Send + Sync>(&mut self, key: &'static str, value: T) {
         (**self).object_put(key, value)
     }
 

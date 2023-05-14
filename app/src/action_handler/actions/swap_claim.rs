@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::component::StateReadExt as _;
+use penumbra_compact_block::StatePayload;
 use penumbra_crypto::TransactionContext;
 use penumbra_shielded_pool::component::{NoteManager, StateReadExt as _};
 use penumbra_storage::{StateRead, StateWrite};
@@ -70,10 +71,10 @@ impl ActionHandler for SwapClaim {
         let source = state.object_get("source").unwrap_or_default();
 
         state
-            .add_rolled_up_payload(self.body.output_1_commitment)
+            .add_state_payload(StatePayload::RolledUp(self.body.output_1_commitment))
             .await;
         state
-            .add_rolled_up_payload(self.body.output_2_commitment)
+            .add_state_payload(StatePayload::RolledUp(self.body.output_2_commitment))
             .await;
 
         state.spend_nullifier(self.body.nullifier, source).await;

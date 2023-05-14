@@ -1,3 +1,3 @@
 mod view;
 
-pub use view::{SctManager, StateReadExt};
+pub use view::{StateReadExt, StateWriteExt};

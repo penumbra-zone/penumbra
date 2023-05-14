@@ -2,29 +2,24 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use penumbra_chain::params::FmdParameters;
-use penumbra_chain::NoteSource;
 use penumbra_chain::{
     component::{AppHash, StateReadExt as _, StateWriteExt as _},
     genesis,
 };
 use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
-use penumbra_compact_block::CompactBlock;
 use penumbra_component::Component;
-use penumbra_crypto::dex::swap::SwapPayload;
-use penumbra_crypto::NotePayload;
 use penumbra_ibc::component::IBCComponent;
 use penumbra_proto::DomainType;
-use penumbra_sct::component::SctManager;
-use penumbra_shielded_pool::component::{NoteManager, ShieldedPool};
+use penumbra_sct::component::{StateReadExt as _, StateWriteExt as _};
+use penumbra_shielded_pool::component::ShieldedPool;
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
-use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, Event};
 use tendermint::validator::Update;
 use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
-use crate::dex::{Dex, SwapManager};
+use crate::dex::Dex;
 use crate::governance::{Governance, StateReadExt as _};
 use crate::stake::component::{Staking, ValidatorUpdates};
 
@@ -120,8 +115,18 @@ impl App {
         Governance::init_chain(&mut state_tx, &()).await;
         ShieldedPool::init_chain(&mut state_tx, app_state).await;
 
-        // Create a synthetic height-zero block
-        App::finish_block(&mut state_tx).await;
+        let mut compact_block = state_tx.stub_compact_block();
+
+        // Hard-coded to zero because we are in the genesis block
+        // Tendermint starts blocks at 1, so this is a "phantom" compact block
+        compact_block.height = 0;
+
+        // Add current FMD parameters to the initial block.
+        compact_block.fmd_parameters = Some(state_tx.get_current_fmd_parameters().await.unwrap());
+
+        state_tx.stub_put_compact_block(compact_block);
+
+        App::finish_sct_block(&mut state_tx).await;
 
         state_tx.apply();
     }
@@ -283,7 +288,7 @@ impl App {
             let mut state_tx = Arc::try_unwrap(arc_state_tx)
                 .expect("components did not retain copies of shared state");
 
-            App::finish_epoch(&mut state_tx).await;
+            App::finish_sct_epoch(&mut state_tx).await;
 
             // set the epoch for the next block
             state_tx.put_epoch_by_height(
@@ -298,108 +303,71 @@ impl App {
         } else {
             // set the epoch for the next block
             state_tx.put_epoch_by_height(current_height + 1, current_epoch);
-            App::finish_block(&mut state_tx).await;
+            App::finish_sct_block(&mut state_tx).await;
 
             self.apply(state_tx)
         }
     }
 
     /// Finish an SCT block and use the resulting roots to finalize the current `CompactBlock`.
-    pub(crate) async fn finish_block<S: StateWrite>(state: S) {
-        Self::finish_compact_block(state, false).await;
+    pub(crate) async fn finish_sct_block<S: StateWrite>(state: S) {
+        Self::finish_sct_inner(state, false).await;
     }
 
     /// Finish an SCT block and epoch and use the resulting roots to finalize the current `CompactBlock`.
-    pub(crate) async fn finish_epoch<S: StateWrite>(state: S) {
-        Self::finish_compact_block(state, true).await;
+    pub(crate) async fn finish_sct_epoch<S: StateWrite>(state: S) {
+        Self::finish_sct_inner(state, true).await;
     }
 
-    // TODO: move this into the compact block crate as a method in its high-level state-write trait
-    // once the dex is separated out into its separate crate
-    async fn finish_compact_block<S: StateWrite>(mut state: S, end_epoch: bool) {
-        // Find out what our block height is (this is set even during the genesis block)
+    async fn finish_sct_inner<S: StateWrite>(mut state: S, end_epoch: bool) {
         let height = state
             .get_block_height()
             .await
-            .expect("height of block is always set");
+            .expect("block height should be set");
+
+        // Grab the compact block and SCT from the state to do final processing.
+        let mut compact_block = state.stub_compact_block();
+        let mut state_commitment_tree = state.stub_state_commitment_tree().await;
+
+        // Set the height of the compact block.
+        compact_block.height = height;
 
         // Check to see if the chain parameters have changed, and include them in the compact block
         // if they have (this is signaled by `penumbra_chain::StateWriteExt::put_chain_params`):
-        let chain_parameters = if state.chain_params_changed() || height == 0 {
-            Some(state.get_chain_params().await.unwrap())
+        if state.chain_params_changed() {
+            compact_block.chain_parameters = Some(state.get_chain_params().await.unwrap());
+        }
+
+        // Close the block in the SCT
+        let block_root = state_commitment_tree
+            .end_block()
+            .expect("ending a block in the state commitment tree can never fail");
+
+        // Put the block root in the compact block
+        compact_block.block_root = block_root;
+
+        // If the block ends an epoch, also close the epoch in the SCT
+        let epoch_root = if end_epoch {
+            let epoch_root = state_commitment_tree
+                .end_epoch()
+                .expect("ending an epoch in the state commitment tree can never fail");
+            Some(epoch_root)
         } else {
             None
         };
+        // Put the epoch root, if any, in the compact block
+        compact_block.epoch_root = epoch_root;
 
-        let fmd_parameters = if height == 0 {
-            Some(state.get_current_fmd_parameters().await.unwrap())
-        } else {
-            None
-        };
+        state.set_compact_block(compact_block.clone());
 
-        // Check to see if a governance proposal has started, and mark this fact if so.
-        let proposal_started = state.proposal_started();
-
-        // End the block in the SCT and record the block root, epoch root if applicable, and the SCT
-        // itself, storing the resultant block and epoch root if applicable in the compact block.
-        let (block_root, epoch_root) = state.end_sct_block(end_epoch).await.expect(
-            "end_sct_block should succeed because we should make sure epochs don't last too long",
-        );
-
-        // Pull out all the pending state payloads (note and swap)
-        let note_payloads = state
-            .pending_note_payloads()
-            .await
-            .into_iter()
-            .map(|(pos, note, source)| (pos, (note, source).into()));
-        let rolled_up_payloads = state
-            .pending_rolled_up_payloads()
-            .await
-            .into_iter()
-            .map(|(pos, commitment)| (pos, commitment.into()));
-        let swap_payloads = state
-            .pending_swap_payloads()
-            .await
-            .into_iter()
-            .map(|(pos, swap, source)| (pos, (swap, source).into()));
-
-        // Sort the payloads by position and put them in the compact block
-        let mut state_payloads = note_payloads
-            .chain(rolled_up_payloads)
-            .chain(swap_payloads)
-            .collect::<Vec<_>>();
-        state_payloads.sort_by_key(|(pos, _)| *pos);
-        let state_payloads = state_payloads
-            .into_iter()
-            .map(|(_, payload)| payload)
-            .collect();
-
-        // Gather the swap outputs
-        let swap_outputs = state
-            .object_get::<im::OrdMap<_, _>>(crate::dex::state_key::pending_outputs())
-            .unwrap_or_default()
-            .into_iter()
-            .collect();
-
-        // Add all the pending nullifiers to the compact block
-        let nullifiers = state
-            .object_get::<im::Vector<_>>(penumbra_shielded_pool::state_key::pending_nullifiers())
-            .unwrap_or_default()
-            .into_iter()
-            .collect();
-
-        // Output the aggregated final compact block
-        state.set_compact_block(CompactBlock {
-            height,
-            state_payloads,
-            nullifiers,
-            block_root,
-            epoch_root,
-            proposal_started,
-            swap_outputs,
-            fmd_parameters,
-            chain_parameters,
-        });
+        state
+            .write_sct(
+                compact_block.height,
+                state_commitment_tree,
+                block_root,
+                epoch_root,
+            )
+            .await;
     }
 
     /// Commits the application state to persistent storage,
