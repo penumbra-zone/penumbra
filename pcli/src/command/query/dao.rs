@@ -35,16 +35,14 @@ impl DaoCmd {
         });
 
         let mut client = app.specific_client().await?;
+        let asset_cache = app.view().assets().await?;
         if let Some(asset_id) = asset_id {
             let key = state_key::balance_for_asset(asset_id);
             let amount: Amount = client.key_domain(&key).await?;
             let value = Value { asset_id, amount };
-            let string = format!("{:?}", value);
+            let string = value.format(&asset_cache);
             println!("{string}");
         } else {
-            // anyhow::bail!("printing the entire DAO balance is not yet supported; try specifying
-            // an asset ID or denomination");
-            let asset_cache = app.view().assets().await?;
             let prefix = dao::state_key::all_assets_balance();
             let results: Vec<_> = client.prefix_domain(prefix).await?.try_collect().await?;
             println!("DAO balance ({} unique assets):", results.len());
