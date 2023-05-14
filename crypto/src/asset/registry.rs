@@ -239,7 +239,8 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                     "wtest_usd".to_string(),
                     vec![
                         denom::UnitData {
-                            exponent: 18,
+                            // TODO(erwan): temporarily reduced to 1e6 (see #2560)
+                            exponent: 6,
                             denom: "test_usd".to_string(),
                         },
                     ],
