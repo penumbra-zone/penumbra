@@ -20,14 +20,3 @@ pub fn note_source(note_commitment: &note::Commitment) -> String {
 pub fn spent_nullifier_lookup(nullifier: &Nullifier) -> String {
     format!("shielded_pool/spent_nullifiers/{nullifier}")
 }
-
-// State keys used to temporarily store payloads and nullifiers to be inserted into the compact
-// block
-
-pub fn pending_payloads() -> &'static str {
-    "shielded_pool/pending_payloads"
-}
-
-pub fn pending_nullifiers() -> &'static str {
-    "shielded_pool/pending_nullifiers"
-}

@@ -327,7 +327,7 @@ impl App {
 
         // Grab the compact block and SCT from the state to do final processing.
         let mut compact_block = state.stub_compact_block();
-        let mut state_commitment_tree = state.state_commitment_tree().await;
+        let mut state_commitment_tree = state.stub_state_commitment_tree().await;
 
         // Set the height of the compact block.
         compact_block.height = height;

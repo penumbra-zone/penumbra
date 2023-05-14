@@ -1,29 +1,20 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::{component::StateReadExt as _, NoteSource, SpendInfo};
-use penumbra_crypto::{Address, Note, NotePayload, Nullifier, Rseed, Value};
+use penumbra_compact_block::{
+    component::{StateReadExt as _, StateWriteExt as _},
+    StatePayload, StatePayloadDebugKind,
+};
+use penumbra_crypto::{Address, Note, Nullifier, Rseed, Value};
 use penumbra_proto::StateWriteProto;
-use penumbra_sct::component::{SctManager as _, StateReadExt as _};
+use penumbra_sct::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_storage::StateWrite;
+use penumbra_tct as tct;
 use tracing::instrument;
 
 use crate::{event, state_key};
 
 use super::SupplyWrite;
-
-#[derive(Clone)]
-pub struct StatePayload {
-    pub source: NoteSource,
-    pub note: NotePayload,
-}
-
-pub struct StatePayloadDebugKind<'a>(pub &'a StatePayload);
-
-impl<'a> std::fmt::Debug for StatePayloadDebugKind<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Note").finish_non_exhaustive()
-    }
-}
 
 /// Manages the addition of new notes to the chain state.
 #[async_trait]
@@ -52,7 +43,7 @@ pub trait NoteManager: StateWrite {
         // is very slow, so instead we hash the current position.
 
         let position: u64 = self
-            .state_commitment_tree()
+            .stub_state_commitment_tree()
             .await
             .position()
             .expect("state commitment tree is not full")
@@ -70,7 +61,7 @@ pub trait NoteManager: StateWrite {
         // Now record the note and update the total supply:
         self.update_token_supply(&value.asset_id, value.amount.value() as i128)
             .await?;
-        self.add_state_payload(StatePayload {
+        self.add_state_payload(StatePayload::Note {
             note: note.payload(),
             source,
         })
@@ -79,7 +70,7 @@ pub trait NoteManager: StateWrite {
         Ok(())
     }
 
-    #[instrument(skip(self, payload), fields(commitment = ?payload.note.note_commitment))]
+    #[instrument(skip(self, payload), fields(commitment = ?payload.commitment()))]
     async fn add_state_payload(&mut self, payload: StatePayload) {
         tracing::debug!(payload = ?StatePayloadDebugKind(&payload));
 
@@ -87,23 +78,21 @@ pub trait NoteManager: StateWrite {
         //self.record(event::state_payload(&payload));
 
         // 1. Insert it into the SCT
-        self.add_sct_commitment(payload.note.note_commitment)
-            .await
+        let mut sct = self.stub_state_commitment_tree().await;
+        sct.insert(tct::Witness::Forget, *payload.commitment())
             // TODO: why? can't we exceed the number of state commitments in a block?
-            .expect("inserting into the state commitment tree should not fail because we should budget commitments per block (currently unimplemented)");
+            .expect("inserting into the state commitment tree never fails");
+        self.stub_put_state_commitment_tree(&sct);
 
-        // 2. Record its source in the JMT
-        self.put(
-            state_key::note_source(&payload.note.note_commitment),
-            payload.source,
-        );
+        // 2. Record its source in the JMT, if present
+        if let Some(source) = payload.source() {
+            self.put(state_key::note_source(payload.commitment()), *source);
+        }
 
-        // 3. Finally, record it to be inserted into the compact block:
-        let mut payloads: im::Vector<StatePayload> = self
-            .object_get(state_key::pending_payloads())
-            .unwrap_or_default();
-        payloads.push_back(payload);
-        self.object_put(state_key::pending_payloads(), payloads);
+        // 3. Finally, record it in the pending compact block.
+        let mut compact_block = self.stub_compact_block();
+        compact_block.state_payloads.push(payload);
+        self.stub_put_compact_block(compact_block);
     }
 
     #[instrument(skip(self, source))]
@@ -125,12 +114,9 @@ pub trait NoteManager: StateWrite {
         // Also record an ABCI event for transaction indexing.
         self.record(event::spend(&nullifier));
 
-        // Record the nullifier to be inserted into the compact block
-        let mut nullifiers: im::Vector<Nullifier> = self
-            .object_get(state_key::pending_nullifiers())
-            .unwrap_or_default();
-        nullifiers.push_back(nullifier);
-        self.object_put(state_key::pending_nullifiers(), nullifiers);
+        let mut compact_block = self.stub_compact_block();
+        compact_block.nullifiers.push(nullifier);
+        self.stub_put_compact_block(compact_block);
     }
 }
 
