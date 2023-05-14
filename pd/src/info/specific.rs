@@ -24,8 +24,7 @@ use penumbra_proto::{
     },
     StateReadProto as _,
 };
-use penumbra_sct::component::StateReadExt as _;
-use penumbra_shielded_pool::component::SupplyRead as _;
+use penumbra_shielded_pool::component::{StateReadExt as _, SupplyRead as _};
 
 use penumbra_storage::StateRead;
 use proto::client::v1alpha1::BatchSwapOutputDataResponse;

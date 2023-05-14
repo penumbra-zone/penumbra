@@ -49,7 +49,7 @@ impl ShieldedPool {
             ShieldedPool::BlockAnchor { height } => sct_state_key::block_anchor_by_height(*height),
             ShieldedPool::EpochAnchor { epoch } => sct_state_key::epoch_anchor_by_index(*epoch),
             ShieldedPool::CompactBlock { height } => cb_state_key::compact_block(*height),
-            ShieldedPool::Commitment { commitment } => sct_state_key::note_source(commitment),
+            ShieldedPool::Commitment { commitment } => state_key::note_source(commitment),
             ShieldedPool::Nullifier { nullifier } => state_key::spent_nullifier_lookup(nullifier),
         }
     }
