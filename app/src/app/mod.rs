@@ -10,7 +10,7 @@ use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_component::Component;
 use penumbra_ibc::component::IBCComponent;
 use penumbra_proto::DomainType;
-use penumbra_sct::component::{SctManager, StateReadExt as _, StateWriteExt as _};
+use penumbra_sct::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_shielded_pool::component::ShieldedPool;
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
 use penumbra_transaction::Transaction;
@@ -325,14 +325,9 @@ impl App {
             .await
             .expect("block height should be set");
 
-        // End the block in the SCT and record the block root, epoch root if applicable, and the SCT itself
-        let (block_root, epoch_root) = state
-            .end_sct_block(end_epoch)
-            .await
-            .expect("end_sct_block should succeed");
-
-        // Grab the compact block from the state to do final processing.
+        // Grab the compact block and SCT from the state to do final processing.
         let mut compact_block = state.stub_compact_block();
+        let mut state_commitment_tree = state.state_commitment_tree().await;
 
         // Set the height of the compact block.
         compact_block.height = height;
@@ -343,13 +338,36 @@ impl App {
             compact_block.chain_parameters = Some(state.get_chain_params().await.unwrap());
         }
 
+        // Close the block in the SCT
+        let block_root = state_commitment_tree
+            .end_block()
+            .expect("ending a block in the state commitment tree can never fail");
+
         // Put the block root in the compact block
         compact_block.block_root = block_root;
 
+        // If the block ends an epoch, also close the epoch in the SCT
+        let epoch_root = if end_epoch {
+            let epoch_root = state_commitment_tree
+                .end_epoch()
+                .expect("ending an epoch in the state commitment tree can never fail");
+            Some(epoch_root)
+        } else {
+            None
+        };
         // Put the epoch root, if any, in the compact block
         compact_block.epoch_root = epoch_root;
 
         state.set_compact_block(compact_block.clone());
+
+        state
+            .write_sct(
+                compact_block.height,
+                state_commitment_tree,
+                block_root,
+                epoch_root,
+            )
+            .await;
     }
 
     /// Commits the application state to persistent storage,
