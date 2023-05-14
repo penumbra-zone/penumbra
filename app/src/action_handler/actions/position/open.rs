@@ -22,6 +22,9 @@ impl ActionHandler for PositionOpen {
         //  + the trading function doesn't specify a cyclic pair,
         //  + the fee is <=50%.
         self.position.check_stateless()?;
+        // This is a temporary check that limits DEX values to 60 bits.
+        // To lift this check, delete this line and the method it invokes.
+        self.position.temporary_check()?;
         Ok(())
     }
 
