@@ -24,13 +24,8 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn state_commitment_tree(&self) -> tct::Tree {
-        // If we have a cached tree, use that.
-        if let Some(tree) = self.object_get(state_key::cached_state_commitment_tree()) {
-            return tree;
-        }
-
         match self
-            .nonconsensus_get_raw(state_key::state_commitment_tree().as_bytes())
+            .nonconsensus_get_raw(state_key::stub_state_commitment_tree().as_bytes())
             .await
             .unwrap()
         {
@@ -75,7 +70,7 @@ pub trait SctManager: StateWrite {
         // Record in the SCT
         let mut tree = self.state_commitment_tree().await;
         let position = tree.insert(tct::Witness::Forget, commitment)?;
-        self.put_state_commitment_tree(tree);
+        self.put_state_commitment_tree(&tree);
 
         // Record the note source, if any
         if let Some(source) = source {
@@ -124,24 +119,12 @@ impl<T: StateWrite + ?Sized> SctManager for T {}
 //#[async_trait(?Send)]
 #[async_trait]
 trait StateWriteExt: StateWrite {
-    // Set the state commitment tree in memory, but without committing to it in the nonconsensus
-    // storage (very cheap).
-    fn put_state_commitment_tree(&mut self, tree: tct::Tree) {
-        self.object_put(state_key::cached_state_commitment_tree(), tree);
-    }
-
-    // Serialize the current state commitment tree to storage (slightly more expensive, should only
-    // happen once a block).
-    async fn write_state_commitment_tree(&mut self) {
-        // If the cached tree is dirty, flush it to storage
-        if let Some(tree) = self.object_get::<tct::Tree>(state_key::cached_state_commitment_tree())
-        {
-            let bytes = bincode::serialize(&tree).unwrap();
-            self.nonconsensus_put_raw(
-                state_key::state_commitment_tree().as_bytes().to_vec(),
-                bytes,
-            );
-        }
+    fn put_state_commitment_tree(&mut self, tree: &tct::Tree) {
+        let bytes = bincode::serialize(&tree).unwrap();
+        self.nonconsensus_put_raw(
+            state_key::stub_state_commitment_tree().as_bytes().to_vec(),
+            bytes,
+        );
     }
 
     fn set_sct_anchor(&mut self, height: u64, sct_anchor: tct::Root) {
@@ -181,8 +164,7 @@ trait StateWriteExt: StateWrite {
             self.set_sct_epoch_anchor(index, epoch_root);
         }
 
-        self.put_state_commitment_tree(sct);
-        self.write_state_commitment_tree().await;
+        self.put_state_commitment_tree(&sct);
     }
 }
 
