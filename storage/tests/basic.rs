@@ -76,6 +76,8 @@ async fn simple_flow() -> anyhow::Result<()> {
     assert_eq!(tx00.object_get("c/ab"), Some(1u64));
     assert_eq!(tx00.object_get("c/ac"), Some(2u64));
     assert_eq!(tx00.object_get("c/ad"), Some(3u64));
+    //     Present in tx00 object store but requested with wrong type
+    assert_eq!(tx00.object_get::<bool>("c/aa"), None);
     //     Missing in tx00 object store
     assert_eq!(tx00.object_get::<bool>("nonexist"), None);
     //     Nonconsensus range checks
@@ -108,6 +110,8 @@ async fn simple_flow() -> anyhow::Result<()> {
     assert_eq!(state_init.object_get("c/ab"), Some(1u64));
     assert_eq!(state_init.object_get("c/ac"), Some(2u64));
     assert_eq!(state_init.object_get("c/ad"), Some(3u64));
+    //     Present in state_init object store but requested with wrong type
+    assert_eq!(state_init.object_get::<bool>("c/aa"), None);
     //     Missing in state_init object store
     assert_eq!(state_init.object_get::<bool>("nonexist"), None);
     //     Nonconsensus range checks
