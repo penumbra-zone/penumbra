@@ -247,22 +247,23 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 )
             }) as for<'r> fn(&'r str) -> _,
         )
-        .add_asset(
-            "^wtest_eth$",
-            &["^test_eth$"],
-            (|data: &str| {
-                assert!(data.is_empty());
-                denom::Inner::new(
-                    "wtest_eth".to_string(),
-                    vec![
-                        denom::UnitData {
-                            exponent: 18,
-                            denom: "test_eth".to_string(),
-                        },
-                    ],
-                )
-            }) as for<'r> fn(&'r str) -> _,
-        )
+        // TODO(erwan): temporarily disabling `test_eth` (see #2560)
+        //.add_asset(
+        //    "^wtest_eth$",
+        //    &["^test_eth$"],
+        //    (|data: &str| {
+        //        assert!(data.is_empty());
+        //        denom::Inner::new(
+        //            "wtest_eth".to_string(),
+        //            vec![
+        //                denom::UnitData {
+        //                    exponent: 18,
+        //                    denom: "test_eth".to_string(),
+        //                },
+        //            ],
+        //        )
+        //    }) as for<'r> fn(&'r str) -> _,
+        //)
         .add_asset(
             "^test_sat$",
             &["^test_btc$"],
