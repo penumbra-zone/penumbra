@@ -111,11 +111,19 @@ service SpecificQueryService {
   rpc ValidatorStatus(ValidatorStatusRequest) returns (ValidatorStatusResponse);
   rpc ValidatorPenalty(ValidatorPenaltyRequest) returns (ValidatorPenaltyResponse);
   rpc NextValidatorRate(NextValidatorRateRequest) returns (NextValidatorRateResponse);
+
   rpc BatchSwapOutputData(BatchSwapOutputDataRequest) returns (BatchSwapOutputDataResponse);
   rpc SwapExecution(SwapExecutionRequest) returns (SwapExecutionResponse);
+  rpc ArbExecution(ArbExecutionRequest) returns (ArbExecutionResponse);
+
+  rpc SwapExecutions(SwapExecutionsRequest) returns (stream SwapExecutionsResponse);
+  rpc ArbExecutions(ArbExecutionsResponse) returns (stream ArbExecutionsResponse);
+
   rpc LiquidityPositions(LiquidityPositionsRequest) returns (stream LiquidityPositionsResponse);
   rpc LiquidityPositionById(LiquidityPositionByIdRequest) returns (LiquidityPositionByIdResponse);
+  rpc LiquidityPositionsById(LiquidityPositionsByIdRequest) returns (stream LiquidityPositionsByIdResponse);
   rpc LiquidityPositionsByPrice(LiquidityPositionsByPriceRequest) returns (stream LiquidityPositionsByPriceResponse);
+
   rpc Spread(SpreadRequest) returns (SpreadResponse);
   rpc AssetInfo(AssetInfoRequest) returns (AssetInfoResponse);
   rpc ProposalInfo(ProposalInfoRequest) returns (ProposalInfoResponse);
@@ -196,6 +204,48 @@ message SwapExecutionResponse {
   core.dex.v1alpha1.SwapExecution swap_execution = 1;
 }
 
+message ArbExecutionRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  uint64 height = 2;
+}
+
+message ArbExecutionResponse {
+  core.dex.v1alpha1.SwapExecution swap_execution = 1;
+  uint64 height = 2;
+}
+
+message SwapExecutionsRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // If present, only return swap executions occurring after the given height.
+  uint64 start_height = 2;
+  // If present, only return swap executions occurring before the given height.
+  uint64 end_height = 3;
+  // If present, filter swap executions by the given trading pair.
+  core.dex.v1alpha1.TradingPair trading_pair = 4;
+}
+
+message SwapExecutionsResponse {
+  core.dex.v1alpha1.SwapExecution swap_execution = 1;
+  uint64 height = 2;
+  core.dex.v1alpha1.TradingPair trading_pair = 3;
+}
+
+message ArbExecutionsRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // If present, only return arb executions occurring after the given height.
+  uint64 start_height = 2;
+  // If present, only return arb executions occurring before the given height.
+  uint64 end_height = 3;
+}
+
+message ArbExecutionsResponse {
+  core.dex.v1alpha1.SwapExecution swap_execution = 1;
+  uint64 height = 2;
+}
+
 // Requests all liquidity position data from the view service.
 message LiquidityPositionsRequest {
   // The expected chain id (empty string if no expectation).
@@ -205,10 +255,6 @@ message LiquidityPositionsRequest {
 }
 
 message LiquidityPositionsResponse {
-  core.dex.v1alpha1.Position data = 1;
-}
-
-message LiquidityPositionByIdResponse {
   core.dex.v1alpha1.Position data = 1;
 }
 
@@ -231,6 +277,20 @@ message LiquidityPositionByIdRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
   core.dex.v1alpha1.PositionId position_id = 2;
+}
+
+message LiquidityPositionByIdResponse {
+  core.dex.v1alpha1.Position data = 1;
+}
+
+message LiquidityPositionsByIdRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  repeated core.dex.v1alpha1.PositionId position_id = 2;
+}
+
+message LiquidityPositionsByIdResponse {
+  core.dex.v1alpha1.Position data = 1;
 }
 
 message SpreadRequest {

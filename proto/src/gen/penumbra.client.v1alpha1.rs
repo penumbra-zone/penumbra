@@ -225,6 +225,80 @@ pub struct SwapExecutionResponse {
         super::super::core::dex::v1alpha1::SwapExecution,
     >,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ArbExecutionRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    #[prost(uint64, tag = "2")]
+    pub height: u64,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ArbExecutionResponse {
+    #[prost(message, optional, tag = "1")]
+    pub swap_execution: ::core::option::Option<
+        super::super::core::dex::v1alpha1::SwapExecution,
+    >,
+    #[prost(uint64, tag = "2")]
+    pub height: u64,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SwapExecutionsRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    /// If present, only return swap executions occurring after the given height.
+    #[prost(uint64, tag = "2")]
+    pub start_height: u64,
+    /// If present, only return swap executions occurring before the given height.
+    #[prost(uint64, tag = "3")]
+    pub end_height: u64,
+    /// If present, filter swap executions by the given trading pair.
+    #[prost(message, optional, tag = "4")]
+    pub trading_pair: ::core::option::Option<
+        super::super::core::dex::v1alpha1::TradingPair,
+    >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SwapExecutionsResponse {
+    #[prost(message, optional, tag = "1")]
+    pub swap_execution: ::core::option::Option<
+        super::super::core::dex::v1alpha1::SwapExecution,
+    >,
+    #[prost(uint64, tag = "2")]
+    pub height: u64,
+    #[prost(message, optional, tag = "3")]
+    pub trading_pair: ::core::option::Option<
+        super::super::core::dex::v1alpha1::TradingPair,
+    >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ArbExecutionsRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    /// If present, only return arb executions occurring after the given height.
+    #[prost(uint64, tag = "2")]
+    pub start_height: u64,
+    /// If present, only return arb executions occurring before the given height.
+    #[prost(uint64, tag = "3")]
+    pub end_height: u64,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ArbExecutionsResponse {
+    #[prost(message, optional, tag = "1")]
+    pub swap_execution: ::core::option::Option<
+        super::super::core::dex::v1alpha1::SwapExecution,
+    >,
+    #[prost(uint64, tag = "2")]
+    pub height: u64,
+}
 /// Requests all liquidity position data from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -239,12 +313,6 @@ pub struct LiquidityPositionsRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionsResponse {
-    #[prost(message, optional, tag = "1")]
-    pub data: ::core::option::Option<super::super::core::dex::v1alpha1::Position>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct LiquidityPositionByIdResponse {
     #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<super::super::core::dex::v1alpha1::Position>,
 }
@@ -281,6 +349,29 @@ pub struct LiquidityPositionByIdRequest {
     pub position_id: ::core::option::Option<
         super::super::core::dex::v1alpha1::PositionId,
     >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LiquidityPositionByIdResponse {
+    #[prost(message, optional, tag = "1")]
+    pub data: ::core::option::Option<super::super::core::dex::v1alpha1::Position>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LiquidityPositionsByIdRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "2")]
+    pub position_id: ::prost::alloc::vec::Vec<
+        super::super::core::dex::v1alpha1::PositionId,
+    >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LiquidityPositionsByIdResponse {
+    #[prost(message, optional, tag = "1")]
+    pub data: ::core::option::Option<super::super::core::dex::v1alpha1::Position>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -976,6 +1067,69 @@ pub mod specific_query_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        pub async fn arb_execution(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ArbExecutionRequest>,
+        ) -> Result<tonic::Response<super::ArbExecutionResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.SpecificQueryService/ArbExecution",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        pub async fn swap_executions(
+            &mut self,
+            request: impl tonic::IntoRequest<super::SwapExecutionsRequest>,
+        ) -> Result<
+            tonic::Response<tonic::codec::Streaming<super::SwapExecutionsResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.SpecificQueryService/SwapExecutions",
+            );
+            self.inner.server_streaming(request.into_request(), path, codec).await
+        }
+        pub async fn arb_executions(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ArbExecutionsResponse>,
+        ) -> Result<
+            tonic::Response<tonic::codec::Streaming<super::ArbExecutionsResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.SpecificQueryService/ArbExecutions",
+            );
+            self.inner.server_streaming(request.into_request(), path, codec).await
+        }
         pub async fn liquidity_positions(
             &mut self,
             request: impl tonic::IntoRequest<super::LiquidityPositionsRequest>,
@@ -1019,6 +1173,30 @@ pub mod specific_query_service_client {
                 "/penumbra.client.v1alpha1.SpecificQueryService/LiquidityPositionById",
             );
             self.inner.unary(request.into_request(), path, codec).await
+        }
+        pub async fn liquidity_positions_by_id(
+            &mut self,
+            request: impl tonic::IntoRequest<super::LiquidityPositionsByIdRequest>,
+        ) -> Result<
+            tonic::Response<
+                tonic::codec::Streaming<super::LiquidityPositionsByIdResponse>,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.SpecificQueryService/LiquidityPositionsById",
+            );
+            self.inner.server_streaming(request.into_request(), path, codec).await
         }
         pub async fn liquidity_positions_by_price(
             &mut self,
@@ -1745,6 +1923,30 @@ pub mod specific_query_service_server {
             &self,
             request: tonic::Request<super::SwapExecutionRequest>,
         ) -> Result<tonic::Response<super::SwapExecutionResponse>, tonic::Status>;
+        async fn arb_execution(
+            &self,
+            request: tonic::Request<super::ArbExecutionRequest>,
+        ) -> Result<tonic::Response<super::ArbExecutionResponse>, tonic::Status>;
+        /// Server streaming response type for the SwapExecutions method.
+        type SwapExecutionsStream: futures_core::Stream<
+                Item = Result<super::SwapExecutionsResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        async fn swap_executions(
+            &self,
+            request: tonic::Request<super::SwapExecutionsRequest>,
+        ) -> Result<tonic::Response<Self::SwapExecutionsStream>, tonic::Status>;
+        /// Server streaming response type for the ArbExecutions method.
+        type ArbExecutionsStream: futures_core::Stream<
+                Item = Result<super::ArbExecutionsResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        async fn arb_executions(
+            &self,
+            request: tonic::Request<super::ArbExecutionsResponse>,
+        ) -> Result<tonic::Response<Self::ArbExecutionsStream>, tonic::Status>;
         /// Server streaming response type for the LiquidityPositions method.
         type LiquidityPositionsStream: futures_core::Stream<
                 Item = Result<super::LiquidityPositionsResponse, tonic::Status>,
@@ -1762,6 +1964,16 @@ pub mod specific_query_service_server {
             tonic::Response<super::LiquidityPositionByIdResponse>,
             tonic::Status,
         >;
+        /// Server streaming response type for the LiquidityPositionsById method.
+        type LiquidityPositionsByIdStream: futures_core::Stream<
+                Item = Result<super::LiquidityPositionsByIdResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        async fn liquidity_positions_by_id(
+            &self,
+            request: tonic::Request<super::LiquidityPositionsByIdRequest>,
+        ) -> Result<tonic::Response<Self::LiquidityPositionsByIdStream>, tonic::Status>;
         /// Server streaming response type for the LiquidityPositionsByPrice method.
         type LiquidityPositionsByPriceStream: futures_core::Stream<
                 Item = Result<super::LiquidityPositionsByPriceResponse, tonic::Status>,
@@ -2121,6 +2333,128 @@ pub mod specific_query_service_server {
                     };
                     Box::pin(fut)
                 }
+                "/penumbra.client.v1alpha1.SpecificQueryService/ArbExecution" => {
+                    #[allow(non_camel_case_types)]
+                    struct ArbExecutionSvc<T: SpecificQueryService>(pub Arc<T>);
+                    impl<
+                        T: SpecificQueryService,
+                    > tonic::server::UnaryService<super::ArbExecutionRequest>
+                    for ArbExecutionSvc<T> {
+                        type Response = super::ArbExecutionResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ArbExecutionRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).arb_execution(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ArbExecutionSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.SpecificQueryService/SwapExecutions" => {
+                    #[allow(non_camel_case_types)]
+                    struct SwapExecutionsSvc<T: SpecificQueryService>(pub Arc<T>);
+                    impl<
+                        T: SpecificQueryService,
+                    > tonic::server::ServerStreamingService<super::SwapExecutionsRequest>
+                    for SwapExecutionsSvc<T> {
+                        type Response = super::SwapExecutionsResponse;
+                        type ResponseStream = T::SwapExecutionsStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::SwapExecutionsRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).swap_executions(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = SwapExecutionsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.SpecificQueryService/ArbExecutions" => {
+                    #[allow(non_camel_case_types)]
+                    struct ArbExecutionsSvc<T: SpecificQueryService>(pub Arc<T>);
+                    impl<
+                        T: SpecificQueryService,
+                    > tonic::server::ServerStreamingService<super::ArbExecutionsResponse>
+                    for ArbExecutionsSvc<T> {
+                        type Response = super::ArbExecutionsResponse;
+                        type ResponseStream = T::ArbExecutionsStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ArbExecutionsResponse>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).arb_executions(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ArbExecutionsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
                 "/penumbra.client.v1alpha1.SpecificQueryService/LiquidityPositions" => {
                     #[allow(non_camel_case_types)]
                     struct LiquidityPositionsSvc<T: SpecificQueryService>(pub Arc<T>);
@@ -2199,6 +2533,50 @@ pub mod specific_query_service_server {
                                 send_compression_encodings,
                             );
                         let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.SpecificQueryService/LiquidityPositionsById" => {
+                    #[allow(non_camel_case_types)]
+                    struct LiquidityPositionsByIdSvc<T: SpecificQueryService>(
+                        pub Arc<T>,
+                    );
+                    impl<
+                        T: SpecificQueryService,
+                    > tonic::server::ServerStreamingService<
+                        super::LiquidityPositionsByIdRequest,
+                    > for LiquidityPositionsByIdSvc<T> {
+                        type Response = super::LiquidityPositionsByIdResponse;
+                        type ResponseStream = T::LiquidityPositionsByIdStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::LiquidityPositionsByIdRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).liquidity_positions_by_id(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = LiquidityPositionsByIdSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
