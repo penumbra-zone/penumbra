@@ -642,7 +642,7 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
 
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
 
     tracing::info!(gm_id = ?gm.id());
     tracing::info!(gn_id = ?gn.id());
