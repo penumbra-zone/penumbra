@@ -149,6 +149,10 @@ pub trait RouteAndFill: StateWrite + Sized {
                 tracing::debug!("no path found, exiting route_and_fill");
                 break;
             };
+            if path.is_empty() {
+                tracing::debug!("empty path found, exiting route_and_fill");
+                break;
+            }
 
             (outer_lambda_2, outer_unfilled_1) = {
                 // path found, fill as much as we can
