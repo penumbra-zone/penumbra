@@ -1,6 +1,6 @@
 use comfy_table::{presets, Table};
 use penumbra_crypto::{
-    asset::{self, Denom},
+    asset::{self},
     dex::{lp::position::Position, DirectedUnitPair},
     fixpoint::U128x128,
 };

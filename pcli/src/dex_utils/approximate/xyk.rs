@@ -14,9 +14,6 @@ use tracing::field;
 /// The number of positions that is used to approximate the xyk CFMM.
 pub(crate) const NUM_POOLS_PRECISION: usize = 30;
 
-/// Experimental scaling factor for spot valuations
-const PRICE_SCALING_FACTOR: u64 = 1_000_000;
-
 /// Maximum number of iteration that we allow GS to perform.
 const GAUS_SEIDEL_MAX_ITERATION: usize = 10_000;
 

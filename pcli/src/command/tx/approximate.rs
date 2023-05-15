@@ -1,4 +1,4 @@
-use crate::App;
+use crate::{warning, App};
 use std::path::PathBuf;
 
 use crate::dex_utils;
@@ -84,9 +84,28 @@ impl ConstantProduct {
         let amount_start = pair.start.format_value(amount_start);
         let amount_end = pair.end.format_value(amount_end);
 
-        println!("#########################ddk########################################");
-        println!("                  PASSIVE LIQUIDITY                             ");
-        println!("#########################ddk########################################");
+        warning::rmm();
+
+        if !self.yes
+            && !Confirm::new()
+                .with_prompt("In the solemn voice of Mandos, he who sets the fates of all, you hear a question,\nechoing like a whisper through the Halls of Waiting:\n\"Do you, in your heart of hearts, truly wish to proceed?\"")
+                .interact()?
+        {
+            return Ok(());
+        }
+        println!("");
+        println!("so it shall be...");
+        println!("");
+        println!("");
+        println!(
+            "#################################################################################"
+        );
+        println!(
+            "########################### LIQUIDITY SUMMARY ###################################"
+        );
+        println!(
+            "#################################################################################"
+        );
         println!("");
         println!(
             "You want to provide liquidity on the pair {}",
