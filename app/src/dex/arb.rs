@@ -49,34 +49,41 @@ pub trait Arbitrage: StateWrite + Sized {
             .route_and_fill(arb_token, arb_token, flash_loan.amount, params)
             .await?;
 
-        if let Some(arb_profit) = (flash_loan.amount + output).checked_sub(&unfilled_input) {
-            tracing::debug!(?arb_profit, "successfully arbitraged positions");
-
-            // TODO: this is a bit nasty, can it be simplified?
-            // should this even be done "inside" the method, or all the way at the top?
-            let (self2, cache) = Arc::try_unwrap(this)
-                .map_err(|_| ())
-                .expect("no more outstanding refs to state after routing")
-                .flatten();
-            std::mem::drop(self2);
-            // Now there is only one reference to self again
-            let mut self_mut = Arc::get_mut(self).expect("self was unique ref");
-            cache.apply_to(&mut self_mut);
-
-            // Finally, record the arb execution in the state:
-            let traces: im::Vector<Vec<Value>> = self_mut
-                .object_get("trade_traces")
-                .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store2"))?;
-            let height = self_mut.get_block_height().await?;
-            self_mut.set_arb_execution(
-                height,
-                SwapExecution {
-                    traces: traces.into_iter().collect(),
-                },
-            );
-        } else {
+        let Some(arb_profit) = (flash_loan.amount + output).checked_sub(&unfilled_input) else {
             tracing::debug!("found unprofitable arb, discarding");
+            return Ok(());
+        };
+
+        if arb_profit == 0u64.into() {
+            tracing::debug!("found 0-profit arb, discarding");
+            return Ok(());
         }
+
+        tracing::debug!(?arb_profit, "successfully arbitraged positions");
+
+        // TODO: this is a bit nasty, can it be simplified?
+        // should this even be done "inside" the method, or all the way at the top?
+        let (self2, cache) = Arc::try_unwrap(this)
+            .map_err(|_| ())
+            .expect("no more outstanding refs to state after routing")
+            .flatten();
+        std::mem::drop(self2);
+        // Now there is only one reference to self again
+        let mut self_mut = Arc::get_mut(self).expect("self was unique ref");
+        cache.apply_to(&mut self_mut);
+
+        // Finally, record the arb execution in the state:
+        let traces: im::Vector<Vec<Value>> = self_mut
+            .object_get("trade_traces")
+            .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store2"))?;
+        let height = self_mut.get_block_height().await?;
+        self_mut.set_arb_execution(
+            height,
+            SwapExecution {
+                traces: traces.into_iter().collect(),
+            },
+        );
+
         Ok(())
     }
 }
