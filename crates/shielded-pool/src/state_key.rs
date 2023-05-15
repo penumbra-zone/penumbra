@@ -1,4 +1,4 @@
-use penumbra_crypto::{asset, note, Nullifier};
+use penumbra_crypto::{asset, Nullifier};
 use std::string::String;
 
 pub fn token_supply(asset_id: &asset::Id) -> String {
@@ -20,8 +20,12 @@ pub fn spent_nullifier_lookup(nullifier: &Nullifier) -> String {
 // State keys used to temporarily store payloads and nullifiers to be inserted into the compact
 // block
 
-pub fn pending_payloads() -> &'static str {
-    "shielded_pool/pending_payloads"
+pub fn pending_notes() -> &'static str {
+    "shielded_pool/pending_notes"
+}
+
+pub fn pending_rolled_up_notes() -> &'static str {
+    "shielded_pool/pending_rolled_up_notes"
 }
 
 pub fn pending_nullifiers() -> &'static str {

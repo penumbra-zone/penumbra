@@ -10,6 +10,5 @@ pub mod state_key;
 pub mod output;
 pub mod spend;
 
-pub use component::StatePayload;
 pub use output::{Output, OutputPlan, OutputView};
 pub use spend::{Spend, SpendPlan, SpendView};
