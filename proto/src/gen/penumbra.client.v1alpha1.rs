@@ -214,7 +214,7 @@ pub struct SwapExecutionRequest {
     pub height: u64,
     #[prost(message, optional, tag = "3")]
     pub trading_pair: ::core::option::Option<
-        super::super::core::dex::v1alpha1::TradingPair,
+        super::super::core::dex::v1alpha1::DirectedTradingPair,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]

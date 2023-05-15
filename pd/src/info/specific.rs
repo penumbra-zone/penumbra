@@ -397,7 +397,7 @@ impl SpecificQueryService for Info {
     }
 
     #[instrument(skip(self, request))]
-    /// Get the batch swap data associated with a given trading pair and height.
+    /// Get the swap execution data associated with a given trading pair and height.
     async fn swap_execution(
         &self,
         request: tonic::Request<SwapExecutionRequest>,
@@ -416,7 +416,7 @@ impl SpecificQueryService for Info {
             .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
 
         let swap_execution = state
-            .swap_execution(height, trading_pair)
+            .swap_execution(height, &trading_pair)
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 

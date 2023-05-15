@@ -504,7 +504,16 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .expect("unable to process batch swaps");
 
     // Swap execution should have a single trace consisting of `[1gn, 1penumbra]`.
-    let swap_execution = state.swap_execution(0, trading_pair).await?.unwrap();
+    let swap_execution = state
+        .swap_execution(
+            0,
+            &DirectedTradingPair {
+                start: gn.id(),
+                end: penumbra.id(),
+            },
+        )
+        .await?
+        .unwrap();
 
     assert_eq!(
         swap_execution.traces,
@@ -610,7 +619,16 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     );
 
     // Swap execution should have two traces.
-    let swap_execution = state.swap_execution(0, trading_pair).await?.unwrap();
+    let swap_execution = state
+        .swap_execution(
+            0,
+            &DirectedTradingPair {
+                start: penumbra.id(),
+                end: gn.id(),
+            },
+        )
+        .await?
+        .unwrap();
 
     assert_eq!(
         swap_execution.traces,

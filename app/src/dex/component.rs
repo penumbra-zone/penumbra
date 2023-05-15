@@ -6,8 +6,8 @@ use penumbra_chain::component::StateReadExt as _;
 use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_component::Component;
 use penumbra_crypto::{
-    dex::{execution::SwapExecution, BatchSwapOutputData, TradingPair},
-    SwapFlow,
+    dex::{execution::SwapExecution, BatchSwapOutputData, DirectedTradingPair, TradingPair},
+    SwapFlow, Value,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
@@ -90,7 +90,7 @@ pub trait StateReadExt: StateRead {
     async fn swap_execution(
         &self,
         height: u64,
-        trading_pair: TradingPair,
+        trading_pair: &DirectedTradingPair,
     ) -> Result<Option<SwapExecution>> {
         self.get(&state_key::swap_execution(height, trading_pair))
             .await
@@ -112,20 +112,37 @@ impl<T: StateRead> StateReadExt for T {}
 /// Extension trait providing write access to dex data.
 #[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {
-    fn set_output_data(&mut self, output_data: BatchSwapOutputData, swap_execution: SwapExecution) {
+    fn set_output_data(&mut self, output_data: BatchSwapOutputData) {
         // Write the output data to the state under a known key, for querying, ...
         let height = output_data.height;
         let trading_pair = output_data.trading_pair;
         self.put(state_key::output_data(height, trading_pair), output_data);
-        // Store the swap execution in the state as well.
-        self.put(
-            state_key::swap_execution(height, trading_pair),
-            swap_execution,
-        );
         // ... and also add it to the compact block to be pushed out to clients.
         let mut compact_block = self.stub_compact_block();
         compact_block.swap_outputs.insert(trading_pair, output_data);
         self.stub_put_compact_block(compact_block);
+    }
+
+    fn reset_trade_traces(&mut self) {
+        let traces: im::Vector<Vec<Value>> = im::Vector::new();
+        self.object_put("trade_traces", traces);
+    }
+
+    fn save_current_traces_as_swap_execution(
+        &mut self,
+        height: u64,
+        pair: &DirectedTradingPair,
+    ) -> Result<()> {
+        let trade_traces: im::Vector<Vec<Value>> = self
+            .object_get("trade_traces")
+            .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store2"))?;
+        let swap_execution = SwapExecution {
+            traces: trade_traces.into_iter().collect(),
+        };
+        self.object_delete("trade_traces");
+        self.put(state_key::swap_execution(height, pair), swap_execution);
+
+        Ok(())
     }
 
     fn put_swap_flow(&mut self, trading_pair: &TradingPair, swap_flow: SwapFlow) {

@@ -189,7 +189,7 @@ message SwapExecutionRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
   uint64 height = 2;
-  core.dex.v1alpha1.TradingPair trading_pair = 3;
+  core.dex.v1alpha1.DirectedTradingPair trading_pair = 3;
 }
 
 message SwapExecutionResponse {

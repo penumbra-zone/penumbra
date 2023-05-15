@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_crypto::{
     asset,
-    dex::{execution::SwapExecution, BatchSwapOutputData, TradingPair},
+    dex::{BatchSwapOutputData, DirectedTradingPair, TradingPair},
     Amount, SwapFlow, Value,
 };
 use penumbra_storage::StateWrite;
@@ -32,27 +32,40 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
     where
         Self: 'static,
     {
+        //let block_height = self.get_block_height().await?;
+        //let epoch_height = self.get_current_epoch().await?.index;
+
         let (delta_1, delta_2) = (batch_data.0.mock_decrypt(), batch_data.1.mock_decrypt());
 
         tracing::debug!(?delta_1, ?delta_2, ?trading_pair);
 
-        // Since we store a single swap execution struct for the canonical trading pair,
-        // representing swaps in both directions, let's set that up now:
-        let traces: im::Vector<Vec<Value>> = im::Vector::new();
-        Arc::get_mut(self)
-            .expect("one mutable reference to state")
-            .object_put("trade_traces", traces);
-
         // Depending on the contents of the batch swap inputs, we might need to path search in either direction.
         let (lambda_2, unfilled_1) = if delta_1.value() > 0 {
+            Arc::get_mut(self)
+                .expect("one mutable reference to state")
+                .reset_trade_traces();
+
             // There is input for asset 1, so we need to route for asset 1 -> asset 2
-            self.route_and_fill(
-                trading_pair.asset_1(),
-                trading_pair.asset_2(),
-                delta_1,
-                params.clone(),
-            )
-            .await?
+            let (lambda_2, unfilled_1) = self
+                .route_and_fill(
+                    trading_pair.asset_1(),
+                    trading_pair.asset_2(),
+                    delta_1,
+                    params.clone(),
+                )
+                .await?;
+
+            Arc::get_mut(self)
+                .expect("one mutable reference to state")
+                .save_current_traces_as_swap_execution(
+                    block_height,
+                    &DirectedTradingPair {
+                        start: trading_pair.asset_1(),
+                        end: trading_pair.asset_2(),
+                    },
+                )?;
+
+            (lambda_2, unfilled_1)
         } else {
             // There was no input for asset 1, so there's 0 output for asset 2 from this side.
             tracing::debug!("no input for asset 1, skipping 1=>2 execution");
@@ -61,13 +74,26 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
 
         let (lambda_1, unfilled_2) = if delta_2.value() > 0 {
             // There is input for asset 2, so we need to route for asset 2 -> asset 1
-            self.route_and_fill(
-                trading_pair.asset_2(),
-                trading_pair.asset_1(),
-                delta_2,
-                params.clone(),
-            )
-            .await?
+            let (lambda_2, unfilled_1) = self
+                .route_and_fill(
+                    trading_pair.asset_2(),
+                    trading_pair.asset_1(),
+                    delta_2,
+                    params.clone(),
+                )
+                .await?;
+
+            Arc::get_mut(self)
+                .expect("one mutable reference to state")
+                .save_current_traces_as_swap_execution(
+                    block_height,
+                    &DirectedTradingPair {
+                        start: trading_pair.asset_2(),
+                        end: trading_pair.asset_1(),
+                    },
+                )?;
+
+            (lambda_2, unfilled_1)
         } else {
             // There was no input for asset 2, so there's 0 output for asset 1 from this side.
             tracing::debug!("no input for asset 2, skipping 2=>1 execution");
@@ -86,28 +112,10 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             unfilled_2,
         };
 
-        // TODO: how does this work when there are trades in both directions?
-        // Won't that mix up the traces? Should the SwapExecution be indexed by
-        // the _DirectedTradingPair_?
-
-        // Fetch the swap execution object that should have been modified during the routing and filling.
-        let trade_traces: im::Vector<Vec<Value>> = self
-            .object_get("trade_traces")
-            .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store2"))?;
-        tracing::debug!(?output_data, ?trade_traces);
+        tracing::debug!(?output_data);
         Arc::get_mut(self)
             .expect("expected state to have no other refs")
-            .set_output_data(
-                output_data,
-                SwapExecution {
-                    traces: trade_traces.into_iter().collect(),
-                },
-            );
-
-        // Clean up the swap execution object store now that it's been persisted.
-        Arc::get_mut(self)
-            .expect("expected state to have no other refs")
-            .object_delete("trade_traces");
+            .set_output_data(output_data);
 
         Ok(())
     }
