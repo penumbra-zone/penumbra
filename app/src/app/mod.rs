@@ -15,7 +15,7 @@ use penumbra_crypto::NotePayload;
 use penumbra_ibc::component::IBCComponent;
 use penumbra_proto::DomainType;
 use penumbra_sct::component::SctManager;
-use penumbra_shielded_pool::component::ShieldedPool;
+use penumbra_shielded_pool::component::{NoteManager, ShieldedPool};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
@@ -24,7 +24,7 @@ use tendermint::validator::Update;
 use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
-use crate::dex::Dex;
+use crate::dex::{Dex, SwapManager};
 use crate::governance::{Governance, StateReadExt as _};
 use crate::stake::component::{Staking, ValidatorUpdates};
 
@@ -348,24 +348,18 @@ impl App {
 
         // Pull out all the pending state payloads (note and swap)
         let note_payloads = state
-            .object_get::<im::Vector<(tct::Position, NotePayload, NoteSource)>>(
-                penumbra_shielded_pool::state_key::pending_notes(),
-            )
-            .unwrap_or_default()
+            .pending_note_payloads()
+            .await
             .into_iter()
             .map(|(pos, note, source)| (pos, (note, source).into()));
         let rolled_up_payloads = state
-            .object_get::<im::Vector<(tct::Position, tct::Commitment)>>(
-                penumbra_shielded_pool::state_key::pending_rolled_up_notes(),
-            )
-            .unwrap_or_default()
+            .pending_rolled_up_payloads()
+            .await
             .into_iter()
             .map(|(pos, commitment)| (pos, commitment.into()));
         let swap_payloads = state
-            .object_get::<im::Vector<(tct::Position, SwapPayload, NoteSource)>>(
-                crate::dex::state_key::pending_payloads(),
-            )
-            .unwrap_or_default()
+            .pending_swap_payloads()
+            .await
             .into_iter()
             .map(|(pos, swap, source)| (pos, (swap, source).into()));
 

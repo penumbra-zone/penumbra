@@ -105,6 +105,16 @@ pub trait NoteManager: StateWrite {
         self.object_put(state_key::pending_notes(), payloads);
     }
 
+    async fn pending_note_payloads(&self) -> im::Vector<(tct::Position, NotePayload, NoteSource)> {
+        self.object_get(state_key::pending_notes())
+            .unwrap_or_default()
+    }
+
+    async fn pending_rolled_up_payloads(&self) -> im::Vector<(tct::Position, Commitment)> {
+        self.object_get(state_key::pending_notes())
+            .unwrap_or_default()
+    }
+
     #[instrument(skip(self, source))]
     async fn spend_nullifier(&mut self, nullifier: Nullifier, source: NoteSource) {
         tracing::debug!("marking as spent");
