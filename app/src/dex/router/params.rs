@@ -16,6 +16,12 @@ impl Default for RoutingParams {
             fixed_candidates: Arc::new(vec![
                 asset::REGISTRY.parse_unit("test_usd").id(),
                 asset::REGISTRY.parse_unit("penumbra").id(),
+                // TODO: remove after fixing candidate set implementation?
+                asset::REGISTRY.parse_unit("gm").id(),
+                asset::REGISTRY.parse_unit("gn").id(),
+                asset::REGISTRY.parse_unit("atom").id(),
+                asset::REGISTRY.parse_unit("osmo").id(),
+                asset::REGISTRY.parse_unit("btc").id(),
             ]),
             max_hops: 4,
         }
