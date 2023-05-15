@@ -654,13 +654,13 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
         10u64.into(),
         1u64.into(),
     ));
-    // Sell 100 gm at 2 gn each.
-    state_tx.put_position(limit_sell(
-        DirectedUnitPair::new(gm.clone(), gn.clone()),
+    // Buy 100 gn at 2 gm each.
+    state_tx.put_position(limit_buy(
+        DirectedUnitPair::new(gn.clone(), gm.clone()),
         100u64.into(),
-        2u64.into(),
+        20u64.into(),
     ));
-    // Sell 100 penumbra at 1 gn each.
+    // Sell 100 penumbra at 1 gm each.
     state_tx.put_position(limit_sell(
         DirectedUnitPair::new(penumbra.clone(), gm.clone()),
         100u64.into(),
@@ -668,7 +668,7 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
     ));
     state_tx.apply();
 
-    // Now we should be able to arb 1penumbra => 10gn => 5gm => 5penumbra.
+    // Now we should be able to arb 10penumbra => 10gn => 20gm => 20penumbra.
     state
         .arbitrage(penumbra.id(), vec![penumbra.id(), gm.id(), gn.id()])
         .await?;
@@ -677,10 +677,10 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
     assert_eq!(
         arb_execution.traces,
         vec![vec![
-            penumbra.value(1u32.into()),
+            penumbra.value(10u32.into()),
             gn.value(10u32.into()),
-            gm.value(5u32.into()),
-            penumbra.value(5u32.into()),
+            gm.value(20u32.into()),
+            penumbra.value(20u32.into()),
         ],]
     );
 
