@@ -7,10 +7,10 @@ edition = "2021"
 
 [features]
 component = [
-    "penumbra-component", 
-    "penumbra-storage", 
-    "penumbra-proto/penumbra-storage", 
-    "penumbra-chain/component", 
+    "penumbra-component",
+    "penumbra-storage",
+    "penumbra-proto/penumbra-storage",
+    "penumbra-chain/component",
     "penumbra-sct/component"
 ]
 proving-keys = ["penumbra-proof-params/proving-keys"]
@@ -24,7 +24,6 @@ penumbra-crypto = { path = "../../crypto", default-features = false }
 penumbra-proto = { path = "../../proto", default-features = false }
 penumbra-sct = { path = "../sct", default-features = false }
 # TODO: invert
-penumbra-compact-block = { path = "../compact-block", default-features = false }
 penumbra-component = { path = "../component", optional = true }
 penumbra-storage = { path = "../../storage", optional = true }
 penumbra-chain = { path = "../../chain", default-features = false }
@@ -46,5 +45,6 @@ blake2b_simd = "0.5"
 bytes = "1"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
 rand = "0.8"
+im = "15.1"
 
 

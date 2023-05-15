@@ -40,6 +40,14 @@ pub fn pending_position_closures() -> &'static str {
     "dex/pending_position_closures"
 }
 
+pub fn pending_payloads() -> &'static str {
+    "dex/pending_payloads"
+}
+
+pub fn pending_outputs() -> &'static str {
+    "dex/pending_outputs"
+}
+
 /// Encompasses non-consensus state keys.
 pub(crate) mod internal {
     use super::*;

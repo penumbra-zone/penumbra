@@ -111,3 +111,9 @@ pub fn deliver_dao_transactions_at_height(block_height: u64) -> String {
 pub fn change_chain_params_at_height(block_height: u64) -> String {
     format!("governance/change_chain_params/{block_height}/")
 }
+
+// Used for object store:
+
+pub fn proposal_started() -> &'static str {
+    "governance/proposal_started"
+}

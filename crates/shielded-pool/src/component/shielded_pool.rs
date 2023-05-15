@@ -5,8 +5,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::{genesis, NoteSource, SpendInfo};
 use penumbra_component::Component;
+use penumbra_crypto::Nullifier;
 use penumbra_crypto::{asset, Value};
-use penumbra_crypto::{note, Nullifier};
 use penumbra_proto::StateReadProto;
 use penumbra_storage::StateRead;
 use penumbra_storage::StateWrite;
@@ -74,10 +74,6 @@ impl Component for ShieldedPool {
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    async fn note_source(&self, note_commitment: note::Commitment) -> Result<Option<NoteSource>> {
-        self.get(&state_key::note_source(&note_commitment)).await
-    }
-
     async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
         if let Some(info) = self
             .get::<SpendInfo>(&state_key::spent_nullifier_lookup(&nullifier))

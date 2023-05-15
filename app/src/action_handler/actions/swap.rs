@@ -2,16 +2,14 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_compact_block::StatePayload;
 use penumbra_crypto::MockFlowCiphertext;
 use penumbra_proof_params::SWAP_PROOF_VERIFICATION_KEY;
-use penumbra_shielded_pool::component::NoteManager;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::{action::Swap, IsAction};
 
 use crate::{
     action_handler::ActionHandler,
-    dex::{StateReadExt, StateWriteExt},
+    dex::{StateReadExt, StateWriteExt, SwapManager},
 };
 
 #[async_trait]
@@ -55,10 +53,7 @@ impl ActionHandler for Swap {
         // Record the swap commitment in the state.
         let source = state.object_get("source").unwrap_or_default();
         state
-            .add_state_payload(StatePayload::Swap {
-                source,
-                swap: self.body.payload.clone(),
-            })
+            .add_swap_payload(self.body.payload.clone(), source)
             .await;
 
         Ok(())
