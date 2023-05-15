@@ -2,8 +2,12 @@ use anyhow::Context;
 use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_crypto::asset::{Denom, Id};
 use penumbra_crypto::{note, FullViewingKey, Nullifier};
+use penumbra_proto::core::transaction;
+use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
+use penumbra_proto::view::v1alpha1::{TransactionInfo, TransactionInfoResponse};
 use penumbra_tct as tct;
 use penumbra_tct::Witness::*;
+use penumbra_transaction::Transaction;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::convert::TryInto;
@@ -13,10 +17,6 @@ use tct::{Forgotten, Tree};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 use web_sys::console as web_console;
-use penumbra_proto::core::transaction;
-use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
-use penumbra_proto::view::v1alpha1::{TransactionInfo, TransactionInfoResponse};
-use penumbra_transaction::Transaction;
 
 use crate::note_record::SpendableNoteRecord;
 use crate::swap_record::SwapRecord;
@@ -61,14 +61,8 @@ pub struct TxInfoResponse {
 }
 
 impl TxInfoResponse {
-    pub fn new(
-        txp: TransactionPerspective,
-        txv: TransactionView,
-    ) -> TxInfoResponse {
-        Self {
-            txp,
-            txv
-        }
+    pub fn new(txp: TransactionPerspective, txv: TransactionView) -> TxInfoResponse {
+        Self { txp, txv }
     }
 }
 
@@ -163,9 +157,10 @@ impl ViewServer {
                                 source,
                             };
                             new_notes.push(note_record.clone());
-                            self.notes.insert(payload.note_commitment, note_record.clone());
-                            self.notes_by_nullifier.insert(nullifier, note_record.clone());
-
+                            self.notes
+                                .insert(payload.note_commitment, note_record.clone());
+                            self.notes_by_nullifier
+                                .insert(nullifier, note_record.clone());
                         }
                         None => {
                             self.nct.insert(Forget, payload.note_commitment).unwrap();
@@ -288,9 +283,10 @@ impl ViewServer {
                                 source,
                             };
                             new_notes.push(note_record.clone());
-                            self.notes.insert(payload.note_commitment, note_record.clone());
-                            self.notes_by_nullifier.insert(nullifier, note_record.clone());
-
+                            self.notes
+                                .insert(payload.note_commitment, note_record.clone());
+                            self.notes_by_nullifier
+                                .insert(nullifier, note_record.clone());
                         }
                         None => {
                             self.nct.insert(Forget, payload.note_commitment).unwrap();
@@ -390,14 +386,12 @@ impl ViewServer {
         let transaction = serde_wasm_bindgen::from_value(tx).unwrap();
         let (txp, txv) = self.transaction_info_inner(transaction);
 
-
         let txp_proto = TransactionPerspective::try_from(txp).unwrap();
         let txv_proto = TransactionView::try_from(txv).unwrap();
 
         let response = TxInfoResponse {
-            txp:txp_proto,
-            txv: txv_proto
-
+            txp: txp_proto,
+            txv: txv_proto,
         };
         serde_wasm_bindgen::to_value(&response).unwrap()
     }
@@ -407,7 +401,10 @@ impl ViewServer {
     pub fn transaction_info_inner(
         &self,
         tx: Transaction,
-    ) -> (penumbra_transaction::TransactionPerspective, penumbra_transaction::TransactionView) {
+    ) -> (
+        penumbra_transaction::TransactionPerspective,
+        penumbra_transaction::TransactionView,
+    ) {
         // First, create a TxP with the payload keys visible to our FVK and no other data.
 
         let mut txp = penumbra_transaction::TransactionPerspective {
@@ -478,8 +475,8 @@ impl ViewServer {
                     asset_ids.insert(swap_plaintext.trading_pair.asset_2());
                 }
                 ActionView::SwapClaim(SwapClaimView::Visible {
-                                          output_1, output_2, ..
-                                      }) => {
+                    output_1, output_2, ..
+                }) => {
                     // Both will be sent to the same address so this only needs to be added once
                     let address = output_1.address();
                     address_views.insert(address, self.fvk.view_address(address));
