@@ -250,6 +250,9 @@ impl<S: StateRead> StateRead for StateDelta<S> {
             .ephemeral_objects
             .get(key)
         {
+            // We have to explicitly call `Any::type_id(&**v)` here because this ensures that we are
+            // asking for the type of the `Any` *inside* the `Box<dyn Any>`, rather than the type of
+            // `Box<dyn Any>` itself.
             return entry.as_ref().map(|v| std::any::Any::type_id(&**v));
         }
 
@@ -262,6 +265,9 @@ impl<S: StateRead> StateRead for StateDelta<S> {
                 .ephemeral_objects
                 .get(key)
             {
+                // We have to explicitly call `Any::type_id(&**v)` here because this ensures that we are
+                // asking for the type of the `Any` *inside* the `Box<dyn Any>`, rather than the type of
+                // `Box<dyn Any>` itself.
                 return entry.as_ref().map(|v| std::any::Any::type_id(&**v));
             }
         }
