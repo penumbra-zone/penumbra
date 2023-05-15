@@ -9,7 +9,7 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-      - uses: myConsciousness/bluesky-post@v2
+      - uses: myConsciousness/bluesky-post@v3
         with:
           text: "Merged PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}\n\n${{ github.event.pull_request.html_url }}"
           identifier: ${{ secrets.BLUESKY_IDENTIFIER }}
