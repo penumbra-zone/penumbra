@@ -127,7 +127,7 @@ impl App {
 
         state_tx.stub_put_compact_block(compact_block);
 
-        App::finish_sct_block(&mut state_tx).await;
+        App::finish_block(&mut state_tx).await;
 
         state_tx.apply();
     }
@@ -289,7 +289,7 @@ impl App {
             let mut state_tx = Arc::try_unwrap(arc_state_tx)
                 .expect("components did not retain copies of shared state");
 
-            App::finish_sct_epoch(&mut state_tx).await;
+            App::finish_epoch(&mut state_tx).await;
 
             // set the epoch for the next block
             state_tx.put_epoch_by_height(
@@ -304,23 +304,23 @@ impl App {
         } else {
             // set the epoch for the next block
             state_tx.put_epoch_by_height(current_height + 1, current_epoch);
-            App::finish_sct_block(&mut state_tx).await;
+            App::finish_block(&mut state_tx).await;
 
             self.apply(state_tx)
         }
     }
 
     /// Finish an SCT block and use the resulting roots to finalize the current `CompactBlock`.
-    pub(crate) async fn finish_sct_block<S: StateWrite>(state: S) {
-        Self::finish_sct_inner(state, false).await;
+    pub(crate) async fn finish_block<S: StateWrite>(state: S) {
+        Self::finish_inner(state, false).await;
     }
 
     /// Finish an SCT block and epoch and use the resulting roots to finalize the current `CompactBlock`.
-    pub(crate) async fn finish_sct_epoch<S: StateWrite>(state: S) {
-        Self::finish_sct_inner(state, true).await;
+    pub(crate) async fn finish_epoch<S: StateWrite>(state: S) {
+        Self::finish_inner(state, true).await;
     }
 
-    async fn finish_sct_inner<S: StateWrite>(mut state: S, end_epoch: bool) {
+    async fn finish_inner<S: StateWrite>(mut state: S, end_epoch: bool) {
         let height = state
             .get_block_height()
             .await
@@ -382,6 +382,13 @@ impl App {
         compact_block.state_payloads = state_payloads
             .into_iter()
             .map(|(_, payload)| payload)
+            .collect();
+
+        // Add all the pending nullifiers to the compact block
+        compact_block.nullifiers = state
+            .object_get::<im::Vector<_>>(penumbra_shielded_pool::state_key::pending_nullifiers())
+            .unwrap_or_default()
+            .into_iter()
             .collect();
 
         state.set_compact_block(compact_block.clone());
