@@ -658,7 +658,7 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
     state_tx.put_position(limit_buy(
         DirectedUnitPair::new(gn.clone(), gm.clone()),
         100u64.into(),
-        20u64.into(),
+        2u64.into(),
     ));
     // Sell 100 penumbra at 1 gm each.
     state_tx.put_position(limit_sell(
