@@ -19,9 +19,9 @@ impl Default for RoutingParams {
                 // TODO: remove after fixing candidate set implementation?
                 asset::REGISTRY.parse_unit("gm").id(),
                 asset::REGISTRY.parse_unit("gn").id(),
-                asset::REGISTRY.parse_unit("atom").id(),
-                asset::REGISTRY.parse_unit("osmo").id(),
-                asset::REGISTRY.parse_unit("btc").id(),
+                asset::REGISTRY.parse_unit("test_atom").id(),
+                asset::REGISTRY.parse_unit("test_osmo").id(),
+                asset::REGISTRY.parse_unit("test_btc").id(),
             ]),
             max_hops: 4,
         }
