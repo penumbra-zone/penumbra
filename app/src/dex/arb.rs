@@ -14,12 +14,14 @@ use crate::dex::{
 
 #[async_trait]
 pub trait Arbitrage: StateWrite + Sized {
+    /// Attempts to extract as much as possible of the `arb_token` from the available
+    /// liquidity positions, and returns the amount of `arb_token` extracted.
     #[instrument(skip(self, arb_token, fixed_candidates))]
     async fn arbitrage(
         self: &mut Arc<Self>,
         arb_token: asset::Id,
         fixed_candidates: Vec<asset::Id>,
-    ) -> Result<()>
+    ) -> Result<Value>
     where
         Self: 'static,
     {
@@ -59,26 +61,21 @@ pub trait Arbitrage: StateWrite + Sized {
             // guarantees about forward progress over precise application of
             // price limits, it technically could occur.
             tracing::debug!("mis-estimation in route-and-fill led to unprofitable arb, discarding");
-            return Ok(());
+            return Ok(Value { amount: 0u64.into(), asset_id: arb_token });
         };
 
         if arb_profit == 0u64.into() {
             // If we didn't make any profit, we don't need to do anything,
             // and we can just discard the state delta entirely.
             tracing::debug!("found 0-profit arb, discarding");
-            return Ok(());
+            return Ok(Value {
+                amount: 0u64.into(),
+                asset_id: arb_token,
+            });
         }
 
-        // TODO: hack to avoid needing an asset cache for nice debug output
-        let formatted_profit = if arb_token == *STAKING_TOKEN_ASSET_ID {
-            let unit = asset::REGISTRY.parse_unit("penumbra");
-            format!("{}{}", unit.format_value(arb_profit), unit)
-        } else {
-            format!("{}", arb_profit.value())
-        };
         tracing::debug!(
-            arb_profit = %formatted_profit,
-            raw_profit = ?arb_profit,
+            ?arb_profit,
             "successfully arbitraged positions, burning profit"
         );
 
@@ -105,7 +102,10 @@ pub trait Arbitrage: StateWrite + Sized {
             },
         );
 
-        Ok(())
+        return Ok(Value {
+            amount: arb_profit,
+            asset_id: arb_token,
+        });
     }
 }
 
