@@ -33,7 +33,15 @@ pub trait StateRead: Send + Sync {
     ///
     /// - `Some(&T)` if a value of type `T` was present at `key`.
     /// - `None` if `key` was not present, or if `key` was present but the value was not of type `T`.
+    ///
+    /// # Panics
+    ///
+    /// If there *is* a value at `key` but it is not of the type requested.
     fn object_get<T: Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T>;
+
+    /// Gets the [`TypeId`] of the object stored at `key` in the ephemeral key-object store, if any
+    /// is present.
+    fn object_type(&self, key: &'static str) -> Option<std::any::TypeId>;
 
     /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as raw bytes.
     ///
@@ -78,6 +86,10 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
     fn object_get<T: Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T> {
         (**self).object_get(key)
     }
+
+    fn object_type(&self, key: &'static str) -> Option<std::any::TypeId> {
+        (**self).object_type(key)
+    }
 }
 
 impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
@@ -108,6 +120,10 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
 
     fn object_get<T: Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T> {
         (**self).object_get(key)
+    }
+
+    fn object_type(&self, key: &'static str) -> Option<std::any::TypeId> {
+        (**self).object_type(key)
     }
 }
 
@@ -140,6 +156,10 @@ impl<S: StateRead + Send + Sync> StateRead for Arc<S> {
     fn object_get<T: Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T> {
         (**self).object_get(key)
     }
+
+    fn object_type(&self, key: &'static str) -> Option<std::any::TypeId> {
+        (**self).object_type(key)
+    }
 }
 
 impl StateRead for () {
@@ -161,6 +181,10 @@ impl StateRead for () {
     }
 
     fn object_get<T: Any + Send + Sync + Clone>(&self, _key: &'static str) -> Option<T> {
+        None
+    }
+
+    fn object_type(&self, _key: &'static str) -> Option<std::any::TypeId> {
         None
     }
 
