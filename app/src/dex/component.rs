@@ -62,7 +62,7 @@ impl Component for Dex {
         }
 
         // Then, perform arbitrage:
-        state
+        let arb_burn = state
             .arbitrage(
                 *STAKING_TOKEN_ASSET_ID,
                 vec![
@@ -77,6 +77,13 @@ impl Component for Dex {
             )
             .await
             .expect("must be able to process arbitrage");
+
+        if arb_burn.amount != 0u64.into() {
+            // TODO: hack to avoid needing an asset cache for nice debug output
+            let unit = asset::REGISTRY.parse_unit("penumbra");
+            let burn = format!("{}{}", unit.format_value(arb_burn.amount), unit);
+            tracing::info!(%burn, "executed arbitrage opportunity");
+        }
 
         // Next, close all positions queued for closure at the end of the block.
         // It's important to do this after execution, to allow block-scoped JIT liquidity.
