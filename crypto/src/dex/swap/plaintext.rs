@@ -13,7 +13,9 @@ use ark_relations::r1cs::SynthesisError;
 use decaf377::r1cs::FqVar;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
-use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, core::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{
+    core::crypto::v1alpha1 as pb_crypto, core::dex::v1alpha1 as pb, DomainType, TypeUrl,
+};
 use penumbra_tct::Commitment;
 use poseidon377::{hash_1, hash_4, hash_7};
 use rand::{CryptoRng, RngCore};
@@ -284,6 +286,10 @@ impl AllocVar<SwapPlaintext, Fq> for SwapPlaintextVar {
             }
         }
     }
+}
+
+impl TypeUrl for SwapPlaintext {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapPlaintext";
 }
 
 impl DomainType for SwapPlaintext {

@@ -1,6 +1,6 @@
 use penumbra_chain::NoteSource;
 use penumbra_crypto::{keys::AddressIndex, note, Note, Nullifier};
-use penumbra_proto::{view::v1alpha1 as pb, DomainType};
+use penumbra_proto::{view::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use std::convert::{TryFrom, TryInto};
 
@@ -18,6 +18,10 @@ pub struct SpendableNoteRecord {
     pub height_spent: Option<u64>,
     pub position: tct::Position,
     pub source: NoteSource,
+}
+
+impl TypeUrl for SpendableNoteRecord {
+    const TYPE_URL: &'static str = "/penumbra.view.v1alpha1.SpendableNoteRecord";
 }
 
 impl DomainType for SpendableNoteRecord {

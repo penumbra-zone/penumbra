@@ -4,7 +4,7 @@ use std::{
 };
 
 use decaf377::{FieldExt, Fq};
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 
 use crate::error::*;
 use crate::prelude::{Witness as _, *};
@@ -81,6 +81,10 @@ impl From<Root> for pb::MerkleRoot {
             inner: Fq::from(root.0).to_bytes().to_vec(),
         }
     }
+}
+
+impl TypeUrl for Root {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.MerkleRoot";
 }
 
 impl DomainType for Root {

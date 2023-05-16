@@ -6,7 +6,7 @@ use penumbra_crypto::{
     VotingReceiptToken,
 };
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use rand::{CryptoRng, RngCore};
 use rand_core::OsRng;
@@ -168,6 +168,10 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
             )?,
         })
     }
+}
+
+impl TypeUrl for DelegatorVotePlan {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.DelegatorVotePlan";
 }
 
 impl DomainType for DelegatorVotePlan {

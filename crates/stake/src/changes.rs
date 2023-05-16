@@ -1,6 +1,6 @@
 use crate::{Delegate, Undelegate};
 use anyhow::Result;
-use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 /// Data structure used to track queued delegation changes that have been
@@ -10,6 +10,10 @@ use serde::{Deserialize, Serialize};
 pub struct DelegationChanges {
     pub delegations: Vec<Delegate>,
     pub undelegations: Vec<Undelegate>,
+}
+
+impl TypeUrl for DelegationChanges {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.DelegationChanges";
 }
 
 impl DomainType for DelegationChanges {

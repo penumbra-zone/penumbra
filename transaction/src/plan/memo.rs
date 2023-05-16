@@ -4,7 +4,7 @@ use penumbra_crypto::{
     symmetric::PayloadKey,
     Address,
 };
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 
 use rand::{CryptoRng, RngCore};
 
@@ -28,6 +28,10 @@ impl MemoPlan {
     pub fn memo(&self) -> Result<MemoCiphertext, anyhow::Error> {
         MemoCiphertext::encrypt(self.key.clone(), &self.plaintext)
     }
+}
+
+impl TypeUrl for MemoPlan {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.MemoPlan";
 }
 
 impl DomainType for MemoPlan {

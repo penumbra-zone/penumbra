@@ -5,7 +5,7 @@ use std::convert::{TryFrom, TryInto};
 
 use decaf377::FieldExt;
 use penumbra_proto::{
-    core::transparent_proofs::v1alpha1 as transparent_proofs, DomainType, Message,
+    core::transparent_proofs::v1alpha1 as transparent_proofs, DomainType, Message, TypeUrl,
 };
 use penumbra_tct as tct;
 
@@ -146,6 +146,10 @@ impl TryFrom<&[u8]> for SwapClaimProof {
             .try_into()
             .map_err(|_| anyhow!("proto malformed"))
     }
+}
+
+impl TypeUrl for SwapClaimProof {
+    const TYPE_URL: &'static str = "/penumbra.core.transpraent_proofs.v1alpha1.SwapClaimProof";
 }
 
 impl DomainType for SwapClaimProof {

@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use penumbra_proto::{core::chain::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::chain::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -91,6 +91,10 @@ impl TryFrom<&[u8]> for NoteSource {
     }
 }
 
+impl TypeUrl for NoteSource {
+    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.NoteSource";
+}
+
 impl DomainType for NoteSource {
     type Proto = pb::NoteSource;
 }
@@ -154,6 +158,10 @@ impl TryFrom<pb::SpendInfo> for SpendInfo {
             spend_height: value.spend_height,
         })
     }
+}
+
+impl TypeUrl for SpendInfo {
+    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.SpendInfo";
 }
 
 impl DomainType for SpendInfo {

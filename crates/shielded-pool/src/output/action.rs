@@ -9,7 +9,7 @@ use penumbra_crypto::{
     EffectHash, EffectingData, FieldExt, NotePayload,
 };
 use penumbra_proto::{
-    core::crypto::v1alpha1 as pbc, core::transaction::v1alpha1 as pb, DomainType,
+    core::crypto::v1alpha1 as pbc, core::transaction::v1alpha1 as pb, DomainType, TypeUrl,
 };
 
 #[derive(Clone, Debug)]
@@ -45,6 +45,10 @@ impl EffectingData for Body {
     }
 }
 
+impl TypeUrl for Output {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.Output";
+}
+
 impl DomainType for Output {
     type Proto = pb::Output;
 }
@@ -75,6 +79,10 @@ impl TryFrom<pb::Output> for Output {
                 .context("output proof malformed")?,
         })
     }
+}
+
+impl TypeUrl for Body {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.OutputBody";
 }
 
 impl DomainType for Body {

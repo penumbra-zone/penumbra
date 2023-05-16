@@ -5,7 +5,7 @@ use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use penumbra_crypto::{
     proofs::groth16::DelegatorVoteProof, Amount, Nullifier, Value, VotingReceiptToken,
 };
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 
 use crate::{
@@ -113,6 +113,10 @@ impl TryFrom<pb::DelegatorVoteBody> for DelegatorVoteBody {
             },
         })
     }
+}
+
+impl TypeUrl for DelegatorVoteBody {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.DelegatorVoteBody";
 }
 
 impl DomainType for DelegatorVoteBody {

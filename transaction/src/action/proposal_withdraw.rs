@@ -2,7 +2,7 @@ use ark_ff::Zero;
 use serde::{Deserialize, Serialize};
 
 use penumbra_crypto::{asset::Amount, Balance, Fr, ProposalNft, Value};
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 use crate::{ActionView, IsAction, TransactionPerspective};
 
@@ -61,6 +61,10 @@ impl TryFrom<pb::ProposalWithdraw> for ProposalWithdraw {
             reason: msg.reason,
         })
     }
+}
+
+impl TypeUrl for ProposalWithdraw {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ProposalWithdraw";
 }
 
 impl DomainType for ProposalWithdraw {

@@ -7,7 +7,7 @@ use penumbra_crypto::{
     Nullifier,
 };
 use penumbra_proto::{
-    client::v1alpha1::CompactBlockRangeResponse, core::chain::v1alpha1 as pb, DomainType,
+    client::v1alpha1::CompactBlockRangeResponse, core::chain::v1alpha1 as pb, DomainType, TypeUrl,
 };
 use penumbra_tct::builder::{block, epoch};
 use serde::{Deserialize, Serialize};
@@ -67,6 +67,10 @@ impl CompactBlock {
             || self.proposal_started // need to process proposal start
             || self.chain_parameters.is_some() // need to save latest chain parameters
     }
+}
+
+impl TypeUrl for CompactBlock {
+    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.CompactBlock";
 }
 
 impl DomainType for CompactBlock {

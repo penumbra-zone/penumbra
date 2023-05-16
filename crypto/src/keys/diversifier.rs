@@ -8,7 +8,7 @@ use aes::Aes128;
 use anyhow::{anyhow, Context};
 use ark_ff::PrimeField;
 use derivative::Derivative;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -55,6 +55,10 @@ impl TryFrom<&[u8]> for Diversifier {
         bytes.copy_from_slice(&slice[0..16]);
         Ok(Diversifier(bytes))
     }
+}
+
+impl TypeUrl for Diversifier {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Diversifier";
 }
 
 impl DomainType for Diversifier {
@@ -226,6 +230,10 @@ impl TryFrom<&[u8]> for AddressIndex {
             randomizer: slice[4..16].try_into().expect("can form 12 byte array"),
         })
     }
+}
+
+impl TypeUrl for AddressIndex {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.AddressIndex";
 }
 
 impl DomainType for AddressIndex {

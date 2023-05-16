@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use hmac::Hmac;
 use pbkdf2::pbkdf2;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -41,6 +41,10 @@ impl PartialEq for SpendKey {
 }
 
 impl Eq for SpendKey {}
+
+impl TypeUrl for SpendKey {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.SpendKey";
+}
 
 impl DomainType for SpendKey {
     type Proto = pb::SpendKey;

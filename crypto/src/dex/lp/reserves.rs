@@ -1,4 +1,4 @@
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 
 use crate::asset::Amount;
 use crate::dex::TradingPair;
@@ -60,6 +60,10 @@ impl Reserves {
             r2: self.r1,
         }
     }
+}
+
+impl TypeUrl for Reserves {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.Reserves";
 }
 
 impl DomainType for Reserves {

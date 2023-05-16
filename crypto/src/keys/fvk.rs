@@ -3,7 +3,7 @@ use ark_ff::PrimeField;
 use ark_serialize::CanonicalDeserialize;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType, TypeUrl};
 use poseidon377::hash_2;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -156,6 +156,10 @@ impl FullViewingKey {
             .expect("hash is 32 bytes");
         AccountGroupId(hash)
     }
+}
+
+impl TypeUrl for FullViewingKey {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha.FullViewingKey";
 }
 
 impl DomainType for FullViewingKey {

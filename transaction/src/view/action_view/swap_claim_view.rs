@@ -1,5 +1,5 @@
 use penumbra_crypto::NoteView;
-use penumbra_proto::{core::dex::v1alpha1 as pbd, DomainType};
+use penumbra_proto::{core::dex::v1alpha1 as pbd, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::action::SwapClaim;
@@ -16,6 +16,10 @@ pub enum SwapClaimView {
     Opaque {
         swap_claim: SwapClaim,
     },
+}
+
+impl TypeUrl for SwapClaimView {
+    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapClaimView";
 }
 
 impl DomainType for SwapClaimView {

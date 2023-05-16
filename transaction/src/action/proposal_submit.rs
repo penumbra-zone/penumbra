@@ -2,7 +2,7 @@ use ark_ff::Zero;
 use serde::{Deserialize, Serialize};
 
 use penumbra_crypto::{asset::Amount, Balance, Fr, ProposalNft, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 use crate::{proposal::Proposal, ActionView, IsAction, TransactionPerspective};
 
@@ -72,6 +72,10 @@ impl TryFrom<pb::ProposalSubmit> for ProposalSubmit {
                 .try_into()?,
         })
     }
+}
+
+impl TypeUrl for ProposalSubmit {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ProposalSubmit";
 }
 
 impl DomainType for ProposalSubmit {

@@ -24,7 +24,7 @@ use ibc_types::core::{
 };
 use penumbra_proto::{
     core::ibc::v1alpha1::{self as pb},
-    DomainType,
+    DomainType, TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 
@@ -115,6 +115,11 @@ impl IbcAction {
         }
     }
 }
+
+impl TypeUrl for IbcAction {
+    const TYPE_URL: &'static str = "/penumbra.core.ibc.v1alpha1.IbcAction";
+}
+
 impl DomainType for IbcAction {
     type Proto = pb::IbcAction;
 }

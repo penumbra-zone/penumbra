@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::anyhow;
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 /// A vote on a proposal.
@@ -96,6 +96,10 @@ mod test {
             assert_eq!(vote, vote2);
         }
     }
+}
+
+impl TypeUrl for Vote {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.Vote";
 }
 
 impl DomainType for Vote {

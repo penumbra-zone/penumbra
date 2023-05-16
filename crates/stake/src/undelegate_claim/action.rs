@@ -3,7 +3,7 @@ use penumbra_crypto::{
     proofs::groth16::UndelegateClaimProof,
     stake::{IdentityKey, Penalty},
 };
-use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -24,6 +24,10 @@ pub struct UndelegateClaimBody {
 pub struct UndelegateClaim {
     pub body: UndelegateClaimBody,
     pub proof: UndelegateClaimProof,
+}
+
+impl TypeUrl for UndelegateClaimBody {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.UndelegateClaimBody";
 }
 
 impl DomainType for UndelegateClaimBody {
@@ -60,6 +64,10 @@ impl TryFrom<pb::UndelegateClaimBody> for UndelegateClaimBody {
                 .try_into()?,
         })
     }
+}
+
+impl TypeUrl for UndelegateClaim {
+    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.UndelegateClaim";
 }
 
 impl DomainType for UndelegateClaim {

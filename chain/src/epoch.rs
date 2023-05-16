@@ -1,4 +1,4 @@
-use penumbra_proto::{core::chain::v1alpha1 as pb_chain, DomainType};
+use penumbra_proto::{core::chain::v1alpha1 as pb_chain, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 /// Penumbra groups blocks into epochs and restricts validator changes to epoch boundaries.
@@ -7,6 +7,10 @@ use serde::{Deserialize, Serialize};
 pub struct Epoch {
     pub index: u64,
     pub start_height: u64,
+}
+
+impl TypeUrl for Epoch {
+    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.Epoch";
 }
 
 impl DomainType for Epoch {
