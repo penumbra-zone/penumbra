@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 extern crate core;
 
 mod note_record;
