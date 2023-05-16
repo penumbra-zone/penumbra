@@ -151,3 +151,22 @@ cargo run --release --bin pcli -- tx swap --into gm 1penumbra
 This will handle generating the swap transaction and you'd soon have the market-rate equivalent of 1 `penumbra`
 in `gm` tokens returned to you, or the original investment of 1 `penumbra` tokens returned if there wasn't
 enough liquidity available to perform the swap.
+
+## Replicating a UniswapV2 (`x*y=k`) pool 
+
+Penumbra's constant-price pool is a versatile market primitive, allowing users extensive control over their trading strategies. It's not solely for active DEX quoters; with our AMM replication tool, users can emulate any passive AMM of their choice. The testnet comes with a built-in UniswapV2 replicator that is utilized as such:
+
+```bash
+cargo run -r --bin pcli tx lp replicate xyk <TRADING_PAIR> <QUANTITY> [--current-price AMT] [--fee-bps AMT]
+```
+For instance, to provide ~100penumbra and ~100test_usd liquidity on the `penumbra:test_usd` pair with a pool fee of `33bps`, run:
+
+```bash
+cargo run -r --bin pcli tx lp replicate penumbra:test_usd 100penumbra --fee-bps 33
+```
+
+You will be prompted a disclaimer which you should read carefully, and accept or reject by pressing "y" for yes, or "n" for no.
+
+The replicating market makers tool will then generate a list of positions that you can submit by pressing "y", or reject by pressing "n".
+
+There are other pairs available that you can try this tool on, for example `gm:gn` or `gm:penumbra`.
