@@ -1,5 +1,8 @@
 # Nullifiers
 
+- [ ] What is a nullifier?
+- [ ] Refactor to describe generic nullifiers
+
 The nullifier $\mathsf {nf}$ (an $\mathbb F_q$ element) is derived as the following output of a rate-3 Poseidon hash:
 
 ```
