@@ -4,9 +4,9 @@ use penumbra_crypto::{Address, GovernanceKey};
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use serde_unit_struct::{Deserialize_unit_struct, Serialize_unit_struct};
-use serde_with::DisplayFromStr;
+use serde_with::{serde_as, DisplayFromStr};
 
-use crate::stake::{FundingStream, FundingStreams, IdentityKey};
+use crate::{FundingStream, FundingStreams, IdentityKey};
 
 mod bonding;
 mod definition;

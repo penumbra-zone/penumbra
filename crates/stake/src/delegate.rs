@@ -1,15 +1,10 @@
-use ark_ff::Zero;
 use penumbra_crypto::{
     asset::Amount,
     stake::{DelegationToken, IdentityKey},
-    Balance, Fr, Value, STAKING_TOKEN_ASSET_ID,
+    Balance, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
-
-use crate::{ActionView, TransactionPerspective};
-
-use super::IsAction;
 
 /// A transaction action adding stake to a validator's delegation pool.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,16 +25,6 @@ pub struct Delegate {
     /// stateless verification that the transaction is internally consistent.
     /// TODO(erwan): make sure this is checked in tx validation
     pub delegation_amount: Amount,
-}
-
-impl IsAction for Delegate {
-    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
-        self.balance().commit(Fr::zero())
-    }
-
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::Delegate(self.to_owned())
-    }
 }
 
 impl Delegate {

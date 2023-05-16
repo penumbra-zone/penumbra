@@ -5,8 +5,6 @@ use futures::TryStreamExt;
 use penumbra_app::dex::PositionRead;
 use penumbra_app::dex::StateReadExt;
 use penumbra_app::governance::StateReadExt as _;
-use penumbra_app::stake::rate::RateData;
-use penumbra_app::stake::StateReadExt as _;
 use penumbra_chain::component::AppHashRead;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_crypto::asset::{self, Asset};
@@ -26,6 +24,8 @@ use penumbra_proto::{
 };
 use penumbra_sct::component::StateReadExt as _;
 use penumbra_shielded_pool::component::SupplyRead as _;
+use penumbra_stake::rate::RateData;
+use penumbra_stake::StateReadExt as _;
 
 use penumbra_storage::StateRead;
 use proto::client::v1alpha1::BatchSwapOutputDataResponse;

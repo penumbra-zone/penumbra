@@ -18,6 +18,7 @@ penumbra-chain = { path = "../chain" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-transaction = { path = "../transaction" }
 penumbra-app = { path = "../app" }
+penumbra-stake = { path = "../crates/stake" }
 penumbra-tct = { path = "../tct" }
 penumbra-view = { path = "../view" }
 penumbra-custody = { path = "../custody" }

@@ -2,6 +2,7 @@ use penumbra_crypto::{balance, Fr, Note, Zero};
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_shielded_pool::{Output, OutputView, Spend, SpendView};
+use penumbra_stake::{Delegate, Undelegate, UndelegateClaim, UndelegateClaimBody};
 
 use crate::{ActionView, TransactionPerspective};
 
@@ -77,6 +78,36 @@ impl IsAction for Spend {
         };
 
         ActionView::Spend(spend_view)
+    }
+}
+
+impl IsAction for Delegate {
+    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::Delegate(self.to_owned())
+    }
+}
+
+impl IsAction for Undelegate {
+    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::Undelegate(self.to_owned())
+    }
+}
+
+impl IsAction for UndelegateClaim {
+    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+        self.body.balance_commitment
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::UndelegateClaim(self.to_owned())
     }
 }
 

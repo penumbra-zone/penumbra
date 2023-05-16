@@ -19,7 +19,7 @@ pub use metrics::*;
 /// functions in our dependencies.
 pub fn register_metrics() {
     penumbra_storage::register_metrics();
-    penumbra_app::stake::register_metrics();
+    penumbra_stake::register_metrics();
     // penumbra_app::ibc::register_metrics();
     penumbra_shielded_pool::component::register_metrics();
 

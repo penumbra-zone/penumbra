@@ -2,7 +2,7 @@ use penumbra_crypto::Address;
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::stake::rate::BaseRateData;
+use crate::rate::BaseRateData;
 
 /// A destination for a portion of a validator's commission of staking rewards.
 #[allow(clippy::large_enum_variant)]

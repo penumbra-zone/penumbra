@@ -46,6 +46,7 @@ cargo +nightly doc --no-deps \
   -p penumbra-measure \
   -p penumbra-storage \
   -p penumbra-shielded-pool \
+  -p penumbra-distributions \
   -p penumbra-tct \
   -p penumbra-transaction \
   -p penumbra-wallet \

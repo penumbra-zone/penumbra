@@ -3,12 +3,13 @@ use decaf377::FieldExt;
 use decaf377_fmd::Clue;
 use penumbra_crypto::{dex::TradingPair, EffectHash, Fee, FullViewingKey, NotePayload, PayloadKey};
 use penumbra_proto::{DomainType, Message};
+use penumbra_stake::{Delegate, Undelegate, UndelegateClaimBody};
 
 use crate::{
     action::{
-        swap, swap_claim, Delegate, DelegatorVote, DelegatorVoteBody, PositionClose, PositionOpen,
+        swap, swap_claim, DelegatorVote, DelegatorVoteBody, PositionClose, PositionOpen,
         PositionRewardClaim, PositionWithdraw, Proposal, ProposalDepositClaim, ProposalSubmit,
-        ProposalWithdraw, Undelegate, UndelegateClaimBody, ValidatorVote, ValidatorVoteBody, Vote,
+        ProposalWithdraw, ValidatorVote, ValidatorVoteBody, Vote,
     },
     plan::TransactionPlan,
     proposal, Action, Transaction, TransactionBody,

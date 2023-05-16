@@ -4,10 +4,10 @@ use penumbra_crypto::{stake::Penalty, Amount};
 use penumbra_proto::{
     client::v1alpha1::NextValidatorRateResponse, core::stake::v1alpha1 as pb, DomainType,
 };
-use penumbra_transaction::action::{Delegate, Undelegate};
 use serde::{Deserialize, Serialize};
 
-use crate::stake::{validator::State, FundingStream, IdentityKey};
+use crate::{validator::State, FundingStream, IdentityKey};
+use crate::{Delegate, Undelegate};
 
 /// Describes a validator's reward rate and voting power in some epoch.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
@@ -126,11 +126,7 @@ impl RateData {
     /// ```
     /// but in general *not both*, because the computation involves rounding.
     pub fn unbonded_amount(&self, delegation_amount: u128) -> u128 {
-        // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
-        // upconvert to u128 intermediates and panic if the result is too large (unlikely)
-        ((delegation_amount as u128 * self.validator_exchange_rate as u128) / 1_0000_0000)
-            .try_into()
-            .unwrap()
+        (delegation_amount * self.validator_exchange_rate as u128) / 1_0000_0000
     }
 
     /// Computes the validator's voting power at this epoch given the total supply of the
@@ -140,7 +136,7 @@ impl RateData {
         total_delegation_tokens: u128,
         base_rate_data: &BaseRateData,
     ) -> u64 {
-        ((total_delegation_tokens as u128 * self.validator_exchange_rate as u128)
+        ((total_delegation_tokens * self.validator_exchange_rate as u128)
             / base_rate_data.base_exchange_rate as u128)
             .try_into()
             .unwrap()

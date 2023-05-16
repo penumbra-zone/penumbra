@@ -3,7 +3,6 @@
 //! for Penumbra.
 use crate::testnet::{generate_tm_config, parse_tm_address, write_configs, ValidatorKeys};
 use anyhow::{Context, Result};
-use penumbra_app::stake::{validator::Validator, FundingStream, FundingStreams};
 use penumbra_chain::genesis;
 use penumbra_chain::{genesis::Allocation, params::ChainParameters};
 use penumbra_crypto::{
@@ -11,6 +10,7 @@ use penumbra_crypto::{
     stake::{DelegationToken, IdentityKey},
     Address, GovernanceKey,
 };
+use penumbra_stake::{validator::Validator, FundingStream, FundingStreams};
 use serde::{de, Deserialize};
 use std::{
     fmt,

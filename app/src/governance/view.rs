@@ -27,12 +27,12 @@ use penumbra_transaction::{
 use tokio::task::JoinSet;
 use tracing::instrument;
 
-use crate::stake::{rate::RateData, validator, StateReadExt as _};
+use penumbra_stake::{rate::RateData, validator, StateReadExt as _};
 
 use super::{state_key, tally::Tally};
 
 #[async_trait]
-pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
+pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     /// Get the id of the next proposal in the sequence of ids.
     async fn next_proposal_id(&self) -> Result<u64> {
         Ok(self
@@ -560,7 +560,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
     }
 }
 
-impl<T: StateRead + crate::stake::StateReadExt + ?Sized> StateReadExt for T {}
+impl<T: StateRead + penumbra_stake::StateReadExt + ?Sized> StateReadExt for T {}
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite {

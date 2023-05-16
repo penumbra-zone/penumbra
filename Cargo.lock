@@ -3958,6 +3958,7 @@ dependencies = [
  "penumbra-proto",
  "penumbra-sct",
  "penumbra-shielded-pool",
+ "penumbra-stake",
  "penumbra-tct",
  "penumbra-transaction",
  "penumbra-view",
@@ -4080,6 +4081,7 @@ dependencies = [
  "penumbra-proto",
  "penumbra-sct",
  "penumbra-shielded-pool",
+ "penumbra-stake",
  "penumbra-storage",
  "penumbra-tendermint-proxy",
  "penumbra-tower-trace",
@@ -4193,11 +4195,13 @@ dependencies = [
  "penumbra-component",
  "penumbra-crypto",
  "penumbra-dao",
+ "penumbra-distributions",
  "penumbra-ibc",
  "penumbra-proof-params",
  "penumbra-proto",
  "penumbra-sct",
  "penumbra-shielded-pool",
+ "penumbra-stake",
  "penumbra-storage",
  "penumbra-tct",
  "penumbra-transaction",
@@ -4383,6 +4387,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-distributions"
+version = "0.52.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "penumbra-chain",
+ "penumbra-component",
+ "penumbra-crypto",
+ "penumbra-proto",
+ "penumbra-shielded-pool",
+ "penumbra-storage",
+ "tendermint",
+ "tracing",
+]
+
+[[package]]
 name = "penumbra-eddy"
 version = "0.52.0"
 dependencies = [
@@ -4558,6 +4578,46 @@ dependencies = [
  "serde",
  "tendermint",
  "tracing",
+]
+
+[[package]]
+name = "penumbra-stake"
+version = "0.52.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64 0.20.0",
+ "bech32",
+ "bitvec",
+ "ed25519-consensus",
+ "futures",
+ "hex",
+ "im",
+ "metrics",
+ "once_cell",
+ "penumbra-chain",
+ "penumbra-component",
+ "penumbra-crypto",
+ "penumbra-dao",
+ "penumbra-proof-params",
+ "penumbra-proto",
+ "penumbra-sct",
+ "penumbra-shielded-pool",
+ "penumbra-storage",
+ "penumbra-tct",
+ "penumbra-transaction",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+ "regex",
+ "serde",
+ "serde_unit_struct",
+ "serde_with 2.3.3",
+ "sha2 0.9.9",
+ "tendermint",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.17",
+ "vergen",
 ]
 
 [[package]]
@@ -4741,6 +4801,7 @@ dependencies = [
  "penumbra-proof-params",
  "penumbra-proto",
  "penumbra-shielded-pool",
+ "penumbra-stake",
  "penumbra-tct",
  "poseidon377",
  "proptest",
@@ -4784,6 +4845,7 @@ dependencies = [
  "penumbra-proto",
  "penumbra-sct",
  "penumbra-shielded-pool",
+ "penumbra-stake",
  "penumbra-tct",
  "penumbra-transaction",
  "prost",
@@ -4818,6 +4880,7 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-custody",
  "penumbra-proto",
+ "penumbra-stake",
  "penumbra-tct",
  "penumbra-transaction",
  "penumbra-view",
@@ -4851,6 +4914,7 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-proto",
  "penumbra-shielded-pool",
+ "penumbra-stake",
  "penumbra-tct",
  "penumbra-transaction",
  "rand_core 0.6.4",

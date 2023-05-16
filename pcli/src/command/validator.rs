@@ -4,13 +4,13 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use penumbra_app::stake::{
+use penumbra_crypto::{keys::AddressIndex, stake::IdentityKey, Fee, GovernanceKey};
+use penumbra_proto::{core::stake::v1alpha1::Validator as ProtoValidator, DomainType, Message};
+use penumbra_stake::{
     validator,
     validator::{Validator, ValidatorToml},
     FundingStream, FundingStreams,
 };
-use penumbra_crypto::{keys::AddressIndex, stake::IdentityKey, Fee, GovernanceKey};
-use penumbra_proto::{core::stake::v1alpha1::Validator as ProtoValidator, DomainType, Message};
 use penumbra_transaction::action::{ValidatorVote, ValidatorVoteBody, Vote};
 use penumbra_wallet::plan;
 use rand_core::OsRng;
