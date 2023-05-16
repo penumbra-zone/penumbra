@@ -11,7 +11,8 @@ component = [
     "penumbra-storage",
     "penumbra-proto/penumbra-storage",
     "penumbra-chain/component",
-    "penumbra-sct/component"
+    "penumbra-sct/component",
+    "tokio",
 ]
 proving-keys = ["penumbra-proof-params/proving-keys"]
 default = ["component", "proving-keys"]
@@ -31,7 +32,7 @@ penumbra-tct = { path = "../../tct" }
 penumbra-proof-params = { path = "../../proof-params" }
 
 # Penumbra dependencies
-tokio = { version = "1.21.1", features = ["full", "tracing"] }
+tokio = { version = "1.21.1", features = ["full", "tracing"], optional = true }
 async-trait = "0.1.52"
 anyhow = "1"
 tracing = "0.1"
