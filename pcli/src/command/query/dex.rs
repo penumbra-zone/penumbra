@@ -7,15 +7,16 @@ use std::pin::Pin;
 use penumbra_crypto::{
     asset,
     dex::{
-        execution::SwapExecution, lp::position::Position, BatchSwapOutputData, DirectedTradingPair,
-        TradingPair,
+        execution::SwapExecution,
+        lp::position::{self, Position},
+        BatchSwapOutputData, DirectedTradingPair, TradingPair,
     },
-    Asset,
+    Asset, Value,
 };
 use penumbra_proto::client::v1alpha1::{
     specific_query_service_client::SpecificQueryServiceClient, AssetInfoRequest,
-    BatchSwapOutputDataRequest, LiquidityPositionsByPriceRequest, LiquidityPositionsRequest,
-    SwapExecutionRequest,
+    BatchSwapOutputDataRequest, LiquidityPositionByIdRequest, LiquidityPositionsByPriceRequest,
+    LiquidityPositionsRequest, SwapExecutionRequest,
 };
 use penumbra_view::ViewClient;
 use tonic::transport::Channel;
@@ -41,10 +42,19 @@ pub enum DexCmd {
         trading_pair: TradingPair,
     },
     /// Display information about all liquidity positions known to the chain.
+    #[clap(display_order(900))]
     AllPositions {
         /// Display closed and withdrawn liquidity positions as well as open ones.
         #[clap(long)]
         include_closed: bool,
+    },
+    /// Display a single position's state given a position ID.
+    Position {
+        /// The ID of the position to query.
+        id: position::Id,
+        /// If set, output raw JSON instead of a table.
+        #[clap(long)]
+        raw: bool,
     },
     /// Display open liquidity for a given pair, sorted by effective price.
     Positions {
@@ -281,6 +291,59 @@ impl DexCmd {
                     .await?;
                 let asset_cache = app.view().assets().await?;
                 println!("{}", render_positions(&asset_cache, &positions));
+            }
+            DexCmd::Position { id, raw } => {
+                let mut client = app.specific_client().await?;
+                let position: Position = client
+                    .liquidity_position_by_id(LiquidityPositionByIdRequest {
+                        position_id: Some((*id).into()),
+                        ..Default::default()
+                    })
+                    .await?
+                    .into_inner()
+                    .data
+                    .ok_or_else(|| anyhow::anyhow!("position not found"))?
+                    .try_into()?;
+
+                if *raw {
+                    println!("{}", serde_json::to_string_pretty(&position)?);
+                } else {
+                    let asset_cache = app.view().assets().await?;
+                    let mut table = Table::new();
+                    table.load_preset(presets::NOTHING);
+                    table.add_row(vec!["ID".to_string(), id.to_string()]);
+                    table.add_row(vec!["State".to_string(), position.state.to_string()]);
+                    table.add_row(vec![
+                        "Reserves 1".to_string(),
+                        Value {
+                            asset_id: position.phi.pair.asset_1(),
+                            amount: position.reserves.r1,
+                        }
+                        .format(&asset_cache),
+                    ]);
+                    table.add_row(vec![
+                        "Reserves 2".to_string(),
+                        Value {
+                            asset_id: position.phi.pair.asset_2(),
+                            amount: position.reserves.r2,
+                        }
+                        .format(&asset_cache),
+                    ]);
+                    table.add_row(vec![
+                        "Fee".to_string(),
+                        format!("{}bps", position.phi.component.fee),
+                    ]);
+                    table.add_row(vec![
+                        "p".to_string(),
+                        position.phi.component.p.value().to_string(),
+                    ]);
+                    table.add_row(vec![
+                        "q".to_string(),
+                        position.phi.component.q.value().to_string(),
+                    ]);
+                    table.add_row(vec!["Nonce".to_string(), hex::encode(&position.nonce)]);
+                    println!("{}", table);
+                }
             }
         };
 
