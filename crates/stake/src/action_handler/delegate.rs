@@ -5,7 +5,9 @@ use async_trait::async_trait;
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::Delegate;
-use crate::{component::StateWriteExt as _, validator, ActionHandler, StateReadExt as _};
+use crate::{
+    action_handler::ActionHandler, component::StateWriteExt as _, validator, StateReadExt as _,
+};
 
 #[async_trait]
 impl ActionHandler for Delegate {

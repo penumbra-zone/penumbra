@@ -1,9 +1,8 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![allow(clippy::clone_on_copy)]
 
-use penumbra_component::ActionHandler;
 use penumbra_crypto::stake::IdentityKey;
 
-mod action_handler;
 mod changes;
 mod current_consensus_keys;
 mod event;
@@ -11,7 +10,18 @@ mod funding_stream;
 mod metrics;
 mod uptime;
 
+#[cfg_attr(docsrs, doc(cfg(feature = "component")))]
+#[cfg(feature = "component")]
+mod action_handler;
+
+#[cfg_attr(docsrs, doc(cfg(feature = "component")))]
+#[cfg(feature = "component")]
 pub mod component;
+
+#[cfg_attr(docsrs, doc(cfg(feature = "component")))]
+#[cfg(feature = "component")]
+pub use component::StateReadExt;
+
 pub mod delegate;
 pub mod rate;
 pub mod state_key;
@@ -25,7 +35,6 @@ pub use undelegate_claim::{UndelegateClaim, UndelegateClaimBody, UndelegateClaim
 
 pub use self::metrics::register_metrics;
 pub use changes::DelegationChanges;
-pub use component::StateReadExt;
 pub use current_consensus_keys::CurrentConsensusKeys;
 pub use funding_stream::{FundingStream, FundingStreams};
 pub use uptime::Uptime;

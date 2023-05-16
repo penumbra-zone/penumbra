@@ -6,7 +6,7 @@ use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::Undelegate;
-use crate::{component::StateWriteExt as _, ActionHandler, StateReadExt as _};
+use crate::{action_handler::ActionHandler, component::StateWriteExt as _, StateReadExt as _};
 
 #[async_trait]
 impl ActionHandler for Undelegate {
