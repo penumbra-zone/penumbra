@@ -552,6 +552,12 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
             ))
             .await?)
     }
+
+    /// Check if any proposal is started in this block.
+    fn proposal_started(&self) -> bool {
+        self.object_get::<()>(&state_key::proposal_started())
+            .is_some()
+    }
 }
 
 impl<T: StateRead + crate::stake::StateReadExt + ?Sized> StateReadExt for T {}
@@ -636,6 +642,11 @@ pub trait StateWriteExt: StateWrite {
                 .await
                 .expect("block height should be set"),
         );
+    }
+
+    /// Record in the object store that some proposal has started.
+    fn mark_proposal_started(&mut self) {
+        self.object_put(state_key::proposal_started(), ());
     }
 
     /// Store the proposal deposit amount.

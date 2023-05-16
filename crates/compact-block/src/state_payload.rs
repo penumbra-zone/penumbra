@@ -15,11 +15,11 @@ pub enum StatePayload {
     RolledUp(note::Commitment),
     Note {
         source: NoteSource,
-        note: NotePayload,
+        note: Box<NotePayload>,
     },
     Swap {
         source: NoteSource,
-        swap: SwapPayload,
+        swap: Box<SwapPayload>,
     },
 }
 
@@ -53,6 +53,30 @@ impl StatePayload {
     }
 }
 
+impl From<note::Commitment> for StatePayload {
+    fn from(commitment: note::Commitment) -> Self {
+        Self::RolledUp(commitment)
+    }
+}
+
+impl From<(NotePayload, NoteSource)> for StatePayload {
+    fn from((note, source): (NotePayload, NoteSource)) -> Self {
+        Self::Note {
+            note: Box::new(note),
+            source,
+        }
+    }
+}
+
+impl From<(SwapPayload, NoteSource)> for StatePayload {
+    fn from((swap, source): (SwapPayload, NoteSource)) -> Self {
+        Self::Swap {
+            swap: Box::new(swap),
+            source,
+        }
+    }
+}
+
 impl From<StatePayload> for pb::StatePayload {
     fn from(msg: StatePayload) -> Self {
         match msg {
@@ -67,7 +91,7 @@ impl From<StatePayload> for pb::StatePayload {
                 state_payload: Some(pb::state_payload::StatePayload::Note(
                     pb::state_payload::Note {
                         source: Some(source.into()),
-                        note: Some(note.into()),
+                        note: Some((*note).into()),
                     },
                 )),
             },
@@ -75,7 +99,7 @@ impl From<StatePayload> for pb::StatePayload {
                 state_payload: Some(pb::state_payload::StatePayload::Swap(
                     pb::state_payload::Swap {
                         source: Some(source.into()),
-                        swap: Some(swap.into()),
+                        swap: Some((*swap).into()),
                     },
                 )),
             },
@@ -98,9 +122,10 @@ impl TryFrom<pb::StatePayload> for StatePayload {
                 source,
                 note,
             })) => Ok(StatePayload::Note {
-                note: note
-                    .ok_or_else(|| anyhow::anyhow!("missing note"))?
-                    .try_into()?,
+                note: Box::new(
+                    note.ok_or_else(|| anyhow::anyhow!("missing note"))?
+                        .try_into()?,
+                ),
                 source: source
                     .ok_or_else(|| anyhow::anyhow!("missing source"))?
                     .try_into()?,
@@ -109,9 +134,10 @@ impl TryFrom<pb::StatePayload> for StatePayload {
                 source,
                 swap,
             })) => Ok(StatePayload::Swap {
-                swap: swap
-                    .ok_or_else(|| anyhow::anyhow!("missing swap"))?
-                    .try_into()?,
+                swap: Box::new(
+                    swap.ok_or_else(|| anyhow::anyhow!("missing swap"))?
+                        .try_into()?,
+                ),
                 source: source
                     .ok_or_else(|| anyhow::anyhow!("missing source"))?
                     .try_into()?,
