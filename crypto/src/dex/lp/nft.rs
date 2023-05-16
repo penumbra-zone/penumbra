@@ -23,7 +23,7 @@ use crate::asset;
 pub struct LpNft {
     position_id: Id,
     state: State,
-    base_denom: asset::Denom,
+    base_denom: asset::DenomMetadata,
 }
 
 impl LpNft {
@@ -39,7 +39,7 @@ impl LpNft {
         }
     }
 
-    pub fn denom(&self) -> asset::Denom {
+    pub fn denom(&self) -> asset::DenomMetadata {
         self.base_denom.clone()
     }
 
@@ -56,10 +56,10 @@ impl LpNft {
     }
 }
 
-impl TryFrom<asset::Denom> for LpNft {
+impl TryFrom<asset::DenomMetadata> for LpNft {
     type Error = anyhow::Error;
 
-    fn try_from(base_denom: asset::Denom) -> Result<Self, Self::Error> {
+    fn try_from(base_denom: asset::DenomMetadata) -> Result<Self, Self::Error> {
         // Note: this regex must be in sync with both asset::REGISTRY
         // and the bech32 prefix for LP IDs defined in the proto crate.
         let base_denom_string = base_denom.to_string();

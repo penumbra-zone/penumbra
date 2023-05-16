@@ -58,8 +58,8 @@ spec:
           configMap:
             name: {{ include "penumbra.fullname" $ }}-genesis-config
             items:
-              - key: "genesis.json"
-                path: "genesis.json"
+              - key: "genesis.json.gz"
+                path: "genesis.json.gz"
       initContainers:
         - name: pvc-ownership
           image: busybox
@@ -118,7 +118,7 @@ spec:
               mkdir $MERGE_DIR
               config-merge -f toml $CONFIG_DIR/config.toml $OVERLAY_DIR/config.toml > $MERGE_DIR/config.toml
               mv $MERGE_DIR/* $CONFIG_DIR/
-              cp /genesis/genesis.json $CONFIG_DIR/
+              gzip -d -c /genesis/genesis.json.gz > $CONFIG_DIR/genesis.json
           securityContext:
             runAsUser: 1025
             runAsGroup: 1025

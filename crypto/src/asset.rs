@@ -8,13 +8,15 @@ use serde::{Deserialize, Serialize};
 mod amount;
 mod cache;
 mod denom;
+mod denom_metadata;
 mod id;
 mod r1cs;
 mod registry;
 
 pub use amount::{Amount, AmountVar};
 pub use cache::Cache;
-pub use denom::{Denom, Unit};
+pub use denom::Denom;
+pub use denom_metadata::{DenomMetadata, Unit};
 pub use id::{Id, VALUE_GENERATOR_DOMAIN_SEP};
 pub use r1cs::AssetIdVar;
 pub use registry::{Registry, REGISTRY};
@@ -23,7 +25,7 @@ pub use registry::{Registry, REGISTRY};
 #[serde(try_from = "pb::Asset", into = "pb::Asset")]
 pub struct Asset {
     pub id: Id,
-    pub denom: Denom,
+    pub denom: DenomMetadata,
 }
 
 impl TypeUrl for Asset {
@@ -37,15 +39,20 @@ impl DomainType for Asset {
 impl TryFrom<pb::Asset> for Asset {
     type Error = anyhow::Error;
     fn try_from(asset: pb::Asset) -> anyhow::Result<Self> {
+        let denom = asset
+            .denom
+            .ok_or_else(|| anyhow::anyhow!("missing denom field in proto"))?
+            .try_into()?;
+
+        let dm = DenomMetadata::default_for(&denom)
+            .ok_or_else(|| anyhow::anyhow!("error generating metadata for denom"))?;
+
         Ok(Self {
             id: asset
                 .id
                 .ok_or_else(|| anyhow::anyhow!("missing id field in proto"))?
                 .try_into()?,
-            denom: asset
-                .denom
-                .ok_or_else(|| anyhow::anyhow!("missing denom field in proto"))?
-                .try_into()?,
+            denom: dm,
         })
     }
 }
@@ -54,7 +61,7 @@ impl From<Asset> for pb::Asset {
     fn from(asset: Asset) -> Self {
         Self {
             id: Some(asset.id.into()),
-            denom: Some(asset.denom.into()),
+            denom: Some(asset.denom.base_denom().into()),
         }
     }
 }
@@ -143,7 +150,7 @@ mod tests {
 
         assert_eq!(
             base_denom.best_unit_for(0u64.into()).to_string(),
-            "upenumbra"
+            "penumbra"
         );
         assert_eq!(
             base_denom.best_unit_for(999u64.into()).to_string(),
@@ -202,17 +209,17 @@ mod tests {
     proptest! {
         #[test]
         fn displaydenom_parsing_formatting_roundtrip(
-            v: u32
+            v: u128
         ) {
             let penumbra_display_denom = REGISTRY.parse_unit("penumbra");
             let formatted = penumbra_display_denom.format_value(v.into());
             let parsed = penumbra_display_denom.parse_value(&formatted);
-            assert_eq!(v, u32::from(parsed.unwrap()));
+            assert_eq!(v, u128::from(parsed.unwrap()));
 
             let mpenumbra_display_denom = REGISTRY.parse_unit("mpenumbra");
             let formatted = mpenumbra_display_denom.format_value(v.into());
             let parsed = mpenumbra_display_denom.parse_value(&formatted);
-            assert_eq!(v, u32::from(parsed.unwrap()));
+            assert_eq!(v, u128::from(parsed.unwrap()));
         }
     }
 }

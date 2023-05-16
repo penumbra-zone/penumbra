@@ -53,6 +53,7 @@ impl TransactionPlan {
                 fvk,
                 [0; 64].into(),
                 auth_path.clone(),
+                witness_data.anchor,
             )));
         }
 
@@ -227,7 +228,7 @@ impl TransactionPlan {
             in_progress_spend_actions.push(tokio::spawn(async move {
                 //Add dummy auth sig for UnauthTransaction
                 let auth_sig = [0; 64].into();
-                spend_plan.spend(&fvk_, auth_sig, auth_path)
+                spend_plan.spend(&fvk_, auth_sig, auth_path, witness_data.anchor)
             }));
         }
 

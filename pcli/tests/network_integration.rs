@@ -26,9 +26,9 @@ use tempfile::{tempdir, NamedTempFile, TempDir};
 
 use penumbra_chain::test_keys::{ADDRESS_0_STR, ADDRESS_1_STR, SEED_PHRASE};
 
-// The number "20" is chosen so that this is bigger than u64::MAX
+// The number "1020" is chosen so that this is bigger than u64::MAX
 // when accounting for the 10e18 scaling factor from the base denom.
-const TEST_ASSET: &str = "20test_usd";
+const TEST_ASSET: &str = "1020test_usd";
 
 // The maximum amount of time any command is allowed to take before we error.
 const TIMEOUT_COMMAND_SECONDS: u64 = 20;
@@ -138,7 +138,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
     // test_asset only by whitespace.
     balance_cmd
         .assert()
-        .stdout(predicate::str::is_match(format!(r"1\s*{TEST_ASSET}")).unwrap());
+        .stdout(predicate::str::is_match(format!(r"1\s*2020test_usd")).unwrap());
 
     // Cleanup: Send the asset back at the end of the test such that other tests begin
     // from the original state.
@@ -306,8 +306,6 @@ fn lp_management() {
         .stdout;
     let output = String::from_utf8_lossy(&o);
 
-    println!("1: {}", output);
-
     // Address 0 has an opened LPNFT.
     assert!(output.contains("1lpnft_opened"));
 
@@ -320,7 +318,6 @@ fn lp_management() {
         .next()
         .unwrap()
         .replace("1lpnft_opened_", "");
-    println!("opened asset_id: {}", asset_id);
 
     // Close the LP.
     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
@@ -352,8 +349,6 @@ fn lp_management() {
         .stdout;
     let output = String::from_utf8_lossy(&o);
 
-    println!("2: {}", output);
-
     // Address 0 has a closed LPNFT.
     assert!(output.contains("1lpnft_closed"));
 
@@ -366,7 +361,6 @@ fn lp_management() {
         .next()
         .unwrap()
         .replace("1lpnft_closed_", "");
-    println!("closed asset_id: {}", asset_id);
 
     // Withdraw the LP.
     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
@@ -382,6 +376,48 @@ fn lp_management() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     close_cmd.assert().success();
 
+    // Test close-all: first open a few LPs
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1penumbra@1gm",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1penumbra@1gm",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1penumbra@1gm",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+
+    // Validate there are three opened position NFTs
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
         .args([
@@ -397,11 +433,75 @@ fn lp_management() {
         .expect("unable to fetch balance")
         .stdout;
     let output = String::from_utf8_lossy(&o);
+    let opened = output.matches("lpnft_opened").count();
+    assert_eq!(opened, 3);
 
-    println!("3: {}", output);
+    // Close all the opened positions
+    let mut closeall_cmd = Command::cargo_bin("pcli").unwrap();
+    closeall_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "close-all",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    closeall_cmd.assert().success();
 
-    // Address 0 has a withdrawn LPNFT.
-    assert!(output.contains("1lpnft_withdrawn"));
+    // Validate there are no longer any opened position NFTs
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
+    let opened = output.matches("lpnft_opened").count();
+    assert_eq!(opened, 0);
+    // Should be three closed positions
+    let closed = output.matches("lpnft_closed").count();
+    assert_eq!(closed, 3);
+
+    // Withdraw all the closed positions
+    let mut withdrawall_cmd = Command::cargo_bin("pcli").unwrap();
+    withdrawall_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "withdraw-all",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    withdrawall_cmd.assert().success();
+
+    // Validate there are no longer any closed position NFTs
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
+    let closed = output.matches("lpnft_closed").count();
+    assert_eq!(closed, 0);
 }
 
 #[ignore]
@@ -705,4 +805,278 @@ fn mismatched_consensus_key_update_fails() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     // Ensure that command fails.
     resubmit_cmd.assert().failure();
+}
+
+#[ignore]
+#[test]
+fn test_orders() {
+    let tmpdir = load_wallet_into_tmpdir();
+
+    // Close and withdraw any existing liquidity positions.
+    let mut close_cmd = Command::cargo_bin("pcli").unwrap();
+    close_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "close-all",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    close_cmd.assert().success();
+    let mut withdraw_cmd = Command::cargo_bin("pcli").unwrap();
+    withdraw_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "withdraw-all",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    withdraw_cmd.assert().success();
+
+    // Create a liquidity position selling 1penumbra for 225test_usd each.
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1penumbra@225test_usd",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+
+    // Swap 225test_usd for some penumbra. We expect to receive 1 penumbra for 225test_usd
+    // based on the position above.
+    let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
+    swap_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "swap",
+            "225test_usd",
+            "--into",
+            "penumbra",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    swap_cmd
+        .assert()
+        .stdout(
+            predicate::str::is_match(
+                "You will receive outputs of 0test_usd and 1penumbra. Claiming now...",
+            )
+            .unwrap(),
+        )
+        .success();
+
+    // The position should now have test_usd reserves, so we can swap against it again...
+
+    // Swap 1penumbra for some test_usd. We expect to receive 225test_usd for 1penumbra
+    // based on the position above.
+    let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
+    swap_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "swap",
+            "1penumbra",
+            "--into",
+            "test_usd",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    swap_cmd
+        .assert()
+        .stdout(
+            predicate::str::is_match(
+                "You will receive outputs of 225test_usd and 0penumbra. Claiming now...",
+            )
+            .unwrap(),
+        )
+        .success();
+
+    // Close and withdraw any existing liquidity positions.
+    let mut close_cmd = Command::cargo_bin("pcli").unwrap();
+    close_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "close-all",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    close_cmd.assert().success();
+    let mut withdraw_cmd = Command::cargo_bin("pcli").unwrap();
+    withdraw_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "withdraw-all",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    withdraw_cmd.assert().success();
+
+    // Create a liquidity position buying 1penumbra for 225test_usd each.
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "buy",
+            "1penumbra@225test_usd",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+
+    // Swap 1penumbra for some test_usd. We expect to receive 225test_usd for 1penumbra
+    // based on the position above.
+    let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
+    swap_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "swap",
+            "1penumbra",
+            "--into",
+            "test_usd",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    swap_cmd
+        .assert()
+        .stdout(
+            predicate::str::is_match(
+                "You will receive outputs of 225test_usd and 0penumbra. Claiming now...",
+            )
+            .unwrap(),
+        )
+        .success();
+
+    // The position should now have some penumbra reserves, so we can swap against it again...
+
+    // Swap 225test_usd for some penumbra. We expect to receive 1penumbra for 225test_usd
+    // based on the position above.
+    let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
+    swap_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "swap",
+            "225test_usd",
+            "--into",
+            "penumbra",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    swap_cmd
+        .assert()
+        .stdout(
+            predicate::str::is_match(
+                "You will receive outputs of 0test_usd and 1penumbra. Claiming now...",
+            )
+            .unwrap(),
+        )
+        .success();
+
+    // Close and withdraw any existing liquidity positions.
+    let mut close_cmd = Command::cargo_bin("pcli").unwrap();
+    close_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "close-all",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    close_cmd.assert().success();
+    let mut withdraw_cmd = Command::cargo_bin("pcli").unwrap();
+    withdraw_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "withdraw-all",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    withdraw_cmd.assert().success();
+
+    // Create a liquidity position selling 5penumbra for 25test_usd each.
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "5penumbra@25test_usd",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+
+    for _ in 1..6 {
+        // Swap 25test_usd for some penumbra. We expect to receive 1penumbra for 25test_usd
+        // based on the position above. 1 fewer should remain in the position.
+        let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
+        swap_cmd
+            .args([
+                "--data-path",
+                tmpdir.path().to_str().unwrap(),
+                "tx",
+                "swap",
+                "25test_usd",
+                "--into",
+                "penumbra",
+            ])
+            .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+        swap_cmd
+            .assert()
+            .stdout(
+                predicate::str::is_match(
+                    "You will receive outputs of 0test_usd and 1penumbra. Claiming now...",
+                )
+                .unwrap(),
+            )
+            .success();
+    }
+
+    // There should be no more penumbra left in the position.
+    // Swap 25test_usd for some penumbra. We expect to receive 0penumbra for 25test_usd
+    // because there is no more penumbra remaining. The output will thus be 25test_usd and 0penumbra.
+    let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
+    swap_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "swap",
+            "25test_usd",
+            "--into",
+            "penumbra",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    swap_cmd
+        .assert()
+        .stdout(
+            predicate::str::is_match(
+                "You will receive outputs of 25test_usd and 0penumbra. Claiming now...",
+            )
+            .unwrap(),
+        )
+        .success();
 }

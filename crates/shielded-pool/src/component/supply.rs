@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::KnownAssets;
 use penumbra_crypto::{
-    asset::{self, Asset, Denom},
+    asset::{self, Asset, DenomMetadata},
     Amount,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
@@ -26,7 +26,7 @@ pub trait SupplyRead: StateRead {
             .unwrap_or_default())
     }
 
-    async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<Denom>> {
+    async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<DenomMetadata>> {
         self.get(&state_key::denom_by_asset(asset_id)).await
     }
 }
@@ -37,7 +37,7 @@ impl<T: StateRead + ?Sized> SupplyRead for T {}
 pub trait SupplyWrite: StateWrite {
     // TODO: refactor for new state model -- no more list of known asset IDs with fixed key
     #[instrument(skip(self))]
-    async fn register_denom(&mut self, denom: &Denom) -> Result<()> {
+    async fn register_denom(&mut self, denom: &DenomMetadata) -> Result<()> {
         let id = denom.id();
         if self.denom_by_asset(&id).await?.is_some() {
             tracing::debug!(?denom, ?id, "skipping existing denom");
@@ -62,7 +62,7 @@ pub trait SupplyWrite: StateWrite {
 
     // TODO: should this really be separate from note management?
     // #[instrument(skip(self, change))]
-    async fn update_token_supply(&mut self, asset_id: &asset::Id, change: i64) -> Result<()> {
+    async fn update_token_supply(&mut self, asset_id: &asset::Id, change: i128) -> Result<()> {
         let key = state_key::token_supply(asset_id);
         let current_supply: Amount = self.get_proto(&key).await?.unwrap_or(0u64).into();
 
@@ -73,7 +73,8 @@ pub trait SupplyWrite: StateWrite {
                 .checked_sub(change.unsigned_abs().into())
                 .ok_or_else(|| {
                     anyhow::anyhow!(
-                        "underflow updating token supply {} with delta {}",
+                        "underflow updating token {} supply {} with delta {}",
+                        asset_id,
                         current_supply,
                         change
                     )
@@ -82,10 +83,11 @@ pub trait SupplyWrite: StateWrite {
         } else {
             current_supply
                 .value()
-                .checked_add((change as u64).into())
+                .checked_add((change as u128).into())
                 .ok_or_else(|| {
                     anyhow::anyhow!(
-                        "overflow updating token supply {} with delta {}",
+                        "overflow updating token {} supply {} with delta {}",
+                        asset_id,
                         current_supply,
                         change
                     )

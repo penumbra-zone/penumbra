@@ -5,7 +5,7 @@ Penumbra uses a hybrid, order-book-like AMM with automatic routing. Liquidity on
 
 ### Liquidity positions
 
-At a high-level, a liquidity position on Penumbra sets aside reserves for one or both assets in a trading pair and specifies a fixed exchange rate between them. The reserves are denoted by $R_1$ and $R_2$, and the valuations of the assets are denoted by $p_1$ and $p_2$, respectively. The constant-sum trading function $\varphi(R)$ combines the reserves and prices of the two assets according to the formula $\varphi(R) = p_1 \cdot R_1 + p_2 \cdot $_2$. The spread between the bid/ask offered by the position is controlled by a fee $\gamma$.
+At a high-level, a liquidity position on Penumbra sets aside reserves for one or both assets in a trading pair and specifies a fixed exchange rate between them. The reserves are denoted by $R_1$ and $R_2$, and the valuations of the assets are denoted by $p_1$ and $p_2$, respectively. A constant-price pool has a trading function $\varphi(R) = p_1 \cdot R_1 + p_2 \cdot R_2 = k$ where $k$ is a constant.
 
 In practice, a **liquidity position** consists of:
 
@@ -154,18 +154,3 @@ $$
 $$
 
 with $r_1 = p_1 q_2$, $r_3 = p_2 q_3$, fee $\varepsilon = \gamma \delta$, and reserves $T_1$, $T_3$.
-
-
-### Binning
-
-## Tickspace 
-
-## 
-
-
-### Replicating payoffs
-
-1. why, talk about active management vs. passive LPing
-1.5 positive externalities of liveness for liquidity 
-2. provide an example of a polynomial trading function getting interpolated with CSMMs 
-3. payoffs vs. focus on trading functions?

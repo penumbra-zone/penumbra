@@ -3,6 +3,7 @@ use std::str::FromStr;
 use ark_r1cs_std::{
     prelude::{EqGadget, FieldVar},
     uint8::UInt8,
+    ToBitsGadget,
 };
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use decaf377::FieldExt;
@@ -64,6 +65,35 @@ pub struct SpendCircuit {
     pub rk: VerificationKey<SpendAuth>,
 }
 
+impl SpendCircuit {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        state_commitment_proof: tct::Proof,
+        note: Note,
+        v_blinding: Fr,
+        spend_auth_randomizer: Fr,
+        ak: VerificationKey<SpendAuth>,
+        nk: NullifierKey,
+        anchor: tct::Root,
+        balance_commitment: balance::Commitment,
+        nullifier: Nullifier,
+        rk: VerificationKey<SpendAuth>,
+    ) -> Self {
+        Self {
+            state_commitment_proof,
+            note,
+            v_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+            anchor,
+            balance_commitment,
+            nullifier,
+            rk,
+        }
+    }
+}
+
 impl ConstraintSynthesizer<Fq> for SpendCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
@@ -75,6 +105,10 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof.position())
         })?;
+        let position_bits = tct::r1cs::PositionBitsVar::new_witness(cs.clone(), || {
+            Ok(self.state_commitment_proof.position())
+        })?
+        .to_bits_le()?;
         let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof)
         })?;
@@ -113,7 +147,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         merkle_path_var.verify(
             cs.clone(),
             &is_not_dummy,
-            position_var.inner,
+            &position_bits,
             anchor_var,
             claimed_note_commitment.inner(),
         )?;
@@ -163,9 +197,9 @@ impl ParameterSetup for SpendCircuit {
         let rk: VerificationKey<SpendAuth> = rsk.into();
         let nullifier = Nullifier(Fq::from(1));
         let mut sct = tct::Tree::new();
+        let anchor: tct::Root = sct.root();
         let note_commitment = note.commit();
         sct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let anchor = sct.root();
         let state_commitment_proof = sct.witness(note_commitment).unwrap();
 
         let circuit = SpendCircuit {
@@ -236,7 +270,7 @@ impl SpendProof {
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<()> {
         let mut public_inputs = Vec::new();
-        public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
+        public_inputs.extend([Fq::from(anchor.0)]);
         public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
         public_inputs.extend(nullifier.0.to_field_elements().unwrap());
         let element_rk = decaf377::Encoding(rk.to_bytes())

@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-compact-block"
-version = "0.1.0"
+version = "0.52.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -19,6 +19,7 @@ penumbra-proto = { path = "../../proto", default-features = false }
 penumbra-component = { path = "../component", optional = true }
 penumbra-storage = { path = "../../storage", optional = true }
 penumbra-chain = { path = "../../chain", default-features = false }
+penumbra-shielded-pool = { path = "../../crates/shielded-pool", default-features = false }
 penumbra-tct = { path = "../../tct" }
 penumbra-proof-params = { path = "../../proof-params", default-features = false }
 

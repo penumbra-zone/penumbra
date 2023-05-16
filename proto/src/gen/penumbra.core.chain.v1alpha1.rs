@@ -42,8 +42,10 @@ pub struct ChainParameters {
     #[prost(uint64, tag = "20")]
     pub proposal_voting_blocks: u64,
     /// The deposit required to create a proposal.
-    #[prost(uint64, tag = "21")]
-    pub proposal_deposit_amount: u64,
+    #[prost(message, optional, tag = "21")]
+    pub proposal_deposit_amount: ::core::option::Option<
+        super::super::crypto::v1alpha1::Amount,
+    >,
     /// The quorum required for a proposal to be considered valid, as a fraction of the total stake
     /// weight of the network.
     #[prost(string, tag = "22")]

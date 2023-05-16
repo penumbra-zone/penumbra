@@ -1,3 +1,4 @@
+use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
@@ -7,7 +8,7 @@ use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 use crate::{fixpoint::U128x128, Fq, Fr};
 use decaf377::{r1cs::FqVar, FieldExt};
 
-#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Ord, Eq, Clone, Copy)]
+#[derive(Serialize, Default, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 #[serde(try_from = "pb::Amount", into = "pb::Amount")]
 pub struct Amount {
     inner: u128,
@@ -49,6 +50,14 @@ impl Amount {
 #[derive(Clone)]
 pub struct AmountVar {
     pub amount: FqVar,
+}
+
+impl ToConstraintField<Fq> for Amount {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let mut elements = Vec::new();
+        elements.extend_from_slice(&[Fq::from(self.inner)]);
+        Some(elements)
+    }
 }
 
 impl AmountVar {
@@ -246,33 +255,11 @@ impl From<u64> for Amount {
     }
 }
 
-impl From<Amount> for u64 {
-    fn from(amount: Amount) -> u64 {
-        amount.inner as u64
-    }
-}
-
-impl TryFrom<Amount> for i64 {
-    type Error = anyhow::Error;
-    fn try_from(value: Amount) -> Result<Self, Self::Error> {
-        value
-            .inner
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("failed conversion!"))
-    }
-}
-
 impl From<u32> for Amount {
     fn from(amount: u32) -> Amount {
         Amount {
             inner: amount as u128,
         }
-    }
-}
-
-impl From<Amount> for u32 {
-    fn from(amount: Amount) -> u32 {
-        amount.inner as u32
     }
 }
 

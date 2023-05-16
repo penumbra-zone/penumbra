@@ -1,10 +1,10 @@
 use crate::Address;
-use ark_ff::PrimeField;
+use ark_ff::{PrimeField, ToConstraintField};
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{
     r1cs::{ElementVar, FqVar},
-    Element, Fq,
+    Element, FieldExt, Fq,
 };
 
 pub struct AddressVar {
@@ -36,34 +36,46 @@ impl AllocVar<Address, Fq> for AddressVar {
         let ns = cs.into();
         let cs = ns.cs();
         let address: Address = *f()?.borrow();
-        match mode {
-            AllocationMode::Constant => unimplemented!(),
-            AllocationMode::Input => unimplemented!(),
-            AllocationMode::Witness => {
-                let diversified_generator: ElementVar =
-                    AllocVar::<Element, Fq>::new_witness(cs.clone(), || {
-                        Ok(address.diversified_generator().clone())
-                    })?;
-                let element_transmission_key = decaf377::Encoding(address.transmission_key().0)
-                    .vartime_decompress()
-                    .map_err(|_| SynthesisError::AssignmentMissing)?;
-                let transmission_key: ElementVar =
-                    AllocVar::<Element, Fq>::new_witness(cs.clone(), || {
-                        Ok(element_transmission_key)
-                    })?;
-                let clue_key = FqVar::new_witness(cs, || {
-                    Ok(Fq::from_le_bytes_mod_order(&address.clue_key().0[..]))
-                })?;
 
-                Ok(Self {
-                    diversified_generator,
-                    transmission_key,
-                    clue_key,
-                })
-            }
-        }
+        let diversified_generator: ElementVar = AllocVar::<Element, Fq>::new_variable(
+            cs.clone(),
+            || Ok(address.diversified_generator().clone()),
+            mode,
+        )?;
+        let element_transmission_key = decaf377::Encoding(address.transmission_key().0)
+            .vartime_decompress()
+            .map_err(|_| SynthesisError::AssignmentMissing)?;
+        let transmission_key: ElementVar = AllocVar::<Element, Fq>::new_variable(
+            cs.clone(),
+            || Ok(element_transmission_key),
+            mode,
+        )?;
+        let clue_key = FqVar::new_variable(
+            cs,
+            || Ok(Fq::from_le_bytes_mod_order(&address.clue_key().0[..])),
+            mode,
+        )?;
+
+        Ok(Self {
+            diversified_generator,
+            transmission_key,
+            clue_key,
+        })
     }
 }
 
 // We do not implement the R1CSVar trait for AddressVar since we do not have the
 // diversifier in-circuit in order to construct an Address.
+
+impl ToConstraintField<Fq> for Address {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let mut elements = Vec::new();
+        elements.extend(self.diversified_generator().to_field_elements()?);
+        let transmission_key_fq = decaf377::Encoding(self.transmission_key().0)
+            .vartime_decompress()
+            .expect("transmission key is valid decaf377 Element");
+        elements.extend([transmission_key_fq.vartime_compress_to_field()]);
+        elements.extend(Fq::from_bytes(self.clue_key().0));
+        Some(elements)
+    }
+}

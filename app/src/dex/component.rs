@@ -3,11 +3,11 @@ use std::{collections::BTreeMap, sync::Arc};
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_component::Component;
 use penumbra_crypto::{
+    asset,
     dex::{execution::SwapExecution, BatchSwapOutputData, TradingPair},
-    SwapFlow,
+    SwapFlow, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
@@ -15,8 +15,8 @@ use tendermint::abci;
 use tracing::instrument;
 
 use super::{
-    router::{self, RouteAndFill},
-    state_key,
+    router::{HandleBatchSwaps, RoutingParams},
+    state_key, Arbitrage, PositionManager,
 };
 
 pub struct Dex {}
@@ -41,6 +41,7 @@ impl Component for Dex {
         end_block: &abci::request::EndBlock,
     ) {
         let current_epoch = state.epoch().await.unwrap();
+
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
         for (trading_pair, swap_flows) in state.swap_flows() {
             state
@@ -49,11 +50,47 @@ impl Component for Dex {
                     swap_flows,
                     end_block.height.try_into().expect("missing height"),
                     current_epoch.start_height,
-                    router::hardcoded_candidates(),
+                    // Always include both ends of the target pair as fixed candidates.
+                    RoutingParams::default_with_extra_candidates([
+                        trading_pair.asset_1(),
+                        trading_pair.asset_2(),
+                    ]),
                 )
                 .await
                 .expect("unable to process batch swaps");
         }
+
+        // Then, perform arbitrage:
+        let arb_burn = state
+            .arbitrage(
+                *STAKING_TOKEN_ASSET_ID,
+                vec![
+                    *STAKING_TOKEN_ASSET_ID,
+                    asset::REGISTRY.parse_unit("gm").id(),
+                    asset::REGISTRY.parse_unit("gn").id(),
+                    asset::REGISTRY.parse_unit("test_usd").id(),
+                    asset::REGISTRY.parse_unit("test_btc").id(),
+                    asset::REGISTRY.parse_unit("test_atom").id(),
+                    asset::REGISTRY.parse_unit("test_osmo").id(),
+                ],
+            )
+            .await
+            .expect("must be able to process arbitrage");
+
+        if arb_burn.amount != 0u64.into() {
+            // TODO: hack to avoid needing an asset cache for nice debug output
+            let unit = asset::REGISTRY.parse_unit("penumbra");
+            let burn = format!("{}{}", unit.format_value(arb_burn.amount), unit);
+            tracing::info!(%burn, "executed arbitrage opportunity");
+        }
+
+        // Next, close all positions queued for closure at the end of the block.
+        // It's important to do this after execution, to allow block-scoped JIT liquidity.
+        Arc::get_mut(state)
+            .expect("state should be uniquely referenced after batch swaps complete")
+            .close_queued_positions()
+            .await
+            .unwrap();
     }
 
     #[instrument(name = "dex", skip(_state))]
@@ -83,6 +120,10 @@ pub trait StateReadExt: StateRead {
             .await
     }
 
+    async fn arb_execution(&self, height: u64) -> Result<Option<SwapExecution>> {
+        self.get(&state_key::arb_execution(height)).await
+    }
+
     // Get the swap flow for the given trading pair accumulated in this block so far.
     fn swap_flow(&self, pair: &TradingPair) -> SwapFlow {
         self.swap_flows().get(pair).cloned().unwrap_or_default()
@@ -104,15 +145,23 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         let height = output_data.height;
         let trading_pair = output_data.trading_pair;
         self.put(state_key::output_data(height, trading_pair), output_data);
+
         // Store the swap execution in the state as well.
         self.put(
             state_key::swap_execution(height, trading_pair),
             swap_execution,
         );
-        // ... and also add it to the compact block to be pushed out to clients.
-        let mut compact_block = self.stub_compact_block();
-        compact_block.swap_outputs.insert(trading_pair, output_data);
-        self.stub_put_compact_block(compact_block);
+
+        // ... and also add it to the set in the compact block to be pushed out to clients.
+        let mut outputs: im::OrdMap<TradingPair, BatchSwapOutputData> = self
+            .object_get(state_key::pending_outputs())
+            .unwrap_or_default();
+        outputs.insert(trading_pair, output_data);
+        self.object_put(state_key::pending_outputs(), outputs);
+    }
+
+    fn set_arb_execution(&mut self, height: u64, execution: SwapExecution) {
+        self.put(state_key::arb_execution(height), execution);
     }
 
     fn put_swap_flow(&mut self, trading_pair: &TradingPair, swap_flow: SwapFlow) {

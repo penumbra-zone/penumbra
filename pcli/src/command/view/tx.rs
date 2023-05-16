@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use penumbra_crypto::{
     asset::Cache,
-    dex::{lp::position::Position, swap::SwapPlaintext},
+    dex::{lp::position::Position, swap::SwapPlaintext, DirectedUnitPair},
     keys::IncomingViewingKey,
     Address, Note, NoteView, Value,
 };
@@ -187,16 +187,32 @@ fn format_position_row(asset_cache: &Cache, position: Position) -> String {
         .get(&trading_pair.asset_2())
         .expect("asset should be known to view service");
 
-    let display_denom_1 = denom_1.default_unit();
-    let display_denom_2 = denom_2.default_unit();
+    let unit_1 = denom_1.default_unit();
+    let unit_2 = denom_2.default_unit();
+
+    // TODO: leaving this around since we may want it to render prices
+    let _unit_pair = DirectedUnitPair {
+        start: unit_1.clone(),
+        end: unit_2.clone(),
+    };
+
+    let r1 = Value {
+        amount: position.reserves.r1,
+        asset_id: trading_pair.asset_1(),
+    };
+    let r2 = Value {
+        amount: position.reserves.r2,
+        asset_id: trading_pair.asset_2(),
+    };
 
     format!(
-        "ID: {} Trading Pair: ({}, {}) State: {} Fee: {}",
-        position.id(),
-        display_denom_1,
-        display_denom_2,
-        position.state,
+        // TODO: nicely render prices
+        // "Reserves: ({}, {})  Prices: ({}, {})  Fee: {} ID: {}",
+        "Reserves: ({}, {})  Fee: {} ID: {}",
+        r1.format(asset_cache),
+        r2.format(asset_cache),
         position.phi.component.fee,
+        position.id(),
     )
 }
 

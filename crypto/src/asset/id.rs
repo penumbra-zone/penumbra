@@ -1,5 +1,5 @@
 use crate::Amount;
-use ark_ff::fields::PrimeField;
+use ark_ff::{fields::PrimeField, ToConstraintField};
 use ark_serialize::CanonicalDeserialize;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
@@ -26,7 +26,7 @@ use crate::{Fq, Value};
 ///
 /// [ADR001]:
 /// https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-001-coin-source-tracing.md
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[serde(try_from = "pb::AssetId", into = "pb::AssetId")]
 pub struct Id(pub Fq);
 
@@ -99,6 +99,14 @@ impl std::str::FromStr for Id {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let inner = bech32str::decode(s, bech32str::asset_id::BECH32_PREFIX, bech32str::Bech32m)?;
         pb::AssetId { inner }.try_into()
+    }
+}
+
+impl ToConstraintField<Fq> for Id {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let mut elements = Vec::new();
+        elements.extend_from_slice(&[self.0]);
+        Some(elements)
     }
 }
 

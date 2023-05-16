@@ -182,6 +182,11 @@ impl ViewService {
                 .actions()
                 .filter_map(|action| match action {
                     penumbra_transaction::Action::Spend(spend) => Some(spend.body.nullifier),
+                    /*
+                    penumbra_transaction::Action::SwapClaim(swap_claim) => {
+                        Some(swap_claim.body.nullifier)
+                    }
+                     */
                     _ => None,
                 })
                 .next()
@@ -312,8 +317,23 @@ impl ViewProtocolService for ViewService {
                 tonic::Status::internal(format!("could not broadcast transaction: {:#}", e))
             })?;
 
+        let detection_height = if await_detection {
+            // We already awaited detection, so we expect to know about the transaction:
+            self.storage
+                .transaction_by_hash(&id.0)
+                .await
+                .map_err(|e| tonic::Status::internal(format!("error querying storage: {:#}", e)))?
+                .map(|(height, _tx)| height)
+                // If we didn't find it for some reason, return 0 for unknown.
+                // TODO: how does this change if we detach extended transaction fetch from scanning?
+                .unwrap_or(0)
+        } else {
+            0
+        };
+
         Ok(tonic::Response::new(pb::BroadcastTransactionResponse {
             id: Some(id.into()),
+            detection_height,
         }))
     }
 
@@ -810,31 +830,31 @@ impl ViewProtocolService for ViewService {
         self.check_account_group_id(request.get_ref().account_group_id.as_ref())
             .await?;
 
-        let include_spent = request.get_ref().include_spent;
+        let request = request.into_inner();
+
+        let include_spent = request.include_spent;
         let asset_id = request
-            .get_ref()
             .asset_id
             .to_owned()
             .map(asset::Id::try_from)
             .map_or(Ok(None), |v| v.map(Some))
             .map_err(|_| tonic::Status::invalid_argument("invalid asset id"))?;
         let address_index = request
-            .get_ref()
             .address_index
             .to_owned()
             .map(AddressIndex::try_from)
             .map_or(Ok(None), |v| v.map(Some))
             .map_err(|_| tonic::Status::invalid_argument("invalid address index"))?;
-        let amount_to_spend = request.get_ref().amount_to_spend;
+
+        let amount_to_spend = request
+            .amount_to_spend
+            .map(Amount::try_from)
+            .map_or(Ok(None), |v| v.map(Some))
+            .map_err(|_| tonic::Status::invalid_argument("invalid amount to spend"))?;
 
         let notes = self
             .storage
-            .notes(
-                include_spent,
-                asset_id,
-                address_index,
-                amount_to_spend.into(),
-            )
+            .notes(include_spent, asset_id, address_index, amount_to_spend)
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error fetching notes: {e}")))?;
 

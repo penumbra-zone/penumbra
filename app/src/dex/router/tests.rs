@@ -1,5 +1,5 @@
 use crate::dex::position_manager::PositionRead;
-use crate::dex::router::RouteAndFill;
+use crate::dex::router::HandleBatchSwaps;
 use crate::dex::{router::path::Path, router::FillRoute, PositionManager};
 use crate::dex::{StateReadExt, StateWriteExt};
 use crate::temp_storage_ext::TempStorageExt;
@@ -10,7 +10,7 @@ use penumbra_crypto::{
     asset,
     dex::{
         lp::{position, Reserves},
-        DirectedTradingPair, Market,
+        DirectedTradingPair, DirectedUnitPair,
     },
     fixpoint::U128x128,
     Amount, Value,
@@ -21,7 +21,7 @@ use penumbra_storage::{StateDelta, StateWrite};
 use rand_core::OsRng;
 use std::sync::Arc;
 
-use super::PathSearch;
+use super::{PathSearch, RoutingParams};
 
 #[tokio::test(flavor = "multi_thread")]
 async fn path_search_basic() {
@@ -36,7 +36,14 @@ async fn path_search_basic() {
 
     tracing::info!(src = %gm, dst = %penumbra, "searching for path");
     let (_path, _spill) = state
-        .path_search(gm.id(), penumbra.id(), 4, super::hardcoded_candidates())
+        .path_search(
+            gm.id(),
+            penumbra.id(),
+            RoutingParams {
+                max_hops: 4,
+                ..Default::default()
+            },
+        )
         .await
         .unwrap();
 
@@ -46,8 +53,10 @@ async fn path_search_basic() {
         .path_search(
             penumbra.id(),
             penumbra.id(),
-            8,
-            super::hardcoded_candidates(),
+            RoutingParams {
+                max_hops: 8,
+                ..Default::default()
+            },
         )
         .await
         .unwrap();
@@ -316,7 +325,13 @@ fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
 
 /// Create a `Position` to buy `asset_1` using `asset_2` with explicit p/q.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
-fn limit_buy_pq(market: Market, quantity: Amount, p: Amount, q: Amount, fee: u32) -> Position {
+fn limit_buy_pq(
+    market: DirectedUnitPair,
+    quantity: Amount,
+    p: Amount,
+    q: Amount,
+    fee: u32,
+) -> Position {
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),
@@ -332,7 +347,11 @@ fn limit_buy_pq(market: Market, quantity: Amount, p: Amount, q: Amount, fee: u32
 
 /// Create a `Position` to buy `asset_1` using `asset_2`.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
-pub(crate) fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
+pub(crate) fn limit_buy(
+    market: DirectedUnitPair,
+    quantity: Amount,
+    price_in_numeraire: Amount,
+) -> Position {
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),
@@ -347,7 +366,11 @@ pub(crate) fn limit_buy(market: Market, quantity: Amount, price_in_numeraire: Am
 }
 
 /// Create a `Position` to sell `asset_1` into `asset_2`.
-pub(crate) fn limit_sell(market: Market, quantity: Amount, price_in_numeraire: Amount) -> Position {
+pub(crate) fn limit_sell(
+    market: DirectedUnitPair,
+    quantity: Amount,
+    price_in_numeraire: Amount,
+) -> Position {
     Position::new(
         OsRng,
         market.into_directed_trading_pair(),
@@ -438,6 +461,7 @@ async fn position_get_best_price() -> anyhow::Result<()> {
 /// Test that positions are fetched in-order and that updating reserves
 /// deindex them correctly.
 async fn test_multiple_similar_position() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
     let storage = TempStorage::new().await?.apply_default_genesis().await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
@@ -445,7 +469,7 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
     let gm = asset::REGISTRY.parse_unit("gm");
     let gn = asset::REGISTRY.parse_unit("gn");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
 
     let one = 1u64.into();
     let price1 = one;
@@ -481,8 +505,10 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
         .is_none());
     Ok(())
 }
+
 #[tokio::test]
 async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
     let storage = TempStorage::new().await?.apply_default_genesis().await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
@@ -507,9 +533,9 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("test_usd");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
-    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
+    let pair_3 = DirectedUnitPair::new(penumbra.clone(), pusd.clone());
 
     let one: Amount = 1u64.into();
 
@@ -517,7 +543,7 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     let price2 = 2u64.into();
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let buy_1 = limit_buy(pair_1.clone(), 3u64.into(), price2);
     let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
@@ -613,12 +639,12 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("test_usd");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
-    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
+    let pair_3 = DirectedUnitPair::new(penumbra.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let one: Amount = 1u64.into();
 
@@ -699,8 +725,8 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
             ------------------------------------------------------------------------------------------------------------
             |                              |                                     |                                     |
             | ^-bids---------asks-v        |   ^-bids---------asks-v             |   ^-bids---------asks-v             |
-            |        1gm@1                 |          1gn@2                      |         1penumbra@1500              |
-            |        1gm@1                 |          1gn@2                      |         1penumbra@1500              |
+            |        1gm@1                 |          1gn@1                      |         1penumbra@1500              |
+            |        1gm@1                 |          1gn@1                      |         1penumbra@1500              |
             |                              |                                     |         1penumbra@1500              |
             |                              |                                     |         1penumbra@1500              |
             |                              |                                     |         1penumbra@1500              |
@@ -712,12 +738,12 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("test_usd");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
-    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
+    let pair_3 = DirectedUnitPair::new(penumbra.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let one = 1u64.into();
     let price1 = one;
@@ -726,9 +752,8 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     state_tx.put_position(buy_1);
     state_tx.put_position(buy_2);
 
-    let price2 = 2u64.into();
-    let buy_1 = limit_buy(pair_2.clone(), 1u64.into(), price2);
-    let buy_2 = limit_buy(pair_2.clone(), 1u64.into(), price2);
+    let buy_1 = limit_buy(pair_2.clone(), 1u64.into(), price1);
+    let buy_2 = limit_buy(pair_2.clone(), 1u64.into(), price1);
     state_tx.put_position(buy_1);
     state_tx.put_position(buy_2);
 
@@ -759,12 +784,23 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
             .await
             .unwrap();
 
-    let desired_output = Amount::from(3000u64) * pusd.unit_amount();
+    let desired_output = Amount::from(1500u64) * pusd.unit_amount();
 
-    assert_eq!(unfilled.amount, Amount::zero());
-    assert_eq!(unfilled.asset_id, gm.id());
-    assert_eq!(output.amount, desired_output);
-    assert_eq!(output.asset_id, pusd.id());
+    assert_eq!(
+        unfilled.asset_id,
+        gm.id(),
+        "the unfilled asset id is correct"
+    );
+    assert_eq!(output.asset_id, pusd.id(), "the output asset id is correct");
+    assert_eq!(
+        unfilled.amount,
+        Amount::zero(),
+        "there is no unfilled amount"
+    );
+    assert_eq!(
+        output.amount, desired_output,
+        "the output amount is correct"
+    );
 
     Ok(())
 }
@@ -794,12 +830,12 @@ async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("test_usd");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
-    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
+    let pair_3 = DirectedUnitPair::new(penumbra.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let one = 1u64.into();
     let price1 = one;
@@ -863,8 +899,6 @@ async fn fill_route_underflow_effective_price() -> anyhow::Result<()> {
     Ok(())
 }
 
-// TODO: remove this ignore once the test passes
-#[ignore]
 #[tokio::test]
 async fn simple_route() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
@@ -875,15 +909,23 @@ async fn simple_route() -> anyhow::Result<()> {
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
-    let pair_1 = Market::new(gn.clone(), penumbra.clone());
+    let pair_1 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
     let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), 1u64.into());
     state_tx.put_position(buy_1);
+    state_tx.apply();
 
     // We should be able to call path_search and route through that position.
     let (path, _spill) = state
-        .path_search(gn.id(), penumbra.id(), 1, super::hardcoded_candidates())
+        .path_search(
+            gn.id(),
+            penumbra.id(),
+            RoutingParams {
+                max_hops: 1,
+                ..Default::default()
+            },
+        )
         .await
         .unwrap();
 
@@ -904,7 +946,7 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
-    let pair_1 = Market::new(gn.clone(), penumbra.clone());
+    let pair_1 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
     let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), 1u64.into());
@@ -913,7 +955,7 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
 
     // We should be able to call path_search and route through that position.
     let (path, _spill) = state
-        .path_search(gn.id(), penumbra.id(), 4, super::hardcoded_candidates())
+        .path_search(gn.id(), penumbra.id(), RoutingParams::default())
         .await
         .unwrap();
 
@@ -942,7 +984,7 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
             swap_flow,
             0u32.into(),
             0,
-            super::hardcoded_candidates(),
+            RoutingParams::default(),
         )
         .await
         .expect("unable to process batch swaps");
@@ -955,13 +997,13 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     // 1 gn in
     assert_eq!(output_data.delta_2, 1u64.into());
     // 0 unfilled penumbra out
-    assert_eq!(output_data.lambda_1_1, 0u64.into());
+    assert_eq!(output_data.unfilled_1, 0u64.into());
     // 0 gn out for penumbra -> gn
-    assert_eq!(output_data.lambda_2_1, 0u64.into());
+    assert_eq!(output_data.lambda_2, 0u64.into());
     // 1 penumbra out for gn -> penumbra
-    assert_eq!(output_data.lambda_1_2, 1u64.into());
+    assert_eq!(output_data.lambda_1, 1u64.into());
     // 0 unfilled gn
-    assert_eq!(output_data.lambda_2_2, 0u64.into());
+    assert_eq!(output_data.unfilled_2, 0u64.into());
 
     Ok(())
 }
@@ -977,10 +1019,10 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
-    let pair_gn_penumbra = Market::new(gn.clone(), penumbra.clone());
-    let pair_gm_gn = Market::new(gm.clone(), gn.clone());
-    let pair_gn_gm = Market::new(gn.clone(), gm.clone());
-    let pair_gm_penumbra = Market::new(gm.clone(), penumbra.clone());
+    let pair_gn_penumbra = DirectedUnitPair::new(gn.clone(), penumbra.clone());
+    let pair_gm_gn = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_gn_gm = DirectedUnitPair::new(gn.clone(), gm.clone());
+    let pair_gm_penumbra = DirectedUnitPair::new(gm.clone(), penumbra.clone());
 
     // Create a 2:1 penumbra:gm position (i.e. buy 20 gm at 2 penumbra each).
     let buy_1 = limit_buy_pq(
@@ -1054,7 +1096,7 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     // consume all penumbra liquidity on the direct gm:penumbra pairs, as well as route through the
     // gm:gn and gn:penumbra pairs to obtain penumbra.
     let (path, _spill) = state
-        .path_search(gm.id(), penumbra.id(), 4, super::hardcoded_candidates())
+        .path_search(gm.id(), penumbra.id(), RoutingParams::default())
         .await
         .unwrap();
 
@@ -1081,7 +1123,7 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
             swap_flow,
             0u32.into(),
             0,
-            super::hardcoded_candidates(),
+            RoutingParams::default(),
         )
         .await
         .expect("unable to process batch swaps");
@@ -1094,7 +1136,7 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     // 0 penumbra in
     assert_eq!(output_data.delta_2, 0u64.into());
     // Some gm leftover
-    assert!(output_data.lambda_1_1 > 0u64.into());
+    assert!(output_data.unfilled_1 > 0u64.into());
 
     // Verify all positions that provided `penumbra` have had all their liquidity consumed.
     let mut s = state.all_positions();
@@ -1125,11 +1167,11 @@ async fn fill_dust_route() -> anyhow::Result<()> {
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let one = 1u64.into();
     let price1 = one;
@@ -1187,11 +1229,11 @@ async fn fill_route_dust() -> () {
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let one = 1u64.into();
     let price1 = one;
@@ -1245,12 +1287,12 @@ async fn fill_route_with_dust_constraint() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let pusd = asset::REGISTRY.parse_unit("test_usd");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
-    let pair_3 = Market::new(penumbra.clone(), pusd.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
+    let pair_3 = DirectedUnitPair::new(penumbra.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let one = 1u64.into();
     let price1 = one;
@@ -1323,13 +1365,13 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
     let pusd = asset::REGISTRY.parse_unit("test_usd");
     let btc = asset::REGISTRY.parse_unit("test_btc");
 
-    let pair_1 = Market::new(gm.clone(), gn.clone());
-    let pair_2 = Market::new(gn.clone(), penumbra.clone());
-    let pair_3 = Market::new(penumbra.clone(), btc.clone());
-    let pair_4 = Market::new(btc.clone(), pusd.clone());
+    let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+    let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
+    let pair_3 = DirectedUnitPair::new(penumbra.clone(), btc.clone());
+    let pair_4 = DirectedUnitPair::new(btc.clone(), pusd.clone());
 
     let traces: im::Vector<Vec<Value>> = im::Vector::new();
-    state_tx.object_put("swap_execution", traces);
+    state_tx.object_put("trade_traces", traces);
 
     let one = 1u64.into();
     let price1 = one;
@@ -1405,7 +1447,7 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
     let spill_price =
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
 
-    let (unfilled, output) =
+    let (_unfilled, _output) =
         FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
             .await
             .unwrap();

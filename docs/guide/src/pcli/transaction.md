@@ -67,13 +67,14 @@ The basic commands for opening liquidity positions are `tx position order buy` a
 To open an order buying `10cube` at a price of `1penumbra` each, with no fee, you'd do the following:
 
 ```bash
-cargo run --release --bin pcli -- tx position order buy 10cube@1penumbra --fee 0
+cargo run --release --bin pcli -- tx position order buy 10cube@1penumbra --spread 0
 ```
 
-Similarly, to open an order selling `100penumbra` at a price of `5gm` each, with a `20bps` fee, you'd do the following:
+Similarly, to open an order selling `100penumbra` at a price of `5gm` each, with a `20bps` fee on transactions
+against the liquidity position, you'd do the following:
 
 ```bash
-cargo run --release --bin pcli -- tx position order sell 100penumbra@5gm --fee 20
+cargo run --release --bin pcli -- tx position order sell 100penumbra@5gm --spread 20
 ```
 
 After opening the position, you'll see that your account has been deposited an "LPNFT" representing the open position:
@@ -102,6 +103,13 @@ $ cargo run --release --bin pcli -- view balance
  0        1lpnft_closed_plpid1hzrzr2myjw508nf0hyzehl0w0x2xzr4t8vwe6t3qtnfhsqzf5lzsufscqr
 ```
 
+You also have the option to close **all** liquidity positions associated with an address at once. This is useful if you have many individual positions, e.g. due to
+trading function approximation:
+
+```bash
+cargo run --release --bin pcli -- tx position close-all
+```
+
 ### Withdrawing a Liquidity Position
 
 If you have a closed liquidity position, you may withdraw it, depositing the reserves in the trading position into your balance.
@@ -120,6 +128,13 @@ $ cargo run --release --bin pcli -- view balance
  0        1cube
 ```
 
+You also have the option to withdraw **all** liquidity positions associated with an address at once. This is useful if you have many individual positions, e.g. due to
+trading function approximation:
+
+```bash
+cargo run --release --bin pcli -- tx position withdraw-all
+```
+
 ## Swapping Assets
 
 One of the most exciting features of Penumbra is that by using IBC (inter-blockchain communication)
@@ -136,3 +151,22 @@ cargo run --release --bin pcli -- tx swap --into gm 1penumbra
 This will handle generating the swap transaction and you'd soon have the market-rate equivalent of 1 `penumbra`
 in `gm` tokens returned to you, or the original investment of 1 `penumbra` tokens returned if there wasn't
 enough liquidity available to perform the swap.
+
+## Replicating a UniswapV2 (`x*y=k`) pool 
+
+Penumbra's constant-price pool is a versatile market primitive, allowing users extensive control over their trading strategies. It's not solely for active DEX quoters; with our AMM replication tool, users can emulate any passive AMM of their choice. The testnet comes with a built-in UniswapV2 replicator that is utilized as such:
+
+```bash
+cargo run -r --bin pcli tx lp replicate xyk <TRADING_PAIR> <QUANTITY> [--current-price AMT] [--fee-bps AMT]
+```
+For instance, to provide ~100penumbra and ~100test_usd liquidity on the `penumbra:test_usd` pair with a pool fee of `33bps`, run:
+
+```bash
+cargo run -r --bin pcli tx lp replicate penumbra:test_usd 100penumbra --fee-bps 33
+```
+
+You will be prompted a disclaimer which you should read carefully, and accept or reject by pressing "y" for yes, or "n" for no.
+
+The replicating market makers tool will then generate a list of positions that you can submit by pressing "y", or reject by pressing "n".
+
+There are other pairs available that you can try this tool on, for example `gm:gn` or `gm:penumbra`.

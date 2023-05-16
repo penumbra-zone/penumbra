@@ -16,7 +16,7 @@ pub fn all_positions() -> &'static str {
 
 pub fn output_data(height: u64, trading_pair: TradingPair) -> String {
     format!(
-        "dex/output/{}/{}/{}",
+        "dex/output/{:020}/{}/{}",
         height,
         &trading_pair.asset_1(),
         &trading_pair.asset_2()
@@ -25,15 +25,31 @@ pub fn output_data(height: u64, trading_pair: TradingPair) -> String {
 
 pub fn swap_execution(height: u64, trading_pair: TradingPair) -> String {
     format!(
-        "dex/swap_execution/{}/{}/{}",
+        "dex/swap_execution/{:020}/{}/{}",
         height,
         &trading_pair.asset_1(),
         &trading_pair.asset_2()
     )
 }
 
+pub fn arb_execution(height: u64) -> String {
+    format!("dex/arb_execution/{height:020}")
+}
+
 pub fn swap_flows() -> &'static str {
     "dex/swap_flows"
+}
+
+pub fn pending_position_closures() -> &'static str {
+    "dex/pending_position_closures"
+}
+
+pub fn pending_payloads() -> &'static str {
+    "dex/pending_payloads"
+}
+
+pub fn pending_outputs() -> &'static str {
+    "dex/pending_outputs"
 }
 
 /// Encompasses non-consensus state keys.

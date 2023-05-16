@@ -11,7 +11,7 @@ use crate::asset;
 /// which unbonding began, and the epoch at which unbonding ends.
 pub struct VotingReceiptToken {
     proposal_id: u64,
-    base_denom: asset::Denom,
+    base_denom: asset::DenomMetadata,
 }
 
 impl VotingReceiptToken {
@@ -27,7 +27,7 @@ impl VotingReceiptToken {
     }
 
     /// Get the base denomination for this delegation token.
-    pub fn denom(&self) -> asset::Denom {
+    pub fn denom(&self) -> asset::DenomMetadata {
         self.base_denom.clone()
     }
 
@@ -47,10 +47,10 @@ impl VotingReceiptToken {
     }
 }
 
-impl TryFrom<asset::Denom> for VotingReceiptToken {
+impl TryFrom<asset::DenomMetadata> for VotingReceiptToken {
     type Error = anyhow::Error;
 
-    fn try_from(base_denom: asset::Denom) -> Result<Self, Self::Error> {
+    fn try_from(base_denom: asset::DenomMetadata) -> Result<Self, Self::Error> {
         let base_string = base_denom.to_string();
 
         // Note: this regex must be in sync with both asset::REGISTRY

@@ -16,4 +16,6 @@
   - [Building documentation](./dev/docs.md)
   - [Building protobuf](./dev/protobuf.md)
   - [Metrics](./dev/metrics.md)
+  - [Parameter Setup](./dev/parameter_setup.md)
+  - [RPC access](./dev/rpc.md)
 - [Resources](./resources.md)

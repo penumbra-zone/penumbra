@@ -6,7 +6,7 @@ use std::{fmt, str::FromStr};
 
 use crate::asset::{self, Unit, REGISTRY};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
 #[serde(try_from = "pb::DirectedTradingPair", into = "pb::DirectedTradingPair")]
 pub struct DirectedTradingPair {
     pub start: asset::Id,
@@ -211,24 +211,48 @@ impl fmt::Display for TradingPair {
 /// A directed tuple of `Unit`s, similar to a `DirectedTradingPair` but embedding
 /// useful denom data.
 #[derive(Clone, Debug)]
-pub struct Market {
+pub struct DirectedUnitPair {
     pub start: Unit,
     pub end: Unit,
 }
 
-impl Market {
+impl DirectedUnitPair {
     pub fn new(start: Unit, end: Unit) -> Self {
         Self { start, end }
     }
+
+    pub fn to_string(&self) -> String {
+        format!("{}:{}", self.start.to_string(), self.end.to_string())
+    }
+
+    pub fn to_canonical_string(&self) -> String {
+        if self.match_canonical_ordering() {
+            self.to_string()
+        } else {
+            self.flip().to_string()
+        }
+    }
+
+    pub fn match_canonical_ordering(&self) -> bool {
+        self.start.id() > self.end.id()
+    }
+
     pub fn into_directed_trading_pair(&self) -> DirectedTradingPair {
         DirectedTradingPair {
             start: self.start.id(),
             end: self.end.id(),
         }
     }
+
+    pub fn flip(&self) -> Self {
+        DirectedUnitPair {
+            start: self.end.clone(),
+            end: self.start.clone(),
+        }
+    }
 }
 
-impl FromStr for Market {
+impl FromStr for DirectedUnitPair {
     type Err = anyhow::Error;
 
     /// Takes an input of the form DENOM1:DENOM2,

@@ -1,15 +1,19 @@
 use penumbra_crypto::{
-    asset::{self, Denom},
+    asset::{self},
     note, AddressView, Note, NoteView, Nullifier, PayloadKey,
 };
 use penumbra_proto::core::transaction::v1alpha1::{
     self as pb, NullifierWithNote, PayloadKeyWithCommitment,
 };
+
 use std::collections::BTreeMap;
+
+use crate::Id;
 
 /// This represents the data to understand an individual transaction without
 /// disclosing viewing keys.
 #[derive(Debug, Clone, Default)]
+
 pub struct TransactionPerspective {
     /// List of per-action payload keys. These can be used to decrypt
     /// the notes, swaps, and memo keys in the transaction.
@@ -34,6 +38,8 @@ pub struct TransactionPerspective {
     pub address_views: Vec<AddressView>,
     /// Any relevant denoms for viewed assets.
     pub denoms: asset::Cache,
+    /// The transaction ID associated with this TransactionPerspective
+    pub transaction_id: Id,
 }
 
 impl TransactionPerspective {
@@ -100,6 +106,7 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
             advice_notes,
             address_views,
             denoms,
+            transaction_id: Some(msg.transaction_id.into()),
         }
     }
 }
@@ -112,7 +119,7 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
         let mut spend_nullifiers = BTreeMap::new();
         let mut advice_notes = BTreeMap::new();
         let mut address_views = Vec::new();
-        let mut denoms = Vec::new();
+        let mut denoms = BTreeMap::new();
 
         for pk in msg.payload_keys {
             if pk.commitment.is_some() {
@@ -140,15 +147,24 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
         }
 
         for denom in msg.denoms {
-            denoms.push(Denom::try_from(denom)?);
+            denoms.insert(
+                denom.penumbra_asset_id.clone().unwrap().try_into()?,
+                denom.try_into()?,
+            );
         }
+
+        let transaction_id: crate::Id = match msg.transaction_id {
+            Some(tx_id) => tx_id.try_into()?,
+            None => Id::default(),
+        };
 
         Ok(Self {
             payload_keys,
             spend_nullifiers,
             advice_notes,
             address_views,
-            denoms: denoms.into_iter().collect(),
+            denoms: denoms.try_into()?,
+            transaction_id,
         })
     }
 }

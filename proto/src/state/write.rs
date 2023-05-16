@@ -9,7 +9,7 @@ pub trait StateWriteProto: StateWrite + Send + Sync {
     fn put<D>(&mut self, key: String, value: D)
     where
         D: DomainType,
-        <D as TryFrom<D::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
+        anyhow::Error: From<<D as TryFrom<D::Proto>>::Error>,
     {
         self.put_proto(key, D::Proto::from(value));
     }

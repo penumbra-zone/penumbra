@@ -142,6 +142,21 @@ impl Position {
         }
     }
 
+    /// Implements temporary limiting reserve/valuations values to 60 bits, for more
+    /// details, please check issue #2560.
+    pub fn temporary_check(&self) -> anyhow::Result<()> {
+        let max_60_bits: u128 = (1 << 60) - 1;
+        if self.reserves.r1.value() > max_60_bits || self.reserves.r2.value() > max_60_bits {
+            anyhow::bail!("we are temporarily limiting reserves to be at most 60 bits wide")
+        } else if self.phi.component.p.value() > max_60_bits
+            || self.phi.component.q.value() > max_60_bits
+        {
+            anyhow::bail!("we are temporarily limiting trading function coefficient to be at most 60 bits wide")
+        } else {
+            Ok(())
+        }
+    }
+
     /// Returns the amount of the given asset that is currently in the position's reserves.
     pub fn reserves_for(&self, asset: asset::Id) -> Option<Amount> {
         if asset == self.phi.pair.asset_1() {

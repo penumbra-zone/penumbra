@@ -4,7 +4,7 @@ use penumbra_proto::{penumbra::core::transaction::v1alpha1 as pb, DomainType, Ty
 use serde::{Deserialize, Serialize};
 
 /// A transaction ID (hash), the Sha256 hash used by Tendermint to identify transactions.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default)]
 #[serde(try_from = "pb::Id", into = "pb::Id")]
 pub struct Id(pub [u8; 32]);
 
@@ -16,13 +16,13 @@ impl AsRef<[u8]> for Id {
 
 impl std::fmt::Debug for Id {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(&self.0))
+        write!(f, "{}", hex::encode(self.0))
     }
 }
 
 impl std::fmt::Display for Id {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(&self.0))
+        write!(f, "{}", hex::encode(self.0))
     }
 }
 

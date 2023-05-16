@@ -1,5 +1,8 @@
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
-use penumbra_crypto::{asset, value, Address, Amount, Balance, EffectHash, EffectingData};
+use penumbra_crypto::{
+    asset::{self, DenomMetadata},
+    value, Address, Amount, Balance, EffectHash, EffectingData,
+};
 use penumbra_proto::{
     core::ibc::v1alpha1::{self as pb, FungibleTokenPacketData},
     DomainType, Message, TypeUrl,
@@ -14,7 +17,7 @@ pub struct Ics20Withdrawal {
     pub destination_chain_id: String,
     // a transparent value consisting of an amount and an asset ID.
     pub amount: Amount,
-    pub denom: asset::Denom,
+    pub denom: asset::DenomMetadata,
     // the address on the destination chain to send the transfer to
     pub destination_chain_address: String,
     // a "sender" penumbra address to use to return funds from this withdrawal.
@@ -91,7 +94,7 @@ impl EffectingData for Ics20Withdrawal {
         state.update(&self.return_address.to_vec());
         state.update(&self.timeout_height.to_le_bytes());
         state.update(&self.timeout_time.to_le_bytes());
-        EffectHash(state.finalize().as_array().clone())
+        EffectHash(*state.finalize().as_array())
     }
 }
 
@@ -108,7 +111,7 @@ impl From<Ics20Withdrawal> for pb::Ics20Withdrawal {
         pb::Ics20Withdrawal {
             destination_chain_id: w.destination_chain_id,
             amount: Some(w.amount.into()),
-            denom: Some(w.denom.into()),
+            denom: Some(w.denom.base_denom().into()),
             destination_chain_address: w.destination_chain_address,
             return_address: Some(w.return_address.into()),
             timeout_height: w.timeout_height,
@@ -126,12 +129,14 @@ impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
             destination_chain_id: s.destination_chain_id,
             amount: s
                 .amount
-                .ok_or_else(|| anyhow::anyhow!("missing denom"))?
+                .ok_or_else(|| anyhow::anyhow!("missing amount"))?
                 .try_into()?,
-            denom: s
-                .denom
-                .ok_or_else(|| anyhow::anyhow!("missing denom"))?
-                .try_into()?,
+            denom: DenomMetadata::default_for(
+                &s.denom
+                    .ok_or_else(|| anyhow::anyhow!("missing denom metadata"))?
+                    .try_into()?,
+            )
+            .ok_or_else(|| anyhow::anyhow!("could not generate default denom metadata"))?,
             destination_chain_address: s.destination_chain_address,
             return_address: s
                 .return_address

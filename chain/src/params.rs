@@ -19,7 +19,7 @@ pub mod change;
 #[derive(Clone, Debug)]
 pub struct AssetInfo {
     pub asset_id: asset::Id,
-    pub denom: asset::Denom,
+    pub denom: asset::DenomMetadata,
     pub as_of_block_height: u64,
     pub total_supply: u64,
 }
@@ -38,7 +38,8 @@ impl TryFrom<pb_chain::AssetInfo> for AssetInfo {
     fn try_from(msg: pb_chain::AssetInfo) -> Result<Self, Self::Error> {
         Ok(AssetInfo {
             asset_id: asset::Id::try_from(msg.asset_id.unwrap())?,
-            denom: asset::Denom::try_from(msg.denom.unwrap())?,
+            denom: asset::DenomMetadata::default_for(&msg.denom.unwrap().try_into()?)
+                .ok_or_else(|| anyhow::anyhow!("could not generate default denom metadata"))?,
             as_of_block_height: msg.as_of_block_height,
             total_supply: msg.total_supply,
         })
@@ -49,7 +50,7 @@ impl From<AssetInfo> for pb_chain::AssetInfo {
     fn from(ai: AssetInfo) -> Self {
         pb_chain::AssetInfo {
             asset_id: Some(pb_crypto::AssetId::from(ai.asset_id)),
-            denom: Some(pb_crypto::Denom::from(ai.denom)),
+            denom: Some(ai.denom.base_denom().into()),
             as_of_block_height: ai.as_of_block_height,
             total_supply: ai.total_supply,
         }
@@ -128,7 +129,10 @@ impl TryFrom<pb_chain::ChainParameters> for ChainParameters {
             inbound_ics20_transfers_enabled: msg.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: msg.outbound_ics20_transfers_enabled,
             proposal_voting_blocks: msg.proposal_voting_blocks,
-            proposal_deposit_amount: msg.proposal_deposit_amount.into(),
+            proposal_deposit_amount: msg
+                .proposal_deposit_amount
+                .ok_or_else(|| anyhow::anyhow!("missing proposal_deposit_amount"))?
+                .try_into()?,
             proposal_valid_quorum: msg
                 .proposal_valid_quorum
                 .parse()
@@ -184,7 +188,7 @@ impl From<ChainParameters> for pb_chain::ChainParameters {
             inbound_ics20_transfers_enabled: params.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: params.outbound_ics20_transfers_enabled,
             proposal_voting_blocks: params.proposal_voting_blocks,
-            proposal_deposit_amount: params.proposal_deposit_amount.into(),
+            proposal_deposit_amount: Some(params.proposal_deposit_amount.into()),
             proposal_valid_quorum: params.proposal_valid_quorum.to_string(),
             proposal_pass_threshold: params.proposal_pass_threshold.to_string(),
             proposal_slash_threshold: params.proposal_slash_threshold.to_string(),

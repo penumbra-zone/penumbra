@@ -8,7 +8,7 @@ use crate::asset;
 /// Delegation tokens represent a share of a particular validator's delegation pool.
 pub struct DelegationToken {
     validator_identity: IdentityKey,
-    base_denom: asset::Denom,
+    base_denom: asset::DenomMetadata,
 }
 
 impl From<IdentityKey> for DelegationToken {
@@ -36,7 +36,7 @@ impl DelegationToken {
     }
 
     /// Get the base denomination for this delegation token.
-    pub fn denom(&self) -> asset::Denom {
+    pub fn denom(&self) -> asset::DenomMetadata {
         self.base_denom.clone()
     }
 
@@ -56,9 +56,9 @@ impl DelegationToken {
     }
 }
 
-impl TryFrom<asset::Denom> for DelegationToken {
+impl TryFrom<asset::DenomMetadata> for DelegationToken {
     type Error = anyhow::Error;
-    fn try_from(base_denom: asset::Denom) -> Result<Self, Self::Error> {
+    fn try_from(base_denom: asset::DenomMetadata) -> Result<Self, Self::Error> {
         // Note: this regex must be in sync with both asset::REGISTRY
         // and VALIDATOR_IDENTITY_BECH32_PREFIX
         let validator_identity =

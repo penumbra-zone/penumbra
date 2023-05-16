@@ -51,6 +51,17 @@ pub struct OutputCircuit {
     pub note_commitment: note::Commitment,
 }
 
+impl OutputCircuit {
+    pub fn new(note: Note, v_blinding: Fr, balance_commitment: balance::Commitment) -> Self {
+        Self {
+            note: note.clone(),
+            v_blinding,
+            balance_commitment,
+            note_commitment: note.commit(),
+        }
+    }
+}
+
 impl ConstraintSynthesizer<Fq> for OutputCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
@@ -64,11 +75,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
         let claimed_balance_commitment =
             BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
 
-        gadgets::element_not_identity(
-            cs.clone(),
-            &Boolean::TRUE,
-            note_var.diversified_generator(),
-        )?;
+        gadgets::element_not_identity(cs, &Boolean::TRUE, note_var.diversified_generator())?;
         // Check integrity of balance commitment.
         let balance_commitment =
             BalanceVar::from_negative_value_var(note_var.value()).commit(v_blinding_vars)?;

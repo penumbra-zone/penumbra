@@ -261,7 +261,7 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
             };
 
         // Check that the unbonded amount is correct relative to that exchange rate
-        if rate_data.unbonded_amount(value.amount.into()) != u64::from(*unbonded_amount) {
+        if rate_data.unbonded_amount(value.amount.value()) != unbonded_amount.value() {
             anyhow::bail!(
                 "unbonded amount {}{} does not correspond to {} staked delegation tokens for validator {} using the exchange rate at the start of proposal {}",
                 unbonded_amount,
@@ -552,6 +552,12 @@ pub trait StateReadExt: StateRead + crate::stake::StateReadExt {
             ))
             .await?)
     }
+
+    /// Check if any proposal is started in this block.
+    fn proposal_started(&self) -> bool {
+        self.object_get::<()>(&state_key::proposal_started())
+            .is_some()
+    }
 }
 
 impl<T: StateRead + crate::stake::StateReadExt + ?Sized> StateReadExt for T {}
@@ -638,6 +644,11 @@ pub trait StateWriteExt: StateWrite {
         );
     }
 
+    /// Record in the object store that some proposal has started.
+    fn mark_proposal_started(&mut self) {
+        self.object_put(state_key::proposal_started(), ());
+    }
+
     /// Store the proposal deposit amount.
     fn put_deposit_amount(&mut self, proposal_id: u64, amount: Amount) {
         self.put(state_key::proposal_deposit_amount(proposal_id), amount);
@@ -710,7 +721,7 @@ pub trait StateWriteExt: StateWrite {
         unbonded_amount: Amount,
     ) -> Result<()> {
         // Convert the unbonded amount into voting power
-        let power = u64::from(unbonded_amount);
+        let power = unbonded_amount.value() as u64;
         let tally: Tally = (vote, power).into();
 
         // Record the vote

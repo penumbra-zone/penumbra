@@ -90,6 +90,9 @@ message BroadcastTransactionRequest {
 message BroadcastTransactionResponse {
   // The hash of the transaction that was broadcast.
   core.transaction.v1alpha1.Id id = 1;
+  // The height in which the transaction was detected as included in the chain, if any.
+  // Will not be included unless await_detection was true.
+  uint64 detection_height = 2;
 }
 
 message TransactionPlannerRequest {
@@ -226,7 +229,7 @@ message NotesRequest {
   // If set, stop returning notes once the total exceeds this amount.
   //
   // Ignored if `asset_id` is unset or if `include_spent` is set.
-  uint64 amount_to_spend = 5;
+  core.crypto.v1alpha1.Amount amount_to_spend = 6;
 
   // Identifies the account group to query.
   optional core.crypto.v1alpha1.AccountGroupId account_group_id = 14;

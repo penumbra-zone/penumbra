@@ -27,9 +27,12 @@
 pdcli/node0/
 pdcli/node1/
 pdcli/vals.json
+# Ignore gzipped genesis file, as we'll create the ConfigMap outside of Helm.
+pdcli/genesis.json.gz
 
 pdcli/.penumbra/testnet_data/node0/tendermint/data/
 pdcli/.penumbra/testnet_data/node0/tendermint/config/config.toml
+pdcli/.penumbra/testnet_data/node0/tendermint/config/genesis.json
 pdcli/.penumbra/testnet_data/node0/pd/
 
 pdcli/.penumbra/testnet_data/node1/tendermint/data/

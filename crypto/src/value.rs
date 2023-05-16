@@ -1,5 +1,6 @@
 //! Values (?)
 
+use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{r1cs::FqVar, Fq};
@@ -37,7 +38,7 @@ pub struct Value {
 pub enum ValueView {
     KnownDenom {
         amount: asset::Amount,
-        denom: asset::Denom,
+        denom: asset::DenomMetadata,
     },
     UnknownDenom {
         amount: asset::Amount,
@@ -59,7 +60,7 @@ impl ValueView {
 
 impl Value {
     /// Convert this `Value` into a `ValueView` with the given `Denom`.
-    pub fn view_with_denom(&self, denom: asset::Denom) -> anyhow::Result<ValueView> {
+    pub fn view_with_denom(&self, denom: asset::DenomMetadata) -> anyhow::Result<ValueView> {
         if self.asset_id == denom.id() {
             Ok(ValueView::KnownDenom {
                 amount: self.amount,
@@ -232,18 +233,22 @@ impl AllocVar<Value, Fq> for ValueVar {
         let ns = cs.into();
         let cs = ns.cs();
         let inner: Value = *f()?.borrow();
-        match mode {
-            AllocationMode::Constant => unimplemented!(),
-            AllocationMode::Input => unimplemented!(),
-            AllocationMode::Witness => {
-                let amount_var = asset::AmountVar::new_witness(cs.clone(), || Ok(inner.amount))?;
-                let asset_id_var = asset::AssetIdVar::new_witness(cs, || Ok(inner.asset_id))?;
-                Ok(Self {
-                    amount: amount_var,
-                    asset_id: asset_id_var,
-                })
-            }
-        }
+
+        let amount_var = asset::AmountVar::new_variable(cs.clone(), || Ok(inner.amount), mode)?;
+        let asset_id_var = asset::AssetIdVar::new_variable(cs, || Ok(inner.asset_id), mode)?;
+        Ok(Self {
+            amount: amount_var,
+            asset_id: asset_id_var,
+        })
+    }
+}
+
+impl ToConstraintField<Fq> for Value {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let mut elements = Vec::new();
+        elements.extend_from_slice(&self.amount.to_field_elements()?);
+        elements.extend_from_slice(&self.asset_id.to_field_elements()?);
+        Some(elements)
     }
 }
 

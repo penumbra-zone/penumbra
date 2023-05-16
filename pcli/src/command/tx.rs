@@ -12,7 +12,8 @@ use decaf377::Fr;
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
-    asset,
+    asset::{self, DenomMetadata},
+    dex::lp::position,
     keys::AddressIndex,
     memo::MemoPlaintext,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
@@ -42,6 +43,8 @@ use proposal::ProposalCmd;
 
 mod liquidity_position;
 use liquidity_position::PositionCmd;
+
+mod replicate;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
@@ -447,7 +450,8 @@ impl TxCmd {
                     app.view.as_mut().unwrap(),
                     OsRng,
                     rate_data,
-                    unbonded_amount.into(),
+                    // TODO: fix and also delete plan::delegate entirely!
+                    unbonded_amount.value() as u64,
                     fee,
                     AddressIndex::new(*source),
                 )
@@ -864,6 +868,169 @@ impl TxCmd {
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
+            TxCmd::Position(PositionCmd::CloseAll { fee, source }) => {
+                let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
+
+                // Query all unspent notes to find the open position NFTs associated with the account:
+                let notes = view
+                    .unspent_notes_by_address_and_asset(app.fvk.account_group_id())
+                    .await?;
+
+                fn is_opened_position_nft(denom: &DenomMetadata) -> bool {
+                    let prefix = format!("lpnft_opened_");
+
+                    denom.starts_with(&prefix)
+                }
+
+                let asset_cache = app.view().assets().await?;
+                let opened_notes: Vec<String> = notes
+                    .iter()
+                    .flat_map(|(index, notes_by_asset)| {
+                        // Include each note individually:
+                        notes_by_asset.iter().flat_map(|(_asset, notes)| {
+                            notes
+                                .iter()
+                                .filter(|record| {
+                                    let base_denom = asset_cache.get(&record.note.asset_id());
+                                    if base_denom.is_none() {
+                                        return false;
+                                    }
+                                    (*index == AddressIndex::from(*source))
+                                        && base_denom.unwrap().is_opened_position_nft()
+                                })
+                                .map(|record| {
+                                    asset_cache
+                                        .get(&record.note.asset_id())
+                                        .unwrap()
+                                        .to_string()
+                                })
+                        })
+                    })
+                    .collect();
+
+                let fee = Fee::from_staking_token_amount((*fee).into());
+
+                let mut plan = &mut Planner::new(OsRng);
+
+                if opened_notes.is_empty() {
+                    println!("No open positions are available to close.");
+                    return Ok(());
+                }
+
+                for denom_string in opened_notes {
+                    // Close the position associated with the opened NFT note
+                    let position_id = position::Id::from_str(&denom_string[13..])
+                        .expect("improperly formatted LPNFT position id");
+                    plan = plan.position_close(position_id);
+                }
+
+                let final_plan = plan
+                    .fee(fee)
+                    .plan(
+                        app.view.as_mut().unwrap(),
+                        app.fvk.account_group_id(),
+                        AddressIndex::new(*source),
+                    )
+                    .await?;
+                app.build_and_submit_transaction(final_plan).await?;
+            }
+            TxCmd::Position(PositionCmd::WithdrawAll { fee, source }) => {
+                let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
+
+                // Query all unspent notes to find the closed position NFTs associated with the account:
+                let notes = view
+                    .unspent_notes_by_address_and_asset(app.fvk.account_group_id())
+                    .await?;
+
+                fn is_closed_position_nft(denom: &DenomMetadata) -> bool {
+                    let prefix = format!("lpnft_closed_");
+
+                    denom.starts_with(&prefix)
+                }
+
+                let asset_cache = app.view().assets().await?;
+                let closed_notes: Vec<String> = notes
+                    .iter()
+                    .flat_map(|(index, notes_by_asset)| {
+                        // Include each note individually:
+                        notes_by_asset.iter().flat_map(|(_asset, notes)| {
+                            notes
+                                .iter()
+                                .filter(|record| {
+                                    let base_denom = asset_cache.get(&record.note.asset_id());
+                                    if base_denom.is_none() {
+                                        return false;
+                                    }
+                                    (*index == AddressIndex::from(*source))
+                                        && is_closed_position_nft(base_denom.unwrap())
+                                })
+                                .map(|record| {
+                                    asset_cache
+                                        .get(&record.note.asset_id())
+                                        .unwrap()
+                                        .to_string()
+                                })
+                        })
+                    })
+                    .collect();
+
+                let fee = Fee::from_staking_token_amount((*fee).into());
+
+                let mut plan = &mut Planner::new(OsRng);
+
+                if closed_notes.is_empty() {
+                    println!("No closed positions are available to withdraw.");
+                    return Ok(());
+                }
+
+                let mut specific_client = app.specific_client().await?;
+
+                let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
+                let params = view.chain_params().await?;
+                for denom_string in closed_notes {
+                    // Withdraw the position associated with the closed NFT note
+                    let position_id = position::Id::from_str(&denom_string[13..])
+                        .expect("improperly formatted LPNFT position id");
+
+                    // Fetch the information regarding the position from the view service.
+                    let position = specific_client
+                        .liquidity_position_by_id(LiquidityPositionByIdRequest {
+                            chain_id: params.chain_id.to_string(),
+                            position_id: Some(position_id.into()),
+                        })
+                        .await?
+                        .into_inner();
+
+                    let reserves = position
+                        .data
+                        .clone()
+                        .expect("missing position metadata")
+                        .reserves
+                        .expect("missing position reserves");
+                    let pair = position
+                        .data
+                        .expect("missing position")
+                        .phi
+                        .expect("missing position trading function")
+                        .pair
+                        .expect("missing trading function pair");
+                    plan = plan.position_withdraw(
+                        position_id,
+                        reserves.try_into().expect("invalid reserves"),
+                        pair.try_into().expect("invalid pair"),
+                    );
+                }
+
+                let final_plan = plan
+                    .fee(fee)
+                    .plan(
+                        app.view.as_mut().unwrap(),
+                        app.fvk.account_group_id(),
+                        AddressIndex::new(*source),
+                    )
+                    .await?;
+                app.build_and_submit_transaction(final_plan).await?;
+            }
             TxCmd::Position(PositionCmd::Withdraw {
                 fee,
                 source,
@@ -911,6 +1078,9 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::RewardClaim {}) => todo!(),
+            TxCmd::Position(PositionCmd::Replicate(replicate_cmd)) => {
+                replicate_cmd.exec(app).await?;
+            }
         }
         Ok(())
     }

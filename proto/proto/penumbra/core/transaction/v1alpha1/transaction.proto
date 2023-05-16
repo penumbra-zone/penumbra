@@ -90,6 +90,7 @@ message Action {
 // A transaction perspective is a bundle of key material and commitment openings
 // that allow generating a view of a transaction from that perspective.
 message TransactionPerspective {
+
   repeated PayloadKeyWithCommitment payload_keys = 1;
   repeated NullifierWithNote spend_nullifiers = 2;
   // The openings of note commitments referred to in the transaction
@@ -98,7 +99,9 @@ message TransactionPerspective {
   // Any relevant address views.
   repeated crypto.v1alpha1.AddressView address_views = 4;
   // Any relevant denoms for viewed assets.
-  repeated crypto.v1alpha1.Denom denoms = 5;
+  repeated crypto.v1alpha1.DenomMetadata denoms = 5;
+  // The transaction ID associated with this TransactionPerspective
+  transaction.v1alpha1.Id transaction_id = 6;
 }
 
 message PayloadKey {

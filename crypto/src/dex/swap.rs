@@ -35,14 +35,14 @@ pub struct BatchSwapOutputData {
     pub delta_1: Amount,
     /// The total amount of asset 2 that was input to the batch swap.
     pub delta_2: Amount,
-    /// The total amount of asset 1 that was output from the batch swap for 1=>2 trades.
-    pub lambda_1_1: Amount,
-    /// The total amount of asset 2 that was output from the batch swap for 1=>2 trades.
-    pub lambda_2_1: Amount,
     /// The total amount of asset 1 that was output from the batch swap for 2=>1 trades.
-    pub lambda_1_2: Amount,
-    /// The total amount of asset 2 that was output from the batch swap for 2=>1 trades.
-    pub lambda_2_2: Amount,
+    pub lambda_1: Amount,
+    /// The total amount of asset 2 that was output from the batch swap for 1=>2 trades.
+    pub lambda_2: Amount,
+    /// The total amount of asset 1 that was returned unfilled from the batch swap for 1=>2 trades.
+    pub unfilled_1: Amount,
+    /// The total amount of asset 2 that was returned unfilled from the batch swap for 2=>1 trades.
+    pub unfilled_2: Amount,
     /// The height for which the batch swap data is valid.
     pub height: u64,
     /// The trading pair associated with the batch swap.
@@ -56,27 +56,27 @@ impl BatchSwapOutputData {
     /// of the batch output `(lambda_1_i, lambda_2_i)`.
     pub fn pro_rata_outputs(&self, (delta_1_i, delta_2_i): (Amount, Amount)) -> (Amount, Amount) {
         // The pro rata fraction is delta_j_i / delta_j, which we can multiply through:
-        //   lambda_2_i = (delta_1_i / delta_1) * lambda_2_1 + (delta_2_i / delta_2) * lambda_2_2
-        //   lambda_1_i = (delta_1_i / delta_1) * lambda_1_1 + (delta_2_i / delta_2) * lambda_1_2
+        //   lambda_2_i = (delta_1_i / delta_1) * lambda_2   + (delta_2_i / delta_2) * unfilled_2
+        //   lambda_1_i = (delta_1_i / delta_1) * unfilled_1 + (delta_2_i / delta_2) * lambda_1
 
         let delta_1_i = U128x128::from(delta_1_i);
         let delta_2_i = U128x128::from(delta_2_i);
         let delta_1 = U128x128::from(self.delta_1);
         let delta_2 = U128x128::from(self.delta_2);
-        let lambda_1_1 = U128x128::from(self.lambda_1_1);
-        let lambda_1_2 = U128x128::from(self.lambda_1_2);
-        let lambda_2_1 = U128x128::from(self.lambda_2_1);
-        let lambda_2_2 = U128x128::from(self.lambda_2_2);
+        let lambda_1 = U128x128::from(self.lambda_1);
+        let lambda_2 = U128x128::from(self.lambda_2);
+        let unfilled_1 = U128x128::from(self.unfilled_1);
+        let unfilled_2 = U128x128::from(self.unfilled_2);
 
         // Compute the user i's share of the batch inputs of assets 1 and 2.
         // The .unwrap_or_default ensures that when the batch input delta_1 is zero, all pro-rata shares of it are also zero.
         let pro_rata_input_1 = (delta_1_i / delta_1).unwrap_or_default();
         let pro_rata_input_2 = (delta_2_i / delta_2).unwrap_or_default();
 
-        let lambda_2_i = (pro_rata_input_1 * lambda_2_1).unwrap_or_default()
-            + (pro_rata_input_2 * lambda_2_2).unwrap_or_default();
-        let lambda_1_i = (pro_rata_input_1 * lambda_1_1).unwrap_or_default()
-            + (pro_rata_input_2 * lambda_1_2).unwrap_or_default();
+        let lambda_2_i = (pro_rata_input_1 * lambda_2).unwrap_or_default()
+            + (pro_rata_input_2 * unfilled_2).unwrap_or_default();
+        let lambda_1_i = (pro_rata_input_1 * unfilled_1).unwrap_or_default()
+            + (pro_rata_input_2 * lambda_1).unwrap_or_default();
 
         (
             lambda_1_i
@@ -106,13 +106,13 @@ impl From<BatchSwapOutputData> for pb::BatchSwapOutputData {
         pb::BatchSwapOutputData {
             delta_1: Some(s.delta_1.into()),
             delta_2: Some(s.delta_2.into()),
-            trading_pair: Some(s.trading_pair.into()),
+            lambda_1: Some(s.lambda_1.into()),
+            lambda_2: Some(s.lambda_2.into()),
+            unfilled_1: Some(s.unfilled_1.into()),
+            unfilled_2: Some(s.unfilled_2.into()),
             height: s.height,
-            lambda_1_1: Some(s.lambda_1_1.into()),
-            lambda_2_1: Some(s.lambda_2_1.into()),
-            lambda_1_2: Some(s.lambda_1_2.into()),
-            lambda_2_2: Some(s.lambda_2_2.into()),
             epoch_height: s.epoch_height,
+            trading_pair: Some(s.trading_pair.into()),
         }
     }
 }
@@ -137,21 +137,21 @@ impl TryFrom<pb::BatchSwapOutputData> for BatchSwapOutputData {
                 .delta_2
                 .ok_or_else(|| anyhow!("Missing delta_2"))?
                 .try_into()?,
-            lambda_1_1: s
-                .lambda_1_1
-                .ok_or_else(|| anyhow!("Missing lambda_1_1"))?
+            lambda_1: s
+                .lambda_1
+                .ok_or_else(|| anyhow!("Missing lambda_1"))?
                 .try_into()?,
-            lambda_2_1: s
-                .lambda_2_1
-                .ok_or_else(|| anyhow!("Missing lambda_2_1"))?
+            lambda_2: s
+                .lambda_2
+                .ok_or_else(|| anyhow!("Missing lambda_2"))?
                 .try_into()?,
-            lambda_1_2: s
-                .lambda_1_2
-                .ok_or_else(|| anyhow!("Missing lambda_1_2"))?
+            unfilled_1: s
+                .unfilled_1
+                .ok_or_else(|| anyhow!("Missing unfilled_1"))?
                 .try_into()?,
-            lambda_2_2: s
-                .lambda_2_2
-                .ok_or_else(|| anyhow!("Missing lambda_2_2"))?
+            unfilled_2: s
+                .unfilled_2
+                .ok_or_else(|| anyhow!("Missing unfilled_2"))?
                 .try_into()?,
             height: s.height,
             trading_pair: s
@@ -186,12 +186,12 @@ mod tests {
         "lo": "31730032"
     },
     "delta2": {},
-    "lambda11": {},
-    "lambda21": {
+    "unfilled1": {},
+    "lambda2": {
         "lo": "28766268"
     },
-    "lambda12": {},
-    "lambda22": {},
+    "lambda1": {},
+    "unfilled2": {},
     "height": "2185",
     "tradingPair": {
         "asset1": {

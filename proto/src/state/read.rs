@@ -21,7 +21,7 @@ pub trait StateReadProto: StateRead + Send + Sync {
     fn get<D>(&self, key: &str) -> DomainFuture<D, Self::GetRawFut>
     where
         D: DomainType + std::fmt::Debug,
-        <D as TryFrom<D::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
+        anyhow::Error: From<<D as TryFrom<D::Proto>>::Error>,
     {
         DomainFuture {
             inner: self.get_raw(key),
@@ -54,7 +54,7 @@ pub trait StateReadProto: StateRead + Send + Sync {
     ) -> Pin<Box<dyn Stream<Item = Result<(String, D)>> + Send + 'static>>
     where
         D: DomainType,
-        <D as TryFrom<D::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
+        anyhow::Error: From<<D as TryFrom<D::Proto>>::Error>,
     {
         Box::pin(self.prefix_proto(prefix).map(|p| match p {
             Ok(p) => match D::try_from(p.1) {

@@ -372,14 +372,14 @@ pub(crate) trait StakingImpl: StateWriteExt {
             let total_delegations = delegations_by_validator
                 .get(&validator.identity_key)
                 .into_iter()
-                .flat_map(|ds| ds.iter().map(|d| u64::from(d.delegation_amount)))
+                .flat_map(|ds| ds.iter().map(|d| d.delegation_amount.value() as u64))
                 .sum::<u64>();
             let total_undelegations = undelegations_by_validator
                 .get(&validator.identity_key)
                 .into_iter()
-                .flat_map(|us| us.iter().map(|u| u64::from(u.delegation_amount)))
+                .flat_map(|us| us.iter().map(|u| u.delegation_amount.value() as u64))
                 .sum::<u64>();
-            let delegation_delta = (total_delegations as i64) - (total_undelegations as i64);
+            let delegation_delta = (total_delegations as i128) - (total_undelegations as i128);
 
             tracing::debug!(
                 validator = ?validator.identity_key,
@@ -389,7 +389,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             );
 
             let abs_unbonded_amount =
-                current_rate.unbonded_amount(delegation_delta.unsigned_abs()) as i64;
+                current_rate.unbonded_amount(delegation_delta.unsigned_abs()) as i128;
             let staking_delta = if delegation_delta >= 0 {
                 // Net delegation: subtract the unbonded amount from the staking token supply
                 -abs_unbonded_amount

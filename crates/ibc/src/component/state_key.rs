@@ -81,6 +81,15 @@ pub fn packet_receipt(packet: &Packet) -> String {
     )
 }
 
+pub fn receipt_by_channel(port_id: &PortId, channel_id: &ChannelId, sequence: u64) -> String {
+    format!(
+        "receipts/ports/{port_id}/channels/{channel_id}/receipts/{sequence}",
+        port_id = port_id,
+        channel_id = channel_id,
+        sequence = sequence
+    )
+}
+
 pub fn packet_commitment(packet: &Packet) -> String {
     format!(
         "commitments/ports/{}/channels/{}/packets/{}",

@@ -16,6 +16,10 @@ pub struct BroadcastTransactionResponse {
     /// The hash of the transaction that was broadcast.
     #[prost(message, optional, tag = "1")]
     pub id: ::core::option::Option<super::super::core::transaction::v1alpha1::Id>,
+    /// The height in which the transaction was detected as included in the chain, if any.
+    /// Will not be included unless await_detection was true.
+    #[prost(uint64, tag = "2")]
+    pub detection_height: u64,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -247,8 +251,10 @@ pub struct NotesRequest {
     /// If set, stop returning notes once the total exceeds this amount.
     ///
     /// Ignored if `asset_id` is unset or if `include_spent` is set.
-    #[prost(uint64, tag = "5")]
-    pub amount_to_spend: u64,
+    #[prost(message, optional, tag = "6")]
+    pub amount_to_spend: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::Amount,
+    >,
     /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<

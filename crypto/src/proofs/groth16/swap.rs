@@ -41,6 +41,24 @@ pub struct SwapCircuit {
     pub fee_commitment: balance::Commitment,
 }
 
+impl SwapCircuit {
+    pub fn new(
+        swap_plaintext: SwapPlaintext,
+        fee_blinding: Fr,
+        balance_commitment: balance::Commitment,
+        swap_commitment: tct::Commitment,
+        fee_commitment: balance::Commitment,
+    ) -> Self {
+        Self {
+            swap_plaintext,
+            fee_blinding,
+            balance_commitment,
+            swap_commitment,
+            fee_commitment,
+        }
+    }
+}
+
 impl ConstraintSynthesizer<Fq> for SwapCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses

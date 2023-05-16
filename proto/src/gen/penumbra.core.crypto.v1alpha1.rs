@@ -119,6 +119,58 @@ pub struct Denom {
     #[prost(string, tag = "1")]
     pub denom: ::prost::alloc::string::String,
 }
+/// DenomMetadata represents a struct that describes a basic token.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DenomMetadata {
+    #[prost(string, tag = "1")]
+    pub description: ::prost::alloc::string::String,
+    /// denom_units represents the list of DenomUnit's for a given coin
+    #[prost(message, repeated, tag = "2")]
+    pub denom_units: ::prost::alloc::vec::Vec<DenomUnit>,
+    /// base represents the base denom (should be the DenomUnit with exponent = 0).
+    #[prost(string, tag = "3")]
+    pub base: ::prost::alloc::string::String,
+    /// display indicates the suggested denom that should be
+    /// displayed in clients.
+    #[prost(string, tag = "4")]
+    pub display: ::prost::alloc::string::String,
+    /// name defines the name of the token (eg: Cosmos Atom)
+    #[prost(string, tag = "5")]
+    pub name: ::prost::alloc::string::String,
+    /// symbol is the token symbol usually shown on exchanges (eg: ATOM). This can
+    /// be the same as the display.
+    #[prost(string, tag = "6")]
+    pub symbol: ::prost::alloc::string::String,
+    /// URI to a document (on or off-chain) that contains additional information. Optional.
+    #[prost(string, tag = "7")]
+    pub uri: ::prost::alloc::string::String,
+    /// URIHash is a sha256 hash of a document pointed by URI. It's used to verify that
+    /// the document didn't change. Optional.
+    #[prost(string, tag = "8")]
+    pub uri_hash: ::prost::alloc::string::String,
+    /// the asset ID on Penumbra for this denomination.
+    #[prost(message, optional, tag = "1984")]
+    pub penumbra_asset_id: ::core::option::Option<AssetId>,
+}
+/// DenomUnit represents a struct that describes a given denomination unit of the basic token.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DenomUnit {
+    /// denom represents the string name of the given denom unit (e.g uatom).
+    #[prost(string, tag = "1")]
+    pub denom: ::prost::alloc::string::String,
+    /// exponent represents power of 10 exponent that one must
+    /// raise the base_denom to in order to equal the given DenomUnit's denom
+    /// 1 denom = 10^exponent base_denom
+    /// (e.g. with a base_denom of uatom, one can create a DenomUnit of 'atom' with
+    /// exponent = 6, thus: 1 atom = 10^6 uatom).
+    #[prost(uint32, tag = "2")]
+    pub exponent: u32,
+    /// aliases is a list of string aliases for the given denom
+    #[prost(string, repeated, tag = "3")]
+    pub aliases: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
@@ -151,7 +203,7 @@ pub mod value_view {
         #[prost(message, optional, tag = "1")]
         pub amount: ::core::option::Option<super::Amount>,
         #[prost(message, optional, tag = "2")]
-        pub denom: ::core::option::Option<super::Denom>,
+        pub denom: ::core::option::Option<super::DenomMetadata>,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -335,6 +387,13 @@ pub struct ZkUndelegateClaimProof {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ZkDelegatorVoteProof {
+    #[prost(bytes = "vec", tag = "1")]
+    pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+/// A Penumbra ZK nullifier derivation proof.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ZkNullifierDerivationProof {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }

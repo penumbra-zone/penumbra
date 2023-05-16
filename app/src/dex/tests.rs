@@ -4,7 +4,7 @@ use penumbra_crypto::{
     asset,
     dex::{
         lp::{position::Position, Reserves},
-        BatchSwapOutputData, DirectedTradingPair, Market,
+        BatchSwapOutputData, DirectedTradingPair, DirectedUnitPair,
     },
     Amount, MockFlowCiphertext,
 };
@@ -16,8 +16,8 @@ use penumbra_crypto::Value;
 
 use crate::dex::{
     position_manager::PositionManager,
-    router::{limit_buy, limit_sell, RouteAndFill},
-    StateWriteExt,
+    router::{limit_buy, limit_sell, HandleBatchSwaps, RoutingParams},
+    Arbitrage, StateWriteExt,
 };
 use crate::dex::{position_manager::PositionRead, StateReadExt};
 use crate::TempStorageExt;
@@ -476,7 +476,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     let gn = asset::REGISTRY.parse_unit("gn");
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
 
-    let pair_gn_penumbra = Market::new(gn.clone(), penumbra.clone());
+    let pair_gn_penumbra = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
     let buy_1 = limit_buy(pair_gn_penumbra.clone(), 1u64.into(), 1u64.into());
@@ -499,13 +499,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap()
         .put_swap_flow(&trading_pair, swap_flow.clone());
     state
-        .handle_batch_swaps(
-            trading_pair,
-            swap_flow,
-            0,
-            0,
-            super::router::hardcoded_candidates(),
-        )
+        .handle_batch_swaps(trading_pair, swap_flow, 0, 0, RoutingParams::default())
         .await
         .expect("unable to process batch swaps");
 
@@ -547,25 +541,25 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
 
     // Sell 25 gn at 1 gm each.
     state_tx.put_position(limit_sell(
-        Market::new(gn.clone(), gm.clone()),
+        DirectedUnitPair::new(gn.clone(), gm.clone()),
         25u64.into(),
         1u64.into(),
     ));
     // Buy 1 pusd at 20 gm each.
     state_tx.put_position(limit_buy(
-        Market::new(pusd.clone(), gm.clone()),
+        DirectedUnitPair::new(pusd.clone(), gm.clone()),
         1u64.into(),
         20u64.into(),
     ));
     // Buy 5 penumbra at 1 gm each.
     state_tx.put_position(limit_buy(
-        Market::new(penumbra.clone(), gm.clone()),
+        DirectedUnitPair::new(penumbra.clone(), gm.clone()),
         5u64.into(),
         1u64.into(),
     ));
     // Sell 1pusd at 5 penumbra each.
     state_tx.put_position(limit_sell(
-        Market::new(pusd.clone(), penumbra.clone()),
+        DirectedUnitPair::new(pusd.clone(), penumbra.clone()),
         1u64.into(),
         5u64.into(),
     ));
@@ -593,9 +587,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
             swap_flow,
             0u32.into(),
             0,
-            // Create a candidate set that includes all relevant asset IDs.
-            //Arc::new(vec![penumbra.id(), gn.id(), pusd.id(), gm.id()]),
-            super::router::hardcoded_candidates(),
+            RoutingParams::default(),
         )
         .await
         .expect("unable to process batch swaps");
@@ -607,10 +599,10 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         BatchSwapOutputData {
             delta_1: penumbra.value(10u32.into()).amount,
             delta_2: 0u32.into(),
-            lambda_1_1: 0u32.into(),
-            lambda_1_2: 0u32.into(),
-            lambda_2_1: gn.value(25u32.into()).amount,
-            lambda_2_2: 0u32.into(),
+            lambda_1: 0u32.into(),
+            lambda_2: gn.value(25u32.into()).amount,
+            unfilled_1: 0u32.into(),
+            unfilled_2: 0u32.into(),
             height: 0,
             epoch_height: 0,
             trading_pair,
@@ -635,6 +627,61 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
                 gn.value(5u32.into()),
             ],
         ]
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+/// Test that a basic cycle arb is detected and filled.
+async fn basic_cycle_arb() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_default_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+
+    tracing::info!(gm_id = ?gm.id());
+    tracing::info!(gn_id = ?gn.id());
+    tracing::info!(penumbra_id = ?penumbra.id());
+
+    // Sell 10 gn at 1 penumbra each.
+    state_tx.put_position(limit_sell(
+        DirectedUnitPair::new(gn.clone(), penumbra.clone()),
+        10u64.into(),
+        1u64.into(),
+    ));
+    // Buy 100 gn at 2 gm each.
+    state_tx.put_position(limit_buy(
+        DirectedUnitPair::new(gn.clone(), gm.clone()),
+        100u64.into(),
+        2u64.into(),
+    ));
+    // Sell 100 penumbra at 1 gm each.
+    state_tx.put_position(limit_sell(
+        DirectedUnitPair::new(penumbra.clone(), gm.clone()),
+        100u64.into(),
+        1u64.into(),
+    ));
+    state_tx.apply();
+
+    // Now we should be able to arb 10penumbra => 10gn => 20gm => 20penumbra.
+    state
+        .arbitrage(penumbra.id(), vec![penumbra.id(), gm.id(), gn.id()])
+        .await?;
+
+    let arb_execution = state.arb_execution(0).await?.expect("arb was performed");
+    assert_eq!(
+        arb_execution.traces,
+        vec![vec![
+            penumbra.value(10u32.into()),
+            gn.value(10u32.into()),
+            gm.value(20u32.into()),
+            penumbra.value(20u32.into()),
+        ],]
     );
 
     Ok(())

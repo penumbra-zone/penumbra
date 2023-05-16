@@ -1,5 +1,6 @@
 mod delegator_vote;
 mod gadgets;
+mod nullifier_derivation;
 mod output;
 mod spend;
 mod swap;
@@ -7,6 +8,7 @@ mod traits;
 mod undelegate;
 
 pub use delegator_vote::{DelegatorVoteCircuit, DelegatorVoteProof};
+pub use nullifier_derivation::{NullifierDerivationCircuit, NullifierDerivationProof};
 pub use output::{OutputCircuit, OutputProof};
 pub use spend::{SpendCircuit, SpendProof};
 pub use swap::{SwapCircuit, SwapProof};
@@ -153,6 +155,51 @@ mod tests {
             let proof_result = proof.verify(&vk, balance_commitment, unbonding_id, penalty);
 
             assert!(proof_result.is_ok());
+        }
+    }
+
+    proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2))]
+    #[test]
+    fn nullifier_derivation_proof_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), value_amount in 2..200u64) {
+            let (pk, vk) = NullifierDerivationCircuit::generate_prepared_test_parameters();
+
+            let mut rng = OsRng;
+
+            let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+            let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+            let fvk_sender = sk_sender.full_viewing_key();
+            let ivk_sender = fvk_sender.incoming();
+            let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
+
+            let value_to_send = Value {
+                amount: value_amount.into(),
+                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            };
+
+            let note = Note::generate(&mut rng, &sender, value_to_send);
+            let note_commitment = note.commit();
+            let nk = *sk_sender.nullifier_key();
+            let mut sct = tct::Tree::new();
+
+            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let position = state_commitment_proof.position();
+            let nullifier = nk.derive_nullifier(state_commitment_proof.position(), &note_commitment);
+
+                let proof = NullifierDerivationProof::prove(
+                    &mut rng,
+                    &pk,
+                    position,
+                    note.clone(),
+                    nk,
+                    nullifier,
+                )
+                .expect("can create proof");
+
+                let proof_result = proof.verify(&vk, position, note, nullifier);
+
+                assert!(proof_result.is_ok());
         }
     }
 
@@ -718,10 +765,9 @@ mod tests {
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
             let nk = *sk_sender.nullifier_key();
             let ak = sk_sender.spend_auth_key().into();
-            let mut sct = tct::Tree::new();
-            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            let sct = tct::Tree::new();
             let anchor = sct.root();
-            let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let state_commitment_proof = tct::Proof::dummy(&mut OsRng, note_commitment);
             // Using a random blinding factor here, but the proof will verify
             // since for dummies we only check if the value is zero, and choose
             // not to enforce the other equality constraint.
@@ -773,10 +819,11 @@ mod tests {
             let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
                 Ok(self.state_commitment_proof.position())
             })?;
+            let position_bits = position_var.inner.to_bits_le()?;
             merkle_path_var.verify(
-                cs.clone(),
+                cs,
                 &Boolean::TRUE,
-                position_var.inner,
+                &position_bits,
                 anchor_var,
                 claimed_note_commitment.inner(),
             )?;

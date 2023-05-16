@@ -1,21 +1,22 @@
-use std::pin::Pin;
-
+use crate::command::utils;
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use futures::{Stream, StreamExt, TryStreamExt};
+use std::pin::Pin;
 
 use penumbra_crypto::{
     asset,
     dex::{
-        execution::SwapExecution, lp::position::Position, BatchSwapOutputData, DirectedTradingPair,
-        TradingPair,
+        execution::SwapExecution,
+        lp::position::{self, Position},
+        BatchSwapOutputData, DirectedTradingPair, TradingPair,
     },
-    Asset,
+    Asset, Value,
 };
 use penumbra_proto::client::v1alpha1::{
     specific_query_service_client::SpecificQueryServiceClient, AssetInfoRequest,
-    BatchSwapOutputDataRequest, LiquidityPositionsByPriceRequest, LiquidityPositionsRequest,
-    SwapExecutionRequest,
+    BatchSwapOutputDataRequest, LiquidityPositionByIdRequest, LiquidityPositionsByPriceRequest,
+    LiquidityPositionsRequest, SwapExecutionRequest,
 };
 use penumbra_view::ViewClient;
 use tonic::transport::Channel;
@@ -41,10 +42,19 @@ pub enum DexCmd {
         trading_pair: TradingPair,
     },
     /// Display information about all liquidity positions known to the chain.
+    #[clap(display_order(900))]
     AllPositions {
         /// Display closed and withdrawn liquidity positions as well as open ones.
         #[clap(long)]
         include_closed: bool,
+    },
+    /// Display a single position's state given a position ID.
+    Position {
+        /// The ID of the position to query.
+        id: position::Id,
+        /// If set, output raw JSON instead of a table.
+        #[clap(long)]
+        raw: bool,
     },
     /// Display open liquidity for a given pair, sorted by effective price.
     Positions {
@@ -191,17 +201,6 @@ impl DexCmd {
             .asset
             .unwrap()
             .try_into()?;
-
-        let display_denom_1 = asset_1.denom.best_unit_for(std::cmp::max(
-            outputs.delta_1,
-            outputs.lambda_1_1 + outputs.lambda_1_2,
-        ));
-
-        let (denom_1, input_amount_1, output_amount_1) = (
-            format!("{display_denom_1}"),
-            display_denom_1.format_value(outputs.delta_1),
-            display_denom_1.format_value(outputs.lambda_1_1 + outputs.lambda_1_2),
-        );
         let asset_2: Asset = client
             .asset_info(AssetInfoRequest {
                 asset_id: Some(trading_pair.asset_2().into()),
@@ -212,26 +211,42 @@ impl DexCmd {
             .asset
             .unwrap()
             .try_into()?;
-        let display_denom_2 = asset_2.denom.best_unit_for(std::cmp::max(
-            outputs.delta_2,
-            outputs.lambda_2_1 + outputs.lambda_2_2,
-        ));
 
-        let (denom_2, input_amount_2, output_amount_2) = (
-            format!("{display_denom_2}"),
-            display_denom_2.format_value(outputs.delta_2),
-            display_denom_2.format_value(outputs.lambda_2_1 + outputs.lambda_2_2),
-        );
+        let unit_1 = asset_1.denom.default_unit();
+        let unit_2 = asset_2.denom.default_unit();
+
+        let consumed_1 = outputs.delta_1 - outputs.unfilled_1;
+        let consumed_2 = outputs.delta_2 - outputs.unfilled_2;
 
         println!("Batch Swap Outputs for height {}:", outputs.height);
-        let mut table = Table::new();
-        table.load_preset(presets::NOTHING);
-        table
-            .set_header(vec!["Denomination", "Input Amount", "Output Amount"])
-            .add_row(vec![denom_1, input_amount_1, output_amount_1])
-            .add_row(vec![denom_2, input_amount_2, output_amount_2]);
-
-        println!("{table}");
+        println!(
+            "Trade {} => {}",
+            unit_1.format_value(outputs.delta_1),
+            unit_2
+        );
+        println!(
+            "\tOutput:         {} for {}",
+            unit_2.format_value(outputs.lambda_2),
+            unit_1.format_value(consumed_1)
+        );
+        println!(
+            "\tUnfilled Input: {}",
+            unit_1.format_value(outputs.unfilled_1)
+        );
+        println!(
+            "Trade {} => {}",
+            unit_2.format_value(outputs.delta_2),
+            unit_1
+        );
+        println!(
+            "\tOutput:         {} for {}",
+            unit_1.format_value(outputs.lambda_1),
+            unit_2.format_value(consumed_2)
+        );
+        println!(
+            "\tUnfilled Input: {}",
+            unit_2.format_value(outputs.unfilled_2)
+        );
 
         Ok(())
     }
@@ -262,7 +277,7 @@ impl DexCmd {
 
                 let positions = positions_stream.try_collect::<Vec<_>>().await?;
 
-                println!("{}", render_positions(&asset_cache, &positions));
+                println!("{}", utils::render_positions(&asset_cache, &positions));
             }
             DexCmd::Positions {
                 trading_pair,
@@ -276,6 +291,59 @@ impl DexCmd {
                     .await?;
                 let asset_cache = app.view().assets().await?;
                 println!("{}", render_positions(&asset_cache, &positions));
+            }
+            DexCmd::Position { id, raw } => {
+                let mut client = app.specific_client().await?;
+                let position: Position = client
+                    .liquidity_position_by_id(LiquidityPositionByIdRequest {
+                        position_id: Some((*id).into()),
+                        ..Default::default()
+                    })
+                    .await?
+                    .into_inner()
+                    .data
+                    .ok_or_else(|| anyhow::anyhow!("position not found"))?
+                    .try_into()?;
+
+                if *raw {
+                    println!("{}", serde_json::to_string_pretty(&position)?);
+                } else {
+                    let asset_cache = app.view().assets().await?;
+                    let mut table = Table::new();
+                    table.load_preset(presets::NOTHING);
+                    table.add_row(vec!["ID".to_string(), id.to_string()]);
+                    table.add_row(vec!["State".to_string(), position.state.to_string()]);
+                    table.add_row(vec![
+                        "Reserves 1".to_string(),
+                        Value {
+                            asset_id: position.phi.pair.asset_1(),
+                            amount: position.reserves.r1,
+                        }
+                        .format(&asset_cache),
+                    ]);
+                    table.add_row(vec![
+                        "Reserves 2".to_string(),
+                        Value {
+                            asset_id: position.phi.pair.asset_2(),
+                            amount: position.reserves.r2,
+                        }
+                        .format(&asset_cache),
+                    ]);
+                    table.add_row(vec![
+                        "Fee".to_string(),
+                        format!("{}bps", position.phi.component.fee),
+                    ]);
+                    table.add_row(vec![
+                        "p".to_string(),
+                        position.phi.component.p.value().to_string(),
+                    ]);
+                    table.add_row(vec![
+                        "q".to_string(),
+                        position.phi.component.q.value().to_string(),
+                    ]);
+                    table.add_row(vec!["Nonce".to_string(), hex::encode(&position.nonce)]);
+                    println!("{}", table);
+                }
             }
         };
 

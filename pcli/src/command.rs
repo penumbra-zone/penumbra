@@ -2,6 +2,7 @@ mod debug;
 mod keys;
 mod query;
 mod tx;
+mod utils;
 mod validator;
 mod view;
 
@@ -25,7 +26,6 @@ pub use view::ViewCmd;
 // without noisy renumberings.
 //
 // https://docs.rs/clap/latest/clap/builder/struct.App.html#method.display_order
-
 #[derive(Debug, clap::Subcommand)]
 pub enum Command {
     /// Query the public chain state, like the validator set.

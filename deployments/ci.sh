@@ -90,6 +90,11 @@ function create_genesis() {
         $preserve_chain_opt \
         --validators-input-file "${CONTAINERHOME}/vals.json" > /dev/null
 
+    # Compress the genesis file, otherwise the Helm manifest will exceed the 1MB
+    # secret limit. See GH1783.
+    gzip -c "${WORKDIR}/.penumbra/testnet_data/node0/tendermint/config/genesis.json" \
+        > "${WORKDIR}/genesis.json.gz"
+
     # Clear out persistent peers. Will peer after services are bootstrapped.
     # The Helm chart requires that these local flat files exist, but we cannot
     # populate them with external IPs just yet. Make sure they're present,
@@ -115,10 +120,29 @@ function helm_uninstall() {
     kubectl delete pvc -l app.kubernetes.io/instance="$HELM_RELEASE" > /dev/null 2>&1
 }
 
+# We manually munge the ConfigMap for genesis data, rather than using Helm
+# to generate the template, to avoid the large filesize from exceeding
+# the 1MB Secret limit for Helm manifests.
+function create_config_map() {
+    if [[ -z "$HELM_RELEASE" ]] ; then
+        >&2 echo "Error: HELM_RELEASE not defined, cannot generate ConfigMap for genesis"
+        return 1
+    fi
+    repo_root="$(git rev-parse --show-toplevel)"
+    config_map_name="${HELM_RELEASE}-genesis-config"
+    # The smelly sleeps ensure that the ConfigMap exists prior to creation of PVs which
+    # mount in the contents of the CM; otherwise, pods get stuck in init state.
+    kubectl delete configmap "$config_map_name" --ignore-not-found=true --wait
+    sleep 2
+    kubectl create configmap "$config_map_name" --from-file="${repo_root}/deployments/charts/penumbra/pdcli/genesis.json.gz"
+    sleep 3
+}
+
 # Apply the Helm configuration to the cluster. Will overwrite resources
 # as necessary. Will *not* replace certain durable resources like
 # the ManagedCertificate, which is annotated with helm.sh/resource-policy=keep.
 function helm_install() {
+    create_config_map
     helm upgrade --install "$HELM_RELEASE" ./charts/penumbra \
         --set "numValidators=$NVALS" \
         --set "numFullNodes=$NFULLNODES" \

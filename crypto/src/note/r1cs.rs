@@ -1,4 +1,5 @@
 use crate::{address::AddressVar, note, value::ValueVar, Note};
+use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{
@@ -56,25 +57,29 @@ impl AllocVar<Note, Fq> for NoteVar {
         // TODO: figure out how to use namespaces
         let ns = cs.into();
         let cs = ns.cs();
-        match mode {
-            AllocationMode::Constant => unimplemented!(),
-            AllocationMode::Input => unimplemented!(),
-            AllocationMode::Witness => {
-                let note1 = f()?;
-                let note: &Note = note1.borrow();
+        let note1 = f()?;
+        let note: &Note = note1.borrow();
+        let note_blinding =
+            FqVar::new_variable(cs.clone(), || Ok(note.note_blinding().clone()), mode)?;
+        let value = ValueVar::new_variable(cs.clone(), || Ok(note.value().clone()), mode)?;
+        let address = AddressVar::new_variable(cs, || Ok(note.address().clone()), mode)?;
 
-                let note_blinding =
-                    FqVar::new_witness(cs.clone(), || Ok(note.note_blinding().clone()))?;
-                let value = ValueVar::new_witness(cs.clone(), || Ok(note.value().clone()))?;
-                let address = AddressVar::new_witness(cs, || Ok(note.address().clone()))?;
+        Ok(Self {
+            note_blinding,
+            value,
+            address,
+        })
+    }
+}
 
-                Ok(Self {
-                    note_blinding,
-                    value,
-                    address,
-                })
-            }
-        }
+impl ToConstraintField<Fq> for Note {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let mut elements = Vec::new();
+        let note_blinding = self.note_blinding();
+        elements.extend([note_blinding]);
+        elements.extend(self.value().to_field_elements()?);
+        elements.extend(self.address().to_field_elements()?);
+        Some(elements)
     }
 }
 

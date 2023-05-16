@@ -11,22 +11,15 @@ use penumbra_storage::StateWrite;
 use tracing::instrument;
 
 use crate::dex::{
-    router::{FillRoute, PathSearch},
+    router::{FillRoute, PathSearch, RoutingParams},
     PositionManager, StateWriteExt,
 };
 
 /// Ties together the routing and filling logic, to process
 /// a block's batch swap flows.
 #[async_trait]
-pub trait RouteAndFill: StateWrite + Sized {
-    #[instrument(skip(
-        self,
-        trading_pair,
-        batch_data,
-        block_height,
-        epoch_height,
-        fixed_candidates
-    ))]
+pub trait HandleBatchSwaps: StateWrite + Sized {
+    #[instrument(skip(self, trading_pair, batch_data, block_height, epoch_height, params))]
     async fn handle_batch_swaps(
         self: &mut Arc<Self>,
         trading_pair: TradingPair,
@@ -34,7 +27,7 @@ pub trait RouteAndFill: StateWrite + Sized {
         // TODO: why not read these 2 from the state?
         block_height: u64,
         epoch_height: u64,
-        fixed_candidates: Arc<Vec<asset::Id>>,
+        params: RoutingParams,
     ) -> Result<()>
     where
         Self: 'static,
@@ -48,7 +41,7 @@ pub trait RouteAndFill: StateWrite + Sized {
         let traces: im::Vector<Vec<Value>> = im::Vector::new();
         Arc::get_mut(self)
             .expect("one mutable reference to state")
-            .object_put("swap_execution", traces);
+            .object_put("trade_traces", traces);
 
         // Depending on the contents of the batch swap inputs, we might need to path search in either direction.
         let (lambda_2, unfilled_1) = if delta_1.value() > 0 {
@@ -57,7 +50,7 @@ pub trait RouteAndFill: StateWrite + Sized {
                 trading_pair.asset_1(),
                 trading_pair.asset_2(),
                 delta_1,
-                fixed_candidates.clone(),
+                params.clone(),
             )
             .await?
         } else {
@@ -72,7 +65,7 @@ pub trait RouteAndFill: StateWrite + Sized {
                 trading_pair.asset_2(),
                 trading_pair.asset_1(),
                 delta_2,
-                fixed_candidates.clone(),
+                params.clone(),
             )
             .await?
         } else {
@@ -87,48 +80,51 @@ pub trait RouteAndFill: StateWrite + Sized {
             trading_pair,
             delta_1,
             delta_2,
-            lambda_1_2: lambda_1,
-            lambda_2_1: lambda_2,
-            lambda_1_1: unfilled_1,
-            lambda_2_2: unfilled_2,
+            lambda_1,
+            lambda_2,
+            unfilled_1,
+            unfilled_2,
         };
 
+        // TODO: how does this work when there are trades in both directions?
+        // Won't that mix up the traces? Should the SwapExecution be indexed by
+        // the _DirectedTradingPair_?
+
         // Fetch the swap execution object that should have been modified during the routing and filling.
-        let swap_execution: im::Vector<Vec<Value>> = self
-            .object_get("swap_execution")
+        let trade_traces: im::Vector<Vec<Value>> = self
+            .object_get("trade_traces")
             .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store2"))?;
-        tracing::debug!(?output_data, ?swap_execution);
+        tracing::debug!(?output_data, ?trade_traces);
         Arc::get_mut(self)
             .expect("expected state to have no other refs")
             .set_output_data(
                 output_data,
                 SwapExecution {
-                    traces: swap_execution.into_iter().collect(),
+                    traces: trade_traces.into_iter().collect(),
                 },
             );
 
         // Clean up the swap execution object store now that it's been persisted.
         Arc::get_mut(self)
             .expect("expected state to have no other refs")
-            .object_delete("swap_execution");
+            .object_delete("trade_traces");
 
         Ok(())
     }
 }
 
-impl<T: PositionManager> RouteAndFill for T {}
+impl<T: PositionManager> HandleBatchSwaps for T {}
 
-/// Ties together the routing and filling logic, to process
-/// a block's batch swap flows.
+/// Lower-level trait that ties together the routing and filling logic.
 #[async_trait]
-trait RouteAndFillInner: StateWrite + Sized {
-    #[instrument(skip(self, asset_1, asset_2, delta_1, fixed_candidates))]
+pub trait RouteAndFill: StateWrite + Sized {
+    #[instrument(skip(self, asset_1, asset_2, delta_1, params))]
     async fn route_and_fill(
         self: &mut Arc<Self>,
         asset_1: asset::Id,
         asset_2: asset::Id,
         delta_1: Amount,
-        fixed_candidates: Arc<Vec<asset::Id>>,
+        params: RoutingParams,
     ) -> Result<(Amount, Amount)>
     where
         Self: 'static,
@@ -145,8 +141,7 @@ trait RouteAndFillInner: StateWrite + Sized {
         loop {
             // Find the best route between the two assets in the trading pair.
             let (path, spill_price) = self
-                // TODO: max hops should not be hardcoded
-                .path_search(asset_1, asset_2, 4, fixed_candidates.clone())
+                .path_search(asset_1, asset_2, params.clone())
                 .await
                 .context("error finding best path")?;
 
@@ -154,6 +149,10 @@ trait RouteAndFillInner: StateWrite + Sized {
                 tracing::debug!("no path found, exiting route_and_fill");
                 break;
             };
+            if path.is_empty() {
+                tracing::debug!("empty path found, exiting route_and_fill");
+                break;
+            }
 
             (outer_lambda_2, outer_unfilled_1) = {
                 // path found, fill as much as we can
@@ -164,6 +163,7 @@ trait RouteAndFillInner: StateWrite + Sized {
 
                 tracing::debug!(?path, delta_1 = ?delta_1.amount, "found path, starting to fill up to spill price");
 
+                // TODO: in what circumstances should we use fill_route_exact?
                 let (unfilled_1, lambda_2) = Arc::get_mut(self)
                     .expect("expected state to have no other refs")
                     .fill_route(delta_1, &path, spill_price)
@@ -190,4 +190,4 @@ trait RouteAndFillInner: StateWrite + Sized {
     }
 }
 
-impl<T: RouteAndFill> RouteAndFillInner for T {}
+impl<T: HandleBatchSwaps> RouteAndFill for T {}
