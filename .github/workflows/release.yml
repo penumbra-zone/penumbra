@@ -87,7 +87,7 @@ jobs:
         # We don't have a comparable setup for mac/win, so those builds will be
         # much slower, effectively making the whole matrix run slow. Punting for now.
         include:
-        - os: macos-11
+        - os: macos-12-xl
           dist-args: --artifacts=local --target=aarch64-apple-darwin --target=x86_64-apple-darwin
           install-dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.0.5/cargo-dist-v0.0.5-installer.sh | sh
         - os: buildjet-16vcpu-ubuntu-2004
