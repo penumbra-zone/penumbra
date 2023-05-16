@@ -26,6 +26,7 @@ use penumbra_dao::DaoDeposit;
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
+use penumbra_stake::UndelegateClaimPlan;
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{
@@ -34,7 +35,7 @@ use penumbra_transaction::{
     },
     plan::{
         ActionPlan, DelegatorVotePlan, MemoPlan, PositionWithdrawPlan, SwapClaimPlan, SwapPlan,
-        TransactionPlan, UndelegateClaimPlan,
+        TransactionPlan,
     },
     proposal,
 };

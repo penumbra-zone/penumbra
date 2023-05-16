@@ -5,9 +5,7 @@ use anyhow::Result;
 use penumbra_crypto::{Address, Fee};
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
-use penumbra_proto::{
-    core::stake::v1alpha1 as pb_stake, core::transaction::v1alpha1 as pb, DomainType,
-};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use rand::{CryptoRng, Rng};
@@ -263,15 +261,12 @@ impl TransactionPlan {
 
     /// Convenience method to get all the destination addresses for each `OutputPlan`s.
     pub fn dest_addresses(&self) -> Vec<Address> {
-        self.output_plans()
-            .into_iter()
-            .map(|plan| plan.dest_address)
-            .collect()
+        self.output_plans().map(|plan| plan.dest_address).collect()
     }
 
     /// Convenience method to get the number of `OutputPlan`s in this transaction.
     pub fn num_outputs(&self) -> usize {
-        self.output_plans().into_iter().count()
+        self.output_plans().count()
     }
 
     /// Method to add `CluePlan`s to a `TransactionPlan`.

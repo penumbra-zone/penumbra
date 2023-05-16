@@ -28,11 +28,8 @@ use penumbra_proto::{
     },
     core::dex::v1alpha1::PositionId,
 };
-use penumbra_transaction::{
-    plan::{SwapClaimPlan, UndelegateClaimPlan},
-    proposal::ProposalToml,
-    vote::Vote,
-};
+use penumbra_stake::UndelegateClaimPlan;
+use penumbra_transaction::{plan::SwapClaimPlan, proposal::ProposalToml, vote::Vote};
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};
 use rand_core::OsRng;

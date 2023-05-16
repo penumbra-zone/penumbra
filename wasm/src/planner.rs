@@ -17,13 +17,11 @@ use penumbra_crypto::{
     Address, Fee, FullViewingKey, Note, Value,
 };
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
+use penumbra_stake::UndelegateClaimPlan;
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{Proposal, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote},
-    plan::{
-        ActionPlan, DelegatorVotePlan, MemoPlan, SwapClaimPlan, SwapPlan, TransactionPlan,
-        UndelegateClaimPlan,
-    },
+    plan::{ActionPlan, DelegatorVotePlan, MemoPlan, SwapClaimPlan, SwapPlan, TransactionPlan},
 };
 
 // use penumbra_view::{SpendableNoteRecord, ViewClient};
