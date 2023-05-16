@@ -161,7 +161,7 @@ pub mod penumbra {
                 pub async fn key_domain<T>(&mut self, key: impl AsRef<str>) -> anyhow::Result<T>
                 where
                     T: crate::DomainType,
-                    <T as TryFrom<T::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
+                    anyhow::Error: From<<T as TryFrom<T::Proto>>::Error>,
                     C: tonic::client::GrpcService<BoxBody> + 'static,
                     C::ResponseBody: Send,
                     <C as tonic::client::GrpcService<BoxBody>>::ResponseBody:
@@ -188,7 +188,7 @@ pub mod penumbra {
                 >
                 where
                     T: crate::DomainType + Send + 'static + Unpin,
-                    <T as TryFrom<T::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
+                    anyhow::Error: From<<T as TryFrom<T::Proto>>::Error>,
                     C: tonic::client::GrpcService<BoxBody> + 'static,
                     C::ResponseBody: Send,
                     <C as tonic::client::GrpcService<BoxBody>>::ResponseBody:

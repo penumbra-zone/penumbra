@@ -50,7 +50,7 @@ impl<D, F> Future for DomainFuture<D, F>
 where
     F: Future<Output = Result<Option<Vec<u8>>>>,
     D: DomainType,
-    <D as TryFrom<D::Proto>>::Error: Into<anyhow::Error> + Send + Sync + 'static,
+    anyhow::Error: From<<D as TryFrom<D::Proto>>::Error>,
 {
     type Output = Result<Option<D>>;
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -59,7 +59,7 @@ where
             Poll::Ready(Ok(Some(bytes))) => {
                 let v = D::Proto::decode(&*bytes).context("could not decode proto from bytes")?;
                 let v = D::try_from(v)
-                    .map_err(Into::into)
+                    .map_err(anyhow::Error::from)
                     .context("could not parse domain type from proto")?;
                 Poll::Ready(Ok(Some(v)))
             }
