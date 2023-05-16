@@ -101,10 +101,9 @@ impl ConstraintSynthesizer<Fq> for SwapCircuit {
 
 impl ParameterSetup for SwapCircuit {
     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
-        let trading_pair = TradingPair {
-            asset_1: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-            asset_2: asset::REGISTRY.parse_denom("nala").unwrap().id(),
-        };
+        let a = asset::REGISTRY.parse_unit("upenumbra");
+        let b: asset::Unit = asset::REGISTRY.parse_unit("nala");
+        let trading_pair = TradingPair::new(a.id(), b.id());
         let diversifier_bytes = [1u8; 16];
         let pk_d_bytes = decaf377::basepoint().vartime_compress().0;
         let clue_key_bytes = [1; 32];

@@ -247,8 +247,16 @@ impl AllocVar<SwapPlaintext, Fq> for SwapPlaintextVar {
         let claim_fee =
             ValueVar::new_variable(cs.clone(), || Ok(swap_plaintext.claim_fee.0), mode)?;
         let delta_1_i = AmountVar::new_variable(cs.clone(), || Ok(swap_plaintext.delta_1_i), mode)?;
-        let trading_pair =
-            TradingPairVar::new_variable(cs.clone(), || Ok(swap_plaintext.trading_pair), mode)?;
+
+        // Note: We currently use `TradingPairVar::new_variable_unchecked` as the only
+        // place we use the trading pair is when computing the swap commitment. A malicious
+        // prover is unable to switch the direction of the canonical trading pair as the
+        // swap commitment integrity check would be invalid.
+        let trading_pair = TradingPairVar::new_variable_unchecked(
+            cs.clone(),
+            || Ok(swap_plaintext.trading_pair),
+            mode,
+        )?;
         let delta_2_i = AmountVar::new_variable(cs.clone(), || Ok(swap_plaintext.delta_2_i), mode)?;
         let claim_address =
             AddressVar::new_variable(cs.clone(), || Ok(swap_plaintext.claim_address), mode)?;
@@ -424,10 +432,10 @@ mod tests {
         let ivk = fvk.incoming();
         let ovk = fvk.outgoing();
         let (dest, _dtk_d) = ivk.payment_address(0u32.into());
-        let trading_pair = TradingPair {
-            asset_1: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-            asset_2: asset::REGISTRY.parse_denom("nala").unwrap().id(),
-        };
+        let trading_pair = TradingPair::new(
+            asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset::REGISTRY.parse_denom("nala").unwrap().id(),
+        );
 
         let swap = SwapPlaintext::new(
             &mut rng,

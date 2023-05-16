@@ -179,6 +179,9 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         // Additionally, check that the position of the spend proof is before the start
         // start_height, which ensures that the note being voted with was created before voting
         // started.
+        //
+        // Also note that `FpVar::enforce_cmp` requires that the field elements have size
+        // (p-1)/2, which is true for positions as they are 48 bits at most.
         position_var
             .inner
             .enforce_cmp(&start_position.inner, core::cmp::Ordering::Less, false)?;
