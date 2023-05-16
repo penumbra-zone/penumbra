@@ -12,6 +12,7 @@ use penumbra_compact_block::CompactBlock;
 use penumbra_component::Component;
 use penumbra_crypto::dex::swap::SwapPayload;
 use penumbra_crypto::NotePayload;
+use penumbra_distributions::component::Distributions;
 use penumbra_ibc::component::IBCComponent;
 use penumbra_proto::DomainType;
 use penumbra_sct::component::SctManager;
@@ -114,6 +115,7 @@ impl App {
             },
         );
 
+        Distributions::init_chain(&mut state_tx, app_state).await;
         Staking::init_chain(&mut state_tx, app_state).await;
         IBCComponent::init_chain(&mut state_tx, &()).await;
         Dex::init_chain(&mut state_tx, &()).await;
@@ -151,6 +153,7 @@ impl App {
 
         // Run each of the begin block handlers for each component, in sequence:
         let mut arc_state_tx = Arc::new(state_tx);
+        Distributions::begin_block(&mut arc_state_tx, begin_block).await;
         Staking::begin_block(&mut arc_state_tx, begin_block).await;
         IBCComponent::begin_block(&mut arc_state_tx, begin_block).await;
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
@@ -254,6 +257,7 @@ impl App {
         let state_tx = StateDelta::new(self.state.clone());
 
         let mut arc_state_tx = Arc::new(state_tx);
+        Distributions::end_block(&mut arc_state_tx, end_block).await;
         Staking::end_block(&mut arc_state_tx, end_block).await;
         IBCComponent::end_block(&mut arc_state_tx, end_block).await;
         Dex::end_block(&mut arc_state_tx, end_block).await;
@@ -274,6 +278,7 @@ impl App {
 
             let mut arc_state_tx = Arc::new(state_tx);
 
+            Distributions::end_epoch(&mut arc_state_tx).await.unwrap();
             Staking::end_epoch(&mut arc_state_tx).await.unwrap();
             IBCComponent::end_epoch(&mut arc_state_tx).await.unwrap();
             Dex::end_epoch(&mut arc_state_tx).await.unwrap();

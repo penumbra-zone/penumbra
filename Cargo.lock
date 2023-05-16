@@ -4257,6 +4257,7 @@ dependencies = [
  "penumbra-component",
  "penumbra-crypto",
  "penumbra-dao",
+ "penumbra-distributions",
  "penumbra-ibc",
  "penumbra-proof-params",
  "penumbra-proto",
@@ -4443,6 +4444,22 @@ dependencies = [
  "tendermint",
  "tendermint-light-client-verifier",
  "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "penumbra-distributions"
+version = "0.52.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "penumbra-chain",
+ "penumbra-component",
+ "penumbra-crypto",
+ "penumbra-proto",
+ "penumbra-shielded-pool",
+ "penumbra-storage",
+ "tendermint",
  "tracing",
 ]
 
