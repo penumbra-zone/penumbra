@@ -3,12 +3,9 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::action::Delegate;
 
-use crate::{
-    action_handler::ActionHandler,
-    stake::{component::StateWriteExt as _, validator, StateReadExt as _},
-};
+use crate::Delegate;
+use crate::{component::StateWriteExt as _, validator, ActionHandler, StateReadExt as _};
 
 #[async_trait]
 impl ActionHandler for Delegate {

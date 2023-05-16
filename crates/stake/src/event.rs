@@ -1,4 +1,4 @@
-use penumbra_transaction::action::{Delegate, Undelegate};
+use crate::{Delegate, Undelegate};
 use tendermint::abci::{Event, EventAttributeIndexExt};
 
 pub fn delegate(delegate: &Delegate) -> Event {

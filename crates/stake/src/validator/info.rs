@@ -4,7 +4,7 @@ use penumbra_proto::{
 use serde::{Deserialize, Serialize};
 
 use super::{Status, Validator};
-use crate::stake::rate::RateData;
+use crate::rate::RateData;
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::ValidatorInfo", into = "pb::ValidatorInfo")]

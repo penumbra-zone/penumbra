@@ -4263,6 +4263,7 @@ dependencies = [
  "penumbra-proto",
  "penumbra-sct",
  "penumbra-shielded-pool",
+ "penumbra-stake",
  "penumbra-storage",
  "penumbra-tct",
  "penumbra-transaction",
@@ -4642,6 +4643,51 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-stake"
+version = "0.52.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64 0.20.0",
+ "bech32",
+ "bitvec",
+ "blake2b_simd 0.5.11",
+ "ed25519-consensus",
+ "futures",
+ "hex",
+ "im",
+ "metrics",
+ "once_cell",
+ "parking_lot 0.12.1",
+ "penumbra-chain",
+ "penumbra-component",
+ "penumbra-crypto",
+ "penumbra-dao",
+ "penumbra-proof-params",
+ "penumbra-proto",
+ "penumbra-sct",
+ "penumbra-shielded-pool",
+ "penumbra-storage",
+ "penumbra-tct",
+ "penumbra-transaction",
+ "prost",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_unit_struct",
+ "serde_with 2.3.3",
+ "sha2 0.9.9",
+ "tempfile",
+ "tendermint",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.17",
+ "vergen",
+]
+
+[[package]]
 name = "penumbra-storage"
 version = "0.52.0"
 dependencies = [
@@ -4822,6 +4868,7 @@ dependencies = [
  "penumbra-proof-params",
  "penumbra-proto",
  "penumbra-shielded-pool",
+ "penumbra-stake",
  "penumbra-tct",
  "poseidon377",
  "proptest",

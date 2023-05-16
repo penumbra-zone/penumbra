@@ -6,11 +6,11 @@ use penumbra_crypto::{
 };
 use penumbra_proof_params::UNDELEGATECLAIM_PROOF_PROVING_KEY;
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
-use rand_core::OsRng;
+use rand_chacha::rand_core::OsRng;
 
 use serde::{Deserialize, Serialize};
 
-use crate::action::{UndelegateClaim, UndelegateClaimBody};
+use crate::{UndelegateClaim, UndelegateClaimBody};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "pb::UndelegateClaimPlan", into = "pb::UndelegateClaimPlan")]

@@ -19,13 +19,14 @@ use penumbra_proto::{
     core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pbt, DomainType, Message,
 };
 use penumbra_shielded_pool::{Output, Spend};
+use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     action::{
-        Delegate, DelegatorVote, PositionClose, PositionOpen, ProposalSubmit, ProposalWithdraw,
-        Swap, Undelegate, ValidatorVote,
+        DelegatorVote, PositionClose, PositionOpen, ProposalSubmit, ProposalWithdraw, Swap,
+        ValidatorVote,
     },
     view::{action_view::OutputView, MemoView, TransactionBodyView},
     Action, ActionView, Id, IsAction, TransactionPerspective, TransactionView,
@@ -229,6 +230,16 @@ impl Transaction {
         })
     }
 
+    pub fn undelegate_claims(&self) -> impl Iterator<Item = &UndelegateClaim> {
+        self.actions().filter_map(|action| {
+            if let Action::UndelegateClaim(d) = action {
+                Some(d)
+            } else {
+                None
+            }
+        })
+    }
+
     pub fn proposal_submits(&self) -> impl Iterator<Item = &ProposalSubmit> {
         self.actions().filter_map(|action| {
             if let Action::ProposalSubmit(s) = action {
@@ -279,7 +290,9 @@ impl Transaction {
         })
     }
 
-    pub fn validator_definitions(&self) -> impl Iterator<Item = &pbs::ValidatorDefinition> {
+    pub fn validator_definitions(
+        &self,
+    ) -> impl Iterator<Item = &penumbra_stake::validator::Definition> {
         self.actions().filter_map(|action| {
             if let Action::ValidatorDefinition(d) = action {
                 Some(d)

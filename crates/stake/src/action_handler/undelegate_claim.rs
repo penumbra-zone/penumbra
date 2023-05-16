@@ -6,9 +6,9 @@ use penumbra_chain::component::StateReadExt;
 use penumbra_crypto::stake::UnbondingToken;
 use penumbra_proof_params::UNDELEGATECLAIM_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::action::UndelegateClaim;
 
-use crate::{action_handler::ActionHandler, stake::StateReadExt as _};
+use crate::UndelegateClaim;
+use crate::{ActionHandler, StateReadExt as _};
 
 #[async_trait]
 impl ActionHandler for UndelegateClaim {

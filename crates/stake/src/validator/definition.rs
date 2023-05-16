@@ -2,7 +2,7 @@ use penumbra_crypto::rdsa::{Signature, SpendAuth};
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::stake::validator::Validator;
+use crate::validator::Validator;
 
 /// Authenticated configuration data for a validator.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]

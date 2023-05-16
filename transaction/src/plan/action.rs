@@ -1,27 +1,24 @@
 use penumbra_crypto::Balance;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
-use penumbra_proto::{
-    core::stake::v1alpha1 as pb_stake, core::transaction::v1alpha1 as pb_t, DomainType,
-};
+use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
+use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use serde::{Deserialize, Serialize};
 
 mod delegator_vote;
 mod position;
 mod swap;
 mod swap_claim;
-mod undelegate_claim;
 
 pub use delegator_vote::DelegatorVotePlan;
 pub use position::{PositionRewardClaimPlan, PositionWithdrawPlan};
 pub use swap::SwapPlan;
 pub use swap_claim::SwapClaimPlan;
-pub use undelegate_claim::UndelegateClaimPlan;
 
 use crate::action::{
-    Delegate, PositionClose, PositionOpen, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
-    Undelegate, ValidatorVote,
+    PositionClose, PositionOpen, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
+    ValidatorVote,
 };
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
@@ -44,7 +41,7 @@ pub enum ActionPlan {
     /// because we don't yet use flow encryption.
     Undelegate(Undelegate),
     UndelegateClaim(UndelegateClaimPlan),
-    ValidatorDefinition(pb_stake::ValidatorDefinition),
+    ValidatorDefinition(penumbra_stake::validator::Definition),
     /// Describes a proposed swap.
     Swap(SwapPlan),
     /// Describes a swap claim.
@@ -145,8 +142,8 @@ impl From<Undelegate> for ActionPlan {
     }
 }
 
-impl From<pb_stake::ValidatorDefinition> for ActionPlan {
-    fn from(inner: pb_stake::ValidatorDefinition) -> ActionPlan {
+impl From<penumbra_stake::validator::Definition> for ActionPlan {
+    fn from(inner: penumbra_stake::validator::Definition) -> ActionPlan {
         ActionPlan::ValidatorDefinition(inner)
     }
 }
@@ -228,7 +225,7 @@ impl From<ActionPlan> for pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::UndelegateClaim(inner.into())),
             },
             ActionPlan::ValidatorDefinition(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::ValidatorDefinition(inner)),
+                action: Some(pb_t::action_plan::Action::ValidatorDefinition(inner.into())),
             },
             ActionPlan::SwapClaim(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::SwapClaim(inner.into())),
@@ -309,7 +306,7 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
                 Ok(ActionPlan::UndelegateClaim(inner.try_into()?))
             }
             pb_t::action_plan::Action::ValidatorDefinition(inner) => {
-                Ok(ActionPlan::ValidatorDefinition(inner))
+                Ok(ActionPlan::ValidatorDefinition(inner.try_into()?))
             }
             pb_t::action_plan::Action::Swap(inner) => Ok(ActionPlan::Swap(inner.try_into()?)),
             pb_t::action_plan::Action::SwapClaim(inner) => {

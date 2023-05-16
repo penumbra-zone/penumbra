@@ -6,8 +6,6 @@ use penumbra_crypto::{
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::{ActionView, IsAction, TransactionPerspective};
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::UndelegateClaimBody", into = "pb::UndelegateClaimBody")]
 pub struct UndelegateClaimBody {
@@ -26,16 +24,6 @@ pub struct UndelegateClaimBody {
 pub struct UndelegateClaim {
     pub body: UndelegateClaimBody,
     pub proof: UndelegateClaimProof,
-}
-
-impl IsAction for UndelegateClaim {
-    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
-        self.body.balance_commitment
-    }
-
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::UndelegateClaim(self.to_owned())
-    }
 }
 
 impl DomainType for UndelegateClaimBody {

@@ -1,7 +1,7 @@
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::stake::{validator::BondingState, validator::State, IdentityKey};
+use crate::{validator::BondingState, validator::State, IdentityKey};
 
 /// The current status of a validator, including its identity, voting power, and state in the
 /// validator state machine.

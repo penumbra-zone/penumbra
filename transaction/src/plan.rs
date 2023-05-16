@@ -9,12 +9,13 @@ use penumbra_proto::{
     core::stake::v1alpha1 as pb_stake, core::transaction::v1alpha1 as pb, DomainType,
 };
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
+use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::action::{
-    Delegate, PositionClose, PositionOpen, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
-    Undelegate, ValidatorVote,
+    PositionClose, PositionOpen, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
+    ValidatorVote,
 };
 
 mod action;
@@ -23,7 +24,7 @@ mod build;
 mod clue;
 mod memo;
 
-pub use action::{ActionPlan, DelegatorVotePlan, SwapClaimPlan, SwapPlan, UndelegateClaimPlan};
+pub use action::{ActionPlan, DelegatorVotePlan, SwapClaimPlan, SwapPlan};
 pub use clue::CluePlan;
 pub use memo::MemoPlan;
 
@@ -108,7 +109,9 @@ impl TransactionPlan {
         })
     }
 
-    pub fn validator_definitions(&self) -> impl Iterator<Item = &pb_stake::ValidatorDefinition> {
+    pub fn validator_definitions(
+        &self,
+    ) -> impl Iterator<Item = &penumbra_stake::validator::Definition> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::ValidatorDefinition(d) = action {
                 Some(d)

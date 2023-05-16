@@ -5,32 +5,27 @@ use penumbra_storage::{StateRead, StateWrite};
 
 use std::sync::Arc;
 
-use penumbra_proto::{core::stake::v1alpha1::ValidatorDefinition, DomainType};
+use penumbra_proto::DomainType;
 
 use crate::{
-    action_handler::ActionHandler,
-    stake::{component::StakingImpl as _, rate::RateData, validator, StateReadExt as _},
+    component::StakingImpl as _, rate::RateData, validator, ActionHandler, StateReadExt as _,
 };
 
 #[async_trait]
-impl ActionHandler for ValidatorDefinition {
+impl ActionHandler for validator::Definition {
     type CheckStatelessContext = ();
     async fn check_stateless(&self, _context: ()) -> Result<()> {
-        // Check that validator definition is correctly signed and well-formed:
-        let definition = validator::Definition::try_from(self.clone())
-            .context("supplied proto is not a valid definition")?;
         // First, check the signature:
-        let definition_bytes = definition.validator.encode_to_vec();
-        definition
-            .validator
+        let definition_bytes = self.validator.encode_to_vec();
+        self.validator
             .identity_key
             .0
-            .verify(&definition_bytes, &definition.auth_sig)
+            .verify(&definition_bytes, &self.auth_sig)
             .context("validator definition signature failed to verify")?;
 
         // TODO(hdevalence) -- is this duplicated by the check during parsing?
         // Check that the funding streams do not exceed 100% commission (10000bps)
-        let total_funding_bps = definition
+        let total_funding_bps = self
             .validator
             .funding_streams
             .iter()
@@ -48,10 +43,9 @@ impl ActionHandler for ValidatorDefinition {
     }
 
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
-        // Check that the sequence numbers of the updated validators is correct.
-        let v = validator::Definition::try_from(self.clone())
-            .context("supplied proto is not a valid definition")?;
+        let v = self;
 
+        // Check that the sequence numbers of the updated validators is correct...
         // Check whether we are redefining an existing validator.
         if let Some(existing_v) = state.validator(&v.validator.identity_key).await? {
             // Ensure that the highest existing sequence number is less than
@@ -96,10 +90,10 @@ impl ActionHandler for ValidatorDefinition {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        let v = self;
+
         let cur_epoch = state.get_current_epoch().await.unwrap();
 
-        let v = validator::Definition::try_from(self.clone())
-            .expect("we already checked that this was a valid proto");
         if state
             .validator(&v.validator.identity_key)
             .await
@@ -107,7 +101,7 @@ impl ActionHandler for ValidatorDefinition {
             .is_some()
         {
             // This is an existing validator definition.
-            state.update_validator(v.validator).await.unwrap();
+            state.update_validator(v.validator.clone()).await.unwrap();
         } else {
             // This is a new validator definition.
             // Set the default rates and state.

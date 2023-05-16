@@ -4,12 +4,9 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::action::Undelegate;
 
-use crate::{
-    action_handler::ActionHandler,
-    stake::{component::StateWriteExt as _, StateReadExt as _},
-};
+use crate::Undelegate;
+use crate::{component::StateWriteExt as _, ActionHandler, StateReadExt as _};
 
 #[async_trait]
 impl ActionHandler for Undelegate {
