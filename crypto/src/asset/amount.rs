@@ -110,6 +110,8 @@ impl AmountVar {
         rem_var
             .amount
             .enforce_cmp(&divisor_var.amount, core::cmp::Ordering::Less, false)?;
+        // Note: `FpVar::enforce_cmp` requires that the amounts have size (p-1)/2, which is
+        // true for amounts as they are 128 bits at most.
 
         // Finally, division is undefined if the divisor is 0.
         // Constrain: divisor != 0

@@ -116,14 +116,18 @@ impl TryFrom<[u8; 64]> for TradingPair {
     fn try_from(bytes: [u8; 64]) -> anyhow::Result<Self> {
         let asset_1_bytes = &bytes[0..32];
         let asset_2_bytes = &bytes[32..64];
-        Ok(Self {
-            asset_1: asset_1_bytes
-                .try_into()
-                .map_err(|_| anyhow::anyhow!("invalid asset_1 bytes in TradingPair"))?,
-            asset_2: asset_2_bytes
-                .try_into()
-                .map_err(|_| anyhow::anyhow!("invalid asset_2 bytes in TradingPair"))?,
-        })
+        let asset_1 = asset_1_bytes
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("invalid asset_1 bytes in TradingPair"))?;
+        let asset_2 = asset_2_bytes
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("invalid asset_2 bytes in TradingPair"))?;
+        let trading_pair = TradingPair::new(asset_1, asset_2);
+        let result = Self { asset_1, asset_2 };
+        if trading_pair != result {
+            return Err(anyhow::anyhow!("non-canonical trading pair"));
+        }
+        Ok(result)
     }
 }
 
@@ -137,22 +141,23 @@ pub struct TradingPairVar {
     pub asset_2: asset::AssetIdVar,
 }
 
-impl AllocVar<TradingPair, Fq> for TradingPairVar {
-    fn new_variable<T: std::borrow::Borrow<TradingPair>>(
+impl TradingPairVar {
+    /// This allocates a `TradingPairVar` without checking it is canonically ordered.
+    ///
+    /// # Safety
+    ///
+    /// Does _not_ ensure that asset_1 <= asset_2, as is the case for `TradingPair`.
+    pub fn new_variable_unchecked(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
-        f: impl FnOnce() -> Result<T, SynthesisError>,
+        f: impl FnOnce() -> Result<TradingPair, SynthesisError>,
         mode: ark_r1cs_std::prelude::AllocationMode,
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let trading_pair = f()?.borrow().clone();
+        let trading_pair = f()?;
         let asset_1 = AssetIdVar::new_variable(cs.clone(), || Ok(trading_pair.asset_1()), mode)?;
         let asset_2 = AssetIdVar::new_variable(cs, || Ok(trading_pair.asset_2()), mode)?;
-        // A valid `TradingPair` has a canonical ordering.
-        // Constrain: asset_1 <= asset_2.
-        asset_1
-            .asset_id
-            .enforce_cmp(&asset_2.asset_id, core::cmp::Ordering::Less, true)?;
+        // Note: We do not check that the trading pair is canonically encoded.
         Ok(Self { asset_1, asset_2 })
     }
 }
@@ -181,16 +186,20 @@ impl From<TradingPair> for pb::TradingPair {
 impl TryFrom<pb::TradingPair> for TradingPair {
     type Error = anyhow::Error;
     fn try_from(tp: pb::TradingPair) -> anyhow::Result<Self> {
-        Ok(Self {
-            asset_1: tp
-                .asset_1
-                .ok_or_else(|| anyhow::anyhow!("missing trading pair asset1"))?
-                .try_into()?,
-            asset_2: tp
-                .asset_2
-                .ok_or_else(|| anyhow::anyhow!("missing trading pair asset2"))?
-                .try_into()?,
-        })
+        let asset_1 = tp
+            .asset_1
+            .ok_or_else(|| anyhow::anyhow!("missing trading pair asset1"))?
+            .try_into()?;
+        let asset_2 = tp
+            .asset_2
+            .ok_or_else(|| anyhow::anyhow!("missing trading pair asset2"))?
+            .try_into()?;
+        let trading_pair = TradingPair::new(asset_1, asset_2);
+        let result = Self { asset_1, asset_2 };
+        if trading_pair != result {
+            return Err(anyhow::anyhow!("non-canonical trading pair"));
+        }
+        Ok(result)
     }
 }
 
