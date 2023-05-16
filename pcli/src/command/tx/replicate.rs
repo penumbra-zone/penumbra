@@ -2,7 +2,7 @@ use crate::{warning, App};
 use std::path::PathBuf;
 
 use crate::dex_utils;
-use crate::dex_utils::approximate::debug;
+use crate::dex_utils::replicate::debug;
 use anyhow::{anyhow, bail, Result};
 use dialoguer::Confirm;
 use penumbra_crypto::dex::lp::position::Position;
@@ -16,22 +16,22 @@ use std::io::Write;
 
 /// Queries the chain for a transaction by hash.
 #[derive(Debug, clap::Subcommand)]
-pub enum ApproximateCmd {
+pub enum ReplicateCmd {
     #[clap(visible_alias = "xyk")]
     ConstantProduct(ConstantProduct),
 }
 
-impl ApproximateCmd {
+impl ReplicateCmd {
     pub async fn exec(&self, app: &mut App) -> anyhow::Result<()> {
         match self {
-            ApproximateCmd::ConstantProduct(xyk_cmd) => xyk_cmd.exec(app).await?,
+            ReplicateCmd::ConstantProduct(xyk_cmd) => xyk_cmd.exec(app).await?,
         };
         Ok(())
     }
 
     pub fn offline(&self) -> bool {
         match self {
-            ApproximateCmd::ConstantProduct(_) => false,
+            ReplicateCmd::ConstantProduct(_) => false,
         }
     }
 }
@@ -65,7 +65,7 @@ impl ConstantProduct {
             None => self.get_spread(app).await?,
         };
 
-        let positions = dex_utils::approximate::xyk::approximate(
+        let positions = dex_utils::replicate::xyk::replicate(
             &pair,
             &self.input,
             current_price.try_into()?,
@@ -211,9 +211,9 @@ impl ConstantProduct {
         positions: Vec<Position>,
     ) -> anyhow::Result<()> {
         // Ad-hoc denom scaling for debug data:
-        let alphas = dex_utils::approximate::xyk::sample_prices(
+        let alphas = dex_utils::replicate::xyk::sample_prices(
             current_price,
-            dex_utils::approximate::xyk::NUM_POOLS_PRECISION,
+            dex_utils::replicate::xyk::NUM_POOLS_PRECISION,
         );
 
         alphas
