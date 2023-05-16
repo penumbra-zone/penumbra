@@ -10,7 +10,6 @@ use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::Fr;
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
-use penumbra_app::stake::rate::RateData;
 use penumbra_crypto::{
     asset,
     asset::Denom,
@@ -28,6 +27,7 @@ use penumbra_proto::{
     },
     core::dex::v1alpha1::PositionId,
 };
+use penumbra_stake::rate::RateData;
 use penumbra_stake::UndelegateClaimPlan;
 use penumbra_transaction::{plan::SwapClaimPlan, proposal::ProposalToml, vote::Vote};
 use penumbra_view::ViewClient;

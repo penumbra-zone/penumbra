@@ -27,7 +27,7 @@ use tracing::Instrument;
 use crate::action_handler::ActionHandler;
 use crate::dex::{Dex, SwapManager};
 use crate::governance::{Governance, StateReadExt as _};
-use crate::stake::component::{Staking, ValidatorUpdates};
+use penumbra_stake::component::{Staking, ValidatorUpdates};
 
 pub mod state_key;
 

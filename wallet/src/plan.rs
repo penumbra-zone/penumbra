@@ -2,8 +2,6 @@ use std::collections::BTreeMap;
 use tonic::transport::Channel;
 
 use anyhow::{Context, Result};
-use penumbra_app::stake::rate::RateData;
-use penumbra_app::stake::validator;
 use penumbra_crypto::{
     keys::{AccountGroupId, AddressIndex},
     memo::MemoPlaintext,
@@ -13,6 +11,8 @@ use penumbra_proto::{
     client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient,
     view::v1alpha1::NotesRequest,
 };
+use penumbra_stake::rate::RateData;
+use penumbra_stake::validator;
 use penumbra_transaction::{
     action::{Proposal, ValidatorVote},
     plan::TransactionPlan,

@@ -5,7 +5,6 @@ use futures::{
     stream::{StreamExt, TryStreamExt},
     TryFutureExt,
 };
-use penumbra_app::stake::{validator, StateReadExt as _};
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_compact_block::component::StateReadExt as _;
 use penumbra_proto::{
@@ -16,6 +15,7 @@ use penumbra_proto::{
     },
     DomainType,
 };
+use penumbra_stake::{validator, StateReadExt as _};
 use tokio::sync::mpsc;
 use tonic::Status;
 use tracing::{instrument, Instrument};
