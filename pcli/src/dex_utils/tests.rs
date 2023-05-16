@@ -1,5 +1,5 @@
 mod tests {
-    use crate::dex_utils::approximate::xyk;
+    use crate::dex_utils::replicate::xyk;
     const PRECISION_BOUND: f64 = 0.0001;
 
     fn approx_eq(a: f64, b: f64) -> bool {

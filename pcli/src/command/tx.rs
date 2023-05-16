@@ -45,7 +45,7 @@ use proposal::ProposalCmd;
 mod liquidity_position;
 use liquidity_position::PositionCmd;
 
-mod approximate;
+mod replicate;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
@@ -1073,8 +1073,8 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::RewardClaim {}) => todo!(),
-            TxCmd::Position(PositionCmd::Approximate(approximate_cmd)) => {
-                approximate_cmd.exec(app).await?;
+            TxCmd::Position(PositionCmd::Replicate(replicate_cmd)) => {
+                replicate_cmd.exec(app).await?;
             }
         }
         Ok(())

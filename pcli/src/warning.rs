@@ -22,7 +22,7 @@ pub fn rmm() {
     eprintln!(
         "
 
-        🚧📉 In the twilight of financial reckoning, whence tools that approximate payoffs dwell, 📈🚧
+        🚧📉 In the twilight of financial reckoning, whence tools that replicate payoffs dwell, 📈🚧
         💸 Lo! Beware the treacherous path, for risk and uncertainty shroudeth the numbers, 💸
         📉 In the shadows of miscalculation, one must tread cautiously, lest ruin befall, 📈
         💸 As the fates of wealth and prosperity intertwine, with the whispers of uncertainty. 🚧

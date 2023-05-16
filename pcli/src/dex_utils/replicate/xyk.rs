@@ -1,4 +1,4 @@
-use crate::dex_utils::approximate::math_utils;
+use crate::dex_utils::replicate::math_utils;
 use ndarray::Array;
 use penumbra_crypto::{
     dex::{
@@ -11,7 +11,7 @@ use penumbra_crypto::{
 use rand_core::OsRng;
 use tracing::field;
 
-/// The number of positions that is used to approximate the xyk CFMM.
+/// The number of positions that is used to replicate the xyk CFMM.
 pub(crate) const NUM_POOLS_PRECISION: usize = 30;
 
 /// Maximum number of iteration that we allow GS to perform.
@@ -19,11 +19,11 @@ const GAUS_SEIDEL_MAX_ITERATION: usize = 10_000;
 
 /// Sample a range of points around a given price
 pub fn sample_prices(current_price: f64, num_points: usize) -> Vec<f64> {
-    crate::dex_utils::approximate::math_utils::sample_to_upper(3.0 * current_price, num_points)
+    crate::dex_utils::replicate::math_utils::sample_to_upper(3.0 * current_price, num_points)
 }
 
-#[tracing::instrument(name = "approximate_xyk")]
-pub fn approximate(
+#[tracing::instrument(name = "replicate_xyk")]
+pub fn replicate(
     pair: &DirectedUnitPair,
     raw_r1: &Value,
     current_price: U128x128,
