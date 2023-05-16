@@ -3,6 +3,6 @@
    and automated order execution strategies.
 
 */
-pub mod approximate;
+pub mod replicate;
 #[cfg(test)]
 mod tests;
