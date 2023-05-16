@@ -66,6 +66,23 @@ impl TryFrom<pb::DenomMetadata> for DenomMetadata {
     type Error = anyhow::Error;
 
     fn try_from(value: pb::DenomMetadata) -> Result<Self, Self::Error> {
+
+        //Get expected asset ID, which should be a hash of the base denom
+
+        let id = 
+
+        let inner = Inner {
+            id: todo!(),
+            base_denom: todo!(),
+            description: todo!(),
+            display: todo!(),
+            name: todo!(),
+            symbol: todo!(),
+            uri: todo!(),
+            uri_hash: todo!(),
+            units: todo!(),
+        };
+
         asset::REGISTRY
             .parse_denom(&value.base)
             .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", value.base))
@@ -122,13 +139,8 @@ impl Inner {
     /// The base denom is added as a unit, so `units` can be empty and should
     /// not include a unit for the base denomination.
     pub fn new(base_denom: String, mut units: Vec<UnitData>) -> Self {
-        let id = asset::Id(Fq::from_le_bytes_mod_order(
-            // XXX choice of hash function?
-            blake2b_simd::Params::default()
-                .personal(b"Penumbra_AssetID")
-                .hash(base_denom.as_bytes())
-                .as_bytes(),
-        ));
+
+        let id = asset::Id::from_raw_denom(&base_denom);
 
         for unit in &units {
             assert_ne!(unit.exponent, 0);

@@ -132,4 +132,14 @@ impl Id {
             asset_id: self.clone(),
         }
     }
+
+    pub(crate) fn from_raw_denom(denom: &str) -> Self {
+        Id(Fq::from_le_bytes_mod_order(
+            // XXX choice of hash function?
+            blake2b_simd::Params::default()
+                .personal(b"Penumbra_AssetID")
+                .hash(denom.as_bytes())
+                .as_bytes(),
+        ))
+    }
 }
