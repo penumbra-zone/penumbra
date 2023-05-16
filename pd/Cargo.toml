@@ -1,6 +1,6 @@
 [package]
 name = "pd"
-version = "0.52.1"
+version = "0.52.2"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"
 description = "The node software for the Penumbra Zone"
