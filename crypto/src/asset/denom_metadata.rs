@@ -33,7 +33,7 @@ pub(super) struct Inner {
     base_denom: String,
     description: String,
     /// Sorted by priority order.
-    pub(super) units: Vec<UnitData>,
+    pub(super) units: Vec<BareDenomUnit>,
     //display: String,
     // Indexes into the units array.
     display_index: usize,
@@ -92,13 +92,13 @@ impl TryFrom<pb::DenomMetadata> for Inner {
         let mut units = value
             .denom_units
             .into_iter()
-            .map(UnitData::try_from)
+            .map(BareDenomUnit::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
         // Ensure that the base denom is present in the unit list.
         // TODO: should we require it to be first?
         if !units.iter().any(|unit| unit.denom == base_denom) {
-            units.push(UnitData {
+            units.push(BareDenomUnit {
                 denom: base_denom.clone(),
                 exponent: 0,
             });
@@ -169,23 +169,28 @@ pub struct Unit {
     pub(super) unit_index: usize,
 }
 
+/// Corresponds to the protobuf `DenomUnit` message.
+///
+/// This is a purely internal type, however, because it doesn't "link back" to
+/// the parent denom, and so instead we expose a nicer `Unit` type.
 #[derive(Clone, Debug)]
-pub(super) struct UnitData {
+pub(super) struct BareDenomUnit {
     pub exponent: u8,
     pub denom: String,
 }
-impl TryFrom<pb::DenomUnit> for UnitData {
+
+impl TryFrom<pb::DenomUnit> for BareDenomUnit {
     type Error = anyhow::Error;
 
     fn try_from(value: pb::DenomUnit) -> Result<Self, Self::Error> {
-        Ok(UnitData {
+        Ok(BareDenomUnit {
             exponent: value.exponent as u8,
             denom: value.denom,
         })
     }
 }
-impl From<UnitData> for pb::DenomUnit {
-    fn from(dn: UnitData) -> Self {
+impl From<BareDenomUnit> for pb::DenomUnit {
+    fn from(dn: BareDenomUnit) -> Self {
         pb::DenomUnit {
             denom: dn.denom,
             exponent: dn.exponent as u32,
@@ -199,7 +204,7 @@ impl Inner {
     ///
     /// The base denom is added as a unit, so `units` can be empty and should
     /// not include a unit for the base denomination.
-    pub fn new(base_denom: String, mut units: Vec<UnitData>) -> Self {
+    pub fn new(base_denom: String, mut units: Vec<BareDenomUnit>) -> Self {
         let id = asset::Id(Fq::from_le_bytes_mod_order(
             // XXX choice of hash function?
             blake2b_simd::Params::default()
@@ -213,7 +218,7 @@ impl Inner {
             assert_ne!(&unit.denom, &base_denom);
         }
 
-        units.push(UnitData {
+        units.push(BareDenomUnit {
             exponent: 0,
             denom: base_denom.clone(),
         });
