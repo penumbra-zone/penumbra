@@ -7,17 +7,16 @@ mod ops;
 #[cfg(test)]
 mod tests;
 
-use ark_ff::{BigInteger, Field, PrimeField, ToConstraintField, Zero};
+use ark_ff::{BigInteger, PrimeField, ToConstraintField, Zero};
 use ark_r1cs_std::bits::uint64::UInt64;
 use ark_r1cs_std::fields::fp::FpVar;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
-use decaf377::{r1cs::FqVar, FieldExt, Fq};
+use decaf377::{r1cs::FqVar, Fq};
 use ethnum::U256;
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct U128x128(U256);
+use self::div::stub_div_rem_u384_by_u256;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -34,6 +33,9 @@ pub enum Error {
     #[error("attempted to decode a slice of the wrong length {0}, expected 32")]
     SliceLength(usize),
 }
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct U128x128(U256);
 
 impl Default for U128x128 {
     fn default() -> Self {
@@ -146,25 +148,7 @@ impl U128x128 {
 
     /// Performs checked division, returning `Some` if no overflow occurred.
     pub fn checked_div(self, rhs: &Self) -> Result<Self, Error> {
-        if rhs.0 == U256::ZERO {
-            return Err(Error::DivisionByZero);
-        }
-
-        // TEMP HACK: need to implement this properly
-        let self_big = ibig::UBig::from_le_bytes(&self.0.to_le_bytes());
-        let rhs_big = ibig::UBig::from_le_bytes(&rhs.0.to_le_bytes());
-        // this is what we actually want to compute: 384-bit / 256-bit division.
-        let q_big = (self_big << 128) / rhs_big;
-        let q_big_bytes = q_big.to_le_bytes();
-        let mut q_bytes = [0; 32];
-        if q_big_bytes.len() > 32 {
-            return Err(Error::Overflow);
-        } else {
-            q_bytes[..q_big_bytes.len()].copy_from_slice(&q_big_bytes);
-        }
-        let q = U256::from_le_bytes(q_bytes);
-
-        Ok(U128x128(q))
+        stub_div_rem_u384_by_u256(self.0, rhs.0).and_then(|(quo, rem)| Ok(U128x128(quo)))
     }
 
     /// Performs checked addition, returning `Some` if no overflow occurred.
@@ -203,21 +187,15 @@ impl AllocVar<U128x128, Fq> for U128x128Var {
         let cs = ns.cs();
         let inner: U128x128 = *f()?.borrow();
 
-        let (lo, hi) = inner.0.into_words();
-
-        let mut lo_bytes = [0u8; 16];
-        lo_bytes.copy_from_slice(&lo.to_le_bytes()[..]);
-        let limb_0 = u64::from_le_bytes(lo_bytes[0..8].try_into().expect("can fit in 8 bytes"));
-        let limb_1 = u64::from_le_bytes(lo_bytes[8..16].try_into().expect("can fit in 8 bytes"));
+        let bytes = inner.to_bytes();
+        // The U128x128 type uses a big-endian encoding
+        let limb_3 = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
+        let limb_2 = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
+        let limb_1 = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
+        let limb_0 = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
 
         let limb_0_var = UInt64::new_variable(cs.clone(), || Ok(limb_0), mode)?;
         let limb_1_var = UInt64::new_variable(cs.clone(), || Ok(limb_1), mode)?;
-
-        let mut hi_bytes = [0u8; 16];
-        hi_bytes.copy_from_slice(&hi.to_le_bytes()[..]);
-        let limb_2 = u64::from_le_bytes(hi_bytes[0..8].try_into().expect("can fit in 8 bytes"));
-        let limb_3 = u64::from_le_bytes(hi_bytes[8..16].try_into().expect("can fit in 8 bytes"));
-
         let limb_2_var = UInt64::new_variable(cs.clone(), || Ok(limb_2), mode)?;
         let limb_3_var = UInt64::new_variable(cs, || Ok(limb_3), mode)?;
 
@@ -235,16 +213,17 @@ impl R1CSVar<Fq> for U128x128Var {
     }
 
     fn value(&self) -> Result<Self::Value, ark_relations::r1cs::SynthesisError> {
-        let mut bytes = [0u8; 32];
-        let x0 = convert_uint64_to_fqvar(&self.limbs[0]);
-        let x1 = convert_uint64_to_fqvar(&self.limbs[1]);
-        let x2 = convert_uint64_to_fqvar(&self.limbs[2]);
-        let x3 = convert_uint64_to_fqvar(&self.limbs[3]);
+        let x0 = self.limbs[0].value()?;
+        let x1 = self.limbs[1].value()?;
+        let x2 = self.limbs[2].value()?;
+        let x3 = self.limbs[3].value()?;
 
-        bytes[0..8].copy_from_slice(&x0.value().expect("value exists").to_bytes()[..]);
-        bytes[8..16].copy_from_slice(&x1.value().expect("value exists").to_bytes()[..]);
-        bytes[16..24].copy_from_slice(&x2.value().expect("value exists").to_bytes()[..]);
-        bytes[24..32].copy_from_slice(&x3.value().expect("value exists").to_bytes()[..]);
+        let mut bytes = [0u8; 32];
+        bytes[0..8].copy_from_slice(x3.to_be_bytes().as_ref());
+        bytes[8..16].copy_from_slice(x2.to_be_bytes().as_ref());
+        bytes[16..24].copy_from_slice(x1.to_be_bytes().as_ref());
+        bytes[24..32].copy_from_slice(x0.to_be_bytes().as_ref());
+
         Ok(Self::Value::from_bytes(bytes))
     }
 }
@@ -288,14 +267,14 @@ impl U128x128Var {
         // z = x * y
         // z = [z0, z1, z2, z3, z4, z5, z6, z7]
         // zi is 128 bits
-        let z0 = x0.clone() * y0.clone();
-        let z1 = x0.clone() * y1.clone() + x1.clone() * y0.clone();
-        let z2 = x0.clone() * y2.clone() + x1.clone() * y1.clone() + x2.clone() * y0.clone();
-        let z3 =
-            x0 * y3.clone() + x1.clone() * y2.clone() + x2.clone() * y1.clone() + x3.clone() * y0;
-        let z4 = x1 * y3.clone() + x2.clone() * y2.clone() + x3.clone() * y1;
-        let z5 = x2 * y3.clone() + x3.clone() * y2;
-        let z6 = x3 * y3;
+        //let z0 = x0.clone() * y0.clone();
+        let z0 = &x0 * &y0;
+        let z1 = &x0 * &y1 + &x1 * &y0;
+        let z2 = &x0 * &y2 + &x1 * &y1 + &x2 * &y0;
+        let z3 = &x0 * &y3 + &x1 * &y2 + &x2 * &y1 + &x3 * &y0;
+        let z4 = &x1 * &y3 + &x2 * &y2 + &x3 * &y1;
+        let z5 = &x2 * &y3 + &x3 * &y2;
+        let z6 = &x3 * &y3;
         // z7 = 0
         // z = z0 + z1 * 2^64 + z2 * 2^128 + z3 * 2^192 + z4 * 2^256 + z5 * 2^320 + z6 * 2^384
         // z*2^-128 = z0*2^-128 + z1*2^-64 + z2 + z3*2^64 + z4*2^128 + z5*2^192 + z6*2^256
@@ -357,31 +336,54 @@ impl U128x128Var {
         cs: ConstraintSystemRef<Fq>,
     ) -> Result<U128x128Var, SynthesisError> {
         // Similar to AmountVar::quo_rem
-        // x = q * n + r
+        // x = q * y + r
         // Constrain 0 <= r
-        // Constrain r < n
-        // n will be 256 bits wide
+        // Constrain r < q
+        // y will be 256 bits wide
         // x will be 384 bits wide
-        // so may need wide(r) multiplication
 
         // x = self (logical 128-bit)
-        // q = rhs (logical 128-bit)
+        // y = rhs (logical 128-bit)
         // xbar = x * 2^128 (representative 256-bit)
-        // qbar = q * 2^128 (representative 256-bit)
+        // ybar = y * 2^128 (representative 256-bit)
 
-        // y = x / q
-        // ybar = y * 2^128 (256 bit value)
+        // q = x / y
+        // qbar = q * 2^128 (256 bit value)
 
-        // xbar / qbar = x / q * 1
-        // ybar = xbar / qbar * 2^128
+        // xbar / ybar = x / y * 1
+        // qbar = xbar / ybar * 2^128
         // xbar * 2^128 = qbar * ybar + r
 
-        // we get ybar (256 bit)
-        // r at most (256 bit)
-        // division oracle = OOC computation
+        // use a division oracle to compute (qbar, r) out-of-circut
+        // Constrain xbar * 2^128 = qbar * ybar + r
+        // Constrain 0 <= r
+        // Constrain r < qbar
+
+        // OOC division
+        let xbar_ooc = self.value().unwrap_or_default();
+        let ybar_ooc = rhs.value().unwrap_or(U128x128::from(1u64));
+        let Ok((quo_ooc, rem_ooc)) = stub_div_rem_u384_by_u256(xbar_ooc.0, ybar_ooc.0) else {
+            return Err(SynthesisError::Unsatisfiable);
+        };
+
+        // Witness quo_ooc, rem_ooc
 
         // Need: 384-bit multiplication for qbar * ybar + r
         // Need: Constrain 256-bit values
+
+        // x = [x0, x1, x2, x3]
+        // x = x0 + x1 * 2^64 + x2 * 2^128 + x3 * 2^192
+        // y = [y0, y1, y2, y3]
+        // y = y0 + y1 * 2^64 + y2 * 2^128 + y3 * 2^192
+        let xbar0 = convert_uint64_to_fqvar(&self.limbs[0]);
+        let xbar1 = convert_uint64_to_fqvar(&self.limbs[1]);
+        let xbar2 = convert_uint64_to_fqvar(&self.limbs[2]);
+        let xbar3 = convert_uint64_to_fqvar(&self.limbs[3]);
+
+        let ybar0 = convert_uint64_to_fqvar(&rhs.limbs[0]);
+        let ybar1 = convert_uint64_to_fqvar(&rhs.limbs[1]);
+        let ybar2 = convert_uint64_to_fqvar(&rhs.limbs[2]);
+        let ybar3 = convert_uint64_to_fqvar(&rhs.limbs[3]);
 
         todo!()
     }
@@ -403,17 +405,11 @@ impl EqGadget<Fq> for U128x128Var {
 
 impl ToConstraintField<Fq> for U128x128 {
     fn to_field_elements(&self) -> Option<Vec<Fq>> {
-        let (lo, hi) = self.0.into_words();
-
-        let mut lo_bytes = [0u8; 16];
-        lo_bytes.copy_from_slice(&lo.to_le_bytes()[..]);
-        let limb_0 = u64::from_le_bytes(lo_bytes[0..8].try_into().expect("can fit in 8 bytes"));
-        let limb_1 = u64::from_le_bytes(lo_bytes[8..16].try_into().expect("can fit in 8 bytes"));
-
-        let mut hi_bytes = [0u8; 16];
-        hi_bytes.copy_from_slice(&hi.to_le_bytes()[..]);
-        let limb_2 = u64::from_le_bytes(hi_bytes[0..8].try_into().expect("can fit in 8 bytes"));
-        let limb_3 = u64::from_le_bytes(hi_bytes[8..16].try_into().expect("can fit in 8 bytes"));
+        let bytes = self.to_bytes();
+        let limb_3 = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
+        let limb_2 = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
+        let limb_1 = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
+        let limb_0 = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
 
         let field_elements = vec![
             Fq::from(limb_0),
@@ -507,14 +503,16 @@ mod test {
         ) {
             let result = a.checked_mul(&b);
             // If the result overflows, the circuit will be unsatisfiable at proving time.
-            if result.is_none() {
+            if result.is_err() {
                 return Ok(());
             }
+
+            let expected_c = result.unwrap();
 
             let circuit = TestMultiplicationCircuit {
                 a,
                 b,
-                c: result.unwrap(),
+                c: expected_c,
             };
 
             let (pk, vk) = TestMultiplicationCircuit::generate_prepared_test_parameters();
@@ -525,7 +523,7 @@ mod test {
 
             let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
                 &vk,
-                &result.unwrap().to_field_elements().unwrap(),
+                &expected_c.to_field_elements().unwrap(),
                 &proof,
             );
             assert!(proof_result.is_ok());
@@ -580,14 +578,16 @@ mod test {
         ) {
             let result = a.checked_add(&b);
             // If the addition overflows, the circuit will be unsatisfiable at proving time.
-            if result.is_none() {
+            if result.is_err() {
                 return Ok(());
             }
+
+            let expected_c = result.unwrap();
 
             let circuit = TestAdditionCircuit {
                 a,
                 b,
-                c: result.unwrap(),
+                c: expected_c,
             };
 
             let (pk, vk) = TestAdditionCircuit::generate_prepared_test_parameters();
