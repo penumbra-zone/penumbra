@@ -75,8 +75,7 @@ impl BuyOrder {
         let desired_amount = U128x128::from(desired.amount); // e.g., 100_000
         let desired_unit_amount = U128x128::from(desired_unit.unit_amount()); // e.g., 1_000
 
-        let offered_amount = ((price_amount * desired_amount) / desired_unit_amount)
-            .ok_or_else(|| anyhow!("overflow"))?
+        let offered_amount = ((price_amount * desired_amount) / desired_unit_amount)?
             .round_up()
             .try_into()
             .expect("rounded to integer");
@@ -113,8 +112,7 @@ impl SellOrder {
         let offered_amount = U128x128::from(offered.amount); // e.g., 100_000
         let offered_unit_amount = U128x128::from(offered_unit.unit_amount()); // e.g., 1_000
 
-        let desired_amount = ((price_amount * offered_amount) / offered_unit_amount)
-            .ok_or_else(|| anyhow!("overflow"))?
+        let desired_amount = ((price_amount * offered_amount) / offered_unit_amount)?
             .round_up()
             .try_into()
             .expect("rounded to integer");
