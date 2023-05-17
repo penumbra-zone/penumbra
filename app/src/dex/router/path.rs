@@ -77,21 +77,26 @@ impl<S: StateRead + 'static> Path<S> {
             .unwrap()
             .effective_price();
 
-        if let Some(path_price) = self.price * hop_price {
-            // Update and return the path.
-            tracing::debug!(%path_price, %hop_price, id = ?best_price_position.id(), "extended path");
-            self.price = path_price;
-            self.nodes.push(new_end);
-            // Create a new span for the extension.  Note: this is a child of
-            // the path span (:path:via:via:via etc), not a child of the current
-            // span (:path:via:via:extend_to).
-            self.span = tracing::debug_span!(parent: &self.span, "via", id = ?new_end);
-            Ok(Some(self))
-        } else {
-            // If there was an overflow estimating the effective price, we failed
-            // to extend the path.
-            tracing::debug!("failed to extend path due to overflow");
-            Ok(None)
+        let path_price = self.price * hop_price;
+
+        match self.price * hop_price {
+            Ok(path_price) => {
+                // Update and return the path.
+                tracing::debug!(%path_price, %hop_price, id = ?best_price_position.id(), "extended path");
+                self.price = path_price;
+                self.nodes.push(new_end);
+                // Create a new span for the extension.  Note: this is a child of
+                // the path span (:path:via:via:via etc), not a child of the current
+                // span (:path:via:via:extend_to).
+                self.span = tracing::debug_span!(parent: &self.span, "via", id = ?new_end);
+                Ok(Some(self))
+            }
+            Err(e) => {
+                // If there was an overflow estimating the effective price, we failed
+                // to extend the path.
+                tracing::debug!(?e, "failed to extend path due to overflow");
+                Ok(None)
+            }
         }
     }
 }

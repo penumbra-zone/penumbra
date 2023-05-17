@@ -36,23 +36,15 @@ pub fn replicate(
     let r1_scaling_factor = U128x128::from(pair.start.unit_amount());
 
     let fp_r1 = (fp_raw_r1 / r1_scaling_factor).unwrap();
-    let fp_r2 = (current_price * fp_r1).ok_or_else(|| {
-        anyhow::anyhow!(
-            "current_price: {} * fp_r1: {} caused overflow.",
-            current_price,
-            fp_r1
-        )
-    })?;
+    let fp_r2 = (current_price * fp_r1).unwrap();
 
     tracing::debug!(
-        r1 = field::display(fp_r1),
-        r2 = field::display(fp_r2),
+        %fp_r1,
+        %fp_r2,
         "computed respective quantities"
     );
 
-    let xyk_invariant = (fp_r1 * fp_r2).ok_or_else(|| {
-        anyhow::anyhow!("overflow computing the curve invariant: {fp_r1} * {fp_r2}")
-    })?;
+    let xyk_invariant = (fp_r1 * fp_r2).expect("no overflow when computing curve invariant!");
 
     let xyk_invariant: f64 = xyk_invariant.try_into()?;
     tracing::debug!(?xyk_invariant, "computed the total invariant for the PVF");
@@ -159,8 +151,8 @@ pub fn replicate(
                     alpha_i,
                     f64_current_price,
                     directed_pair = pair.to_string(),
-                    r1 = field::display(r1),
-                    r2 = field::display(r2),
+                    %r1,
+                    %r2,
                     ?p,
                     ?q,
                     "creating position with a tick above the current price"

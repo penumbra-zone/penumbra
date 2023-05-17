@@ -15,7 +15,7 @@ use penumbra_crypto::{
         },
         DirectedTradingPair,
     },
-    fixpoint::U128x128,
+    fixpoint::{Error, U128x128},
     Amount, Value,
 };
 use penumbra_storage::{StateDelta, StateRead, StateWrite};
@@ -147,7 +147,10 @@ async fn fill_route_inner<S: StateWrite + Sized>(
         // - `None` on the spill price means no limit.
         // - `None` on the actual price means infinite price.
         let should_apply = if let Some(spill_price) = spill_price {
-            let below_limit = tx.actual_price().map(|p| p <= spill_price).unwrap_or(false);
+            let below_limit = tx
+                .actual_price()
+                .and_then(|p| Ok(p <= spill_price))
+                .unwrap_or(false);
 
             // We should apply if we're below the limit, or we haven't yet made progress.
             below_limit || !filled_once
@@ -273,7 +276,7 @@ impl FrontierTx {
         }
     }
 
-    fn actual_price(&self) -> Option<U128x128> {
+    fn actual_price(&self) -> Result<U128x128, Error> {
         let input: U128x128 = self
             .trace
             .first()
