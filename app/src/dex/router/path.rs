@@ -77,8 +77,6 @@ impl<S: StateRead + 'static> Path<S> {
             .unwrap()
             .effective_price();
 
-        let path_price = self.price * hop_price;
-
         match self.price * hop_price {
             Ok(path_price) => {
                 // Update and return the path.
