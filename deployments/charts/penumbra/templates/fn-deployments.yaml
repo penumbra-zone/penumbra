@@ -174,13 +174,6 @@ spec:
             - 0.0.0.0:8080
             - --metrics-bind
             - 0.0.0.0:9000
-        - name: health-check
-          image: "{{ $.Values.health.image }}:{{ $.Values.health.version }}"
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 1251
-              protocol: TCP
-              name: health
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
