@@ -20,6 +20,8 @@ pub enum Error {
     Underflow,
     #[error("division by zero")]
     DivisionByZero,
+    #[error("attempted to convert invalid f64: {value:?} to a U128x128")]
+    InvalidFloat64 { value: f64 },
     #[error("attempted to convert non-integral value {value:?} to an integer")]
     NonIntegral { value: U128x128 },
     #[error("attempted to decode a slice of the wrong length {0}, expected 32")]
@@ -72,7 +74,7 @@ impl U128x128 {
         Self(U256::from_words(hi, lo))
     }
 
-    pub fn ratio<T: Into<Self>>(numerator: T, denominator: T) -> Option<Self> {
+    pub fn ratio<T: Into<Self>>(numerator: T, denominator: T) -> Result<Self, Error> {
         numerator.into() / denominator.into()
     }
 
