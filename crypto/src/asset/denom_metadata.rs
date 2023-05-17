@@ -10,10 +10,7 @@ use ark_ff::fields::PrimeField;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    asset::{self},
-    Fq, Value,
-};
+use crate::{asset, Fq, Value};
 
 use super::Denom;
 /// An asset denomination's metadata.
@@ -272,7 +269,7 @@ impl DenomMetadata {
     /// Returns the default (largest) unit for this denomination.
     pub fn default_unit(&self) -> Unit {
         Unit {
-            unit_index: 0,
+            unit_index: self.inner.display_index,
             inner: self.inner.clone(),
         }
     }
