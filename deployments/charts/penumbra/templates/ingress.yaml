@@ -1,46 +1,34 @@
 {{- if .Values.ingress.enabled }}
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
 metadata:
-  name: {{ include "penumbra.fullname" . }}-ingress
-  annotations:
-    kubernetes.io/ingress.global-static-ip-name: {{ include "penumbra.fullname" . }}-ingress-ip
-    networking.gke.io/managed-certificates: {{ include "penumbra.fullname" . }}-ingress-cert
-    kubernetes.io/ingress.class: "gce"
-  labels:
-    {{- include "penumbra.labels" . | nindent 4 }}
+  name: {{ include "penumbra.fullname" . }}-https
 spec:
-  rules:
-    - host: {{ .Values.ingress.hosts.rpc }}
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                # Service name points to fullnode-0; assumes at least 1 fn
-                name: {{ include "penumbra.fullname" . }}-p2p-fn-0
-                port:
-                  number: 26657
-    - host: {{ .Values.ingress.hosts.grpc }}
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ include "penumbra.fullname" . }}-p2p-fn-0
-                port:
-                  number: 8080
-    - host: {{ .Values.ingress.hosts.grafana }}
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ include "penumbra.fullname" . }}-metrics-grafana
-                port:
-                  number: 80
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`{{ .Values.ingress.hosts.grpc }}`)
+    services:
+    - name: {{ include "penumbra.fullname" . }}-p2p-fn-0
+      port: 8080
+      scheme: h2c
+  - kind: Rule
+    match: Host(`{{ .Values.ingress.hosts.rpc }}`)
+    services:
+    - name: {{ include "penumbra.fullname" . }}-p2p-fn-0
+      port: 26657
+  - kind: Rule
+    match: Host(`{{ .Values.ingress.hosts.grafana }}`)
+    services:
+    - name: {{ include "penumbra.fullname" . }}-metrics-grafana
+      port: 80
+  tls:
+    domains:
+    - main: {{ .Values.ingress.hosts.grpc }}
+      sans:
+        - {{ .Values.ingress.hosts.rpc }}
+        - {{ .Values.ingress.hosts.grafana }}
+    secretName: {{ include "penumbra.fullname" . }}-wildcard
 {{- end }}
