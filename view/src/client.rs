@@ -754,7 +754,7 @@ where
         }
         .boxed()
     }
-
+    
     fn address_by_index(
         &mut self,
         address_index: AddressIndex,

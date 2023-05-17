@@ -78,6 +78,10 @@ service ViewProtocolService {
 
   // Broadcast a transaction to the network, optionally waiting for full confirmation.
   rpc BroadcastTransaction(BroadcastTransactionRequest) returns (BroadcastTransactionResponse);
+
+  // Query for owned position IDs for the given trading pair and in the given position state.
+  rpc OwnedPositionIds(OwnedPositionIdsRequest) returns (OwnedPositionIdsResponse);
+
 }
 
 message BroadcastTransactionRequest {
@@ -414,4 +418,15 @@ message SwapRecord {
   core.dex.v1alpha1.BatchSwapOutputData output_data = 5;
   optional uint64 height_claimed = 6;
   core.chain.v1alpha1.NoteSource source = 7;
+}
+
+message OwnedPositionIdsRequest {
+  // If present, return only positions with this position state.
+  optional core.dex.v1alpha1.PositionState position_state = 1;
+  // If present, return only positions for this trading pair.
+  optional core.dex.v1alpha1.TradingPair trading_pair = 2;
+}
+
+message OwnedPositionIdsResponse {
+  repeated core.dex.v1alpha1.PositionId position_ids = 1;
 }

@@ -65,6 +65,14 @@ pub enum DexCmd {
         #[clap(long)]
         limit: Option<u64>,
     },
+    /// Retrieve all position Ids for a given trading pair and position state.
+    /// If no state or trading pair is provided, all positions are returned.
+    PositionIds {
+        /// The trading pair to query, with ordering determining direction of trade (1=>2).
+        trading_pair: Option<DirectedTradingPair>,
+        /// The state of the position to query.
+        state: Option<position::State>,
+    },
 }
 
 impl DexCmd {
@@ -252,6 +260,15 @@ impl DexCmd {
         Ok(())
     }
 
+    pub async fn position_ids(
+        &self,
+        app: &mut App,
+        trading_pair: Option<&DirectedTradingPair>,
+        position_state: Option<position::State>,
+    ) -> Result<Vec<position::Id>> {
+        todo!()
+    }
+
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
             DexCmd::BatchOutputs {
@@ -346,6 +363,7 @@ impl DexCmd {
                     println!("{}", table);
                 }
             }
+            DexCmd::PositionIds { trading_pair, state } => todo!(),
         };
 
         Ok(())
