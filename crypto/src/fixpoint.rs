@@ -14,6 +14,12 @@ pub struct U128x128(U256);
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    #[error("overflow")]
+    Overflow,
+    #[error("underflow")]
+    Underflow,
+    #[error("division by zero")]
+    DivisionByZero,
     #[error("attempted to convert non-integral value {value:?} to an integer")]
     NonIntegral { value: U128x128 },
     #[error("attempted to decode a slice of the wrong length {0}, expected 32")]
@@ -93,7 +99,7 @@ impl U128x128 {
     }
 
     /// Performs checked multiplication, returning `Some` if no overflow occurred.
-    pub fn checked_mul(self, rhs: &Self) -> Option<Self> {
+    pub fn checked_mul(self, rhs: &Self) -> Result<Self, Error> {
         // It's important to use `into_words` because the `U256` type has an
         // unsafe API that makes the limb ordering dependent on the host
         // endianness.
@@ -118,7 +124,7 @@ impl U128x128 {
 
         let (x1y1_hi, _x1y1_lo) = x1y1.into_words();
         if x1y1_hi != 0 {
-            return None;
+            return Err(Error::Overflow);
         }
 
         x1y1.checked_shl(128)
@@ -126,12 +132,13 @@ impl U128x128 {
             .and_then(|acc| acc.checked_add(x1y0))
             .and_then(|acc| acc.checked_add(x0y0 >> 128))
             .map(U128x128)
+            .ok_or(Error::Overflow)
     }
 
     /// Performs checked division, returning `Some` if no overflow occurred.
-    pub fn checked_div(self, rhs: &Self) -> Option<Self> {
+    pub fn checked_div(self, rhs: &Self) -> Result<Self, Error> {
         if rhs.0 == U256::ZERO {
-            return None;
+            return Err(Error::DivisionByZero);
         }
 
         // TEMP HACK: need to implement this properly
@@ -142,23 +149,29 @@ impl U128x128 {
         let q_big_bytes = q_big.to_le_bytes();
         let mut q_bytes = [0; 32];
         if q_big_bytes.len() > 32 {
-            return None;
+            return Err(Error::Overflow);
         } else {
             q_bytes[..q_big_bytes.len()].copy_from_slice(&q_big_bytes);
         }
         let q = U256::from_le_bytes(q_bytes);
 
-        Some(U128x128(q))
+        Ok(U128x128(q))
     }
 
     /// Performs checked addition, returning `Some` if no overflow occurred.
-    pub fn checked_add(self, rhs: &Self) -> Option<Self> {
-        self.0.checked_add(rhs.0).map(U128x128)
+    pub fn checked_add(self, rhs: &Self) -> Result<Self, Error> {
+        self.0
+            .checked_add(rhs.0)
+            .map(U128x128)
+            .ok_or(Error::Overflow)
     }
 
     /// Performs checked subtraction, returning `Some` if no underflow occurred.
-    pub fn checked_sub(self, rhs: &Self) -> Option<Self> {
-        self.0.checked_sub(rhs.0).map(U128x128)
+    pub fn checked_sub(self, rhs: &Self) -> Result<Self, Error> {
+        self.0
+            .checked_sub(rhs.0)
+            .map(U128x128)
+            .ok_or(Error::Underflow)
     }
 
     /// Saturating integer subtraction. Computes self - rhs, saturating at the numeric bounds instead of overflowing.
