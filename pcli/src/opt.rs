@@ -1,8 +1,12 @@
+use std::sync::Arc;
+
 use crate::{
     box_grpc_svc::{self, BoxGrpcService},
     legacy, App, Command,
 };
 use anyhow::Result;
+use arti_client::{config::TorClientConfigBuilder, TorClient};
+use arti_hyper::ArtiHttpConnector;
 use camino::Utf8PathBuf;
 use clap::Parser;
 use directories::ProjectDirs;
@@ -20,6 +24,7 @@ use penumbra_proto::{
 };
 use penumbra_view::ViewService;
 use penumbra_wallet::KeyStore;
+use rustls::{OwnedTrustAnchor, RootCertStore};
 use tracing_subscriber::EnvFilter;
 use url::Url;
 
@@ -130,7 +135,13 @@ impl Opt {
             let path = self.data_path.join(crate::VIEW_FILE_NAME);
             tracing::info!(%path, "using local view service");
 
-            let svc = ViewService::load_or_initialize(Some(path), fvk, self.node.clone()).await?;
+            let svc = ViewService::load_or_initialize(
+                Some(path),
+                fvk,
+                self.node.clone(),
+                self.use_tor.then_some(&self.data_path),
+            )
+            .await?;
 
             // Now build the view and custody clients, doing gRPC with ourselves
             let svc = ViewProtocolServiceServer::new(svc);

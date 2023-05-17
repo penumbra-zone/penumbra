@@ -232,8 +232,9 @@ impl Opt {
                 let specific_query_proxy = SpecificQueryProxy(proxy_channel.clone());
                 let tendermint_proxy_proxy = TendermintProxyProxy(proxy_channel.clone());
 
-                let view_service =
-                    ViewProtocolServiceServer::new(ViewService::new(storage, opt.node).await?);
+                let view_service = ViewProtocolServiceServer::new(
+                    ViewService::new(storage, opt.node, None::<&str>).await?,
+                );
                 let custody_service = config.kms_config.as_ref().map(|kms_config| {
                     CustodyProtocolServiceServer::new(SoftKms::new(
                         kms_config.spend_key.clone().into(),

@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use arti_hyper::ArtiHttpConnector;
 use penumbra_compact_block::CompactBlock;
 use penumbra_crypto::{
     dex::lp::{position, LpNft},
@@ -19,10 +20,11 @@ use penumbra_proto::{
     DomainType,
 };
 use penumbra_transaction::Transaction;
+
 use proto::client::v1alpha1::AssetInfoRequest;
 use sha2::Digest;
 use tokio::sync::{watch, RwLock};
-use tonic::transport::Channel;
+use tonic::transport::{Channel, Endpoint};
 use url::Url;
 
 use crate::{
@@ -51,6 +53,12 @@ impl Worker {
     pub async fn new(
         storage: Storage,
         node: Url,
+        tor_http_connector: Option<
+            ArtiHttpConnector<
+                tor_rtcompat::tokio::TokioRustlsRuntime,
+                tls_api_rustls::TlsConnector,
+            >,
+        >,
     ) -> Result<
         (
             Self,
@@ -72,11 +80,17 @@ impl Worker {
         // Mark the current height as seen, since it's not new.
         sync_height_rx.borrow_and_update();
 
-        let client = ObliviousQueryServiceClient::connect(node.to_string()).await?;
+        let endpoint = Endpoint::try_from(node.to_string())?;
+        let channel: Channel = if let Some(tor_http_connector) = tor_http_connector {
+            endpoint.connect_with_connector(tor_http_connector).await?
+        } else {
+            // Otherwise, connect directly to the node
+            endpoint.connect().await?
+        };
 
-        let specific_client = SpecificQueryServiceClient::connect(node.to_string()).await?;
-
-        let tm_client = TendermintProxyServiceClient::connect(node.to_string()).await?;
+        let client = ObliviousQueryServiceClient::new(channel.clone());
+        let specific_client = SpecificQueryServiceClient::new(channel.clone());
+        let tm_client = TendermintProxyServiceClient::new(channel);
 
         Ok((
             Self {

@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Context};
+use arti_hyper::ArtiHttpConnector;
 use camino::Utf8Path;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -28,6 +29,7 @@ use tokio::{
     sync::broadcast::{self, error::RecvError},
     task::spawn_blocking,
 };
+use tonic::transport::{Channel, Endpoint};
 use url::Url;
 
 use crate::{sync::FilteredBlock, SpendableNoteRecord, SwapRecord};
@@ -63,6 +65,12 @@ impl Storage {
         storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: &FullViewingKey,
         node: Url,
+        tor_http_connector: Option<
+            ArtiHttpConnector<
+                tor_rtcompat::tokio::TokioRustlsRuntime,
+                tls_api_rustls::TlsConnector,
+            >,
+        >,
     ) -> anyhow::Result<Self> {
         if let Some(path) = storage_path.as_ref() {
             if path.as_ref().exists() {
@@ -75,7 +83,15 @@ impl Storage {
             }
         };
 
-        let mut client = ObliviousQueryServiceClient::connect(node.to_string()).await?;
+        let endpoint = Endpoint::try_from(node.to_string())?;
+        let channel: Channel = if let Some(tor_http_connector) = tor_http_connector {
+            endpoint.connect_with_connector(tor_http_connector).await?
+        } else {
+            // Otherwise, connect directly to the node
+            endpoint.connect().await?
+        };
+        let mut client = ObliviousQueryServiceClient::new(channel);
+
         let params = client
             .chain_parameters(tonic::Request::new(ChainParametersRequest {
                 chain_id: String::new(),
@@ -979,8 +995,8 @@ impl Storage {
         let rseed = note.rseed().to_bytes().to_vec();
 
         dbtx.execute(
-            "INSERT INTO notes (note_commitment, address, amount, asset_id, rseed) 
-                VALUES (?1, ?2, ?3, ?4, ?5) 
+            "INSERT INTO notes (note_commitment, address, amount, asset_id, rseed)
+                VALUES (?1, ?2, ?3, ?4, ?5)
                 ON CONFLICT DO NOTHING",
             (note_commitment, address, amount, asset_id, rseed),
         )?;

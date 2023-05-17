@@ -38,6 +38,14 @@ ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.1.
 tokio = { version = "1.22", features = ["full"] }
 tokio-stream = { version = "0.1.8", features = ["sync"] }
 anyhow = "1"
+arti-client = { version = "0.9", features = ["tokio", "rustls"] }
+arti-hyper = "0.9"
+tor-rtcompat = "0.9"
+tls-api = "0.9"
+tls-api-rustls = "0.9"
+tokio-rustls = "0.23"
+rustls = "0.20"
+webpki-roots = "0.23"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
 rand = "0.8"
 serde_json = "1"

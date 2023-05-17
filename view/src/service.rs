@@ -1,10 +1,13 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
+    path::Path,
     pin::Pin,
     sync::{Arc, Mutex},
 };
 
 use anyhow::{anyhow, Context};
+use arti_client::{config::CfgPath, TorClient, TorClientConfig};
+use arti_hyper::ArtiHttpConnector;
 use async_stream::try_stream;
 use camino::Utf8Path;
 use futures::stream::{StreamExt, TryStreamExt};
@@ -34,9 +37,13 @@ use penumbra_transaction::{
 };
 use rand::Rng;
 use rand_core::OsRng;
+use rustls::{OwnedTrustAnchor, RootCertStore};
 use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
-use tonic::{async_trait, transport::Channel};
+use tonic::{
+    async_trait,
+    transport::{Channel, Endpoint},
+};
 use tracing::instrument;
 use url::Url;
 
@@ -61,8 +68,12 @@ pub struct ViewService {
     state_commitment_tree: Arc<RwLock<penumbra_tct::Tree>>,
     // The Url for the pd gRPC endpoint on remote node.
     node: Url,
-    /// Used to watch for changes to the sync height.
+    // Used to watch for changes to the sync height.
     sync_height_rx: watch::Receiver<u64>,
+    // The Tor http connector, if any
+    tor_http_connector: Option<
+        ArtiHttpConnector<tor_rtcompat::tokio::TokioRustlsRuntime, tls_api_rustls::TlsConnector>,
+    >,
 }
 
 impl ViewService {
@@ -71,10 +82,23 @@ impl ViewService {
         storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: &FullViewingKey,
         node: Url,
+        use_tor_with_dir: Option<impl AsRef<Path>>,
     ) -> anyhow::Result<Self> {
-        let storage = Storage::load_or_initialize(storage_path, fvk, node.clone()).await?;
+        let tor_http_connector = if let Some(data_dir) = use_tor_with_dir {
+            Some(tor_http_connector(data_dir.as_ref()).await?)
+        } else {
+            None
+        };
 
-        Self::new(storage, node).await
+        let storage = Storage::load_or_initialize(
+            storage_path,
+            fvk,
+            node.clone(),
+            tor_http_connector.clone(),
+        )
+        .await?;
+
+        Self::new_with_tor(storage, node, tor_http_connector).await
     }
 
     /// Constructs a new [`ViewService`], spawning a sync task internally.
@@ -84,9 +108,32 @@ impl ViewService {
     /// To create multiple [`ViewService`]s, clone the [`ViewService`] returned
     /// by this method, rather than calling it multiple times.  That way, each clone
     /// will be backed by the same scanning task, rather than each spawning its own.
-    pub async fn new(storage: Storage, node: Url) -> Result<Self, anyhow::Error> {
+    pub async fn new(
+        storage: Storage,
+        node: Url,
+        use_tor_with_dir: Option<impl AsRef<Path>>,
+    ) -> Result<Self, anyhow::Error> {
+        let tor_http_connector = if let Some(data_dir) = use_tor_with_dir {
+            Some(tor_http_connector(data_dir.as_ref()).await?)
+        } else {
+            None
+        };
+
+        Self::new_with_tor(storage, node, tor_http_connector).await
+    }
+
+    async fn new_with_tor(
+        storage: Storage,
+        node: Url,
+        tor_http_connector: Option<
+            ArtiHttpConnector<
+                tor_rtcompat::tokio::TokioRustlsRuntime,
+                tls_api_rustls::TlsConnector,
+            >,
+        >,
+    ) -> Result<Self, anyhow::Error> {
         let (worker, sct, error_slot, sync_height_rx) =
-            Worker::new(storage.clone(), node.clone()).await?;
+            Worker::new(storage.clone(), node.clone(), tor_http_connector.clone()).await?;
 
         tokio::spawn(worker.run());
 
@@ -100,6 +147,7 @@ impl ViewService {
             sync_height_rx,
             state_commitment_tree: sct,
             node,
+            tor_http_connector,
         })
     }
 
@@ -209,7 +257,14 @@ impl ViewService {
     async fn tendermint_proxy_client(
         &self,
     ) -> Result<TendermintProxyServiceClient<Channel>, anyhow::Error> {
-        let client = TendermintProxyServiceClient::connect(self.node.to_string()).await?;
+        let endpoint = Endpoint::try_from(self.node.to_string())?;
+        let channel: Channel = if let Some(tor_http_connector) = self.tor_http_connector.clone() {
+            endpoint.connect_with_connector(tor_http_connector).await?
+        } else {
+            // Otherwise, connect directly to the node
+            endpoint.connect().await?
+        };
+        let client = TendermintProxyServiceClient::new(channel);
 
         Ok(client)
     }
@@ -1212,4 +1267,42 @@ impl ViewProtocolService for ViewService {
 
         Ok(tonic::Response::new(response))
     }
+}
+
+async fn tor_http_connector(
+    data_dir: impl AsRef<Path>,
+) -> anyhow::Result<
+    ArtiHttpConnector<tor_rtcompat::tokio::TokioRustlsRuntime, tls_api_rustls::TlsConnector>,
+> {
+    // If the user specified to use Tor, create a Tor client and use it to connect
+    let mut tor_config = TorClientConfig::builder();
+    tor_config
+        .storage()
+        .cache_dir(CfgPath::new_literal(data_dir.as_ref()))
+        .state_dir(CfgPath::new_literal(data_dir.as_ref()));
+    let tor_config = tor_config.build()?;
+
+    // TLS config trusting only the webpki roots
+    let mut roots = RootCertStore::empty();
+    roots.add_server_trust_anchors(webpki_roots::TLS_SERVER_ROOTS.0.iter().map(|ta| {
+        OwnedTrustAnchor::from_subject_spki_name_constraints(
+            ta.subject,
+            ta.spki,
+            ta.name_constraints,
+        )
+    }));
+    let tls_config = rustls::ClientConfig::builder()
+        .with_safe_defaults()
+        .with_root_certificates(roots)
+        .with_no_client_auth();
+    let tls_config = Arc::new(tls_config);
+
+    // Specifically use the tokio/rustls runtime to align with the rest of the stack
+    let tor_client = TorClient::with_runtime(tor_rtcompat::tokio::TokioRustlsRuntime::current()?)
+        .config(tor_config)
+        .create_bootstrapped()
+        .await?;
+
+    let tls_http_connector = tls_api_rustls::TlsConnector { config: tls_config };
+    Ok(ArtiHttpConnector::new(tor_client, tls_http_connector))
 }
