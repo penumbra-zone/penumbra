@@ -46,7 +46,7 @@
   - [(merge with parent) Notes](./protocol/notes.md)
   - [Note Plaintexts](./protocol/notes/note_plaintexts.md)
   - [Note Commitments](./protocol/notes/note_commitments.md)
-  - [Note Ciphertexts]()
+  - [Note Ciphertexts](./protocol/notes/note_ciphertexts.md)
   - [Transaction Actions](./shielded_pool/action.md)
     - [`Spend`](./protocol/action_descriptions/spend.md)
     - [`Output`](./protocol/action_descriptions/outputs.md)
