@@ -162,7 +162,7 @@ cargo run -r --bin pcli tx lp replicate xyk <TRADING_PAIR> <QUANTITY> [--current
 For instance, to provide ~100penumbra and ~100test_usd liquidity on the `penumbra:test_usd` pair with a pool fee of `33bps`, run:
 
 ```bash
-cargo run -r --bin pcli tx lp replicate penumbra:test_usd 100penumbra --fee-bps 33
+cargo run -r --bin pcli tx lp replicate xyk penumbra:test_usd 100penumbra --fee-bps 33
 ```
 
 You will be prompted a disclaimer which you should read carefully, and accept or reject by pressing "y" for yes, or "n" for no.
