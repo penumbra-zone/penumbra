@@ -16,6 +16,7 @@ use penumbra_crypto::Value;
 
 use crate::dex::{
     position_manager::PositionManager,
+    router::FillRoute,
     router::{limit_buy, limit_sell, HandleBatchSwaps, RoutingParams},
     Arbitrage, StateWriteExt,
 };
@@ -75,24 +76,27 @@ async fn single_limit_order() -> anyhow::Result<()> {
     //          -> reserves are updated correctly
 
     // Test 1: We're trying to fill the entire order.
-    let delta_1 = Value {
+    let delta_gm = Value {
         amount: 100_000u64.into(),
         asset_id: gm.id(),
     };
 
-    let lambda_1 = Value {
+    let lambda_gm = Value {
         amount: 0u64.into(),
         asset_id: gm.id(),
     };
 
-    let lambda_2 = Value {
+    let lambda_gn = Value {
         amount: 120_000u64.into(),
         asset_id: gn.id(),
     };
 
-    let (unfilled, output) = state_test_1.fill_against(delta_1, &position_1_id).await?;
-    assert_eq!(unfilled, lambda_1);
-    assert_eq!(output, lambda_2);
+    let route_to_gn = vec![gn.id()];
+    let (unfilled, output) =
+        FillRoute::fill_route(&mut state_test_1, delta_gm, &route_to_gn, None).await?;
+
+    assert_eq!(unfilled, lambda_gm);
+    assert_eq!(output, lambda_gn);
 
     let position = state_test_1
         .position_by_id(&position_1_id)
@@ -101,19 +105,15 @@ async fn single_limit_order() -> anyhow::Result<()> {
         .unwrap();
 
     // Check that the position is filled
-    assert_eq!(position.reserves.r1, delta_1.amount);
+    assert_eq!(position.reserves.r1, delta_gm.amount);
     assert_eq!(position.reserves.r2, Amount::zero());
 
+    let route_to_gm = vec![gm.id()];
     // Now we try to fill the order a second time, this should leave the position untouched.
-    let (unfilled, output) = state_test_1.fill_against(delta_1, &position_1_id).await?;
-    assert_eq!(unfilled, delta_1);
-    assert_eq!(
-        output,
-        Value {
-            amount: Amount::zero(),
-            asset_id: gn.id(),
-        }
-    );
+    assert!(state_test_1
+        .fill_route(delta_gm, &route_to_gn, None)
+        .await
+        .is_err());
 
     // Fetch the position, and assert that its reserves are unchanged.
     let position = state_test_1
@@ -121,15 +121,18 @@ async fn single_limit_order() -> anyhow::Result<()> {
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(position.reserves.r1, delta_1.amount);
+    assert_eq!(position.reserves.r1, delta_gm.amount);
     assert_eq!(position.reserves.r2, Amount::zero());
 
     // Now let's try to do a "round-trip" i.e. fill the order in the other direction:
-    let delta_2 = Value {
+    let delta_gn = Value {
         amount: 120_000u64.into(),
         asset_id: gn.id(),
     };
-    let (unfilled, output) = state_test_1.fill_against(delta_2, &position_1_id).await?;
+
+    let (unfilled, output) = state_test_1
+        .fill_route(delta_gn, &route_to_gm, None)
+        .await?;
     assert_eq!(
         unfilled,
         Value {
@@ -157,12 +160,12 @@ async fn single_limit_order() -> anyhow::Result<()> {
     // Finally, let's test partial fills, rolling back to `state_tx`, which contains
     // a single limit order for 100_000gm@1.2gn.
     for _i in 1..=100 {
-        let delta_1 = Value {
+        let delta_gm = Value {
             amount: 1000u64.into(),
             asset_id: gm.id(),
         };
         // We are splitting a single large fill for a `100_000gm` into, 100 fills for `1000gm`.
-        let (unfilled, output) = state_tx.fill_against(delta_1, &position_1_id).await?;
+        let (unfilled, output) = state_tx.fill_route(delta_gm, &route_to_gn, None).await?;
 
         // We check that there are no unfilled `gm`s resulting from executing the order
         assert_eq!(
@@ -275,20 +278,20 @@ async fn multiple_limit_orders() -> anyhow::Result<()> {
 
     // Since we are looking to exhaust the order's reserves, Delta_1's amount
     // must account for the 9 bps fee, rounded up.
-    let delta_1 = Value {
+    let delta_gm = Value {
         amount: 100_091u64.into(),
         asset_id: gm.id(),
     };
 
-    let (unfilled, output, positions_touched) = state_test_1
-        .fill(delta_1, DirectedTradingPair::new(gm.id(), gn.id()))
+    let route_to_gn = vec![gn.id()];
+    let (unfilled, output) = state_test_1
+        .fill_route(delta_gm, &route_to_gn, None)
         .await?;
 
-    assert_eq!(positions_touched.len(), 1);
-    assert_eq!(positions_touched[0], position_1_id);
-
+    assert_eq!(unfilled.asset_id, gm.id());
     assert_eq!(unfilled.amount, Amount::zero());
     assert_eq!(output.amount, 120_000u64.into());
+    assert_eq!(output.asset_id, gn.id());
 
     // We fetch the entire order book, checking that only position 1 was filled against.
     let p_1 = state_test_1.position_by_id(&position_1_id).await?.unwrap();
@@ -303,19 +306,16 @@ async fn multiple_limit_orders() -> anyhow::Result<()> {
 
     // Test 2: We're trying to exhaust order A and B:
     let mut state_test_2 = full_orderbook_state.fork();
-    let delta_1 = Value {
-        amount: delta_1.amount + 100_101u64.into(),
+    let delta_gm = Value {
+        amount: delta_gm.amount + 100_101u64.into(),
         asset_id: gm.id(),
     };
 
-    let (unfilled, output, positions_touched) = state_test_2
-        .fill(delta_1, DirectedTradingPair::new(gm.id(), gn.id()))
+    let (unfilled, output) = state_test_2
+        .fill_route(delta_gm, &route_to_gn, None)
         .await?;
-
-    assert_eq!(positions_touched.len(), 2);
-    assert_eq!(positions_touched[0], position_1_id);
-    assert_eq!(positions_touched[1], position_2_id);
-
+    assert_eq!(unfilled.asset_id, gm.id());
+    assert_eq!(output.asset_id, gn.id());
     assert_eq!(unfilled.amount, Amount::zero());
     assert_eq!(output.amount, 240_000u64.into());
 
@@ -332,20 +332,16 @@ async fn multiple_limit_orders() -> anyhow::Result<()> {
 
     // Test 3: We're trying to fill all the orders.
     let mut state_test_3 = full_orderbook_state.fork();
-    let delta_1 = Value {
-        amount: delta_1.amount + 100_111u64.into(),
+    let delta_gm = Value {
+        amount: delta_gm.amount + 100_111u64.into(),
         asset_id: gm.id(),
     };
 
-    let (unfilled, output, positions_touched) = state_test_3
-        .fill(delta_1, DirectedTradingPair::new(gm.id(), gn.id()))
+    let (unfilled, output) = state_test_3
+        .fill_route(delta_gm, &route_to_gn, None)
         .await?;
-
-    assert_eq!(positions_touched.len(), 3);
-    assert_eq!(positions_touched[0], position_1_id);
-    assert_eq!(positions_touched[1], position_2_id);
-    assert_eq!(positions_touched[2], position_3_id);
-
+    assert_eq!(unfilled.asset_id, gm.id());
+    assert_eq!(output.asset_id, gn.id());
     assert_eq!(unfilled.amount, Amount::zero());
     assert_eq!(output.amount, 360_000u64.into());
 

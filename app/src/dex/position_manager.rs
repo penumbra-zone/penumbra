@@ -151,49 +151,6 @@ pub trait PositionManager: StateWrite + PositionRead {
         self.put(state_key::position_by_id(&id), position);
     }
 
-    /// Fill a trade of `input` value against all available positions, until completion, or
-    /// the available liquidity is exhausted.
-    ///
-    /// Returns the unfilled amount, the total output of the trade, and the ids of positions
-    /// that were executed against.
-    ///
-    /// TODO(erwan): global slippage parameter should act as a "fail-early" guard here, but we'd
-    /// need to get some signal about the phi of the position we're executing against.
-    async fn fill(
-        &mut self,
-        input: Value,
-        pair: DirectedTradingPair,
-    ) -> Result<(Value, Value, Vec<position::Id>)> {
-        let mut position_ids = self.positions_by_price(&pair);
-
-        let zero = Value {
-            asset_id: input.asset_id,
-            amount: 0u64.into(),
-        };
-
-        let mut remaining = input;
-        let mut total_output = zero;
-
-        let mut positions = vec![];
-
-        while let Some(id) = position_ids.next().await {
-            if remaining == zero {
-                break;
-            }
-
-            let id = &id?;
-            positions.push(id.clone());
-            let (unfilled, output) = self.fill_against(remaining, id).await?;
-            remaining = unfilled;
-            total_output = Value {
-                asset_id: input.asset_id,
-                amount: total_output.amount + output.amount,
-            };
-        }
-
-        Ok((remaining, total_output, positions))
-    }
-
     /// Returns the list of candidate assets to route through for a trade from `from`.
     /// Combines a list of fixed candidates with a list of liquidity-based candidates.
     /// This ensures that the fixed candidates are always considered, minimizing
