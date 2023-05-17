@@ -48,7 +48,12 @@ impl AssetIdVar {
             FqVar::new_constant(cs.clone(), *VALUE_GENERATOR_DOMAIN_SEP)?;
         let hashed_asset_id =
             poseidon377::r1cs::hash_1(cs, &value_generator_domain_sep, self.asset_id.clone())?;
-        let result = ElementVar::encode_to_curve(&hashed_asset_id);
-        result
+        ElementVar::encode_to_curve(&hashed_asset_id)
+    }
+}
+
+impl EqGadget<Fq> for AssetIdVar {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
+        self.asset_id.is_eq(&other.asset_id)
     }
 }

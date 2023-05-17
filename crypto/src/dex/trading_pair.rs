@@ -1,10 +1,12 @@
 use anyhow::anyhow;
-use decaf377::FieldExt;
+use ark_r1cs_std::prelude::{AllocVar, EqGadget};
+use ark_relations::r1cs::SynthesisError;
+use decaf377::{FieldExt, Fq};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
-use crate::asset::{self, Unit, REGISTRY};
+use crate::asset::{self, AssetIdVar, Unit, REGISTRY};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
 #[serde(try_from = "pb::DirectedTradingPair", into = "pb::DirectedTradingPair")]
@@ -127,6 +129,40 @@ impl TryFrom<[u8; 64]> for TradingPair {
 
 impl TypeUrl for TradingPair {
     const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.TradingPair";
+}
+
+/// Represents a trading pair in R1CS.
+pub struct TradingPairVar {
+    pub asset_1: asset::AssetIdVar,
+    pub asset_2: asset::AssetIdVar,
+}
+
+impl AllocVar<TradingPair, Fq> for TradingPairVar {
+    fn new_variable<T: std::borrow::Borrow<TradingPair>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let trading_pair = f()?.borrow().clone();
+        let asset_1 = AssetIdVar::new_variable(cs.clone(), || Ok(trading_pair.asset_1()), mode)?;
+        let asset_2 = AssetIdVar::new_variable(cs, || Ok(trading_pair.asset_2()), mode)?;
+        // A valid `TradingPair` has a canonical ordering.
+        // Constrain: asset_1 <= asset_2.
+        asset_1
+            .asset_id
+            .enforce_cmp(&asset_2.asset_id, core::cmp::Ordering::Less, true)?;
+        Ok(Self { asset_1, asset_2 })
+    }
+}
+
+impl EqGadget<Fq> for TradingPairVar {
+    fn is_eq(&self, other: &Self) -> Result<ark_r1cs_std::prelude::Boolean<Fq>, SynthesisError> {
+        let asset_1_eq = self.asset_1.is_eq(&other.asset_1);
+        let asset_2_eq = self.asset_2.is_eq(&other.asset_2);
+        asset_1_eq.and(asset_2_eq)
+    }
 }
 
 impl DomainType for TradingPair {
