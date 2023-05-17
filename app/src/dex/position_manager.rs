@@ -151,45 +151,6 @@ pub trait PositionManager: StateWrite + PositionRead {
         self.put(state_key::position_by_id(&id), position);
     }
 
-    /// Fill a trade of `input` value against a specific position `id`, writing
-    /// the updated reserves to the chain state and returning a pair of `(unfilled, output)`.
-    async fn fill_against(&mut self, input: Value, id: &position::Id) -> Result<(Value, Value)> {
-        let mut position = self
-            .position_by_id(id)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("tried to fill against unknown position {id:?}"))?;
-
-        if position.state != position::State::Opened {
-            return Err(anyhow::anyhow!(
-                "tried to fill against non-Opened position {:?}",
-                id
-            ));
-        }
-
-        let (unfilled, new_reserves, output) = position
-            .phi
-            .fill(input, &position.reserves)
-            .context(format!(
-                "could not fill {:?} against position {:?}",
-                input, id
-            ))?;
-
-        tracing::debug!(
-            input = ?input.amount,
-            output = ?output.amount,
-            unfilled = ?unfilled.amount,
-            old_reserves = ?position.reserves,
-            ?new_reserves,
-            ?id,
-            "executed against position",
-        );
-
-        position.reserves = new_reserves;
-        self.put_position(position);
-
-        Ok((unfilled, output))
-    }
-
     /// Fill a trade of `input` value against all available positions, until completion, or
     /// the available liquidity is exhausted.
     ///
