@@ -1,6 +1,6 @@
+use crate::fixpoint;
+use crate::fixpoint::U128x128;
 use ethnum::U256;
-
-use super::U128x128;
 
 impl From<u8> for U128x128 {
     fn from(value: u8) -> Self {
@@ -66,17 +66,15 @@ impl From<U128x128> for f64 {
 }
 
 impl TryFrom<f64> for U128x128 {
-    type Error = anyhow::Error;
+    type Error = fixpoint::Error;
 
-    fn try_from(value: f64) -> anyhow::Result<U128x128> {
+    fn try_from(value: f64) -> Result<U128x128, Self::Error> {
         if value < 0.0 {
-            Err(anyhow::anyhow!(
-                "U128x128 cannot represent negative numbers"
-            ))
+            Err(fixpoint::Error::InvalidFloat64 { value })
         } else if value.is_infinite() {
-            Err(anyhow::anyhow!("U128x128 cannot represent infinite values"))
+            Err(fixpoint::Error::InvalidFloat64 { value })
         } else if value.is_nan() {
-            Err(anyhow::anyhow!("U128x128 cannot represent NaN values"))
+            Err(fixpoint::Error::InvalidFloat64 { value })
         } else {
             let integral = value as u128;
             let fractional = value.fract();
