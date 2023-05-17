@@ -181,11 +181,11 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 denom_metadata::Inner::new(
                     "upenumbra".to_string(),
                     vec![
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 6,
                             denom: "penumbra".to_string(),
                         },
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 3,
                             denom: "mpenumbra".to_string(),
                         },
@@ -201,11 +201,11 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 denom_metadata::Inner::new(
                     "ugm".to_string(),
                     vec![
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 6,
                             denom: "gm".to_string(),
                         },
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 3,
                             denom: "mgm".to_string(),
                         },
@@ -221,11 +221,11 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 denom_metadata::Inner::new(
                     "ugn".to_string(),
                     vec![
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 6,
                             denom: "gn".to_string(),
                         },
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 3,
                             denom: "mgn".to_string(),
                         },
@@ -241,7 +241,7 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 denom_metadata::Inner::new(
                     "wtest_usd".to_string(),
                     vec![
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             // TODO(erwan): temporarily reduced to 1e6 (see #2560)
                             exponent: 6,
                             denom: "test_usd".to_string(),
@@ -275,7 +275,7 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 denom_metadata::Inner::new(
                     "test_sat".to_string(),
                     vec![
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 8,
                             denom: "test_btc".to_string(),
                         },
@@ -291,11 +291,11 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 denom_metadata::Inner::new(
                     "utest_atom".to_string(),
                     vec![
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 6,
                             denom: "test_atom".to_string(),
                         },
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 3,
                             denom: "mtest_atom".to_string(),
                         },
@@ -311,11 +311,11 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 denom_metadata::Inner::new(
                     "utest_osmo".to_string(),
                     vec![
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 6,
                             denom: "test_osmo".to_string(),
                         },
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 3,
                             denom: "mtest_osmo".to_string(),
                         },
@@ -337,11 +337,11 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 denom_metadata::Inner::new(
                     format!("udelegation_{data}"),
                     vec![
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 6,
                             denom: format!("delegation_{data}"),
                         },
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 3,
                             denom: format!("mdelegation_{data}"),
                         },
@@ -363,11 +363,11 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                 denom_metadata::Inner::new(
                     format!("uunbonding_{data}"),
                     vec![
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 6,
                             denom: format!("unbonding_{data}"),
                         },
-                        denom_metadata::UnitData {
+                        denom_metadata::BareDenomUnit {
                             exponent: 3,
                             denom: format!("munbonding_{data}"),
                         },
@@ -404,11 +404,11 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             (|data: &str| {
                 assert!(!data.is_empty());
                 denom_metadata::Inner::new(format!("uvoted_on_{data}"), vec![
-                    denom_metadata::UnitData {
+                    denom_metadata::BareDenomUnit {
                         exponent: 6,
                         denom: format!("voted_on_{data}"),
                     },
-                    denom_metadata::UnitData {
+                    denom_metadata::BareDenomUnit {
                         exponent: 3,
                         denom: format!("mvoted_on_{data}"),
                     },
