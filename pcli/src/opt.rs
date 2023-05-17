@@ -1,12 +1,8 @@
-use std::sync::Arc;
-
 use crate::{
     box_grpc_svc::{self, BoxGrpcService},
     legacy, App, Command,
 };
 use anyhow::Result;
-use arti_client::{config::TorClientConfigBuilder, TorClient};
-use arti_hyper::ArtiHttpConnector;
 use camino::Utf8PathBuf;
 use clap::Parser;
 use directories::ProjectDirs;
@@ -24,7 +20,6 @@ use penumbra_proto::{
 };
 use penumbra_view::ViewService;
 use penumbra_wallet::KeyStore;
-use rustls::{OwnedTrustAnchor, RootCertStore};
 use tracing_subscriber::EnvFilter;
 use url::Url;
 
@@ -39,7 +34,7 @@ pub struct Opt {
     #[clap(
         short,
         long,
-        default_value = "https://pd-tls.penumbra.zone:443",
+        default_value = "http://testnet.penumbra.zone:8080",
         env = "PENUMBRA_NODE_PD_URL",
         parse(try_from_str = Url::parse),
     )]
