@@ -5,11 +5,15 @@ use std::{
     sync::Arc,
 };
 
+use anyhow::ensure;
 use ark_ff::fields::PrimeField;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
-use crate::{asset, Fq, Value};
+use crate::{
+    asset::{self},
+    Fq, Value,
+};
 
 use super::Denom;
 /// An asset denomination's metadata.
@@ -21,19 +25,22 @@ use super::Denom;
 pub struct DenomMetadata {
     pub(super) inner: Arc<Inner>,
 }
+
 // These are constructed by the asset registry.
 pub(super) struct Inner {
     // The Penumbra asset ID
     id: asset::Id,
     base_denom: String,
     description: String,
-    display: String,
+    /// Sorted by priority order.
+    pub(super) units: Vec<UnitData>,
+    //display: String,
+    // Indexes into the units array.
+    display_index: usize,
     name: String,
     symbol: String,
     uri: String,
     uri_hash: String,
-    /// Sorted by priority order.
-    pub(super) units: Vec<UnitData>,
 }
 
 impl TypeUrl for DenomMetadata {
@@ -44,25 +51,91 @@ impl DomainType for DenomMetadata {
     type Proto = pb::DenomMetadata;
 }
 
+impl From<&Inner> for pb::DenomMetadata {
+    fn from(inner: &Inner) -> Self {
+        pb::DenomMetadata {
+            description: inner.description.clone(),
+            base: inner.base_denom.clone(),
+            display: inner.units[inner.display_index].denom.clone(),
+            name: inner.name.clone(),
+            symbol: inner.symbol.clone(),
+            uri: inner.uri.clone(),
+            uri_hash: inner.uri_hash.clone(),
+            penumbra_asset_id: Some(inner.id.into()),
+            denom_units: inner.units.clone().into_iter().map(|x| x.into()).collect(),
+        }
+    }
+}
+
+impl TryFrom<pb::DenomMetadata> for Inner {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::DenomMetadata) -> Result<Self, Self::Error> {
+        let base_denom = value.base;
+        ensure!(
+            !base_denom.is_empty(),
+            "denom metadata must have a base denom"
+        );
+
+        // Compute the ID from the base denom to ensure we don't get confused.
+        let id = asset::Id::from_raw_denom(&base_denom);
+        // If the ID was supplied, we should check that it's consistent with the base denom.
+        if let Some(supplied_id) = value.penumbra_asset_id {
+            let supplied_id = asset::Id::try_from(supplied_id)?;
+            ensure!(
+                id == supplied_id,
+                "denom metadata has mismatched penumbra asset ID"
+            );
+        }
+
+        // Parse the list of units, which may be empty.
+        let mut units = value
+            .denom_units
+            .into_iter()
+            .map(UnitData::try_from)
+            .collect::<Result<Vec<_>, _>>()?;
+
+        // Ensure that the base denom is present in the unit list.
+        // TODO: should we require it to be first?
+        if !units.iter().any(|unit| unit.denom == base_denom) {
+            units.push(UnitData {
+                denom: base_denom.clone(),
+                exponent: 0,
+            });
+        }
+
+        let display_index = if !value.display.is_empty() {
+            units
+                .iter()
+                .position(|unit| unit.denom == value.display)
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "display denom {} not found in units {:?}",
+                        value.display,
+                        units
+                    )
+                })?
+        } else {
+            0
+        };
+
+        Ok(Inner {
+            id,
+            base_denom,
+            units,
+            display_index,
+            description: value.description,
+            name: value.name,
+            symbol: value.symbol,
+            uri: value.uri,
+            uri_hash: value.uri_hash,
+        })
+    }
+}
+
 impl From<DenomMetadata> for pb::DenomMetadata {
     fn from(dn: DenomMetadata) -> Self {
-        pb::DenomMetadata {
-            description: dn.inner.description.clone(),
-            base: dn.inner.base_denom.clone(),
-            display: dn.inner.display.clone(),
-            name: dn.inner.name.clone(),
-            symbol: dn.inner.symbol.clone(),
-            uri: dn.inner.uri.clone(),
-            uri_hash: dn.inner.uri_hash.clone(),
-            penumbra_asset_id: Some(dn.inner.id.into()),
-            denom_units: dn
-                .inner
-                .units
-                .clone()
-                .into_iter()
-                .map(|x| x.into())
-                .collect(),
-        }
+        dn.inner.as_ref().into()
     }
 }
 
@@ -70,9 +143,10 @@ impl TryFrom<pb::DenomMetadata> for DenomMetadata {
     type Error = anyhow::Error;
 
     fn try_from(value: pb::DenomMetadata) -> Result<Self, Self::Error> {
-        asset::REGISTRY
-            .parse_denom(&value.base)
-            .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", value.base))
+        let inner = Inner::try_from(value)?;
+        Ok(DenomMetadata {
+            inner: Arc::new(inner),
+        })
     }
 }
 
@@ -146,10 +220,10 @@ impl Inner {
 
         Self {
             id,
+            display_index: units.len() - 1,
             units,
             base_denom,
             description: String::new(),
-            display: String::new(),
             name: String::new(),
             symbol: String::new(),
             uri: String::new(),
