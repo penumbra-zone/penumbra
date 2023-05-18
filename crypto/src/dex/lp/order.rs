@@ -6,13 +6,14 @@ use crate::{
     asset::{self, Unit},
     dex::DirectedTradingPair,
     fixpoint::U128x128,
-    Value,
+    Amount, Value,
 };
 
 use super::position::Position;
 
 /// Helper structure for constructing a [`Position`] expressing the desire to
 /// buy the `desired` value in exchange for the `offered` value.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BuyOrder {
     pub desired: Value,
     pub offered: Value,
@@ -21,6 +22,7 @@ pub struct BuyOrder {
 
 /// Helper structure for constructing a [`Position`] expressing the desire to
 /// sell the `offered` value in exchange for the `desired` value.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SellOrder {
     pub offered: Value,
     pub desired: Value,
@@ -91,6 +93,42 @@ impl BuyOrder {
             fee,
         })
     }
+
+    /// Formats this `BuyOrder` as a string.
+    pub fn format(&self, cache: &asset::Cache) -> Result<String> {
+        let desired_unit = cache
+            .get(&self.desired.asset_id)
+            .map(|d| d.default_unit())
+            .ok_or_else(|| anyhow!("unknown asset {}", self.desired.asset_id))?;
+
+        // When parsing, we have
+        // offered_amount = ceil(price_amount * desired_amount / desired_unit_amount)
+        // We want to compute price_amount
+        //   ignoring rounding, this is
+        //   price_amount = offered_amount * desired_unit_amount / desired_amount
+        let offered_amount = U128x128::from(self.offered.amount);
+        let desired_amount = U128x128::from(self.desired.amount);
+        let desired_unit_amount = U128x128::from(desired_unit.unit_amount());
+
+        let price_amount: Amount = ((offered_amount * desired_unit_amount) / desired_amount)?
+            // TODO: Is this the correct rounding behavior? Should we expect this to round-trip exactly?
+            .round_up()
+            .try_into()
+            .expect("rounded to integer");
+
+        let price_str = Value {
+            amount: price_amount,
+            asset_id: self.offered.asset_id,
+        }
+        .format(&cache);
+        let desired_str = self.desired.format(&cache);
+
+        if self.fee != 0 {
+            Ok(format!("{}@{}/{}bps", desired_str, price_str, self.fee))
+        } else {
+            Ok(format!("{}@{}", desired_str, price_str))
+        }
+    }
 }
 
 impl SellOrder {
@@ -127,6 +165,42 @@ impl SellOrder {
             desired,
             fee,
         })
+    }
+
+    /// Formats this `SellOrder` as a string.
+    pub fn format(&self, cache: &asset::Cache) -> Result<String> {
+        let offered_unit = cache
+            .get(&self.offered.asset_id)
+            .map(|d| d.default_unit())
+            .ok_or_else(|| anyhow!("unknown asset {}", self.offered.asset_id))?;
+
+        // When parsing, we have
+        // desired_amount = ceil(price_amount * offered_amount / offered_unit_amount)
+        // We want to compute price_amount
+        //   ignoring rounding, this is
+        //   price_amount = desired_amount * offered_unit_amount / offered_amount
+        let offered_amount = U128x128::from(self.offered.amount);
+        let desired_amount = U128x128::from(self.desired.amount);
+        let offered_unit_amount = U128x128::from(offered_unit.unit_amount());
+
+        let price_amount: Amount = ((desired_amount * offered_unit_amount) / offered_amount)?
+            // TODO: Is this the correct rounding behavior? Should we expect this to round-trip exactly?
+            .round_up()
+            .try_into()
+            .expect("rounded to integer");
+
+        let price_str = Value {
+            amount: price_amount,
+            asset_id: self.desired.asset_id,
+        }
+        .format(&cache);
+        let offered_str = self.offered.format(&cache);
+
+        if self.fee != 0 {
+            Ok(format!("{}@{}/{}bps", offered_str, price_str, self.fee))
+        } else {
+            Ok(format!("{}@{}", offered_str, price_str))
+        }
     }
 }
 
@@ -173,22 +247,154 @@ impl SellOrder {
 // TODO: maybe useful in cleaning up cli rendering?
 // unsure if we can get an exact round trip
 
-/*
 impl Position {
-    pub fn interpret_buy(&self) -> Option<BuyOrder> {
+    fn interpret_inner(&self) -> Option<(Value, Value)> {
         // if r1 * r2 != 0, return None
         // otherwise, nonzero reserves => offered,
         // p,q imply desired,
-        unimplemented!()
+        let offered = if self.reserves.r1 == 0u64.into() {
+            Value {
+                amount: self.reserves.r2,
+                asset_id: self.phi.pair.asset_2(),
+            }
+        } else if self.reserves.r2 == 0u64.into() {
+            Value {
+                amount: self.reserves.r1,
+                asset_id: self.phi.pair.asset_1(),
+            }
+        } else {
+            return None;
+        };
+        // The "desired" amount is the fill against the reserves.
+        // However, we don't want to account for fees here, so make a feeless copy of
+        // the trading function.
+        let mut feeless_phi = self.phi.clone();
+        feeless_phi.component.fee = 0;
+        let (_new_reserves, desired) = feeless_phi
+            .fill_output(&self.reserves, offered)
+            .expect("asset types match")
+            .expect("supplied exact reserves");
+
+        Some((offered, desired))
     }
 
-    pub fn interpret_sell(&self) -> Option<SellOrder> {
-        // if r1 * r2 != 0, return None
-        // otherwise, nonzero reserves => offered,
-        // p,q imply desired,
-        unimplemented!()
+    /// Attempts to interpret this position as a "buy order".
+    ///
+    /// If both of the reserves are nonzero, returns None.
+    pub fn interpret_as_buy(&self) -> Option<BuyOrder> {
+        self.interpret_inner().map(|(offered, desired)| BuyOrder {
+            offered,
+            desired,
+            fee: self.phi.component.fee,
+        })
+    }
+
+    /// Attempts to interpret this position as a "sell order".
+    ///
+    /// If both of the reserves are nonzero, returns None.
+    pub fn interpret_as_sell(&self) -> Option<SellOrder> {
+        self.interpret_inner().map(|(offered, desired)| SellOrder {
+            offered,
+            desired,
+            fee: self.phi.component.fee,
+        })
+    }
+
+    /// Interprets a position with mixed reserves as a pair of "sell orders".
+    pub fn interpret_as_mixed(&self) -> Option<(SellOrder, SellOrder)> {
+        let mut split1 = self.clone();
+        let mut split2 = self.clone();
+
+        if split1.reserves.r2 == 0u64.into() {
+            return None;
+        }
+        split1.reserves.r2 = 0u64.into();
+
+        if split2.reserves.r1 == 0u64.into() {
+            return None;
+        }
+        split2.reserves.r1 = 0u64.into();
+
+        Some((
+            split1.interpret_as_sell().expect("r2 is zero"),
+            split2.interpret_as_sell().expect("r1 is zero"),
+        ))
     }
 }
-*/
 
-// TODO: rendering `BuyOrder`/`SellOrder` as strings?
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_buy_order_basic() {
+        // TODO: should have a way to build an asset::Cache for known assets
+        let mut cache = asset::Cache::default();
+        let gm = asset::REGISTRY.parse_unit("gm");
+        let gn = asset::REGISTRY.parse_unit("gn");
+        cache.extend([gm.base(), gn.base()]);
+
+        let buy_str_1 = "123.444gm@2gn/10bps";
+        let buy_order_1 = BuyOrder::parse_str(buy_str_1).unwrap();
+        assert_eq!(
+            buy_order_1,
+            BuyOrder {
+                desired: Value {
+                    amount: 123_444000u64.into(),
+                    asset_id: gm.id()
+                },
+                offered: Value {
+                    amount: 246_888000u64.into(),
+                    asset_id: gn.id()
+                },
+                fee: 10,
+            }
+        );
+
+        let buy_formatted_1 = buy_order_1.format(&cache).unwrap();
+        assert_eq!(buy_formatted_1, buy_str_1);
+
+        let buy_position_1 = buy_order_1.into_position(rand::thread_rng());
+        let buy_position_as_order_1 = buy_position_1.interpret_as_buy().unwrap();
+        let buy_position_formatted_1 = buy_position_as_order_1.format(&cache).unwrap();
+
+        assert_eq!(buy_position_as_order_1, buy_order_1);
+        assert_eq!(buy_position_formatted_1, buy_str_1);
+    }
+
+    #[test]
+    fn parse_sell_order_basic() {
+        // TODO: should have a way to build an asset::Cache for known assets
+        let mut cache = asset::Cache::default();
+        let gm = asset::REGISTRY.parse_unit("gm");
+        let gn = asset::REGISTRY.parse_unit("gn");
+        cache.extend([gm.base(), gn.base()]);
+
+        let sell_str_1 = "123.444gm@2gn/10bps";
+        let sell_order_1 = SellOrder::parse_str(sell_str_1).unwrap();
+        assert_eq!(
+            sell_order_1,
+            SellOrder {
+                desired: Value {
+                    amount: 246_888000u64.into(),
+                    asset_id: gn.id()
+                },
+                offered: Value {
+                    amount: 123_444000u64.into(),
+                    asset_id: gm.id()
+                },
+                fee: 10,
+            }
+        );
+
+        let sell_formatted_1 = sell_order_1.format(&cache).unwrap();
+        assert_eq!(sell_formatted_1, sell_str_1);
+
+        let sell_position_1 = sell_order_1.into_position(rand::thread_rng());
+        let sell_position_as_order_1 = sell_position_1.interpret_as_sell().unwrap();
+        let sell_position_formatted_1 = sell_position_as_order_1.format(&cache).unwrap();
+
+        assert_eq!(sell_position_as_order_1, sell_order_1);
+        assert_eq!(sell_position_formatted_1, sell_str_1);
+    }
+}
