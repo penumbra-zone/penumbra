@@ -2,9 +2,12 @@ use anyhow::Result;
 
 use penumbra_crypto::{
     asset,
-    dex::lp::{
-        position::{self, Position},
-        BuyOrder, SellOrder,
+    dex::{
+        lp::{
+            position::{self, Position},
+            BuyOrder, SellOrder,
+        },
+        TradingPair,
     },
 };
 use rand_core::CryptoRngCore;
@@ -24,6 +27,8 @@ pub enum PositionCmd {
         /// Only spend funds originally received by the given address index.
         #[clap(long, default_value = "0")]
         source: u32,
+        /// The trading pair to close all positions for.
+        trading_pair: Option<TradingPair>,
     },
     /// Debits an opened position NFT and credits a closed position NFT.
     Close {

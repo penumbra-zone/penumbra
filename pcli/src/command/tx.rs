@@ -865,19 +865,17 @@ impl TxCmd {
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Position(PositionCmd::CloseAll { fee, source }) => {
+            TxCmd::Position(PositionCmd::CloseAll {
+                fee,
+                source,
+                trading_pair,
+            }) => {
                 let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
 
                 // Query all unspent notes to find the open position NFTs associated with the account:
                 let notes = view
                     .unspent_notes_by_address_and_asset(app.fvk.account_group_id())
                     .await?;
-
-                fn is_opened_position_nft(denom: &DenomMetadata) -> bool {
-                    let prefix = format!("lpnft_opened_");
-
-                    denom.starts_with(&prefix)
-                }
 
                 let asset_cache = app.view().assets().await?;
                 let opened_notes: Vec<String> = notes
