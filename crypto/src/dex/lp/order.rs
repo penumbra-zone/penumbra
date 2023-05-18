@@ -47,7 +47,7 @@ fn parse_parts(input: &str) -> Result<(&str, &str, u32)> {
 }
 
 fn extract_unit(input: &str) -> Result<Unit> {
-    let unit_re = Regex::new(r"[0-9.]+([^0-9.]+)")?;
+    let unit_re = Regex::new(r"[0-9.]+([^0-9.].*+)$")?;
     if let Some(captures) = unit_re.captures(input) {
         let unit = captures.get(1).expect("matched regex").as_str();
         Ok(asset::REGISTRY.parse_unit(unit))
