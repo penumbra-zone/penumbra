@@ -123,6 +123,7 @@ impl Opt {
             // Use a remote view service.
             tracing::info!(%address, "using remote view service");
 
+            // TODO: use Tor to connect to remote view service if user specified this
             let ep = tonic::transport::Endpoint::new(address.to_string())?;
             box_grpc_svc::connect(ep).await?
         } else {

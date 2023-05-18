@@ -87,6 +87,8 @@ impl App {
     }
 
     async fn pd_channel(&self) -> anyhow::Result<Channel> {
+        // TODO: integrate Tor support here
+
         match self.pd_url.scheme() {
             "http" => Ok(Channel::from_shared(self.pd_url.to_string())?
                 .connect()
