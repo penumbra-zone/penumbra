@@ -38,12 +38,14 @@ use penumbra_transaction::{
 use rand::Rng;
 use rand_core::OsRng;
 use rustls::{OwnedTrustAnchor, RootCertStore};
+use tls_api_rustls::TlsConnector;
 use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
 use tonic::{
     async_trait,
     transport::{Channel, Endpoint},
 };
+use tor_rtcompat::tokio::TokioRustlsRuntime;
 use tracing::instrument;
 use url::Url;
 
@@ -71,9 +73,7 @@ pub struct ViewService {
     // Used to watch for changes to the sync height.
     sync_height_rx: watch::Receiver<u64>,
     // The Tor http connector, if any
-    tor_http_connector: Option<
-        ArtiHttpConnector<tor_rtcompat::tokio::TokioRustlsRuntime, tls_api_rustls::TlsConnector>,
-    >,
+    tor_http_connector: Option<ArtiHttpConnector<TokioRustlsRuntime, TlsConnector>>,
 }
 
 impl ViewService {
@@ -125,12 +125,7 @@ impl ViewService {
     async fn new_with_tor(
         storage: Storage,
         node: Url,
-        tor_http_connector: Option<
-            ArtiHttpConnector<
-                tor_rtcompat::tokio::TokioRustlsRuntime,
-                tls_api_rustls::TlsConnector,
-            >,
-        >,
+        tor_http_connector: Option<ArtiHttpConnector<TokioRustlsRuntime, TlsConnector>>,
     ) -> Result<Self, anyhow::Error> {
         let (worker, sct, error_slot, sync_height_rx) =
             Worker::new(storage.clone(), node.clone(), tor_http_connector.clone()).await?;
@@ -261,7 +256,6 @@ impl ViewService {
         let channel: Channel = if let Some(tor_http_connector) = self.tor_http_connector.clone() {
             endpoint.connect_with_connector(tor_http_connector).await?
         } else {
-            // Otherwise, connect directly to the node
             endpoint.connect().await?
         };
         let client = TendermintProxyServiceClient::new(channel);
@@ -1271,9 +1265,7 @@ impl ViewProtocolService for ViewService {
 
 async fn tor_http_connector(
     data_dir: impl AsRef<Path>,
-) -> anyhow::Result<
-    ArtiHttpConnector<tor_rtcompat::tokio::TokioRustlsRuntime, tls_api_rustls::TlsConnector>,
-> {
+) -> anyhow::Result<ArtiHttpConnector<TokioRustlsRuntime, TlsConnector>> {
     // If the user specified to use Tor, create a Tor client and use it to connect
     let mut tor_config = TorClientConfig::builder();
     tor_config
@@ -1298,11 +1290,11 @@ async fn tor_http_connector(
     let tls_config = Arc::new(tls_config);
 
     // Specifically use the tokio/rustls runtime to align with the rest of the stack
-    let tor_client = TorClient::with_runtime(tor_rtcompat::tokio::TokioRustlsRuntime::current()?)
+    let tor_client = TorClient::with_runtime(TokioRustlsRuntime::current()?)
         .config(tor_config)
         .create_bootstrapped()
         .await?;
 
-    let tls_http_connector = tls_api_rustls::TlsConnector { config: tls_config };
+    let tls_http_connector = TlsConnector { config: tls_config };
     Ok(ArtiHttpConnector::new(tor_client, tls_http_connector))
 }

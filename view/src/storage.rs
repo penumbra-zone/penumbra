@@ -85,6 +85,7 @@ impl Storage {
 
         let endpoint = Endpoint::try_from(node.to_string())?;
         let channel: Channel = if let Some(tor_http_connector) = tor_http_connector {
+            // If Tor is specified, connect to the node through Tor
             endpoint.connect_with_connector(tor_http_connector).await?
         } else {
             // Otherwise, connect directly to the node
