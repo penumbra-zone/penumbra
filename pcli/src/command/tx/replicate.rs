@@ -10,7 +10,7 @@ use penumbra_crypto::dex::DirectedUnitPair;
 use penumbra_crypto::keys::AddressIndex;
 use penumbra_crypto::{Amount, Value};
 use penumbra_proto::client::v1alpha1::SpreadRequest;
-use penumbra_view::Planner;
+use penumbra_view::{Planner, ViewClient};
 use rand_core::OsRng;
 use std::io::Write;
 
@@ -117,9 +117,10 @@ impl ConstantProduct {
         // TODO(erwan): would be nice to print current balance?
 
         println!("You will create the following pools:");
+        let asset_cache = app.view().assets().await?;
         println!(
             "{}",
-            crate::command::utils::render_xyk_approximation(pair.clone(), &positions)
+            crate::command::utils::render_positions(&asset_cache, &positions),
         );
 
         if let Some(debug_file) = &self.debug_file {

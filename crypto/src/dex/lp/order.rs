@@ -94,8 +94,13 @@ impl BuyOrder {
         })
     }
 
-    /// Formats this `BuyOrder` as a string.
-    pub fn format(&self, cache: &asset::Cache) -> Result<String> {
+    /// Returns a formatted representation of the price component.  This is
+    /// returned as a string because it implicitly depends on the unit of the
+    /// offered asset, so shouldn't be used for computation; it's split out for
+    /// use in tables.
+    ///
+    /// Errors if the assets in `self` aren't in `cache`.
+    pub fn price_str(&self, cache: &asset::Cache) -> Result<String> {
         let desired_unit = cache
             .get(&self.desired.asset_id)
             .map(|d| d.default_unit())
@@ -121,6 +126,13 @@ impl BuyOrder {
             asset_id: self.offered.asset_id,
         }
         .format(&cache);
+
+        Ok(price_str)
+    }
+
+    /// Formats this `BuyOrder` as a string.
+    pub fn format(&self, cache: &asset::Cache) -> Result<String> {
+        let price_str = self.price_str(cache)?;
         let desired_str = self.desired.format(&cache);
 
         if self.fee != 0 {
@@ -167,8 +179,13 @@ impl SellOrder {
         })
     }
 
-    /// Formats this `SellOrder` as a string.
-    pub fn format(&self, cache: &asset::Cache) -> Result<String> {
+    /// Returns a formatted representation of the price component.  This is
+    /// returned as a string because it implicitly depends on the unit of the
+    /// offered asset, so shouldn't be used for computation; it's split out for
+    /// use in tables.
+    ///
+    /// Errors if the assets in `self` aren't in `cache`.
+    pub fn price_str(&self, cache: &asset::Cache) -> Result<String> {
         let offered_unit = cache
             .get(&self.offered.asset_id)
             .map(|d| d.default_unit())
@@ -194,6 +211,13 @@ impl SellOrder {
             asset_id: self.desired.asset_id,
         }
         .format(&cache);
+
+        Ok(price_str)
+    }
+
+    /// Formats this `SellOrder` as a string.
+    pub fn format(&self, cache: &asset::Cache) -> Result<String> {
+        let price_str = self.price_str(cache)?;
         let offered_str = self.offered.format(&cache);
 
         if self.fee != 0 {
