@@ -1110,7 +1110,7 @@ pub mod specific_query_service_client {
         }
         pub async fn arb_executions(
             &mut self,
-            request: impl tonic::IntoRequest<super::ArbExecutionsResponse>,
+            request: impl tonic::IntoRequest<super::ArbExecutionsRequest>,
         ) -> Result<
             tonic::Response<tonic::codec::Streaming<super::ArbExecutionsResponse>>,
             tonic::Status,
@@ -1945,7 +1945,7 @@ pub mod specific_query_service_server {
             + 'static;
         async fn arb_executions(
             &self,
-            request: tonic::Request<super::ArbExecutionsResponse>,
+            request: tonic::Request<super::ArbExecutionsRequest>,
         ) -> Result<tonic::Response<Self::ArbExecutionsStream>, tonic::Status>;
         /// Server streaming response type for the LiquidityPositions method.
         type LiquidityPositionsStream: futures_core::Stream<
@@ -2419,7 +2419,7 @@ pub mod specific_query_service_server {
                     struct ArbExecutionsSvc<T: SpecificQueryService>(pub Arc<T>);
                     impl<
                         T: SpecificQueryService,
-                    > tonic::server::ServerStreamingService<super::ArbExecutionsResponse>
+                    > tonic::server::ServerStreamingService<super::ArbExecutionsRequest>
                     for ArbExecutionsSvc<T> {
                         type Response = super::ArbExecutionsResponse;
                         type ResponseStream = T::ArbExecutionsStream;
@@ -2429,7 +2429,7 @@ pub mod specific_query_service_server {
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::ArbExecutionsResponse>,
+                            request: tonic::Request<super::ArbExecutionsRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
