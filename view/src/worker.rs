@@ -160,8 +160,6 @@ impl Worker {
             .map(|h| h + 1)
             .unwrap_or(0);
 
-        let epoch_duration = self.storage.chain_params().await?.epoch_duration;
-
         let mut stream = self
             .client
             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
@@ -212,14 +210,8 @@ impl Worker {
                 self.sync_height_tx.send(height)?;
             } else {
                 // Otherwise, scan the block and commit its changes:
-                let filtered_block = scan_block(
-                    &self.fvk,
-                    &mut sct_guard,
-                    block,
-                    epoch_duration,
-                    &self.storage,
-                )
-                .await?;
+                let filtered_block =
+                    scan_block(&self.fvk, &mut sct_guard, block, &self.storage).await?;
 
                 // Download any transactions we detected.
                 let transactions = self.fetch_transactions(&filtered_block).await?;
