@@ -1,5 +1,6 @@
 use std::pin::Pin;
 
+use async_stream::try_stream;
 use futures::StreamExt;
 use futures::TryStreamExt;
 use penumbra_app::dex::PositionRead;
@@ -8,6 +9,7 @@ use penumbra_app::governance::StateReadExt as _;
 use penumbra_chain::component::AppHashRead;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_crypto::asset::{self, Asset};
+use penumbra_crypto::dex::execution::SwapExecution;
 use penumbra_crypto::dex::lp::position;
 use penumbra_crypto::dex::lp::position::Position;
 use penumbra_crypto::dex::DirectedTradingPair;
@@ -27,13 +29,17 @@ use penumbra_shielded_pool::component::SupplyRead as _;
 use penumbra_stake::rate::RateData;
 use penumbra_stake::StateReadExt as _;
 
+use penumbra_proto::DomainType;
 use penumbra_storage::StateRead;
 use proto::client::v1alpha1::ArbExecutionRequest;
 use proto::client::v1alpha1::ArbExecutionResponse;
+use proto::client::v1alpha1::ArbExecutionsRequest;
 use proto::client::v1alpha1::ArbExecutionsResponse;
 use proto::client::v1alpha1::BatchSwapOutputDataResponse;
 use proto::client::v1alpha1::LiquidityPositionByIdRequest;
 use proto::client::v1alpha1::LiquidityPositionByIdResponse;
+use proto::client::v1alpha1::LiquidityPositionsByIdRequest;
+use proto::client::v1alpha1::LiquidityPositionsByIdResponse;
 use proto::client::v1alpha1::LiquidityPositionsByPriceRequest;
 use proto::client::v1alpha1::LiquidityPositionsByPriceResponse;
 use proto::client::v1alpha1::LiquidityPositionsRequest;
@@ -46,6 +52,7 @@ use proto::client::v1alpha1::SpreadRequest;
 use proto::client::v1alpha1::SpreadResponse;
 use proto::client::v1alpha1::SwapExecutionRequest;
 use proto::client::v1alpha1::SwapExecutionResponse;
+use proto::client::v1alpha1::SwapExecutionsRequest;
 use proto::client::v1alpha1::SwapExecutionsResponse;
 use proto::client::v1alpha1::TransactionByNoteRequest;
 use proto::client::v1alpha1::TransactionByNoteResponse;
@@ -71,6 +78,12 @@ impl SpecificQueryService for Info {
     type LiquidityPositionsByPriceStream = Pin<
         Box<
             dyn futures::Stream<Item = Result<LiquidityPositionsByPriceResponse, tonic::Status>>
+                + Send,
+        >,
+    >;
+    type LiquidityPositionsByIdStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<LiquidityPositionsByIdResponse, tonic::Status>>
                 + Send,
         >,
     >;
@@ -260,6 +273,51 @@ impl SpecificQueryService for Info {
     }
 
     #[instrument(skip(self, request))]
+    async fn liquidity_positions_by_id(
+        &self,
+        request: tonic::Request<LiquidityPositionsByIdRequest>,
+    ) -> Result<tonic::Response<Self::LiquidityPositionsByIdStream>, Status> {
+        let state = self.storage.latest_snapshot();
+
+        let position_ids: Vec<position::Id> = request
+            .into_inner()
+            .position_id
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<anyhow::Result<Vec<_>>>()
+            .map_err(|e: anyhow::Error| {
+                tonic::Status::invalid_argument(format!("error converting position_id: {e}"))
+            })?;
+
+        let s = try_stream! {
+            for position_id in position_ids {
+                let position = state
+                    .position_by_id(&position_id)
+                    .await
+                    .map_err(|e: anyhow::Error| {
+                        tonic::Status::unavailable(format!("error fetching position from storage: {e}"))
+                    })?
+                    .ok_or_else(|| Status::not_found("position not found"))?;
+
+                yield position.to_proto();
+            }
+        };
+        Ok(tonic::Response::new(
+            s.map_ok(|p: penumbra_proto::core::dex::v1alpha1::Position| {
+                LiquidityPositionsByIdResponse { data: Some(p) }
+            })
+            .map_err(|e: anyhow::Error| {
+                tonic::Status::unavailable(format!(
+                    "error getting position value from storage: {e}"
+                ))
+            })
+            // TODO: how do we instrument a Stream
+            //.instrument(Span::current())
+            .boxed(),
+        ))
+    }
+
+    #[instrument(skip(self, request))]
     async fn transaction_by_note(
         &self,
         request: tonic::Request<TransactionByNoteRequest>,
@@ -435,6 +493,83 @@ impl SpecificQueryService for Info {
             })),
             None => Err(Status::not_found("batch swap output data not found")),
         }
+    }
+
+    #[instrument(skip(self, request))]
+    async fn swap_executions(
+        &self,
+        request: tonic::Request<SwapExecutionsRequest>,
+    ) -> Result<tonic::Response<Self::SwapExecutionsStream>, Status> {
+        let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+        let request_inner = request.into_inner();
+        let start_height = request_inner.start_height;
+        let end_height = request_inner.end_height;
+        let trading_pair = request_inner.trading_pair;
+
+        // Convert to domain type ahead of time if necessary
+        let trading_pair: Option<TradingPair> = if let Some(trading_pair) = trading_pair {
+            Some(trading_pair.try_into().expect("invalid trading pair"))
+        } else {
+            None
+        };
+
+        use penumbra_app::dex::state_key;
+
+        let s = state.prefix(&state_key::swap_executions());
+        Ok(tonic::Response::new(
+            s.filter_map(|i: anyhow::Result<(String, SwapExecution)>| {
+                let trading_pair2 = trading_pair.clone();
+                let start_height2 = start_height.clone();
+                let end_height2 = end_height.clone();
+                async move {
+                    if i.is_err() {
+                        return Some(Err(tonic::Status::unavailable(format!(
+                            "error getting prefix value from storage: {}",
+                            i.err().unwrap()
+                        ))));
+                    }
+
+                    let (key, swap_execution) = i.unwrap();
+                    let parts = key.split('/').collect::<Vec<_>>();
+                    let height = parts[2].parse().expect("height is not a number");
+                    let asset_1: asset::Id =
+                        parts[3].parse().expect("asset id formatted improperly");
+                    let asset_2: asset::Id =
+                        parts[4].parse().expect("asset id formatted improperly");
+
+                    let swap_trading_pair = TradingPair::new(asset_1, asset_2);
+
+                    if let Some(trading_pair) = trading_pair2 {
+                        // filter by trading pair
+
+                        if swap_trading_pair != trading_pair {
+                            return None;
+                        }
+                    }
+
+                    // TODO: would be great to start iteration at start_height
+                    // and stop at end_height rather than touching _every_
+                    // key, but the current storage implementation doesn't make this
+                    // easy.
+                    if height < start_height2 || height > end_height2 {
+                        None
+                    } else {
+                        Some(Ok(SwapExecutionsResponse {
+                            swap_execution: Some(swap_execution.into()),
+                            height: height,
+                            trading_pair: Some(swap_trading_pair.into()),
+                        }))
+                    }
+                }
+            })
+            // TODO: how do we instrument a Stream
+            //.instrument(Span::current())
+            .boxed(),
+        ))
     }
 
     #[instrument(skip(self, request))]
@@ -651,5 +786,58 @@ impl SpecificQueryService for Info {
             })),
             None => Err(Status::not_found("arb execution data not found")),
         }
+    }
+
+    #[instrument(skip(self, request))]
+    async fn arb_executions(
+        &self,
+        request: tonic::Request<ArbExecutionsRequest>,
+    ) -> Result<tonic::Response<Self::ArbExecutionsStream>, Status> {
+        let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+        let request_inner = request.into_inner();
+        let start_height = request_inner.start_height;
+        let end_height = request_inner.end_height;
+
+        use penumbra_app::dex::state_key;
+
+        let s = state.prefix(&state_key::arb_executions());
+        Ok(tonic::Response::new(
+            s.filter_map(|i: anyhow::Result<(String, SwapExecution)>| async move {
+                if i.is_err() {
+                    return Some(Err(tonic::Status::unavailable(format!(
+                        "error getting prefix value from storage: {}",
+                        i.err().unwrap()
+                    ))));
+                }
+
+                let (key, arb_execution) = i.unwrap();
+                let height = key
+                    .split('/')
+                    .last()
+                    .expect("arb execution key has height as last part")
+                    .parse()
+                    .expect("height is a number");
+
+                // TODO: would be great to start iteration at start_height
+                // and stop at end_height rather than touching _every_
+                // key, but the current storage implementation doesn't make this
+                // easy.
+                if height < start_height || height > end_height {
+                    None
+                } else {
+                    Some(Ok(ArbExecutionsResponse {
+                        swap_execution: Some(arb_execution.into()),
+                        height: height,
+                    }))
+                }
+            })
+            // TODO: how do we instrument a Stream
+            //.instrument(Span::current())
+            .boxed(),
+        ))
     }
 }
