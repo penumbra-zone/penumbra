@@ -2,11 +2,12 @@ use crate::{warning, App};
 use std::path::PathBuf;
 
 use crate::dex_utils;
-use crate::dex_utils::replicate::debug;
+use crate::dex_utils::replicate::debug::{self, PayoffPositionEntry};
 use anyhow::{anyhow, bail, Result};
 use dialoguer::Confirm;
 use penumbra_crypto::dex::lp::position::Position;
 use penumbra_crypto::dex::DirectedUnitPair;
+use penumbra_crypto::fixpoint::U128x128;
 use penumbra_crypto::keys::AddressIndex;
 use penumbra_crypto::{Amount, Value};
 use penumbra_proto::client::v1alpha1::SpreadRequest;
@@ -130,6 +131,7 @@ impl ConstantProduct {
                 current_price,
                 positions.clone(),
             )?;
+            return Ok(());
         }
 
         if !self.yes
@@ -206,7 +208,7 @@ impl ConstantProduct {
     pub(crate) fn write_debug_data(
         file: PathBuf,
         pair: DirectedUnitPair,
-        _input: Value,
+        input: Value,
         current_price: f64,
         positions: Vec<Position>,
     ) -> anyhow::Result<()> {
@@ -221,21 +223,35 @@ impl ConstantProduct {
             .enumerate()
             .for_each(|(i, alpha)| tracing::debug!(i, alpha, "sampled tick"));
 
-        let _r1 = 0.0;
-        let _r2 = 0.0;
-        let _total_k = 0.0;
+        let mut r1: f64;
+
+        {
+            let raw_r1 = input.amount.value();
+            let denom_unit = pair.start.unit_amount().value();
+            let fp_r1 = U128x128::ratio(raw_r1, denom_unit).unwrap();
+            r1 = fp_r1.into();
+        }
+
+        let r2 = r1 * current_price;
+        let total_k = r1 * r2;
+        println!("Entry R1: {r1}");
+        println!("Entry R2: {r2}");
+        println!("total K: {total_k}");
 
         let debug_positions: Vec<debug::PayoffPositionEntry> = positions
             .iter()
             .zip(alphas)
             .enumerate()
-            .map(|(idx, (pos, alpha))| debug::PayoffPositionEntry {
-                payoff: Into::into(pos.clone()),
-                current_price,
-                index: idx,
-                pair: pair.clone(),
-                alpha,
-                total_k: _total_k,
+            .map(|(idx, (pos, alpha))| {
+                let payoff_entry = debug::PayoffPosition::from_position(pair.clone(), pos.clone());
+                debug::PayoffPositionEntry {
+                    payoff: payoff_entry,
+                    current_price,
+                    index: idx,
+                    pair: pair.clone(),
+                    alpha,
+                    total_k,
+                }
             })
             .collect();
 
