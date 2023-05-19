@@ -161,7 +161,8 @@ impl OutputProof {
         balance_commitment: balance::Commitment,
         note_commitment: note::Commitment,
     ) -> anyhow::Result<()> {
-        let proof = Proof::deserialize_compressed(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
+        let proof =
+            Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
         public_inputs.extend(note_commitment.0.to_field_elements().unwrap());
