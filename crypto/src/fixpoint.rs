@@ -583,10 +583,6 @@ mod test {
 
     use super::*;
 
-    fn u128x128_strategy() -> BoxedStrategy<U128x128> {
-        any::<[u8; 32]>().prop_map(U128x128::from_bytes).boxed()
-    }
-
     proptest! {
         #[test]
         fn test_convert_uint64_to_fqvar(
@@ -602,16 +598,22 @@ mod test {
     proptest! {
         #[test]
         fn multiply(
-            a in u128x128_strategy(),
-            b in u128x128_strategy(),
+            a_bytes in any::<[u8; 8]>(),
+            b_bytes in any::<[u8; 2]>(),
         ) {
-            let result = a.checked_mul(&b);
-            // If the result overflows, the circuit will be unsatisfiable at proving time.
-            if result.is_err() {
-                return Ok(());
-            }
+            // We intentionally pick small values such that the multiplication will not overflow
+            // since the resulting circuit would be unsatisfiable at proving time.
+            let a_bytes: Vec<u8> = a_bytes.into_iter().chain([0u8; 24].into_iter()).rev().collect();
+            let a = U128x128::from_bytes(a_bytes.try_into().unwrap());
+            let b_bytes: Vec<u8> = b_bytes.into_iter().chain([0u8; 30].into_iter()).rev().collect();
+            let b = U128x128::from_bytes(b_bytes.try_into().unwrap());
 
-            let expected_c = result.unwrap();
+            dbg!(a);
+            dbg!(b);
+            let result = a.checked_mul(&b);
+            dbg!(&result);
+
+            let expected_c = result.expect("result should not overflow");
 
             let circuit = TestMultiplicationCircuit {
                 a,
@@ -678,14 +680,17 @@ mod test {
         #[ignore]
         #[test]
         fn add(
-            a in u128x128_strategy(),
-            b in u128x128_strategy(),
+            a_bytes in any::<[u8; 16]>(),
+            b_bytes in any::<[u8; 16]>(),
         ) {
+            // We intentionally pick small values such that the addition will not overflow
+            // since if the addition overflows, the circuit will be unsatisfiable at proving time.
+            let a_bytes: Vec<u8> = a_bytes.into_iter().chain([0u8; 16].into_iter()).collect();
+            let a = U128x128::from_bytes(a_bytes.try_into().unwrap());
+            let b_bytes: Vec<u8> = b_bytes.into_iter().chain([0u8; 16].into_iter()).collect();
+            let b = U128x128::from_bytes(b_bytes.try_into().unwrap());
+
             let result = a.checked_add(&b);
-            // If the addition overflows, the circuit will be unsatisfiable at proving time.
-            if result.is_err() {
-                return Ok(());
-            }
 
             let expected_c = result.unwrap();
 
