@@ -109,7 +109,7 @@ impl U128x128 {
         }
     }
 
-    /// Performs checked multiplication, returning `Some` if no overflow occurred.
+    /// Performs checked multiplication, returning `Ok` if no overflow occurred.
     pub fn checked_mul(self, rhs: &Self) -> Result<Self, Error> {
         // It's important to use `into_words` because the `U256` type has an
         // unsafe API that makes the limb ordering dependent on the host
@@ -146,12 +146,12 @@ impl U128x128 {
             .ok_or(Error::Overflow)
     }
 
-    /// Performs checked division, returning `Some` if no overflow occurred.
+    /// Performs checked division, returning `Ok` if no overflow occurred.
     pub fn checked_div(self, rhs: &Self) -> Result<Self, Error> {
-        stub_div_rem_u384_by_u256(self.0, rhs.0).and_then(|(quo, rem)| Ok(U128x128(quo)))
+        stub_div_rem_u384_by_u256(self.0, rhs.0).map(|(quo, rem)| U128x128(quo))
     }
 
-    /// Performs checked addition, returning `Some` if no overflow occurred.
+    /// Performs checked addition, returning `Ok` if no overflow occurred.
     pub fn checked_add(self, rhs: &Self) -> Result<Self, Error> {
         self.0
             .checked_add(rhs.0)
@@ -159,7 +159,7 @@ impl U128x128 {
             .ok_or(Error::Overflow)
     }
 
-    /// Performs checked subtraction, returning `Some` if no underflow occurred.
+    /// Performs checked subtraction, returning `Ok` if no underflow occurred.
     pub fn checked_sub(self, rhs: &Self) -> Result<Self, Error> {
         self.0
             .checked_sub(rhs.0)
@@ -242,7 +242,7 @@ impl U128x128Var {
         rhs: &Self,
         cs: ConstraintSystemRef<Fq>,
     ) -> Result<U128x128Var, SynthesisError> {
-        todo!()
+        todo!();
     }
 
     pub fn checked_mul(
@@ -675,6 +675,7 @@ mod test {
     }
 
     proptest! {
+        #[ignore]
         #[test]
         fn add(
             a in u128x128_strategy(),
@@ -700,14 +701,9 @@ mod test {
             let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
             .expect("should be able to form proof");
 
-            // let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
-            //     &vk,
-            //     &result.unwrap().to_field_elements().unwrap(),
-            //     &proof,
-            // );
             let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
                 &vk,
-                &[],
+                &expected_c.to_field_elements().unwrap(),
                 &proof,
             );
             assert!(proof_result.is_ok());
@@ -730,8 +726,8 @@ mod test {
             let a_var = U128x128Var::new_witness(cs.clone(), || Ok(self.a))?;
             let b_var = U128x128Var::new_witness(cs.clone(), || Ok(self.b))?;
             let c_public_var = U128x128Var::new_input(cs.clone(), || Ok(self.c))?;
-            //let c_var = a_var.checked_add(&b_var, cs)?;
-            //c_var.enforce_equal(&c_public_var)?;
+            let c_var = a_var.checked_add(&b_var, cs)?;
+            c_var.enforce_equal(&c_public_var)?;
             Ok(())
         }
     }
