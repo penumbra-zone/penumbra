@@ -141,7 +141,7 @@ impl ParameterSetup for SwapCircuit {
 }
 
 #[derive(Clone, Debug)]
-pub struct SwapProof(Proof<Bls12_377>);
+pub struct SwapProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
 impl SwapProof {
     #![allow(clippy::too_many_arguments)]
@@ -163,7 +163,9 @@ impl SwapProof {
         };
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(pk, circuit, rng)
             .map_err(|err| anyhow::anyhow!(err))?;
-        Ok(Self(proof))
+        let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];
+        Proof::serialize_compressed(&proof, &mut proof_bytes[..]).expect("can serialize Proof");
+        Ok(Self(proof_bytes))
     }
 
     /// Called to verify the proof using the provided public inputs.
@@ -184,6 +186,8 @@ impl SwapProof {
         swap_commitment: tct::Commitment,
         fee_commitment: balance::Commitment,
     ) -> anyhow::Result<()> {
+        let proof = Proof::deserialize_compressed(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
+
         let mut public_inputs = Vec::new();
         public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
         public_inputs.extend(swap_commitment.0.to_field_elements().unwrap());
@@ -194,7 +198,7 @@ impl SwapProof {
         let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
             vk,
             public_inputs.as_slice(),
-            &self.0,
+            &proof,
         )
         .map_err(|err| anyhow::anyhow!(err))?;
         tracing::debug!(?proof_result, elapsed = ?start.elapsed());
@@ -214,10 +218,8 @@ impl DomainType for SwapProof {
 
 impl From<SwapProof> for pb::ZkSwapProof {
     fn from(proof: SwapProof) -> Self {
-        let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];
-        Proof::serialize_compressed(&proof.0, &mut proof_bytes[..]).expect("can serialize Proof");
         pb::ZkSwapProof {
-            inner: proof_bytes.to_vec(),
+            inner: proof.0.to_vec(),
         }
     }
 }
@@ -226,8 +228,6 @@ impl TryFrom<pb::ZkSwapProof> for SwapProof {
     type Error = anyhow::Error;
 
     fn try_from(proto: pb::ZkSwapProof) -> Result<Self, Self::Error> {
-        Ok(SwapProof(
-            Proof::deserialize_compressed(&proto.inner[..]).map_err(|e| anyhow::anyhow!(e))?,
-        ))
+        Ok(SwapProof(proto.inner[..].try_into()?))
     }
 }
