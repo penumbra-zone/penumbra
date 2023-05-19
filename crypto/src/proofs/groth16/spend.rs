@@ -271,7 +271,8 @@ impl SpendProof {
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<()> {
-        let proof = Proof::deserialize_compressed(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
+        let proof =
+            Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
         public_inputs.extend([Fq::from(anchor.0)]);

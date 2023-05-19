@@ -186,7 +186,8 @@ impl SwapProof {
         swap_commitment: tct::Commitment,
         fee_commitment: balance::Commitment,
     ) -> anyhow::Result<()> {
-        let proof = Proof::deserialize_compressed(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
+        let proof =
+            Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
         public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
