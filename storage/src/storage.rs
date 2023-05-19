@@ -12,7 +12,11 @@ use sha2::Sha256;
 use tokio::sync::watch;
 use tracing::Span;
 
-use crate::{cache::Cache, snapshot::Snapshot, EscapedByteSlice};
+use crate::{
+    cache::Cache,
+    snapshot::{JmtValueEntry, Snapshot},
+    EscapedByteSlice,
+};
 use crate::{snapshot_cache::SnapshotCache, StateDelta};
 
 mod temp;
@@ -136,8 +140,8 @@ impl Storage {
                         .collect();
 
                     // Maintain a two-way index of the JMT keys and their hashes in RocksDB.
-                    // The `jmt_keys` column family maps JMT `key`s to their `keyhash`.
-                    // The `jmt_keys_by_keyhash` column family maps JMT `keyhash`es to their preimage.
+                    // The `jmt_keys` column family maps a JMT `key` to its `keyhash`.
+                    // The `jmt_keys_by_keyhash` column family maps a JMT `keyhash` to its preimage.
                     let jmt_keys_cf = inner
                         .db
                         .cf_handle("jmt_keys")
@@ -192,10 +196,11 @@ impl Storage {
                         .expect("jmt_values column family not found");
 
                     tracing::debug!("iterate through the node batch values!");
+
                     for ((version, key_hash), some_value) in batch.node_batch.values() {
                         let value = match some_value {
-                            Some(v) => v,
-                            None => crate::snapshot::TOMBSTONED_VALUE.as_bytes(),
+                            Some(v) => JmtValueEntry::new(v.to_vec()),
+                            None => JmtValueEntry::new(vec![]).set_dirty(),
                         };
 
                         let versioned_key = VersionedKey {
@@ -205,7 +210,7 @@ impl Storage {
 
                         inner
                             .db
-                            .put_cf(jmt_values_cf, versioned_key.encode(), value)?;
+                            .put_cf(jmt_values_cf, versioned_key.encode(), value.to_bytes())?;
                     }
 
                     // Write the unwritten changes from the nonconsensus to RocksDB.
