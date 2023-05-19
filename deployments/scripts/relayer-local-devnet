@@ -36,7 +36,7 @@ repo_root="$(git rev-parse --show-toplevel)"
 cd "${repo_root}/deployments/relayer" || exit 1
 ./generate-configs preview
 ./generate-configs local
-./configure-relayer
+./configure-relayer local
 cd - || exit 2
 
 echo "OK, devnet's up, try running ./build-path and see if you can link the two chains."

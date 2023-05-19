@@ -4,6 +4,19 @@
 # https://github.com/cosmos/relayer/
 set -euo pipefail
 
+
+
+# There are two common invocations: relay between testnet & preview, or
+# between preview and a local devnet. The latter is useful for debugging locally.
+relaying_target_mode="${1:-testnet}"
+if [[ "$relaying_target_mode" = "testnet" ]] ; then
+    >&2 echo "Configuring relayer path between testnet & preview environments"
+elif [[ "$relaying_target_mode" = "local" ]] ; then
+    >&2 echo "Configuring relayer path between preview & local devnet environments"
+else
+    >&2 echo "WARNING: unsupported relaying target '$relaying_target_mode'"
+fi
+
 rm -rf ~/.relayer
 rly config init --memo "Automatic IBC for Penumbra, via relayer"
 
@@ -48,11 +61,13 @@ function create_paths() {
     rly paths new "$chain_a_id" "$chain_b_id" "$path_name"
 }
 
-# Create Penumbra-only path, between preview and testnet. Works!
-# create_paths penumbra-testnet penumbra-preview penumbra_path
-
-# Create Penumbra-only path, between preview and devnet.
-create_paths penumbra-preview penumbra-local penumbra_path
+if [[ "$relaying_target_mode" = "local" ]] ; then
+    # Create Penumbra-only path, between preview and devnet.
+    create_paths penumbra-preview penumbra-local penumbra_path
+else
+    # Create Penumbra-only path, between preview and testnet. Works!
+    create_paths penumbra-testnet penumbra-preview penumbra_path
+fi
 
 # Create paths between Penumbra and/or other Cosmos-adjacent testnets.
 # These are not working yet, so commenting them out by default.
