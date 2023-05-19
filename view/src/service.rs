@@ -683,6 +683,7 @@ impl ViewProtocolService for ViewService {
         }))
     }
 
+    #[instrument(skip(self, request))]
     async fn balance_by_address(
         &self,
         request: tonic::Request<pb::BalanceByAddressRequest>,
@@ -699,6 +700,8 @@ impl ViewProtocolService for ViewService {
             .balance_by_address(address)
             .await
             .map_err(|e| tonic::Status::internal(format!("error: {e}")))?;
+
+        tracing::debug!(?address, ?result);
 
         let stream = try_stream! {
             for element in result {
