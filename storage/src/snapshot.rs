@@ -17,8 +17,6 @@ use crate::{metrics, storage::VersionedKey, StateRead};
 mod rocks_wrapper;
 use rocks_wrapper::RocksDbSnapshot;
 
-pub(crate) const TOMBSTONED_VALUE: &str = "DELETED_VALUE";
-
 /// A snapshot of the underlying storage at a specific state version, suitable
 /// for read-only access by multiple threads, e.g., RPC calls.
 ///
@@ -332,6 +330,43 @@ impl HasPreimage for Inner {
     }
 }
 
+pub(crate) struct JmtValueEntry {
+    pub dirty: bool,
+    pub entry: Vec<u8>,
+}
+
+impl JmtValueEntry {
+    pub fn new(value: Vec<u8>) -> Self {
+        Self {
+            dirty: false,
+            entry: value,
+        }
+    }
+
+    pub fn set_dirty(mut self) -> Self {
+        Self {
+            dirty: true,
+            entry: self.entry,
+        }
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(self.entry.len() + 1);
+        bytes.push(self.dirty as u8);
+        bytes.extend_from_slice(&self.entry);
+        bytes
+    }
+
+    fn from_bytes<T: AsRef<[u8]>>(entry: T) -> Self {
+        let dirty_flag: bool = entry.as_ref()[0] != 0u8;
+        let value = &entry.as_ref()[1..];
+        Self {
+            dirty: dirty_flag,
+            entry: value.to_vec(),
+        }
+    }
+}
+
 /// A Reader interface for RocksDB.
 ///
 /// Note that it is up to the caller to ensure consistency between the [`rocksdb::DB`] handle,
@@ -359,11 +394,8 @@ impl TreeReader for Inner {
             };
 
             if let Some(v) = self.snapshot.get_cf(jmt_values_cf, k.encode())? {
-                return Ok(if v == TOMBSTONED_VALUE.as_bytes().to_vec() {
-                    None
-                } else {
-                    Some(v)
-                });
+                let v = JmtValueEntry::from_bytes(v);
+                return Ok(if v.dirty { None } else { Some(v.entry) });
             }
         }
 
@@ -386,15 +418,9 @@ impl TreeReader for Inner {
         };
 
         let (_key, value) = tuple?;
-        let value = value.into();
+        let value = JmtValueEntry::from_bytes(value);
 
-        // TODO(erwan): this is of course, very ugly - I plan to follow-up with
-        // a prefix based approach.
-        if value == TOMBSTONED_VALUE.as_bytes().to_vec() {
-            Ok(None)
-        } else {
-            Ok(Some(value))
-        }
+        return Ok(if value.dirty { None } else { Some(value.entry) });
     }
 
     /// Gets node given a node key. Returns `None` if the node does not exist.
