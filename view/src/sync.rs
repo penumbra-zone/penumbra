@@ -10,6 +10,7 @@ use penumbra_crypto::{
     FullViewingKey, Note, NotePayload, Nullifier,
 };
 use penumbra_tct as tct;
+use tracing::Instrument;
 
 use crate::{SpendableNoteRecord, Storage, SwapRecord};
 
@@ -37,7 +38,7 @@ impl FilteredBlock {
     }
 }
 
-#[tracing::instrument(skip(fvk, state_commitment_tree, state_payloads, nullifiers, storage))]
+#[tracing::instrument(skip_all, fields(height = %height))]
 pub async fn scan_block(
     fvk: &FullViewingKey,
     state_commitment_tree: &mut tct::Tree,
@@ -48,11 +49,12 @@ pub async fn scan_block(
         block_root,
         epoch_root,
         fmd_parameters,
-        proposal_started,
         swap_outputs,
         chain_parameters,
+        // TODO: do we need this, or is there a bug in scan_block?
+        // proposal_started,
+        ..
     }: CompactBlock,
-    epoch_duration: u64,
     storage: &Storage,
 ) -> anyhow::Result<FilteredBlock> {
     // Trial-decrypt a note with our own specific viewing key
@@ -60,7 +62,9 @@ pub async fn scan_block(
         // TODO: change fvk to Arc<FVK> in Worker and pass to scan_block as Arc
         // need this so the task is 'static and not dependent on key lifetime
         let fvk2 = fvk.clone();
-        tokio::spawn(async move { note_payload.trial_decrypt(&fvk2) })
+        tokio::spawn(
+            async move { note_payload.trial_decrypt(&fvk2) }.instrument(tracing::Span::current()),
+        )
     };
     // Trial-decrypt a swap with our own specific viewing key
     let trial_decrypt_swap =
@@ -68,7 +72,10 @@ pub async fn scan_block(
             // TODO: change fvk to Arc<FVK> in Worker and pass to scan_block as Arc
             // need this so the task is 'static and not dependent on key lifetime
             let fvk2 = fvk.clone();
-            tokio::spawn(async move { swap_payload.trial_decrypt(&fvk2) })
+            tokio::spawn(
+                async move { swap_payload.trial_decrypt(&fvk2) }
+                    .instrument(tracing::Span::current()),
+            )
         };
 
     // Nullifiers we've found in this block
@@ -118,6 +125,8 @@ pub async fn scan_block(
     } else {
         // If we found at least one note for us in this block, we have to explicitly construct the
         // whole block in the SCT by inserting each commitment one at a time
+        tracing::debug!("found at least one relevant SCT entry, reconstructing block subtree");
+
         for payload in state_payloads.into_iter() {
             // We need to insert each commitment, so use a match statement to ensure we
             // exhaustively cover all possible cases.
