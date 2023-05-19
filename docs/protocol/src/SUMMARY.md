@@ -43,7 +43,6 @@
   - [Nullifiers](./protocol/notes/nullifiers.md)
 - [Multi-Asset Shielded Pool](./shielded_pool.md)
   - [Asset IDs and Value Commitments](./protocol/value_commitments.md)
-  - [(merge with parent) Notes](./protocol/notes.md)
   - [Note Plaintexts](./protocol/notes/note_plaintexts.md)
   - [Note Commitments](./protocol/notes/note_commitments.md)
   - [Note Ciphertexts](./protocol/notes/note_ciphertexts.md)
@@ -76,5 +75,4 @@
   - [Transaction Actions](./governance/action.md)
     - [`DelegatorVote`](./protocol/action_descriptions/delegator_vote.md)
 - [IBC Integration](./ibc.md)
-  - [(merge with parent) Transfers into Penumbra](./ibc/in.md)
   - [Transaction Actions](./ibc/action.md)
