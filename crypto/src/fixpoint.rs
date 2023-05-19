@@ -366,26 +366,130 @@ impl U128x128Var {
             return Err(SynthesisError::Unsatisfiable);
         };
 
-        // Witness quo_ooc, rem_ooc
+        // Goal: Constrain xbar * 2^128 = qbar * ybar + r
+        // We already have xbar as bits, so we have xbar * 2^128 "for free" by rearranging limbs
+        // Need the bits of qbar * ybar + r => need bits of qbar, ybar, r + mul constraint
 
-        // Need: 384-bit multiplication for qbar * ybar + r
-        // Need: Constrain 256-bit values
+        let x = self;
+        let y = rhs;
+        let q = U128x128Var::new_witness(cs.clone(), || Ok(U128x128(quo_ooc)))?;
+        // r isn't a U128x128, but we can reuse the codepath for constraining its bits as limb values
+        let r = U128x128Var::new_witness(cs.clone(), || Ok(U128x128(rem_ooc)))?.limbs;
 
-        // x = [x0, x1, x2, x3]
-        // x = x0 + x1 * 2^64 + x2 * 2^128 + x3 * 2^192
-        // y = [y0, y1, y2, y3]
-        // y = y0 + y1 * 2^64 + y2 * 2^128 + y3 * 2^192
-        let xbar0 = convert_uint64_to_fqvar(&self.limbs[0]);
-        let xbar1 = convert_uint64_to_fqvar(&self.limbs[1]);
-        let xbar2 = convert_uint64_to_fqvar(&self.limbs[2]);
-        let xbar3 = convert_uint64_to_fqvar(&self.limbs[3]);
+        let qbar = &q.limbs;
+        let ybar = &y.limbs;
+        let xbar = &x.limbs;
 
-        let ybar0 = convert_uint64_to_fqvar(&rhs.limbs[0]);
-        let ybar1 = convert_uint64_to_fqvar(&rhs.limbs[1]);
-        let ybar2 = convert_uint64_to_fqvar(&rhs.limbs[2]);
-        let ybar3 = convert_uint64_to_fqvar(&rhs.limbs[3]);
+        // qbar = qbar0 + qbar1 * 2^64 + qbar2 * 2^128 + qbar3 * 2^192
+        // ybar = ybar0 + ybar1 * 2^64 + ybar2 * 2^128 + ybar3 * 2^192
+        //    r =    r0 +    r1 * 2^64 +    r2 * 2^128 +    r3 * 2^192
 
-        todo!()
+        let xbar0 = convert_uint64_to_fqvar(&xbar[0]);
+        let xbar1 = convert_uint64_to_fqvar(&xbar[1]);
+        let xbar2 = convert_uint64_to_fqvar(&xbar[2]);
+        let xbar3 = convert_uint64_to_fqvar(&xbar[3]);
+
+        let ybar0 = convert_uint64_to_fqvar(&ybar[0]);
+        let ybar1 = convert_uint64_to_fqvar(&ybar[1]);
+        let ybar2 = convert_uint64_to_fqvar(&ybar[2]);
+        let ybar3 = convert_uint64_to_fqvar(&ybar[3]);
+
+        let qbar0 = convert_uint64_to_fqvar(&qbar[0]);
+        let qbar1 = convert_uint64_to_fqvar(&qbar[1]);
+        let qbar2 = convert_uint64_to_fqvar(&qbar[2]);
+        let qbar3 = convert_uint64_to_fqvar(&qbar[3]);
+
+        let r0 = convert_uint64_to_fqvar(&r[0]);
+        let r1 = convert_uint64_to_fqvar(&r[1]);
+        let r2 = convert_uint64_to_fqvar(&r[2]);
+        let r3 = convert_uint64_to_fqvar(&r[3]);
+
+        // Let z = qbar * ybar + r.  Then z will be 513 bits in general; we want
+        // to constrain it to be equal to xbar * 2^128 so we need the low 384
+        // bits -- we'll constrain the low 128 as 0 and the upper 256 as xbar --
+        // and constrain everything above as 0 (not necessarily as bit
+        // constraints)
+
+        // Write z as:
+        //    z =    z0 +    z1 * 2^64 +    z2 * 2^128 +    z3 * 2^192 +    z4 * 2^256 +    z5 * 2^320 +    z6 * 2^384
+        // Without carrying, the limbs of z are:
+        // z0_raw = r0 + qbar0 * ybar0
+        // z1_raw = r1 + qbar1 * ybar0 + qbar0 * ybar1
+        // z2_raw = r2 + qbar2 * ybar0 + qbar1 * ybar1 + qbar0 * ybar2
+        // z3_raw = r3 + qbar3 * ybar0 + qbar2 * ybar1 + qbar1 * ybar2 + qbar0 * ybar3
+        // z4_raw =                      qbar3 * ybar1 + qbar2 * ybar2 + qbar1 * ybar3
+        // z5_raw =                                      qbar3 * ybar2 + qbar2 * ybar3
+        // z6_raw =                                                      qbar3 * ybar3
+
+        let z0_raw = r0 + &qbar0 * &ybar0;
+        let z1_raw = r1 + &qbar1 * &ybar0 + &qbar0 * &ybar1;
+        let z2_raw = r2 + &qbar2 * &ybar0 + &qbar1 * &ybar1 + &qbar0 * &ybar2;
+        let z3_raw = r3 + &qbar3 * &ybar0 + &qbar2 * &ybar1 + &qbar1 * &ybar2 + &qbar0 * &ybar3;
+        let z4_raw = /*__________________*/ &qbar3 * &ybar1 + &qbar2 * &ybar2 + &qbar1 * &ybar3;
+        let z5_raw = /*____________________________________*/ &qbar3 * &ybar2 + &qbar2 * &ybar3;
+        let z6_raw = /*______________________________________________________*/ &qbar3 * &ybar3;
+        /* ------------------------------------------------------------------------------------^ 384 + 128 = 512 */
+
+        // These terms are overlapping, and we need to carry to compute the
+        // canonical limbs.
+        //
+        // We want to constrain
+        //    z =    z0 +    z1 * 2^64 +    z2 * 2^128 +    z3 * 2^192 +    z4 * 2^256 +    z5 * 2^320 +    z6 * 2^384
+        // ==         0       0          xbar0           xbar1           xbar2           xbar3              0
+        // We need to bit-constrain z0 and z1 to be able to compute the carry to
+        // get the canonical z2, z3, z4, z5 values, but don't need bit constraints
+        // for the upper terms, we just need to enforce that they're 0, without the
+        // possibility of wrapping in the finite field.
+
+        // z0 < 2^128 + 2^64 < 2^(128 + 1) => 129 bits
+        let z0_bits = bit_constrain(z0_raw, 129)?; // no carry-in
+        let z0 = convert_le_bits_to_fqvar(&z0_bits[0..64]);
+        let c1 = convert_le_bits_to_fqvar(&z0_bits[64..]); // 65 bits
+
+        // z1 < 2^64 + 2 * 2^128 + 2^65 < 3*2^128 < 2^(128 + 2) => 130 bits
+        let z1_bits = bit_constrain(z1_raw + c1, 130)?; // carry-in c1
+        let z1 = convert_le_bits_to_fqvar(&z1_bits[0..64]);
+        let c2 = convert_le_bits_to_fqvar(&z1_bits[64..]); // 66 bits
+
+        // z2 < 2^64 + 3 * 2^128 + 2^66 < 4*2^128 = 2^(128 + 2) => 130 bits
+        let z2_bits = bit_constrain(z2_raw + c2, 130)?; // carry-in c2
+        let z2 = convert_le_bits_to_fqvar(&z2_bits[0..64]);
+        let c3 = convert_le_bits_to_fqvar(&z2_bits[64..]); // 66 bits
+
+        // z3 < 2^64 + 4 * 2^128 + 2^66 < 5*2^128 = 2^(128 + 3) => 131 bits
+        let z3_bits = bit_constrain(z3_raw + c3, 131)?; // carry-in c3
+        let z3 = convert_le_bits_to_fqvar(&z3_bits[0..64]);
+        let c4 = convert_le_bits_to_fqvar(&z3_bits[64..]); // 67 bits
+
+        // z4 < 3 * 2^128 + 2^67 < 4*2^128 = 2^(128 + 2) => 130 bits
+        let z4_bits = bit_constrain(z4_raw + c4, 130)?; // carry-in c4
+        let z4 = convert_le_bits_to_fqvar(&z4_bits[0..64]);
+        let c5 = convert_le_bits_to_fqvar(&z4_bits[64..]); // 66 bits
+
+        // z5 < 2 * 2^128 + 2^66 < 3*2^128 = 2^(128 + 2) => 130 bits
+        let z5_bits = bit_constrain(z5_raw + c5, 130)?; // carry-in c5
+        let z5 = convert_le_bits_to_fqvar(&z5_bits[0..64]);
+        let c6 = convert_le_bits_to_fqvar(&z5_bits[64..]); // 66 bits
+
+        // z6_plus < 2^128 + 2^66 < 2*2^128 = 2^(128 + 1) => 129 bits
+        // Since 129 bits < field modulus, we can enforce z6_plus = 0
+        // without bit constraining.
+        let z6_and_up = z6_raw + c6;
+        // Note: 129 + 384 = 513 so this is all of the remaining bits
+
+        // Repeat:
+        // We want to constrain
+        //    z =    z0 +    z1 * 2^64 +    z2 * 2^128 +    z3 * 2^192 +    z4 * 2^256 +    z5 * 2^320 +    z6 * 2^384
+        // ==         0       0          xbar0           xbar1           xbar2           xbar3              0
+        z0.enforce_equal(&FqVar::zero())?;
+        z1.enforce_equal(&FqVar::zero())?;
+        z2.enforce_equal(&xbar0)?;
+        z3.enforce_equal(&xbar1)?;
+        z4.enforce_equal(&xbar2)?;
+        z5.enforce_equal(&xbar3)?;
+        z6_and_up.enforce_equal(&FqVar::zero())?;
+
+        Ok(q)
     }
 }
 
