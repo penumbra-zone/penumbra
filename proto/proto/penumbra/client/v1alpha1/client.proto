@@ -117,7 +117,7 @@ service SpecificQueryService {
   rpc ArbExecution(ArbExecutionRequest) returns (ArbExecutionResponse);
 
   rpc SwapExecutions(SwapExecutionsRequest) returns (stream SwapExecutionsResponse);
-  rpc ArbExecutions(ArbExecutionsResponse) returns (stream ArbExecutionsResponse);
+  rpc ArbExecutions(ArbExecutionsRequest) returns (stream ArbExecutionsResponse);
 
   rpc LiquidityPositions(LiquidityPositionsRequest) returns (stream LiquidityPositionsResponse);
   rpc LiquidityPositionById(LiquidityPositionByIdRequest) returns (LiquidityPositionByIdResponse);
