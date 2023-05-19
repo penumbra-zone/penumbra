@@ -28,6 +28,9 @@ use penumbra_stake::rate::RateData;
 use penumbra_stake::StateReadExt as _;
 
 use penumbra_storage::StateRead;
+use proto::client::v1alpha1::ArbExecutionRequest;
+use proto::client::v1alpha1::ArbExecutionResponse;
+use proto::client::v1alpha1::ArbExecutionsResponse;
 use proto::client::v1alpha1::BatchSwapOutputDataResponse;
 use proto::client::v1alpha1::LiquidityPositionByIdRequest;
 use proto::client::v1alpha1::LiquidityPositionByIdResponse;
@@ -43,6 +46,7 @@ use proto::client::v1alpha1::SpreadRequest;
 use proto::client::v1alpha1::SpreadResponse;
 use proto::client::v1alpha1::SwapExecutionRequest;
 use proto::client::v1alpha1::SwapExecutionResponse;
+use proto::client::v1alpha1::SwapExecutionsResponse;
 use proto::client::v1alpha1::TransactionByNoteRequest;
 use proto::client::v1alpha1::TransactionByNoteResponse;
 use proto::client::v1alpha1::ValidatorPenaltyRequest;
@@ -70,6 +74,10 @@ impl SpecificQueryService for Info {
                 + Send,
         >,
     >;
+    type ArbExecutionsStream =
+        Pin<Box<dyn futures::Stream<Item = Result<ArbExecutionsResponse, tonic::Status>> + Send>>;
+    type SwapExecutionsStream =
+        Pin<Box<dyn futures::Stream<Item = Result<SwapExecutionsResponse, tonic::Status>> + Send>>;
 
     async fn spread(
         &self,
@@ -616,5 +624,32 @@ impl SpecificQueryService for Info {
                 //.instrument(Span::current())
                 .boxed(),
         ))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn arb_execution(
+        &self,
+        request: tonic::Request<ArbExecutionRequest>,
+    ) -> Result<tonic::Response<ArbExecutionResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+        let request_inner = request.into_inner();
+        let height = request_inner.height;
+
+        let arb_execution = state
+            .arb_execution(height)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        match arb_execution {
+            Some(arb_execution) => Ok(tonic::Response::new(ArbExecutionResponse {
+                swap_execution: Some(arb_execution.into()),
+                height: height.into(),
+            })),
+            None => Err(Status::not_found("arb execution data not found")),
+        }
     }
 }
