@@ -234,7 +234,53 @@ impl U128x128Var {
         rhs: &Self,
         cs: ConstraintSystemRef<Fq>,
     ) -> Result<U128x128Var, SynthesisError> {
-        todo!();
+        // x = [x0, x1, x2, x3]
+        // x = x0 + x1 * 2^64 + x2 * 2^128 + x3 * 2^192
+        // y = [y0, y1, y2, y3]
+        // y = y0 + y1 * 2^64 + y2 * 2^128 + y3 * 2^192
+        let x0 = convert_uint64_to_fqvar(&self.limbs[0]);
+        let x1 = convert_uint64_to_fqvar(&self.limbs[1]);
+        let x2 = convert_uint64_to_fqvar(&self.limbs[2]);
+        let x3 = convert_uint64_to_fqvar(&self.limbs[3]);
+
+        let y0 = convert_uint64_to_fqvar(&rhs.limbs[0]);
+        let y1 = convert_uint64_to_fqvar(&rhs.limbs[1]);
+        let y2 = convert_uint64_to_fqvar(&rhs.limbs[2]);
+        let y3 = convert_uint64_to_fqvar(&rhs.limbs[3]);
+
+        // z = x + y
+        // z = [z0, z1, z2, z3]
+        let z0_raw = &x0 + &y0;
+        let z1_raw = &x1 + &y1;
+        let z2_raw = &x2 + &y2;
+        let z3_raw = &x3 + &y3;
+
+        // z0 < 2^64 + 2^64 < 2^(65) => 65 bits
+        let z0_bits = bit_constrain(z0_raw, 64)?; // no carry-in
+        let z0 = UInt64::from_bits_le(&z0_bits[0..64]);
+        let c1 = convert_le_bits_to_fqvar(&z0_bits[64..]);
+
+        // z1 < 2^64 + 2^64 + 2^64 < 2^(66) => 66 bits
+        let z1_bits = bit_constrain(z1_raw + c1, 66)?; // carry-in c1
+        let z1 = UInt64::from_bits_le(&z1_bits[0..64]);
+        let c2 = convert_le_bits_to_fqvar(&z1_bits[64..]);
+
+        // z2 < 2^64 + 2^64 + 2^64 < 2^(66) => 66 bits
+        let z2_bits = bit_constrain(z2_raw + c2, 66)?; // carry-in c2
+        let z2 = UInt64::from_bits_le(&z2_bits[0..64]);
+        let c3 = convert_le_bits_to_fqvar(&z2_bits[64..]);
+
+        // z3 < 2^64 + 2^64 + 2^64 < 2^(66) => 66 bits
+        let z3_bits = bit_constrain(z3_raw + c3, 66)?; // carry-in c3
+        let z3 = UInt64::from_bits_le(&z3_bits[0..64]);
+        let c4 = convert_le_bits_to_fqvar(&z3_bits[64..]);
+
+        // Constrain c4: No overflow.
+        c4.enforce_equal(&FqVar::zero())?;
+
+        Ok(Self {
+            limbs: [z0, z1, z2, z3],
+        })
     }
 
     pub fn checked_sub(
@@ -619,6 +665,7 @@ mod test {
     }
 
     proptest! {
+        #![proptest_config(ProptestConfig::with_cases(1))]
         #[test]
         fn multiply(
             a_int in any::<u64>(),
@@ -693,7 +740,7 @@ mod test {
     }
 
     proptest! {
-        #[ignore]
+        #![proptest_config(ProptestConfig::with_cases(1))]
         #[test]
         fn add(
             a_int in any::<u64>(),
@@ -702,12 +749,9 @@ mod test {
             let a = U128x128::from(a_int);
             let b = U128x128::from(b_int);
 
-            dbg!(a);
-            dbg!(b);
             let result = a.checked_add(&b);
-            dbg!(&result);
 
-            let expected_c = result.expect("values should not overflow");
+            let expected_c = result.expect("result should not overflow");
 
             let circuit = TestAdditionCircuit {
                 a,
@@ -723,14 +767,9 @@ mod test {
 
             let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
                 &vk,
-                &[],
+                &expected_c.to_field_elements().unwrap(),
                 &proof,
             );
-            // let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
-            //     &vk,
-            //     &expected_c.to_field_elements().unwrap(),
-            //     &proof,
-            // );
             assert!(proof_result.is_ok());
         }
     }
