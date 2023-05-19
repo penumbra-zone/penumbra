@@ -6,7 +6,7 @@ use super::Error;
 /// Computes (2^128 * x) / y and its remainder.
 /// TEMP HACK: need to implement this properly
 pub(super) fn stub_div_rem_u384_by_u256(x: U256, y: U256) -> Result<(U256, U256), Error> {
-    if x == U256::ZERO {
+    if y == U256::ZERO {
         return Err(Error::DivisionByZero);
     }
 
