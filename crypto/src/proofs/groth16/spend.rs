@@ -222,7 +222,7 @@ impl ParameterSetup for SpendCircuit {
 }
 
 #[derive(Clone, Debug)]
-pub struct SpendProof(Proof<Bls12_377>);
+pub struct SpendProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
 impl SpendProof {
     #![allow(clippy::too_many_arguments)]
@@ -254,7 +254,9 @@ impl SpendProof {
         };
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(pk, circuit, rng)
             .map_err(|err| anyhow::anyhow!(err))?;
-        Ok(Self(proof))
+        let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];
+        Proof::serialize_compressed(&proof, &mut proof_bytes[..]).expect("can serialize Proof");
+        Ok(Self(proof_bytes))
     }
 
     /// Called to verify the proof using the provided public inputs.
@@ -269,6 +271,8 @@ impl SpendProof {
         nullifier: Nullifier,
         rk: VerificationKey<SpendAuth>,
     ) -> anyhow::Result<()> {
+        let proof = Proof::deserialize_compressed(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
+
         let mut public_inputs = Vec::new();
         public_inputs.extend([Fq::from(anchor.0)]);
         public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
@@ -283,7 +287,7 @@ impl SpendProof {
         let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
             &vk,
             public_inputs.as_slice(),
-            &self.0,
+            &proof,
         )
         .map_err(|err| anyhow::anyhow!(err))?;
         tracing::debug!(?proof_result, elapsed = ?start.elapsed());
@@ -303,10 +307,8 @@ impl DomainType for SpendProof {
 
 impl From<SpendProof> for pb::ZkSpendProof {
     fn from(proof: SpendProof) -> Self {
-        let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];
-        Proof::serialize_compressed(&proof.0, &mut proof_bytes[..]).expect("can serialize Proof");
         pb::ZkSpendProof {
-            inner: proof_bytes.to_vec(),
+            inner: proof.0.to_vec(),
         }
     }
 }
@@ -315,8 +317,6 @@ impl TryFrom<pb::ZkSpendProof> for SpendProof {
     type Error = anyhow::Error;
 
     fn try_from(proto: pb::ZkSpendProof) -> Result<Self, Self::Error> {
-        Ok(SpendProof(
-            Proof::deserialize_compressed(&proto.inner[..]).map_err(|e| anyhow::anyhow!(e))?,
-        ))
+        Ok(SpendProof(proto.inner[..].try_into()?))
     }
 }
