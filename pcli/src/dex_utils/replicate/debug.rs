@@ -1,6 +1,7 @@
 use penumbra_crypto::dex::lp::position::Position;
 use penumbra_crypto::dex::lp::Reserves;
 use penumbra_crypto::dex::DirectedUnitPair;
+use penumbra_crypto::fixpoint::U128x128;
 use rand_core::OsRng;
 use serde::Serialize;
 
@@ -25,23 +26,36 @@ pub struct PayoffPositionEntry {
 /// clutter it with serializiation methods that are useful for narrow purposes.
 #[derive(Serialize)]
 pub struct PayoffPosition {
-    pub fee: u128,
-    pub p: u128,
-    pub q: u128,
-    pub k: u128,
-    pub r1: u128,
-    pub r2: u128,
+    pub p: f64,
+    pub q: f64,
+    pub k: f64,
+    pub r1: f64,
+    pub r2: f64,
+    pub fee: f64,
 }
 
-impl From<Position> for PayoffPosition {
-    fn from(value: Position) -> Self {
-        let p = value.phi.component.p.value();
-        let q = value.phi.component.q.value();
-        let r1 = value.reserves.r1.value();
-        let r2 = value.reserves.r2.value();
+impl PayoffPosition {
+    pub fn from_position(pair: DirectedUnitPair, position: Position) -> PayoffPosition {
+        let oriented_phi = position.phi.orient_end(pair.end.id()).unwrap();
+        let p = U128x128::ratio(oriented_phi.p.value(), pair.end.unit_amount().value())
+            .unwrap()
+            .into();
+        let q = U128x128::ratio(oriented_phi.q.value(), pair.start.unit_amount().value())
+            .unwrap()
+            .into();
+
+        let r1 = position.reserves_for(pair.start.id()).unwrap();
+        let r2 = position.reserves_for(pair.end.id()).unwrap();
+        let r1 = U128x128::ratio(r1.value(), pair.start.unit_amount().value())
+            .unwrap()
+            .into();
+        let r2 = U128x128::ratio(r2.value(), pair.end.unit_amount().value())
+            .unwrap()
+            .into();
         let k = p * r1 + q * r2;
-        let fee = value.phi.component.fee as u128;
-        Self {
+        let k = k / p;
+        let fee = position.phi.component.fee as f64;
+        PayoffPosition {
             fee,
             p,
             q,
@@ -49,22 +63,6 @@ impl From<Position> for PayoffPosition {
             r1,
             r2,
         }
-    }
-}
-
-impl From<PayoffPositionEntry> for Position {
-    fn from(entry: PayoffPositionEntry) -> Self {
-        Position::new(
-            OsRng,
-            entry.pair.into_directed_trading_pair(),
-            entry.payoff.fee as u32,
-            entry.payoff.p.into(),
-            entry.payoff.q.into(),
-            Reserves {
-                r1: entry.payoff.r1.into(),
-                r2: entry.payoff.r2.into(),
-            },
-        )
     }
 }
 
