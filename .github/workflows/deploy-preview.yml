@@ -60,9 +60,3 @@ jobs:
           export PENUMBRA_VERSION='main'
           export HELM_RELEASE='penumbra-testnet-preview'
           ./ci.sh
-
-      # We only run one (1) relayer instance, and re-deploy it as part of the preview update.
-      # The other end of the configured path is the long-running testnet.
-      - name: deploy relayer
-        run: |-
-          ./deployments/scripts/bounce-relayer
