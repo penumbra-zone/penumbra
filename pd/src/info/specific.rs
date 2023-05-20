@@ -521,10 +521,7 @@ impl SpecificQueryService for Info {
 
         let s = state.prefix(&state_key::swap_executions());
         Ok(tonic::Response::new(
-            s.filter_map(|i: anyhow::Result<(String, SwapExecution)>| {
-                let trading_pair2 = trading_pair.clone();
-                let start_height2 = start_height.clone();
-                let end_height2 = end_height.clone();
+            s.filter_map(move |i: anyhow::Result<(String, SwapExecution)>| {
                 async move {
                     if i.is_err() {
                         return Some(Err(tonic::Status::unavailable(format!(
@@ -543,7 +540,7 @@ impl SpecificQueryService for Info {
 
                     let swap_trading_pair = TradingPair::new(asset_1, asset_2);
 
-                    if let Some(trading_pair) = trading_pair2 {
+                    if let Some(trading_pair) = trading_pair {
                         // filter by trading pair
 
                         if swap_trading_pair != trading_pair {
@@ -555,7 +552,7 @@ impl SpecificQueryService for Info {
                     // and stop at end_height rather than touching _every_
                     // key, but the current storage implementation doesn't make this
                     // easy.
-                    if height < start_height2 || height > end_height2 {
+                    if height < start_height || height > end_height {
                         None
                     } else {
                         Some(Ok(SwapExecutionsResponse {
@@ -806,35 +803,37 @@ impl SpecificQueryService for Info {
 
         let s = state.prefix(&state_key::arb_executions());
         Ok(tonic::Response::new(
-            s.filter_map(|i: anyhow::Result<(String, SwapExecution)>| async move {
-                if i.is_err() {
-                    return Some(Err(tonic::Status::unavailable(format!(
-                        "error getting prefix value from storage: {}",
-                        i.err().unwrap()
-                    ))));
-                }
+            s.filter_map(
+                move |i: anyhow::Result<(String, SwapExecution)>| async move {
+                    if i.is_err() {
+                        return Some(Err(tonic::Status::unavailable(format!(
+                            "error getting prefix value from storage: {}",
+                            i.err().unwrap()
+                        ))));
+                    }
 
-                let (key, arb_execution) = i.unwrap();
-                let height = key
-                    .split('/')
-                    .last()
-                    .expect("arb execution key has height as last part")
-                    .parse()
-                    .expect("height is a number");
+                    let (key, arb_execution) = i.unwrap();
+                    let height = key
+                        .split('/')
+                        .last()
+                        .expect("arb execution key has height as last part")
+                        .parse()
+                        .expect("height is a number");
 
-                // TODO: would be great to start iteration at start_height
-                // and stop at end_height rather than touching _every_
-                // key, but the current storage implementation doesn't make this
-                // easy.
-                if height < start_height || height > end_height {
-                    None
-                } else {
-                    Some(Ok(ArbExecutionsResponse {
-                        swap_execution: Some(arb_execution.into()),
-                        height: height,
-                    }))
-                }
-            })
+                    // TODO: would be great to start iteration at start_height
+                    // and stop at end_height rather than touching _every_
+                    // key, but the current storage implementation doesn't make this
+                    // easy.
+                    if height < start_height || height > end_height {
+                        None
+                    } else {
+                        Some(Ok(ArbExecutionsResponse {
+                            swap_execution: Some(arb_execution.into()),
+                            height: height,
+                        }))
+                    }
+                },
+            )
             // TODO: how do we instrument a Stream
             //.instrument(Span::current())
             .boxed(),
