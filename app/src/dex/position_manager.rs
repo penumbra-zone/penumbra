@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_crypto::{
     asset,
@@ -6,7 +6,6 @@ use penumbra_crypto::{
         lp::position::{self, Position},
         DirectedTradingPair,
     },
-    Value,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{EscapedByteSlice, StateRead, StateWrite};

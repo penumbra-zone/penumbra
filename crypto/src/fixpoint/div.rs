@@ -25,6 +25,7 @@ pub(super) fn stub_div_rem_u384_by_u256(x: U256, y: U256) -> Result<(U256, U256)
     Ok((q, rem))
 }
 
+#[allow(dead_code)]
 fn u256_to_ubig(x: U256) -> UBig {
     let mut bytes = [0; 32];
     bytes.copy_from_slice(&x.to_le_bytes());

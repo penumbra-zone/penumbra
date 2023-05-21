@@ -66,8 +66,6 @@ pub(crate) mod internal {
     use penumbra_crypto::dex::lp::BareTradingFunction;
 
     pub mod price_index {
-        use penumbra_crypto::asset;
-
         use super::*;
 
         pub fn prefix(pair: &DirectedTradingPair) -> [u8; 71] {
@@ -75,14 +73,6 @@ pub(crate) mod internal {
             key[0..7].copy_from_slice(b"dex/pi/");
             key[7..7 + 32].copy_from_slice(&pair.start.to_bytes());
             key[7 + 32..7 + 32 + 32].copy_from_slice(&pair.end.to_bytes());
-            key
-        }
-
-        /// A prefix that will return all positions "from" a given asset.
-        pub fn from_asset_prefix(from: &asset::Id) -> [u8; 39] {
-            let mut key = [0u8; 39];
-            key[0..7].copy_from_slice(b"dex/pi/");
-            key[7..7 + 32].copy_from_slice(&from.to_bytes());
             key
         }
 

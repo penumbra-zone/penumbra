@@ -2,7 +2,7 @@ use crate::{warning, App};
 use std::path::PathBuf;
 
 use crate::dex_utils;
-use crate::dex_utils::replicate::debug::{self, PayoffPositionEntry};
+use crate::dex_utils::replicate::debug;
 use anyhow::{anyhow, bail, Result};
 use dialoguer::Confirm;
 use penumbra_crypto::dex::lp::position::Position;
@@ -224,7 +224,7 @@ impl ConstantProduct {
             .enumerate()
             .for_each(|(i, alpha)| tracing::debug!(i, alpha, "sampled tick"));
 
-        let mut r1: f64;
+        let r1: f64;
 
         {
             let raw_r1 = input.amount.value();

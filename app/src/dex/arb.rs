@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::component::StateReadExt;
-use penumbra_crypto::{asset, dex::execution::SwapExecution, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::{asset, dex::execution::SwapExecution, Value};
 use penumbra_storage::{StateDelta, StateWrite};
 use tracing::instrument;
 

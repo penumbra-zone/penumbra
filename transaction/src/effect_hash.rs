@@ -2,7 +2,7 @@ use blake2b_simd::{Hash, Params};
 use decaf377::FieldExt;
 use decaf377_fmd::Clue;
 use penumbra_crypto::{dex::TradingPair, EffectHash, Fee, FullViewingKey, NotePayload, PayloadKey};
-use penumbra_proto::{DomainType, Message};
+use penumbra_proto::DomainType;
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimBody};
 
 use crate::{

@@ -6,7 +6,6 @@ use async_trait::async_trait;
 use decaf377::Fq;
 use once_cell::sync::Lazy;
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_crypto::{
     keys::{FullViewingKey, NullifierKey},
     rdsa::{VerificationKey, VerificationKeyBytes},

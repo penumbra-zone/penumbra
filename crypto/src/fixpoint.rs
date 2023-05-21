@@ -148,7 +148,7 @@ impl U128x128 {
 
     /// Performs checked division, returning `Ok` if no overflow occurred.
     pub fn checked_div(self, rhs: &Self) -> Result<Self, Error> {
-        stub_div_rem_u384_by_u256(self.0, rhs.0).map(|(quo, rem)| U128x128(quo))
+        stub_div_rem_u384_by_u256(self.0, rhs.0).map(|(quo, _rem)| U128x128(quo))
     }
 
     /// Performs checked addition, returning `Ok` if no overflow occurred.
@@ -232,7 +232,7 @@ impl U128x128Var {
     pub fn checked_add(
         self,
         rhs: &Self,
-        cs: ConstraintSystemRef<Fq>,
+        _cs: ConstraintSystemRef<Fq>,
     ) -> Result<U128x128Var, SynthesisError> {
         // x = [x0, x1, x2, x3]
         // x = x0 + x1 * 2^64 + x2 * 2^128 + x3 * 2^192
@@ -285,8 +285,8 @@ impl U128x128Var {
 
     pub fn checked_sub(
         self,
-        rhs: &Self,
-        cs: ConstraintSystemRef<Fq>,
+        _rhs: &Self,
+        _cs: ConstraintSystemRef<Fq>,
     ) -> Result<U128x128Var, SynthesisError> {
         todo!();
     }
@@ -294,7 +294,7 @@ impl U128x128Var {
     pub fn checked_mul(
         self,
         rhs: &Self,
-        cs: ConstraintSystemRef<Fq>,
+        _cs: ConstraintSystemRef<Fq>,
     ) -> Result<U128x128Var, SynthesisError> {
         // x = [x0, x1, x2, x3]
         // x = x0 + x1 * 2^64 + x2 * 2^128 + x3 * 2^192
