@@ -17,11 +17,11 @@ pub struct Cache {
 }
 
 impl Cache {
-    fn get_by_id(&self, id: Id) -> Option<DenomMetadata> {
+    fn _get_by_id(&self, id: Id) -> Option<DenomMetadata> {
         self.cache.get(&id).cloned()
     }
 
-    fn get_unit(&self, raw_denom: &str) -> Option<Unit> {
+    fn _get_unit(&self, raw_denom: &str) -> Option<Unit> {
         self.units.get(raw_denom).cloned()
     }
 }

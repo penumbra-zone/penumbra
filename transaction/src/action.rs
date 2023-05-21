@@ -1,9 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_crypto::balance;
-use penumbra_proto::{
-    core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pb, DomainType, TypeUrl,
-};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 
 mod delegator_vote;
 mod position;

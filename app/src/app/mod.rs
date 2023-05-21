@@ -2,23 +2,19 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use penumbra_chain::params::FmdParameters;
-use penumbra_chain::NoteSource;
 use penumbra_chain::{
     component::{AppHash, StateReadExt as _, StateWriteExt as _},
     genesis,
 };
-use penumbra_compact_block::component::{StateReadExt as _, StateWriteExt as _};
+use penumbra_compact_block::component::StateWriteExt as _;
 use penumbra_compact_block::CompactBlock;
 use penumbra_component::Component;
-use penumbra_crypto::dex::swap::SwapPayload;
-use penumbra_crypto::NotePayload;
 use penumbra_distributions::component::Distributions;
 use penumbra_ibc::component::IBCComponent;
 use penumbra_proto::DomainType;
 use penumbra_sct::component::SctManager;
 use penumbra_shielded_pool::component::{NoteManager, ShieldedPool};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
-use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, Event};
 use tendermint::validator::Update;

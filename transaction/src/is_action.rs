@@ -2,7 +2,7 @@ use penumbra_crypto::{balance, Fr, Note, Zero};
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_shielded_pool::{Output, OutputView, Spend, SpendView};
-use penumbra_stake::{Delegate, Undelegate, UndelegateClaim, UndelegateClaimBody};
+use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 
 use crate::{ActionView, TransactionPerspective};
 
