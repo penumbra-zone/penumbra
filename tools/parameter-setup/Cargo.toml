@@ -5,7 +5,8 @@ edition = "2021"
 publish = false
 
 [dependencies]
-penumbra-crypto = { path = "../../crypto/" }
+penumbra-crypto = { path = "../../crates/core/crypto/" }
+penumbra-dex = { path = "../../crates/core/component/dex/" }
 ark-groth16 = "0.4"
 ark-serialize = "0.4"
 decaf377 = { version = "0.4", features = ["r1cs"] }

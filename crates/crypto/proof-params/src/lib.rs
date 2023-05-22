@@ -46,6 +46,19 @@ pub mod swap {
 }
 
 #[cfg(feature = "proving-keys")]
+/// Proving key for the swap claim proof.
+pub static SWAPCLAIM_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
+    Lazy::new(proving_keys::swapclaim_proving_parameters);
+
+/// Verification key for the swap claim proof.
+pub static SWAPCLAIM_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> =
+    Lazy::new(|| swapclaim_verification_parameters().into());
+
+pub mod swapclaim {
+    include!("gen/swapclaim_id.rs");
+}
+
+#[cfg(feature = "proving-keys")]
 /// Proving key for the undelegateclaim proof.
 pub static UNDELEGATECLAIM_PROOF_PROVING_KEY: Lazy<ProvingKey<Bls12_377>> =
     Lazy::new(proving_keys::undelegateclaim_proving_parameters);
@@ -102,6 +115,12 @@ fn output_verification_parameters() -> VerifyingKey<Bls12_377> {
 
 fn swap_verification_parameters() -> VerifyingKey<Bls12_377> {
     let vk_params = include_bytes!("gen/swap_vk.param");
+    VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
+        .expect("can deserialize VerifyingKey")
+}
+
+fn swapclaim_verification_parameters() -> VerifyingKey<Bls12_377> {
+    let vk_params = include_bytes!("gen/swapclaim_vk.param");
     VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
         .expect("can deserialize VerifyingKey")
 }

@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_component::ActionHandler;
 use penumbra_crypto::TransactionContext;
+use penumbra_proof_params::SWAPCLAIM_PROOF_VERIFICATION_KEY;
 use penumbra_shielded_pool::component::{NoteManager, StateReadExt as _};
 use penumbra_storage::{StateRead, StateWrite};
 
@@ -16,12 +17,13 @@ impl ActionHandler for SwapClaim {
     async fn check_stateless(&self, context: TransactionContext) -> Result<()> {
         self.proof
             .verify(
+                &SWAPCLAIM_PROOF_VERIFICATION_KEY,
                 context.anchor,
                 self.body.nullifier,
+                self.body.fee.clone(),
                 self.body.output_data,
                 self.body.output_1_commitment,
                 self.body.output_2_commitment,
-                self.body.fee.clone(),
             )
             .context("a swap claim proof did not verify")?;
 

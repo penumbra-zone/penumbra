@@ -9,8 +9,9 @@ use ark_serialize::CanonicalSerialize;
 use decaf377::Bls12_377;
 use penumbra_crypto::proofs::groth16::{
     DelegatorVoteCircuit, NullifierDerivationCircuit, OutputCircuit, ParameterSetup, ProvingKeyExt,
-    SpendCircuit, SwapCircuit, UndelegateClaimCircuit, VerifyingKeyExt,
+    SpendCircuit, UndelegateClaimCircuit, VerifyingKeyExt,
 };
+use penumbra_dex::{swap::proof::SwapCircuit, swap_claim::proof::SwapClaimCircuit};
 
 fn main() -> Result<()> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -18,6 +19,8 @@ fn main() -> Result<()> {
     let target_dir = root
         .join("..")
         .join("..")
+        .join("crates")
+        .join("crypto")
         .join("proof-params")
         .join("src")
         .join("gen");
@@ -31,6 +34,8 @@ fn main() -> Result<()> {
     write_params(&target_dir, "output", &output_pk, &output_vk)?;
     let (swap_pk, swap_vk) = SwapCircuit::generate_test_parameters();
     write_params(&target_dir, "swap", &swap_pk, &swap_vk)?;
+    let (swapclaim_pk, swapclaim_vk) = SwapClaimCircuit::generate_test_parameters();
+    write_params(&target_dir, "swapclaim", &swapclaim_pk, &swapclaim_vk)?;
     let (undelegateclaim_pk, undelegateclaim_vk) =
         UndelegateClaimCircuit::generate_test_parameters();
     write_params(
