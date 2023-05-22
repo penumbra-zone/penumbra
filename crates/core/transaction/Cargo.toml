@@ -23,9 +23,9 @@ penumbra-dex = { path = "../component/dex/", default-features = false }
 decaf377 = "0.4"
 decaf377-rdsa = { version = "0.6" }
 poseidon377 = { version = "0.4", features = ["r1cs"] }
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.1.x",  version = "0.1.1" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
 
-ibc-proto = { version = "0.26", default-features = false, features = ["std"] }
+ibc-proto = { version = "0.31.0-alpha.2", default-features = false, features = ["std"] }
 
 # Crates.io deps
 base64 = "0.21"
