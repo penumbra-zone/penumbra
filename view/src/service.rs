@@ -581,8 +581,9 @@ impl ViewProtocolService for ViewService {
         let mut address_views = BTreeMap::new();
         let mut asset_ids = BTreeSet::new();
         for action_view in min_view.action_views() {
+            use penumbra_dex::{swap::SwapView, swap_claim::SwapClaimView};
             use penumbra_transaction::view::action_view::{
-                ActionView, DelegatorVoteView, OutputView, SpendView, SwapClaimView, SwapView,
+                ActionView, DelegatorVoteView, OutputView, SpendView,
             };
             match action_view {
                 ActionView::Spend(SpendView::Visible { note, .. }) => {

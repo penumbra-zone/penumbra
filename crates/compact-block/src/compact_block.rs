@@ -2,10 +2,8 @@ use std::{collections::BTreeMap, convert::TryFrom};
 
 use anyhow::Result;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::{
-    dex::{BatchSwapOutputData, TradingPair},
-    Nullifier,
-};
+use penumbra_crypto::Nullifier;
+use penumbra_dex::{BatchSwapOutputData, TradingPair};
 use penumbra_proto::{
     client::v1alpha1::CompactBlockRangeResponse, core::chain::v1alpha1 as pb, DomainType, TypeUrl,
 };

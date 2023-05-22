@@ -492,18 +492,6 @@ pub struct PositionRewardClaim {
         super::super::crypto::v1alpha1::BalanceCommitment,
     >,
 }
-/// Contains a path for a trade, including the trading pair (with direction), the trading
-/// function defining their relationship, and the route taken between the two assets.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Path {
-    #[prost(message, optional, tag = "1")]
-    pub pair: ::core::option::Option<DirectedTradingPair>,
-    #[prost(message, repeated, tag = "2")]
-    pub route: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::AssetId>,
-    #[prost(message, optional, tag = "3")]
-    pub phi: ::core::option::Option<BareTradingFunction>,
-}
 /// Contains the entire execution of a particular swap.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

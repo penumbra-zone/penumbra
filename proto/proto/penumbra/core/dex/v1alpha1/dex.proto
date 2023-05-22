@@ -321,14 +321,6 @@ message PositionRewardClaim {
   crypto.v1alpha1.BalanceCommitment rewards_commitment = 2;
 }
 
-// Contains a path for a trade, including the trading pair (with direction), the trading
-// function defining their relationship, and the route taken between the two assets.
-message Path {
-    DirectedTradingPair pair = 1;
-    repeated crypto.v1alpha1.AssetId route = 2;
-    BareTradingFunction phi = 3;
-}
-
 // Contains the entire execution of a particular swap.
 message SwapExecution {
   // Contains all individual steps consisting of a trade trace.

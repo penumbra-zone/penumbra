@@ -20,6 +20,7 @@ penumbra-component = { path = "../component", optional = true }
 penumbra-storage = { path = "../../storage", optional = true }
 penumbra-chain = { path = "../../chain", default-features = false }
 penumbra-shielded-pool = { path = "../../crates/shielded-pool", default-features = false }
+penumbra-dex = { path = "../../crates/dex", default-features = false }
 penumbra-tct = { path = "../../tct" }
 penumbra-proof-params = { path = "../../proof-params", default-features = false }
 

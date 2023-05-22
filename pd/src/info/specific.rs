@@ -3,17 +3,15 @@ use std::pin::Pin;
 use async_stream::try_stream;
 use futures::StreamExt;
 use futures::TryStreamExt;
-use penumbra_app::dex::PositionRead;
-use penumbra_app::dex::StateReadExt;
 use penumbra_app::governance::StateReadExt as _;
 use penumbra_chain::component::AppHashRead;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_crypto::asset::{self, Asset};
-use penumbra_crypto::dex::execution::SwapExecution;
-use penumbra_crypto::dex::lp::position;
-use penumbra_crypto::dex::lp::position::Position;
-use penumbra_crypto::dex::DirectedTradingPair;
-use penumbra_crypto::dex::TradingPair;
+use penumbra_dex::{
+    component::{PositionRead, StateReadExt},
+    lp::{position, position::Position},
+    DirectedTradingPair, SwapExecution, TradingPair,
+};
 use penumbra_proto::{
     self as proto,
     client::v1alpha1::{
@@ -218,7 +216,7 @@ impl SpecificQueryService for Info {
         let s = state.all_positions();
         Ok(tonic::Response::new(
             s.filter(move |item| {
-                use penumbra_crypto::dex::lp::position::State;
+                use penumbra_dex::lp::position::State;
                 let keep = match item {
                     Ok(position) => {
                         if position.state == State::Opened {
@@ -517,7 +515,7 @@ impl SpecificQueryService for Info {
             None
         };
 
-        use penumbra_app::dex::state_key;
+        use penumbra_dex::state_key;
 
         let s = state.prefix(&state_key::swap_executions());
         Ok(tonic::Response::new(
@@ -799,7 +797,7 @@ impl SpecificQueryService for Info {
         let start_height = request_inner.start_height;
         let end_height = request_inner.end_height;
 
-        use penumbra_app::dex::state_key;
+        use penumbra_dex::state_key;
 
         let s = state.prefix(&state_key::arb_executions());
         Ok(tonic::Response::new(
@@ -829,7 +827,7 @@ impl SpecificQueryService for Info {
                     } else {
                         Some(Ok(ArbExecutionsResponse {
                             swap_execution: Some(arb_execution.into()),
-                            height: height,
+                            height,
                         }))
                     }
                 },

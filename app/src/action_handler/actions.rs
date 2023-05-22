@@ -11,10 +11,7 @@ use super::ActionHandler;
 use penumbra_component::ActionHandler as _;
 
 mod delegator_vote;
-mod position;
 mod proposal;
-mod swap;
-mod swap_claim;
 mod validator_vote;
 
 #[async_trait]

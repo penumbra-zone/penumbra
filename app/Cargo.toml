@@ -13,6 +13,7 @@ penumbra-shielded-pool = { path = "../crates/shielded-pool" }
 penumbra-stake = { path = "../crates/stake" }
 penumbra-sct = { path = "../crates/sct" }
 penumbra-dao = { path = "../crates/dao" }
+penumbra-dex = { path = "../crates/dex" }
 penumbra-ibc = { path = "../crates/ibc" }
 penumbra-distributions = { path = "../crates/distributions" }
 penumbra-compact-block = { path = "../crates/compact-block" }

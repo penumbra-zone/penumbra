@@ -25,6 +25,7 @@ penumbra-app = { path = "../app" }
 penumbra-shielded-pool = { path = "../crates/shielded-pool" }
 penumbra-stake = { path = "../crates/stake" }
 penumbra-sct = { path = "../crates/sct" }
+penumbra-dex = { path = "../crates/dex" }
 penumbra-compact-block = { path = "../crates/compact-block" }
 penumbra-wallet = { path = "../wallet" }
 penumbra-tower-trace = { path = "../tower-trace" }

@@ -1,5 +1,13 @@
 use penumbra_crypto::Balance;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_dex::{
+    lp::{
+        action::{PositionClose, PositionOpen},
+        plan::{PositionRewardClaimPlan, PositionWithdrawPlan},
+    },
+    swap::SwapPlan,
+    swap_claim::SwapClaimPlan,
+};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType, TypeUrl};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
@@ -7,19 +15,10 @@ use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use serde::{Deserialize, Serialize};
 
 mod delegator_vote;
-mod position;
-mod swap;
-mod swap_claim;
 
 pub use delegator_vote::DelegatorVotePlan;
-pub use position::{PositionRewardClaimPlan, PositionWithdrawPlan};
-pub use swap::SwapPlan;
-pub use swap_claim::SwapClaimPlan;
 
-use crate::action::{
-    PositionClose, PositionOpen, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
-    ValidatorVote,
-};
+use crate::action::{ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote};
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
 ///

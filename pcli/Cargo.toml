@@ -33,6 +33,7 @@ penumbra-shielded-pool = { path = "../crates/shielded-pool", default-features = 
 penumbra-stake = { path = "../crates/stake", default-features = false }
 penumbra-ibc = { path = "../crates/ibc", default-features = false }
 penumbra-dao = { path = "../crates/dao", default-features = false }
+penumbra-dex = { path = "../crates/dex", default-features = false }
 penumbra-sct = { path = "../crates/sct", default-features = false }
 penumbra-compact-block = { path = "../crates/compact-block", default-features = false }
 # TODO: replace by a penumbra-app

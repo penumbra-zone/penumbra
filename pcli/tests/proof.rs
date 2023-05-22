@@ -5,16 +5,15 @@ use ark_ff::UniformRand;
 use decaf377::Fr;
 use penumbra_crypto::{
     asset,
-    dex::{swap::SwapPlaintext, TradingPair},
     keys::{SeedPhrase, SpendKey},
     proofs::groth16::{
-        DelegatorVoteProof, NullifierDerivationProof, OutputProof, SpendProof, SwapProof,
-        UndelegateClaimProof,
+        DelegatorVoteProof, NullifierDerivationProof, OutputProof, SpendProof, UndelegateClaimProof,
     },
     rdsa::{self, SpendAuth, VerificationKey},
     stake::{IdentityKey, Penalty, UnbondingToken},
     Amount, Balance, Fee, Note, Value,
 };
+use penumbra_dex::{swap::proof::SwapProof, swap::SwapPlaintext, TradingPair};
 use penumbra_proof_params::{
     DELEGATOR_VOTE_PROOF_PROVING_KEY, DELEGATOR_VOTE_PROOF_VERIFICATION_KEY,
     NULLIFIER_DERIVATION_PROOF_PROVING_KEY, NULLIFIER_DERIVATION_PROOF_VERIFICATION_KEY,

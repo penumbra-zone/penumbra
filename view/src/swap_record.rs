@@ -1,8 +1,6 @@
 use penumbra_chain::NoteSource;
-use penumbra_crypto::{
-    dex::{swap::SwapPlaintext, BatchSwapOutputData},
-    Nullifier,
-};
+use penumbra_crypto::Nullifier;
+use penumbra_dex::{swap::SwapPlaintext, BatchSwapOutputData};
 use penumbra_proto::{view::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 

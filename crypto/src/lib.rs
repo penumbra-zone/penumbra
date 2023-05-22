@@ -8,7 +8,6 @@ pub use decaf377_rdsa as rdsa;
 mod address;
 pub mod asset;
 pub mod balance;
-pub mod dex;
 pub mod eddy;
 mod effect_hash;
 mod fee;
@@ -28,7 +27,7 @@ pub mod symmetric;
 mod transaction;
 pub mod value;
 
-pub use address::{Address, AddressView};
+pub use address::{Address, AddressVar, AddressView};
 pub use asset::Amount;
 pub use asset::Asset;
 pub use balance::Balance;

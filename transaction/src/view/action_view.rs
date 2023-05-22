@@ -1,23 +1,21 @@
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_dex::{
+    lp::action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},
+    swap::SwapView,
+    swap_claim::SwapClaimView,
+};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 use serde::{Deserialize, Serialize};
 
 pub mod delegator_vote_view;
-pub mod swap_claim_view;
-pub mod swap_view;
 
 pub use delegator_vote_view::DelegatorVoteView;
 pub use penumbra_shielded_pool::OutputView;
 pub use penumbra_shielded_pool::SpendView;
-pub use swap_claim_view::SwapClaimView;
-pub use swap_view::SwapView;
 
-use crate::action::{
-    PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw, ProposalDepositClaim,
-    ProposalSubmit, ProposalWithdraw, ValidatorVote,
-};
+use crate::action::{ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote};
 use crate::Action;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

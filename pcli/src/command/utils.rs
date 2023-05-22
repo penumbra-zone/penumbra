@@ -1,5 +1,6 @@
 use comfy_table::{presets, Table};
-use penumbra_crypto::{asset, dex::lp::position::Position, Value};
+use penumbra_crypto::{asset, Value};
+use penumbra_dex::lp::position::Position;
 
 pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position]) -> String {
     let mut table = Table::new();

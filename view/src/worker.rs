@@ -4,10 +4,8 @@ use std::{
 };
 
 use penumbra_compact_block::CompactBlock;
-use penumbra_crypto::{
-    dex::lp::{position, LpNft},
-    Asset, FullViewingKey, Nullifier,
-};
+use penumbra_crypto::{Asset, FullViewingKey, Nullifier};
+use penumbra_dex::lp::{position, LpNft};
 use penumbra_proto::client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient;
 use penumbra_proto::{
     self as proto,

@@ -4,6 +4,12 @@
 use anyhow::Result;
 use penumbra_crypto::{Address, Fee};
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_dex::{
+    lp::action::{PositionClose, PositionOpen},
+    lp::plan::PositionWithdrawPlan,
+    swap::SwapPlan,
+    swap_claim::SwapClaimPlan,
+};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
@@ -11,10 +17,7 @@ use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
-use crate::action::{
-    PositionClose, PositionOpen, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
-    ValidatorVote,
-};
+use crate::action::{ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote};
 
 mod action;
 mod auth;
@@ -22,11 +25,9 @@ mod build;
 mod clue;
 mod memo;
 
-pub use action::{ActionPlan, DelegatorVotePlan, SwapClaimPlan, SwapPlan};
+pub use action::{ActionPlan, DelegatorVotePlan};
 pub use clue::CluePlan;
 pub use memo::MemoPlan;
-
-pub use self::action::PositionWithdrawPlan;
 
 /// A declaration of a planned [`Transaction`](crate::Transaction),
 /// for use in transaction authorization and creation.
