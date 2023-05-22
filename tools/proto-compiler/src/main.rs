@@ -7,6 +7,7 @@ fn main() -> Result<()> {
     let target_dir = root
         .join("..")
         .join("..")
+        .join("crates")
         .join("proto")
         .join("src")
         .join("gen");

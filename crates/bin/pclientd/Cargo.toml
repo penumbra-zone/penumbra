@@ -1,0 +1,67 @@
+[package]
+name = "pclientd"
+version = "0.52.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = []
+sct-divergence-check = ["penumbra-view/sct-divergence-check"]
+# Enable to use rayon parallelism for crypto operations
+parallel = ["penumbra-crypto/parallel"]
+
+[dependencies]
+# Workspace dependencies
+penumbra-proto            = { path = "../../proto", features = ["rpc"] }
+penumbra-tct              = { path = "../../crypto/tct" }
+penumbra-crypto           = { path = "../../core/crypto", features = ["parallel"] }
+penumbra-chain            = { path = "../../core/component/chain" }
+penumbra-transaction      = { path = "../../core/transaction" }
+penumbra-app              = { path = "../../core/app" }
+penumbra-custody          = { path = "../../custody" }
+penumbra-view             = { path = "../../view" }
+
+tokio = { version = "1.22", features = ["full"] }
+tokio-stream = { version = "0.1.8", features = ["sync"] }
+anyhow = "1"
+rand_core = { version = "0.6.3", features = ["getrandom"] }
+rand = "0.8"
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
+serde_with = { version = "1.11", features = ["hex"] }
+tracing = "0.1"
+tracing-subscriber = "0.2"
+url = "2"
+http = "0.2.9"
+http-body = "0.4.5"
+tower = "0.4.0"
+tonic = "0.8.1"
+tonic-web = "0.4.0"
+tonic-reflection = "0.6"
+bytes = { version = "1", features = ["serde"] }
+prost = "0.11"
+futures = "0.3"
+hex = "0.4"
+metrics = "0.19.0"
+async-stream = "0.2"
+parking_lot = "0.12"
+clap = { version = "3", features = ["derive", "env"] }
+camino = "1"
+async-trait = "0.1"
+tendermint = "0.29.0"
+sha2 = "0.10.1"
+toml = "0.5"
+ed25519-consensus = "2.1"
+atty = "0.2"
+
+[dev-dependencies]
+tempfile = "3.3.0"
+assert_cmd = "2.0"
+base64 = "0.20"
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.1.x",  version = "0.1.1" }
+
+ibc-proto = "0.26"
+
+[build-dependencies]
+vergen = "5"
