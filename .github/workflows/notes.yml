@@ -35,39 +35,6 @@ jobs:
         run: |
           cargo install mdbook mdbook-katex mdbook-mermaid
 
-      # This is disabled for now because it broke during the proto reorganization.
-      # We are currently rendering docs by pushing protos to Buf.build.
-      #
-      #- name: Install protobuf compiler
-      #  run: |
-      #    curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v21.2/protoc-21.2-linux-x86_64.zip
-      #    unzip protoc-21.2-linux-x86_64.zip -d $HOME/.local
-      #
-      #- name: Install Golang toolchain
-      #  uses: actions/setup-go@v3
-      #  with:
-      #    go-version: '^1.18.3'
-      #- name: Install protoc-gen-doc
-      #  run: |
-      #    go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@latest
-      #
-      #- name: Build proto docs
-      #  run: |
-      #    export PATH="$PATH:~/go/bin:$HOME/.local/bin"
-      #    protoc --doc_out=./docs/protobuf --doc_opt=html,index.html -I ./proto/proto:proto/ibc-go-vendor proto/proto/**/*.proto proto/proto/*.proto
-      #    cd docs/protobuf
-      #    if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
-      #    mkdir -p firebase-tmp/${{ steps.get_version.outputs.version }}
-      #    cp index.html firebase-tmp/${{ steps.get_version.outputs.version }}
-      #- name: Deploy proto docs to firebase
-      #  uses: w9jds/firebase-action@v2.0.0
-      #  with:
-      #    args: deploy
-      #  env:
-      #    FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-      #    PROJECT_ID: penumbra-protobuf
-      #    PROJECT_PATH: docs/protobuf
-
       - name: Build API docs
         run: ./deployments/scripts/rust-docs
 
