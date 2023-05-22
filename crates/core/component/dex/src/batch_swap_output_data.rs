@@ -9,7 +9,11 @@ use penumbra_proto::{
 };
 use serde::{Deserialize, Serialize};
 
-use penumbra_crypto::{asset::AmountVar, fixpoint::U128x128, Amount};
+use penumbra_crypto::{
+    asset::AmountVar,
+    fixpoint::{U128x128, U128x128Var},
+    Amount,
+};
 
 use crate::TradingPairVar;
 
@@ -83,12 +87,12 @@ impl BatchSwapOutputData {
 impl ToConstraintField<Fq> for BatchSwapOutputData {
     fn to_field_elements(&self) -> Option<Vec<Fq>> {
         let mut public_inputs = Vec::new();
-        public_inputs.extend(Fq::from(self.delta_1).to_field_elements().unwrap());
-        public_inputs.extend(Fq::from(self.delta_2).to_field_elements().unwrap());
-        public_inputs.extend(Fq::from(self.lambda_1).to_field_elements().unwrap());
-        public_inputs.extend(Fq::from(self.lambda_2).to_field_elements().unwrap());
-        public_inputs.extend(Fq::from(self.unfilled_1).to_field_elements().unwrap());
-        public_inputs.extend(Fq::from(self.unfilled_2).to_field_elements().unwrap());
+        // public_inputs.extend(U128x128::from(self.delta_1).to_field_elements().unwrap());
+        // public_inputs.extend(U128x128::from(self.delta_2).to_field_elements().unwrap());
+        // public_inputs.extend(U128x128::from(self.lambda_1).to_field_elements().unwrap());
+        // public_inputs.extend(U128x128::from(self.lambda_2).to_field_elements().unwrap());
+        // public_inputs.extend(U128x128::from(self.unfilled_1).to_field_elements().unwrap());
+        // public_inputs.extend(U128x128::from(self.unfilled_2).to_field_elements().unwrap());
         public_inputs.extend(Fq::from(self.height).to_field_elements().unwrap());
         public_inputs.extend(self.trading_pair.to_field_elements().unwrap());
         public_inputs.extend(Fq::from(self.epoch_height).to_field_elements().unwrap());
@@ -97,12 +101,12 @@ impl ToConstraintField<Fq> for BatchSwapOutputData {
 }
 
 pub struct BatchSwapOutputDataVar {
-    pub delta_1: AmountVar,
-    pub delta_2: AmountVar,
-    pub lambda_1: AmountVar,
-    pub lambda_2: AmountVar,
-    pub unfilled_1: AmountVar,
-    pub unfilled_2: AmountVar,
+    // pub delta_1: U128x128Var,
+    // pub delta_2: U128x128Var,
+    // pub lambda_1: U128x128Var,
+    // pub lambda_2: U128x128Var,
+    // pub unfilled_1: U128x128Var,
+    // pub unfilled_2: U128x128Var,
     pub height: FqVar,
     pub trading_pair: TradingPairVar,
     pub epoch_height: FqVar,
@@ -117,12 +121,18 @@ impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
         let ns = cs.into();
         let cs = ns.cs();
         let output_data = f()?.borrow().clone();
-        let delta_1 = AmountVar::new_variable(cs.clone(), || Ok(output_data.delta_1), mode)?;
-        let delta_2 = AmountVar::new_variable(cs.clone(), || Ok(output_data.delta_2), mode)?;
-        let lambda_1 = AmountVar::new_variable(cs.clone(), || Ok(output_data.lambda_1), mode)?;
-        let lambda_2 = AmountVar::new_variable(cs.clone(), || Ok(output_data.lambda_2), mode)?;
-        let unfilled_1 = AmountVar::new_variable(cs.clone(), || Ok(output_data.unfilled_1), mode)?;
-        let unfilled_2 = AmountVar::new_variable(cs.clone(), || Ok(output_data.unfilled_2), mode)?;
+        // let delta_1_fixpoint: U128x128 = output_data.delta_1.into();
+        // let delta_1 = U128x128Var::new_variable(cs.clone(), || Ok(delta_1_fixpoint), mode)?;
+        // let delta_2_fixpoint: U128x128 = output_data.delta_2.into();
+        // let delta_2 = U128x128Var::new_variable(cs.clone(), || Ok(delta_2_fixpoint), mode)?;
+        // let lambda_1_fixpoint: U128x128 = output_data.lambda_1.into();
+        // let lambda_1 = U128x128Var::new_variable(cs.clone(), || Ok(lambda_1_fixpoint), mode)?;
+        // let lambda_2_fixpoint: U128x128 = output_data.lambda_2.into();
+        // let lambda_2 = U128x128Var::new_variable(cs.clone(), || Ok(lambda_2_fixpoint), mode)?;
+        // let unfilled_1_fixpoint: U128x128 = output_data.unfilled_1.into();
+        // let unfilled_1 = U128x128Var::new_variable(cs.clone(), || Ok(unfilled_1_fixpoint), mode)?;
+        // let unfilled_2_fixpoint: U128x128 = output_data.unfilled_2.into();
+        // let unfilled_2 = U128x128Var::new_variable(cs.clone(), || Ok(unfilled_2_fixpoint), mode)?;
         let height = FqVar::new_variable(cs.clone(), || Ok(Fq::from(output_data.height)), mode)?;
         let trading_pair = TradingPairVar::new_variable_unchecked(
             cs.clone(),
@@ -133,12 +143,12 @@ impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
             FqVar::new_variable(cs, || Ok(Fq::from(output_data.epoch_height)), mode)?;
 
         Ok(Self {
-            delta_1,
-            delta_2,
-            lambda_1,
-            lambda_2,
-            unfilled_1,
-            unfilled_2,
+            // delta_1,
+            // delta_2,
+            // lambda_1,
+            // lambda_2,
+            // unfilled_1,
+            // unfilled_2,
             trading_pair,
             height,
             epoch_height,
@@ -169,6 +179,51 @@ impl From<BatchSwapOutputData> for pb::BatchSwapOutputData {
         }
     }
 }
+
+// impl BatchSwapOutputDataVar {
+//     pub fn pro_rata_outputs(
+//         &self,
+//         delta_1_i: AmountVar,
+//         delta_2_i: AmountVar,
+//     ) -> Result<(Amount, Amount), SynthesisError> {
+//         // The pro rata fraction is delta_j_i / delta_j, which we can multiply through:
+//         //   lambda_2_i = (delta_1_i / delta_1) * lambda_2   + (delta_2_i / delta_2) * unfilled_2
+//         //   lambda_1_i = (delta_1_i / delta_1) * unfilled_1 + (delta_2_i / delta_2) * lambda_1
+
+//         // TODO Convert AmountVar to U128x128Var
+//         let delta_1_i = self.del;
+//         let delta_2_i = U128x128::from(delta_2_i);
+//         let delta_1 = U128x128::from(self.delta_1);
+//         let delta_2 = U128x128::from(self.delta_2);
+//         let lambda_1 = U128x128::from(self.lambda_1);
+//         let lambda_2 = U128x128::from(self.lambda_2);
+//         let unfilled_1 = U128x128::from(self.unfilled_1);
+//         let unfilled_2 = U128x128::from(self.unfilled_2);
+
+//         // Compute the user i's share of the batch inputs of assets 1 and 2.
+//         // The .unwrap_or_default ensures that when the batch input delta_1 is zero, all pro-rata shares of it are also zero.
+//         let pro_rata_input_1 = (delta_1_i / delta_1).unwrap_or_default();
+//         let pro_rata_input_2 = (delta_2_i / delta_2).unwrap_or_default();
+
+//         let lambda_2_i = (pro_rata_input_1 * lambda_2).unwrap_or_default()
+//             + (pro_rata_input_2 * unfilled_2).unwrap_or_default();
+//         let lambda_1_i = (pro_rata_input_1 * unfilled_1).unwrap_or_default()
+//             + (pro_rata_input_2 * lambda_1).unwrap_or_default();
+
+//         (
+//             lambda_1_i
+//                 .unwrap_or_default()
+//                 .round_down()
+//                 .try_into()
+//                 .expect("rounded amount is integral"),
+//             lambda_2_i
+//                 .unwrap_or_default()
+//                 .round_down()
+//                 .try_into()
+//                 .expect("rounded amount is integral"),
+//         )
+//     }
+// }
 
 impl From<BatchSwapOutputData> for BatchSwapOutputDataResponse {
     fn from(s: BatchSwapOutputData) -> Self {
