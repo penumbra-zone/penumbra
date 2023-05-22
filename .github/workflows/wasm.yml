@@ -32,12 +32,12 @@ jobs:
       - name: cargo fmt
         run:
           cargo fmt --all -- --check
-        working-directory: wasm
+        working-directory: crates/wasm
 
       - name: build wasm32 target
         run:
           cargo build --release --target wasm32-unknown-unknown
-        working-directory: wasm
+        working-directory: crates/wasm
 
       # Download prebuilt binary for wasm-pack; faster than `cargo install`.
       - uses: jetli/wasm-pack-action@v0.4.0
@@ -49,4 +49,4 @@ jobs:
       - name: run wasm-pack build
         run:
           wasm-pack build
-        working-directory: wasm
+        working-directory: crates/wasm
