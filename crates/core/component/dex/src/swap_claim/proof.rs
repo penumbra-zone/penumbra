@@ -13,14 +13,13 @@ use rand_core::{CryptoRngCore, OsRng};
 
 use penumbra_crypto::{
     asset::{self, AmountVar},
-    balance::{self, commitment::BalanceCommitmentVar, BalanceVar},
-    fmd, ka,
-    keys::{Diversifier, NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey},
+    keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey},
     note::{self, NoteVar, StateCommitmentVar},
-    Address, Amount, Fee, Fq, Fr, Nullifier, NullifierVar, Rseed, Value, ValueVar,
+    Amount, Fee, Fq, Nullifier, NullifierVar, Rseed, Value, ValueVar,
 };
 
 use crate::{
+    batch_swap_output_data::BatchSwapOutputDataVar,
     swap::{SwapPlaintext, SwapPlaintextVar},
     BatchSwapOutputData, TradingPair,
 };
@@ -60,6 +59,7 @@ pub struct SwapClaimCircuit {
 }
 
 impl SwapClaimCircuit {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         swap_plaintext: SwapPlaintext,
         state_commitment_proof: tct::Proof,
@@ -106,6 +106,9 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof.position())
         })?;
+        let position_bits = tct::r1cs::PositionBitsVar::new_witness(cs.clone(), || {
+            Ok(self.state_commitment_proof.position())
+        })?;
         let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof)
         })?;
@@ -119,8 +122,8 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
         let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
         let claimed_fee_var = ValueVar::new_input(cs.clone(), || Ok(self.claim_fee.0))?;
-        // let output_data_var =
-        //     BatchSwapOutputDataVar::new_input(cs.clone(), || Ok(self.output_data))?;
+        let output_data_var =
+            BatchSwapOutputDataVar::new_input(cs.clone(), || Ok(self.output_data))?;
         let claimed_note_commitment_1 =
             StateCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment_1))?;
         let claimed_note_commitment_2 =
@@ -131,33 +134,32 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         claimed_swap_commitment.enforce_equal(&swap_commitment)?;
 
         // Merkle path integrity. Ensure the provided note commitment is in the TCT.
-        // merkle_path_var.verify(
-        //     cs.clone(),
-        //     &Boolean::TRUE,
-        //     position_var.inner.clone(),
-        //     anchor_var,
-        //     claimed_swap_commitment.inner(),
-        // )?;
+        merkle_path_var.verify(
+            cs.clone(),
+            &Boolean::TRUE,
+            &position_bits.to_bits_le()?,
+            anchor_var,
+            claimed_swap_commitment.inner(),
+        )?;
 
         // Nullifier integrity.
         let nullifier_var = nk_var.derive_nullifier(&position_var, &claimed_swap_commitment)?;
         nullifier_var.enforce_equal(&claimed_nullifier_var)?;
 
         // Fee consistency check.
-        //claimed_fee_var.enforce_equal(&swap_plaintext_var.claim_fee)?;
+        claimed_fee_var.enforce_equal(&swap_plaintext_var.claim_fee)?;
 
         // Validate the swap commitment's height matches the output data's height (i.e. the clearing price height).
-        // let block = position_var.block()?;
-        // let epoch = position_var.epoch()?;
-        // let note_commitment_block_height_var = epoch_duration_var * epoch + block;
-        // output_data_var
-        //     .height
-        //     .enforce_equal(&note_commitment_block_height_var)?;
+        let block = position_bits.block()?;
+        let note_commitment_block_height_var = output_data_var.epoch_height + block;
+        output_data_var
+            .height
+            .enforce_equal(&note_commitment_block_height_var)?;
 
         // Validate that the output data's trading pair matches the note commitment's trading pair.
-        // output_data_var
-        //     .trading_pair
-        //     .enforce_equal(&swap_plaintext_var.trading_pair)?;
+        output_data_var
+            .trading_pair
+            .enforce_equal(&swap_plaintext_var.trading_pair)?;
 
         // Output amounts integrity
         // let (computed_lambda_1_i, computed_lambda_2_i) = output_data_var
@@ -307,14 +309,6 @@ impl SwapClaimProof {
     }
 
     /// Called to verify the proof using the provided public inputs.
-    ///
-    /// The public inputs are:
-    /// * balance commitment,
-    /// * swap commitment,
-    /// * fee commimtment,
-    ///
-    // Commented out, but this may be useful when debugging proof verification failures,
-    // to check that the proof data and verification keys are consistent.
     //#[tracing::instrument(skip(self, vk), fields(self = ?base64::encode(&self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
     #[tracing::instrument(skip(self, vk))]
     pub fn verify(
@@ -335,7 +329,7 @@ impl SwapClaimProof {
         public_inputs.extend(nullifier.0.to_field_elements().unwrap());
         public_inputs.extend(Fq::from(fee.0.amount).to_field_elements().unwrap());
         public_inputs.extend(fee.0.asset_id.0.to_field_elements().unwrap());
-        //public_inputs.extend(output_data.to_field_elements().unwrap());
+        public_inputs.extend(output_data.to_field_elements().unwrap());
         public_inputs.extend(note_commitment_1.0.to_field_elements().unwrap());
         public_inputs.extend(note_commitment_2.0.to_field_elements().unwrap());
 
@@ -381,7 +375,6 @@ impl TryFrom<pb::ZkSwapClaimProof> for SwapClaimProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_ff::PrimeField;
     use penumbra_crypto::{
         keys::{SeedPhrase, SpendKey},
         Amount,

@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::{AllocVar, EqGadget};
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{FieldExt, Fq};
@@ -159,6 +160,15 @@ impl TradingPairVar {
         let asset_2 = AssetIdVar::new_variable(cs, || Ok(trading_pair.asset_2()), mode)?;
         // Note: We do not check that the trading pair is canonically encoded.
         Ok(Self { asset_1, asset_2 })
+    }
+}
+
+impl ToConstraintField<Fq> for TradingPair {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let mut public_inputs = Vec::new();
+        public_inputs.extend(Fq::from(self.asset_1().0).to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.asset_2().0).to_field_elements().unwrap());
+        Some(public_inputs)
     }
 }
 
