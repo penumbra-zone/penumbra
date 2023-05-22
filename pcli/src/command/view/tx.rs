@@ -1,15 +1,16 @@
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
-use penumbra_crypto::{
-    asset::Cache,
-    dex::{lp::position::Position, swap::SwapPlaintext, DirectedUnitPair},
-    keys::IncomingViewingKey,
-    Address, Note, NoteView, Value,
+use penumbra_crypto::{asset::Cache, keys::IncomingViewingKey, Address, Note, NoteView, Value};
+use penumbra_dex::{
+    lp::position::Position,
+    swap::SwapPlaintext,
+    swap::{Swap, SwapView},
+    swap_claim::{SwapClaim, SwapClaimView},
+    DirectedUnitPair,
 };
 use penumbra_proto::{client::v1alpha1::GetTxRequest, DomainType};
 use penumbra_transaction::{
-    action::{Swap, SwapClaim},
-    view::action_view::{OutputView, SpendView, SwapClaimView, SwapView},
+    view::action_view::{OutputView, SpendView},
     Transaction,
 };
 use penumbra_view::{TransactionInfo, ViewClient};

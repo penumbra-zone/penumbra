@@ -7,7 +7,6 @@ pub use mock_client::MockClient;
 pub use temp_storage_ext::TempStorageExt;
 
 pub mod app;
-pub mod dex;
 pub mod governance;
 
 /// Temporary compat wrapper for duplicate trait impls

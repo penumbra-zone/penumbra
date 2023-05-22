@@ -4,12 +4,9 @@ use penumbra_crypto::balance;
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 
 mod delegator_vote;
-mod position;
 mod proposal_deposit_claim;
 mod proposal_submit;
 mod proposal_withdraw;
-pub mod swap;
-pub mod swap_claim;
 mod validator_vote;
 
 use crate::{ActionView, IsAction, TransactionPerspective};
@@ -17,12 +14,9 @@ use crate::{ActionView, IsAction, TransactionPerspective};
 pub use crate::proposal::{Proposal, ProposalKind, ProposalPayload};
 pub use crate::vote::Vote;
 pub use delegator_vote::{DelegatorVote, DelegatorVoteBody};
-pub use position::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw};
 pub use proposal_deposit_claim::ProposalDepositClaim;
 pub use proposal_submit::ProposalSubmit;
 pub use proposal_withdraw::ProposalWithdraw;
-pub use swap::Swap;
-pub use swap_claim::SwapClaim;
 pub use validator_vote::{ValidatorVote, ValidatorVoteBody};
 
 /// An action performed by a Penumbra transaction.
@@ -33,18 +27,18 @@ pub enum Action {
     Spend(penumbra_shielded_pool::Spend),
     ValidatorDefinition(penumbra_stake::validator::Definition),
     IbcAction(penumbra_ibc::IbcAction),
-    Swap(Swap),
-    SwapClaim(SwapClaim),
+    Swap(penumbra_dex::swap::Swap),
+    SwapClaim(penumbra_dex::swap_claim::SwapClaim),
     ProposalSubmit(ProposalSubmit),
     ProposalWithdraw(ProposalWithdraw),
     DelegatorVote(DelegatorVote),
     ValidatorVote(ValidatorVote),
     ProposalDepositClaim(ProposalDepositClaim),
 
-    PositionOpen(PositionOpen),
-    PositionClose(PositionClose),
-    PositionWithdraw(PositionWithdraw),
-    PositionRewardClaim(PositionRewardClaim),
+    PositionOpen(penumbra_dex::lp::action::PositionOpen),
+    PositionClose(penumbra_dex::lp::action::PositionClose),
+    PositionWithdraw(penumbra_dex::lp::action::PositionWithdraw),
+    PositionRewardClaim(penumbra_dex::lp::action::PositionRewardClaim),
 
     Delegate(penumbra_stake::Delegate),
     Undelegate(penumbra_stake::Undelegate),

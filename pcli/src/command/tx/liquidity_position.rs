@@ -1,11 +1,9 @@
 use anyhow::Result;
 
-use penumbra_crypto::{
-    asset,
-    dex::lp::{
-        position::{self, Position},
-        BuyOrder, SellOrder,
-    },
+use penumbra_crypto::asset;
+use penumbra_dex::lp::{
+    position::{self, Position},
+    BuyOrder, SellOrder,
 };
 use rand_core::CryptoRngCore;
 

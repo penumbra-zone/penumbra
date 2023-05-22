@@ -1,14 +1,17 @@
 use blake2b_simd::{Hash, Params};
 use decaf377::FieldExt;
 use decaf377_fmd::Clue;
-use penumbra_crypto::{dex::TradingPair, EffectHash, Fee, FullViewingKey, NotePayload, PayloadKey};
+use penumbra_crypto::{EffectHash, Fee, FullViewingKey, NotePayload, PayloadKey};
+use penumbra_dex::{
+    lp::action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},
+    swap, swap_claim, TradingPair,
+};
 use penumbra_proto::DomainType;
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimBody};
 
 use crate::{
     action::{
-        swap, swap_claim, DelegatorVote, DelegatorVoteBody, PositionClose, PositionOpen,
-        PositionRewardClaim, PositionWithdraw, Proposal, ProposalDepositClaim, ProposalSubmit,
+        DelegatorVote, DelegatorVoteBody, Proposal, ProposalDepositClaim, ProposalSubmit,
         ProposalWithdraw, ValidatorVote, ValidatorVoteBody, Vote,
     },
     plan::TransactionPlan,
@@ -648,17 +651,17 @@ impl EffectingData for TradingPair {
 mod tests {
     use penumbra_crypto::{
         asset,
-        dex::{swap::SwapPlaintext, TradingPair},
         keys::{SeedPhrase, SpendKey},
         memo::MemoPlaintext,
         Address, Fee, Note, Value, STAKING_TOKEN_ASSET_ID,
     };
+    use penumbra_dex::{swap::SwapPlaintext, swap::SwapPlan, TradingPair};
     use penumbra_shielded_pool::{OutputPlan, SpendPlan};
     use penumbra_tct as tct;
     use rand_core::OsRng;
 
     use crate::{
-        plan::{CluePlan, MemoPlan, SwapPlan, TransactionPlan},
+        plan::{CluePlan, MemoPlan, TransactionPlan},
         WitnessData,
     };
 

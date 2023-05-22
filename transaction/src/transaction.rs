@@ -14,6 +14,10 @@ use penumbra_crypto::{
     Fee, Fr, FullViewingKey, Note, Nullifier, PayloadKey, TransactionContext,
 };
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_dex::{
+    lp::action::{PositionClose, PositionOpen},
+    swap::Swap,
+};
 use penumbra_ibc::IbcAction;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, Message, TypeUrl};
 use penumbra_shielded_pool::{Output, Spend};
@@ -22,10 +26,7 @@ use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    action::{
-        DelegatorVote, PositionClose, PositionOpen, ProposalSubmit, ProposalWithdraw, Swap,
-        ValidatorVote,
-    },
+    action::{DelegatorVote, ProposalSubmit, ProposalWithdraw, ValidatorVote},
     view::{action_view::OutputView, MemoView, TransactionBodyView},
     Action, ActionView, Id, IsAction, TransactionPerspective, TransactionView,
 };

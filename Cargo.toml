@@ -11,6 +11,7 @@ members = [
   "crates/component",
   "crates/ibc",
   "crates/dao",
+  "crates/dex",
   "crates/sct",
   "crates/compact-block",
   "crates/distributions",

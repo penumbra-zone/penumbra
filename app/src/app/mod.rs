@@ -9,6 +9,7 @@ use penumbra_chain::{
 use penumbra_compact_block::component::StateWriteExt as _;
 use penumbra_compact_block::CompactBlock;
 use penumbra_component::Component;
+use penumbra_dex::component::{Dex, SwapManager};
 use penumbra_distributions::component::Distributions;
 use penumbra_ibc::component::IBCComponent;
 use penumbra_proto::DomainType;
@@ -21,7 +22,6 @@ use tendermint::validator::Update;
 use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
-use crate::dex::{Dex, SwapManager};
 use crate::governance::{Governance, StateReadExt as _};
 use penumbra_stake::component::{Staking, ValidatorUpdates};
 
@@ -377,7 +377,7 @@ impl App {
 
         // Gather the swap outputs
         let swap_outputs = state
-            .object_get::<im::OrdMap<_, _>>(crate::dex::state_key::pending_outputs())
+            .object_get::<im::OrdMap<_, _>>(penumbra_dex::state_key::pending_outputs())
             .unwrap_or_default()
             .into_iter()
             .collect();

@@ -10,18 +10,22 @@ use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
     asset::Amount,
     asset::DenomMetadata,
-    dex::{
-        lp::position::{self, Position},
-        swap::SwapPlaintext,
-        TradingPair,
-    },
     keys::{AccountGroupId, AddressIndex},
     memo::MemoPlaintext,
     stake::IdentityKey,
-    Address, Fee, Note, Value,
+    Address, Balance, Fee, Note, Value,
 };
-use penumbra_crypto::{dex::lp::Reserves, Balance};
 use penumbra_dao::DaoDeposit;
+use penumbra_dex::{
+    lp::action::{PositionClose, PositionOpen},
+    lp::plan::PositionWithdrawPlan,
+    lp::position::{self, Position},
+    lp::Reserves,
+    swap::SwapPlaintext,
+    swap::SwapPlan,
+    swap_claim::SwapClaimPlan,
+    TradingPair,
+};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
@@ -30,13 +34,9 @@ use penumbra_stake::{rate::RateData, validator};
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{
-        PositionClose, PositionOpen, Proposal, ProposalDepositClaim, ProposalSubmit,
-        ProposalWithdraw, ValidatorVote, Vote,
+        Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
     },
-    plan::{
-        ActionPlan, DelegatorVotePlan, MemoPlan, PositionWithdrawPlan, SwapClaimPlan, SwapPlan,
-        TransactionPlan,
-    },
+    plan::{ActionPlan, DelegatorVotePlan, MemoPlan, TransactionPlan},
     proposal,
 };
 use rand::{CryptoRng, RngCore};

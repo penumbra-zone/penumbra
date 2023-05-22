@@ -1,5 +1,13 @@
-use penumbra_crypto::{balance, Fr, Note, Zero};
+use penumbra_crypto::{balance, Fr, Note, Value, Zero};
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_dex::{
+    lp::{
+        action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},
+        position, LpNft,
+    },
+    swap::{Swap, SwapCiphertext, SwapView},
+    swap_claim::{SwapClaim, SwapClaimView},
+};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_shielded_pool::{Output, OutputView, Spend, SpendView};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
@@ -159,5 +167,125 @@ impl IsAction for DaoSpend {
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
         ActionView::DaoSpend(self.clone())
+    }
+}
+
+impl IsAction for PositionOpen {
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::PositionOpen(self.to_owned())
+    }
+}
+
+impl IsAction for PositionClose {
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::PositionClose(self.to_owned())
+    }
+}
+
+impl IsAction for PositionWithdraw {
+    fn balance_commitment(&self) -> balance::Commitment {
+        let closed_position_nft = Value {
+            amount: 1u64.into(),
+            asset_id: LpNft::new(self.position_id, position::State::Closed).asset_id(),
+        }
+        .commit(Fr::zero());
+        let withdrawn_position_nft = Value {
+            amount: 1u64.into(),
+            asset_id: LpNft::new(self.position_id, position::State::Withdrawn).asset_id(),
+        }
+        .commit(Fr::zero());
+
+        // The action consumes a closed position and produces the position's reserves and a withdrawn position NFT.
+        self.reserves_commitment - closed_position_nft + withdrawn_position_nft
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::PositionWithdraw(self.to_owned())
+    }
+}
+
+impl IsAction for PositionRewardClaim {
+    fn balance_commitment(&self) -> balance::Commitment {
+        let withdrawn_position_nft = Value {
+            amount: 1u64.into(),
+            asset_id: LpNft::new(self.position_id, position::State::Withdrawn).asset_id(),
+        }
+        .commit(Fr::zero());
+
+        // The action consumes a closed position and produces the position's reserves.
+        self.rewards_commitment - withdrawn_position_nft
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::PositionRewardClaim(self.to_owned())
+    }
+}
+
+impl IsAction for Swap {
+    /// Compute a commitment to the value contributed to a transaction by this swap.
+    /// Will subtract (v1,t1), (v2,t2), and (f,fee_token)
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.balance_commitment_inner()
+    }
+
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
+        let commitment = self.body.payload.commitment;
+
+        let plaintext = txp.payload_keys.get(&commitment).and_then(|payload_key| {
+            // Decrypt swap ciphertext
+            SwapCiphertext::decrypt_with_payload_key(
+                &self.body.payload.encrypted_swap,
+                payload_key,
+                commitment,
+            )
+            .ok()
+        });
+
+        ActionView::Swap(match plaintext {
+            Some(swap_plaintext) => SwapView::Visible {
+                swap: self.to_owned(),
+                swap_plaintext,
+            },
+            None => SwapView::Opaque {
+                swap: self.to_owned(),
+            },
+        })
+    }
+}
+
+impl IsAction for SwapClaim {
+    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
+        // Get the advice notes for each output from the swap claim
+        let output_1 = txp.advice_notes.get(&self.body.output_1_commitment);
+        let output_2 = txp.advice_notes.get(&self.body.output_2_commitment);
+
+        match (output_1, output_2) {
+            (Some(output_1), Some(output_2)) => {
+                let swap_claim_view = SwapClaimView::Visible {
+                    swap_claim: self.to_owned(),
+                    output_1: txp.view_note(output_1.to_owned()),
+                    output_2: txp.view_note(output_2.to_owned()),
+                };
+                ActionView::SwapClaim(swap_claim_view)
+            }
+            _ => {
+                let swap_claim_view = SwapClaimView::Opaque {
+                    swap_claim: self.to_owned(),
+                };
+                ActionView::SwapClaim(swap_claim_view)
+            }
+        }
     }
 }

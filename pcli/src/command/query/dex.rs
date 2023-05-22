@@ -3,13 +3,10 @@ use comfy_table::{presets, Table};
 use futures::{Stream, StreamExt, TryStreamExt};
 use std::pin::Pin;
 
-use penumbra_crypto::{
-    dex::{
-        execution::SwapExecution,
-        lp::position::{self, Position},
-        BatchSwapOutputData, DirectedTradingPair, TradingPair,
-    },
-    Asset, Value,
+use penumbra_crypto::{Asset, Value};
+use penumbra_dex::{
+    lp::position::{self, Position},
+    BatchSwapOutputData, DirectedTradingPair, SwapExecution, TradingPair,
 };
 use penumbra_proto::client::v1alpha1::{
     specific_query_service_client::SpecificQueryServiceClient, AssetInfoRequest,

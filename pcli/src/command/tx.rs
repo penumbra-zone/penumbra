@@ -12,12 +12,12 @@ use decaf377::Fr;
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_crypto::{
     asset::{self, DenomMetadata},
-    dex::lp::position,
     keys::AddressIndex,
     memo::MemoPlaintext,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
     Amount, Fee, Value, STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_ibc::Ics20Withdrawal;
 use penumbra_proto::{
     client::v1alpha1::{
@@ -28,7 +28,7 @@ use penumbra_proto::{
 };
 use penumbra_stake::rate::RateData;
 use penumbra_stake::UndelegateClaimPlan;
-use penumbra_transaction::{plan::SwapClaimPlan, proposal::ProposalToml, vote::Vote};
+use penumbra_transaction::{proposal::ProposalToml, vote::Vote};
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};
 use rand_core::OsRng;
