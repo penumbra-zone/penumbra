@@ -247,14 +247,6 @@ impl Opt {
                     .add_service(tonic_web::enable(oblivious_query_proxy))
                     .add_service(tonic_web::enable(specific_query_proxy))
                     .add_service(tonic_web::enable(tendermint_proxy_proxy))
-                    .add_service(tonic_web::enable(
-                        tonic_reflection::server::Builder::configure()
-                            .register_encoded_file_descriptor_set(
-                                penumbra_proto::FILE_DESCRIPTOR_SET,
-                            )
-                            .build()
-                            .with_context(|| "could not configure grpc reflection service")?,
-                    ))
                     .serve(bind_addr.clone());
 
                 tokio::spawn(server).await??;
