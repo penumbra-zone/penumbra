@@ -42,7 +42,7 @@ pub use governance::{
 pub use keys::FullViewingKey;
 pub use note::{Note, NoteCiphertext, NoteView};
 pub use note_payload::NotePayload;
-pub use nullifier::Nullifier;
+pub use nullifier::{Nullifier, NullifierVar};
 pub use rseed::Rseed;
 pub use symmetric::PayloadKey;
 pub use transaction::TransactionContext;

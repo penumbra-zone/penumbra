@@ -249,6 +249,11 @@ message ZKSwapProof {
     bytes inner = 1;
 }
 
+// A Penumbra ZK swap claim proof.
+message ZKSwapClaimProof {
+    bytes inner = 1;
+}
+
 // A Penumbra ZK undelegate claim proof.
 message ZKUndelegateClaimProof {
     bytes inner = 1;

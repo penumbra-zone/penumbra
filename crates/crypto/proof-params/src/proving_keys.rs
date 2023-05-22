@@ -19,6 +19,11 @@ pub fn swap_proving_parameters() -> ProvingKey<Bls12_377> {
     load_proving_parameters(pk_params, crate::swap::PROVING_KEY_ID)
 }
 
+pub fn swapclaim_proving_parameters() -> ProvingKey<Bls12_377> {
+    let pk_params = include_bytes!("gen/swapclaim_pk.bin");
+    load_proving_parameters(pk_params, crate::swapclaim::PROVING_KEY_ID)
+}
+
 pub fn undelegateclaim_proving_parameters() -> ProvingKey<Bls12_377> {
     let pk_params = include_bytes!("gen/undelegateclaim_pk.bin");
     load_proving_parameters(pk_params, crate::undelegateclaim::PROVING_KEY_ID)

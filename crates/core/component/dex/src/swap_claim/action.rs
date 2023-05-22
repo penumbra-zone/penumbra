@@ -1,5 +1,5 @@
 use anyhow::Context;
-use penumbra_crypto::{Balance, Fee, Nullifier};
+use penumbra_crypto::{proofs::groth16::GROTH16_PROOF_LENGTH_BYTES, Balance, Fee, Nullifier};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 
@@ -33,7 +33,7 @@ impl DomainType for SwapClaim {
 impl From<SwapClaim> for pb::SwapClaim {
     fn from(sc: SwapClaim) -> Self {
         pb::SwapClaim {
-            proof: sc.proof.into(),
+            proof: sc.proof.0.into(),
             body: Some(sc.body.into()),
             epoch_duration: sc.epoch_duration,
         }
@@ -43,16 +43,17 @@ impl From<SwapClaim> for pb::SwapClaim {
 impl TryFrom<pb::SwapClaim> for SwapClaim {
     type Error = anyhow::Error;
     fn try_from(sc: pb::SwapClaim) -> Result<Self, Self::Error> {
+        let proof_bytes: [u8; GROTH16_PROOF_LENGTH_BYTES] = (sc.proof[..])
+            .try_into()
+            .context("swap claim proof malformed")?;
         Ok(Self {
-            proof: sc.proof[..]
-                .try_into()
-                .context("swap claim proof malformed")?,
             body: sc
                 .body
                 .ok_or_else(|| anyhow::anyhow!("missing swap claim body"))?
                 .try_into()
                 .context("swap claim body malformed")?,
             epoch_duration: sc.epoch_duration,
+            proof: SwapClaimProof(proof_bytes),
         })
     }
 }

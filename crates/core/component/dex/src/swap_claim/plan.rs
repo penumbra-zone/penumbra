@@ -2,9 +2,11 @@ use penumbra_crypto::{
     keys::{IncomingViewingKey, NullifierKey},
     FullViewingKey, Value,
 };
+use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 
+use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use tct::Position;
 
@@ -44,18 +46,35 @@ impl SwapClaimPlan {
         state_commitment_proof: &tct::Proof,
         nk: &NullifierKey,
     ) -> SwapClaimProof {
-        let (lambda_1_i, lambda_2_i) = self.output_data.pro_rata_outputs((
+        let (lambda_1, lambda_2) = self.output_data.pro_rata_outputs((
             self.swap_plaintext.delta_1_i.into(),
             self.swap_plaintext.delta_2_i.into(),
         ));
+        let (output_rseed_1, output_rseed_2) = self.swap_plaintext.output_rseeds();
+        let note_blinding_1 = output_rseed_1.derive_note_blinding();
+        let note_blinding_2 = output_rseed_2.derive_note_blinding();
+        let (output_1_note, output_2_note) = self.swap_plaintext.output_notes(&self.output_data);
+        let note_commitment_1 = output_1_note.commit();
+        let note_commitment_2 = output_2_note.commit();
 
-        SwapClaimProof {
-            swap_plaintext: self.swap_plaintext.clone(),
-            lambda_1_i,
-            lambda_2_i,
-            nk: nk.clone(),
-            swap_commitment_proof: state_commitment_proof.clone(),
-        }
+        let nullifier = nk.derive_nullifier(self.position, &self.swap_plaintext.swap_commitment());
+        SwapClaimProof::prove(
+            &mut OsRng,
+            &SWAPCLAIM_PROOF_PROVING_KEY,
+            self.swap_plaintext.clone(),
+            state_commitment_proof.clone(),
+            nk.clone(),
+            state_commitment_proof.root(),
+            nullifier,
+            lambda_1,
+            lambda_2,
+            note_blinding_1,
+            note_blinding_2,
+            note_commitment_1,
+            note_commitment_2,
+            self.output_data,
+        )
+        .expect("can generate ZKSwapClaimProof")
     }
 
     /// Construct the [`swap_claim::Body`] described by this plan.

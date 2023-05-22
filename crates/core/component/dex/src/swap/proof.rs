@@ -204,7 +204,7 @@ impl SwapProof {
         tracing::debug!(?proof_result, elapsed = ?start.elapsed());
         proof_result
             .then_some(())
-            .ok_or_else(|| anyhow::anyhow!("proof did not verify"))
+            .ok_or_else(|| anyhow::anyhow!("a swap proof did not verify"))
     }
 }
 

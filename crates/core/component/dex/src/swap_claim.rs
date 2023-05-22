@@ -1,7 +1,8 @@
 mod action;
 mod plan;
-mod proof;
 mod view;
+
+pub mod proof;
 
 pub use action::{Body, SwapClaim};
 pub use plan::SwapClaimPlan;
