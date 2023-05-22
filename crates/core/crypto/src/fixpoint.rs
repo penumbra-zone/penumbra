@@ -420,7 +420,7 @@ impl U128x128Var {
         let y = rhs;
         let q = U128x128Var::new_witness(cs.clone(), || Ok(U128x128(quo_ooc)))?;
         // r isn't a U128x128, but we can reuse the codepath for constraining its bits as limb values
-        let r = U128x128Var::new_witness(cs.clone(), || Ok(U128x128(rem_ooc)))?.limbs;
+        let r = U128x128Var::new_witness(cs, || Ok(U128x128(rem_ooc)))?.limbs;
 
         let qbar = &q.limbs;
         let ybar = &y.limbs;
@@ -536,6 +536,17 @@ impl U128x128Var {
         z6_and_up.enforce_equal(&FqVar::zero())?;
 
         Ok(q)
+    }
+
+    pub fn round_down(self) -> U128x128Var {
+        Self {
+            limbs: [
+                UInt64::constant(0u64),
+                UInt64::constant(0u64),
+                self.limbs[2].clone(),
+                self.limbs[3].clone(),
+            ],
+        }
     }
 }
 
@@ -667,7 +678,7 @@ mod test {
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(1))]
         #[test]
-        fn multiply(
+        fn multiply_and_round(
             a_int in any::<u64>(),
             b_int in any::<u64>(),
         ) {
@@ -677,11 +688,13 @@ mod test {
             let result = a.checked_mul(&b);
 
             let expected_c = result.expect("result should not overflow");
+            let rounded_down_c = expected_c.round_down();
 
             let circuit = TestMultiplicationCircuit {
                 a,
                 b,
                 c: expected_c,
+                rounded_down_c,
             };
 
             let (pk, vk) = TestMultiplicationCircuit::generate_prepared_test_parameters();
@@ -690,9 +703,12 @@ mod test {
             let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
             .expect("should be able to form proof");
 
+            let mut pi = Vec::new();
+            pi.extend_from_slice(&expected_c.to_field_elements().unwrap());
+            pi.extend_from_slice(&rounded_down_c.to_field_elements().unwrap());
             let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
                 &vk,
-                &expected_c.to_field_elements().unwrap(),
+                &pi,
                 &proof,
             );
             assert!(proof_result.is_ok());
@@ -705,6 +721,7 @@ mod test {
 
         // c = a * b
         pub c: U128x128,
+        pub rounded_down_c: U128x128,
     }
 
     impl ConstraintSynthesizer<Fq> for TestMultiplicationCircuit {
@@ -715,8 +732,12 @@ mod test {
             let a_var = U128x128Var::new_witness(cs.clone(), || Ok(self.a))?;
             let b_var = U128x128Var::new_witness(cs.clone(), || Ok(self.b))?;
             let c_public_var = U128x128Var::new_input(cs.clone(), || Ok(self.c))?;
+            let c_public_rounded_down_var =
+                U128x128Var::new_input(cs.clone(), || Ok(self.rounded_down_c))?;
             let c_var = a_var.checked_mul(&b_var, cs)?;
             c_var.enforce_equal(&c_public_var)?;
+            let c_rounded_down = c_var.round_down();
+            c_rounded_down.enforce_equal(&c_public_rounded_down_var)?;
             Ok(())
         }
     }
@@ -726,10 +747,13 @@ mod test {
             let num: [u8; 32] = [0u8; 32];
             let a = U128x128::from_bytes(num);
             let b = U128x128::from_bytes(num);
+            let c = a.checked_mul(&b).unwrap();
+            let rounded_down_c = c.round_down();
             let circuit = TestMultiplicationCircuit {
                 a,
                 b,
-                c: a.checked_mul(&b).unwrap(),
+                c,
+                rounded_down_c,
             };
             let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
                 circuit, &mut OsRng,
