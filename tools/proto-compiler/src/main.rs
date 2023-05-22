@@ -65,18 +65,18 @@ fn main() -> Result<()> {
 
     config.compile_protos(
         &[
-            "../../proto/proto/penumbra/core/crypto/v1alpha1/crypto.proto",
-            "../../proto/proto/penumbra/core/transaction/v1alpha1/transaction.proto",
-            "../../proto/proto/penumbra/core/stake/v1alpha1/stake.proto",
-            "../../proto/proto/penumbra/core/chain/v1alpha1/chain.proto",
-            "../../proto/proto/penumbra/core/ibc/v1alpha1/ibc.proto",
-            "../../proto/proto/penumbra/core/dex/v1alpha1/dex.proto",
-            "../../proto/proto/penumbra/core/transparent_proofs/v1alpha1/transparent_proofs.proto",
-            "../../proto/proto/penumbra/core/governance/v1alpha1/governance.proto",
-            "../../proto/rust-vendored/tendermint/types/validator.proto",
-            "../../proto/rust-vendored/tendermint/p2p/types.proto",
+            "../../crates/proto/proto/penumbra/core/crypto/v1alpha1/crypto.proto",
+            "../../crates/proto/proto/penumbra/core/transaction/v1alpha1/transaction.proto",
+            "../../crates/proto/proto/penumbra/core/stake/v1alpha1/stake.proto",
+            "../../crates/proto/proto/penumbra/core/chain/v1alpha1/chain.proto",
+            "../../crates/proto/proto/penumbra/core/ibc/v1alpha1/ibc.proto",
+            "../../crates/proto/proto/penumbra/core/dex/v1alpha1/dex.proto",
+            "../../crates/proto/proto/penumbra/core/transparent_proofs/v1alpha1/transparent_proofs.proto",
+            "../../crates/proto/proto/penumbra/core/governance/v1alpha1/governance.proto",
+            "../../crates/proto/rust-vendored/tendermint/types/validator.proto",
+            "../../crates/proto/rust-vendored/tendermint/p2p/types.proto",
         ],
-        &["../../proto/proto/", "../../proto/rust-vendored/"],
+        &["../../crates/proto/proto/", "../../crates/proto/rust-vendored/"],
     )?;
 
     // For the client code, we also want to generate RPC instances, so compile via tonic:
@@ -107,15 +107,15 @@ fn main() -> Result<()> {
         .compile_with_config(
             config,
             &[
-                "../../proto/proto/penumbra/client/v1alpha1/client.proto",
-                "../../proto/proto/penumbra/narsil/ledger/v1alpha1/ledger.proto",
-                "../../proto/proto/penumbra/view/v1alpha1/view.proto",
-                "../../proto/proto/penumbra/custody/v1alpha1/custody.proto",
-                "../../proto/rust-vendored/cosmos/base/tendermint/v1beta1/query.proto",
-                "../../proto/rust-vendored/tendermint/types/validator.proto",
-                "../../proto/rust-vendored/tendermint/p2p/types.proto",
+                "../../crates/proto/proto/penumbra/client/v1alpha1/client.proto",
+                "../../crates/proto/proto/penumbra/narsil/ledger/v1alpha1/ledger.proto",
+                "../../crates/proto/proto/penumbra/view/v1alpha1/view.proto",
+                "../../crates/proto/proto/penumbra/custody/v1alpha1/custody.proto",
+                "../../crates/proto/rust-vendored/cosmos/base/tendermint/v1beta1/query.proto",
+                "../../crates/proto/rust-vendored/tendermint/types/validator.proto",
+                "../../crates/proto/rust-vendored/tendermint/p2p/types.proto",
             ],
-            &["../../proto/proto/", "../../proto/rust-vendored/"],
+            &["../../crates/proto/proto/", "../../crates/proto/rust-vendored/"],
         )?;
 
     // Finally, build pbjson Serialize, Deserialize impls:
