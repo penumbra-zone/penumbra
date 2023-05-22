@@ -297,13 +297,7 @@ async fn main() -> anyhow::Result<()> {
                 )))
                 .add_service(tonic_web::enable(TendermintProxyServiceServer::new(
                     tm_proxy.clone(),
-                )))
-                .add_service(tonic_web::enable(
-                    tonic_reflection::server::Builder::configure()
-                        .register_encoded_file_descriptor_set(penumbra_proto::FILE_DESCRIPTOR_SET)
-                        .build()
-                        .with_context(|| "could not configure grpc reflection service")?,
-                ));
+                )));
 
             let grpc_server = if let Some(domain) = grpc_auto_https {
                 use pd::auto_https::Wrapper;

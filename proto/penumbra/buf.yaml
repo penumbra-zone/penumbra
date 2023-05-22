@@ -1,0 +1,16 @@
+version: v1
+name: buf.build/penumbra-zone/penumbra
+deps:
+  - buf.build/cosmos/ibc
+  - buf.build/cosmos/cosmos-sdk
+build:
+  # Skip gogoproto from consideration during build, otherwise
+  # we get an error that the proto "exists in multiple locations".
+  excludes:
+    - gogoproto
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - DEFAULT
