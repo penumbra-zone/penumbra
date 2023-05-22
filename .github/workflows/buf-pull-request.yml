@@ -10,16 +10,16 @@ jobs:
         with:
           buf_api_token: ${{ secrets.BUF_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          input: 'proto'
+          input: 'crates/proto'
       - uses: bufbuild/buf-lint-action@v1
         with:
-          input: 'proto'
+          input: 'crates/proto'
           buf_token: ${{ secrets.BUF_TOKEN }}
 
       - name: Check for module path changes
         shell: bash
         run: |
-          cd proto/proto
+          cd crates/proto/proto
           buf mod update
           s="$(git status --porcelain)"
           if [[ -n "$s" ]]; then
@@ -33,9 +33,9 @@ jobs:
       - name: Check for breaking changes
         uses: bufbuild/buf-breaking-action@v1
         with:
-          input: 'proto'
+          input: 'crates/proto'
           # The 'main' branch of the GitHub repository that defines the module.
-          against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=proto'
+          against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=crates/proto'
 
   protobuf-fresh:
     name: Compile protobuf specs to rust code
@@ -72,7 +72,7 @@ jobs:
           cargo run
           cd ../..
           # Ignore changes to the unstable proto_descriptor output
-          git checkout -- proto/src/gen/proto_descriptor.bin
+          git checkout -- crates/proto/src/gen/proto_descriptor.bin
           s="$(git status --porcelain)"
           if [[ -n "$s" ]]; then
               echo "ERROR: protobuf files must be regenerated and committed:"

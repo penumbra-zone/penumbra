@@ -17,10 +17,10 @@ jobs:
         with:
           buf_api_token: ${{ secrets.BUF_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          input: 'proto'
+          input: 'crates/proto'
       - uses: bufbuild/buf-lint-action@v1
         with:
-          input: 'proto'
+          input: 'crates/proto'
       # Disabled because we don't have any changes to compare against
       # - uses: bufbuild/buf-breaking-action@v1
       #   with:
@@ -30,4 +30,4 @@ jobs:
       - uses: bufbuild/buf-push-action@v1
         with:
           buf_token: ${{ secrets.BUF_TOKEN }}
-          input: 'proto/proto'
+          input: 'crates/proto/proto'
