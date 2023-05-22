@@ -1,11 +1,17 @@
 use anyhow::{anyhow, Result};
 
+use ark_ff::ToConstraintField;
+use ark_r1cs_std::prelude::AllocVar;
+use ark_relations::r1cs::SynthesisError;
+use decaf377::{r1cs::FqVar, Fq};
 use penumbra_proto::{
     client::v1alpha1::BatchSwapOutputDataResponse, core::dex::v1alpha1 as pb, DomainType, TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 
-use penumbra_crypto::{fixpoint::U128x128, Amount};
+use penumbra_crypto::{asset::AmountVar, fixpoint::U128x128, Amount};
+
+use crate::TradingPairVar;
 
 use super::TradingPair;
 
@@ -71,6 +77,72 @@ impl BatchSwapOutputData {
                 .try_into()
                 .expect("rounded amount is integral"),
         )
+    }
+}
+
+impl ToConstraintField<Fq> for BatchSwapOutputData {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        let mut public_inputs = Vec::new();
+        public_inputs.extend(Fq::from(self.delta_1).to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.delta_2).to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.lambda_1).to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.lambda_2).to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.unfilled_1).to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.unfilled_2).to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.height).to_field_elements().unwrap());
+        public_inputs.extend(self.trading_pair.to_field_elements().unwrap());
+        public_inputs.extend(Fq::from(self.epoch_height).to_field_elements().unwrap());
+        Some(public_inputs)
+    }
+}
+
+pub struct BatchSwapOutputDataVar {
+    pub delta_1: AmountVar,
+    pub delta_2: AmountVar,
+    pub lambda_1: AmountVar,
+    pub lambda_2: AmountVar,
+    pub unfilled_1: AmountVar,
+    pub unfilled_2: AmountVar,
+    pub height: FqVar,
+    pub trading_pair: TradingPairVar,
+    pub epoch_height: FqVar,
+}
+
+impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
+    fn new_variable<T: std::borrow::Borrow<BatchSwapOutputData>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let output_data = f()?.borrow().clone();
+        let delta_1 = AmountVar::new_variable(cs.clone(), || Ok(output_data.delta_1), mode)?;
+        let delta_2 = AmountVar::new_variable(cs.clone(), || Ok(output_data.delta_2), mode)?;
+        let lambda_1 = AmountVar::new_variable(cs.clone(), || Ok(output_data.lambda_1), mode)?;
+        let lambda_2 = AmountVar::new_variable(cs.clone(), || Ok(output_data.lambda_2), mode)?;
+        let unfilled_1 = AmountVar::new_variable(cs.clone(), || Ok(output_data.unfilled_1), mode)?;
+        let unfilled_2 = AmountVar::new_variable(cs.clone(), || Ok(output_data.unfilled_2), mode)?;
+        let height = FqVar::new_variable(cs.clone(), || Ok(Fq::from(output_data.height)), mode)?;
+        let trading_pair = TradingPairVar::new_variable_unchecked(
+            cs.clone(),
+            || Ok(output_data.trading_pair),
+            mode,
+        )?;
+        let epoch_height =
+            FqVar::new_variable(cs, || Ok(Fq::from(output_data.epoch_height)), mode)?;
+
+        Ok(Self {
+            delta_1,
+            delta_2,
+            lambda_1,
+            lambda_2,
+            unfilled_1,
+            unfilled_2,
+            trading_pair,
+            height,
+            epoch_height,
+        })
     }
 }
 
