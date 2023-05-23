@@ -59,9 +59,9 @@ atty = "0.2"
 tempfile = "3.3.0"
 assert_cmd = "2.0"
 base64 = "0.20"
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "tm-31-ics9" }
 
-ibc-proto = "0.31.0-alpha.2"
+ibc-proto = "0.30"
 
 [build-dependencies]
 vergen = "5"

@@ -32,7 +32,7 @@ use tendermint::validator::Update;
 use tendermint::{
     abci::{
         self,
-        types::{Evidence, LastCommitInfo},
+        types::{CommitInfo, Misbehavior},
     },
     block, PublicKey,
 };
@@ -644,7 +644,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
     }
 
     #[instrument(skip(self, last_commit_info))]
-    async fn track_uptime(&mut self, last_commit_info: &LastCommitInfo) -> Result<()> {
+    async fn track_uptime(&mut self, last_commit_info: &CommitInfo) -> Result<()> {
         // Note: this probably isn't the correct height for the LastCommitInfo,
         // which is about the *last* commit, but at least it'll be consistent,
         // which is all we need to count signatures.
@@ -859,7 +859,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         Ok(())
     }
 
-    async fn process_evidence(&mut self, evidence: &Evidence) -> Result<()> {
+    async fn process_evidence(&mut self, evidence: &Misbehavior) -> Result<()> {
         let validator = self
             .validator_by_tendermint_address(&evidence.validator.address)
             .await?

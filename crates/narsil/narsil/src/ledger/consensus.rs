@@ -78,6 +78,12 @@ impl Consensus {
                         .await
                         .expect("commit must succeed"),
                 ),
+                Request::PrepareProposal(_) => {
+                    unimplemented!("Tendermint v034 does not support `PrepareProposal`")
+                }
+                Request::ProcessProposal(_) => {
+                    unimplemented!("Tendermint v034 does not support `ProcessProposal`")
+                }
             }));
         }
         Ok(())
