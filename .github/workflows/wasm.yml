@@ -50,3 +50,9 @@ jobs:
         run:
           wasm-pack build
         working-directory: crates/wasm
+
+      # Always show the results of `cargo tree`, even if the tests failed, since that
+      # output will be immediately useful in debugging.
+      - name: display mio deps
+        run: cargo tree --invert mio --edges features
+        if: always()
