@@ -7,7 +7,7 @@ use penumbra_component::Component;
 use penumbra_crypto::{asset, SwapFlow, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
-use tendermint::abci;
+use tendermint::v0_34::abci;
 use tracing::instrument;
 
 use crate::{state_key, BatchSwapOutputData, SwapExecution, TradingPair};

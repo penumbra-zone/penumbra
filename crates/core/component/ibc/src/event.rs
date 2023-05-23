@@ -1,12 +1,11 @@
+use ibc_proto::protobuf::Protobuf;
+use ibc_types::clients::ics07_tendermint as tm;
 use ibc_types::core::{
     ics02_client::client_state::ClientState,
     ics03_connection::connection::{ConnectionEnd, Counterparty},
     ics04_channel::{channel::ChannelEnd, packet::Packet},
     ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 };
-// TODO(erwan): generalize this
-use ibc_proto::protobuf::Protobuf;
-use ibc_types::clients::ics07_tendermint as tm;
 use tendermint::abci::{Event, EventAttributeIndexExt};
 
 pub fn create_client(client_id: ClientId, client_state: tm::client_state::ClientState) -> Event {
