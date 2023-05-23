@@ -419,9 +419,6 @@ impl TendermintProxyService for TendermintProxy {
                                     timestamp: None,
                                     total_voting_power: -1,
                                 }),
-                                // This variant is described as not-implemented in tendermint-rs,
-                                // and doesn't exist in the prost-generated protobuf types
-                                tendermint::evidence::Evidence::ConflictingHeaders(_) => panic!("unimplemented"),
                         }),
                         })
                         .collect(),

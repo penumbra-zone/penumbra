@@ -1026,7 +1026,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4114279215a005bc675e386011e594e1d9b800918cea18fcadadcce864a2046b"
 dependencies = [
  "borsh-derive",
- "hashbrown 0.13.2",
+ "hashbrown 0.11.2",
 ]
 
 [[package]]
@@ -2844,50 +2844,34 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.30.0"
-source = "git+https://github.com/penumbra-zone/ibc-proto-rs?branch=penumbra#505bb1fc470ddf618b99832967aa0de86306f807"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f844ebc1ddf70f2ad7cd5981a2feba261fff55e1ad6482c27551ee3c6cec7df4"
 dependencies = [
  "base64 0.21.1",
  "borsh",
  "bytes",
  "flex-error",
- "ics23 0.10.1",
  "parity-scale-codec",
  "prost",
  "scale-info",
  "serde",
  "subtle-encoding",
- "tendermint-proto 0.31.1",
-]
-
-[[package]]
-name = "ibc-proto"
-version = "0.31.0-alpha.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed65b85a5f119da1cc16c7482a8331befca4a1034095e729dddcf93be1b3415a"
-dependencies = [
- "base64 0.21.1",
- "bytes",
- "flex-error",
- "ics23 0.10.1",
- "prost",
- "serde",
- "subtle-encoding",
- "tendermint-proto 0.32.0",
+ "tendermint-proto",
  "tonic 0.9.2",
 ]
 
 [[package]]
 name = "ibc-types"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=0.2.x#b56deb3b237f9f2eea2d94907e9620c18c64adce"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=tm-31-ics9#15a0ddd3154f07c6395fd869a8bc4739898a7c65"
 dependencies = [
  "bytes",
  "derive_more",
  "displaydoc",
  "dyn-clone",
  "erased-serde",
- "ibc-proto 0.30.0",
- "ics23 0.10.1",
+ "ibc-proto",
+ "ics23",
  "num-traits",
  "primitive-types",
  "prost",
@@ -2899,7 +2883,7 @@ dependencies = [
  "subtle-encoding",
  "tendermint",
  "tendermint-light-client-verifier",
- "tendermint-proto 0.31.1",
+ "tendermint-proto",
  "time 0.3.19",
  "tracing",
  "uint",
@@ -2928,23 +2912,6 @@ dependencies = [
  "hex",
  "prost",
  "ripemd",
- "sha2 0.10.6",
- "sha3",
-]
-
-[[package]]
-name = "ics23"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af9e8f569c5cc88e08b8d076dc207e0748aa1f52d4b84910ec919c8f2bed6ea7"
-dependencies = [
- "anyhow",
- "bytes",
- "hex",
- "pbjson",
- "prost",
- "ripemd",
- "serde",
  "sha2 0.10.6",
  "sha3",
 ]
@@ -3138,7 +3105,7 @@ dependencies = [
  "bcs",
  "byteorder",
  "hex",
- "ics23 0.9.0",
+ "ics23",
  "itertools",
  "mirai-annotations",
  "num-derive",
@@ -3554,7 +3521,7 @@ dependencies = [
  "tendermint",
  "tendermint-config",
  "tendermint-light-client-verifier",
- "tendermint-proto 0.31.1",
+ "tendermint-proto",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.8",
@@ -3997,7 +3964,7 @@ dependencies = [
  "futures",
  "hex",
  "http-body",
- "ibc-proto 0.31.0-alpha.2",
+ "ibc-proto",
  "ibc-types",
  "indicatif",
  "jmt",
@@ -4063,7 +4030,7 @@ dependencies = [
  "hex",
  "http",
  "http-body",
- "ibc-proto 0.31.0-alpha.2",
+ "ibc-proto",
  "ibc-types",
  "metrics",
  "parking_lot 0.12.1",
@@ -4120,9 +4087,9 @@ dependencies = [
  "futures",
  "hex",
  "http",
- "ibc-proto 0.31.0-alpha.2",
+ "ibc-proto",
  "ibc-types",
- "ics23 0.9.0",
+ "ics23",
  "jmt",
  "metrics",
  "metrics-exporter-prometheus",
@@ -4164,7 +4131,7 @@ dependencies = [
  "tendermint",
  "tendermint-config",
  "tendermint-light-client-verifier",
- "tendermint-proto 0.31.1",
+ "tendermint-proto",
  "tendermint-rpc",
  "tokio",
  "tokio-stream",
@@ -4241,7 +4208,7 @@ dependencies = [
  "ed25519-consensus",
  "futures",
  "hex",
- "ibc-proto 0.31.0-alpha.2",
+ "ibc-proto",
  "ibc-types",
  "im",
  "jmt",
@@ -4276,7 +4243,7 @@ dependencies = [
  "tempfile",
  "tendermint",
  "tendermint-light-client-verifier",
- "tendermint-proto 0.31.1",
+ "tendermint-proto",
  "tokio",
  "tonic 0.8.3",
  "tracing",
@@ -4296,7 +4263,7 @@ dependencies = [
  "decaf377",
  "hex",
  "ibc-types",
- "ics23 0.9.0",
+ "ics23",
  "once_cell",
  "penumbra-component",
  "penumbra-crypto",
@@ -4537,7 +4504,7 @@ dependencies = [
  "base64 0.20.0",
  "blake2b_simd 0.5.11",
  "hex",
- "ibc-proto 0.31.0-alpha.2",
+ "ibc-proto",
  "ibc-types",
  "metrics",
  "once_cell",
@@ -4621,9 +4588,9 @@ dependencies = [
  "decaf377-rdsa",
  "futures",
  "hex",
- "ibc-proto 0.31.0-alpha.2",
+ "ibc-proto",
  "ibc-types",
- "ics23 0.9.0",
+ "ics23",
  "pbjson",
  "pbjson-types",
  "penumbra-storage",
@@ -4736,7 +4703,7 @@ dependencies = [
  "async-trait",
  "futures",
  "hex",
- "ics23 0.9.0",
+ "ics23",
  "jmt",
  "metrics",
  "parking_lot 0.12.1",
@@ -4844,7 +4811,7 @@ dependencies = [
  "tendermint",
  "tendermint-config",
  "tendermint-light-client-verifier",
- "tendermint-proto 0.31.1",
+ "tendermint-proto",
  "tendermint-rpc",
  "tokio",
  "tokio-stream",
@@ -4867,7 +4834,7 @@ dependencies = [
  "pin-project-lite",
  "sha2 0.9.9",
  "tendermint",
- "tendermint-proto 0.31.1",
+ "tendermint-proto",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.8",
@@ -4897,7 +4864,7 @@ dependencies = [
  "decaf377-rdsa",
  "derivative",
  "hex",
- "ibc-proto 0.31.0-alpha.2",
+ "ibc-proto",
  "ibc-types",
  "num-bigint",
  "once_cell",
@@ -6813,7 +6780,7 @@ dependencies = [
  "signature",
  "subtle",
  "subtle-encoding",
- "tendermint-proto 0.31.1",
+ "tendermint-proto",
  "time 0.3.19",
  "zeroize",
 ]
@@ -6850,24 +6817,6 @@ name = "tendermint-proto"
 version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1f15666993e193fa4d2b2479aa1e4f1bbe41283c820812df8dd618f41ca3f7a"
-dependencies = [
- "bytes",
- "flex-error",
- "num-derive",
- "num-traits",
- "prost",
- "prost-types",
- "serde",
- "serde_bytes",
- "subtle-encoding",
- "time 0.3.19",
-]
-
-[[package]]
-name = "tendermint-proto"
-version = "0.32.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ce23c8ff0e6634eb4c3c4aeed45076dc97dac91aac5501a905a67fa222e165b"
 dependencies = [
  "bytes",
  "flex-error",
@@ -7363,7 +7312,7 @@ dependencies = [
  "pin-project",
  "prost",
  "tendermint",
- "tendermint-proto 0.31.1",
+ "tendermint-proto",
  "tokio",
  "tokio-stream",
  "tokio-util 0.6.10",

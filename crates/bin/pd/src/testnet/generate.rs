@@ -198,7 +198,7 @@ pub fn testnet_generate(
             validator: tendermint::consensus::params::ValidatorParams {
                 pub_key_types: vec![Algorithm::Ed25519],
             },
-            version: Some(tendermint::consensus::params::VersionParams { app_version: 0 }),
+            version: Some(tendermint::consensus::params::VersionParams { app: 0 }),
         },
         // always empty in genesis json
         app_hash: tendermint::AppHash::default(),

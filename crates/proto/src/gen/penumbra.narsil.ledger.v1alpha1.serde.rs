@@ -3016,6 +3016,9 @@ impl serde::Serialize for InfoRequest {
         if self.p2p_version != 0 {
             len += 1;
         }
+        if !self.abci_version.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.narsil.ledger.v1alpha1.InfoRequest", len)?;
         if !self.version.is_empty() {
             struct_ser.serialize_field("version", &self.version)?;
@@ -3025,6 +3028,9 @@ impl serde::Serialize for InfoRequest {
         }
         if self.p2p_version != 0 {
             struct_ser.serialize_field("p2pVersion", ToString::to_string(&self.p2p_version).as_str())?;
+        }
+        if !self.abci_version.is_empty() {
+            struct_ser.serialize_field("abciVersion", &self.abci_version)?;
         }
         struct_ser.end()
     }
@@ -3041,6 +3047,8 @@ impl<'de> serde::Deserialize<'de> for InfoRequest {
             "blockVersion",
             "p2p_version",
             "p2pVersion",
+            "abci_version",
+            "abciVersion",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -3048,6 +3056,7 @@ impl<'de> serde::Deserialize<'de> for InfoRequest {
             Version,
             BlockVersion,
             P2pVersion,
+            AbciVersion,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3072,6 +3081,7 @@ impl<'de> serde::Deserialize<'de> for InfoRequest {
                             "version" => Ok(GeneratedField::Version),
                             "blockVersion" | "block_version" => Ok(GeneratedField::BlockVersion),
                             "p2pVersion" | "p2p_version" => Ok(GeneratedField::P2pVersion),
+                            "abciVersion" | "abci_version" => Ok(GeneratedField::AbciVersion),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3094,6 +3104,7 @@ impl<'de> serde::Deserialize<'de> for InfoRequest {
                 let mut version__ = None;
                 let mut block_version__ = None;
                 let mut p2p_version__ = None;
+                let mut abci_version__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Version => {
@@ -3118,12 +3129,19 @@ impl<'de> serde::Deserialize<'de> for InfoRequest {
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::AbciVersion => {
+                            if abci_version__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("abciVersion"));
+                            }
+                            abci_version__ = Some(map.next_value()?);
+                        }
                     }
                 }
                 Ok(InfoRequest {
                     version: version__.unwrap_or_default(),
                     block_version: block_version__.unwrap_or_default(),
                     p2p_version: p2p_version__.unwrap_or_default(),
+                    abci_version: abci_version__.unwrap_or_default(),
                 })
             }
         }

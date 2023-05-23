@@ -20,14 +20,13 @@ penumbra-dao = { path = "../component/dao/", default-features = false }
 penumbra-dex = { path = "../component/dex/", default-features = false }
 
 # Git deps
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "tm-31-ics9" }
+
+# Crates.io deps
+ibc-proto = { version = "0.30", features = ["std"] }
 decaf377 = "0.4"
 decaf377-rdsa = { version = "0.6" }
 poseidon377 = { version = "0.4", features = ["r1cs"] }
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
-
-ibc-proto = { version = "0.31.0-alpha.2", default-features = false, features = ["std"] }
-
-# Crates.io deps
 base64 = "0.21"
 ark-ff = { version = "0.4", default_features = false }
 ark-serialize = "0.4"

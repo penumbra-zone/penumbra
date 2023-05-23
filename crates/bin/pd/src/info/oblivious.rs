@@ -85,10 +85,11 @@ impl ObliviousQueryService for Info {
         request: tonic::Request<penumbra_proto::client::v1alpha1::InfoRequest>,
     ) -> Result<tonic::Response<penumbra_proto::client::v1alpha1::InfoResponse>, Status> {
         let info = self
-            .info(tendermint::abci::request::Info {
+            .info(tendermint::v0_34::abci::request::Info {
                 version: request.get_ref().version.clone(),
                 block_version: request.get_ref().block_version,
                 p2p_version: request.get_ref().p2p_version,
+                abci_version: request.get_ref().abci_version.clone(),
             })
             .await
             .map_err(|e| tonic::Status::unknown(format!("error getting ABCI info: {e}")))?;

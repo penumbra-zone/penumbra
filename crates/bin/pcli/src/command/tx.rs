@@ -873,7 +873,7 @@ impl TxCmd {
                     .unspent_notes_by_address_and_asset(app.fvk.account_group_id())
                     .await?;
 
-                fn is_opened_position_nft(denom: &DenomMetadata) -> bool {
+                fn _is_opened_position_nft(denom: &DenomMetadata) -> bool {
                     let prefix = format!("lpnft_opened_");
 
                     denom.starts_with(&prefix)
