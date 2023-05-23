@@ -20,7 +20,7 @@ penumbra-chain = { path = "../chain", default-features = false }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 
 # Penumbra dependencies
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "tm-31-ics9" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
 ibc-proto = { version = "0.30", default-features = false }
 
 # Crates.io deps

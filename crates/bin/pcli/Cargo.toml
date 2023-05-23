@@ -43,7 +43,7 @@ tendermint = { version = "0.31.1", features = ["rust-crypto"] }
 jmt = "0.3"
 
 # External dependencies
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "tm-31-ics9" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
 
 ibc-proto = { version = "0.30" }
 ark-ff = { version = "0.4", default-features = false }
