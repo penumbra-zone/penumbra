@@ -215,7 +215,7 @@ pub async fn scan_block(
     }
 
     // Print the TCT root for debugging
-    #[cfg(feature = "tct-divergence-check")]
+    #[cfg(feature = "sct-divergence-check")]
     tracing::debug!(tct_root = %state_commitment_tree.root(), "tct root");
 
     //Filter nullifiers to remove any without matching note commitments
