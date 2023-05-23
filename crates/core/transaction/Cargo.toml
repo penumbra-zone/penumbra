@@ -20,7 +20,7 @@ penumbra-dao = { path = "../component/dao/", default-features = false }
 penumbra-dex = { path = "../component/dex/", default-features = false }
 
 # Git deps
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "tm-31-ics9" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
 
 # Crates.io deps
 ibc-proto = { version = "0.30", default-features = false }
