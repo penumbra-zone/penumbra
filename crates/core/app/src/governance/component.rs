@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use penumbra_chain::component::StateReadExt;
 use penumbra_storage::StateWrite;
 use penumbra_transaction::proposal;
-use tendermint::abci;
+use tendermint::v0_34::abci;
 use tracing::instrument;
 
 use super::{tally, StateReadExt as _, StateWriteExt as _};

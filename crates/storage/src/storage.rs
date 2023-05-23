@@ -142,7 +142,7 @@ impl Storage {
 
                     // Write the unwritten changes from the state to the JMT.
                     let (root_hash, batch) = jmt.put_value_set(
-                        unwritten_changes.into_iter().map(|x| (x.0, x.2)),
+                        unwritten_changes.into_iter().map(|(keyhash, _key, some_value)| (keyhash, some_value)),
                         new_version,
                     )?;
 
