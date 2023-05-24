@@ -691,12 +691,18 @@ impl SpecificQueryService for Info {
             return Err(Status::invalid_argument("key is empty"));
         }
 
-        // TODO: we are unconditionally generating the proof here; we shouldn't do that if the
+        // TODO(erwan): we are unconditionally generating the proof here; we shouldn't do that if the
         // request doesn't ask for it
-        let (value, proof) = state
+        let (some_value, proof) = state
             .get_with_proof_to_apphash(request.key.into_bytes())
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        let Some(value) = some_value else {
+            return Err(Status::not_found(format!(
+                "key not found",
+            )));
+        };
 
         Ok(tonic::Response::new(KeyValueResponse {
             value,

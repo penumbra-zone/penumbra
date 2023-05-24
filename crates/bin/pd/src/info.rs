@@ -132,7 +132,9 @@ impl Info {
 
                 let key = hex::decode(&query.data).unwrap_or_else(|_| query.data.to_vec());
 
-                let (value, proof_ops) = snapshot.get_with_proof_to_apphash_tm(key).await?;
+                let Some((value, proof_ops)) = snapshot.get_with_proof_to_apphash_tm(key).await? else {
+                    anyhow::bail!("key not found")
+                };
 
                 Ok(abci::response::Query {
                     code: 0.into(),

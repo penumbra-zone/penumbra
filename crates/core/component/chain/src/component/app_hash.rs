@@ -1,11 +1,12 @@
+use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::core::ics23_commitment::merkle::MerkleProof;
 use ibc_types::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
 use once_cell::sync::Lazy;
 use penumbra_proto::Message;
 use penumbra_storage::{RootHash, Snapshot};
-
 use sha2::{Digest, Sha256};
+use tendermint::merkle::proof::ProofOps as TendermintMerkleProof;
 
 pub static PENUMBRA_PROOF_SPECS: Lazy<ProofSpecs> =
     Lazy::new(|| ProofSpecs::from(vec![penumbra_storage::ics23_spec(), apphash_spec()]));
@@ -61,6 +62,7 @@ fn apphash_spec() -> ics23::ProofSpec {
         }),
         min_depth: 0,
         max_depth: 1,
+        prehash_key_before_comparison: true,
     }
 }
 
@@ -69,11 +71,13 @@ pub trait AppHashRead {
     async fn get_with_proof_to_apphash(
         &self,
         key: Vec<u8>,
-    ) -> Result<(Vec<u8>, MerkleProof), anyhow::Error>;
+    ) -> Result<(Option<Vec<u8>>, MerkleProof), anyhow::Error>;
+
     async fn get_with_proof_to_apphash_tm(
         &self,
         key: Vec<u8>,
-    ) -> Result<(Vec<u8>, tendermint::merkle::proof::ProofOps), anyhow::Error>;
+    ) -> Result<Option<(Vec<u8>, tendermint::merkle::proof::ProofOps)>, anyhow::Error>;
+
     async fn app_hash(&self) -> Result<AppHash, anyhow::Error>;
 }
 
@@ -84,16 +88,15 @@ impl AppHashRead for Snapshot {
         Ok(AppHash::from(root))
     }
 
+    /// Returns the value and a proof of inclusion up to the current app hash, which consists
+    /// of a proof of existence of the jmt root hash, and a proof of existence of the app hash.
     async fn get_with_proof_to_apphash(
         &self,
         key: Vec<u8>,
-    ) -> anyhow::Result<(Vec<u8>, MerkleProof)> {
-        let (value, jmt_proof) = self.get_with_proof(key.clone()).await?;
-        let jmt_root = self.root_hash().await?;
+    ) -> anyhow::Result<(Option<Vec<u8>>, MerkleProof)> {
+        let (some_value, ics23_proof) = self.get_with_proof(key.clone()).await?;
 
-        let jmt_commitment_proof = ics23::CommitmentProof {
-            proof: Some(ics23::commitment_proof::Proof::Exist(jmt_proof)),
-        };
+        let jmt_root = self.root_hash().await?;
         let root_proof = ics23::CommitmentProof {
             proof: Some(ics23::commitment_proof::Proof::Exist(
                 ics23::ExistenceProof {
@@ -106,36 +109,40 @@ impl AppHashRead for Snapshot {
         };
 
         Ok((
-            value,
+            some_value,
             MerkleProof {
-                proofs: vec![jmt_commitment_proof, root_proof],
+                proofs: vec![root_proof, ics23_proof],
             },
         ))
     }
 
+    /// Review: it looks like the Tendermint proof format does not support
+    /// non-existence proof. So, I have set the api to return an
+    /// `Result<Option<(Vec<u8>, ProofOps)>>` instead of `Result<(Option<Vec<u8>, ProofOps)>`.
     async fn get_with_proof_to_apphash_tm(
         &self,
         key: Vec<u8>,
-    ) -> Result<(Vec<u8>, tendermint::merkle::proof::ProofOps), anyhow::Error> {
-        let (value, proof_ics) = self.get_with_proof_to_apphash(key.to_vec()).await?;
+    ) -> Result<Option<(Vec<u8>, TendermintMerkleProof)>> {
+        let (Some(value), ics23_proof) = self.get_with_proof_to_apphash(key.to_vec()).await? else {
+            return Ok(None)
+        };
 
         let jmt_op = tendermint::merkle::proof::ProofOp {
             field_type: "jmt:v".to_string(),
             key,
-            data: proof_ics.proofs[0].encode_to_vec(),
+            data: ics23_proof.proofs[0].encode_to_vec(),
         };
         let root_op = tendermint::merkle::proof::ProofOp {
             field_type: "apphash".to_string(),
             key: APPHASH_DOMSEP.into(),
-            data: proof_ics.proofs[1].encode_to_vec(),
+            data: ics23_proof.proofs[1].encode_to_vec(),
         };
 
-        Ok((
-            value,
-            tendermint::merkle::proof::ProofOps {
-                ops: vec![jmt_op, root_op],
-            },
-        ))
+        let proof = tendermint::merkle::proof::ProofOps {
+            ops: vec![jmt_op, root_op],
+        };
+
+        Ok(Some((value, proof)))
     }
 }
 
