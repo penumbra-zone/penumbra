@@ -1,7 +1,9 @@
 use anyhow::Context;
 use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_crypto::asset::{DenomMetadata, Id};
-use penumbra_crypto::{note, FullViewingKey, Nullifier, Asset};
+use penumbra_crypto::{note, Asset, FullViewingKey, Nullifier};
+use penumbra_dex::lp::position::Position;
+use penumbra_dex::lp::{position, LpNft};
 use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
 use penumbra_tct as tct;
 use penumbra_tct::Witness::*;
@@ -15,8 +17,6 @@ use tct::{Forgotten, Tree};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 use web_sys::console as web_console;
-use penumbra_dex::lp::{LpNft, position};
-use penumbra_dex::lp::position::Position;
 
 use crate::note_record::SpendableNoteRecord;
 use crate::swap_record::SwapRecord;
@@ -396,7 +396,11 @@ impl ViewServer {
         serde_wasm_bindgen::to_value(&response).unwrap()
     }
 
-    pub fn get_lpnft_asset(&mut self, position_value: JsValue, position_state_value: JsValue) -> JsValue {
+    pub fn get_lpnft_asset(
+        &mut self,
+        position_value: JsValue,
+        position_state_value: JsValue,
+    ) -> JsValue {
         let position: Position = serde_wasm_bindgen::from_value(position_value).unwrap();
         let position_state = serde_wasm_bindgen::from_value(position_state_value).unwrap();
 
@@ -406,11 +410,7 @@ impl ViewServer {
         let asset = Asset { id, denom };
 
         serde_wasm_bindgen::to_value(&asset).unwrap()
-
-
     }
-
-
 }
 
 impl ViewServer {
