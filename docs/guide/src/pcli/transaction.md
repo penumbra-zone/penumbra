@@ -67,14 +67,14 @@ The basic commands for opening liquidity positions are `tx position order buy` a
 To open an order buying `10cube` at a price of `1penumbra` each, with no fee, you'd do the following:
 
 ```bash
-cargo run --release --bin pcli -- tx position order buy 10cube@1penumbra --spread 0
+cargo run --release --bin pcli -- tx position order buy 10cube@1penumbra
 ```
 
 Similarly, to open an order selling `100penumbra` at a price of `5gm` each, with a `20bps` fee on transactions
-against the liquidity position, you'd do the following:
+against the liquidity position, you would append `/20bps` at the end of the order, like as follow:
 
 ```bash
-cargo run --release --bin pcli -- tx position order sell 100penumbra@5gm --spread 20
+cargo run --release --bin pcli -- tx position order sell 100penumbra@5gm/20bps
 ```
 
 After opening the position, you'll see that your account has been deposited an "LPNFT" representing the open position:
