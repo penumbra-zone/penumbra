@@ -55,12 +55,13 @@ impl Snapshot {
         self.0.version
     }
 
-    /// Gets a value by key alongside an ICS23 existence proof of that value.
-    ///
-    /// Errors if the key is not present.
-    /// TODO: change return type to `Option<Vec<u8>>` and an
-    /// existence-or-nonexistence proof.
-    pub async fn get_with_proof(&self, key: Vec<u8>) -> Result<(Vec<u8>, ics23::ExistenceProof)> {
+    /// Returns some value corresponding to the key, along with an ICS23 existence proof
+    /// up to the current JMT root hash. If the key is not present, returns `None` and a
+    /// non-existence proof.
+    pub async fn get_with_proof(
+        &self,
+        key: Vec<u8>,
+    ) -> Result<(Option<Vec<u8>>, ics23::CommitmentProof)> {
         let span = Span::current();
         let snapshot = self.clone();
 
@@ -69,8 +70,7 @@ impl Snapshot {
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     let tree = jmt::Sha256Jmt::new(&*snapshot.0);
-                    let (value, proof) = tree.get_with_ics23_proof(key, snapshot.version())?;
-                    todo!()
+                    tree.get_with_ics23_proof(key, snapshot.version())
                 })
             })?
             .await?
@@ -330,8 +330,8 @@ impl StateRead for Snapshot {
 impl TreeReader for Inner {
     fn get_value_option(
         &self,
-        max_version: jmt::Version,
-        key_hash: KeyHash,
+        _max_version: jmt::Version,
+        _key_hash: KeyHash,
     ) -> Result<Option<jmt::OwnedValue>> {
         unimplemented!("TODO")
     }
