@@ -1,3 +1,4 @@
+use borsh::{BorshDeserialize, BorshSerialize};
 use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Result;
@@ -243,9 +244,9 @@ impl TreeWriter for Inner {
     fn write_node_batch(&self, node_batch: &NodeBatch) -> Result<()> {
         let node_batch = node_batch.clone();
 
-        for (node_key, node) in node_batch {
-            let key_bytes = &node_key.encode()?;
-            let value_bytes = &node.encode()?;
+        for (node_key, node) in node_batch.nodes() {
+            let key_bytes = &node_key.try_to_vec()?;
+            let value_bytes = &node.try_to_vec()?;
             tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));
 
             let jmt_cf = self
@@ -267,8 +268,8 @@ fn get_rightmost_leaf(db: &DB) -> Result<Option<(NodeKey, LeafNode)>> {
     iter.seek_to_last();
 
     if iter.valid() {
-        let node_key = NodeKey::decode(iter.key().unwrap())?;
-        let node = Node::decode(iter.value().unwrap())?;
+        let node_key = NodeKey::try_from_slice(iter.key().unwrap())?;
+        let node = Node::try_from_slice(iter.value().unwrap())?;
 
         if let Node::Leaf(leaf_node) = node {
             ret = Some((node_key, leaf_node));

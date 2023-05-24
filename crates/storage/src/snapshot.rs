@@ -2,9 +2,10 @@ use std::{any::Any, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
+use borsh::{BorshDeserialize, BorshSerialize};
 use jmt::{
     storage::{HasPreimage, LeafNode, Node, NodeKey, TreeReader},
-    KeyHash,
+    KeyHash, Sha256Jmt,
 };
 use tokio::sync::mpsc;
 use tracing::Span;
@@ -67,9 +68,9 @@ impl Snapshot {
             .name("State::get_with_proof")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let tree = jmt::JellyfishMerkleTree::new(&*snapshot.0);
-                    let proof = tree.get_with_ics23_proof(key, snapshot.version())?;
-                    Ok((proof.value.clone(), proof))
+                    let tree = jmt::Sha256Jmt::new(&*snapshot.0);
+                    let (value, proof) = tree.get_with_ics23_proof(key, snapshot.version())?;
+                    todo!()
                 })
             })?
             .await?
@@ -89,7 +90,7 @@ impl Snapshot {
             .name("State::root_hash")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let tree = jmt::JellyfishMerkleTree::new(&*snapshot.0);
+                    let tree = jmt::Sha256Jmt::new(&*snapshot.0);
                     let root = tree
                         .get_root_hash_option(snapshot.version())?
                         .unwrap_or(crate::RootHash([0; 32]));
@@ -105,7 +106,7 @@ impl Snapshot {
     /// special-cases the empty tree case so that reads on an empty tree just
     /// return None.
     fn get_jmt(&self, key: jmt::KeyHash) -> Result<Option<Vec<u8>>> {
-        let tree = jmt::JellyfishMerkleTree::new(&*self.0);
+        let tree = Sha256Jmt::new(&*self.0);
         match tree.get(key, self.0.version) {
             Ok(Some(value)) => {
                 tracing::trace!(version = ?self.0.version, ?key, value = ?hex::encode(&value), "read from tree");
@@ -318,6 +319,14 @@ impl StateRead for Snapshot {
 /// A reader interface for rocksdb. NOTE: it is up to the caller to ensure consistency between the
 /// rocksdb::DB handle and any write batches that may be applied through the writer interface.
 impl TreeReader for Inner {
+    fn get_value_option(
+        &self,
+        max_version: jmt::Version,
+        key_hash: KeyHash,
+    ) -> Result<Option<jmt::OwnedValue>> {
+        unimplemented!("TODO")
+    }
+
     /// Gets node given a node key. Returns `None` if the node does not exist.
     fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node>> {
         let node_key = node_key;
@@ -329,8 +338,8 @@ impl TreeReader for Inner {
             .expect("jmt column family not found");
         let value = self
             .snapshot
-            .get_cf(jmt_cf, node_key.encode()?)?
-            .map(|db_slice| Node::decode(&db_slice))
+            .get_cf(jmt_cf, node_key.try_to_vec()?)?
+            .map(|db_slice| Node::try_from_slice(&db_slice))
             .transpose()?;
 
         tracing::trace!(?node_key, ?value);
@@ -346,8 +355,8 @@ impl TreeReader for Inner {
         iter.seek_to_last();
 
         if iter.valid() {
-            let node_key = NodeKey::decode(iter.key().unwrap())?;
-            let node = Node::decode(iter.value().unwrap())?;
+            let node_key = NodeKey::try_from_slice(iter.key().unwrap())?;
+            let node = Node::try_from_slice(iter.value().unwrap())?;
 
             if let Node::Leaf(leaf_node) = node {
                 return Ok(Some((node_key, leaf_node)));
