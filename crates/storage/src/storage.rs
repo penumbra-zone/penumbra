@@ -4,7 +4,7 @@ use std::{path::PathBuf, sync::Arc};
 use anyhow::Result;
 use jmt::{
     storage::{LeafNode, Node, NodeBatch, NodeKey, TreeWriter},
-    JellyfishMerkleTree, KeyHash,
+    KeyHash, Sha256Jmt,
 };
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
@@ -126,13 +126,13 @@ impl Storage {
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     let snap = inner.snapshots.read().latest();
-                    let jmt = JellyfishMerkleTree::new(&*snap.0);
+                    let jmt = Sha256Jmt::new(&*snap.0);
 
                     let unwritten_changes: Vec<_> = cache
                         .unwritten_changes
                         .into_iter()
                         // Pre-calculate all KeyHashes for later storage in `jmt_keys`
-                        .map(|x| (KeyHash::from(&x.0), x.0, x.1))
+                        .map(|(key, some_value)| (KeyHash::with::<sha2::Sha256>(&key), key, some_value))
                         .collect();
 
                     // Maintain a two-way index of the JMT keys and their hashes in RocksDB.
