@@ -51,7 +51,7 @@ toml = "0.5"
 # We don't need this crate at all, but its upstream published a breaking change as
 # 0.7.1 (also prost-related), and depending on an exact version here will exclude
 # the bad update until it's yanked.
-ics23 = "0.9.0"
+ics23 = "0.10.1"
 
 pin-project-lite = "0.2.9"
 ark-ff = { version = "0.4" }
