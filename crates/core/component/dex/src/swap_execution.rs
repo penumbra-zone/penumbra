@@ -4,10 +4,12 @@ use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 /// Contains the summary data of a trade, for client consumption.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::SwapExecution", into = "pb::SwapExecution")]
 pub struct SwapExecution {
     pub traces: Vec<Vec<Value>>,
+    pub input: Value,
+    pub output: Value,
 }
 
 impl TypeUrl for SwapExecution {
@@ -32,6 +34,14 @@ impl TryFrom<pb::SwapExecution> for SwapExecution {
                         .collect::<Result<Vec<_>>>()
                 })
                 .collect::<Result<Vec<_>>>()?,
+            input: se
+                .input
+                .ok_or_else(|| anyhow::anyhow!("missing input"))?
+                .try_into()?,
+            output: se
+                .output
+                .ok_or_else(|| anyhow::anyhow!("missing output"))?
+                .try_into()?,
         })
     }
 }
@@ -46,6 +56,8 @@ impl From<SwapExecution> for pb::SwapExecution {
                     value: vt.into_iter().map(Into::into).collect(),
                 })
                 .collect(),
+            input: Some(se.input.into()),
+            output: Some(se.output.into()),
         }
     }
 }
