@@ -57,13 +57,17 @@ impl Opt {
 #[derive(Debug, Parser)]
 pub enum Command {
     /// Measure the performance of downloading compact blocks without parsing them.
-    StreamBlocks,
+    StreamBlocks {
+        /// If set, skip downloading the genesis compact block.
+        #[clap(long)]
+        skip_genesis: bool,
+    },
 }
 
 impl Opt {
     pub async fn run(&self) -> anyhow::Result<()> {
         match self.cmd {
-            Command::StreamBlocks => {
+            Command::StreamBlocks { skip_genesis } => {
                 let mut client =
                     ObliviousQueryServiceClient::connect(self.node.to_string()).await?;
 
@@ -76,11 +80,12 @@ impl Opt {
                     .try_into()?;
 
                 let end_height = self.latest_known_block_height().await?.0;
+                let start_height = if skip_genesis { 1 } else { 0 };
 
                 let mut stream = client
                     .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
                         chain_id: params.chain_id,
-                        start_height: 0,
+                        start_height,
                         end_height,
                         keep_alive: false,
                     }))
@@ -151,7 +156,7 @@ impl Opt {
         let client = reqwest::Client::new();
 
         let rsp: serde_json::Value = client
-            .get(self.tendermint_url.clone())
+            .get(format!("{}/status", self.tendermint_url.clone()))
             .send()
             .await?
             .json()
