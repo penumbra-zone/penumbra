@@ -1,11 +1,14 @@
 use ark_ff::ToConstraintField;
-use ark_r1cs_std::prelude::*;
+use ark_r1cs_std::{prelude::*, uint64::UInt64};
 use ark_relations::r1cs::SynthesisError;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
-use crate::{fixpoint::U128x128, Fq, Fr};
+use crate::{
+    fixpoint::{convert_le_bits_to_fqvar, U128x128, U128x128Var},
+    Fq, Fr,
+};
 use decaf377::{r1cs::FqVar, FieldExt};
 
 #[derive(Serialize, Default, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
@@ -399,6 +402,33 @@ impl TryFrom<U128x128> for Amount {
         Ok(Amount {
             inner: value.try_into()?,
         })
+    }
+}
+
+impl U128x128Var {
+    pub fn from_amount_var(amount: AmountVar) -> Result<U128x128Var, SynthesisError> {
+        let bits = amount.amount.to_bits_le()?;
+        let limb_2 = UInt64::from_bits_le(&bits[0..64]);
+        let limb_3 = UInt64::from_bits_le(&bits[64..128]);
+        Ok(Self {
+            limbs: [
+                UInt64::constant(0u64),
+                UInt64::constant(0u64),
+                limb_2,
+                limb_3,
+            ],
+        })
+    }
+}
+
+impl From<U128x128Var> for AmountVar {
+    fn from(value: U128x128Var) -> Self {
+        let mut le_bits = Vec::new();
+        le_bits.extend_from_slice(&value.limbs[2].to_bits_le()[..]);
+        le_bits.extend_from_slice(&value.limbs[3].to_bits_le()[..]);
+        Self {
+            amount: convert_le_bits_to_fqvar(&le_bits[..]),
+        }
     }
 }
 
