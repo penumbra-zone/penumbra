@@ -1,13 +1,11 @@
 version: v1
 name: buf.build/penumbra-zone/penumbra
+# We pin versions of the upstream cosmos deps, to avoid the chore of bumping
+# the lockfile regularly, while still detecting uncommitted changes to our
+# protos in CI.
 deps:
-  - buf.build/cosmos/ibc
-  - buf.build/cosmos/cosmos-sdk
-build:
-  # Skip gogoproto from consideration during build, otherwise
-  # we get an error that the proto "exists in multiple locations".
-  excludes:
-    - gogoproto
+  - buf.build/cosmos/ibc:f642cdf6bc574f4eb8f784b3572848dc
+  - buf.build/cosmos/cosmos-sdk:f68ef6b77d324ad1a46f4628241f011e
 breaking:
   use:
     - FILE
