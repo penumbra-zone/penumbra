@@ -57,7 +57,7 @@ parking_lot = "0.12"
 tendermint = "0.31.1"
 tendermint-proto = "0.31.1"
 tendermint-light-client-verifier = "0.31.1"
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "back-to-upstream-ibc-proto" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
 ibc-proto = { version = "=0.31.0-alpha.1" }
 
 [dev-dependencies]
