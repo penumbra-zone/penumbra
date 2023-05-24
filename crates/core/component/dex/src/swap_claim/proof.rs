@@ -151,7 +151,7 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
 
         // Validate the swap commitment's height matches the output data's height (i.e. the clearing price height).
         let block = position_bits.block()?;
-        let note_commitment_block_height_var = output_data_var.epoch_height + block;
+        let note_commitment_block_height_var = output_data_var.epoch_height.clone() + block;
         output_data_var
             .height
             .enforce_equal(&note_commitment_block_height_var)?;
@@ -162,10 +162,13 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
             .enforce_equal(&swap_plaintext_var.trading_pair)?;
 
         // Output amounts integrity
-        // let (computed_lambda_1, computed_lambda_2) = output_data_var
-        //     .pro_rata_outputs(swap_plaintext_var.delta_1_i, swap_plaintext_var.delta_2_i)?;
-        // computed_lambda_1.enforce_equal(&lambda_1_var)?;
-        // computed_lambda_2.enforce_equal(&lambda_2_var)?;
+        let (computed_lambda_1_i, computed_lambda_2_i) = output_data_var.pro_rata_outputs(
+            swap_plaintext_var.delta_1_i,
+            swap_plaintext_var.delta_2_i,
+            cs,
+        )?;
+        computed_lambda_1_i.enforce_equal(&lambda_1_i_var)?;
+        computed_lambda_2_i.enforce_equal(&lambda_2_i_var)?;
 
         // Output note integrity
         let output_1_note = NoteVar {

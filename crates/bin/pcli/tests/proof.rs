@@ -235,7 +235,7 @@ fn swap_claim_proof_happy_path() {
     let anchor = sct.root();
     let state_commitment_proof = sct.witness(swap_commitment).unwrap();
     let position = state_commitment_proof.position();
-    let nullifier = nk.derive_nullifier(position, &swap_commitment);
+    let nullifier: penumbra_crypto::Nullifier = nk.derive_nullifier(position, &swap_commitment);
     let epoch_duration = 20;
     let height = epoch_duration * position.epoch() + position.block();
 

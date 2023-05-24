@@ -173,6 +173,7 @@ impl U128x128 {
     }
 }
 
+#[derive(Clone)]
 pub struct U128x128Var {
     pub limbs: [UInt64<Fq>; 4],
 }
@@ -229,11 +230,7 @@ impl R1CSVar<Fq> for U128x128Var {
 }
 
 impl U128x128Var {
-    pub fn checked_add(
-        self,
-        rhs: &Self,
-        _cs: ConstraintSystemRef<Fq>,
-    ) -> Result<U128x128Var, SynthesisError> {
+    pub fn checked_add(self, rhs: &Self) -> Result<U128x128Var, SynthesisError> {
         // x = [x0, x1, x2, x3]
         // x = x0 + x1 * 2^64 + x2 * 2^128 + x3 * 2^192
         // y = [y0, y1, y2, y3]
@@ -291,11 +288,7 @@ impl U128x128Var {
         todo!();
     }
 
-    pub fn checked_mul(
-        self,
-        rhs: &Self,
-        _cs: ConstraintSystemRef<Fq>,
-    ) -> Result<U128x128Var, SynthesisError> {
+    pub fn checked_mul(self, rhs: &Self) -> Result<U128x128Var, SynthesisError> {
         // x = [x0, x1, x2, x3]
         // x = x0 + x1 * 2^64 + x2 * 2^128 + x3 * 2^192
         // y = [y0, y1, y2, y3]
@@ -548,6 +541,17 @@ impl U128x128Var {
             ],
         }
     }
+
+    pub fn zero() -> U128x128Var {
+        Self {
+            limbs: [
+                UInt64::constant(0u64),
+                UInt64::constant(0u64),
+                UInt64::constant(0u64),
+                UInt64::constant(0u64),
+            ],
+        }
+    }
 }
 
 impl EqGadget<Fq> for U128x128Var {
@@ -586,6 +590,10 @@ impl ToConstraintField<Fq> for U128x128 {
         let limb_2 = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
         let limb_1 = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
         let limb_0 = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
+        dbg!(limb_0);
+        dbg!(limb_1);
+        dbg!(limb_2);
+        dbg!(limb_3);
 
         let mut field_elements = Vec::new();
         for byte in limb_3.to_le_bytes() {
@@ -602,6 +610,22 @@ impl ToConstraintField<Fq> for U128x128 {
         }
 
         Some(field_elements)
+    }
+}
+
+impl CondSelectGadget<Fq> for U128x128Var {
+    fn conditionally_select(
+        cond: &Boolean<Fq>,
+        true_value: &Self,
+        false_value: &Self,
+    ) -> Result<Self, SynthesisError> {
+        let limb0 = cond.select(&true_value.limbs[0], &false_value.limbs[0])?;
+        let limb1 = cond.select(&true_value.limbs[1], &false_value.limbs[1])?;
+        let limb2 = cond.select(&true_value.limbs[2], &false_value.limbs[2])?;
+        let limb3 = cond.select(&true_value.limbs[3], &false_value.limbs[3])?;
+        Ok(Self {
+            limbs: [limb0, limb1, limb2, limb3],
+        })
     }
 }
 
@@ -734,7 +758,7 @@ mod test {
             let c_public_var = U128x128Var::new_input(cs.clone(), || Ok(self.c))?;
             let c_public_rounded_down_var =
                 U128x128Var::new_input(cs.clone(), || Ok(self.rounded_down_c))?;
-            let c_var = a_var.checked_mul(&b_var, cs)?;
+            let c_var = a_var.checked_mul(&b_var)?;
             c_var.enforce_equal(&c_public_var)?;
             let c_rounded_down = c_var.round_down();
             c_rounded_down.enforce_equal(&c_public_rounded_down_var)?;
@@ -814,7 +838,7 @@ mod test {
             let a_var = U128x128Var::new_witness(cs.clone(), || Ok(self.a))?;
             let b_var = U128x128Var::new_witness(cs.clone(), || Ok(self.b))?;
             let c_public_var = U128x128Var::new_input(cs.clone(), || Ok(self.c))?;
-            let c_var = a_var.checked_add(&b_var, cs)?;
+            let c_var = a_var.checked_add(&b_var)?;
             c_var.enforce_equal(&c_public_var)?;
             Ok(())
         }
