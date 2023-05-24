@@ -17,7 +17,7 @@ decaf377 = "0.4"
 tendermint = "0.31.1"
 ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
 
-ics23 = "0.9.0"
+ics23 = "0.10.1"
 
 # Crates.io deps
 ark-ff = { version = "0.4", default_features = false }

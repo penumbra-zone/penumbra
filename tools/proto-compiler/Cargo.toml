@@ -15,4 +15,4 @@ pbjson-build = "0.5"
 tempfile = "3"
 
 ibc-proto = { version = "=0.31.0-alpha.1" }
-ics23 = "0.9.0"
+ics23 = "0.10.1"
