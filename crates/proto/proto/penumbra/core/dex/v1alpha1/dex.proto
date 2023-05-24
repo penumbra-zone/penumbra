@@ -329,6 +329,11 @@ message SwapExecution {
     repeated crypto.v1alpha1.Value value = 1;
   }
   repeated Trace traces = 1;
+  
+  // The total input amount for this execution.
+  crypto.v1alpha1.Value input = 2;
+  // The total output amount for this execution.
+  crypto.v1alpha1.Value output = 3;
 }
 
 // Contains private and public data for withdrawing funds from a closed position.

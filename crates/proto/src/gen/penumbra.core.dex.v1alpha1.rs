@@ -498,6 +498,12 @@ pub struct PositionRewardClaim {
 pub struct SwapExecution {
     #[prost(message, repeated, tag = "1")]
     pub traces: ::prost::alloc::vec::Vec<swap_execution::Trace>,
+    /// The total input amount for this execution.
+    #[prost(message, optional, tag = "2")]
+    pub input: ::core::option::Option<super::super::crypto::v1alpha1::Value>,
+    /// The total output amount for this execution.
+    #[prost(message, optional, tag = "3")]
+    pub output: ::core::option::Option<super::super::crypto::v1alpha1::Value>,
 }
 /// Nested message and enum types in `SwapExecution`.
 pub mod swap_execution {
