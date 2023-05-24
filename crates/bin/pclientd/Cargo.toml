@@ -59,7 +59,7 @@ atty = "0.2"
 tempfile = "3.3.0"
 assert_cmd = "2.0"
 base64 = "0.20"
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "back-to-upstream-ibc-proto" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
 
 ibc-proto = "=0.31.0-alpha.1"
 

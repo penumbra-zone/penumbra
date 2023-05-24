@@ -33,7 +33,7 @@ penumbra-compact-block = { path = "../core/component/compact-block", default-fea
 penumbra-app           = { path = "../core/app" }
 penumbra-transaction   = { path = "../core/transaction" }
 
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "back-to-upstream-ibc-proto" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
 
 tokio = { version = "1.22", features = ["full"] }
 tokio-stream = { version = "0.1.8", features = ["sync"] }
