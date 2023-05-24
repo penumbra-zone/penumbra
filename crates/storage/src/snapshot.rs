@@ -2,7 +2,10 @@ use std::{any::Any, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use jmt::storage::{LeafNode, Node, NodeKey, TreeReader};
+use jmt::{
+    storage::{HasPreimage, LeafNode, Node, NodeKey, TreeReader},
+    KeyHash,
+};
 use tokio::sync::mpsc;
 use tracing::Span;
 
@@ -354,5 +357,16 @@ impl TreeReader for Inner {
         }
 
         Ok(None)
+    }
+}
+
+impl HasPreimage for Inner {
+    fn preimage(&self, key_hash: KeyHash) -> Result<Option<Vec<u8>>> {
+        let jmt_keys_by_keyhash_cf = self
+            .db
+            .cf_handle("jmt_keys_by_keyhash")
+            .expect("jmt_keys_by_keyhash column family not found");
+
+        Ok(self.snapshot.get_cf(jmt_keys_by_keyhash_cf, &key_hash.0)?)
     }
 }
