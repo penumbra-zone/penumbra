@@ -26,7 +26,7 @@ pbjson = "0.5"
 pbjson-types = "0.5"
 
 ibc-proto = { version = "=0.31.0-alpha.1", default-features = false, features = ["std"] }
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "back-to-upstream-ibc-proto" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
 
 ics23 = "0.9.0"
 tendermint = "0.31.1"
