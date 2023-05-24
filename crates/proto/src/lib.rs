@@ -277,3 +277,27 @@ pub mod tendermint {
         include!("gen/tendermint.p2p.rs");
     }
 }
+
+/// Return all well known types from the protobuf definitions.
+/// Intended for use with the `tonic-reflection` crate, to support
+/// gRPC server reflection when creating services. Ideally we'd have
+/// a single const for the entire set, but we must collect them
+/// from each proto file dynamically.
+#[cfg(feature = "rpc")]
+pub fn file_descriptor_sets() -> Vec<u8> {
+    [
+        client::v1alpha1::FILE_DESCRIPTOR_SET,
+        core::chain::v1alpha1::FILE_DESCRIPTOR_SET,
+        core::crypto::v1alpha1::FILE_DESCRIPTOR_SET,
+        core::dex::v1alpha1::FILE_DESCRIPTOR_SET,
+        core::governance::v1alpha1::FILE_DESCRIPTOR_SET,
+        core::ibc::v1alpha1::FILE_DESCRIPTOR_SET,
+        core::stake::v1alpha1::FILE_DESCRIPTOR_SET,
+        core::transaction::v1alpha1::FILE_DESCRIPTOR_SET,
+        core::transparent_proofs::v1alpha1::FILE_DESCRIPTOR_SET,
+        custody::v1alpha1::FILE_DESCRIPTOR_SET,
+        narsil::v1alpha1::ledger::FILE_DESCRIPTOR_SET,
+        view::v1alpha1::FILE_DESCRIPTOR_SET,
+    ]
+    .concat()
+}
