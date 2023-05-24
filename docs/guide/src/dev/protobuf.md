@@ -42,16 +42,18 @@ If the generated output would change in any way, CI will
 fail, prompting the developer to commit the changes.
 
 ## Updating buf lockfiles
-Occasionally the lockfile pinning protobuf dependencies will drift from latest,
-either due to changes in upstream Cosmos deps, or changes in our own. To update:
+We pin specific versions of upstream Cosmos deps in the buf lockfile
+for our proto definitions. Doing so avoids a tedious chore of needing
+to update the lockfile frequently when the upstream BSR entries change.
+We should review these deps periodically and bump them, as we would any other dependency.
 
 ```shell
 cd proto/penumbra
+# edit buf.yaml to remove the tags, i.e. suffix `:<tag>`
 buf mod update
 ```
 
-then commit and PR in the results. Eventually we hope to remove the need for this chore;
-see [GH2321](https://github.com/penumbra-zone/penumbra/issues/2321) for details.
+then commit and PR in the results.
 
 [`protoc` website]: https://grpc.io/docs/protoc-installation/#install-pre-compiled-binaries-any-os
 [proto-compiler]: https://github.com/penumbra-zone/penumbra/tree/main/tools/proto-compiler
