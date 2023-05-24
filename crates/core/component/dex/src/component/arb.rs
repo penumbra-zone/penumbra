@@ -101,6 +101,17 @@ pub trait Arbitrage: StateWrite + Sized {
             height,
             SwapExecution {
                 traces: traces.into_iter().collect(),
+                input: Value {
+                    asset_id: arb_token,
+                    amount: flash_loan
+                        .amount
+                        .checked_sub(&unfilled_input)
+                        .unwrap_or_default(),
+                },
+                output: Value {
+                    amount: arb_profit,
+                    asset_id: arb_token,
+                },
             },
         );
 

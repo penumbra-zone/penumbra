@@ -100,6 +100,8 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
                 output_data,
                 SwapExecution {
                     traces: trade_traces.into_iter().collect(),
+                    input: todo!(),
+                    output: todo!(),
                 },
             );
 
