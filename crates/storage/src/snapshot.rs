@@ -144,7 +144,8 @@ impl StateRead for Snapshot {
     /// Fetch a key from the JMT column family.
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         let span = Span::current();
-        let key_hash = jmt::KeyHash::from(key);
+        // convert a &str to a jmt::KeyHash
+        let key_hash = jmt::KeyHash::with::<sha2::Sha256>(key.as_bytes());
         let self2 = self.clone();
         crate::future::SnapshotFuture(
             tokio::task::Builder::new()
@@ -212,17 +213,25 @@ impl StateRead for Snapshot {
                         .db
                         .cf_handle("jmt_keys")
                         .expect("jmt_keys column family not found");
-                    let iter = self2.0.snapshot.iterator_cf_opt(keys_cf, options, mode);
-                    for i in iter {
+
+                    let jmt_keys_iterator =
+                        self2.0.snapshot.iterator_cf_opt(keys_cf, options, mode);
+
+                    for tuple in jmt_keys_iterator {
                         // For each key that matches the prefix, fetch the value from the JMT column family.
-                        let (key_preimage, _key_hash) = i?;
+                        let (key_preimage, _) = tuple?;
+
                         let k = std::str::from_utf8(key_preimage.as_ref())
                             .expect("saved jmt keys are utf-8 strings")
                             .to_string();
+
+                        let key_hash = jmt::KeyHash::with::<sha2::Sha256>(k.as_bytes());
+
                         let v = self2
-                            .get_jmt(k.as_bytes().into())?
+                            .get_jmt(key_hash)?
                             .expect("keys in jmt_keys should have a corresponding value in jmt");
                         tracing::debug!(%k, "prefix_raw");
+
                         tx.blocking_send(Ok((k, v)))?;
                     }
                     Ok::<(), anyhow::Error>(())
