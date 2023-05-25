@@ -7,10 +7,11 @@ use jmt::{
     storage::{HasPreimage, LeafNode, Node, NodeKey, TreeReader},
     KeyHash, Sha256Jmt,
 };
+use rocksdb::{IteratorMode, ReadOptions};
 use tokio::sync::mpsc;
 use tracing::Span;
 
-use crate::{metrics, StateRead};
+use crate::{metrics, storage::VersionedKey, StateRead};
 
 mod rocks_wrapper;
 use rocks_wrapper::RocksDbSnapshot;
@@ -330,10 +331,51 @@ impl StateRead for Snapshot {
 impl TreeReader for Inner {
     fn get_value_option(
         &self,
-        _max_version: jmt::Version,
-        _key_hash: KeyHash,
+        max_version: jmt::Version,
+        key_hash: KeyHash,
     ) -> Result<Option<jmt::OwnedValue>> {
-        unimplemented!("TODO")
+        let jmt_values_cf = self
+            .db
+            .cf_handle("jmt_values")
+            .expect("jmt_values column family not found");
+
+        // Prefix ranges exclude the upper bound in the iterator result.
+        // This means that when requesting the largest possible version, there
+        // is no way to specify a range that is inclusive of `u64::MAX`.
+        if max_version == u64::MAX {
+            let k = VersionedKey {
+                version: u64::MAX,
+                key_hash,
+            };
+
+            if let Some(v) = self.snapshot.get_cf(jmt_values_cf, k.encode())? {
+                let maybe_value: Option<Vec<u8>> = BorshDeserialize::try_from_slice(v.as_ref())?;
+                return Ok(maybe_value);
+            }
+        }
+
+        let mut lower_bound = key_hash.0.to_vec();
+        lower_bound.extend_from_slice(&0u64.to_be_bytes());
+
+        let mut upper_bound = key_hash.0.to_vec();
+        // The upper bound is excluded from the iteration results.
+        upper_bound.extend_from_slice(&(max_version.saturating_add(1)).to_be_bytes());
+
+        let mut readopts = ReadOptions::default();
+        readopts.set_iterate_lower_bound(lower_bound);
+        readopts.set_iterate_upper_bound(upper_bound);
+        let mut iterator =
+            self.snapshot
+                .iterator_cf_opt(jmt_values_cf, readopts, IteratorMode::End);
+
+        let Some(tuple) = iterator.next() else {
+            return Ok(None)
+        };
+
+        let (_key, v) = tuple?;
+        let maybe_value = BorshDeserialize::try_from_slice(v.as_ref())?;
+        Ok(maybe_value)
+
     }
 
     /// Gets node given a node key. Returns `None` if the node does not exist.
