@@ -11,7 +11,7 @@ use rocksdb::{IteratorMode, ReadOptions};
 use tokio::sync::mpsc;
 use tracing::Span;
 
-use crate::{metrics, storage::VersionedKey, StateRead};
+use crate::{metrics, storage::VersionedKeyHash, StateRead};
 
 mod rocks_wrapper;
 use rocks_wrapper::RocksDbSnapshot;
@@ -329,6 +329,8 @@ impl StateRead for Snapshot {
 /// A reader interface for rocksdb. NOTE: it is up to the caller to ensure consistency between the
 /// rocksdb::DB handle and any write batches that may be applied through the writer interface.
 impl TreeReader for Inner {
+    /// Gets a value by identifier, returning the newest value whose version is *less than or
+    /// equal to* the specified version.  Returns `None` if the value does not exist.
     fn get_value_option(
         &self,
         max_version: jmt::Version,
@@ -343,7 +345,7 @@ impl TreeReader for Inner {
         // This means that when requesting the largest possible version, there
         // is no way to specify a range that is inclusive of `u64::MAX`.
         if max_version == u64::MAX {
-            let k = VersionedKey {
+            let k = VersionedKeyHash {
                 version: u64::MAX,
                 key_hash,
             };
@@ -375,7 +377,6 @@ impl TreeReader for Inner {
         let (_key, v) = tuple?;
         let maybe_value = BorshDeserialize::try_from_slice(v.as_ref())?;
         Ok(maybe_value)
-
     }
 
     /// Gets node given a node key. Returns `None` if the node does not exist.
