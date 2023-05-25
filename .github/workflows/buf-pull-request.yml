@@ -10,16 +10,16 @@ jobs:
         with:
           buf_api_token: ${{ secrets.BUF_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          input: 'proto'
+          input: 'crates/proto'
       - uses: bufbuild/buf-lint-action@v1
         with:
-          input: 'proto'
+          input: 'crates/proto'
           buf_token: ${{ secrets.BUF_TOKEN }}
 
       - name: Check for module path changes
         shell: bash
         run: |
-          cd proto/penumbra
+          cd crates/proto/proto
           buf mod update
           s="$(git status --porcelain)"
           if [[ -n "$s" ]]; then
@@ -33,9 +33,9 @@ jobs:
       - name: Check for breaking changes
         uses: bufbuild/buf-breaking-action@v1
         with:
-          input: 'proto'
+          input: 'crates/proto'
           # The 'main' branch of the GitHub repository that defines the module.
-          against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=proto'
+          against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=crates/proto'
 
   protobuf-fresh:
     name: Compile protobuf specs to rust code
@@ -44,12 +44,12 @@ jobs:
     steps:
       - name: Checkout the source code
         uses: actions/checkout@v2
-
-      - uses: bufbuild/buf-setup-action@v1
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
         with:
-          buf_api_token: ${{ secrets.BUF_TOKEN }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          input: 'proto'
+          profile: minimal
+          toolchain: stable
+          override: false
 
       - name: Install protobuf compiler
         shell: bash
@@ -68,8 +68,11 @@ jobs:
       - name: Compile protobuf specs into rust src files
         shell: bash
         run: |
-          cd proto/
-          buf generate
+          cd tools/proto-compiler
+          cargo run
+          cd ../..
+          # Ignore changes to the unstable proto_descriptor output
+          git checkout -- crates/proto/src/gen/proto_descriptor.bin
           s="$(git status --porcelain)"
           if [[ -n "$s" ]]; then
               echo "ERROR: protobuf files must be regenerated and committed:"

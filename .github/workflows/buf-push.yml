@@ -17,16 +17,17 @@ jobs:
         with:
           buf_api_token: ${{ secrets.BUF_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          input: 'proto'
+          input: 'crates/proto'
       - uses: bufbuild/buf-lint-action@v1
         with:
-          input: 'proto'
-
-      # N.B. We don't check for breaking changes here, because we do so per-PR, and notify there.
-      # Occasionally we'll make breaking changes, the PR CI is notification enough of that.
-      # We still want to publish the resulting changes to the BSR.
-
+          input: 'crates/proto'
+      # Disabled because we don't have any changes to compare against
+      # - uses: bufbuild/buf-breaking-action@v1
+      #   with:
+      #     # The 'main' branch of the GitHub repository that defines the module.
+      #     against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main'
+      #     input: 'proto'
       - uses: bufbuild/buf-push-action@v1
         with:
           buf_token: ${{ secrets.BUF_TOKEN }}
-          input: 'proto/penumbra'
+          input: 'crates/proto/proto'

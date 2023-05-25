@@ -1,7 +1,0 @@
-all:
-    buf lint
-    buf generate
-    buf breaking --against https://github.com/penumbra-zone/penumbra.git#branch=main,subdir=proto .
-
-breaking:
-    buf breaking --against https://github.com/penumbra-zone/penumbra.git#branch=main,subdir=proto .

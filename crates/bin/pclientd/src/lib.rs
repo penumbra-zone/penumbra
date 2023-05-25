@@ -250,7 +250,7 @@ impl Opt {
                     .add_service(tonic_web::enable(
                         tonic_reflection::server::Builder::configure()
                             .register_encoded_file_descriptor_set(
-                                &penumbra_proto::file_descriptor_sets(),
+                                penumbra_proto::FILE_DESCRIPTOR_SET,
                             )
                             .build()
                             .with_context(|| "could not configure grpc reflection service")?,
