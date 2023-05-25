@@ -9,8 +9,8 @@ use penumbra_dex::{
     BatchSwapOutputData, DirectedTradingPair, SwapExecution, TradingPair,
 };
 use penumbra_proto::client::v1alpha1::{
-    specific_query_service_client::SpecificQueryServiceClient, AssetInfoRequest,
-    BatchSwapOutputDataRequest, LiquidityPositionByIdRequest, LiquidityPositionsByPriceRequest,
+    specific_query_service_client::SpecificQueryServiceClient, BatchSwapOutputDataRequest,
+    DenomMetadataByIdRequest, LiquidityPositionByIdRequest, LiquidityPositionsByPriceRequest,
     LiquidityPositionsRequest, SwapExecutionRequest,
 };
 use penumbra_view::ViewClient;
@@ -196,7 +196,7 @@ impl DexCmd {
             .await?;
 
         let asset_1: Asset = client
-            .asset_info(AssetInfoRequest {
+            .asset_info(DenomMetadataByIdRequest {
                 asset_id: Some(trading_pair.asset_1().into()),
                 chain_id: chain_id.clone(),
             })
@@ -206,7 +206,7 @@ impl DexCmd {
             .unwrap()
             .try_into()?;
         let asset_2: Asset = client
-            .asset_info(AssetInfoRequest {
+            .asset_info(DenomMetadataByIdRequest {
                 asset_id: Some(trading_pair.asset_2().into()),
                 chain_id: chain_id.clone(),
             })

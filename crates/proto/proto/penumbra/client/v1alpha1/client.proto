@@ -126,7 +126,7 @@ service SpecificQueryService {
   rpc LiquidityPositionsByPrice(LiquidityPositionsByPriceRequest) returns (stream LiquidityPositionsByPriceResponse);
 
   rpc Spread(SpreadRequest) returns (SpreadResponse);
-  rpc AssetInfo(AssetInfoRequest) returns (AssetInfoResponse);
+  rpc DenomMetadataById(DenomMetadataByIdRequest) returns (DenomMetadataByIdResponse);
   rpc ProposalInfo(ProposalInfoRequest) returns (ProposalInfoResponse);
   rpc ProposalRateData(ProposalRateDataRequest) returns (stream ProposalRateDataResponse);
 
@@ -312,18 +312,18 @@ message SpreadResponse {
 }
 
 // Requests information on an asset by asset id
-message AssetInfoRequest {
+message DenomMetadataByIdRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
   // The asset id to request information on.
   core.crypto.v1alpha1.AssetId asset_id = 2;
 }
 
-message AssetInfoResponse {
+message DenomMetadataByIdResponse {
   // If present, information on the requested asset.
   //
   // If the requested asset was unknown, this field will not be present.
-  core.crypto.v1alpha1.Asset asset = 1;
+  core.crypto.v1alpha1.DenomMetadata denom_metadata = 1;
 }
 
 message ProposalInfoRequest {

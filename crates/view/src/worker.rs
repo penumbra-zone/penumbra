@@ -17,7 +17,7 @@ use penumbra_proto::{
     DomainType,
 };
 use penumbra_transaction::Transaction;
-use proto::client::v1alpha1::AssetInfoRequest;
+use proto::client::v1alpha1::DenomMetadataByIdRequest;
 use sha2::Digest;
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
@@ -271,7 +271,7 @@ impl Worker {
 
                     let asset: Asset = self
                         .specific_client
-                        .asset_info(AssetInfoRequest {
+                        .asset_info(DenomMetadataByIdRequest {
                             asset_id: Some(note_record.note.asset_id().into()),
                             chain_id: chain_id.clone(),
                         })
