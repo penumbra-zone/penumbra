@@ -6,56 +6,15 @@ use std::{
 };
 
 use anyhow::Context;
-use penumbra_crypto::{asset, stake::Penalty, Amount};
+use penumbra_crypto::{stake::Penalty, Amount};
 use penumbra_proto::client::v1alpha1 as pb_client;
 use penumbra_proto::core::chain::v1alpha1 as pb_chain;
-use penumbra_proto::core::crypto::v1alpha1 as pb_crypto;
+
 use penumbra_proto::view::v1alpha1 as pb_view;
 use penumbra_proto::{DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 pub mod change;
-
-#[derive(Clone, Debug)]
-pub struct AssetInfo {
-    pub asset_id: asset::Id,
-    pub denom: asset::DenomMetadata,
-    pub as_of_block_height: u64,
-    pub total_supply: u64,
-}
-
-impl TypeUrl for AssetInfo {
-    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.AssetInfo";
-}
-
-impl DomainType for AssetInfo {
-    type Proto = pb_chain::AssetInfo;
-}
-
-impl TryFrom<pb_chain::AssetInfo> for AssetInfo {
-    type Error = anyhow::Error;
-
-    fn try_from(msg: pb_chain::AssetInfo) -> Result<Self, Self::Error> {
-        Ok(AssetInfo {
-            asset_id: asset::Id::try_from(msg.asset_id.unwrap())?,
-            denom: asset::DenomMetadata::default_for(&msg.denom.unwrap().try_into()?)
-                .ok_or_else(|| anyhow::anyhow!("could not generate default denom metadata"))?,
-            as_of_block_height: msg.as_of_block_height,
-            total_supply: msg.total_supply,
-        })
-    }
-}
-
-impl From<AssetInfo> for pb_chain::AssetInfo {
-    fn from(ai: AssetInfo) -> Self {
-        pb_chain::AssetInfo {
-            asset_id: Some(pb_crypto::AssetId::from(ai.asset_id)),
-            denom: Some(ai.denom.base_denom().into()),
-            as_of_block_height: ai.as_of_block_height,
-            total_supply: ai.total_supply,
-        }
-    }
-}
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(

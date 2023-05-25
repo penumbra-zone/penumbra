@@ -3,9 +3,9 @@ use std::{collections::BTreeMap, future::Future, pin::Pin};
 use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::asset::Id;
+use penumbra_crypto::asset::{DenomMetadata, Id};
 use penumbra_crypto::keys::AccountGroupId;
-use penumbra_crypto::{asset, keys::AddressIndex, note, Asset, Nullifier};
+use penumbra_crypto::{asset, keys::AddressIndex, note, Nullifier};
 use penumbra_crypto::{stake::IdentityKey, Address, Amount};
 use penumbra_proto::view::v1alpha1::{
     self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,
@@ -624,10 +624,10 @@ where
 
             let assets = pb_assets
                 .into_iter()
-                .map(Asset::try_from)
-                .collect::<Result<Vec<Asset>, anyhow::Error>>()?;
+                .map(DenomMetadata::try_from)
+                .collect::<Result<Vec<DenomMetadata>, anyhow::Error>>()?;
 
-            Ok(assets.into_iter().map(|asset| asset.denom).collect())
+            Ok(assets.into_iter().collect())
         }
         .boxed()
     }

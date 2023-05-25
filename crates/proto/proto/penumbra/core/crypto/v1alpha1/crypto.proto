@@ -149,11 +149,6 @@ message MerkleRoot {
     bytes inner = 1;
 }
 
-message Asset {
-  AssetId id = 1;
-  Denom denom = 2;
-}
-
 // A validator's identity key (decaf377-rdsa spendauth verification key).
 message IdentityKey {
   bytes ik = 1;

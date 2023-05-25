@@ -4,7 +4,7 @@ use std::{
 };
 
 use penumbra_compact_block::CompactBlock;
-use penumbra_crypto::{asset::DenomMetadata, Asset, FullViewingKey, Nullifier};
+use penumbra_crypto::{asset::DenomMetadata, FullViewingKey, Nullifier};
 use penumbra_dex::lp::{position, LpNft};
 use penumbra_proto::client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient;
 use penumbra_proto::{
@@ -226,26 +226,22 @@ impl Worker {
                             let lp_nft = LpNft::new(position_id, position::State::Opened);
                             let id = lp_nft.asset_id();
                             let denom = lp_nft.denom();
-                            let asset = Asset { id, denom };
-                            self.storage.record_asset(asset).await?;
+                            self.storage.record_asset(denom).await?;
 
                             let lp_nft = LpNft::new(position_id, position::State::Closed);
                             let id = lp_nft.asset_id();
                             let denom = lp_nft.denom();
-                            let asset = Asset { id, denom };
-                            self.storage.record_asset(asset).await?;
+                            self.storage.record_asset(denom).await?;
 
                             let lp_nft = LpNft::new(position_id, position::State::Withdrawn);
                             let id = lp_nft.asset_id();
                             let denom = lp_nft.denom();
-                            let asset = Asset { id, denom };
-                            self.storage.record_asset(asset).await?;
+                            self.storage.record_asset(denom).await?;
 
                             let lp_nft = LpNft::new(position_id, position::State::Claimed);
                             let id = lp_nft.asset_id();
                             let denom = lp_nft.denom();
-                            let asset = Asset { id, denom };
-                            self.storage.record_asset(asset).await?;
+                            self.storage.record_asset(denom).await?;
 
                             //Record the position itself
 
@@ -281,12 +277,7 @@ impl Worker {
                         .ok_or_else(|| anyhow::anyhow!("asset not found"))?
                         .try_into()?;
 
-                    let asset = Asset {
-                        id: denom_metadata.id(),
-                        denom: denom_metadata,
-                    };
-
-                    self.storage.record_asset(asset).await?;
+                    self.storage.record_asset(denom_metadata).await?;
                 }
 
                 // Commit the block to the database.

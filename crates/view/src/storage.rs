@@ -4,10 +4,10 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
-    asset::{self, Id},
+    asset::{self, DenomMetadata, Id},
     note,
     stake::{DelegationToken, IdentityKey},
-    Address, Amount, Asset, FieldExt, Fq, FullViewingKey, Note, Nullifier, Rseed, Value,
+    Address, Amount, FieldExt, Fq, FullViewingKey, Note, Nullifier, Rseed, Value,
 };
 use penumbra_dex::{
     lp::position::{self, Position, State},
@@ -693,7 +693,7 @@ impl Storage {
         }
     }
 
-    pub async fn all_assets(&self) -> anyhow::Result<Vec<Asset>> {
+    pub async fn all_assets(&self) -> anyhow::Result<Vec<DenomMetadata>> {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
@@ -702,20 +702,19 @@ impl Storage {
                 .query_and_then([], |row| {
                     let asset_id: Vec<u8> = row.get("asset_id")?;
                     let denom: String = row.get("denom")?;
-                    let asset = Asset {
-                        id: Id::try_from(asset_id.as_slice())?,
-                        denom: asset::REGISTRY
-                            .parse_denom(&denom)
-                            .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?,
-                    };
-                    Ok::<_, anyhow::Error>(asset)
+
+                    let denom_metadata = asset::REGISTRY
+                        .parse_denom(&denom)
+                        .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?;
+
+                    Ok::<_, anyhow::Error>(denom_metadata)
                 })?
                 .collect()
         })
         .await?
     }
 
-    pub async fn asset_by_id(&self, id: &Id) -> anyhow::Result<Option<Asset>> {
+    pub async fn asset_by_id(&self, id: &Id) -> anyhow::Result<Option<DenomMetadata>> {
         let id = id.to_bytes().to_vec();
 
         let pool = self.pool.clone();
@@ -726,13 +725,10 @@ impl Storage {
                 .query_and_then([id], |row| {
                     let asset_id: Vec<u8> = row.get("asset_id")?;
                     let denom: String = row.get("denom")?;
-                    let asset = Asset {
-                        id: Id::try_from(asset_id.as_slice())?,
-                        denom: asset::REGISTRY
-                            .parse_denom(&denom)
-                            .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?,
-                    };
-                    Ok::<_, anyhow::Error>(asset)
+                    let denom_metadata = asset::REGISTRY
+                        .parse_denom(&denom)
+                        .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?;
+                    Ok::<_, anyhow::Error>(denom_metadata)
                 })?
                 .next()
                 .transpose()
@@ -742,7 +738,7 @@ impl Storage {
 
     // Get assets whose denoms match the given SQL LIKE pattern, with the `_` and `%` wildcards,
     // where `\` is the escape character.
-    pub async fn assets_matching(&self, pattern: String) -> anyhow::Result<Vec<Asset>> {
+    pub async fn assets_matching(&self, pattern: String) -> anyhow::Result<Vec<DenomMetadata>> {
         let pattern = pattern.to_owned();
 
         let pool = self.pool.clone();
@@ -753,13 +749,10 @@ impl Storage {
                 .query_and_then([pattern], |row| {
                     let asset_id: Vec<u8> = row.get("asset_id")?;
                     let denom: String = row.get("denom")?;
-                    let asset = Asset {
-                        id: Id::try_from(asset_id.as_slice())?,
-                        denom: asset::REGISTRY
-                            .parse_denom(&denom)
-                            .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?,
-                    };
-                    Ok::<_, anyhow::Error>(asset)
+                    let denom_metadata = asset::REGISTRY
+                        .parse_denom(&denom)
+                        .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?;
+                    Ok::<_, anyhow::Error>(denom_metadata)
                 })?
                 .collect()
         })
@@ -935,9 +928,9 @@ impl Storage {
         }).await?
     }
 
-    pub async fn record_asset(&self, asset: Asset) -> anyhow::Result<()> {
-        let asset_id = asset.id.to_bytes().to_vec();
-        let denom = asset.denom.to_string();
+    pub async fn record_asset(&self, asset: DenomMetadata) -> anyhow::Result<()> {
+        let asset_id = asset.id().to_bytes().to_vec();
+        let denom = asset.base_denom().denom.to_string();
 
         let pool = self.pool.clone();
 
