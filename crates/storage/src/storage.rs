@@ -247,20 +247,32 @@ impl Storage {
 
 impl TreeWriter for Inner {
     /// Writes a node batch into storage.
-    //TODO: Change JMT traits to accept owned NodeBatch
+    // TODO(erwan): Change JMT traits to accept owned NodeBatch
     fn write_node_batch(&self, node_batch: &NodeBatch) -> Result<()> {
         let node_batch = node_batch.clone();
+        let jmt_cf = self
+            .db
+            .cf_handle("jmt")
+            .expect("jmt column family not found");
 
         for (node_key, node) in node_batch.nodes() {
             let key_bytes = &node_key.try_to_vec()?;
             let value_bytes = &node.try_to_vec()?;
             tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));
-
-            let jmt_cf = self
-                .db
-                .cf_handle("jmt")
-                .expect("jmt column family not found");
             self.db.put_cf(jmt_cf, key_bytes, value_bytes)?;
+        }
+        let jmt_values_cf = self
+            .db
+            .cf_handle("jmt_values")
+            .expect("jmt_values column family not found");
+
+        for ((version, key_hash), some_value) in node_batch.values() {
+            let versioned_key = VersionedKey::new(*version, *key_hash);
+            let key_bytes = &versioned_key.encode();
+            let value_bytes = &some_value.try_to_vec()?;
+            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));
+
+            self.db.put_cf(jmt_values_cf, key_bytes, value_bytes)?;
         }
 
         Ok(())
@@ -301,13 +313,17 @@ pub struct VersionedKey {
 }
 
 impl VersionedKey {
+    pub fn new(version: jmt::Version, key_hash: KeyHash) -> Self {
+        Self { version, key_hash }
+    }
+
     pub fn encode(&self) -> Vec<u8> {
         let mut buf: Vec<u8> = self.key_hash.0.to_vec();
         buf.extend_from_slice(&self.version.to_be_bytes());
         buf
     }
 
-    pub fn decode(buf: Vec<u8>) -> Result<Self> {
+    pub fn _decode(buf: Vec<u8>) -> Result<Self> {
         if buf.len() != 40 {
             Err(anyhow::anyhow!(
                 "could not decode buffer into VersionedKey (invalid size)"
