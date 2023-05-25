@@ -57,12 +57,19 @@ impl Storage {
                                        the nonconsensus state.
                        * jmt_keys: index JMT keys (i.e. keyhash preimages).
                        * jmt_keys_by_keyhash: index JMT keys by their hash.
+                       * jmt_values: maps KeyHash || BE(version) to an `Option<Vec<u8>>`
                     */
 
                     let db = Arc::new(DB::open_cf(
                         &opts,
                         path,
-                        ["jmt", "nonconsensus", "jmt_keys", "jmt_keys_by_keyhash"],
+                        [
+                            "jmt",
+                            "nonconsensus",
+                            "jmt_keys",
+                            "jmt_keys_by_keyhash",
+                            "jmt_values",
+                        ],
                     )?);
 
                     // Note: for compatibility reasons with Tendermint, we set the "pre-genesis"
@@ -283,4 +290,40 @@ fn get_rightmost_leaf(db: &DB) -> Result<Option<(NodeKey, LeafNode)>> {
 
 pub fn latest_version(db: &DB) -> Result<Option<jmt::Version>> {
     Ok(get_rightmost_leaf(db)?.map(|(node_key, _)| node_key.version()))
+}
+
+/// Represent a JMT key at a specific `jmt::Version`
+/// This is used to index the JMT values in RocksDB.
+#[derive(Clone, Debug)]
+pub struct VersionedKey {
+    pub key_hash: KeyHash,
+    pub version: jmt::Version,
+}
+
+impl VersionedKey {
+    pub fn encode(&self) -> Vec<u8> {
+        let mut buf: Vec<u8> = self.key_hash.0.to_vec();
+        buf.extend_from_slice(&self.version.to_be_bytes());
+        buf
+    }
+
+    pub fn decode(buf: Vec<u8>) -> Result<Self> {
+        if buf.len() != 40 {
+            Err(anyhow::anyhow!(
+                "could not decode buffer into VersionedKey (invalid size)"
+            ))
+        } else {
+            let raw_key_hash: [u8; 32] = buf[0..32]
+                .try_into()
+                .expect("buffer is at least 40 bytes wide");
+            let key_hash = KeyHash(raw_key_hash);
+
+            let raw_version: [u8; 8] = buf[32..40]
+                .try_into()
+                .expect("buffer is at least 40 bytes wide");
+            let version: u64 = u64::from_be_bytes(raw_version);
+
+            Ok(VersionedKey { version, key_hash })
+        }
+    }
 }
