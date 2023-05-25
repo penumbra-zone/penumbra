@@ -19,12 +19,14 @@ pub struct UnbondingToken {
 impl UnbondingToken {
     pub fn new(validator_identity: IdentityKey, start_epoch_index: u64) -> Self {
         // This format string needs to be in sync with the asset registry
-        let base_denom = asset::REGISTRY
-            .parse_denom(&format!(
+        let base_denom = asset::DenomMetadata::default_for(&asset::Denom {
+            denom: format!(
                 // "uu" is not a typo, these are micro-unbonding tokens
                 "uunbonding_epoch_{start_epoch_index}_{validator_identity}"
-            ))
-            .expect("base denom format is valid");
+            )
+            .to_string(),
+        })
+        .expect("base denom format is valid");
         UnbondingToken {
             validator_identity,
             base_denom,
@@ -100,10 +102,11 @@ impl TryFrom<asset::DenomMetadata> for UnbondingToken {
 impl FromStr for UnbondingToken {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        asset::REGISTRY
-            .parse_denom(s)
-            .ok_or_else(|| anyhow::anyhow!("could not parse {} as base denomination", s))?
-            .try_into()
+        asset::DenomMetadata::default_for(&asset::Denom {
+            denom: s.to_string(),
+        })
+        .ok_or_else(|| anyhow::anyhow!("could not parse {} as base denomination", s))?
+        .try_into()
     }
 }
 

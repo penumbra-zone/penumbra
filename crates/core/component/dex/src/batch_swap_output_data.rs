@@ -296,7 +296,10 @@ mod tests {
     use ark_relations::r1cs::ConstraintSynthesizer;
     use ark_snark::SNARK;
     use decaf377::Bls12_377;
-    use penumbra_crypto::{asset, proofs::groth16::ParameterSetup};
+    use penumbra_crypto::{
+        asset::{self, Denom},
+        proofs::groth16::ParameterSetup,
+    };
     use rand_core::OsRng;
 
     use super::*;
@@ -368,8 +371,16 @@ mod tests {
     impl ParameterSetup for ProRataOutputCircuit {
         fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
             let trading_pair = TradingPair {
-                asset_1: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-                asset_2: asset::REGISTRY.parse_denom("nala").unwrap().id(),
+                asset_1: asset::DenomMetadata::default_for(&Denom {
+                    denom: "upenumbra".to_string(),
+                })
+                .unwrap()
+                .id(),
+                asset_2: asset::DenomMetadata::default_for(&Denom {
+                    denom: "nala".to_string(),
+                })
+                .unwrap()
+                .id(),
             };
             let circuit = ProRataOutputCircuit {
                 delta_1_i: Amount::from(1u32),

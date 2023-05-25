@@ -1,10 +1,10 @@
-use penumbra_crypto::asset::{self, Asset};
+use penumbra_crypto::asset::{self, DenomMetadata};
 use penumbra_proto::{core::chain::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(try_from = "pb::KnownAssets", into = "pb::KnownAssets")]
-pub struct KnownAssets(pub Vec<Asset>);
+pub struct KnownAssets(pub Vec<DenomMetadata>);
 
 impl TypeUrl for KnownAssets {
     const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.KnownAssets";
@@ -22,7 +22,7 @@ impl TryFrom<pb::KnownAssets> for KnownAssets {
                 .assets
                 .into_iter()
                 .map(|asset| asset.try_into())
-                .collect::<anyhow::Result<Vec<Asset>>>()?,
+                .collect::<anyhow::Result<Vec<DenomMetadata>>>()?,
         ))
     }
 }
@@ -41,6 +41,6 @@ impl From<KnownAssets> for pb::KnownAssets {
 
 impl From<KnownAssets> for asset::Cache {
     fn from(assets: KnownAssets) -> Self {
-        Self::from_iter(assets.0.into_iter().map(|asset| asset.denom))
+        Self::from_iter(assets.0.into_iter())
     }
 }

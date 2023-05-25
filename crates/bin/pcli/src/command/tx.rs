@@ -11,7 +11,7 @@ use ark_ff::UniformRand;
 use decaf377::Fr;
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_crypto::{
-    asset::{self, DenomMetadata},
+    asset::{self, Denom, DenomMetadata},
     keys::AddressIndex,
     memo::MemoPlaintext,
     stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
@@ -830,7 +830,10 @@ impl TxCmd {
                     timeout_timestamp = current_time_u64 + 172800u64;
                 }
 
-                let denom = asset::REGISTRY.parse_denom(denom).unwrap();
+                let denom = asset::DenomMetadata::default_for(&Denom {
+                    denom: denom.to_string(),
+                })
+                .unwrap();
                 let amount = Amount::try_from(amount.clone()).unwrap();
 
                 let withdrawal = Ics20Withdrawal {

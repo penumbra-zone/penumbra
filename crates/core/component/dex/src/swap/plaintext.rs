@@ -411,7 +411,7 @@ mod tests {
 
     use super::*;
     use penumbra_crypto::{
-        asset,
+        asset::{self, Denom},
         keys::{SeedPhrase, SpendKey},
         Value,
     };
@@ -428,8 +428,16 @@ mod tests {
         let ovk = fvk.outgoing();
         let (dest, _dtk_d) = ivk.payment_address(0u32.into());
         let trading_pair = TradingPair::new(
-            asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-            asset::REGISTRY.parse_denom("nala").unwrap().id(),
+            asset::DenomMetadata::default_for(&Denom {
+                denom: "upenumbra".to_string(),
+            })
+            .unwrap()
+            .id(),
+            asset::DenomMetadata::default_for(&Denom {
+                denom: "nala".to_string(),
+            })
+            .unwrap()
+            .id(),
         );
 
         let swap = SwapPlaintext::new(
@@ -439,7 +447,11 @@ mod tests {
             1u64.into(),
             Fee(Value {
                 amount: 3u64.into(),
-                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                asset_id: asset::DenomMetadata::default_for(&Denom {
+                    denom: "upenumbra".to_string(),
+                })
+                .unwrap()
+                .id(),
             }),
             dest,
         );

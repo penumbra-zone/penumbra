@@ -180,7 +180,7 @@ pub mod state_payload {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct KnownAssets {
     #[prost(message, repeated, tag = "1")]
-    pub assets: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::Asset>,
+    pub assets: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::DenomMetadata>,
 }
 /// A spicy transaction ID
 #[allow(clippy::derive_partial_eq_without_eq)]

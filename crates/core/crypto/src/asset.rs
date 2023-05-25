@@ -1,10 +1,5 @@
 //! Asset types and identifiers.
 
-use penumbra_proto::{
-    core::crypto::v1alpha1 as pb, view::v1alpha1::AssetsResponse, DomainType, TypeUrl,
-};
-use serde::{Deserialize, Serialize};
-
 mod amount;
 mod cache;
 mod denom;
@@ -21,64 +16,65 @@ pub use id::{Id, VALUE_GENERATOR_DOMAIN_SEP};
 pub use r1cs::AssetIdVar;
 pub use registry::{Registry, REGISTRY};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(try_from = "pb::Asset", into = "pb::Asset")]
-pub struct Asset {
-    pub id: Id,
-    pub denom: DenomMetadata,
-}
+// #[derive(Clone, Debug, Serialize, Deserialize)]
+// #[serde(try_from = "pb::Asset", into = "pb::Asset")]
+// pub struct Asset {
+//     pub id: Id,
+//     pub denom: DenomMetadata,
+// }
 
-impl TypeUrl for Asset {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Asset";
-}
+// impl TypeUrl for Asset {
+//     const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Asset";
+// }
 
-impl DomainType for Asset {
-    type Proto = pb::Asset;
-}
+// impl DomainType for Asset {
+//     type Proto = pb::Asset;
+// }
 
-impl TryFrom<pb::Asset> for Asset {
-    type Error = anyhow::Error;
-    fn try_from(asset: pb::Asset) -> anyhow::Result<Self> {
-        let denom = asset
-            .denom
-            .ok_or_else(|| anyhow::anyhow!("missing denom field in proto"))?
-            .try_into()?;
+// impl TryFrom<pb::Asset> for Asset {
+//     type Error = anyhow::Error;
+//     fn try_from(asset: pb::Asset) -> anyhow::Result<Self> {
+//         let denom = asset
+//             .denom
+//             .ok_or_else(|| anyhow::anyhow!("missing denom field in proto"))?
+//             .try_into()?;
 
-        let dm = DenomMetadata::default_for(&denom)
-            .ok_or_else(|| anyhow::anyhow!("error generating metadata for denom"))?;
+//         let dm = DenomMetadata::default_for(&denom)
+//             .ok_or_else(|| anyhow::anyhow!("error generating metadata for denom"))?;
 
-        Ok(Self {
-            id: asset
-                .id
-                .ok_or_else(|| anyhow::anyhow!("missing id field in proto"))?
-                .try_into()?,
-            denom: dm,
-        })
-    }
-}
+//         Ok(Self {
+//             id: asset
+//                 .id
+//                 .ok_or_else(|| anyhow::anyhow!("missing id field in proto"))?
+//                 .try_into()?,
+//             denom: dm,
+//         })
+//     }
+// }
 
-impl From<Asset> for pb::Asset {
-    fn from(asset: Asset) -> Self {
-        Self {
-            id: Some(asset.id.into()),
-            denom: Some(asset.denom.base_denom().into()),
-        }
-    }
-}
+// impl From<Asset> for pb::Asset {
+//     fn from(asset: Asset) -> Self {
+//         Self {
+//             id: Some(asset.id.into()),
+//             denom: Some(asset.denom.base_denom().into()),
+//         }
+//     }
+// }
 
-impl TryFrom<AssetsResponse> for Asset {
-    type Error = anyhow::Error;
+// impl TryFrom<AssetsResponse> for Asset {
+//     type Error = anyhow::Error;
 
-    fn try_from(response: AssetsResponse) -> Result<Self, Self::Error> {
-        response
-            .asset
-            .ok_or_else(|| anyhow::anyhow!("empty AssetsResponse message"))?
-            .try_into()
-    }
-}
+//     fn try_from(response: AssetsResponse) -> Result<Self, Self::Error> {
+//         response
+//             .asset
+//             .ok_or_else(|| anyhow::anyhow!("empty AssetsResponse message"))?
+//             .try_into()
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
+    use crate::asset::DenomMetadata;
     use proptest::prelude::*;
 
     use super::*;
@@ -86,21 +82,30 @@ mod tests {
     #[test]
     fn test_registry_native_token() {
         // We should be able to use `parse_base` with the valid base denomination.
-        let base_denom = REGISTRY.parse_denom("upenumbra").unwrap();
+        let base_denom = DenomMetadata::default_for(&Denom {
+            denom: "upenumbra".to_string(),
+        })
+        .unwrap();
         assert_eq!(format!("{base_denom}"), "upenumbra".to_string());
 
         // If we try to use `parse_base` with a display denomination, we should get `None`.
         let display_denoms = vec!["mpenumbra", "penumbra"];
         for display_denom in &display_denoms {
-            assert!(REGISTRY.parse_denom(display_denom).is_none());
+            assert!(DenomMetadata::default_for(&Denom {
+                denom: display_denom.to_string(),
+            })
+            .is_none());
         }
 
         // We should be able to use the display denominations with `parse_display` however.
         for display_denom in display_denoms {
-            let parsed_display_denom = REGISTRY.parse_unit(display_denom);
+            let parsed_display_denom = DenomMetadata::default_for(&Denom {
+                denom: display_denom.to_string(),
+            })
+            .unwrap();
 
             assert_eq!(
-                format!("{}", parsed_display_denom.base()),
+                format!("{}", parsed_display_denom.base_unit()),
                 "upenumbra".to_string()
             );
 
@@ -146,7 +151,10 @@ mod tests {
 
     #[test]
     fn best_unit_for() {
-        let base_denom = REGISTRY.parse_denom("upenumbra").unwrap();
+        let base_denom = DenomMetadata::default_for(&Denom {
+            denom: "upenumbra".to_string(),
+        })
+        .unwrap();
 
         assert_eq!(
             base_denom.best_unit_for(0u64.into()).to_string(),
@@ -202,7 +210,10 @@ mod tests {
     fn test_registry_fallthrough() {
         // We should be able to use `parse_base` with a base denomination for assets
         // not included in the hardcoded registry.
-        let base_denom = REGISTRY.parse_denom("cube").unwrap();
+        let base_denom = DenomMetadata::default_for(&Denom {
+            denom: "cube".to_string(),
+        })
+        .unwrap();
         assert_eq!(format!("{base_denom}"), "cube".to_string());
     }
 

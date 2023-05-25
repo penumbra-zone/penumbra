@@ -393,7 +393,10 @@ impl std::ops::Add for BalanceVar {
 
 #[cfg(test)]
 mod test {
-    use crate::{Fr, Zero, STAKING_TOKEN_ASSET_ID};
+    use crate::{
+        asset::{Denom, DenomMetadata},
+        Fr, Zero, STAKING_TOKEN_ASSET_ID,
+    };
     use once_cell::sync::Lazy;
     use proptest::prelude::*;
 
@@ -488,12 +491,20 @@ mod test {
     }
 
     // Two sample denom/asset id pairs, for testing
-    static DENOM_1: Lazy<asset::DenomMetadata> =
-        Lazy::new(|| asset::REGISTRY.parse_denom("a").unwrap());
+    static DENOM_1: Lazy<asset::DenomMetadata> = Lazy::new(|| {
+        DenomMetadata::default_for(&Denom {
+            denom: "a".to_string(),
+        })
+        .unwrap()
+    });
     static ASSET_ID_1: Lazy<asset::Id> = Lazy::new(|| DENOM_1.id());
 
-    static DENOM_2: Lazy<asset::DenomMetadata> =
-        Lazy::new(|| asset::REGISTRY.parse_denom("b").unwrap());
+    static DENOM_2: Lazy<asset::DenomMetadata> = Lazy::new(|| {
+        DenomMetadata::default_for(&Denom {
+            denom: "b".to_string(),
+        })
+        .unwrap()
+    });
     static ASSET_ID_2: Lazy<asset::Id> = Lazy::new(|| DENOM_2.id());
 
     fn gen_expression() -> impl proptest::strategy::Strategy<Value = Expression> {

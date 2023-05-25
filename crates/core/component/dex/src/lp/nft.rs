@@ -1,4 +1,4 @@
-use penumbra_crypto::asset;
+use penumbra_crypto::asset::{self, Denom};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use regex::Regex;
 
@@ -28,9 +28,10 @@ pub struct LpNft {
 
 impl LpNft {
     pub fn new(position_id: Id, state: State) -> Self {
-        let base_denom = asset::REGISTRY
-            .parse_denom(&format!("lpnft_{state}_{position_id}"))
-            .expect("base denom format is valid");
+        let base_denom = asset::DenomMetadata::default_for(&Denom {
+            denom: format!("lpnft_{state}_{position_id}"),
+        })
+        .expect("base denom format is valid");
 
         Self {
             position_id,
@@ -102,9 +103,10 @@ impl std::str::FromStr for LpNft {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let base_denom = asset::REGISTRY
-            .parse_denom(s)
-            .ok_or_else(|| anyhow::anyhow!("invalid denom string"))?;
+        let base_denom = asset::DenomMetadata::default_for(&Denom {
+            denom: s.to_string(),
+        })
+        .ok_or_else(|| anyhow::anyhow!("invalid denom string"))?;
         base_denom.try_into()
     }
 }
@@ -153,6 +155,8 @@ impl From<LpNft> for pb::LpNft {
 
 #[cfg(test)]
 mod tests {
+    use penumbra_crypto::asset::Denom;
+
     use super::*;
 
     use super::super::{super::DirectedTradingPair, position::*};
@@ -161,10 +165,11 @@ mod tests {
     fn lpnft_denom_parsing_roundtrip() {
         let pair = DirectedTradingPair {
             start: penumbra_crypto::STAKING_TOKEN_ASSET_ID.clone(),
-            end: penumbra_crypto::asset::REGISTRY
-                .parse_denom("cube")
-                .unwrap()
-                .id(),
+            end: asset::DenomMetadata::default_for(&Denom {
+                denom: "cube".to_string(),
+            })
+            .unwrap()
+            .id(),
         };
 
         let position = Position::new(
@@ -191,7 +196,10 @@ mod tests {
 
         assert_eq!(lpnft1.to_string(), lpnft1_string);
 
-        let lpnft2_denom = asset::REGISTRY.parse_denom(&lpnft1_string).unwrap();
+        let lpnft2_denom = asset::DenomMetadata::default_for(&Denom {
+            denom: lpnft1_string.clone(),
+        })
+        .unwrap();
         let lpnft2 = LpNft::try_from(lpnft2_denom).unwrap();
 
         dbg!(&lpnft2);

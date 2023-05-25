@@ -232,7 +232,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        asset,
+        asset::{self, Denom, DenomMetadata},
         keys::{SeedPhrase, SpendKey},
         Value,
     };
@@ -292,7 +292,11 @@ mod tests {
 
         let value = Value {
             amount: 10u64.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: DenomMetadata::default_for(&Denom {
+                denom: "upenumbra".to_string(),
+            })
+            .unwrap()
+            .id(),
         };
         let note = Note::generate(&mut rng, &dest, value);
 

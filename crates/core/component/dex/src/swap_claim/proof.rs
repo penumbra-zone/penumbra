@@ -12,7 +12,7 @@ use penumbra_tct as tct;
 use rand_core::{CryptoRngCore, OsRng};
 
 use penumbra_crypto::{
-    asset::{self, AmountVar},
+    asset::{self, AmountVar, Denom},
     keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey},
     note::{self, NoteVar, StateCommitmentVar},
     Amount, Fee, Fq, Nullifier, NullifierVar, Rseed, Value, ValueVar,
@@ -201,8 +201,16 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
 impl ParameterSetup for SwapClaimCircuit {
     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
         let trading_pair = TradingPair {
-            asset_1: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-            asset_2: asset::REGISTRY.parse_denom("nala").unwrap().id(),
+            asset_1: asset::DenomMetadata::default_for(&Denom {
+                denom: "upenumbra".to_string(),
+            })
+            .unwrap()
+            .id(),
+            asset_2: asset::DenomMetadata::default_for(&Denom {
+                denom: "nala".to_string(),
+            })
+            .unwrap()
+            .id(),
         };
 
         let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);
@@ -220,7 +228,11 @@ impl ParameterSetup for SwapClaimCircuit {
             delta_2_i,
             claim_fee: Fee(Value {
                 amount: 3u64.into(),
-                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                asset_id: asset::DenomMetadata::default_for(&Denom {
+                    denom: "upenumbra".to_string(),
+                })
+                .unwrap()
+                .id(),
             }),
             claim_address: address,
             rseed: Rseed([1u8; 32]),

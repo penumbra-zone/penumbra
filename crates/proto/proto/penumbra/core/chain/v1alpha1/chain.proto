@@ -117,7 +117,7 @@ message StatePayload {
 }
 
 message KnownAssets {
-  repeated crypto.v1alpha1.Asset assets = 1;
+  repeated crypto.v1alpha1.DenomMetadata assets = 1;
 }
 
 // A spicy transaction ID

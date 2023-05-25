@@ -363,8 +363,10 @@ pub struct AssetsRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AssetsResponse {
-    #[prost(message, optional, tag = "1")]
-    pub asset: ::core::option::Option<super::super::core::crypto::v1alpha1::Asset>,
+    #[prost(message, optional, tag = "2")]
+    pub denom_metadata: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::DenomMetadata,
+    >,
 }
 /// Requests the current chain parameters from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]

@@ -333,7 +333,11 @@ mod tests {
     use decaf377::Fr;
     use std::ops::Deref;
 
-    use crate::{balance::commitment::VALUE_BLINDING_GENERATOR, Balance};
+    use crate::{
+        asset::{Denom, DenomMetadata},
+        balance::commitment::VALUE_BLINDING_GENERATOR,
+        Balance,
+    };
 
     use super::*;
 
@@ -341,10 +345,15 @@ mod tests {
     fn sum_balance_commitments() {
         use ark_ff::Field;
 
-        let pen_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
-        let atom_denom = asset::REGISTRY
-            .parse_denom("HubPort/HubChannel/uatom")
-            .unwrap();
+        let pen_denom = DenomMetadata::default_for(&Denom {
+            denom: "upenumbra".to_string(),
+        })
+        .unwrap();
+
+        let atom_denom = DenomMetadata::default_for(&Denom {
+            denom: "HubPort/HubChannel/uatom".to_string(),
+        })
+        .unwrap();
 
         let pen_id = asset::Id::from(pen_denom);
         let atom_id = asset::Id::from(atom_denom);
@@ -416,8 +425,14 @@ mod tests {
 
     #[test]
     fn value_parsing_happy() {
-        let upenumbra_base_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
-        let nala_base_denom = asset::REGISTRY.parse_denom("nala").unwrap();
+        let upenumbra_base_denom = DenomMetadata::default_for(&Denom {
+            denom: "upenumbra".to_string(),
+        })
+        .unwrap();
+        let nala_base_denom = DenomMetadata::default_for(&Denom {
+            denom: "nala".to_string(),
+        })
+        .unwrap();
         let cache = [upenumbra_base_denom.clone(), nala_base_denom.clone()]
             .into_iter()
             .collect::<asset::Cache>();
@@ -447,7 +462,10 @@ mod tests {
 
     #[test]
     fn format_picks_best_unit() {
-        let upenumbra_base_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
+        let upenumbra_base_denom = DenomMetadata::default_for(&Denom {
+            denom: "upenumbra".to_string(),
+        })
+        .unwrap();
         let cache = [upenumbra_base_denom.clone()]
             .into_iter()
             .collect::<asset::Cache>();

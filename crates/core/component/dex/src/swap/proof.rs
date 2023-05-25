@@ -12,7 +12,7 @@ use penumbra_tct as tct;
 use rand_core::{CryptoRngCore, OsRng};
 
 use penumbra_crypto::{
-    asset,
+    asset::{self, Denom},
     balance::{self, commitment::BalanceCommitmentVar, BalanceVar},
     fmd, ka,
     keys::Diversifier,
@@ -119,7 +119,11 @@ impl ParameterSetup for SwapCircuit {
             delta_2_i: 1u64.into(),
             claim_fee: Fee(Value {
                 amount: 3u64.into(),
-                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                asset_id: asset::DenomMetadata::default_for(&Denom {
+                    denom: "upenumbra".to_string(),
+                })
+                .unwrap()
+                .id(),
             }),
             claim_address: address,
             rseed: Rseed([1u8; 32]),

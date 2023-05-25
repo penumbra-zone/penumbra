@@ -527,7 +527,10 @@ mod tests {
     use rand_core::OsRng;
 
     use super::*;
-    use crate::keys::{SeedPhrase, SpendKey};
+    use crate::{
+        asset::{Denom, DenomMetadata},
+        keys::{SeedPhrase, SpendKey},
+    };
 
     #[test]
     fn note_encryption_and_decryption() {
@@ -541,7 +544,11 @@ mod tests {
 
         let value = Value {
             amount: 10u64.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: DenomMetadata::default_for(&Denom {
+                denom: "upenumbra".to_string(),
+            })
+            .unwrap()
+            .id(),
         };
         let note = Note::generate(&mut rng, &dest, value);
 
@@ -574,7 +581,11 @@ mod tests {
 
         let value = Value {
             amount: 10u64.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: DenomMetadata::default_for(&Denom {
+                denom: "upenumbra".to_string(),
+            })
+            .unwrap()
+            .id(),
         };
         let note = Note::generate(&mut rng, &dest, value);
 
@@ -605,7 +616,11 @@ mod tests {
 
         let value = Value {
             amount: 10u64.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: DenomMetadata::default_for(&Denom {
+                denom: "upenumbra".to_string(),
+            })
+            .unwrap()
+            .id(),
         };
         let note = Note::generate(&mut rng, &dest, value);
 

@@ -3,7 +3,7 @@ use std::str::FromStr;
 use regex::Regex;
 
 use super::IdentityKey;
-use crate::asset;
+use crate::asset::{self, Denom, DenomMetadata};
 
 /// Delegation tokens represent a share of a particular validator's delegation pool.
 pub struct DelegationToken {
@@ -26,9 +26,12 @@ impl From<&IdentityKey> for DelegationToken {
 impl DelegationToken {
     pub fn new(validator_identity: IdentityKey) -> Self {
         // This format string needs to be in sync with the asset registry
-        let base_denom = asset::REGISTRY
-            .parse_denom(&format!("udelegation_{validator_identity}"))
-            .expect("base denom format is valid");
+
+        let token_string = format!("udelegation_{validator_identity}").to_string();
+        let base_denom = DenomMetadata::default_for(&Denom {
+            denom: token_string,
+        })
+        .expect("base denom format is valid");
         DelegationToken {
             validator_identity,
             base_denom,
@@ -86,10 +89,11 @@ impl TryFrom<asset::DenomMetadata> for DelegationToken {
 impl FromStr for DelegationToken {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        asset::REGISTRY
-            .parse_denom(s)
-            .ok_or_else(|| anyhow::anyhow!("could not parse {} as base denomination", s))?
-            .try_into()
+        asset::DenomMetadata::default_for(&Denom {
+            denom: s.to_string(),
+        })
+        .ok_or_else(|| anyhow::anyhow!("could not parse {} as base denomination", s))?
+        .try_into()
     }
 }
 

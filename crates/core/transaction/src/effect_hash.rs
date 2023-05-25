@@ -650,7 +650,7 @@ impl EffectingData for TradingPair {
 #[cfg(test)]
 mod tests {
     use penumbra_crypto::{
-        asset,
+        asset::{self, Denom, DenomMetadata},
         keys::{SeedPhrase, SpendKey},
         memo::MemoPlaintext,
         Address, Fee, Note, Value, STAKING_TOKEN_ASSET_ID,
@@ -701,8 +701,16 @@ mod tests {
         sct.insert(tct::Witness::Keep, note1.commit()).unwrap();
 
         let trading_pair = TradingPair::new(
-            asset::REGISTRY.parse_denom("nala").unwrap().id(),
-            asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            DenomMetadata::default_for(&Denom {
+                denom: "nala".to_string(),
+            })
+            .unwrap()
+            .id(),
+            DenomMetadata::default_for(&Denom {
+                denom: "upenumbra".to_string(),
+            })
+            .unwrap()
+            .id(),
         );
 
         let swap_plaintext = SwapPlaintext::new(
@@ -712,7 +720,11 @@ mod tests {
             1u64.into(),
             Fee(Value {
                 amount: 3u64.into(),
-                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                asset_id: DenomMetadata::default_for(&Denom {
+                    denom: "upenumbra".to_string(),
+                })
+                .unwrap()
+                .id(),
             }),
             addr,
         );

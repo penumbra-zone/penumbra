@@ -1,5 +1,6 @@
 #![allow(clippy::clone_on_copy)]
 pub use ark_ff::{One, Zero};
+use asset::Denom;
 pub use decaf377::{FieldExt, Fq, Fr};
 pub use decaf377_fmd as fmd;
 pub use decaf377_ka as ka;
@@ -29,7 +30,6 @@ pub mod value;
 
 pub use address::{Address, AddressVar, AddressView};
 pub use asset::Amount;
-pub use asset::Asset;
 pub use balance::Balance;
 pub use effect_hash::{EffectHash, EffectingData};
 pub use fee::Fee;
@@ -54,6 +54,11 @@ fn fmt_hex<T: AsRef<[u8]>>(data: T, f: &mut std::fmt::Formatter) -> std::fmt::Re
 
 use once_cell::sync::Lazy;
 
-pub static STAKING_TOKEN_DENOM: Lazy<asset::DenomMetadata> =
-    Lazy::new(|| asset::REGISTRY.parse_denom("upenumbra").unwrap());
+pub static STAKING_TOKEN_DENOM: Lazy<asset::DenomMetadata> = Lazy::new(|| {
+    asset::DenomMetadata::default_for(&Denom {
+        denom: "upenumbra".to_string(),
+    })
+    .unwrap()
+});
+
 pub static STAKING_TOKEN_ASSET_ID: Lazy<asset::Id> = Lazy::new(|| STAKING_TOKEN_DENOM.id());

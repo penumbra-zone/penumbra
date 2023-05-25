@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::KnownAssets;
 use penumbra_crypto::{
-    asset::{self, Asset, DenomMetadata},
+    asset::{self, DenomMetadata},
     Amount,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
@@ -51,10 +51,8 @@ pub trait SupplyWrite: StateWrite {
             // we don't do this often).
             // TODO: fix with new state model
             let mut known_assets = self.known_assets().await?;
-            known_assets.0.push(Asset {
-                id,
-                denom: denom.clone(),
-            });
+
+            known_assets.0.push(denom.to_owned());
             self.put(state_key::known_assets().to_owned(), known_assets);
             Ok(())
         }
@@ -70,7 +68,7 @@ pub trait SupplyWrite: StateWrite {
         let new_supply: Amount = if change < 0 {
             current_supply
                 .value()
-                .checked_sub(change.unsigned_abs().into())
+                .checked_sub(change.unsigned_abs())
                 .ok_or_else(|| {
                     anyhow::anyhow!(
                         "underflow updating token {} supply {} with delta {}",
@@ -83,7 +81,7 @@ pub trait SupplyWrite: StateWrite {
         } else {
             current_supply
                 .value()
-                .checked_add((change as u128).into())
+                .checked_add(change as u128)
                 .ok_or_else(|| {
                     anyhow::anyhow!(
                         "overflow updating token {} supply {} with delta {}",

@@ -1,5 +1,5 @@
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
-use penumbra_crypto::asset;
+use penumbra_crypto::asset::{self, Denom};
 
 /// IBC token respresents a token that was created through IBC.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -15,9 +15,10 @@ impl IbcToken {
     pub fn new(channel_id: &ChannelId, port_id: &PortId, denom: &str) -> Self {
         let transfer_path = format!("{port_id}/{channel_id}/{denom}");
 
-        let base_denom = asset::REGISTRY
-            .parse_denom(&transfer_path)
-            .expect("IBC denom is invalid");
+        let base_denom = asset::DenomMetadata::default_for(&Denom {
+            denom: transfer_path,
+        })
+        .expect("IBC denom is invalid");
 
         IbcToken {
             channel_id: channel_id.clone(),

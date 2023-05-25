@@ -1,4 +1,7 @@
-use penumbra_crypto::{asset, Address, Amount, Note, Rseed, Value};
+use penumbra_crypto::{
+    asset::{self, Denom},
+    Address, Amount, Note, Rseed, Value,
+};
 use penumbra_proto::{core::chain::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
@@ -64,10 +67,11 @@ impl Allocation {
             self.address,
             Value {
                 amount: self.amount,
-                asset_id: asset::REGISTRY
-                    .parse_denom(&self.denom)
-                    .ok_or_else(|| anyhow::anyhow!("invalid denomination"))?
-                    .id(),
+                asset_id: asset::DenomMetadata::default_for(&Denom {
+                    denom: self.denom.clone(),
+                })
+                .unwrap()
+                .id(),
             },
             Rseed([0u8; 32]),
         )

@@ -9,9 +9,9 @@ use async_stream::try_stream;
 use camino::Utf8Path;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_crypto::{
-    asset::{self},
+    asset::{self, Denom, DenomMetadata},
     keys::{AccountGroupId, AddressIndex, FullViewingKey},
-    Amount, Asset, Fee, Value,
+    Amount, Fee, Value,
 };
 use penumbra_dex::{lp::position, TradingPair};
 use penumbra_proto::{
@@ -658,7 +658,7 @@ impl ViewProtocolService for ViewService {
             if let Some(asset) = self.storage.asset_by_id(&id).await.map_err(|e| {
                 tonic::Status::internal(format!("Error retrieving asset by id: {:#}", e))
             })? {
-                denoms.push(asset.denom);
+                denoms.push(asset);
             }
         }
 
@@ -976,11 +976,10 @@ impl ViewProtocolService for ViewService {
         } else {
             let mut assets = vec![];
             for denom in include_specific_denominations {
-                if let Some(denom) = asset::REGISTRY.parse_denom(&denom.denom) {
-                    assets.push(Asset {
-                        id: denom.id(),
-                        denom,
-                    });
+                if let Some(denom) = DenomMetadata::default_for(&Denom {
+                    denom: denom.denom.clone(),
+                }) {
+                    assets.push(denom);
                 }
             }
             for (include, pattern) in [
@@ -1008,7 +1007,7 @@ impl ViewProtocolService for ViewService {
             for asset in assets {
                 yield
                     pb::AssetsResponse {
-                        asset: Some(asset.into()),
+                        denom_metadata: Some(asset.into()),
                     }
             }
         };

@@ -5,6 +5,8 @@ use regex::{Regex, RegexSet};
 
 use crate::asset::{denom_metadata, DenomMetadata, Unit};
 
+use super::Denom;
+
 /// A registry of known assets, providing metadata related to a denomination string.
 ///
 /// The [`REGISTRY`] constant provides an instance of the registry.
@@ -47,37 +49,35 @@ impl Registry {
     ///
     /// If the denomination is unknown, returns `Some` with the parsed base
     /// denomination and default display denomination (base = display).
-    pub fn parse_denom(&self, raw_denom: &str) -> Option<DenomMetadata> {
-        // We hope that our regexes are disjoint (TODO: add code to test this)
-        // so that there will only ever be one match from the RegexSet.
+    // pub fn parse_denom(&self, raw_denom: &str) -> Option<DenomMetadata> {
+    //     // We hope that our regexes are disjoint (TODO: add code to test this)
+    //     // so that there will only ever be one match from the RegexSet.
 
-        if let Some(base_index) = self.base_set.matches(raw_denom).iter().next() {
-            // We've matched a base denomination.
+    //     if let Some(base_index) = self.base_set.matches(raw_denom).iter().next() {
+    //         // We've matched a base denomination.
 
-            // Rematch with the specific pattern to obtain captured denomination data.
-            let data = self.base_regexes[base_index]
-                .captures(raw_denom)
-                .expect("already checked this regex matches")
-                .name("data")
-                .map(|m| m.as_str())
-                .unwrap_or("");
+    //         // Rematch with the specific pattern to obtain captured denomination data.
+    //         let data = self.base_regexes[base_index]
+    //             .captures(raw_denom)
+    //             .expect("already checked this regex matches")
+    //             .name("data")
+    //             .map(|m| m.as_str())
+    //             .unwrap_or("");
 
-            Some(DenomMetadata {
-                inner: Arc::new(self.constructors[base_index](data)),
-            })
-        } else if self.display_set.matches(raw_denom).iter().next().is_some() {
-            // 2. This denom isn't a base denom, it's a display denom
-            None
-        } else {
-            // 3. Fallthrough: create default base denom
-            Some(DenomMetadata {
-                inner: Arc::new(denom_metadata::Inner::new(
-                    raw_denom.to_string(),
-                    Vec::new(),
-                )),
-            })
-        }
-    }
+    //         Some(DenomMetadata {
+    //             inner: Arc::new(self.constructors[base_index](data)),
+    //         })
+    //     } else if self.display_set.matches(raw_denom).iter().next().is_some() {
+    //         // 2. This denom isn't a base denom, it's a display denom
+    //         None
+    //     } else {
+    //         // 3. Fallthrough: create default base denom
+    //         Some(DenomMetadata::from(Inner::new(
+    //             raw_denom.to_string(),
+    //             Vec::new(),
+    //         )))
+    //     }
+    // }
 
     /// Parses the provided `raw_unit`, determining whether it is a display unit
     /// for another denomination or a base denomination itself.
@@ -101,9 +101,11 @@ impl Registry {
             }
             unreachable!("we matched one of the display regexes");
         } else {
-            self.parse_denom(raw_unit)
-                .expect("parse_base only returns None on display denom input")
-                .base_unit()
+            DenomMetadata::default_for(&Denom {
+                denom: raw_unit.to_string(),
+            })
+            .expect("parse_base only returns None on display denom input")
+            .base_unit()
         }
     }
 }

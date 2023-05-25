@@ -7,7 +7,9 @@ use std::{
 
 use anyhow::ensure;
 use ark_ff::fields::PrimeField;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{
+    core::crypto::v1alpha1 as pb, view::v1alpha1::AssetsResponse, DomainType, TypeUrl,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{asset, Fq, Value};
@@ -20,7 +22,7 @@ use super::Denom;
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(try_from = "pb::DenomMetadata", into = "pb::DenomMetadata")]
 pub struct DenomMetadata {
-    pub(super) inner: Arc<Inner>,
+    inner: Arc<Inner>,
 }
 
 // These are constructed by the asset registry.
@@ -151,9 +153,21 @@ impl TryFrom<&str> for DenomMetadata {
     type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        asset::REGISTRY
-            .parse_denom(value)
-            .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", value))
+        DenomMetadata::default_for(&Denom {
+            denom: value.to_string(),
+        })
+        .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", value))
+    }
+}
+
+impl TryFrom<AssetsResponse> for DenomMetadata {
+    type Error = anyhow::Error;
+
+    fn try_from(response: AssetsResponse) -> Result<Self, Self::Error> {
+        response
+            .denom_metadata
+            .ok_or_else(|| anyhow::anyhow!("empty AssetsResponse message"))?
+            .try_into()
     }
 }
 
@@ -314,7 +328,9 @@ impl DenomMetadata {
     }
 
     pub fn default_for(denom: &Denom) -> Option<DenomMetadata> {
-        asset::REGISTRY.parse_denom(&denom.denom)
+        Some(DenomMetadata {
+            inner: Arc::new(Inner::new(denom.denom.to_string(), Vec::new())),
+        })
     }
 
     pub fn is_opened_position_nft(&self) -> bool {

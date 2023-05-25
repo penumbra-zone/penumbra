@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, ops::Deref};
 
-use super::{DenomMetadata, Id, REGISTRY};
+use super::{Denom, DenomMetadata, Id};
 use crate::asset::denom_metadata::Unit;
 
 /// On-chain data structures only record a fixed-size [`Id`], so this type
@@ -53,7 +53,9 @@ impl TryFrom<BTreeMap<Id, DenomMetadata>> for Cache {
         let mut cache = BTreeMap::default();
         let mut units: BTreeMap<String, Unit> = BTreeMap::default();
         for (provided_id, denom) in map.into_iter() {
-            if let Some(denom) = REGISTRY.parse_denom(&denom.base_denom().denom) {
+            if let Some(denom) = DenomMetadata::default_for(&Denom {
+                denom: denom.base_denom().denom,
+            }) {
                 let id = denom.id();
                 if provided_id != id {
                     return Err(anyhow::anyhow!(

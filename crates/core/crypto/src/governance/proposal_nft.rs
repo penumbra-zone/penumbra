@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use regex::Regex;
 
-use crate::asset;
+use crate::asset::{self, Denom, DenomMetadata};
 
 /// Unbonding tokens represent staking tokens that are currently unbonding and
 /// subject to slashing.
@@ -53,14 +53,17 @@ impl FromStr for Kind {
 
 impl ProposalNft {
     fn new(proposal_id: u64, proposal_state: Kind) -> Self {
+        let proposal_string = format!(
+            "proposal_{}_{}",
+            proposal_id,
+            proposal_state.display_static()
+        )
+        .to_string();
         // This format string needs to be in sync with the asset registry
-        let base_denom = asset::REGISTRY
-            .parse_denom(&format!(
-                "proposal_{}_{}",
-                proposal_id,
-                proposal_state.display_static()
-            ))
-            .expect("base denom format is valid");
+        let base_denom = DenomMetadata::default_for(&Denom {
+            denom: proposal_string,
+        })
+        .expect("base denom format is valid");
         ProposalNft {
             proposal_id,
             proposal_state,
@@ -161,10 +164,11 @@ impl FromStr for ProposalNft {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        asset::REGISTRY
-            .parse_denom(s)
-            .ok_or_else(|| anyhow::anyhow!("could not parse {} as base denomination", s))?
-            .try_into()
+        DenomMetadata::default_for(&Denom {
+            denom: s.to_string(),
+        })
+        .ok_or_else(|| anyhow::anyhow!("could not parse {} as base denomination", s))?
+        .try_into()
     }
 }
 
