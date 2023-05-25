@@ -410,7 +410,7 @@ pub struct SpreadResponse {
 /// Requests information on an asset by asset id
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AssetInfoRequest {
+pub struct DenomMetadataByIdRequest {
     /// The expected chain id (empty string if no expectation).
     #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
@@ -420,12 +420,14 @@ pub struct AssetInfoRequest {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AssetInfoResponse {
+pub struct DenomMetadataByIdResponse {
     /// If present, information on the requested asset.
     ///
     /// If the requested asset was unknown, this field will not be present.
     #[prost(message, optional, tag = "1")]
-    pub asset: ::core::option::Option<super::super::core::crypto::v1alpha1::Asset>,
+    pub denom_metadata: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::DenomMetadata,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1244,10 +1246,10 @@ pub mod specific_query_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        pub async fn asset_info(
+        pub async fn denom_metadata_by_id(
             &mut self,
-            request: impl tonic::IntoRequest<super::AssetInfoRequest>,
-        ) -> Result<tonic::Response<super::AssetInfoResponse>, tonic::Status> {
+            request: impl tonic::IntoRequest<super::DenomMetadataByIdRequest>,
+        ) -> Result<tonic::Response<super::DenomMetadataByIdResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -1259,7 +1261,7 @@ pub mod specific_query_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.client.v1alpha1.SpecificQueryService/AssetInfo",
+                "/penumbra.client.v1alpha1.SpecificQueryService/DenomMetadataById",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -1994,10 +1996,10 @@ pub mod specific_query_service_server {
             &self,
             request: tonic::Request<super::SpreadRequest>,
         ) -> Result<tonic::Response<super::SpreadResponse>, tonic::Status>;
-        async fn asset_info(
+        async fn denom_metadata_by_id(
             &self,
-            request: tonic::Request<super::AssetInfoRequest>,
-        ) -> Result<tonic::Response<super::AssetInfoResponse>, tonic::Status>;
+            request: tonic::Request<super::DenomMetadataByIdRequest>,
+        ) -> Result<tonic::Response<super::DenomMetadataByIdResponse>, tonic::Status>;
         async fn proposal_info(
             &self,
             request: tonic::Request<super::ProposalInfoRequest>,
@@ -2668,24 +2670,26 @@ pub mod specific_query_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.client.v1alpha1.SpecificQueryService/AssetInfo" => {
+                "/penumbra.client.v1alpha1.SpecificQueryService/DenomMetadataById" => {
                     #[allow(non_camel_case_types)]
-                    struct AssetInfoSvc<T: SpecificQueryService>(pub Arc<T>);
+                    struct DenomMetadataByIdSvc<T: SpecificQueryService>(pub Arc<T>);
                     impl<
                         T: SpecificQueryService,
-                    > tonic::server::UnaryService<super::AssetInfoRequest>
-                    for AssetInfoSvc<T> {
-                        type Response = super::AssetInfoResponse;
+                    > tonic::server::UnaryService<super::DenomMetadataByIdRequest>
+                    for DenomMetadataByIdSvc<T> {
+                        type Response = super::DenomMetadataByIdResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::AssetInfoRequest>,
+                            request: tonic::Request<super::DenomMetadataByIdRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move { (*inner).asset_info(request).await };
+                            let fut = async move {
+                                (*inner).denom_metadata_by_id(request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -2694,7 +2698,7 @@ pub mod specific_query_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = AssetInfoSvc(inner);
+                        let method = DenomMetadataByIdSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

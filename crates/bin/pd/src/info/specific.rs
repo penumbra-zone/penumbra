@@ -15,10 +15,10 @@ use penumbra_dex::{
 use penumbra_proto::{
     self as proto,
     client::v1alpha1::{
-        specific_query_service_server::SpecificQueryService, AssetInfoRequest, AssetInfoResponse,
-        BatchSwapOutputDataRequest, KeyValueRequest, KeyValueResponse, ProposalInfoRequest,
-        ProposalInfoResponse, ProposalRateDataRequest, ProposalRateDataResponse,
-        ValidatorStatusRequest,
+        specific_query_service_server::SpecificQueryService, AssetInfoResponse,
+        BatchSwapOutputDataRequest, DenomMetadataByIdRequest, KeyValueRequest, KeyValueResponse,
+        ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
+        ProposalRateDataResponse, ValidatorStatusRequest,
     },
     StateReadProto as _,
 };
@@ -570,7 +570,7 @@ impl SpecificQueryService for Info {
     #[instrument(skip(self, request))]
     async fn asset_info(
         &self,
-        request: tonic::Request<AssetInfoRequest>,
+        request: tonic::Request<DenomMetadataByIdRequest>,
     ) -> Result<tonic::Response<AssetInfoResponse>, Status> {
         let state = self.storage.latest_snapshot();
         state
