@@ -13,6 +13,7 @@ use penumbra_crypto::{
     keys::{AccountGroupId, AddressIndex, FullViewingKey},
     Amount, Asset, Fee,
 };
+use penumbra_dex::{lp::position, TradingPair};
 use penumbra_proto::{
     client::v1alpha1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,
@@ -1215,5 +1216,39 @@ impl ViewProtocolService for ViewService {
         };
 
         Ok(tonic::Response::new(response))
+    }
+
+    async fn owned_position_ids(
+        &self,
+        request: tonic::Request<pb::OwnedPositionIdsRequest>,
+    ) -> Result<tonic::Response<pb::OwnedPositionIdsResponse>, tonic::Status> {
+        self.check_worker().await?;
+
+        let pb::OwnedPositionIdsRequest {
+            position_state,
+            trading_pair,
+        } = request.into_inner();
+
+        let position_state: Option<position::State> = position_state
+            .map(|state| state.try_into())
+            .transpose()
+            .map_err(|e: anyhow::Error| e.context("could not decode position state"))
+            .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
+
+        let trading_pair: Option<TradingPair> = trading_pair
+            .map(|pair| pair.try_into())
+            .transpose()
+            .map_err(|e: anyhow::Error| e.context("could not decode trading pair"))
+            .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
+
+        let ids = self
+            .storage
+            .owned_position_ids(position_state, trading_pair)
+            .await
+            .map_err(|e| tonic::Status::unavailable(format!("error getting position ids: {e}")))?;
+
+        Ok(tonic::Response::new(pb::OwnedPositionIdsResponse {
+            position_ids: ids.into_iter().map(Into::into).collect(),
+        }))
     }
 }

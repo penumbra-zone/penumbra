@@ -580,6 +580,28 @@ pub struct SwapRecord {
     #[prost(message, optional, tag = "7")]
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct OwnedPositionIdsRequest {
+    /// If present, return only positions with this position state.
+    #[prost(message, optional, tag = "1")]
+    pub position_state: ::core::option::Option<
+        super::super::core::dex::v1alpha1::PositionState,
+    >,
+    /// If present, return only positions for this trading pair.
+    #[prost(message, optional, tag = "2")]
+    pub trading_pair: ::core::option::Option<
+        super::super::core::dex::v1alpha1::TradingPair,
+    >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct OwnedPositionIdsResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub position_ids: ::prost::alloc::vec::Vec<
+        super::super::core::dex::v1alpha1::PositionId,
+    >,
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod view_protocol_service_client {
@@ -1084,6 +1106,26 @@ pub mod view_protocol_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        /// Query for owned position IDs for the given trading pair and in the given position state.
+        pub async fn owned_position_ids(
+            &mut self,
+            request: impl tonic::IntoRequest<super::OwnedPositionIdsRequest>,
+        ) -> Result<tonic::Response<super::OwnedPositionIdsResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/OwnedPositionIds",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
     }
 }
 /// Generated client implementations.
@@ -1327,6 +1369,11 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::BroadcastTransactionRequest>,
         ) -> Result<tonic::Response<super::BroadcastTransactionResponse>, tonic::Status>;
+        /// Query for owned position IDs for the given trading pair and in the given position state.
+        async fn owned_position_ids(
+            &self,
+            request: tonic::Request<super::OwnedPositionIdsRequest>,
+        ) -> Result<tonic::Response<super::OwnedPositionIdsResponse>, tonic::Status>;
     }
     /// The view protocol is used by a view client, who wants to do some
     /// transaction-related actions, to request data from a view service, which is
@@ -2183,6 +2230,46 @@ pub mod view_protocol_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = BroadcastTransactionSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/OwnedPositionIds" => {
+                    #[allow(non_camel_case_types)]
+                    struct OwnedPositionIdsSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::UnaryService<super::OwnedPositionIdsRequest>
+                    for OwnedPositionIdsSvc<T> {
+                        type Response = super::OwnedPositionIdsResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::OwnedPositionIdsRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).owned_position_ids(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = OwnedPositionIdsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

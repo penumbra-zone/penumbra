@@ -218,36 +218,40 @@ impl Worker {
                 // registry based on transaction contents.
                 for transaction in &transactions {
                     for action in transaction.actions() {
-                        match action {
-                            penumbra_transaction::Action::PositionOpen(position_open) => {
-                                let position_id = position_open.position.id();
+                        if let penumbra_transaction::Action::PositionOpen(position_open) = action {
+                            let position_id = position_open.position.id();
 
-                                // Record every possible permutation.
-                                let lp_nft = LpNft::new(position_id, position::State::Opened);
-                                let id = lp_nft.asset_id();
-                                let denom = lp_nft.denom();
-                                let asset = Asset { id, denom };
-                                self.storage.record_asset(asset).await?;
+                            // Record every possible permutation.
 
-                                let lp_nft = LpNft::new(position_id, position::State::Closed);
-                                let id = lp_nft.asset_id();
-                                let denom = lp_nft.denom();
-                                let asset = Asset { id, denom };
-                                self.storage.record_asset(asset).await?;
+                            let lp_nft = LpNft::new(position_id, position::State::Opened);
+                            let id = lp_nft.asset_id();
+                            let denom = lp_nft.denom();
+                            let asset = Asset { id, denom };
+                            self.storage.record_asset(asset).await?;
 
-                                let lp_nft = LpNft::new(position_id, position::State::Withdrawn);
-                                let id = lp_nft.asset_id();
-                                let denom = lp_nft.denom();
-                                let asset = Asset { id, denom };
-                                self.storage.record_asset(asset).await?;
+                            let lp_nft = LpNft::new(position_id, position::State::Closed);
+                            let id = lp_nft.asset_id();
+                            let denom = lp_nft.denom();
+                            let asset = Asset { id, denom };
+                            self.storage.record_asset(asset).await?;
 
-                                let lp_nft = LpNft::new(position_id, position::State::Claimed);
-                                let id = lp_nft.asset_id();
-                                let denom = lp_nft.denom();
-                                let asset = Asset { id, denom };
-                                self.storage.record_asset(asset).await?;
-                            }
-                            _ => {} // noop
+                            let lp_nft = LpNft::new(position_id, position::State::Withdrawn);
+                            let id = lp_nft.asset_id();
+                            let denom = lp_nft.denom();
+                            let asset = Asset { id, denom };
+                            self.storage.record_asset(asset).await?;
+
+                            let lp_nft = LpNft::new(position_id, position::State::Claimed);
+                            let id = lp_nft.asset_id();
+                            let denom = lp_nft.denom();
+                            let asset = Asset { id, denom };
+                            self.storage.record_asset(asset).await?;
+
+                            //Record the position itself
+
+                            self.storage
+                                .record_position(position_open.position.clone())
+                                .await?;
                         };
                     }
                 }

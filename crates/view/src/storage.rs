@@ -9,6 +9,10 @@ use penumbra_crypto::{
     stake::{DelegationToken, IdentityKey},
     Address, Amount, Asset, FieldExt, Fq, FullViewingKey, Note, Nullifier, Rseed, Value,
 };
+use penumbra_dex::{
+    lp::position::{self, Position, State},
+    TradingPair,
+};
 use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_client::ObliviousQueryServiceClient, ChainParametersRequest,
@@ -950,6 +954,26 @@ impl Storage {
         Ok(())
     }
 
+    pub async fn record_position(&self, position: Position) -> anyhow::Result<()> {
+        let position_id = position.id().0.to_vec();
+        let position_state = position.state.to_string();
+        let trading_pair = position.phi.pair.to_string();
+
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            pool.get()?
+                .execute(
+                    "INSERT OR IGNORE INTO positions (position_id, position_state, trading_pair) VALUES (?1, ?2, ?3)",
+                    (position_id, position_state, trading_pair),
+                )
+                .map_err(anyhow::Error::from)
+        })
+        .await??;
+
+        Ok(())
+    }
+
     pub async fn record_empty_block(&self, height: u64) -> anyhow::Result<()> {
         // Check that the incoming block height follows the latest recorded height
         let last_sync_height = self.last_sync_height().await?.ok_or_else(|| {
@@ -1344,5 +1368,39 @@ impl Storage {
         .await??;
 
         Ok(())
+    }
+
+    pub async fn owned_position_ids(
+        &self,
+        position_state: Option<State>,
+        trading_pair: Option<TradingPair>,
+    ) -> anyhow::Result<Vec<position::Id>> {
+        let pool = self.pool.clone();
+
+        let state_clause = match position_state {
+            Some(state) => state.to_string(),
+            None => "position_state".to_string(),
+        };
+
+        let pair_clause = match trading_pair {
+            Some(pair) => pair.to_string(),
+            None => "trading_pair".to_string(),
+        };
+
+        spawn_blocking(move || {
+            pool.get()?
+                .prepare_cached(
+                    "SELECT position_id FROM positions 
+                     WHERE position_state = ?1 
+                     AND trading_pair = ?2",
+                )?
+                .query_and_then([state_clause, pair_clause], |row| {
+                    let position_id: Vec<u8> = row.get("position_id")?;
+
+                    position::Id::decode(position_id.as_slice())
+                })?
+                .collect()
+        })
+        .await?
     }
 }
