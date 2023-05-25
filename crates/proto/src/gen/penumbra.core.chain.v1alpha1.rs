@@ -81,21 +81,6 @@ pub struct FmdParameters {
     #[prost(uint64, tag = "2")]
     pub as_of_block_height: u64,
 }
-/// TODO: delete with legacy code
-/// Information about a given asset at a given time (as specified by block
-/// height). Currently this only contains the total supply.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AssetInfo {
-    #[prost(message, optional, tag = "1")]
-    pub asset_id: ::core::option::Option<super::super::crypto::v1alpha1::AssetId>,
-    #[prost(message, optional, tag = "2")]
-    pub denom: ::core::option::Option<super::super::crypto::v1alpha1::Denom>,
-    #[prost(uint64, tag = "3")]
-    pub as_of_block_height: u64,
-    #[prost(uint64, tag = "4")]
-    pub total_supply: u64,
-}
 /// Contains the minimum data needed to update client state.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -180,7 +165,7 @@ pub mod state_payload {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct KnownAssets {
     #[prost(message, repeated, tag = "1")]
-    pub assets: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::Asset>,
+    pub assets: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::DenomMetadata>,
 }
 /// A spicy transaction ID
 #[allow(clippy::derive_partial_eq_without_eq)]

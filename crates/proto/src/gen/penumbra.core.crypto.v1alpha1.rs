@@ -228,14 +228,6 @@ pub struct MerkleRoot {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Asset {
-    #[prost(message, optional, tag = "1")]
-    pub id: ::core::option::Option<AssetId>,
-    #[prost(message, optional, tag = "2")]
-    pub denom: ::core::option::Option<Denom>,
-}
 /// A validator's identity key (decaf377-rdsa spendauth verification key).
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

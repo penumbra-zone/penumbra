@@ -5,6 +5,8 @@ use regex::{Regex, RegexSet};
 
 use crate::asset::{denom_metadata, DenomMetadata, Unit};
 
+use super::denom_metadata::Inner;
+
 /// A registry of known assets, providing metadata related to a denomination string.
 ///
 /// The [`REGISTRY`] constant provides an instance of the registry.
@@ -71,10 +73,7 @@ impl Registry {
         } else {
             // 3. Fallthrough: create default base denom
             Some(DenomMetadata {
-                inner: Arc::new(denom_metadata::Inner::new(
-                    raw_denom.to_string(),
-                    Vec::new(),
-                )),
+                inner: Arc::new(Inner::new(raw_denom.to_string(), Vec::new())),
             })
         }
     }

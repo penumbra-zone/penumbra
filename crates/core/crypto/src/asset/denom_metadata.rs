@@ -7,7 +7,9 @@ use std::{
 
 use anyhow::ensure;
 use ark_ff::fields::PrimeField;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{
+    core::crypto::v1alpha1 as pb, view::v1alpha1::AssetsResponse, DomainType, TypeUrl,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{asset, Fq, Value};
@@ -154,6 +156,17 @@ impl TryFrom<&str> for DenomMetadata {
         asset::REGISTRY
             .parse_denom(value)
             .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", value))
+    }
+}
+
+impl TryFrom<AssetsResponse> for DenomMetadata {
+    type Error = anyhow::Error;
+
+    fn try_from(response: AssetsResponse) -> Result<Self, Self::Error> {
+        response
+            .denom_metadata
+            .ok_or_else(|| anyhow::anyhow!("empty AssetsResponse message"))?
+            .try_into()
     }
 }
 

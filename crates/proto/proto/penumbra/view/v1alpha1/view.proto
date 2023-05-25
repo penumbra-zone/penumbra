@@ -297,7 +297,7 @@ message AssetsRequest {
 
 // Requests all assets known to the view service.
 message AssetsResponse {
-  core.crypto.v1alpha1.Asset asset = 1;
+  core.crypto.v1alpha1.DenomMetadata denom_metadata = 2;
 }
 
 // Requests the current chain parameters from the view service.

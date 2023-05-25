@@ -388,12 +388,12 @@ impl serde::Serialize for AssetsResponse {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.asset.is_some() {
+        if self.denom_metadata.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.AssetsResponse", len)?;
-        if let Some(v) = self.asset.as_ref() {
-            struct_ser.serialize_field("asset", v)?;
+        if let Some(v) = self.denom_metadata.as_ref() {
+            struct_ser.serialize_field("denomMetadata", v)?;
         }
         struct_ser.end()
     }
@@ -405,12 +405,13 @@ impl<'de> serde::Deserialize<'de> for AssetsResponse {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "asset",
+            "denom_metadata",
+            "denomMetadata",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            Asset,
+            DenomMetadata,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -432,7 +433,7 @@ impl<'de> serde::Deserialize<'de> for AssetsResponse {
                         E: serde::de::Error,
                     {
                         match value {
-                            "asset" => Ok(GeneratedField::Asset),
+                            "denomMetadata" | "denom_metadata" => Ok(GeneratedField::DenomMetadata),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -452,19 +453,19 @@ impl<'de> serde::Deserialize<'de> for AssetsResponse {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut asset__ = None;
+                let mut denom_metadata__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::Asset => {
-                            if asset__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("asset"));
+                        GeneratedField::DenomMetadata => {
+                            if denom_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("denomMetadata"));
                             }
-                            asset__ = map.next_value()?;
+                            denom_metadata__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(AssetsResponse {
-                    asset: asset__,
+                    denom_metadata: denom_metadata__,
                 })
             }
         }

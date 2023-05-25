@@ -66,16 +66,6 @@ message FmdParameters {
   uint64 as_of_block_height = 2;
 }
 
-// TODO: delete with legacy code
-// Information about a given asset at a given time (as specified by block
-// height). Currently this only contains the total supply.
-message AssetInfo {
-  crypto.v1alpha1.AssetId asset_id = 1;
-  crypto.v1alpha1.Denom denom = 2;
-  uint64 as_of_block_height = 3;
-  uint64 total_supply = 4;
-}
-
 // Contains the minimum data needed to update client state.
 message CompactBlock {
   uint64 height = 1;
@@ -117,7 +107,7 @@ message StatePayload {
 }
 
 message KnownAssets {
-  repeated crypto.v1alpha1.Asset assets = 1;
+  repeated crypto.v1alpha1.DenomMetadata assets = 1;
 }
 
 // A spicy transaction ID

@@ -1,10 +1,5 @@
 //! Asset types and identifiers.
 
-use penumbra_proto::{
-    core::crypto::v1alpha1 as pb, view::v1alpha1::AssetsResponse, DomainType, TypeUrl,
-};
-use serde::{Deserialize, Serialize};
-
 mod amount;
 mod cache;
 mod denom;
@@ -21,61 +16,61 @@ pub use id::{Id, VALUE_GENERATOR_DOMAIN_SEP};
 pub use r1cs::AssetIdVar;
 pub use registry::{Registry, REGISTRY};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(try_from = "pb::Asset", into = "pb::Asset")]
-pub struct Asset {
-    pub id: Id,
-    pub denom: DenomMetadata,
-}
+// #[derive(Clone, Debug, Serialize, Deserialize)]
+// #[serde(try_from = "pb::Asset", into = "pb::Asset")]
+// pub struct Asset {
+//     pub id: Id,
+//     pub denom: DenomMetadata,
+// }
 
-impl TypeUrl for Asset {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Asset";
-}
+// impl TypeUrl for Asset {
+//     const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Asset";
+// }
 
-impl DomainType for Asset {
-    type Proto = pb::Asset;
-}
+// impl DomainType for Asset {
+//     type Proto = pb::Asset;
+// }
 
-impl TryFrom<pb::Asset> for Asset {
-    type Error = anyhow::Error;
-    fn try_from(asset: pb::Asset) -> anyhow::Result<Self> {
-        let denom = asset
-            .denom
-            .ok_or_else(|| anyhow::anyhow!("missing denom field in proto"))?
-            .try_into()?;
+// impl TryFrom<pb::Asset> for Asset {
+//     type Error = anyhow::Error;
+//     fn try_from(asset: pb::Asset) -> anyhow::Result<Self> {
+//         let denom = asset
+//             .denom
+//             .ok_or_else(|| anyhow::anyhow!("missing denom field in proto"))?
+//             .try_into()?;
 
-        let dm = DenomMetadata::default_for(&denom)
-            .ok_or_else(|| anyhow::anyhow!("error generating metadata for denom"))?;
+//         let dm = DenomMetadata::default_for(&denom)
+//             .ok_or_else(|| anyhow::anyhow!("error generating metadata for denom"))?;
 
-        Ok(Self {
-            id: asset
-                .id
-                .ok_or_else(|| anyhow::anyhow!("missing id field in proto"))?
-                .try_into()?,
-            denom: dm,
-        })
-    }
-}
+//         Ok(Self {
+//             id: asset
+//                 .id
+//                 .ok_or_else(|| anyhow::anyhow!("missing id field in proto"))?
+//                 .try_into()?,
+//             denom: dm,
+//         })
+//     }
+// }
 
-impl From<Asset> for pb::Asset {
-    fn from(asset: Asset) -> Self {
-        Self {
-            id: Some(asset.id.into()),
-            denom: Some(asset.denom.base_denom().into()),
-        }
-    }
-}
+// impl From<Asset> for pb::Asset {
+//     fn from(asset: Asset) -> Self {
+//         Self {
+//             id: Some(asset.id.into()),
+//             denom: Some(asset.denom.base_denom().into()),
+//         }
+//     }
+// }
 
-impl TryFrom<AssetsResponse> for Asset {
-    type Error = anyhow::Error;
+// impl TryFrom<AssetsResponse> for Asset {
+//     type Error = anyhow::Error;
 
-    fn try_from(response: AssetsResponse) -> Result<Self, Self::Error> {
-        response
-            .asset
-            .ok_or_else(|| anyhow::anyhow!("empty AssetsResponse message"))?
-            .try_into()
-    }
-}
+//     fn try_from(response: AssetsResponse) -> Result<Self, Self::Error> {
+//         response
+//             .asset
+//             .ok_or_else(|| anyhow::anyhow!("empty AssetsResponse message"))?
+//             .try_into()
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

@@ -1,7 +1,7 @@
 use anyhow::Context;
 use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_crypto::asset::{DenomMetadata, Id};
-use penumbra_crypto::{note, Asset, FullViewingKey, Nullifier};
+use penumbra_crypto::{note, FullViewingKey, Nullifier};
 use penumbra_dex::lp::position::Position;
 use penumbra_dex::lp::LpNft;
 use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
@@ -405,11 +405,10 @@ impl ViewServer {
         let position_state = serde_wasm_bindgen::from_value(position_state_value).unwrap();
 
         let lp_nft = LpNft::new(position.id(), position_state);
-        let id = lp_nft.asset_id();
-        let denom = lp_nft.denom();
-        let asset = Asset { id, denom };
 
-        serde_wasm_bindgen::to_value(&asset).unwrap()
+        let denom = lp_nft.denom();
+
+        serde_wasm_bindgen::to_value(&denom).unwrap()
     }
 }
 
