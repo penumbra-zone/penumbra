@@ -22,6 +22,11 @@ penumbra:
 tendermint:
   image: ghcr.io/strangelove-ventures/heighliner/tendermint
   version: v0.34.23
+  config:
+    p2p:
+      max_num_inbound_peers: 75
+      max_num_outbound_peers: 75
+
 toolkit:
   image: ghcr.io/strangelove-ventures/infra-toolkit
   version: v0.0.6

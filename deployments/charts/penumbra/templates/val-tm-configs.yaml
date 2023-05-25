@@ -13,8 +13,8 @@ data:
     proxy_app = "tcp://localhost:26658"
 
     [p2p]
-    max_num_inbound_peers = 50
-    max_num_outbound_peers = 50
+    max_num_inbound_peers = {{ $.Values.tendermint.config.p2p.max_num_inbound_peers }}
+    max_num_outbound_peers = {{ $.Values.tendermint.config.p2p.max_num_outbound_peers }}
 
     persistent_peers = "{{ $.Files.Get (printf "pdcli/persistent_peers_val_%d.txt" $i) | trim }}"
     external_address = "{{ $.Files.Get (printf "pdcli/external_address_val_%d.txt" $i) | trim }}"
