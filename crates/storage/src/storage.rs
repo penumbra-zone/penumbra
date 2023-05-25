@@ -246,8 +246,9 @@ impl Storage {
 }
 
 impl TreeWriter for Inner {
-    /// Writes a node batch into storage.
-    // TODO(erwan): Change JMT traits to accept owned NodeBatch
+    /// Writes a [`NodeBatch`] into storage which includes the JMT
+    /// nodes (`NodeKey` -> `Node`) and the JMT values,
+    /// (`VersionedKeyHash` -> `Option<Vec<u8>>`).
     fn write_node_batch(&self, node_batch: &NodeBatch) -> Result<()> {
         let node_batch = node_batch.clone();
         let jmt_cf = self
@@ -267,7 +268,7 @@ impl TreeWriter for Inner {
             .expect("jmt_values column family not found");
 
         for ((version, key_hash), some_value) in node_batch.values() {
-            let versioned_key = VersionedKey::new(*version, *key_hash);
+            let versioned_key = VersionedKeyHash::new(*version, *key_hash);
             let key_bytes = &versioned_key.encode();
             let value_bytes = &some_value.try_to_vec()?;
             tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));
@@ -304,15 +305,15 @@ pub fn latest_version(db: &DB) -> Result<Option<jmt::Version>> {
     Ok(get_rightmost_leaf(db)?.map(|(node_key, _)| node_key.version()))
 }
 
-/// Represent a JMT key at a specific `jmt::Version`
+/// Represent a JMT key hash at a specific `jmt::Version`
 /// This is used to index the JMT values in RocksDB.
 #[derive(Clone, Debug)]
-pub struct VersionedKey {
+pub struct VersionedKeyHash {
     pub key_hash: KeyHash,
     pub version: jmt::Version,
 }
 
-impl VersionedKey {
+impl VersionedKeyHash {
     pub fn new(version: jmt::Version, key_hash: KeyHash) -> Self {
         Self { version, key_hash }
     }
@@ -339,7 +340,7 @@ impl VersionedKey {
                 .expect("buffer is at least 40 bytes wide");
             let version: u64 = u64::from_be_bytes(raw_version);
 
-            Ok(VersionedKey { version, key_hash })
+            Ok(VersionedKeyHash { version, key_hash })
         }
     }
 }
