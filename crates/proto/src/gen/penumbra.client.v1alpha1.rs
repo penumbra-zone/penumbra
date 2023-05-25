@@ -493,6 +493,15 @@ pub struct KeyValueResponse {
         ::ibc_proto::ibc::core::commitment::v1::MerkleProof,
     >,
 }
+/// Nested message and enum types in `KeyValueResponse`.
+pub mod key_value_response {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Value {
+        #[prost(bytes="vec", tag="1")]
+        pub value: ::prost::alloc::vec::Vec<u8>,
+    }
+}
 /// Performs a prefixed key-value query, by string prefix.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -705,6 +714,7 @@ pub struct GetBlockByHeightResponse {
     #[prost(message, optional, tag = "2")]
     pub block: ::core::option::Option<super::super::super::tendermint::types::Block>,
 }
+
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod oblivious_query_service_client {
