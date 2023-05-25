@@ -124,8 +124,7 @@ async fn single_limit_order() -> anyhow::Result<()> {
     };
 
     let route_to_gn = vec![gn.id()];
-    let (unfilled, output) =
-        FillRoute::fill_route(&mut state_test_1, delta_gm, &route_to_gn, None).await?;
+    let trace = FillRoute::fill_route(&mut state_test_1, delta_gm, &route_to_gn, None).await?;
 
     assert_eq!(unfilled, lambda_gm);
     assert_eq!(output, lambda_gn);

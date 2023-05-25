@@ -20,7 +20,7 @@ use crate::{
         position::{self, Position},
         Reserves,
     },
-    DirectedTradingPair,
+    DirectedTradingPair, SwapExecution,
 };
 
 #[async_trait]
@@ -48,7 +48,7 @@ pub trait FillRoute: StateWrite + Sized {
         input: Value,
         hops: &[asset::Id],
         spill_price: Option<U128x128>,
-    ) -> Result<(Value, Value)> {
+    ) -> Result<Vec<Value>> {
         fill_route_inner(self, input, hops, spill_price, true).await
     }
 
@@ -69,7 +69,9 @@ pub trait FillRoute: StateWrite + Sized {
         hops: &[asset::Id],
         spill_price: U128x128,
     ) -> Result<(Value, Value)> {
-        fill_route_inner(self, input, hops, Some(spill_price), false).await
+        let trace = fill_route_inner(self, input, hops, Some(spill_price), false).await?;
+
+        todo!()
     }
 }
 
@@ -81,7 +83,7 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     hops: &[asset::Id],
     spill_price: Option<U128x128>,
     ensure_progress: bool,
-) -> Result<(Value, Value)> {
+) -> Result<Vec<Value>> {
     // Build a transaction for this execution, so if we error out at any
     // point we don't leave the state in an inconsistent state.  This is
     // particularly important for this method, because we lift position data
@@ -210,18 +212,13 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     let trace = std::mem::take(&mut frontier.trace);
     std::mem::drop(frontier);
 
-    // Add the trace to the object store:
-    tracing::debug!(?trace, "recording trace of filled route");
-    let mut swap_execution: im::Vector<Vec<Value>> =
-        this.object_get("trade_traces").unwrap_or_default();
-    swap_execution.push_back(trace);
-    this.object_put("trade_traces", swap_execution);
+    tracing::debug!(?trace, "returning trace of filled route");
 
     // Apply the state transaction now that we've reached the end without errors.
     this.apply();
 
     // cleanup / finalization
-    Ok((input, output))
+    Ok(trace)
 }
 
 /// Breaksdown a route into a collection of `DirectedTradingPair`, this is mostly useful
@@ -260,7 +257,7 @@ struct Frontier<S> {
     /// A stream of positions for each pair on the route, ordered by price.
     pub positions_by_price: PositionsByPrice,
     /// A trace of the execution along the route.
-    pub trace: Vec<Value>,
+    pub trace: Vec<Vec<Value>>,
 }
 
 struct FrontierTx {

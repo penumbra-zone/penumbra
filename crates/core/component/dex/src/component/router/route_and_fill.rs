@@ -38,12 +38,9 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         // Since we store a single swap execution struct for the canonical trading pair,
         // representing swaps in both directions, let's set that up now:
         let traces: im::Vector<Vec<Value>> = im::Vector::new();
-        Arc::get_mut(self)
-            .expect("one mutable reference to state")
-            .object_put("trade_traces", traces);
 
         // Depending on the contents of the batch swap inputs, we might need to path search in either direction.
-        let (lambda_2, unfilled_1) = if delta_1.value() > 0 {
+        let swap_execution_1_for_2 = if delta_1.value() > 0 {
             // There is input for asset 1, so we need to route for asset 1 -> asset 2
             self.route_and_fill(
                 trading_pair.asset_1(),
@@ -58,7 +55,7 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             (0u64.into(), delta_1)
         };
 
-        let (lambda_1, unfilled_2) = if delta_2.value() > 0 {
+        let swap_execution_2_for_1 = if delta_2.value() > 0 {
             // There is input for asset 2, so we need to route for asset 2 -> asset 1
             self.route_and_fill(
                 trading_pair.asset_2(),
@@ -90,9 +87,6 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         // the _DirectedTradingPair_?
 
         // Fetch the swap execution object that should have been modified during the routing and filling.
-        let trade_traces: im::Vector<Vec<Value>> = self
-            .object_get("trade_traces")
-            .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store2"))?;
         tracing::debug!(?output_data, ?trade_traces);
         Arc::get_mut(self)
             .expect("expected state to have no other refs")
@@ -126,7 +120,7 @@ pub trait RouteAndFill: StateWrite + Sized {
         asset_2: asset::Id,
         delta_1: Amount,
         params: RoutingParams,
-    ) -> Result<(Amount, Amount)>
+    ) -> Result<SwapExecution>
     where
         Self: 'static,
     {
@@ -135,6 +129,9 @@ pub trait RouteAndFill: StateWrite + Sized {
         let mut outer_lambda_2 = 0u64.into();
         // Unfilled output of asset 1
         let mut outer_unfilled_1 = delta_1;
+
+        // All traces of trades that were executed.
+        let mut traces: Vec<Vec<Value>> = Vec::new();
 
         // Continuously route and fill until either:
         // 1. We have no more delta_1 remaining
@@ -165,11 +162,13 @@ pub trait RouteAndFill: StateWrite + Sized {
                 tracing::debug!(?path, delta_1 = ?delta_1.amount, "found path, starting to fill up to spill price");
 
                 // TODO: in what circumstances should we use fill_route_exact?
-                let (unfilled_1, lambda_2) = Arc::get_mut(self)
+                let trace = Arc::get_mut(self)
                     .expect("expected state to have no other refs")
                     .fill_route(delta_1, &path, spill_price)
                     .await
                     .context("error filling along best path")?;
+
+                traces.push(trace);
 
                 tracing::debug!(lambda_2 = ?lambda_2.amount, unfilled_1 = ?unfilled_1.amount, "filled along best path");
 

@@ -49,9 +49,15 @@ pub trait Arbitrage: StateWrite + Sized {
             amount: u64::MAX.into(),
         };
 
-        let (output, unfilled_input) = this
+        let swap_execution = this
             .route_and_fill(arb_token, arb_token, flash_loan.amount, params)
             .await?;
+        let filled_input = swap_execution.input.amount;
+        let output = swap_execution.output.amount;
+        let unfilled_input = flash_loan
+            .amount
+            .checked_sub(&filled_input)
+            .expect("filled input should always be <= flash loan amount");
 
         // Because we're trading the arb token to itself, the total output is the
         // output from the route-and-fill, plus the unfilled input.
@@ -103,10 +109,7 @@ pub trait Arbitrage: StateWrite + Sized {
                 traces: traces.into_iter().collect(),
                 input: Value {
                     asset_id: arb_token,
-                    amount: flash_loan
-                        .amount
-                        .checked_sub(&unfilled_input)
-                        .unwrap_or_default(),
+                    amount: filled_input,
                 },
                 output: Value {
                     amount: arb_profit,

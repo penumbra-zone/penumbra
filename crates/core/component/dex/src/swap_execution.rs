@@ -1,5 +1,5 @@
 use anyhow::Result;
-use penumbra_crypto::Value;
+use penumbra_crypto::{Amount, Value};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
@@ -10,6 +10,45 @@ pub struct SwapExecution {
     pub traces: Vec<Vec<Value>>,
     pub input: Value,
     pub output: Value,
+}
+
+impl SwapExecution {
+    /// Create a new `SwapExecution` from the given traces.
+    /// Sets input and output based on trace values.
+    pub fn new(traces: Vec<Vec<Value>>) -> Self {
+        // Input consists of the sum of the first value of each trace.
+        let input = traces
+            .iter()
+            .map(|trace| trace.first().expect("empty trace").amount)
+            .sum::<Amount>();
+        // Output consists of the sum of the last value of each trace.
+        let output = traces
+            .iter()
+            .map(|trace| trace.last().expect("empty trace").amount)
+            .sum::<Amount>();
+
+        Self {
+            traces,
+            input: Value {
+                amount: input,
+                asset_id: traces
+                    .first()
+                    .expect("empty traces")
+                    .first()
+                    .expect("empty trace")
+                    .asset_id,
+            },
+            output: Value {
+                amount: output,
+                asset_id: traces
+                    .first()
+                    .expect("empty traces")
+                    .last()
+                    .expect("empty trace")
+                    .asset_id,
+            },
+        }
+    }
 }
 
 impl TypeUrl for SwapExecution {
