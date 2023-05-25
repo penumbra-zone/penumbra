@@ -366,7 +366,12 @@ message KeyValueRequest {
 }
 
 message KeyValueResponse {
-  bytes value = 1;
+  message Value {
+    bytes value = 1;
+  }
+  // The value corresponding to the specified key.
+  Value value = 1;
+  // The proof of existence or non-existence.
   .ibc.core.commitment.v1.MerkleProof proof = 2;
 }
 
