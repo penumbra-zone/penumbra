@@ -699,14 +699,8 @@ impl SpecificQueryService for Info {
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-        let Some(value) = some_value else {
-            return Err(Status::not_found(format!(
-                "key not found",
-            )));
-        };
-
         Ok(tonic::Response::new(KeyValueResponse {
-            value,
+            value: some_value,
             proof: if request.proof {
                 Some(ibc_proto::ibc::core::commitment::v1::MerkleProof {
                     proofs: proof
