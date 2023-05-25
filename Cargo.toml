@@ -1,6 +1,7 @@
 [workspace]
 
 exclude = [
+    "tools/proto-compiler",
     "tools/parameter-setup",
 ]
 
