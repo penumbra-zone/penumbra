@@ -44,7 +44,6 @@ pub mod penumbra {
         pub mod crypto {
             pub mod v1alpha1 {
                 include!("gen/penumbra.core.crypto.v1alpha1.rs");
-                include!("gen/penumbra.core.crypto.v1alpha1.serde.rs");
             }
         }
 
@@ -52,7 +51,6 @@ pub mod penumbra {
         pub mod stake {
             pub mod v1alpha1 {
                 include!("gen/penumbra.core.stake.v1alpha1.rs");
-                include!("gen/penumbra.core.stake.v1alpha1.serde.rs");
             }
         }
 
@@ -60,7 +58,6 @@ pub mod penumbra {
         pub mod dex {
             pub mod v1alpha1 {
                 include!("gen/penumbra.core.dex.v1alpha1.rs");
-                include!("gen/penumbra.core.dex.v1alpha1.serde.rs");
             }
         }
 
@@ -68,7 +65,6 @@ pub mod penumbra {
         pub mod governance {
             pub mod v1alpha1 {
                 include!("gen/penumbra.core.governance.v1alpha1.rs");
-                include!("gen/penumbra.core.governance.v1alpha1.serde.rs");
             }
         }
 
@@ -76,7 +72,6 @@ pub mod penumbra {
         pub mod transaction {
             pub mod v1alpha1 {
                 include!("gen/penumbra.core.transaction.v1alpha1.rs");
-                include!("gen/penumbra.core.transaction.v1alpha1.serde.rs");
             }
         }
 
@@ -84,7 +79,6 @@ pub mod penumbra {
         pub mod chain {
             pub mod v1alpha1 {
                 include!("gen/penumbra.core.chain.v1alpha1.rs");
-                include!("gen/penumbra.core.chain.v1alpha1.serde.rs");
             }
         }
 
@@ -92,7 +86,6 @@ pub mod penumbra {
         pub mod ibc {
             pub mod v1alpha1 {
                 include!("gen/penumbra.core.ibc.v1alpha1.rs");
-                include!("gen/penumbra.core.ibc.v1alpha1.serde.rs");
             }
         }
 
@@ -110,7 +103,6 @@ pub mod penumbra {
     pub mod client {
         pub mod v1alpha1 {
             include!("gen/penumbra.client.v1alpha1.rs");
-            include!("gen/penumbra.client.v1alpha1.serde.rs");
 
             // TODO(erwan): this is one way to flatten the complex proto hierarchy, should be easy to lift
             pub mod tendermint_proxy {
@@ -220,7 +212,6 @@ pub mod penumbra {
         pub mod v1alpha1 {
             pub mod ledger {
                 include!("gen/penumbra.narsil.ledger.v1alpha1.rs");
-                include!("gen/penumbra.narsil.ledger.v1alpha1.serde.rs");
             }
         }
     }
@@ -229,7 +220,6 @@ pub mod penumbra {
     pub mod view {
         pub mod v1alpha1 {
             include!("gen/penumbra.view.v1alpha1.rs");
-            include!("gen/penumbra.view.v1alpha1.serde.rs");
         }
     }
 
@@ -237,7 +227,6 @@ pub mod penumbra {
     pub mod custody {
         pub mod v1alpha1 {
             include!("gen/penumbra.custody.v1alpha1.rs");
-            include!("gen/penumbra.custody.v1alpha1.serde.rs");
         }
     }
 }

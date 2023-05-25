@@ -1,3 +1,4 @@
+// @generated
 impl serde::Serialize for AbciQueryRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -142,6 +143,244 @@ impl<'de> serde::Deserialize<'de> for AbciQueryRequest {
             }
         }
         deserializer.deserialize_struct("penumbra.client.v1alpha1.ABCIQueryRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for AbciQueryResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.code != 0 {
+            len += 1;
+        }
+        if !self.log.is_empty() {
+            len += 1;
+        }
+        if !self.info.is_empty() {
+            len += 1;
+        }
+        if self.index != 0 {
+            len += 1;
+        }
+        if !self.key.is_empty() {
+            len += 1;
+        }
+        if !self.value.is_empty() {
+            len += 1;
+        }
+        if self.proof_ops.is_some() {
+            len += 1;
+        }
+        if self.height != 0 {
+            len += 1;
+        }
+        if !self.codespace.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.ABCIQueryResponse", len)?;
+        if self.code != 0 {
+            struct_ser.serialize_field("code", &self.code)?;
+        }
+        if !self.log.is_empty() {
+            struct_ser.serialize_field("log", &self.log)?;
+        }
+        if !self.info.is_empty() {
+            struct_ser.serialize_field("info", &self.info)?;
+        }
+        if self.index != 0 {
+            struct_ser.serialize_field("index", ToString::to_string(&self.index).as_str())?;
+        }
+        if !self.key.is_empty() {
+            struct_ser.serialize_field("key", pbjson::private::base64::encode(&self.key).as_str())?;
+        }
+        if !self.value.is_empty() {
+            struct_ser.serialize_field("value", pbjson::private::base64::encode(&self.value).as_str())?;
+        }
+        if let Some(v) = self.proof_ops.as_ref() {
+            struct_ser.serialize_field("proofOps", v)?;
+        }
+        if self.height != 0 {
+            struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
+        }
+        if !self.codespace.is_empty() {
+            struct_ser.serialize_field("codespace", &self.codespace)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for AbciQueryResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "code",
+            "log",
+            "info",
+            "index",
+            "key",
+            "value",
+            "proof_ops",
+            "proofOps",
+            "height",
+            "codespace",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Code,
+            Log,
+            Info,
+            Index,
+            Key,
+            Value,
+            ProofOps,
+            Height,
+            Codespace,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "code" => Ok(GeneratedField::Code),
+                            "log" => Ok(GeneratedField::Log),
+                            "info" => Ok(GeneratedField::Info),
+                            "index" => Ok(GeneratedField::Index),
+                            "key" => Ok(GeneratedField::Key),
+                            "value" => Ok(GeneratedField::Value),
+                            "proofOps" | "proof_ops" => Ok(GeneratedField::ProofOps),
+                            "height" => Ok(GeneratedField::Height),
+                            "codespace" => Ok(GeneratedField::Codespace),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = AbciQueryResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.client.v1alpha1.ABCIQueryResponse")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<AbciQueryResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut code__ = None;
+                let mut log__ = None;
+                let mut info__ = None;
+                let mut index__ = None;
+                let mut key__ = None;
+                let mut value__ = None;
+                let mut proof_ops__ = None;
+                let mut height__ = None;
+                let mut codespace__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Code => {
+                            if code__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("code"));
+                            }
+                            code__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Log => {
+                            if log__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("log"));
+                            }
+                            log__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::Info => {
+                            if info__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("info"));
+                            }
+                            info__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::Index => {
+                            if index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("index"));
+                            }
+                            index__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Key => {
+                            if key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("key"));
+                            }
+                            key__ = 
+                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Value => {
+                            if value__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("value"));
+                            }
+                            value__ = 
+                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::ProofOps => {
+                            if proof_ops__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("proofOps"));
+                            }
+                            proof_ops__ = map.next_value()?;
+                        }
+                        GeneratedField::Height => {
+                            if height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("height"));
+                            }
+                            height__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Codespace => {
+                            if codespace__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("codespace"));
+                            }
+                            codespace__ = Some(map.next_value()?);
+                        }
+                    }
+                }
+                Ok(AbciQueryResponse {
+                    code: code__.unwrap_or_default(),
+                    log: log__.unwrap_or_default(),
+                    info: info__.unwrap_or_default(),
+                    index: index__.unwrap_or_default(),
+                    key: key__.unwrap_or_default(),
+                    value: value__.unwrap_or_default(),
+                    proof_ops: proof_ops__,
+                    height: height__.unwrap_or_default(),
+                    codespace: codespace__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.client.v1alpha1.ABCIQueryResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for ArbExecutionRequest {
@@ -2255,6 +2494,115 @@ impl<'de> serde::Deserialize<'de> for GetBlockByHeightRequest {
         deserializer.deserialize_struct("penumbra.client.v1alpha1.GetBlockByHeightRequest", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for GetBlockByHeightResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.block_id.is_some() {
+            len += 1;
+        }
+        if self.block.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.GetBlockByHeightResponse", len)?;
+        if let Some(v) = self.block_id.as_ref() {
+            struct_ser.serialize_field("blockId", v)?;
+        }
+        if let Some(v) = self.block.as_ref() {
+            struct_ser.serialize_field("block", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for GetBlockByHeightResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "block_id",
+            "blockId",
+            "block",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            BlockId,
+            Block,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "blockId" | "block_id" => Ok(GeneratedField::BlockId),
+                            "block" => Ok(GeneratedField::Block),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = GetBlockByHeightResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.client.v1alpha1.GetBlockByHeightResponse")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<GetBlockByHeightResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut block_id__ = None;
+                let mut block__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::BlockId => {
+                            if block_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("blockId"));
+                            }
+                            block_id__ = map.next_value()?;
+                        }
+                        GeneratedField::Block => {
+                            if block__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("block"));
+                            }
+                            block__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(GetBlockByHeightResponse {
+                    block_id: block_id__,
+                    block: block__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.client.v1alpha1.GetBlockByHeightResponse", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for GetStatusRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -2324,6 +2672,134 @@ impl<'de> serde::Deserialize<'de> for GetStatusRequest {
             }
         }
         deserializer.deserialize_struct("penumbra.client.v1alpha1.GetStatusRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for GetStatusResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.node_info.is_some() {
+            len += 1;
+        }
+        if self.sync_info.is_some() {
+            len += 1;
+        }
+        if self.validator_info.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.GetStatusResponse", len)?;
+        if let Some(v) = self.node_info.as_ref() {
+            struct_ser.serialize_field("nodeInfo", v)?;
+        }
+        if let Some(v) = self.sync_info.as_ref() {
+            struct_ser.serialize_field("syncInfo", v)?;
+        }
+        if let Some(v) = self.validator_info.as_ref() {
+            struct_ser.serialize_field("validatorInfo", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for GetStatusResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "node_info",
+            "nodeInfo",
+            "sync_info",
+            "syncInfo",
+            "validator_info",
+            "validatorInfo",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            NodeInfo,
+            SyncInfo,
+            ValidatorInfo,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "nodeInfo" | "node_info" => Ok(GeneratedField::NodeInfo),
+                            "syncInfo" | "sync_info" => Ok(GeneratedField::SyncInfo),
+                            "validatorInfo" | "validator_info" => Ok(GeneratedField::ValidatorInfo),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = GetStatusResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.client.v1alpha1.GetStatusResponse")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<GetStatusResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut node_info__ = None;
+                let mut sync_info__ = None;
+                let mut validator_info__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::NodeInfo => {
+                            if node_info__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("nodeInfo"));
+                            }
+                            node_info__ = map.next_value()?;
+                        }
+                        GeneratedField::SyncInfo => {
+                            if sync_info__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("syncInfo"));
+                            }
+                            sync_info__ = map.next_value()?;
+                        }
+                        GeneratedField::ValidatorInfo => {
+                            if validator_info__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validatorInfo"));
+                            }
+                            validator_info__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(GetStatusResponse {
+                    node_info: node_info__,
+                    sync_info: sync_info__,
+                    validator_info: validator_info__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.client.v1alpha1.GetStatusResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for GetTxRequest {

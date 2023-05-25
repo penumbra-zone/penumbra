@@ -1,3 +1,4 @@
+// @generated
 impl serde::Serialize for AccountGroupInfo {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

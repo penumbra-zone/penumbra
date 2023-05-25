@@ -45,6 +45,9 @@ plugins:
       - extern_path=.ibc=::ibc_proto::ibc
       - extern_path=.ics23=::ics23
 
+  - plugin: buf.build/community/neoeinstein-prost-serde:v0.2.2
+    out: ../crates/proto/src/gen
+
   - plugin: buf.build/community/neoeinstein-tonic:v0.2.2
     out: ../crates/proto/src/gen
     opt:
