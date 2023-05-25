@@ -88,13 +88,14 @@ impl AppHashRead for Snapshot {
         Ok(AppHash::from(root))
     }
 
-    /// Returns the value and a proof of inclusion up to the current app hash, which consists
-    /// of a proof of existence of the jmt root hash, and a proof of existence of the app hash.
+    /// Returns a value and an ICS23 proof of inclusion up to the current
+    /// apphash if the key is present. Otherwise, returns `None` along
+    /// with a proof of non-existence.
     async fn get_with_proof_to_apphash(
         &self,
         key: Vec<u8>,
     ) -> anyhow::Result<(Option<Vec<u8>>, MerkleProof)> {
-        let (some_value, ics23_proof) = self.get_with_proof(key.clone()).await?;
+        let (some_value, membership_proof) = self.get_with_proof(key.clone()).await?;
 
         let jmt_root = self.root_hash().await?;
         let root_proof = ics23::CommitmentProof {
@@ -111,11 +112,14 @@ impl AppHashRead for Snapshot {
         Ok((
             some_value,
             MerkleProof {
-                proofs: vec![root_proof, ics23_proof],
+                proofs: vec![membership_proof, root_proof],
             },
         ))
     }
 
+    /// Returns the value and a proof of inclusion up to the current app hash,
+    /// using Tendermint's proof format. Returns `None` if the key is not present.
+    ///
     /// Review: it looks like the Tendermint proof format does not support
     /// non-existence proof. So, I have set the api to return an
     /// `Result<Option<(Vec<u8>, ProofOps)>>` instead of `Result<(Option<Vec<u8>, ProofOps)>`.
