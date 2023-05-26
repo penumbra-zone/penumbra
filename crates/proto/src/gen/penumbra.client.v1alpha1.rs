@@ -486,8 +486,10 @@ pub struct KeyValueRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct KeyValueResponse {
-    #[prost(bytes = "vec", tag = "1")]
-    pub value: ::prost::alloc::vec::Vec<u8>,
+    /// The value corresponding to the specified key, if it was found.
+    #[prost(message, optional, tag = "1")]
+    pub value: ::core::option::Option<key_value_response::Value>,
+    /// A proof of existence or non-existence.
     #[prost(message, optional, tag = "2")]
     pub proof: ::core::option::Option<
         ::ibc_proto::ibc::core::commitment::v1::MerkleProof,
@@ -496,9 +498,9 @@ pub struct KeyValueResponse {
 /// Nested message and enum types in `KeyValueResponse`.
 pub mod key_value_response {
     #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Value {
-        #[prost(bytes="vec", tag="1")]
+        #[prost(bytes = "vec", tag = "1")]
         pub value: ::prost::alloc::vec::Vec<u8>,
     }
 }
@@ -714,7 +716,6 @@ pub struct GetBlockByHeightResponse {
     #[prost(message, optional, tag = "2")]
     pub block: ::core::option::Option<super::super::super::tendermint::types::Block>,
 }
-
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod oblivious_query_service_client {
