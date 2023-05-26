@@ -29,6 +29,8 @@ pub enum DexCmd {
         #[clap(long)]
         height: u64,
         /// The trading pair to query for batch outputs.
+        /// Pairs must be specified with a colon separating them, e.g. "penumbra:test_usd".
+        #[clap(value_name = "asset_1:asset_2")]
         trading_pair: TradingPair,
     },
     /// Display information about a specific trading pair & height's swap execution.
@@ -37,6 +39,8 @@ pub enum DexCmd {
         #[clap(long)]
         height: u64,
         /// The trading pair to query for the swap execution.
+        /// Pairs must be specified with a colon separating them, e.g. "penumbra:test_usd".
+        #[clap(value_name = "asset_1:asset_2")]
         trading_pair: TradingPair,
     },
     /// Display information about all liquidity positions known to the chain.
@@ -57,6 +61,8 @@ pub enum DexCmd {
     /// Display open liquidity for a given pair, sorted by effective price.
     Positions {
         /// The trading pair to query, with ordering determining direction of trade (1=>2).
+        /// Pairs must be specified with a colon separating them, e.g. "penumbra:test_usd".
+        #[clap(value_name = "asset_1:asset_2")]
         trading_pair: DirectedTradingPair,
         /// A limit on the number of positions to display.
         #[clap(long)]
