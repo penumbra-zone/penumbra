@@ -52,7 +52,17 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         } else {
             // There was no input for asset 1, so there's 0 output for asset 2 from this side.
             tracing::debug!("no input for asset 1, skipping 1=>2 execution");
-            (0u64.into(), delta_1)
+            SwapExecution {
+                traces: vec![],
+                input: Value {
+                    asset_id: trading_pair.asset_1(),
+                    amount: Amount::zero(),
+                },
+                output: Value {
+                    asset_id: trading_pair.asset_2(),
+                    amount: Amount::zero(),
+                },
+            }
         };
 
         let swap_execution_2_for_1 = if delta_2.value() > 0 {
@@ -67,7 +77,17 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         } else {
             // There was no input for asset 2, so there's 0 output for asset 1 from this side.
             tracing::debug!("no input for asset 2, skipping 2=>1 execution");
-            (0u64.into(), delta_2)
+            SwapExecution {
+                traces: vec![],
+                input: Value {
+                    asset_id: trading_pair.asset_2(),
+                    amount: Amount::zero(),
+                },
+                output: Value {
+                    asset_id: trading_pair.asset_1(),
+                    amount: Amount::zero(),
+                },
+            }
         };
 
         let output_data = BatchSwapOutputData {

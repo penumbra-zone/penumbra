@@ -48,7 +48,7 @@ pub trait FillRoute: StateWrite + Sized {
         input: Value,
         hops: &[asset::Id],
         spill_price: Option<U128x128>,
-    ) -> Result<Vec<Value>> {
+    ) -> Result<Vec<Vec<Value>>> {
         fill_route_inner(self, input, hops, spill_price, true).await
     }
 
@@ -83,7 +83,7 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     hops: &[asset::Id],
     spill_price: Option<U128x128>,
     ensure_progress: bool,
-) -> Result<Vec<Value>> {
+) -> Result<Vec<Vec<Value>>> {
     // Build a transaction for this execution, so if we error out at any
     // point we don't leave the state in an inconsistent state.  This is
     // particularly important for this method, because we lift position data
@@ -348,7 +348,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
 
         // Record a trace of the execution along the current route,
         // starting with all-zero amounts.
-        let trace: Vec<Value> = std::iter::once(Value {
+        let trace: Vec<Vec<Value>> = vec![std::iter::once(Value {
             amount: 0u64.into(),
             asset_id: pairs.first().unwrap().start,
         })
@@ -356,7 +356,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             amount: 0u64.into(),
             asset_id: pair.end,
         }))
-        .collect();
+        .collect()];
 
         Ok(Frontier {
             positions,
@@ -377,16 +377,27 @@ impl<S: StateRead + StateWrite> Frontier<S> {
     /// Apply the [`FrontierTx`] to the frontier, returning the input and output
     /// amounts it added to the trace.
     fn apply(&mut self, changes: FrontierTx) -> (Amount, Amount) {
-        self.trace[0].amount +=
-            changes.trace[0].expect("all trace amounts must be set when applying changes");
+        let mut trace: Vec<Value> = vec![];
+
+        trace[0] = Value {
+            amount: changes.trace[0].expect("all trace amounts must be set when applying changes"),
+            asset_id: self.trace[0][0].asset_id,
+        };
         for (i, new_reserves) in changes.new_reserves.into_iter().enumerate() {
             let new_reserves =
                 new_reserves.expect("all new reserves must be set when applying changes");
-            let trace =
+            let amount =
                 changes.trace[i + 1].expect("all trace amounts must be set when applying changes");
             self.positions[i].reserves = new_reserves;
-            self.trace[i + 1].amount += trace;
+            // Each sub-trace of the frontier has the same asset IDs for each hop
+            trace[i + 1] = Value {
+                amount,
+                asset_id: self.trace[0][i + 1].asset_id,
+            };
         }
+
+        // Add the new trace
+        self.trace.push(trace);
 
         (
             changes.trace.first().unwrap().unwrap(),
