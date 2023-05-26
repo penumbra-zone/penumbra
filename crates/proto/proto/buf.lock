@@ -9,8 +9,8 @@ deps:
   - remote: buf.build
     owner: cosmos
     repository: cosmos-sdk
-    commit: e7a85cef453e4b999ad9aff8714ae05f
-    digest: shake256:bc5f340b60991981d8aabefcc9c706780e25fa0d3ab7e1d9a3e75559f45c80038a913d05aa51928ad8dfebeee75feea1dc6e0e7a6311302e60c42fb3596ee262
+    commit: f384ef1fd55a41d8b34331f77d2077eb
+    digest: shake256:993bf19541da644f3e9ff926d035e0ba75c81c8a3a7f403f48ae34dfeac728e106c39833d329a0e5af4d0b9664287f2539a10940d118dc82fe0dc8189992741f
   - remote: buf.build
     owner: cosmos
     repository: gogo-proto
@@ -19,8 +19,8 @@ deps:
   - remote: buf.build
     owner: cosmos
     repository: ibc
-    commit: d3189561f45d4a829c36b525fddd29cc
-    digest: shake256:dea94b4056a0bd8bcea70284c0b556a7d9a961145de012ce43a651fadc5855f2f97f761ef9724d043999f747f1905f89569f3537818ba5dc3cc77643539d491e
+    commit: f642cdf6bc574f4eb8f784b3572848dc
+    digest: shake256:2b9099510012065316b7452603b4f469d9f8e31c87ae6a1bdf1b504913129fe0e33969368a1bc88c9206a66534487a7b5c593b37129e66cad900c90b3723146c
   - remote: buf.build
     owner: cosmos
     repository: ics23
@@ -29,5 +29,5 @@ deps:
   - remote: buf.build
     owner: googleapis
     repository: googleapis
-    commit: 75b4300737fb4efca0831636be94e517
-    digest: shake256:d865f55b8ceb838c90c28b09894ab43d07f42551108c23760004a6a4e28fe24d3a1f7380a3c9278edb329a338a9cc5db8ad9f394de548e70d534e98504972d67
+    commit: 5ae7f88519b04fe1965da0f8a375a088
+    digest: shake256:27d9fcdc0e3eb957449dc3d17e2d24c7ce59c3c483ecf128818183c336dfd28595ecd13771fb3172247775caf7707c4076dd8e70c5ac2cbcac170df35e4d0028
