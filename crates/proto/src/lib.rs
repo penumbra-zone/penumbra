@@ -112,7 +112,6 @@ pub mod penumbra {
             include!("gen/penumbra.client.v1alpha1.rs");
             include!("gen/penumbra.client.v1alpha1.serde.rs");
 
-            // TODO(erwan): this is one way to flatten the complex proto hierarchy, should be easy to lift
             pub mod tendermint_proxy {
                 pub use crate::cosmos::base::tendermint::v1beta1::*;
             }
@@ -138,7 +137,10 @@ pub mod penumbra {
                 ///
                 /// Prefer `key_domain` when applicable, because this gets the validated domain type,
                 /// rather than just the raw translation of the protobuf.
-                pub async fn key_proto<P>(&mut self, key: impl AsRef<str>) -> anyhow::Result<P>
+                pub async fn key_proto<P>(
+                    &mut self,
+                    key: impl AsRef<str>,
+                ) -> anyhow::Result<Option<P>>
                 where
                     P: prost::Message + Default + From<P>,
                     C: tonic::client::GrpcService<BoxBody> + 'static,
@@ -152,14 +154,21 @@ pub mod penumbra {
                         ..Default::default()
                     };
 
-                    let t =
-                        P::decode(self.key_value(request).await?.into_inner().value.as_slice())?;
+                    let response = self.key_value(request).await?.into_inner();
 
-                    Ok(t)
+                    let Some(value_buffer) = response.value else {
+                        return Ok(None);
+                    };
+
+                    let t = P::decode(value_buffer.value.as_slice())?;
+                    Ok(Some(t))
                 }
 
                 /// Get the typed domain value corresponding to a state key.
-                pub async fn key_domain<T>(&mut self, key: impl AsRef<str>) -> anyhow::Result<T>
+                pub async fn key_domain<T>(
+                    &mut self,
+                    key: impl AsRef<str>,
+                ) -> anyhow::Result<Option<T>>
                 where
                     T: crate::DomainType,
                     anyhow::Error: From<<T as TryFrom<T::Proto>>::Error>,
@@ -174,10 +183,14 @@ pub mod penumbra {
                         ..Default::default()
                     };
 
-                    let t =
-                        T::decode(self.key_value(request).await?.into_inner().value.as_slice())?;
+                    let response = self.key_value(request).await?.into_inner();
 
-                    Ok(t)
+                    let Some(value_buffer) = response.value else {
+                        return Ok(None);
+                    };
+
+                    let t = T::decode(value_buffer.value.as_slice())?;
+                    Ok(Some(t))
                 }
 
                 /// Get the typed domain value corresponding to prefixes of a state key.
@@ -242,7 +255,6 @@ pub mod penumbra {
     }
 }
 
-// TODO(erwan): figure out path to upstream those. maybe they should be in their own crate or repo?
 pub mod cosmos {
     pub mod base {
         pub mod query {
