@@ -29,6 +29,7 @@ use penumbra_crypto::proofs::groth16::{ParameterSetup, GROTH16_PROOF_LENGTH_BYTE
 /// SwapClaim consumes an existing Swap NFT so they are most similar to Spend operations,
 /// however the note commitment proof needs to be for a specific block due to clearing prices
 /// only being valid for particular blocks (i.e. the exchange rates of assets change over time).
+#[derive(Clone, Debug)]
 pub struct SwapClaimCircuit {
     /// The swap being claimed
     swap_plaintext: SwapPlaintext,
@@ -211,10 +212,12 @@ impl ParameterSetup for SwapClaimCircuit {
         let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
         let nk = *sk_sender.nullifier_key();
 
+        let delta_1_i = 10u64.into();
+        let delta_2_i = 1u64.into();
         let swap_plaintext = SwapPlaintext {
             trading_pair,
-            delta_1_i: 100000u64.into(),
-            delta_2_i: 1u64.into(),
+            delta_1_i,
+            delta_2_i,
             claim_fee: Fee(Value {
                 amount: 3u64.into(),
                 asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
@@ -230,12 +233,12 @@ impl ParameterSetup for SwapClaimCircuit {
         let nullifier = Nullifier(Fq::from(1));
         let claim_fee = Fee::default();
         let output_data = BatchSwapOutputData {
-            delta_1: Amount::from(0u64),
-            delta_2: Amount::from(0u64),
-            lambda_1: Amount::from(0u64),
-            lambda_2: Amount::from(0u64),
-            unfilled_1: Amount::from(0u64),
-            unfilled_2: Amount::from(0u64),
+            delta_1: Amount::from(10u64),
+            delta_2: Amount::from(10u64),
+            lambda_1: Amount::from(10u64),
+            lambda_2: Amount::from(10u64),
+            unfilled_1: Amount::from(10u64),
+            unfilled_2: Amount::from(10u64),
             height: 0,
             trading_pair: swap_plaintext.trading_pair,
             epoch_height: 0,
@@ -244,6 +247,7 @@ impl ParameterSetup for SwapClaimCircuit {
         let note_blinding_2 = Fq::from(1);
         let note_commitment_1 = tct::Commitment(Fq::from(1));
         let note_commitment_2 = tct::Commitment(Fq::from(2));
+        let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
         let circuit = SwapClaimCircuit {
             swap_plaintext,
@@ -253,8 +257,8 @@ impl ParameterSetup for SwapClaimCircuit {
             nk,
             claim_fee,
             output_data,
-            lambda_1: Amount::from(1u64),
-            lambda_2: Amount::from(1u64),
+            lambda_1,
+            lambda_2,
             note_blinding_1,
             note_blinding_2,
             note_commitment_1,
@@ -303,6 +307,7 @@ impl SwapClaimProof {
             note_commitment_1,
             note_commitment_2,
         };
+
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(pk, circuit, rng)
             .map_err(|err| anyhow::anyhow!(err))?;
 
@@ -421,8 +426,8 @@ mod tests {
         let height = epoch_duration * position.epoch() + position.block();
 
         let output_data = BatchSwapOutputData {
-            delta_1: Amount::from(100u64),
-            delta_2: Amount::from(100u64),
+            delta_1: Amount::from(1000u64),
+            delta_2: Amount::from(1000u64),
             lambda_1: Amount::from(50u64),
             lambda_2: Amount::from(25u64),
             unfilled_1: Amount::from(23u64),
@@ -431,10 +436,7 @@ mod tests {
             trading_pair: swap_plaintext.trading_pair,
             epoch_height: position.epoch().into(),
         };
-        let (lambda_1, lambda_2) = output_data.pro_rata_outputs(
-            (delta_1_i.try_into().unwrap(),
-            delta_2_i.try_into().unwrap())
-        );
+        let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
         let (output_rseed_1, output_rseed_2) = swap_plaintext.output_rseeds();
         let note_blinding_1 = output_rseed_1.derive_note_blinding();

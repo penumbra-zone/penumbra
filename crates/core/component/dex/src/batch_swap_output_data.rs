@@ -91,8 +91,6 @@ impl ToConstraintField<Fq> for BatchSwapOutputData {
     fn to_field_elements(&self) -> Option<Vec<Fq>> {
         let mut public_inputs = Vec::new();
         let delta_1 = U128x128::from(self.delta_1);
-        dbg!(delta_1);
-        //dbg!(delta_1.to_field_elements().unwrap());
         public_inputs.extend(delta_1.to_field_elements().unwrap());
         public_inputs.extend(U128x128::from(self.delta_2).to_field_elements().unwrap());
         public_inputs.extend(U128x128::from(self.lambda_1).to_field_elements().unwrap());
@@ -102,6 +100,7 @@ impl ToConstraintField<Fq> for BatchSwapOutputData {
         public_inputs.extend(Fq::from(self.height).to_field_elements().unwrap());
         public_inputs.extend(self.trading_pair.to_field_elements().unwrap());
         public_inputs.extend(Fq::from(self.epoch_height).to_field_elements().unwrap());
+        dbg!(&public_inputs);
         Some(public_inputs)
     }
 }
@@ -127,17 +126,8 @@ impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
         let ns = cs.into();
         let cs = ns.cs();
         let output_data = f()?.borrow().clone();
-        dbg!(output_data.delta_1);
         let delta_1_fixpoint: U128x128 = output_data.delta_1.into();
-        dbg!(delta_1_fixpoint);
         let delta_1 = U128x128Var::new_variable(cs.clone(), || Ok(delta_1_fixpoint), mode)?;
-        use ark_r1cs_std::R1CSVar;
-        dbg!(delta_1.value());
-        dbg!(delta_1.limbs[0].value());
-        dbg!(delta_1.limbs[1].value());
-        dbg!(delta_1.limbs[2].value());
-        dbg!(delta_1.limbs[3].value());
-
         let delta_2_fixpoint: U128x128 = output_data.delta_2.into();
         let delta_2 = U128x128Var::new_variable(cs.clone(), || Ok(delta_2_fixpoint), mode)?;
         let lambda_1_fixpoint: U128x128 = output_data.lambda_1.into();
@@ -303,6 +293,13 @@ impl TryFrom<BatchSwapOutputDataResponse> for BatchSwapOutputData {
 
 #[cfg(test)]
 mod tests {
+    use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, ProvingKey, VerifyingKey};
+    use ark_relations::r1cs::ConstraintSynthesizer;
+    use ark_snark::SNARK;
+    use decaf377::Bls12_377;
+    use penumbra_crypto::{asset, proofs::groth16::ParameterSetup};
+    use rand_core::OsRng;
+
     use super::*;
 
     #[test]
@@ -339,5 +336,113 @@ mod tests {
 
         assert_eq!(lambda_1_i, Amount::from(0u64));
         assert_eq!(lambda_2_i, Amount::from(28766268u64));
+    }
+
+    struct ProRataOutputCircuit {
+        delta_1_i: Amount,
+        delta_2_i: Amount,
+        lambda_1_i: Amount,
+        lambda_2_i: Amount,
+        pub bsod: BatchSwapOutputData,
+    }
+
+    impl ConstraintSynthesizer<Fq> for ProRataOutputCircuit {
+        fn generate_constraints(
+            self,
+            cs: ConstraintSystemRef<Fq>,
+        ) -> ark_relations::r1cs::Result<()> {
+            let delta_1_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.delta_1_i))?;
+            let delta_2_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.delta_2_i))?;
+            let lambda_1_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.lambda_1_i))?;
+            let lambda_2_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.lambda_2_i))?;
+            let bsod_var = BatchSwapOutputDataVar::new_input(cs.clone(), || Ok(self.bsod))?;
+
+            let (calculated_lambda_1_i_var, calculated_lambda_2_i_var) =
+                bsod_var.pro_rata_outputs(delta_1_i_var, delta_2_i_var, cs.clone())?;
+            calculated_lambda_1_i_var.enforce_equal(&lambda_1_i_var)?;
+            calculated_lambda_2_i_var.enforce_equal(&lambda_2_i_var)?;
+
+            Ok(())
+        }
+    }
+
+    impl ParameterSetup for ProRataOutputCircuit {
+        fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+            let trading_pair = TradingPair {
+                asset_1: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                asset_2: asset::REGISTRY.parse_denom("nala").unwrap().id(),
+            };
+            let circuit = ProRataOutputCircuit {
+                delta_1_i: Amount::from(1u32),
+                delta_2_i: Amount::from(1u32),
+                lambda_1_i: Amount::from(1u32),
+                lambda_2_i: Amount::from(1u32),
+                bsod: BatchSwapOutputData {
+                    delta_1: Amount::from(1u32),
+                    delta_2: Amount::from(1u32),
+                    lambda_1: Amount::from(1u32),
+                    lambda_2: Amount::from(1u32),
+                    unfilled_1: Amount::from(1u32),
+                    unfilled_2: Amount::from(1u32),
+                    height: 1,
+                    trading_pair,
+                    epoch_height: 1,
+                },
+            };
+            let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
+                circuit, &mut OsRng,
+            )
+            .expect("can perform circuit specific setup");
+            (pk, vk)
+        }
+    }
+
+    #[test]
+    fn happy_path_bsod_pro_rata() {
+        // Example Chain-wide swap output data
+        let gm = asset::REGISTRY.parse_unit("gm");
+        let gn = asset::REGISTRY.parse_unit("gn");
+        let trading_pair = TradingPair::new(gm.id(), gn.id());
+        let bsod = BatchSwapOutputData {
+            delta_1: Amount::from(200u64),
+            delta_2: Amount::from(300u64),
+            lambda_1: Amount::from(150u64),
+            lambda_2: Amount::from(125u64),
+            unfilled_1: Amount::from(23u64),
+            unfilled_2: Amount::from(50u64),
+            height: 0u64,
+            trading_pair,
+            epoch_height: 0u64,
+        };
+
+        // Now suppose our user's contribution is:
+        let delta_1_i = Amount::from(100u64);
+        let delta_2_i = Amount::from(200u64);
+
+        // Then their pro-rata outputs (out-of-circuit) are:
+        let (lambda_1_i, lambda_2_i) = bsod.pro_rata_outputs((delta_1_i, delta_2_i));
+
+        let circuit = ProRataOutputCircuit {
+            delta_1_i,
+            delta_2_i,
+            lambda_1_i,
+            lambda_2_i,
+            bsod,
+        };
+
+        let (pk, vk) = ProRataOutputCircuit::generate_test_parameters();
+        let mut rng = OsRng;
+
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+            .expect("should be able to form proof");
+
+        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
+            &vk,
+            &bsod.to_field_elements().unwrap(),
+            &proof,
+        )
+        .expect("should be able to verify proof");
+
+        assert!(proof_result);
     }
 }
