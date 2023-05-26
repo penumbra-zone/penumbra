@@ -198,7 +198,7 @@ message SwapExecutionRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
   uint64 height = 2;
-  core.dex.v1alpha1.TradingPair trading_pair = 3;
+  core.dex.v1alpha1.DirectedTradingPair trading_pair = 3;
 }
 
 message SwapExecutionResponse {
@@ -224,13 +224,13 @@ message SwapExecutionsRequest {
   // If present, only return swap executions occurring before the given height.
   uint64 end_height = 3;
   // If present, filter swap executions by the given trading pair.
-  core.dex.v1alpha1.TradingPair trading_pair = 4;
+  core.dex.v1alpha1.DirectedTradingPair trading_pair = 4;
 }
 
 message SwapExecutionsResponse {
   core.dex.v1alpha1.SwapExecution swap_execution = 1;
   uint64 height = 2;
-  core.dex.v1alpha1.TradingPair trading_pair = 3;
+  core.dex.v1alpha1.DirectedTradingPair trading_pair = 3;
 }
 
 message ArbExecutionsRequest {
