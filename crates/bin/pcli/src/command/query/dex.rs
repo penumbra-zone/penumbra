@@ -3,7 +3,7 @@ use comfy_table::{presets, Table};
 use futures::{Stream, StreamExt, TryStreamExt};
 use std::pin::Pin;
 
-use penumbra_crypto::{Asset, Value};
+use penumbra_crypto::{asset::DenomMetadata, Asset, Value};
 use penumbra_dex::{
     lp::position::{self, Position},
     BatchSwapOutputData, DirectedTradingPair, SwapExecution, TradingPair,
@@ -195,29 +195,29 @@ impl DexCmd {
             .get_batch_outputs(app, chain_id.clone(), height, trading_pair)
             .await?;
 
-        let asset_1: Asset = client
-            .asset_info(DenomMetadataByIdRequest {
+        let asset_1: DenomMetadata = client
+            .denom_metadata_by_id(DenomMetadataByIdRequest {
                 asset_id: Some(trading_pair.asset_1().into()),
                 chain_id: chain_id.clone(),
             })
             .await?
             .into_inner()
-            .asset
+            .denom_metadata
             .unwrap()
             .try_into()?;
-        let asset_2: Asset = client
-            .asset_info(DenomMetadataByIdRequest {
+        let asset_2: DenomMetadata = client
+            .denom_metadata_by_id(DenomMetadataByIdRequest {
                 asset_id: Some(trading_pair.asset_2().into()),
                 chain_id: chain_id.clone(),
             })
             .await?
             .into_inner()
-            .asset
+            .denom_metadata
             .unwrap()
             .try_into()?;
 
-        let unit_1 = asset_1.denom.default_unit();
-        let unit_2 = asset_2.denom.default_unit();
+        let unit_1 = asset_1.default_unit();
+        let unit_2 = asset_2.default_unit();
 
         let consumed_1 = outputs.delta_1 - outputs.unfilled_1;
         let consumed_2 = outputs.delta_2 - outputs.unfilled_2;
