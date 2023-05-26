@@ -188,6 +188,16 @@ impl AllocVar<U128x128, Fq> for U128x128Var {
         let cs = ns.cs();
         let inner: U128x128 = *f()?.borrow();
 
+        // TODO: in the case of a constant U128x128Var, this will allocate
+        // witness vars intsead of constants, but we don't have much use for
+        // constant U128x128Vars anyways, so this efficiency loss shouldn't be a
+        // problem.
+
+        let (hi_128, lo_128) = inner.0.into_words();
+        let hi_128_var = FqVar::new_variable(cs.clone(), || Ok(Fq::from(hi_128)), mode)?;
+        let lo_128_var = FqVar::new_variable(cs.clone(), || Ok(Fq::from(lo_128)), mode)?;
+
+        // Now construct the bit constraints out of thin air ...
         let bytes = inner.to_bytes();
         // The U128x128 type uses a big-endian encoding
         let limb_3 = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
@@ -195,10 +205,25 @@ impl AllocVar<U128x128, Fq> for U128x128Var {
         let limb_1 = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
         let limb_0 = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
 
-        let limb_0_var = UInt64::new_variable(cs.clone(), || Ok(limb_0), mode)?;
-        let limb_1_var = UInt64::new_variable(cs.clone(), || Ok(limb_1), mode)?;
-        let limb_2_var = UInt64::new_variable(cs.clone(), || Ok(limb_2), mode)?;
-        let limb_3_var = UInt64::new_variable(cs, || Ok(limb_3), mode)?;
+        let limb_0_var = UInt64::new_variable(cs.clone(), || Ok(limb_0), AllocationMode::Witness)?;
+        let limb_1_var = UInt64::new_variable(cs.clone(), || Ok(limb_1), AllocationMode::Witness)?;
+        let limb_2_var = UInt64::new_variable(cs.clone(), || Ok(limb_2), AllocationMode::Witness)?;
+        let limb_3_var = UInt64::new_variable(cs, || Ok(limb_3), AllocationMode::Witness)?;
+
+        // ... and then bind them to the input variables we created above.
+        let lo_128_bits = limb_0_var
+            .to_bits_le()
+            .into_iter()
+            .chain(limb_1_var.to_bits_le())
+            .collect::<Vec<_>>();
+        let hi_128_bits = limb_2_var
+            .to_bits_le()
+            .into_iter()
+            .chain(limb_3_var.to_bits_le())
+            .collect::<Vec<_>>();
+
+        hi_128_var.enforce_equal(&convert_le_bits_to_fqvar(&hi_128_bits[..]))?;
+        lo_128_var.enforce_equal(&convert_le_bits_to_fqvar(&lo_128_bits[..]))?;
 
         Ok(Self {
             limbs: [limb_0_var, limb_1_var, limb_2_var, limb_3_var],
@@ -568,48 +593,10 @@ impl EqGadget<Fq> for U128x128Var {
     }
 }
 
-fn byte_to_field_elements(byte: u8) -> Vec<Fq> {
-    let mut field_elements = Vec::new();
-    for bit in (0..8).rev() {
-        let bit = (byte >> bit) & 1;
-        if bit == 0u8 {
-            field_elements.push(Fq::zero())
-        } else if bit == 1u8 {
-            field_elements.push(Fq::from(1u8))
-        } else {
-            panic!("expected bit, invalid value")
-        }
-    }
-    field_elements
-}
-
 impl ToConstraintField<Fq> for U128x128 {
     fn to_field_elements(&self) -> Option<Vec<Fq>> {
-        let bytes = self.to_bytes();
-        let limb_3 = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
-        let limb_2 = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
-        let limb_1 = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
-        let limb_0 = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
-        dbg!(limb_0);
-        dbg!(limb_1);
-        dbg!(limb_2);
-        dbg!(limb_3);
-
-        let mut field_elements = Vec::new();
-        for byte in limb_3.to_le_bytes() {
-            field_elements.append(&mut byte_to_field_elements(byte));
-        }
-        for byte in limb_2.to_le_bytes() {
-            field_elements.append(&mut byte_to_field_elements(byte));
-        }
-        for byte in limb_1.to_le_bytes() {
-            field_elements.append(&mut byte_to_field_elements(byte));
-        }
-        for byte in limb_0.to_le_bytes() {
-            field_elements.append(&mut byte_to_field_elements(byte));
-        }
-
-        Some(field_elements)
+        let (hi_128, lo_128) = self.0.into_words();
+        Some(vec![Fq::from(hi_128), Fq::from(lo_128)])
     }
 }
 
