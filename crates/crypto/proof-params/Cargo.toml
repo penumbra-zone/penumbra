@@ -72,6 +72,11 @@ harness = false
 required-features = ["proving-keys"]
 
 [[bench]]
+name = "swap_claim"
+harness = false
+required-features = ["proving-keys"]
+
+[[bench]]
 name = "undelegate_claim"
 harness = false
 required-features = ["proving-keys"]
