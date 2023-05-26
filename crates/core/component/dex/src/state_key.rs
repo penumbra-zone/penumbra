@@ -24,12 +24,10 @@ pub fn output_data(height: u64, trading_pair: TradingPair) -> String {
     )
 }
 
-pub fn swap_execution(height: u64, trading_pair: TradingPair) -> String {
+pub fn swap_execution(height: u64, trading_pair: DirectedTradingPair) -> String {
     format!(
         "dex/swap_execution/{:020}/{}/{}",
-        height,
-        &trading_pair.asset_1(),
-        &trading_pair.asset_2()
+        height, &trading_pair.start, &trading_pair.end
     )
 }
 

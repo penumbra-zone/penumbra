@@ -48,8 +48,10 @@ pub trait FillRoute: StateWrite + Sized {
         input: Value,
         hops: &[asset::Id],
         spill_price: Option<U128x128>,
-    ) -> Result<Vec<Vec<Value>>> {
-        fill_route_inner(self, input, hops, spill_price, true).await
+    ) -> Result<SwapExecution> {
+        Ok(SwapExecution::new(
+            fill_route_inner(self, input, hops, spill_price, true).await?,
+        ))
     }
 
     /// Like `fill_route`, but with exact spill price checks at the cost of

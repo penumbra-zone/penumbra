@@ -10,7 +10,7 @@ use penumbra_storage::{StateRead, StateWrite};
 use tendermint::v0_34::abci;
 use tracing::instrument;
 
-use crate::{state_key, BatchSwapOutputData, SwapExecution, TradingPair};
+use crate::{state_key, BatchSwapOutputData, DirectedTradingPair, SwapExecution, TradingPair};
 
 use super::{
     router::{HandleBatchSwaps, RoutingParams},
@@ -112,7 +112,7 @@ pub trait StateReadExt: StateRead {
     async fn swap_execution(
         &self,
         height: u64,
-        trading_pair: TradingPair,
+        trading_pair: DirectedTradingPair,
     ) -> Result<Option<SwapExecution>> {
         self.get(&state_key::swap_execution(height, trading_pair))
             .await
@@ -138,16 +138,27 @@ impl<T: StateRead> StateReadExt for T {}
 /// Extension trait providing write access to dex data.
 #[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {
-    fn set_output_data(&mut self, output_data: BatchSwapOutputData, swap_execution: SwapExecution) {
+    fn set_output_data(
+        &mut self,
+        output_data: BatchSwapOutputData,
+        swap_execution_1_for_2: SwapExecution,
+        swap_execution_2_for_1: SwapExecution,
+    ) {
         // Write the output data to the state under a known key, for querying, ...
         let height = output_data.height;
         let trading_pair = output_data.trading_pair;
         self.put(state_key::output_data(height, trading_pair), output_data);
 
-        // Store the swap execution in the state as well.
+        // Store the swap executions for both directions in the state as well.
+        let tp_1_for_2 = DirectedTradingPair::new(trading_pair.asset_1, trading_pair.asset_2);
+        let tp_2_for_1 = DirectedTradingPair::new(trading_pair.asset_2, trading_pair.asset_1);
         self.put(
-            state_key::swap_execution(height, trading_pair),
-            swap_execution,
+            state_key::swap_execution(height, tp_1_for_2),
+            swap_execution_1_for_2,
+        );
+        self.put(
+            state_key::swap_execution(height, tp_2_for_1),
+            swap_execution_2_for_1,
         );
 
         // ... and also add it to the set in the compact block to be pushed out to clients.
