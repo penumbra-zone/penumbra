@@ -4,7 +4,7 @@ use std::{
 };
 
 use penumbra_compact_block::CompactBlock;
-use penumbra_crypto::{Asset, FullViewingKey, Nullifier};
+use penumbra_crypto::{asset::DenomMetadata, Asset, FullViewingKey, Nullifier};
 use penumbra_dex::lp::{position, LpNft};
 use penumbra_proto::client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient;
 use penumbra_proto::{
@@ -269,17 +269,22 @@ impl Worker {
                         continue;
                     }
 
-                    let asset: Asset = self
+                    let denom_metadata: DenomMetadata = self
                         .specific_client
-                        .asset_info(DenomMetadataByIdRequest {
+                        .denom_metadata_by_id(DenomMetadataByIdRequest {
                             asset_id: Some(note_record.note.asset_id().into()),
                             chain_id: chain_id.clone(),
                         })
                         .await?
                         .into_inner()
-                        .asset
+                        .denom_metadata
                         .ok_or_else(|| anyhow::anyhow!("asset not found"))?
                         .try_into()?;
+
+                    let asset = Asset {
+                        id: denom_metadata.id(),
+                        denom: denom_metadata,
+                    };
 
                     self.storage.record_asset(asset).await?;
                 }

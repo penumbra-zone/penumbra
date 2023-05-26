@@ -6,7 +6,7 @@ use futures::TryStreamExt;
 use penumbra_app::governance::StateReadExt as _;
 use penumbra_chain::component::AppHashRead;
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_crypto::asset::{self, Asset};
+use penumbra_crypto::asset::{self};
 use penumbra_dex::{
     component::{PositionRead, StateReadExt},
     lp::{position, position::Position},
@@ -15,10 +15,10 @@ use penumbra_dex::{
 use penumbra_proto::{
     self as proto,
     client::v1alpha1::{
-        specific_query_service_server::SpecificQueryService, AssetInfoResponse,
-        BatchSwapOutputDataRequest, DenomMetadataByIdRequest, KeyValueRequest, KeyValueResponse,
-        ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
-        ProposalRateDataResponse, ValidatorStatusRequest,
+        specific_query_service_server::SpecificQueryService, BatchSwapOutputDataRequest,
+        DenomMetadataByIdRequest, KeyValueRequest, KeyValueResponse, ProposalInfoRequest,
+        ProposalInfoResponse, ProposalRateDataRequest, ProposalRateDataResponse,
+        ValidatorStatusRequest,
     },
     StateReadProto as _,
 };
@@ -34,6 +34,7 @@ use proto::client::v1alpha1::ArbExecutionResponse;
 use proto::client::v1alpha1::ArbExecutionsRequest;
 use proto::client::v1alpha1::ArbExecutionsResponse;
 use proto::client::v1alpha1::BatchSwapOutputDataResponse;
+use proto::client::v1alpha1::DenomMetadataByIdResponse;
 use proto::client::v1alpha1::LiquidityPositionByIdRequest;
 use proto::client::v1alpha1::LiquidityPositionByIdResponse;
 use proto::client::v1alpha1::LiquidityPositionsByIdRequest;
@@ -568,10 +569,10 @@ impl SpecificQueryService for Info {
     }
 
     #[instrument(skip(self, request))]
-    async fn asset_info(
+    async fn denom_metadata_by_id(
         &self,
         request: tonic::Request<DenomMetadataByIdRequest>,
-    ) -> Result<tonic::Response<AssetInfoResponse>, Status> {
+    ) -> Result<tonic::Response<DenomMetadataByIdResponse>, Status> {
         let state = self.storage.latest_snapshot();
         state
             .check_chain_id(&request.get_ref().chain_id)
@@ -593,8 +594,8 @@ impl SpecificQueryService for Info {
         let rsp = match denom {
             Some(denom) => {
                 tracing::debug!(?id, ?denom, "found denom");
-                AssetInfoResponse {
-                    asset: Some(Asset { id, denom }.into()),
+                DenomMetadataByIdResponse {
+                    denom_metadata: Some(denom.into()),
                 }
             }
             None => {
