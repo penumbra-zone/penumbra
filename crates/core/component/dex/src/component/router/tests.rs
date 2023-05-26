@@ -592,10 +592,12 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
 
     let spill_price = U128x128::from(Amount::from(1_000_000_000u64) * pusd.unit_amount());
 
-    let (unfilled, output) =
-        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
-            .await
-            .unwrap();
+    let execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        .await
+        .unwrap();
+
+    let unfilled = delta_1.amount.checked_sub(&execution.input.amount).unwrap();
+    let output = execution.output;
 
     // let output_cal = U128x128::ratio(output.amount, pusd.unit_amount()).unwrap();
     let desired_output: Amount = (Amount::from(10_000u64)
@@ -603,8 +605,8 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
         + Amount::from(6u64) * Amount::from(3000u64))
         * pusd.unit_amount();
 
-    assert_eq!(unfilled.asset_id, gm.id());
-    assert_eq!(unfilled.amount, Amount::zero());
+    assert_eq!(execution.input.asset_id, gm.id());
+    assert_eq!(unfilled, Amount::zero());
 
     assert_eq!(output.asset_id, pusd.id());
     assert_eq!(output.amount, desired_output);
@@ -695,18 +697,20 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
 
     let spill_price = U128x128::from(Amount::from(1_000_000_000u64) * pusd.unit_amount());
 
-    let (unfilled, output) =
-        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
-            .await
-            .unwrap();
+    let execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        .await
+        .unwrap();
+
+    let unfilled = delta_1.amount.checked_sub(&execution.input.amount).unwrap();
+    let output = execution.output;
 
     let desired_output: Amount = (Amount::from(10_000u64)
         + Amount::from(3100u64)
         + Amount::from(6u64) * Amount::from(3000u64))
         * pusd.unit_amount();
 
-    assert_eq!(unfilled.asset_id, gm.id());
-    assert_eq!(unfilled.amount, Amount::zero());
+    assert_eq!(execution.input.asset_id, gm.id());
+    assert_eq!(unfilled, Amount::zero());
 
     assert_eq!(output.asset_id, pusd.id());
     assert_eq!(output.amount, desired_output);
@@ -780,24 +784,22 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     let spill_price =
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(pusd.unit_amount())).unwrap();
 
-    let (unfilled, output) =
-        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
-            .await
-            .unwrap();
+    let execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        .await
+        .unwrap();
+
+    let unfilled = delta_1.amount.checked_sub(&execution.input.amount).unwrap();
+    let output = execution.output;
 
     let desired_output = Amount::from(1500u64) * pusd.unit_amount();
 
     assert_eq!(
-        unfilled.asset_id,
+        execution.input.asset_id,
         gm.id(),
         "the unfilled asset id is correct"
     );
     assert_eq!(output.asset_id, pusd.id(), "the output asset id is correct");
-    assert_eq!(
-        unfilled.amount,
-        Amount::zero(),
-        "there is no unfilled amount"
-    );
+    assert_eq!(unfilled, Amount::zero(), "there is no unfilled amount");
     assert_eq!(
         output.amount, desired_output,
         "the output amount is correct"
@@ -875,17 +877,19 @@ async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
     let valuation_gm = (U128x128::from(one) * U128x128::from(gm.unit_amount())).unwrap();
     let spill_price = U128x128::ratio(valuation_gm, valuation_penumbra).unwrap();
 
-    let (unfilled, output) =
-        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
-            .await
-            .unwrap();
+    let execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        .await
+        .unwrap();
+
+    let unfilled = delta_1.amount.checked_sub(&execution.input.amount).unwrap();
+    let output = execution.output;
 
     let desired_output = Amount::from(2900u64) * pusd.unit_amount();
 
     let one_gm = gm.unit_amount() * one;
 
-    assert_eq!(unfilled.amount, one_gm);
-    assert_eq!(unfilled.asset_id, gm.id());
+    assert_eq!(unfilled, one_gm);
+    assert_eq!(execution.input.asset_id, gm.id());
     assert_eq!(output.amount, desired_output);
     assert_eq!(output.asset_id, pusd.id());
 
@@ -1203,10 +1207,12 @@ async fn fill_dust_route() -> anyhow::Result<()> {
     let spill_price =
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
 
-    let (unfilled, output) =
-        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
-            .await
-            .unwrap();
+    let execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        .await
+        .unwrap();
+
+    let unfilled = delta_1.amount.checked_sub(&execution.input.amount).unwrap();
+    let output = execution.output;
 
     println!("unfilled: {unfilled:?}");
     println!("output: {output:?}");
@@ -1265,10 +1271,12 @@ async fn fill_route_dust() -> () {
     let spill_price =
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
 
-    let (unfilled, output) =
-        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
-            .await
-            .unwrap();
+    let execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        .await
+        .unwrap();
+
+    let unfilled = delta_1.amount.checked_sub(&execution.input.amount).unwrap();
+    let output = execution.output;
 
     println!("unfilled: {unfilled:?}");
     println!("output: {output:?}");
@@ -1341,10 +1349,12 @@ async fn fill_route_with_dust_constraint() -> anyhow::Result<()> {
     let spill_price =
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
 
-    let (unfilled, output) =
-        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
-            .await
-            .unwrap();
+    let execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        .await
+        .unwrap();
+
+    let unfilled = delta_1.amount.checked_sub(&execution.input.amount).unwrap();
+    let output = execution.output;
 
     println!("unfilled: {unfilled:?}");
     println!("output: {output:?}");
@@ -1448,9 +1458,8 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
     let spill_price =
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
 
-    let (_unfilled, _output) =
-        FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
-            .await
-            .unwrap();
+    let _execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+        .await
+        .unwrap();
     Ok(())
 }

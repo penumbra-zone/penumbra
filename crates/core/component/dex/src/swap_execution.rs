@@ -27,25 +27,27 @@ impl SwapExecution {
             .map(|trace| trace.last().expect("empty trace").amount)
             .sum::<Amount>();
 
+        let in_asset_id = traces
+            .first()
+            .expect("empty traces")
+            .first()
+            .expect("empty trace")
+            .asset_id;
+        let out_asset_id = traces
+            .first()
+            .expect("empty traces")
+            .last()
+            .expect("empty trace")
+            .asset_id;
         Self {
             traces,
             input: Value {
                 amount: input,
-                asset_id: traces
-                    .first()
-                    .expect("empty traces")
-                    .first()
-                    .expect("empty trace")
-                    .asset_id,
+                asset_id: in_asset_id,
             },
             output: Value {
                 amount: output,
-                asset_id: traces
-                    .first()
-                    .expect("empty traces")
-                    .last()
-                    .expect("empty trace")
-                    .asset_id,
+                asset_id: out_asset_id,
             },
         }
     }

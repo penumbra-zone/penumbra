@@ -124,9 +124,15 @@ async fn single_limit_order() -> anyhow::Result<()> {
     };
 
     let route_to_gn = vec![gn.id()];
-    let trace = FillRoute::fill_route(&mut state_test_1, delta_gm, &route_to_gn, None).await?;
+    let execution = FillRoute::fill_route(&mut state_test_1, delta_gm, &route_to_gn, None).await?;
 
-    assert_eq!(unfilled, lambda_gm);
+    let unfilled = delta_gm
+        .amount
+        .checked_sub(&execution.input.amount)
+        .unwrap();
+    let output = execution.output;
+
+    assert_eq!(unfilled, lambda_gm.amount);
     assert_eq!(output, lambda_gn);
 
     let position = state_test_1
@@ -161,16 +167,17 @@ async fn single_limit_order() -> anyhow::Result<()> {
         asset_id: gn.id(),
     };
 
-    let (unfilled, output) = state_test_1
+    let execution = state_test_1
         .fill_route(delta_gn, &route_to_gm, None)
         .await?;
-    assert_eq!(
-        unfilled,
-        Value {
-            amount: Amount::zero(),
-            asset_id: gn.id(),
-        }
-    );
+
+    let unfilled = delta_gm
+        .amount
+        .checked_sub(&execution.input.amount)
+        .unwrap();
+    let output = execution.output;
+
+    assert_eq!(unfilled, Amount::zero(),);
     assert_eq!(
         output,
         Value {
@@ -196,16 +203,16 @@ async fn single_limit_order() -> anyhow::Result<()> {
             asset_id: gm.id(),
         };
         // We are splitting a single large fill for a `100_000gm` into, 100 fills for `1000gm`.
-        let (unfilled, output) = state_tx.fill_route(delta_gm, &route_to_gn, None).await?;
+        let execution = state_tx.fill_route(delta_gm, &route_to_gn, None).await?;
+
+        let unfilled = delta_gm
+            .amount
+            .checked_sub(&execution.input.amount)
+            .unwrap();
+        let output = execution.output;
 
         // We check that there are no unfilled `gm`s resulting from executing the order
-        assert_eq!(
-            unfilled,
-            Value {
-                amount: Amount::zero(),
-                asset_id: gm.id(),
-            }
-        );
+        assert_eq!(unfilled, Amount::zero());
         // And that for every `1000gm`, we get `1200gn` as desired.
         assert_eq!(
             output,
@@ -315,12 +322,18 @@ async fn multiple_limit_orders() -> anyhow::Result<()> {
     };
 
     let route_to_gn = vec![gn.id()];
-    let (unfilled, output) = state_test_1
+    let execution = state_test_1
         .fill_route(delta_gm, &route_to_gn, None)
         .await?;
 
-    assert_eq!(unfilled.asset_id, gm.id());
-    assert_eq!(unfilled.amount, Amount::zero());
+    let unfilled = delta_gm
+        .amount
+        .checked_sub(&execution.input.amount)
+        .unwrap();
+    let output = execution.output;
+
+    assert_eq!(execution.input.asset_id, gm.id());
+    assert_eq!(unfilled, Amount::zero());
     assert_eq!(output.amount, 120_000u64.into());
     assert_eq!(output.asset_id, gn.id());
 
@@ -342,12 +355,19 @@ async fn multiple_limit_orders() -> anyhow::Result<()> {
         asset_id: gm.id(),
     };
 
-    let (unfilled, output) = state_test_2
+    let execution = state_test_2
         .fill_route(delta_gm, &route_to_gn, None)
         .await?;
-    assert_eq!(unfilled.asset_id, gm.id());
+
+    let unfilled = delta_gm
+        .amount
+        .checked_sub(&execution.input.amount)
+        .unwrap();
+    let output = execution.output;
+
+    assert_eq!(execution.input.asset_id, gm.id());
     assert_eq!(output.asset_id, gn.id());
-    assert_eq!(unfilled.amount, Amount::zero());
+    assert_eq!(unfilled, Amount::zero());
     assert_eq!(output.amount, 240_000u64.into());
 
     // We fetch the entire order book, checking that only position 1 was filled against.
@@ -368,12 +388,19 @@ async fn multiple_limit_orders() -> anyhow::Result<()> {
         asset_id: gm.id(),
     };
 
-    let (unfilled, output) = state_test_3
+    let execution = state_test_3
         .fill_route(delta_gm, &route_to_gn, None)
         .await?;
-    assert_eq!(unfilled.asset_id, gm.id());
+
+    let unfilled = delta_gm
+        .amount
+        .checked_sub(&execution.input.amount)
+        .unwrap();
+    let output = execution.output;
+
+    assert_eq!(execution.input.asset_id, gm.id());
     assert_eq!(output.asset_id, gn.id());
-    assert_eq!(unfilled.amount, Amount::zero());
+    assert_eq!(unfilled, Amount::zero());
     assert_eq!(output.amount, 360_000u64.into());
 
     // We fetch the entire order book, checking that only position 1 was filled against.
@@ -531,7 +558,15 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .expect("unable to process batch swaps");
 
     // Swap execution should have a single trace consisting of `[1gn, 1penumbra]`.
-    let swap_execution = state.swap_execution(0, trading_pair).await?.unwrap();
+    let swap_execution = state
+        .swap_execution(
+            0,
+            DirectedTradingPair::new(trading_pair.asset_1, trading_pair.asset_2),
+        )
+        .await?
+        .unwrap();
+
+    // TODO: check the other direction's swap execution too.
 
     assert_eq!(
         swap_execution.traces,
@@ -637,7 +672,13 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     );
 
     // Swap execution should have two traces.
-    let swap_execution = state.swap_execution(0, trading_pair).await?.unwrap();
+    let swap_execution = state
+        .swap_execution(
+            0,
+            DirectedTradingPair::new(trading_pair.asset_1, trading_pair.asset_2),
+        )
+        .await?
+        .unwrap();
 
     assert_eq!(
         swap_execution.traces,
