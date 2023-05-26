@@ -510,7 +510,7 @@ impl SpecificQueryService for Info {
         let trading_pair = request_inner.trading_pair;
 
         // Convert to domain type ahead of time if necessary
-        let trading_pair: Option<TradingPair> = if let Some(trading_pair) = trading_pair {
+        let trading_pair: Option<DirectedTradingPair> = if let Some(trading_pair) = trading_pair {
             Some(trading_pair.try_into().expect("invalid trading pair"))
         } else {
             None
@@ -537,7 +537,7 @@ impl SpecificQueryService for Info {
                     let asset_2: asset::Id =
                         parts[4].parse().expect("asset id formatted improperly");
 
-                    let swap_trading_pair = TradingPair::new(asset_1, asset_2);
+                    let swap_trading_pair = DirectedTradingPair::new(asset_1, asset_2);
 
                     if let Some(trading_pair) = trading_pair {
                         // filter by trading pair

@@ -41,7 +41,7 @@ pub enum DexCmd {
         /// The trading pair to query for the swap execution.
         /// Pairs must be specified with a colon separating them, e.g. "penumbra:test_usd".
         #[clap(value_name = "asset_1:asset_2")]
-        trading_pair: TradingPair,
+        trading_pair: DirectedTradingPair,
     },
     /// Display information about all liquidity positions known to the chain.
     #[clap(display_order(900))]
@@ -95,7 +95,7 @@ impl DexCmd {
         &self,
         app: &mut App,
         height: &u64,
-        trading_pair: &TradingPair,
+        trading_pair: &DirectedTradingPair,
     ) -> Result<SwapExecution> {
         let mut client = app.specific_client().await?;
         client
@@ -161,7 +161,7 @@ impl DexCmd {
         &self,
         app: &mut App,
         height: &u64,
-        trading_pair: &TradingPair,
+        trading_pair: &DirectedTradingPair,
     ) -> Result<()> {
         let swap_execution = self.get_swap_execution(app, height, trading_pair).await?;
 
