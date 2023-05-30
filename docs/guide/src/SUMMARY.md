@@ -10,6 +10,7 @@
 - [Using `pd`](./pd.md)
   - [Building `pd`](./pd/build.md)
   - [Joining a Testnet](./pd/join-testnet.md)
+- [Using the web wallet](./extension.md)
 - [Development](./dev.md)
   - [Devnet Quickstart](./dev/devnet-quickstart.md)
   - [SQLite compilation setup](./dev/sqlx.md)
