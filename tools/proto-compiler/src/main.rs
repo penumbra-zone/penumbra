@@ -115,7 +115,10 @@ fn main() -> Result<()> {
                 "../../crates/proto/rust-vendored/tendermint/types/validator.proto",
                 "../../crates/proto/rust-vendored/tendermint/p2p/types.proto",
             ],
-            &["../../crates/proto/proto/", "../../crates/proto/rust-vendored/"],
+            &[
+                "../../crates/proto/proto/",
+                "../../crates/proto/rust-vendored/",
+            ],
         )?;
 
     // Finally, build pbjson Serialize, Deserialize impls:
