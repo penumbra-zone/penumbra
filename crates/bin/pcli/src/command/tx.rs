@@ -638,7 +638,8 @@ impl TxCmd {
                 let mut client = app.specific_client().await?;
                 let next_proposal_id: u64 = client
                     .key_proto(penumbra_app::governance::state_key::next_proposal_id())
-                    .await?;
+                    .await?
+                    .context(format!("there are no proposals yet"))?;
 
                 let toml_template: ProposalToml = kind
                     .template_proposal(&chain_params, next_proposal_id)?
@@ -666,7 +667,11 @@ impl TxCmd {
                 let mut client = app.specific_client().await?;
                 let state: proposal::State = client
                     .key_domain(state_key::proposal_state(*proposal_id))
-                    .await?;
+                    .await?
+                    .context(format!(
+                        "proposal state for proposal {} was not found",
+                        proposal_id
+                    ))?;
 
                 let outcome = match state {
                     proposal::State::Voting => anyhow::bail!(
@@ -684,7 +689,11 @@ impl TxCmd {
 
                 let deposit_amount: Amount = client
                     .key_domain(state_key::proposal_deposit_amount(*proposal_id))
-                    .await?;
+                    .await?
+                    .context(format!(
+                        "deposit amount for proposal {} was not found",
+                        proposal_id
+                    ))?;
 
                 let plan = Planner::new(OsRng)
                     .proposal_deposit_claim(*proposal_id, deposit_amount, outcome)

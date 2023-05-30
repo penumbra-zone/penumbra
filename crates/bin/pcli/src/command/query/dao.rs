@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use futures::TryStreamExt;
 //use penumbra_app::dao;
 use penumbra_dao::component::state_key;
@@ -38,14 +38,21 @@ impl DaoCmd {
         let asset_cache = app.view().assets().await?;
         if let Some(asset_id) = asset_id {
             let key = state_key::balance_for_asset(asset_id);
-            let amount: Amount = client.key_domain(&key).await?;
+            let amount: Amount = client
+                .key_domain(&key)
+                .await?
+                .context(format!("No balance found for asset {asset_id}"))?;
+
             let value = Value { asset_id, amount };
-            let string = value.format(&asset_cache);
-            println!("{string}");
+            let value_str = value.format(&asset_cache);
+
+            println!("{value_str}");
         } else {
             let prefix = dao::state_key::all_assets_balance();
             let results: Vec<_> = client.prefix_domain(prefix).await?.try_collect().await?;
+
             println!("DAO balance ({} unique assets):", results.len());
+
             for (key, amount) in results {
                 // Parse every key/value pair into a Value
                 let asset_id: asset::Id = key
@@ -55,8 +62,8 @@ impl DaoCmd {
                     .parse()
                     .expect("valid asset ID");
                 let value = Value { asset_id, amount };
-                let string = value.format(&asset_cache);
-                println!("{string}");
+                let value_str = value.format(&asset_cache);
+                println!("{value_str}");
             }
         };
 

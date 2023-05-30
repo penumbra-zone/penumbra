@@ -700,7 +700,7 @@ impl SpecificQueryService for Info {
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         Ok(tonic::Response::new(KeyValueResponse {
-            value: some_value.into(),
+            value: some_value.map(Into::into),
             proof: if request.proof {
                 Some(ibc_proto::ibc::core::commitment::v1::MerkleProof {
                     proofs: proof

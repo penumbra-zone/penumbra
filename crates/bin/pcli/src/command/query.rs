@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 mod shielded_pool;
 use shielded_pool::ShieldedPool;
@@ -110,15 +110,20 @@ impl QueryCmd {
 
         let mut client = app.specific_client().await?;
         let req = penumbra_proto::client::v1alpha1::KeyValueRequest {
-            key,
+            key: key.clone(),
             ..Default::default()
         };
 
         tracing::debug!(?req);
 
-        let rsp = client.key_value(req).await?.into_inner();
+        let value = client
+            .key_value(req)
+            .await?
+            .into_inner()
+            .value
+            .context(format!("key not found! key={}", key))?;
 
-        self.display_value(&rsp.value)?;
+        self.display_value(&value.value)?;
         Ok(())
     }
 
