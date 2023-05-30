@@ -35,26 +35,24 @@ jobs:
         run: |
           cargo install mdbook mdbook-katex mdbook-mermaid
 
-      - name: Build API docs
-        run: ./deployments/scripts/rust-docs
-
-      - name: Move API docs to subdirectory
+      - name: Build software guide
         run: |
-          cd docs/rustdoc
+          cd docs/guide && mdbook build
+      - name: Move software guide to subdirectory
+        run: |
+          cd docs/guide
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
-          mv ../../target/doc firebase-tmp/${{ steps.get_version.outputs.version }}
-          # Copy in the static index file
-          cp index.html firebase-tmp/${{ steps.get_version.outputs.version }}
-
-      - name: Deploy API docs to firebase
+          mv book/html firebase-tmp/${{ steps.get_version.outputs.version }}
+          tree firebase-tmp
+      - name: Deploy software guide to firebase
         uses: w9jds/firebase-action@v2.0.0
         with:
           args: deploy
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-          PROJECT_ID: penumbra-doc
-          PROJECT_PATH: docs/rustdoc
+          PROJECT_ID: penumbra-guide
+          PROJECT_PATH: docs/guide
 
       - name: Build protocol spec
         run: |
@@ -75,21 +73,21 @@ jobs:
           PROJECT_ID: penumbra-protocol
           PROJECT_PATH: docs/protocol
 
-      - name: Build software guide
+      - name: Build rustdocs
+        run: ./deployments/scripts/rust-docs
+      - name: Move API docs to subdirectory
         run: |
-          cd docs/guide && mdbook build
-      - name: Move software guide to subdirectory
-        run: |
-          cd docs/guide
+          cd docs/rustdoc
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
-          mv book/html firebase-tmp/${{ steps.get_version.outputs.version }}
-          tree firebase-tmp
-      - name: Deploy software guide to firebase
+          mv ../../target/doc firebase-tmp/${{ steps.get_version.outputs.version }}
+          # Copy in the static index file
+          cp index.html firebase-tmp/${{ steps.get_version.outputs.version }}
+      - name: Deploy API docs to firebase
         uses: w9jds/firebase-action@v2.0.0
         with:
           args: deploy
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-          PROJECT_ID: penumbra-guide
-          PROJECT_PATH: docs/guide
+          PROJECT_ID: penumbra-doc
+          PROJECT_PATH: docs/rustdoc
