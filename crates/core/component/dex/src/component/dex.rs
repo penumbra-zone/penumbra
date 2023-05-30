@@ -141,8 +141,8 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     fn set_output_data(
         &mut self,
         output_data: BatchSwapOutputData,
-        swap_execution_1_for_2: SwapExecution,
-        swap_execution_2_for_1: SwapExecution,
+        swap_execution_1_for_2: Option<SwapExecution>,
+        swap_execution_2_for_1: Option<SwapExecution>,
     ) {
         // Write the output data to the state under a known key, for querying, ...
         let height = output_data.height;
@@ -150,16 +150,20 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         self.put(state_key::output_data(height, trading_pair), output_data);
 
         // Store the swap executions for both directions in the state as well.
-        let tp_1_for_2 = DirectedTradingPair::new(trading_pair.asset_1, trading_pair.asset_2);
-        let tp_2_for_1 = DirectedTradingPair::new(trading_pair.asset_2, trading_pair.asset_1);
-        self.put(
-            state_key::swap_execution(height, tp_1_for_2),
-            swap_execution_1_for_2,
-        );
-        self.put(
-            state_key::swap_execution(height, tp_2_for_1),
-            swap_execution_2_for_1,
-        );
+        if let Some(swap_execution) = swap_execution_1_for_2 {
+            let tp_1_for_2 = DirectedTradingPair::new(trading_pair.asset_1, trading_pair.asset_2);
+            self.put(
+                state_key::swap_execution(height, tp_1_for_2),
+                swap_execution,
+            );
+        }
+        if let Some(swap_execution) = swap_execution_2_for_1 {
+            let tp_2_for_1 = DirectedTradingPair::new(trading_pair.asset_2, trading_pair.asset_1);
+            self.put(
+                state_key::swap_execution(height, tp_2_for_1),
+                swap_execution,
+            );
+        }
 
         // ... and also add it to the set in the compact block to be pushed out to clients.
         let mut outputs: im::OrdMap<TradingPair, BatchSwapOutputData> = self

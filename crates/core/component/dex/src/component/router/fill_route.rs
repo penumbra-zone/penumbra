@@ -49,9 +49,7 @@ pub trait FillRoute: StateWrite + Sized {
         hops: &[asset::Id],
         spill_price: Option<U128x128>,
     ) -> Result<SwapExecution> {
-        Ok(SwapExecution::new(
-            fill_route_inner(self, input, hops, spill_price, true).await?,
-        ))
+        fill_route_inner(self, input, hops, spill_price, true).await
     }
 
     /// Like `fill_route`, but with exact spill price checks at the cost of
@@ -85,7 +83,7 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     hops: &[asset::Id],
     spill_price: Option<U128x128>,
     ensure_progress: bool,
-) -> Result<Vec<Vec<Value>>> {
+) -> Result<SwapExecution> {
     // Build a transaction for this execution, so if we error out at any
     // point we don't leave the state in an inconsistent state.  This is
     // particularly important for this method, because we lift position data
@@ -220,7 +218,7 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     this.apply();
 
     // cleanup / finalization
-    Ok(trace)
+    Ok(SwapExecution::new(trace))
 }
 
 /// Breaksdown a route into a collection of `DirectedTradingPair`, this is mostly useful
@@ -348,17 +346,8 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             }
         }
 
-        // Record a trace of the execution along the current route,
-        // starting with all-zero amounts.
-        let trace: Vec<Vec<Value>> = vec![std::iter::once(Value {
-            amount: 0u64.into(),
-            asset_id: pairs.first().unwrap().start,
-        })
-        .chain(pairs.iter().map(|pair| Value {
-            amount: 0u64.into(),
-            asset_id: pair.end,
-        }))
-        .collect()];
+        // The current trace list along the route should be initialized as empty.
+        let trace: Vec<Vec<Value>> = Vec::new();
 
         Ok(Frontier {
             positions,
@@ -383,7 +372,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
 
         trace[0] = Value {
             amount: changes.trace[0].expect("all trace amounts must be set when applying changes"),
-            asset_id: self.trace[0][0].asset_id,
+            asset_id: self.pairs[0].start,
         };
         for (i, new_reserves) in changes.new_reserves.into_iter().enumerate() {
             let new_reserves =
@@ -391,10 +380,10 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             let amount =
                 changes.trace[i + 1].expect("all trace amounts must be set when applying changes");
             self.positions[i].reserves = new_reserves;
-            // Each sub-trace of the frontier has the same asset IDs for each hop
+            // Pull the asset ID from the pairs.
             trace[i + 1] = Value {
                 amount,
-                asset_id: self.trace[0][i + 1].asset_id,
+                asset_id: self.pairs[i].end,
             };
         }
 

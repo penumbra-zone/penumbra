@@ -42,52 +42,36 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         // Depending on the contents of the batch swap inputs, we might need to path search in either direction.
         let swap_execution_1_for_2 = if delta_1.value() > 0 {
             // There is input for asset 1, so we need to route for asset 1 -> asset 2
-            self.route_and_fill(
-                trading_pair.asset_1(),
-                trading_pair.asset_2(),
-                delta_1,
-                params.clone(),
+            Some(
+                self.route_and_fill(
+                    trading_pair.asset_1(),
+                    trading_pair.asset_2(),
+                    delta_1,
+                    params.clone(),
+                )
+                .await?,
             )
-            .await?
         } else {
             // There was no input for asset 1, so there's 0 output for asset 2 from this side.
             tracing::debug!("no input for asset 1, skipping 1=>2 execution");
-            SwapExecution {
-                traces: vec![],
-                input: Value {
-                    asset_id: trading_pair.asset_1(),
-                    amount: Amount::zero(),
-                },
-                output: Value {
-                    asset_id: trading_pair.asset_2(),
-                    amount: Amount::zero(),
-                },
-            }
+            None
         };
 
         let swap_execution_2_for_1 = if delta_2.value() > 0 {
             // There is input for asset 2, so we need to route for asset 2 -> asset 1
-            self.route_and_fill(
-                trading_pair.asset_2(),
-                trading_pair.asset_1(),
-                delta_2,
-                params.clone(),
+            Some(
+                self.route_and_fill(
+                    trading_pair.asset_2(),
+                    trading_pair.asset_1(),
+                    delta_2,
+                    params.clone(),
+                )
+                .await?,
             )
-            .await?
         } else {
             // There was no input for asset 2, so there's 0 output for asset 1 from this side.
             tracing::debug!("no input for asset 2, skipping 2=>1 execution");
-            SwapExecution {
-                traces: vec![],
-                input: Value {
-                    asset_id: trading_pair.asset_2(),
-                    amount: Amount::zero(),
-                },
-                output: Value {
-                    asset_id: trading_pair.asset_1(),
-                    amount: Amount::zero(),
-                },
-            }
+            None
         };
 
         let output_data = BatchSwapOutputData {
@@ -96,10 +80,22 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             trading_pair,
             delta_1,
             delta_2,
-            lambda_1: swap_execution_2_for_1.output.amount,
-            lambda_2: swap_execution_1_for_2.output.amount,
-            unfilled_1: delta_1 - swap_execution_1_for_2.input.amount,
-            unfilled_2: delta_2 - swap_execution_2_for_1.input.amount,
+            lambda_1: match swap_execution_2_for_1 {
+                Some(swap_execution) => swap_execution.output.amount,
+                None => 0u64.into(),
+            },
+            lambda_2: match swap_execution_1_for_2 {
+                Some(swap_execution) => swap_execution.output.amount,
+                None => 0u64.into(),
+            },
+            unfilled_1: match swap_execution_1_for_2 {
+                Some(swap_execution) => delta_1 - swap_execution.input.amount,
+                None => delta_1,
+            },
+            unfilled_2: match swap_execution_2_for_1 {
+                Some(swap_execution) => delta_2 - swap_execution.input.amount,
+                None => delta_2,
+            },
         };
 
         // TODO: how does this work when there are trades in both directions?
