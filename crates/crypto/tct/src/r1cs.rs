@@ -73,38 +73,20 @@ impl ToBitsGadget<Fq> for PositionVar {
     }
 }
 
-/// Raise f to the power of `exp`
-pub fn mul_exp(f: Fq, exp: usize) -> Fq {
-    let mut acc = Fq::from(1);
-    for _ in 0..exp {
-        acc *= f;
-    }
-    acc
-}
-
-/// Convert a vector of bits in little-endian order to an FqVar.
-pub fn convert_le_bits_to_fqvar(value: &[Boolean<Fq>]) -> FqVar {
-    let mut acc = FqVar::zero();
-    for (i, bit) in value.iter().enumerate() {
-        acc += FqVar::from(bit.clone()) * FqVar::constant(mul_exp(Fq::from(2_i32), i));
-    }
-    acc
-}
-
 impl PositionBitsVar {
-    /// Witness the commitment index by taking the last 16 bytes of the position.
+    /// Witness the commitment index by taking the last 16 bits of the position.
     pub fn commitment(&self) -> Result<FqVar, SynthesisError> {
-        Ok(convert_le_bits_to_fqvar(&self.inner[48..64]))
+        Ok(Boolean::<Fq>::le_bits_to_fp_var(&self.inner[48..64])?)
     }
 
     /// Witness the block.
     pub fn block(&self) -> Result<FqVar, SynthesisError> {
-        Ok(convert_le_bits_to_fqvar(&self.inner[32..48]))
+        Ok(Boolean::<Fq>::le_bits_to_fp_var(&self.inner[16..32])?)
     }
 
-    /// Witness the epoch by taking the first 32 bytes of the position.
+    /// Witness the epoch by taking the first 16 bits of the position.
     pub fn epoch(&self) -> Result<FqVar, SynthesisError> {
-        Ok(convert_le_bits_to_fqvar(&self.inner[0..32]))
+        Ok(Boolean::<Fq>::le_bits_to_fp_var(&self.inner[0..16])?)
     }
 }
 
