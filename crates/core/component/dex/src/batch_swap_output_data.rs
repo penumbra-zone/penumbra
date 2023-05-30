@@ -100,7 +100,6 @@ impl ToConstraintField<Fq> for BatchSwapOutputData {
         public_inputs.extend(Fq::from(self.height).to_field_elements().unwrap());
         public_inputs.extend(self.trading_pair.to_field_elements().unwrap());
         public_inputs.extend(Fq::from(self.epoch_height).to_field_elements().unwrap());
-        dbg!(&public_inputs);
         Some(public_inputs)
     }
 }
