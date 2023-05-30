@@ -52,7 +52,7 @@ cargo run --release --bin pcli -- view reset
 and then pass the `-n` flag to any commands you run to point `pcli` at your local node, e.g.,
 
 ```shell
-cargo run --bin pcli -- -n 127.0.0.1 view balance
+cargo run --bin pcli -- -n http://127.0.0.1:8080 view balance
 ```
 
 By default, `pd testnet generate` uses the latest snapshot of the Discord's
