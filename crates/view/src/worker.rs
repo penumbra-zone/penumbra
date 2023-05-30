@@ -348,6 +348,7 @@ async fn sct_divergence_check(
     height: u64,
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
+    use anyhow::Context;
     use penumbra_sct::state_key as sct_state_key;
 
     let value = client
@@ -357,9 +358,10 @@ async fn sct_divergence_check(
         })
         .await?
         .into_inner()
-        .value;
+        .value
+        .context("sct state not found")?;
 
-    let expected_root = penumbra_tct::Root::decode(value.as_slice())?;
+    let expected_root = penumbra_tct::Root::decode(value.value.as_slice())?;
 
     if actual_root == expected_root {
         tracing::info!(?height, ?actual_root, ?expected_root, "sct roots match");
