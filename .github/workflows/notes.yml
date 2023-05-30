@@ -21,7 +21,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly
+          toolchain: nightly-2023-05-15
           override: true
       - name: Load Rust caching
         uses: Swatinem/rust-cache@v2

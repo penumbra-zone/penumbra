@@ -11,12 +11,14 @@ The landing page, the top-level `index.html`, is handled as a special case.
 If you added new crates by appending a `-p <crate_name>` to the `rust-docs` script,
 then you must rebuild the index page via:
 
+You'll need to use the `nightly` toolchain for Rust to build the docs. In some cases, you'll need
+a specific version. To configure locally:
+
 ```
-REGENERATE_INDEX=1 ./deployments/scripts/rust-docs
+rustup toolchain install nightly-2023-05-15
 ```
 
-CI will automatically rebuild all our docs on merges into main, except for the Rust doc index.html,
-which must be updated manually.
+CI will automatically rebuild all our docs on merges into main.
 
 [protocol docs]: https://protocol.penumbra.zone
 [rustdoc]: https://rustdoc.penumbra.zone

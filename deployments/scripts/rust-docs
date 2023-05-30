@@ -16,17 +16,12 @@ export RUSTDOCFLAGS="--enable-index-page -Zunstable-options --cfg docsrs"
 # - published crates are excluded
 # Doing this in one go is useful because the JSON file with search
 # indexes is overwritten on each cargo doc invocation.
-#
-# When updating, remember to run with REGENERATE_INDEX=1.
-# See docs/rustdoc/README.md for more info.
 
-# Silence shellcheck warning on 'nightly_opt' being an empty string.
-# shellcheck disable=SC2086
-cargo +nightly doc --no-deps \
+cargo +nightly-2023-05-15 doc --no-deps \
   -p tendermint \
   -p tendermint-config \
   -p tower-abci \
-  -p jmt@0.3.0 \
+  -p jmt \
   -p ark-ff \
   -p ark-serialize \
   -p poseidon377 \
