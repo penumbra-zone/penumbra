@@ -110,6 +110,12 @@ pub mod penumbra {
     pub mod client {
         pub mod v1alpha1 {
             include!("gen/penumbra.client.v1alpha1.rs");
+            impl From<Vec<u8>> for key_value_response::Value {
+                fn from(v: Vec<u8>) -> Self {
+                    key_value_response::Value { value: v }
+                }
+            }
+
             include!("gen/penumbra.client.v1alpha1.serde.rs");
 
             pub mod tendermint_proxy {
@@ -131,6 +137,7 @@ pub mod penumbra {
             // Convenience methods for fetching data...
             #[cfg(feature = "rpc")]
             use specific_query_service_client::SpecificQueryServiceClient;
+
             #[cfg(feature = "rpc")]
             impl<C> SpecificQueryServiceClient<C> {
                 /// Get the Rust protobuf type corresponding to a state key.

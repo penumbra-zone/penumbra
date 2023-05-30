@@ -32,11 +32,12 @@ impl IbcCmd {
                         ..Default::default()
                     })
                     .await
-                    .context(format!("Failed to find client {client_id}"))?
+                    .context(format!("Error finding client {client_id}"))?
                     .into_inner()
-                    .value;
+                    .value
+                    .context("Client {client_id} not found")?;
 
-                let client_state = TendermintClientState::decode(value.as_ref())?;
+                let client_state = TendermintClientState::decode(value.value.as_ref())?;
                 let client_state_json = serde_json::to_string_pretty(&client_state)?;
                 println!("{}", client_state_json.to_colored_json_auto()?);
             }
@@ -48,11 +49,12 @@ impl IbcCmd {
                         ..Default::default()
                     })
                     .await
-                    .context(format!("Failed to find connection {connection_id}"))?
+                    .context(format!("error finding {connection_id}"))?
                     .into_inner()
-                    .value;
+                    .value
+                    .context(format!("Connection {connection_id} not found"))?;
 
-                let connection = ConnectionEnd::decode(value.as_ref())?;
+                let connection = ConnectionEnd::decode(value.value.as_ref())?;
                 let connection_json = serde_json::to_string_pretty(&connection)?;
                 println!("{}", connection_json.to_colored_json_auto()?);
             }
@@ -64,11 +66,12 @@ impl IbcCmd {
                         ..Default::default()
                     })
                     .await
-                    .context(format!("Failed to find channel {port}:{channel_id}"))?
+                    .context(format!("Error finding channel: {port}:{channel_id}"))?
                     .into_inner()
-                    .value;
+                    .value
+                    .context(format!("Channel {port}:{channel_id} not found"))?;
 
-                let connection = ChannelEnd::decode(value.as_ref())?;
+                let connection = ChannelEnd::decode(value.value.as_ref())?;
                 let connection_json = serde_json::to_string_pretty(&connection)?;
                 println!("{}", connection_json.to_colored_json_auto()?);
             }

@@ -57,7 +57,11 @@ impl GovernanceCmd {
         match self {
             GovernanceCmd::ListProposals { inactive } => {
                 let proposal_id_list: Vec<u64> = if *inactive {
-                    let next: u64 = client.key_proto(next_proposal_id()).await?;
+                    let next: u64 = client
+                        .key_proto(next_proposal_id())
+                        .await?
+                        .context("no proposal found")?;
+
                     (0..next).collect()
                 } else {
                     let mut unfinished = client
@@ -80,11 +84,17 @@ impl GovernanceCmd {
 
                 let mut writer = stdout();
                 for proposal_id in proposal_id_list {
-                    let proposal: Proposal =
-                        client.key_domain(proposal_definition(proposal_id)).await?;
+                    let proposal: Proposal = client
+                        .key_domain(proposal_definition(proposal_id))
+                        .await?
+                        .context(format!("proposal {} not found", proposal_id))?;
+
                     let proposal_title = proposal.title;
-                    let proposal_state: proposal::State =
-                        client.key_domain(proposal_state(proposal_id)).await?;
+
+                    let proposal_state: proposal::State = client
+                        .key_domain(proposal_state(proposal_id))
+                        .await?
+                        .context(format!("proposal state for {} not found", proposal_id))?;
 
                     writeln!(
                         writer,
@@ -94,20 +104,40 @@ impl GovernanceCmd {
             }
             GovernanceCmd::Proposal { proposal_id, query } => match query {
                 Definition => {
-                    let proposal: Proposal =
-                        client.key_domain(proposal_definition(*proposal_id)).await?;
+                    let proposal: Proposal = client
+                        .key_domain(proposal_definition(*proposal_id))
+                        .await?
+                        .context(format!(
+                            "proposal definition for proposal {} not found",
+                            proposal_id
+                        ))?;
                     toml(&proposal)?;
                 }
                 State => {
-                    let state: proposal::State =
-                        client.key_domain(proposal_state(*proposal_id)).await?;
+                    let state: proposal::State = client
+                        .key_domain(proposal_state(*proposal_id))
+                        .await?
+                        .context(format!(
+                            "proposal state for proposal {} not found",
+                            proposal_id
+                        ))?;
                     json(&state)?;
                 }
                 Period => {
                     let start: u64 = client
                         .key_proto(proposal_voting_start(*proposal_id))
-                        .await?;
-                    let end: u64 = client.key_proto(proposal_voting_end(*proposal_id)).await?;
+                        .await?
+                        .context(format!(
+                            "proposal voting start for proposal {} not found",
+                            proposal_id
+                        ))?;
+                    let end: u64 = client
+                        .key_proto(proposal_voting_end(*proposal_id))
+                        .await?
+                        .context(format!(
+                            "proposal voting end for proposal {} not found",
+                            proposal_id
+                        ))?;
                     let period = json!({
                         "voting_start_block": start,
                         "voting_end_block": end,
@@ -133,7 +163,9 @@ impl GovernanceCmd {
                         let power: u64 = client
                             .key_proto(voting_power_at_proposal_start(*proposal_id, *identity_key))
                             .await
+                            .context("Error looking for validator power")?
                             .context("validator power not found")?;
+
                         validator_votes_and_power.insert(*identity_key, (*vote, power));
                     }
 
