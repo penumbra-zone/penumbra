@@ -7,8 +7,6 @@ title = "The Penumbra Protocol"
 
 [preprocessor.katex]
 
-[output.katex]
-
 [preprocessor.mermaid]
 command = "mdbook-mermaid"
 

@@ -8,8 +8,6 @@ title = "The Penumbra Guide"
 [preprocessor.katex]
 renderers = ["html"]
 
-[output.katex]
-
 [preprocessor.mermaid]
 command = "mdbook-mermaid"
 
