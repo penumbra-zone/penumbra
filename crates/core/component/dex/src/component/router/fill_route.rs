@@ -560,8 +560,6 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             asset_id: self.pairs[constraining_index].end,
         };
 
-        tx.trace.push(Some(exactly_consumed_reserves.amount));
-
         tracing::debug!(
             constraining_index,
             exactly_consumed_reserves = ?exactly_consumed_reserves.amount,
@@ -570,6 +568,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
 
         // Work backwards along the path from the constraining position.
         self.fill_backward(&mut tx, constraining_index, exactly_consumed_reserves);
+        tx.trace.push(Some(exactly_consumed_reserves.amount));
         // Work forwards along the path from the constraining position.
         self.fill_forward(&mut tx, constraining_index + 1, exactly_consumed_reserves);
 
