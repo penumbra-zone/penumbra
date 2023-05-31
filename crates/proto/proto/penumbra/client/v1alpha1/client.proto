@@ -368,7 +368,8 @@ message SimulateTradeRequest {
   }
 
   core.crypto.v1alpha1.Value input = 1;
-  Routing routing = 2;
+  core.crypto.v1alpha1.AssetId output = 2;
+  Routing routing = 3;
 }
 
 message SimulateTradeResponse {

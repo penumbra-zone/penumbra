@@ -473,6 +473,8 @@ pub struct SimulateTradeRequest {
     #[prost(message, optional, tag = "1")]
     pub input: ::core::option::Option<super::super::core::crypto::v1alpha1::Value>,
     #[prost(message, optional, tag = "2")]
+    pub output: ::core::option::Option<super::super::core::crypto::v1alpha1::AssetId>,
+    #[prost(message, optional, tag = "3")]
     pub routing: ::core::option::Option<simulate_trade_request::Routing>,
 }
 /// Nested message and enum types in `SimulateTradeRequest`.
