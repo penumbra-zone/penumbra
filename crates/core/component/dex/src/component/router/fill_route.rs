@@ -271,7 +271,7 @@ impl FrontierTx {
     fn new<S>(frontier: &Frontier<S>) -> FrontierTx {
         FrontierTx {
             new_reserves: vec![None; frontier.positions.len()],
-            trace: vec![],
+            trace: vec![None; frontier.pairs.len() + 1],
         }
     }
 
@@ -526,7 +526,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         let mut tx = FrontierTx::new(&self);
         // We have to manually update the trace here, because fill_forward
         // doesn't handle the input amount, only things that come after it.
-        tx.trace.push(Some(input.amount));
+        tx.trace[0] = Some(input.amount);
         // Now fill forward along the frontier, accumulating changes into the new tx.
         self.fill_forward(&mut tx, 0, input);
 
@@ -568,7 +568,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
 
         // Work backwards along the path from the constraining position.
         self.fill_backward(&mut tx, constraining_index, exactly_consumed_reserves);
-        tx.trace.push(Some(exactly_consumed_reserves.amount));
+        tx.trace[constraining_index] = Some(exactly_consumed_reserves.amount);
         // Work forwards along the path from the constraining position.
         self.fill_forward(&mut tx, constraining_index + 1, exactly_consumed_reserves);
 
@@ -593,7 +593,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             );
 
             tx.new_reserves[i] = Some(new_reserves);
-            tx.trace.push(Some(output.amount));
+            tx.trace[i + 1] = Some(output.amount);
 
             current_value = output;
         }
@@ -604,7 +604,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         tracing::debug!("filling backward along frontier");
         let mut current_value = output;
         for i in (0..=start_index).rev() {
-            tx.trace.insert(0, Some(current_value.amount));
+            tx.trace[i + 1] = Some(current_value.amount);
 
             let (new_reserves, prev_input) = self.positions[i]
                 .phi
@@ -627,6 +627,6 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             current_value = prev_input;
         }
 
-        tx.trace.insert(0, Some(current_value.amount));
+        tx.trace[0] = Some(current_value.amount);
     }
 }
