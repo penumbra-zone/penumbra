@@ -99,14 +99,11 @@ pub trait Arbitrage: StateWrite + Sized {
         cache.apply_to(&mut self_mut);
 
         // Finally, record the arb execution in the state:
-        let traces: im::Vector<Vec<Value>> = self_mut
-            .object_get("trade_traces")
-            .ok_or_else(|| anyhow::anyhow!("missing swap execution in object store2"))?;
         let height = self_mut.get_block_height().await?;
         self_mut.set_arb_execution(
             height,
             SwapExecution {
-                traces: traces.into_iter().collect(),
+                traces: swap_execution.traces,
                 input: Value {
                     asset_id: arb_token,
                     amount: filled_input,
