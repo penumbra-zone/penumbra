@@ -185,16 +185,15 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     // if we didn't fully consume their reserves.
     frontier.save();
 
-    let trace = std::mem::take(&mut frontier.trace);
-    std::mem::drop(frontier);
+    let swap_execution = frontier.to_swap_execution();
 
-    tracing::debug!(?trace, "returning trace of filled route");
+    tracing::debug!(?swap_execution, "returning swap execution of filled route");
 
     // Apply the state transaction now that we've reached the end without errors.
     this.apply();
 
     // cleanup / finalization
-    Ok(SwapExecution::new(trace))
+    Ok(swap_execution)
 }
 
 /// Breaksdown a route into a collection of `DirectedTradingPair`, this is mostly useful
@@ -234,6 +233,40 @@ struct Frontier<S> {
     pub positions_by_price: PositionsByPrice,
     /// A trace of the execution along the route.
     pub trace: Vec<Vec<Value>>,
+}
+
+impl<S> Frontier<S> {
+    /// Create a new `SwapExecution` from the given traces.
+    /// Sets input and output based on trace values.
+    pub fn to_swap_execution(mut self) -> SwapExecution {
+        // Input consists of the sum of the first value of each trace.
+        let input = self
+            .trace
+            .iter()
+            .map(|trace| trace.first().expect("empty trace").amount)
+            .sum::<Amount>();
+        // Output consists of the sum of the last value of each trace.
+        let output = self
+            .trace
+            .iter()
+            .map(|trace| trace.last().expect("empty trace").amount)
+            .sum::<Amount>();
+
+        let in_asset_id = self.pairs.first().expect("empty pairs").start;
+        let out_asset_id = self.pairs.last().expect("empty pairs").end;
+
+        SwapExecution {
+            traces: std::mem::take(&mut self.trace),
+            input: Value {
+                amount: input,
+                asset_id: in_asset_id,
+            },
+            output: Value {
+                amount: output,
+                asset_id: out_asset_id,
+            },
+        }
+    }
 }
 
 struct FrontierTx {
