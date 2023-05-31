@@ -467,6 +467,46 @@ pub struct ProposalRateDataResponse {
     #[prost(message, optional, tag = "1")]
     pub rate_data: ::core::option::Option<super::super::core::stake::v1alpha1::RateData>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SimulateTradeRequest {
+    #[prost(message, optional, tag = "1")]
+    pub input: ::core::option::Option<super::super::core::crypto::v1alpha1::Value>,
+    #[prost(message, optional, tag = "2")]
+    pub routing: ::core::option::Option<simulate_trade_request::Routing>,
+}
+/// Nested message and enum types in `SimulateTradeRequest`.
+pub mod simulate_trade_request {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Routing {
+        #[prost(oneof = "routing::Setting", tags = "1, 2")]
+        pub setting: ::core::option::Option<routing::Setting>,
+    }
+    /// Nested message and enum types in `Routing`.
+    pub mod routing {
+        #[allow(clippy::derive_partial_eq_without_eq)]
+        #[derive(Clone, PartialEq, ::prost::Message)]
+        pub struct SingleHop {}
+        #[allow(clippy::derive_partial_eq_without_eq)]
+        #[derive(Clone, PartialEq, ::prost::Message)]
+        pub struct Default {}
+        #[allow(clippy::derive_partial_eq_without_eq)]
+        #[derive(Clone, PartialEq, ::prost::Oneof)]
+        pub enum Setting {
+            #[prost(message, tag = "1")]
+            Default(Default),
+            #[prost(message, tag = "2")]
+            SingleHop(SingleHop),
+        }
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SimulateTradeResponse {
+    #[prost(message, optional, tag = "1")]
+    pub output: ::core::option::Option<super::super::core::dex::v1alpha1::SwapExecution>,
+}
 /// Performs a key-value query, either by key or by key hash.
 ///
 /// Proofs are only supported by key.
@@ -1317,6 +1357,26 @@ pub mod specific_query_service_client {
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
+        /// Simulate routing and trade execution.
+        pub async fn simulate_trade(
+            &mut self,
+            request: impl tonic::IntoRequest<super::SimulateTradeRequest>,
+        ) -> Result<tonic::Response<super::SimulateTradeResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.client.v1alpha1.SpecificQueryService/SimulateTrade",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
         /// General-purpose key-value state query API, that can be used to query
         /// arbitrary keys in the JMT storage.
         pub async fn key_value(
@@ -2025,6 +2085,11 @@ pub mod specific_query_service_server {
             &self,
             request: tonic::Request<super::ProposalRateDataRequest>,
         ) -> Result<tonic::Response<Self::ProposalRateDataStream>, tonic::Status>;
+        /// Simulate routing and trade execution.
+        async fn simulate_trade(
+            &self,
+            request: tonic::Request<super::SimulateTradeRequest>,
+        ) -> Result<tonic::Response<super::SimulateTradeResponse>, tonic::Status>;
         /// General-purpose key-value state query API, that can be used to query
         /// arbitrary keys in the JMT storage.
         async fn key_value(
@@ -2799,6 +2864,46 @@ pub mod specific_query_service_server {
                                 send_compression_encodings,
                             );
                         let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.client.v1alpha1.SpecificQueryService/SimulateTrade" => {
+                    #[allow(non_camel_case_types)]
+                    struct SimulateTradeSvc<T: SpecificQueryService>(pub Arc<T>);
+                    impl<
+                        T: SpecificQueryService,
+                    > tonic::server::UnaryService<super::SimulateTradeRequest>
+                    for SimulateTradeSvc<T> {
+                        type Response = super::SimulateTradeResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::SimulateTradeRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).simulate_trade(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = SimulateTradeSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
