@@ -4924,6 +4924,457 @@ impl<'de> serde::Deserialize<'de> for ProposalRateDataResponse {
         deserializer.deserialize_struct("penumbra.client.v1alpha1.ProposalRateDataResponse", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for SimulateTradeRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.input.is_some() {
+            len += 1;
+        }
+        if self.routing.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.SimulateTradeRequest", len)?;
+        if let Some(v) = self.input.as_ref() {
+            struct_ser.serialize_field("input", v)?;
+        }
+        if let Some(v) = self.routing.as_ref() {
+            struct_ser.serialize_field("routing", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for SimulateTradeRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "input",
+            "routing",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Input,
+            Routing,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "input" => Ok(GeneratedField::Input),
+                            "routing" => Ok(GeneratedField::Routing),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = SimulateTradeRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.client.v1alpha1.SimulateTradeRequest")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<SimulateTradeRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut input__ = None;
+                let mut routing__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Input => {
+                            if input__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("input"));
+                            }
+                            input__ = map.next_value()?;
+                        }
+                        GeneratedField::Routing => {
+                            if routing__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("routing"));
+                            }
+                            routing__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(SimulateTradeRequest {
+                    input: input__,
+                    routing: routing__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.client.v1alpha1.SimulateTradeRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for simulate_trade_request::Routing {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.setting.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.SimulateTradeRequest.Routing", len)?;
+        if let Some(v) = self.setting.as_ref() {
+            match v {
+                simulate_trade_request::routing::Setting::Default(v) => {
+                    struct_ser.serialize_field("default", v)?;
+                }
+                simulate_trade_request::routing::Setting::SingleHop(v) => {
+                    struct_ser.serialize_field("singleHop", v)?;
+                }
+            }
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for simulate_trade_request::Routing {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "default",
+            "single_hop",
+            "singleHop",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Default,
+            SingleHop,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "default" => Ok(GeneratedField::Default),
+                            "singleHop" | "single_hop" => Ok(GeneratedField::SingleHop),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = simulate_trade_request::Routing;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.client.v1alpha1.SimulateTradeRequest.Routing")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<simulate_trade_request::Routing, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut setting__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Default => {
+                            if setting__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("default"));
+                            }
+                            setting__ = map.next_value::<::std::option::Option<_>>()?.map(simulate_trade_request::routing::Setting::Default)
+;
+                        }
+                        GeneratedField::SingleHop => {
+                            if setting__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("singleHop"));
+                            }
+                            setting__ = map.next_value::<::std::option::Option<_>>()?.map(simulate_trade_request::routing::Setting::SingleHop)
+;
+                        }
+                    }
+                }
+                Ok(simulate_trade_request::Routing {
+                    setting: setting__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.client.v1alpha1.SimulateTradeRequest.Routing", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for simulate_trade_request::routing::Default {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let len = 0;
+        let struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.SimulateTradeRequest.Routing.Default", len)?;
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for simulate_trade_request::routing::Default {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                            Err(serde::de::Error::unknown_field(value, FIELDS))
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = simulate_trade_request::routing::Default;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.client.v1alpha1.SimulateTradeRequest.Routing.Default")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<simulate_trade_request::routing::Default, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                while map.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                }
+                Ok(simulate_trade_request::routing::Default {
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.client.v1alpha1.SimulateTradeRequest.Routing.Default", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for simulate_trade_request::routing::SingleHop {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let len = 0;
+        let struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.SimulateTradeRequest.Routing.SingleHop", len)?;
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for simulate_trade_request::routing::SingleHop {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                            Err(serde::de::Error::unknown_field(value, FIELDS))
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = simulate_trade_request::routing::SingleHop;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.client.v1alpha1.SimulateTradeRequest.Routing.SingleHop")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<simulate_trade_request::routing::SingleHop, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                while map.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                }
+                Ok(simulate_trade_request::routing::SingleHop {
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.client.v1alpha1.SimulateTradeRequest.Routing.SingleHop", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for SimulateTradeResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.output.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.SimulateTradeResponse", len)?;
+        if let Some(v) = self.output.as_ref() {
+            struct_ser.serialize_field("output", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for SimulateTradeResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "output",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Output,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "output" => Ok(GeneratedField::Output),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = SimulateTradeResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.client.v1alpha1.SimulateTradeResponse")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<SimulateTradeResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut output__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Output => {
+                            if output__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("output"));
+                            }
+                            output__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(SimulateTradeResponse {
+                    output: output__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.client.v1alpha1.SimulateTradeResponse", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for SpreadRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

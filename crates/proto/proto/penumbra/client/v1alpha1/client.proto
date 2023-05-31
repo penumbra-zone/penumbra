@@ -130,6 +130,9 @@ service SpecificQueryService {
   rpc ProposalInfo(ProposalInfoRequest) returns (ProposalInfoResponse);
   rpc ProposalRateData(ProposalRateDataRequest) returns (stream ProposalRateDataResponse);
 
+  // Simulate routing and trade execution.
+  rpc SimulateTrade(SimulateTradeRequest) returns (SimulateTradeResponse);
+
   // General-purpose key-value state query API, that can be used to query
   // arbitrary keys in the JMT storage.
   rpc KeyValue(KeyValueRequest) returns (KeyValueResponse);
@@ -351,6 +354,25 @@ message ProposalRateDataRequest {
 // The rate data for a single validator.
 message ProposalRateDataResponse {
   core.stake.v1alpha1.RateData rate_data = 1;
+}
+
+message SimulateTradeRequest {
+  message Routing {
+    oneof setting {
+      Default default = 1;
+      SingleHop single_hop = 2;
+    }
+
+    message SingleHop {}
+    message Default {}
+  }
+
+  core.crypto.v1alpha1.Value input = 1;
+  Routing routing = 2;
+}
+
+message SimulateTradeResponse {
+  core.dex.v1alpha1.SwapExecution output = 1;
 }
 
 // Performs a key-value query, either by key or by key hash.
