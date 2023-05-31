@@ -561,7 +561,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     let swap_execution = state
         .swap_execution(
             0,
-            DirectedTradingPair::new(trading_pair.asset_1, trading_pair.asset_2),
+            DirectedTradingPair::new(trading_pair.asset_2, trading_pair.asset_1),
         )
         .await?
         .unwrap();
