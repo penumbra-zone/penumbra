@@ -245,7 +245,7 @@ impl FrontierTx {
     fn new<S>(frontier: &Frontier<S>) -> FrontierTx {
         FrontierTx {
             new_reserves: vec![None; frontier.positions.len()],
-            trace: vec![None; frontier.trace.len()],
+            trace: vec![],
         }
     }
 
@@ -533,6 +533,8 @@ impl<S: StateRead + StateWrite> Frontier<S> {
                 .expect("asset ids should match"),
             asset_id: self.pairs[constraining_index].end,
         };
+
+        tx.trace.push(Some(exactly_consumed_reserves.amount));
 
         tracing::debug!(
             constraining_index,
