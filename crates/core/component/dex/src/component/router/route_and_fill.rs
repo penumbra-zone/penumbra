@@ -35,10 +35,6 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
 
         tracing::debug!(?delta_1, ?delta_2, ?trading_pair);
 
-        // Since we store a single swap execution struct for the canonical trading pair,
-        // representing swaps in both directions, let's set that up now:
-        let traces: im::Vector<Vec<Value>> = im::Vector::new();
-
         // Depending on the contents of the batch swap inputs, we might need to path search in either direction.
         let swap_execution_1_for_2 = if delta_1.value() > 0 {
             // There is input for asset 1, so we need to route for asset 1 -> asset 2
@@ -74,28 +70,30 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             None
         };
 
+        let (lambda_2, unfilled_1) = match &swap_execution_1_for_2 {
+            Some(swap_execution) => (
+                swap_execution.output.amount,
+                delta_1 - swap_execution.input.amount,
+            ),
+            None => (0u64.into(), delta_1),
+        };
+        let (lambda_1, unfilled_2) = match &swap_execution_2_for_1 {
+            Some(swap_execution) => (
+                swap_execution.output.amount,
+                delta_2 - swap_execution.input.amount,
+            ),
+            None => (0u64.into(), delta_2),
+        };
         let output_data = BatchSwapOutputData {
             height: block_height,
             epoch_height,
             trading_pair,
             delta_1,
             delta_2,
-            lambda_1: match swap_execution_2_for_1 {
-                Some(swap_execution) => swap_execution.output.amount,
-                None => 0u64.into(),
-            },
-            lambda_2: match swap_execution_1_for_2 {
-                Some(swap_execution) => swap_execution.output.amount,
-                None => 0u64.into(),
-            },
-            unfilled_1: match swap_execution_1_for_2 {
-                Some(swap_execution) => delta_1 - swap_execution.input.amount,
-                None => delta_1,
-            },
-            unfilled_2: match swap_execution_2_for_1 {
-                Some(swap_execution) => delta_2 - swap_execution.input.amount,
-                None => delta_2,
-            },
+            lambda_1,
+            lambda_2,
+            unfilled_1,
+            unfilled_2,
         };
 
         // TODO: how does this work when there are trades in both directions?
