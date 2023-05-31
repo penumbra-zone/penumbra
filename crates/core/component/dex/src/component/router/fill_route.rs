@@ -37,8 +37,6 @@ pub trait FillRoute: StateWrite + Sized {
     /// switch back and forth between them without making progress. Ensuring we
     /// always consume at least one position prevents this possibility.
     ///
-    /// If this behavior is not desired, use `fill_route_exact` instead.
-    ///
     /// # Invariants
     ///
     /// It is an error to call `fill_route` on a route that does not have at least one position for each hop.
@@ -50,28 +48,6 @@ pub trait FillRoute: StateWrite + Sized {
         spill_price: Option<U128x128>,
     ) -> Result<SwapExecution> {
         fill_route_inner(self, input, hops, spill_price, true).await
-    }
-
-    /// Like `fill_route`, but with exact spill price checks at the cost of
-    /// potentially not making progress.
-    ///
-    /// Use `fill_route` instead unless you have a specific reason to use this
-    /// method.
-    ///
-    /// # Invariants
-    ///
-    /// It is an error to call `fill_route_exact` on a route that does not have
-    /// at least one position for each hop.
-    #[instrument(skip(self, input, hops, spill_price))]
-    async fn fill_route_exact(
-        &mut self,
-        input: Value,
-        hops: &[asset::Id],
-        spill_price: U128x128,
-    ) -> Result<(Value, Value)> {
-        let trace = fill_route_inner(self, input, hops, Some(spill_price), false).await?;
-
-        todo!()
     }
 }
 
@@ -524,7 +500,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         let mut tx = FrontierTx::new(&self);
         // We have to manually update the trace here, because fill_forward
         // doesn't handle the input amount, only things that come after it.
-        tx.trace[0] = Some(input.amount);
+        tx.trace.push(Some(input.amount));
         // Now fill forward along the frontier, accumulating changes into the new tx.
         self.fill_forward(&mut tx, 0, input);
 
@@ -590,7 +566,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             );
 
             tx.new_reserves[i] = Some(new_reserves);
-            tx.trace[i + 1] = Some(output.amount);
+            tx.trace.push(Some(output.amount));
 
             current_value = output;
         }
@@ -601,7 +577,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         tracing::debug!("filling backward along frontier");
         let mut current_value = output;
         for i in (0..=start_index).rev() {
-            tx.trace[i + 1] = Some(current_value.amount);
+            tx.trace.push(Some(current_value.amount));
 
             let (new_reserves, prev_input) = self.positions[i]
                 .phi
