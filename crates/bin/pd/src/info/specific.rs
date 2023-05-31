@@ -33,7 +33,9 @@ use penumbra_stake::StateReadExt as _;
 use penumbra_proto::DomainType;
 use penumbra_storage::StateDelta;
 use penumbra_storage::StateRead;
+use proto::client::v1alpha1::simulate_trade_request::routing;
 use proto::client::v1alpha1::simulate_trade_request::routing::Setting;
+use proto::client::v1alpha1::simulate_trade_request::Routing;
 use proto::client::v1alpha1::ArbExecutionRequest;
 use proto::client::v1alpha1::ArbExecutionResponse;
 use proto::client::v1alpha1::ArbExecutionsRequest;
@@ -103,11 +105,17 @@ impl SpecificQueryService for Info {
         request: tonic::Request<SimulateTradeRequest>,
     ) -> Result<tonic::Response<SimulateTradeResponse>, Status> {
         let request = request.into_inner();
-        let routing_strategy = request
-            .routing
-            .ok_or_else(|| tonic::Status::invalid_argument("missing routing parameter"))?
-            .setting
-            .ok_or_else(|| tonic::Status::invalid_argument("missing routing parameter"))?;
+        let routing_stategy = match request.routing {
+            None => Routing {
+                setting: Some(Setting::Default(routing::Default {})),
+            },
+            Some(routing) => routing,
+        };
+
+        let routing_strategy = match routing_stategy.setting {
+            None => Setting::Default(routing::Default {}),
+            Some(setting) => setting,
+        };
 
         let input: penumbra_crypto::Value = request
             .input
