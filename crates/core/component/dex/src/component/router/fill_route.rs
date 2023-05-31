@@ -604,7 +604,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         tracing::debug!("filling backward along frontier");
         let mut current_value = output;
         for i in (0..=start_index).rev() {
-            tx.trace.push(Some(current_value.amount));
+            tx.trace.insert(0, Some(current_value.amount));
 
             let (new_reserves, prev_input) = self.positions[i]
                 .phi
@@ -627,6 +627,6 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             current_value = prev_input;
         }
 
-        tx.trace[0] = Some(current_value.amount);
+        tx.trace.insert(0, Some(current_value.amount));
     }
 }
