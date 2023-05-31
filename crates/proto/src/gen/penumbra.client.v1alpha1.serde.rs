@@ -4935,12 +4935,18 @@ impl serde::Serialize for SimulateTradeRequest {
         if self.input.is_some() {
             len += 1;
         }
+        if self.output.is_some() {
+            len += 1;
+        }
         if self.routing.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.client.v1alpha1.SimulateTradeRequest", len)?;
         if let Some(v) = self.input.as_ref() {
             struct_ser.serialize_field("input", v)?;
+        }
+        if let Some(v) = self.output.as_ref() {
+            struct_ser.serialize_field("output", v)?;
         }
         if let Some(v) = self.routing.as_ref() {
             struct_ser.serialize_field("routing", v)?;
@@ -4956,12 +4962,14 @@ impl<'de> serde::Deserialize<'de> for SimulateTradeRequest {
     {
         const FIELDS: &[&str] = &[
             "input",
+            "output",
             "routing",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Input,
+            Output,
             Routing,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -4985,6 +4993,7 @@ impl<'de> serde::Deserialize<'de> for SimulateTradeRequest {
                     {
                         match value {
                             "input" => Ok(GeneratedField::Input),
+                            "output" => Ok(GeneratedField::Output),
                             "routing" => Ok(GeneratedField::Routing),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -5006,6 +5015,7 @@ impl<'de> serde::Deserialize<'de> for SimulateTradeRequest {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut input__ = None;
+                let mut output__ = None;
                 let mut routing__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
@@ -5014,6 +5024,12 @@ impl<'de> serde::Deserialize<'de> for SimulateTradeRequest {
                                 return Err(serde::de::Error::duplicate_field("input"));
                             }
                             input__ = map.next_value()?;
+                        }
+                        GeneratedField::Output => {
+                            if output__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("output"));
+                            }
+                            output__ = map.next_value()?;
                         }
                         GeneratedField::Routing => {
                             if routing__.is_some() {
@@ -5025,6 +5041,7 @@ impl<'de> serde::Deserialize<'de> for SimulateTradeRequest {
                 }
                 Ok(SimulateTradeRequest {
                     input: input__,
+                    output: output__,
                     routing: routing__,
                 })
             }

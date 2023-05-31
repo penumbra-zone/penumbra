@@ -1,4 +1,5 @@
 use std::pin::Pin;
+use std::sync::Arc;
 
 use async_stream::try_stream;
 use futures::StreamExt;
@@ -7,6 +8,8 @@ use penumbra_app::governance::StateReadExt as _;
 use penumbra_chain::component::AppHashRead;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_crypto::asset::{self};
+use penumbra_dex::component::router::RouteAndFill;
+use penumbra_dex::component::router::RoutingParams;
 use penumbra_dex::{
     component::{PositionRead, StateReadExt},
     lp::{position, position::Position},
@@ -28,7 +31,9 @@ use penumbra_stake::rate::RateData;
 use penumbra_stake::StateReadExt as _;
 
 use penumbra_proto::DomainType;
+use penumbra_storage::StateDelta;
 use penumbra_storage::StateRead;
+use proto::client::v1alpha1::simulate_trade_request::routing::Setting;
 use proto::client::v1alpha1::ArbExecutionRequest;
 use proto::client::v1alpha1::ArbExecutionResponse;
 use proto::client::v1alpha1::ArbExecutionsRequest;
@@ -47,6 +52,8 @@ use proto::client::v1alpha1::NextValidatorRateRequest;
 use proto::client::v1alpha1::NextValidatorRateResponse;
 use proto::client::v1alpha1::PrefixValueRequest;
 use proto::client::v1alpha1::PrefixValueResponse;
+use proto::client::v1alpha1::SimulateTradeRequest;
+use proto::client::v1alpha1::SimulateTradeResponse;
 use proto::client::v1alpha1::SpreadRequest;
 use proto::client::v1alpha1::SpreadResponse;
 use proto::client::v1alpha1::SwapExecutionRequest;
@@ -90,6 +97,51 @@ impl SpecificQueryService for Info {
         Pin<Box<dyn futures::Stream<Item = Result<ArbExecutionsResponse, tonic::Status>> + Send>>;
     type SwapExecutionsStream =
         Pin<Box<dyn futures::Stream<Item = Result<SwapExecutionsResponse, tonic::Status>> + Send>>;
+
+    async fn simulate_trade(
+        &self,
+        request: tonic::Request<SimulateTradeRequest>,
+    ) -> Result<tonic::Response<SimulateTradeResponse>, Status> {
+        let request = request.into_inner();
+        let routing_strategy = request
+            .routing
+            .ok_or_else(|| tonic::Status::invalid_argument("missing routing parameter"))?
+            .setting
+            .ok_or_else(|| tonic::Status::invalid_argument("missing routing parameter"))?;
+
+        let input: penumbra_crypto::Value = request
+            .input
+            .ok_or_else(|| tonic::Status::invalid_argument("missing input parameter"))?
+            .try_into()
+            .map_err(|e| {
+                tonic::Status::invalid_argument(format!("error parsing input: {:#}", e))
+            })?;
+
+        let output_id = request
+            .output
+            .ok_or_else(|| tonic::Status::invalid_argument("missing output id parameter"))?
+            .try_into()
+            .map_err(|e| {
+                tonic::Status::invalid_argument(format!("error parsing output id: {:#}", e))
+            })?;
+
+        let routing_params = match routing_strategy {
+            Setting::Default(_) => RoutingParams::default(),
+            Setting::SingleHop(_) => RoutingParams {
+                max_hops: 1,
+                ..RoutingParams::default()
+            },
+        };
+
+        let state = self.storage.latest_snapshot();
+        let mut state_tx = Arc::new(StateDelta::new(state));
+        let (output, unfilled) = state_tx
+            .route_and_fill(input.asset_id, output_id, input.amount, routing_params)
+            .await
+            .map_err(|e| tonic::Status::internal(format!("error simulating trade: {:#}", e)))?;
+
+        todo!()
+    }
 
     async fn spread(
         &self,
