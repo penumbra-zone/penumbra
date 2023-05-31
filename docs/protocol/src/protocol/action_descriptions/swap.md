@@ -7,9 +7,9 @@ Each swap contains a SwapBody and a zk-SNARK swap proof.
 The swap proof demonstrates the properties enumerated below for the private witnesses known by the prover:
 
 * Swap plaintext which consists of:
-  * Trading pair, which consists of two asset IDs $G_1, G_2 \isin \mathbb G$
+  * Trading pair, which consists of two asset IDs  $ID_1, ID_2 \isin \mathbb F_q$ with asset-specific generators $G_1, G_2 \isin \mathbb G$
   * Fee value which consists of an amount $v_f$ interpreted as an $\mathbb F_q$ and
- an asset ID $G_{v_f} \isin \mathbb G$
+ an asset ID $ID_{v_f} \isin \mathbb F_q$ with asset-specific generator $G_{v_f} \isin \mathbb G$
   * Input amount of the first asset $v_1$ interpreted as an $\mathbb F_q$
   * Input amount of the second asset $v_2$ interpreted as an $\mathbb F_q$
   * `Rseed`, interpreted as an $\mathbb F_q$
@@ -28,9 +28,9 @@ And the corresponding public inputs:
 
 The zk-SNARK certifies that the public input swap commitment $scm$ was derived as:
 
-$scm_{inner} = hash_4(ds, (G_1, G_2, v_1, v_2))$
+$scm_{inner} = hash_4(ds, (ID_1, ID_2, v_1, v_2))$
 
-$scm = hash_7(ds, (rseed, v_f, G_{v_f}, B_d, pk_d, \mathsf{ck_d}, scm_{inner})$.
+$scm = hash_7(ds, (rseed, v_f, ID_{v_f}, B_d, pk_d, \mathsf{ck_d}, scm_{inner})$.
 
 using the above witnessed values and where `ds` is a constant domain separator:
 

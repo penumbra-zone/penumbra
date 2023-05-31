@@ -57,7 +57,7 @@
   - [Liquidity Compensation](./zswap/liquidity_compensation.md)
   - [Transaction Actions](./dex/actions.md)
     - [`Swap`](./protocol/action_descriptions/swap.md)
-    - [`SwapClaim`](./protocol/action_descriptions/swap.md)
+    - [`SwapClaim`](./protocol/action_descriptions/swap_claim.md)
     - [`Position` Actions](./dex/actions/position.md)
 - [Staking and Delegation](./stake.md)
   - [Staking Tokens](./stake/tokens.md)
