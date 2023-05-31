@@ -346,10 +346,10 @@ impl<S: StateRead + StateWrite> Frontier<S> {
     fn apply(&mut self, changes: FrontierTx) -> (Amount, Amount) {
         let mut trace: Vec<Value> = vec![];
 
-        trace[0] = Value {
+        trace.push(Value {
             amount: changes.trace[0].expect("all trace amounts must be set when applying changes"),
             asset_id: self.pairs[0].start,
-        };
+        });
         for (i, new_reserves) in changes.new_reserves.into_iter().enumerate() {
             let new_reserves =
                 new_reserves.expect("all new reserves must be set when applying changes");
@@ -357,10 +357,10 @@ impl<S: StateRead + StateWrite> Frontier<S> {
                 changes.trace[i + 1].expect("all trace amounts must be set when applying changes");
             self.positions[i].reserves = new_reserves;
             // Pull the asset ID from the pairs.
-            trace[i + 1] = Value {
+            trace.push(Value {
                 amount,
                 asset_id: self.pairs[i].end,
-            };
+            });
         }
 
         // Add the new trace
