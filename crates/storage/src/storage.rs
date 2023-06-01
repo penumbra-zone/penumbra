@@ -51,13 +51,19 @@ impl Storage {
 
                     /*
                        RocksDB columns:
-                       * jmt: maps `jmt::NodeKey` to `jmt::Node`, persists the internal
+                       --> jmt: maps `storage::DbNodeKey` to `jmt::Node`, persists the internal
                                structure of the JMT.
-                       * nonconsensus: maps arbitrary keys to arbitrary values, persists
+                         Note: we need to use a newtype wrapper around `NodeKey` here, because
+                         we want a lexicographical ordering that maps to ascending jmt::Version.
+
+                       --> nonconsensus: maps arbitrary keys to arbitrary values, persists
                                        the nonconsensus state.
-                       * jmt_keys: index JMT keys (i.e. keyhash preimages).
-                       * jmt_keys_by_keyhash: index JMT keys by their hash.
-                       * jmt_values: maps KeyHash || BE(version) to an `Option<Vec<u8>>`
+
+                       --> jmt_keys: index JMT keys (i.e. keyhash preimages).
+
+                       --> jmt_keys_by_keyhash: index JMT keys by their hash.
+
+                       --> jmt_values: maps KeyHash || BE(version) to an `Option<Vec<u8>>`
                     */
 
                     let db = Arc::new(DB::open_cf(
@@ -258,7 +264,7 @@ impl TreeWriter for Inner {
 
         for (node_key, node) in node_batch.nodes() {
             let db_node_key = DbNodeKey::from(node_key.clone());
-            let db_node_key_bytes = db_node_key.encode();
+            let db_node_key_bytes = db_node_key.encode()?;
             let value_bytes = &node.try_to_vec()?;
             tracing::trace!(?db_node_key_bytes, value_bytes = ?hex::encode(value_bytes));
             self.db.put_cf(jmt_cf, db_node_key_bytes, value_bytes)?;
@@ -289,7 +295,7 @@ fn get_rightmost_leaf(db: &DB) -> Result<Option<(NodeKey, LeafNode)>> {
     iter.seek_to_last();
 
     if iter.valid() {
-        let node_key = DbNodeKey::decode(iter.key().unwrap()).into_inner();
+        let node_key = DbNodeKey::decode(iter.key().unwrap())?.into_inner();
         let node = Node::try_from_slice(iter.value().unwrap())?;
 
         if let Node::Leaf(leaf_node) = node {
@@ -359,18 +365,18 @@ impl DbNodeKey {
         self.0
     }
 
-    pub fn encode(&self) -> Vec<u8> {
+    pub fn encode(&self) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
         bytes.extend_from_slice(&self.0.version().to_be_bytes()); // encode version as big-endian
-        let rest = borsh::BorshSerialize::try_to_vec(&self.0).unwrap();
+        let rest = borsh::BorshSerialize::try_to_vec(&self.0)?;
         bytes.extend_from_slice(&rest);
-        bytes
+        Ok(bytes)
     }
 
-    pub fn decode(bytes: impl AsRef<[u8]>) -> Self {
+    pub fn decode(bytes: impl AsRef<[u8]>) -> Result<Self> {
         // Ignore the bytes that encode the version
         let node_key_slice = bytes.as_ref()[8..].to_vec();
-        let node_key = borsh::BorshDeserialize::try_from_slice(&node_key_slice).unwrap();
-        DbNodeKey(node_key)
+        let node_key = borsh::BorshDeserialize::try_from_slice(&node_key_slice)?;
+        Ok(DbNodeKey(node_key))
     }
 }
