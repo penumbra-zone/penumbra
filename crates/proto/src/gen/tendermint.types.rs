@@ -56,7 +56,7 @@ pub struct BlockId {
     #[prost(message, optional, tag = "2")]
     pub part_set_header: ::core::option::Option<PartSetHeader>,
 }
-/// Header defines the structure of a Tendermint block header.
+/// Header defines the structure of a block header.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Header {

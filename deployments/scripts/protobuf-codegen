@@ -1,0 +1,30 @@
+#!/bin/bash
+# Generate code for Rust & Go from proto definitions.
+
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+
+echo "Pulling proto dependencies from BSR..."
+pushd "${repo_root}/proto/"
+# Purge the vendor dir, to ensure that the codegen is complete:
+# if upstream removed files, we want them removed here, too.
+rm -rf rust-vendored/
+mkdir rust-vendored
+# Make sure the lockfile is up to date.
+buf mod update penumbra
+buf export penumbra --output rust-vendored/
+# Remove the re-exported Penumbra proto defs, since we version control
+# those directly in this repo, and don't need to duplicate them as output.
+rm -rf rust-vendored/penumbra/
+
+echo "Generating golang code..."
+buf generate
+popd
+
+echo "Generating rust code..."
+pushd "${repo_root}/tools/proto-compiler"
+cargo run
+popd
+
+echo "Finished! Consider running a 'cargo check --release' to confirm builds still work."
