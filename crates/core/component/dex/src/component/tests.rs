@@ -171,7 +171,7 @@ async fn single_limit_order() -> anyhow::Result<()> {
         .fill_route(delta_gn, &route_to_gm, None)
         .await?;
 
-    let unfilled = delta_gm
+    let unfilled = delta_gn
         .amount
         .checked_sub(&execution.input.amount)
         .unwrap();
