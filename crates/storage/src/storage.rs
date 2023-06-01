@@ -247,7 +247,7 @@ impl Storage {
 
 impl TreeWriter for Inner {
     /// Writes a [`NodeBatch`] into storage which includes the JMT
-    /// nodes (`NodeKey` -> `Node`) and the JMT values,
+    /// nodes (`DbNodeKey` -> `Node`) and the JMT values,
     /// (`VersionedKeyHash` -> `Option<Vec<u8>>`).
     fn write_node_batch(&self, node_batch: &NodeBatch) -> Result<()> {
         let node_batch = node_batch.clone();
@@ -257,10 +257,11 @@ impl TreeWriter for Inner {
             .expect("jmt column family not found");
 
         for (node_key, node) in node_batch.nodes() {
-            let key_bytes = &node_key.try_to_vec()?;
+            let db_node_key = DbNodeKey::from(node_key.clone());
+            let db_node_key_bytes = db_node_key.encode();
             let value_bytes = &node.try_to_vec()?;
-            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));
-            self.db.put_cf(jmt_cf, key_bytes, value_bytes)?;
+            tracing::trace!(?db_node_key_bytes, value_bytes = ?hex::encode(value_bytes));
+            self.db.put_cf(jmt_cf, db_node_key_bytes, value_bytes)?;
         }
         let jmt_values_cf = self
             .db
@@ -288,7 +289,7 @@ fn get_rightmost_leaf(db: &DB) -> Result<Option<(NodeKey, LeafNode)>> {
     iter.seek_to_last();
 
     if iter.valid() {
-        let node_key = NodeKey::try_from_slice(iter.key().unwrap())?;
+        let node_key = DbNodeKey::decode(iter.key().unwrap()).into_inner();
         let node = Node::try_from_slice(iter.value().unwrap())?;
 
         if let Node::Leaf(leaf_node) = node {
@@ -342,5 +343,34 @@ impl VersionedKeyHash {
 
             Ok(VersionedKeyHash { version, key_hash })
         }
+    }
+}
+
+/// An ordered node key is a node key that is encoded in a way that
+/// preserves the order of the node keys in the database.
+pub struct DbNodeKey(NodeKey);
+
+impl DbNodeKey {
+    pub fn from(node_key: NodeKey) -> Self {
+        DbNodeKey(node_key)
+    }
+
+    pub fn into_inner(self) -> NodeKey {
+        self.0
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&self.0.version().to_be_bytes()); // encode version as big-endian
+        let rest = borsh::BorshSerialize::try_to_vec(&self.0).unwrap();
+        bytes.extend_from_slice(&rest);
+        bytes
+    }
+
+    pub fn decode(bytes: impl AsRef<[u8]>) -> Self {
+        // Ignore the bytes that encode the version
+        let node_key_slice = bytes.as_ref()[8..].to_vec();
+        let node_key = borsh::BorshDeserialize::try_from_slice(&node_key_slice).unwrap();
+        DbNodeKey(node_key)
     }
 }
