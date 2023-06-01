@@ -10,16 +10,17 @@ jobs:
         with:
           buf_api_token: ${{ secrets.BUF_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          input: 'crates/proto'
+          input: 'proto'
+
       - uses: bufbuild/buf-lint-action@v1
         with:
-          input: 'crates/proto'
+          input: 'proto'
           buf_token: ${{ secrets.BUF_TOKEN }}
 
       - name: Check for module path changes
         shell: bash
         run: |
-          cd crates/proto/proto
+          cd proto/penumbra
           buf mod update
           s="$(git status --porcelain)"
           if [[ -n "$s" ]]; then
@@ -33,7 +34,7 @@ jobs:
       - name: Check for breaking changes
         uses: bufbuild/buf-breaking-action@v1
         with:
-          input: 'crates/proto'
+          input: 'proto'
           # The 'main' branch of the GitHub repository that defines the module.
           against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=crates/proto'
 
@@ -44,12 +45,20 @@ jobs:
     steps:
       - name: Checkout the source code
         uses: actions/checkout@v2
+        with:
+          lfs: true
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: false
+
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          buf_api_token: ${{ secrets.BUF_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          input: 'proto'
 
       - name: Install protobuf compiler
         shell: bash
@@ -68,11 +77,7 @@ jobs:
       - name: Compile protobuf specs into rust src files
         shell: bash
         run: |
-          cd tools/proto-compiler
-          cargo run
-          cd ../..
-          # Ignore changes to the unstable proto_descriptor output
-          git checkout -- crates/proto/src/gen/proto_descriptor.bin
+          ./deployments/scripts/protobuf-codegen
           s="$(git status --porcelain)"
           if [[ -n "$s" ]]; then
               echo "ERROR: protobuf files must be regenerated and committed:"

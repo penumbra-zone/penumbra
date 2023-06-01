@@ -4,8 +4,9 @@ The Penumbra project dynamically generates code for interfacing
 with [gRPC]. The following locations within the repository
 are relevant:
 
-  * `proto/proto/penumbra/**/*.proto`, the developer-authored spec files
-  * `proto/src/gen/*.rs`, the generated Rust code files
+  * `proto/penumbra/**/*.proto`, the developer-authored spec files
+  * `crates/proto/src/gen/*.rs`, the generated Rust code files
+  * `proto/go/**/*.pb.go`, the generated Go code files
   * `tools/proto-compiler/`, the build logic for generated the Rust code files
 
 We use [buf] to auto-publish the protobuf schemas at
@@ -35,18 +36,15 @@ After installing, run `buf --version` and confirm you're running at least
 
 ## Building protos
 
-Switch to the [proto-compiler] directory and run the tool:
+From the top-level of the git repository:
 
 ```shell
-cd tools/proto-compiler
-cargo run
+./deployments/scripts/protobuf-codegen
 ```
 
 Then run `git status` to determine whether any changes were made.
 The build process is deterministic, so regenerating multiple times
 from the same source files should not change the output.
-A possible exception to this rule is if `prost` makes a superficial
-change to the output that isn't substantive.
 
 If the generated output would change in any way, CI will
 fail, prompting the developer to commit the changes.
@@ -58,7 +56,7 @@ to update the lockfile frequently when the upstream BSR entries change.
 We should review these deps periodically and bump them, as we would any other dependency.
 
 ```shell
-cd crates/proto/proto
+cd proto/penumbra
 # edit buf.yaml to remove the tags, i.e. suffix `:<tag>`
 buf mod update
 ```

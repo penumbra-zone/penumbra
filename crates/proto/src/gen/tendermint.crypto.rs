@@ -50,7 +50,7 @@ pub struct ProofOps {
     #[prost(message, repeated, tag = "1")]
     pub ops: ::prost::alloc::vec::Vec<ProofOp>,
 }
-/// PublicKey defines the keys available for use with Tendermint Validators
+/// PublicKey defines the keys available for use with Validators
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PublicKey {
