@@ -143,12 +143,14 @@ impl SpecificQueryService for Info {
 
         let state = self.storage.latest_snapshot();
         let mut state_tx = Arc::new(StateDelta::new(state));
-        let (output, unfilled) = state_tx
+        let swap_execution = state_tx
             .route_and_fill(input.asset_id, output_id, input.amount, routing_params)
             .await
             .map_err(|e| tonic::Status::internal(format!("error simulating trade: {:#}", e)))?;
 
-        todo!()
+        Ok(tonic::Response::new(SimulateTradeResponse {
+            output: Some(swap_execution.into()),
+        }))
     }
 
     async fn spread(
