@@ -386,6 +386,7 @@ impl TreeReader for Inner {
     /// Gets node given a node key. Returns `None` if the node does not exist.
     fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node>> {
         let node_key = node_key;
+        let db_node_key = DbNodeKey::from(node_key.clone());
         tracing::trace!(?node_key);
 
         let jmt_cf = self
@@ -394,7 +395,7 @@ impl TreeReader for Inner {
             .expect("jmt column family not found");
         let value = self
             .snapshot
-            .get_cf(jmt_cf, node_key.try_to_vec()?)?
+            .get_cf(jmt_cf, db_node_key.encode()?)?
             .map(|db_slice| Node::try_from_slice(&db_slice))
             .transpose()?;
 
@@ -411,7 +412,7 @@ impl TreeReader for Inner {
         iter.seek_to_last();
 
         if iter.valid() {
-            let node_key = DbNodeKey::decode(iter.key().unwrap()).into_inner();
+            let node_key = DbNodeKey::decode(iter.key().unwrap())?.into_inner();
             let node = Node::try_from_slice(iter.value().unwrap())?;
 
             if let Node::Leaf(leaf_node) = node {
