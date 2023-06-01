@@ -88,7 +88,7 @@ impl RateData {
     /// unbonded_amount == rate_data.unbonded_amount(delegation_amount)
     /// ```
     /// but in general *not both*, because the computation involves rounding.
-    pub fn delegation_amount(&self, unbonded_amount: u64) -> u64 {
+    pub fn delegation_amount(&self, unbonded_amount: u128) -> u128 {
         // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
         // upconvert to u128 intermediates and panic if the result is too large (unlikely)
         ((unbonded_amount as u128 * 1_0000_0000) / self.validator_exchange_rate as u128)
@@ -144,7 +144,7 @@ impl RateData {
 
     /// Uses this `RateData` to build a `Delegate` transaction action that
     /// delegates `unbonded_amount` of the staking token.
-    pub fn build_delegate(&self, unbonded_amount: u64) -> Delegate {
+    pub fn build_delegate(&self, unbonded_amount: u128) -> Delegate {
         Delegate {
             delegation_amount: self.delegation_amount(unbonded_amount).into(),
             epoch_index: self.epoch_index,

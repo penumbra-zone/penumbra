@@ -132,6 +132,7 @@ message TransactionPlannerRequest {
   }
   message Undelegate {
     core.crypto.v1alpha1.Value value = 1;
+    core.stake.v1alpha1.RateData rate_data = 2;
   }
 }
 

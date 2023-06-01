@@ -11,7 +11,7 @@ use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_crypto::{
     asset::{self},
     keys::{AccountGroupId, AddressIndex, FullViewingKey},
-    Amount, Asset, Fee,
+    Amount, Asset, Fee, Value,
 };
 use penumbra_dex::{lp::position, TradingPair};
 use penumbra_proto::{
@@ -29,6 +29,7 @@ use penumbra_proto::{
     },
     DomainType,
 };
+use penumbra_stake::rate::RateData;
 use penumbra_tct::{Commitment, Proof};
 use penumbra_transaction::{
     plan::TransactionPlan, AuthorizationData, Transaction, TransactionPerspective, WitnessData,
@@ -385,18 +386,46 @@ impl ViewProtocolService for ViewService {
             ));
         }
 
-        #[allow(clippy::never_loop)]
-        for _delegation in prq.delegations {
-            return Err(tonic::Status::unimplemented(
-                "Delegations are not yet implemented, sorry!",
-            ));
+        for delegation in prq.delegations {
+            let amount: Amount = delegation
+                .amount
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing amount"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse amount: {e:#}"))
+                })?;
+
+            let amount_u128: u128 = amount.into();
+
+            let rate_data: RateData = delegation
+                .rate_data
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing rate data"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse rate data: {e:#}"))
+                })?;
+
+            planner.delegate(amount_u128, rate_data);
         }
 
-        #[allow(clippy::never_loop)]
-        for _undelegation in prq.undelegations {
-            return Err(tonic::Status::unimplemented(
-                "Undelegations are not yet implemented, sorry!",
-            ));
+        for undelegation in prq.undelegations {
+            let value: Value = undelegation
+                .value
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing value"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse value: {e:#}"))
+                })?;
+
+            let rate_data: RateData = undelegation
+                .rate_data
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing rate data"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse rate data: {e:#}"))
+                })?;
+
+            planner.undelegate(value.amount, rate_data);
         }
 
         let mut client_of_self =

@@ -448,7 +448,7 @@ impl TxCmd {
                     OsRng,
                     rate_data,
                     // TODO: fix and also delete plan::delegate entirely!
-                    unbonded_amount.value() as u64,
+                    unbonded_amount.value(),
                     fee,
                     AddressIndex::new(*source),
                 )

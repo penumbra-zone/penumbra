@@ -264,7 +264,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// If you don't specify spends or outputs as well, they will be filled in automatically.
     #[instrument(skip(self))]
-    pub fn delegate(&mut self, unbonded_amount: u64, rate_data: RateData) -> &mut Self {
+    pub fn delegate(&mut self, unbonded_amount: u128, rate_data: RateData) -> &mut Self {
         let delegation = rate_data.build_delegate(unbonded_amount).into();
         self.action(delegation);
         self

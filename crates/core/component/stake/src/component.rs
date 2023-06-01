@@ -372,13 +372,13 @@ pub(crate) trait StakingImpl: StateWriteExt {
             let total_delegations = delegations_by_validator
                 .get(&validator.identity_key)
                 .into_iter()
-                .flat_map(|ds| ds.iter().map(|d| d.delegation_amount.value() as u64))
-                .sum::<u64>();
+                .flat_map(|ds| ds.iter().map(|d| d.delegation_amount.value()))
+                .sum::<u128>();
             let total_undelegations = undelegations_by_validator
                 .get(&validator.identity_key)
                 .into_iter()
-                .flat_map(|us| us.iter().map(|u| u.delegation_amount.value() as u64))
-                .sum::<u64>();
+                .flat_map(|us| us.iter().map(|u| u.delegation_amount.value()))
+                .sum::<u128>();
             let delegation_delta = (total_delegations as i128) - (total_undelegations as i128);
 
             tracing::debug!(
