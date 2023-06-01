@@ -4558,15 +4558,15 @@ impl serde::Serialize for transaction_planner_request::Delegate {
         if self.amount.is_some() {
             len += 1;
         }
-        if self.identity_key.is_some() {
+        if self.rate_data.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest.Delegate", len)?;
         if let Some(v) = self.amount.as_ref() {
             struct_ser.serialize_field("amount", v)?;
         }
-        if let Some(v) = self.identity_key.as_ref() {
-            struct_ser.serialize_field("identityKey", v)?;
+        if let Some(v) = self.rate_data.as_ref() {
+            struct_ser.serialize_field("rateData", v)?;
         }
         struct_ser.end()
     }
@@ -4579,14 +4579,14 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Delegate {
     {
         const FIELDS: &[&str] = &[
             "amount",
-            "identity_key",
-            "identityKey",
+            "rate_data",
+            "rateData",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Amount,
-            IdentityKey,
+            RateData,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -4609,7 +4609,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Delegate {
                     {
                         match value {
                             "amount" => Ok(GeneratedField::Amount),
-                            "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
+                            "rateData" | "rate_data" => Ok(GeneratedField::RateData),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -4630,7 +4630,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Delegate {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut amount__ = None;
-                let mut identity_key__ = None;
+                let mut rate_data__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Amount => {
@@ -4639,17 +4639,17 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Delegate {
                             }
                             amount__ = map.next_value()?;
                         }
-                        GeneratedField::IdentityKey => {
-                            if identity_key__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("identityKey"));
+                        GeneratedField::RateData => {
+                            if rate_data__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("rateData"));
                             }
-                            identity_key__ = map.next_value()?;
+                            rate_data__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(transaction_planner_request::Delegate {
                     amount: amount__,
-                    identity_key: identity_key__,
+                    rate_data: rate_data__,
                 })
             }
         }

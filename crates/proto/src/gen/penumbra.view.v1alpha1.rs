@@ -90,9 +90,9 @@ pub mod transaction_planner_request {
         pub amount: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Amount,
         >,
-        #[prost(message, optional, tag = "2")]
-        pub identity_key: ::core::option::Option<
-            super::super::super::core::crypto::v1alpha1::IdentityKey,
+        #[prost(message, optional, tag = "3")]
+        pub rate_data: ::core::option::Option<
+            super::super::super::core::stake::v1alpha1::RateData,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
