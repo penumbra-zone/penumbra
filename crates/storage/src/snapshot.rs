@@ -11,7 +11,11 @@ use rocksdb::{IteratorMode, ReadOptions};
 use tokio::sync::mpsc;
 use tracing::Span;
 
-use crate::{metrics, storage::VersionedKeyHash, StateRead};
+use crate::{
+    metrics,
+    storage::{DbNodeKey, VersionedKeyHash},
+    StateRead,
+};
 
 mod rocks_wrapper;
 use rocks_wrapper::RocksDbSnapshot;
@@ -407,7 +411,7 @@ impl TreeReader for Inner {
         iter.seek_to_last();
 
         if iter.valid() {
-            let node_key = NodeKey::try_from_slice(iter.key().unwrap())?;
+            let node_key = DbNodeKey::decode(iter.key().unwrap()).into_inner();
             let node = Node::try_from_slice(iter.value().unwrap())?;
 
             if let Node::Leaf(leaf_node) = node {
