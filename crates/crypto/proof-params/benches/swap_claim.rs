@@ -96,7 +96,7 @@ fn swap_claim_proving_time(c: &mut Criterion) {
         unfilled_2: Amount::from(50u64),
         height: height.into(),
         trading_pair: swap_plaintext.trading_pair,
-        epoch_starting_height: position.epoch().into(),
+        epoch_starting_height: (epoch_duration * position.epoch()).into(),
     };
     let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
