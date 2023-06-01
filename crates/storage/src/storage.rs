@@ -374,6 +374,9 @@ impl DbNodeKey {
     }
 
     pub fn decode(bytes: impl AsRef<[u8]>) -> Result<Self> {
+        if bytes.as_ref().len() < 8 {
+            anyhow::bail!("byte slice is too short")
+        }
         // Ignore the bytes that encode the version
         let node_key_slice = bytes.as_ref()[8..].to_vec();
         let node_key = borsh::BorshDeserialize::try_from_slice(&node_key_slice)?;
