@@ -53,7 +53,9 @@ pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position
                         sell_order_1.offered.format(&asset_cache),
                     ]);
                     table.add_row(vec![
-                        String::new(),
+                        // Add a mark indicating this row is associated with the same position.
+                        "└──────────────────────────────────────────────────────────────▶"
+                            .to_string(),
                         String::new(),
                         format!("{}bps", position.phi.component.fee),
                         format!(
