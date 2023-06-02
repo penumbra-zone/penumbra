@@ -60,3 +60,6 @@ jobs:
           export PENUMBRA_VERSION='main'
           export HELM_RELEASE='penumbra-testnet-preview'
           ./ci.sh
+
+      - name: bounce grpcui
+        run: kubectl rollout restart deployment grpcui-preview
