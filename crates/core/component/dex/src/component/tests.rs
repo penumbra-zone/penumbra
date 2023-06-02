@@ -807,13 +807,18 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
      *
      */
 
-    state_tx.put_position(limit_buy(penumbra_usd.clone(), 1u64.into(), 110u64.into()));
-    state_tx.put_position(limit_buy(penumbra_usd.clone(), 1u64.into(), 100u64.into()));
-    state_tx.put_position(limit_sell(
-        penumbra_usd.clone(),
-        10u64.into(),
-        100u64.into(),
-    ));
+    let mut buy_1 = limit_buy(penumbra_usd.clone(), 1u64.into(), 110u64.into());
+    buy_1.nonce = [1; 32];
+
+    let mut buy_2 = limit_buy(penumbra_usd.clone(), 1u64.into(), 100u64.into());
+    buy_2.nonce = [2; 32];
+
+    let mut sell_1 = limit_sell(penumbra_usd.clone(), 10u64.into(), 100u64.into());
+    sell_1.nonce = [0; 32];
+
+    state_tx.put_position(buy_1);
+    state_tx.put_position(buy_2);
+    state_tx.put_position(sell_1);
 
     state_tx.apply();
 
