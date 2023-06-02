@@ -467,7 +467,6 @@ impl<S: StateRead + StateWrite> Frontier<S> {
                 "replacing constraining position in frontier",
             );
 
-            self.position_ids.remove(&replaced_position_id);
             self.position_ids.insert(next_position_id);
             self.positions[index] = next_position;
 
