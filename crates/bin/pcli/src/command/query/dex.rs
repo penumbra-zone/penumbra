@@ -3,7 +3,10 @@ use comfy_table::{presets, Table};
 use futures::{Stream, StreamExt, TryStreamExt};
 use std::pin::Pin;
 
-use penumbra_crypto::{asset::DenomMetadata, Value};
+use penumbra_crypto::{
+    asset::{self, DenomMetadata},
+    Value,
+};
 use penumbra_dex::{
     lp::position::{self, Position},
     BatchSwapOutputData, DirectedTradingPair, SwapExecution, TradingPair,
@@ -11,7 +14,7 @@ use penumbra_dex::{
 use penumbra_proto::client::v1alpha1::{
     specific_query_service_client::SpecificQueryServiceClient, BatchSwapOutputDataRequest,
     DenomMetadataByIdRequest, LiquidityPositionByIdRequest, LiquidityPositionsByPriceRequest,
-    LiquidityPositionsRequest, SwapExecutionRequest,
+    LiquidityPositionsRequest, SimulateTradeRequest, SwapExecutionRequest,
 };
 use penumbra_view::ViewClient;
 use tonic::transport::Channel;
@@ -68,6 +71,14 @@ pub enum DexCmd {
         #[clap(long)]
         limit: Option<u64>,
     },
+    /// Simulates execution of a trade against the current DEX state.
+    Simulate {
+        /// The input amount to swap, written as a typed value 1.87penumbra, 12cubes, etc.
+        input: String,
+        /// The denomination to swap the input into, e.g. `gm`
+        #[clap(long, display_order = 100)]
+        into: String,
+    },
 }
 
 impl DexCmd {
@@ -110,6 +121,30 @@ impl DexCmd {
             .ok_or_else(|| anyhow::anyhow!("proto response missing swap execution"))?
             .try_into()
             .context("cannot parse batch swap output data")
+    }
+
+    pub async fn get_simulated_execution(
+        &self,
+        app: &mut App,
+        input: Value,
+        output: asset::Id,
+    ) -> Result<SwapExecution> {
+        use penumbra_proto::client::v1alpha1::simulate_trade_request::{routing::Setting, Routing};
+        let mut client = app.specific_client().await?;
+        client
+            .simulate_trade(SimulateTradeRequest {
+                input: Some(input.into()),
+                output: Some(output.into()),
+                routing: Some(Routing {
+                    setting: Some(Setting::Default(Default::default())),
+                }),
+            })
+            .await?
+            .into_inner()
+            .output
+            .ok_or_else(|| anyhow::anyhow!("proto response missing swap execution"))?
+            .try_into()
+            .context("cannot parse simulation response")
     }
 
     pub async fn get_all_liquidity_positions(
@@ -160,16 +195,18 @@ impl DexCmd {
     pub async fn print_swap_execution(
         &self,
         app: &mut App,
-        height: &u64,
-        trading_pair: &DirectedTradingPair,
+        swap_execution: &SwapExecution,
     ) -> Result<()> {
-        let swap_execution = self.get_swap_execution(app, height, trading_pair).await?;
-
         let cache = app.view().assets().await?;
 
-        for trace in swap_execution.traces {
+        println!(
+            "{} => {} via:",
+            swap_execution.input.format(&cache),
+            swap_execution.output.format(&cache),
+        );
+        for trace in &swap_execution.traces {
             println!(
-                "{}",
+                "  {}",
                 trace
                     .iter()
                     .map(|v| v.format(&cache))
@@ -267,7 +304,16 @@ impl DexCmd {
                 height,
                 trading_pair,
             } => {
-                self.print_swap_execution(app, height, trading_pair).await?;
+                let swap_execution = self.get_swap_execution(app, height, trading_pair).await?;
+
+                self.print_swap_execution(app, &swap_execution).await?;
+            }
+            DexCmd::Simulate { input, into } => {
+                let input = input.parse::<Value>()?;
+                let into = asset::REGISTRY.parse_unit(into.as_str()).base();
+
+                let swap_execution = self.get_simulated_execution(app, input, into.id()).await?;
+                self.print_swap_execution(app, &swap_execution).await?;
             }
             DexCmd::AllPositions { include_closed } => {
                 let client = app.specific_client().await?;
