@@ -109,7 +109,7 @@ pub enum TxCmd {
     Swap {
         /// The input amount to swap, written as a typed value 1.87penumbra, 12cubes, etc.
         input: String,
-        /// The denomination to swap the input into.
+        /// The denomination to swap the input into, e.g. `gm`
         #[clap(long, display_order = 100)]
         into: String,
         /// The transaction fee (paid in upenumbra).
