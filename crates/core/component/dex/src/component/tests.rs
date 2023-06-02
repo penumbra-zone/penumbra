@@ -754,3 +754,83 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+/// Reproduce the arbitrage loop bug that caused testnet 53 to stall.
+/// The issue was that we did not treat the spill price as a strict
+/// upper bound, which is necessary to ensure that the arbitrage logic
+/// terminates.
+async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let test_usd = asset::REGISTRY.parse_unit("test_usd");
+
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let test_usd = asset::REGISTRY.parse_unit("test_usd");
+
+    tracing::info!(penumbra_id= ?penumbra.id());
+    tracing::info!(test_usd_id = ?test_usd.id());
+
+    let penumbra_usd = DirectedUnitPair::new(penumbra.clone(), test_usd.clone());
+
+    /*
+     * INITIAL STATE:
+     * Position A: Seeks to buy 1 penumbra for 110 test_usd
+     * Position B: Seeks to buy 1 penumbra for 100 test_usd
+     * Position C: Seeks to sell 10 penumbra for 100 test_usd
+     *
+     * The arbitrage logic should detect that it can sell 1 penumbra for 110 test_usd,
+     * (Position A), and buy it back for 100 test_usd (Position B), and thus make a profit
+     * of 10 test_usd. The execution price on the cycle is 0.909 penumbra/test_usd/penumbra, and the
+     * spill price is 1 penumbra/test_usd/penumbra.
+     *
+     * So the arbitrage logic found a profitable cycle, and executed it. In this setup,
+     * there are no more profitable cycles, so the arbitrage logic should terminate.
+     *
+     * It doesn't, because we did not treat the spill price as a strict upper bound.
+     *
+     * AFTER EXECUTING THE FIRST ARBITRAGE CYCLE:
+     * Position A: Seeks to sell 1 penumbra for 110 test_usd
+     * Position B: Seeks to sell 1 penumbra for 100 test_usd
+     * Position C: Seeks to sell 10 penumbra for 100 test_usd
+     *
+     *
+     * Notice that Position A and Position B are now both seeking to sell penumbra for usd,
+     * because they were filled previously. The execution price on penumbra -> usd -> penumbra
+     * is 1, and the spill price is 1. The fact that we don't treat the spill price as a strict
+     * upper bound means that we will execute the arbitrage logic again even though there are no
+     * profitable cycles (=surplus).
+     *
+     */
+
+    state_tx.put_position(limit_buy(penumbra_usd.clone(), 1u64.into(), 110u64.into()));
+    state_tx.put_position(limit_buy(penumbra_usd.clone(), 1u64.into(), 100u64.into()));
+    state_tx.put_position(limit_sell(
+        penumbra_usd.clone(),
+        10u64.into(),
+        100u64.into(),
+    ));
+
+    state_tx.apply();
+
+    tracing::info!("we posted the positions");
+
+    tracing::info!("we are triggering the arbitrage logic");
+
+    let op = tokio::time::timeout(
+        tokio::time::Duration::from_secs(2),
+        state.arbitrage(penumbra.id(), vec![penumbra.id(), test_usd.id()]),
+    )
+    .await??;
+
+    tracing::info!("the arbitrage logic has concluded!");
+
+    tracing::info!("fetching the `ArbExecution`");
+    let arb_execution = state.arb_execution(0).await?.expect("arb was performed");
+    println!("arb_execution: {arb_execution:?}");
+    Ok(())
+}
