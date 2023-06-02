@@ -139,6 +139,9 @@ pub trait RouteAndFill: StateWrite + Sized {
         // All traces of trades that were executed.
         let mut traces: Vec<Vec<Value>> = Vec::new();
 
+        // the previous macro path that we have taken.
+        let mut prev_path: Vec<asset::Id> = vec![];
+
         // Continuously route and fill until either:
         // 1. We have no more delta_1 remaining
         // 2. A path can no longer be found
@@ -153,10 +156,19 @@ pub trait RouteAndFill: StateWrite + Sized {
                 tracing::debug!("no path found, exiting route_and_fill");
                 break;
             };
+
             if path.is_empty() {
                 tracing::debug!("empty path found, exiting route_and_fill");
                 break;
             }
+
+            // If we have already taken this path, then we are stuck in a loop.
+            if prev_path == path {
+                tracing::debug!("path is the same as previous path, exiting route_and_fill");
+                break;
+            }
+
+            prev_path = path.clone();
 
             (outer_lambda_2, outer_unfilled_1) = {
                 // path found, fill as much as we can
