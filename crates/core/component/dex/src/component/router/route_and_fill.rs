@@ -162,7 +162,10 @@ pub trait RouteAndFill: StateWrite + Sized {
                 break;
             }
 
-            // If we have already taken this path, then we are stuck in a loop.
+            // If we have already taken this path, then we could be stuck in a loop.
+            // This branch is part of testnet 53's arb cycle bug fix. This is probably
+            // not the best way to fix this bug, but it's a start.
+            // TODO(erwan): remove this branch once we have a better fix.
             if prev_path == path {
                 tracing::debug!("path is the same as previous path, exiting route_and_fill");
                 break;
