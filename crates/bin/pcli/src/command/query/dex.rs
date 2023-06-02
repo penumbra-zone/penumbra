@@ -204,16 +204,66 @@ impl DexCmd {
             swap_execution.input.format(&cache),
             swap_execution.output.format(&cache),
         );
+
+        // Try to make a nice table of execution traces. To do this, first find
+        // the max length of any subtrace:
+        let max_trace_len = swap_execution
+            .traces
+            .iter()
+            .map(|trace| trace.len())
+            .max()
+            .unwrap_or(0);
+
+        // Spacer | trace hops | trace price
+        let column_count = 1 + max_trace_len + 1;
+
+        let mut table = Table::new();
+        table.load_preset(presets::NOTHING);
+        let mut headers = vec![""; column_count];
+        headers[1] = "Trace";
+        headers[column_count - 1] = "Subprice";
+        table.set_header(headers);
+
+        let price_string = |input: Value, output: Value| -> String {
+            use penumbra_dex::lp::SellOrder;
+            format!(
+                "{}/{}",
+                SellOrder {
+                    offered: output,
+                    desired: input,
+                    fee: 0,
+                }
+                .price_str(&cache)
+                .expect("assets are known"),
+                // kind of hacky, this is assuming coincidency between price_str calcs
+                // and this code
+                Value {
+                    asset_id: output.asset_id,
+                    amount: cache
+                        .get(&output.asset_id)
+                        .unwrap()
+                        .default_unit()
+                        .unit_amount(),
+                }
+                .format(&cache)
+            )
+        };
+
         for trace in &swap_execution.traces {
-            println!(
-                "  {}",
-                trace
-                    .iter()
-                    .map(|v| v.format(&cache))
-                    .collect::<Vec<_>>()
-                    .join(" => ")
-            );
+            let mut row = vec![String::new(); column_count];
+            // Put all but the last element of the trace in the columns, left-to-right
+            for i in 0..(trace.len() - 1) {
+                row[1 + i] = format!("{} =>", trace[i].format(&cache));
+            }
+            // Right-align the last elemnent of the trace, in case subtraces have different lengths
+            row[column_count - 2] = format!("{}", trace.last().unwrap().format(&cache));
+            // Print the price in the last column.
+            row[column_count - 1] = price_string(*trace.first().unwrap(), *trace.last().unwrap());
+
+            table.add_row(row);
         }
+
+        println!("{}", table);
 
         Ok(())
     }
