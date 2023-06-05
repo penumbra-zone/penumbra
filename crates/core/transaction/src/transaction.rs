@@ -74,6 +74,10 @@ impl Transaction {
             .map(|action| match action {
                 Action::Spend(_) => 1,
                 Action::Output(_) => 1,
+                Action::Swap(_) => 1,
+                Action::SwapClaim(_) => 1,
+                Action::UndelegateClaim(_) => 1,
+                Action::DelegatorVote(_) => 1,
                 _ => 0,
             })
             .sum()
