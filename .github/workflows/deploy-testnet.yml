@@ -54,3 +54,6 @@ jobs:
           export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
           export HELM_RELEASE='penumbra-testnet'
           ./ci.sh
+
+      - name: bounce grpcui
+        run: kubectl rollout restart deployment grpcui-testnet
