@@ -139,9 +139,6 @@ pub trait RouteAndFill: StateWrite + Sized {
         // All traces of trades that were executed.
         let mut traces: Vec<Vec<Value>> = Vec::new();
 
-        // the previous macro path that we have taken.
-        let mut prev_path: Vec<asset::Id> = vec![];
-
         // Continuously route and fill until either:
         // 1. We have no more delta_1 remaining
         // 2. A path can no longer be found
@@ -182,12 +179,30 @@ pub trait RouteAndFill: StateWrite + Sized {
 
                 tracing::debug!(?path, delta_1 = ?delta_1.amount, "found path, starting to fill up to spill price");
 
-                // TODO: in what circumstances should we use fill_route_exact?
                 let execution = Arc::get_mut(self)
                     .expect("expected state to have no other refs")
                     .fill_route(delta_1, &path, spill_price)
                     .await
                     .context("error filling along best path")?;
+
+                // Ensure that we've actually executed, or else bail out.
+                let Some(actual_max_price) = execution.max_price() else {
+                    tracing::debug!("no traces in execution, exiting route_and_fill");
+                    break;
+                };
+
+                // If there's a top-level price limit, check the actual max
+                // price of the execution against it.  This is necessary because
+                // the price obtained in the path search is only an estimate,
+                // not an exact amount.
+                if let Some(price_limit) = params.price_limit {
+                    if actual_max_price >= price_limit {
+                        tracing::debug!(
+                            "actual max price is not less than price limit, exiting route_and_fill"
+                        );
+                        break;
+                    }
+                }
 
                 // Append the traces from this execution to the outer traces.
                 traces.append(&mut execution.traces.clone());
