@@ -17,10 +17,10 @@ jobs:
         with:
           buf_api_token: ${{ secrets.BUF_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          input: 'crates/proto'
+          input: 'proto'
       - uses: bufbuild/buf-lint-action@v1
         with:
-          input: 'crates/proto'
+          input: 'proto'
 
       # N.B. We don't check for breaking changes here, because we do so per-PR, and notify there.
       # Occasionally we'll make breaking changes, the PR CI is notification enough of that.
@@ -29,4 +29,4 @@ jobs:
       - uses: bufbuild/buf-push-action@v1
         with:
           buf_token: ${{ secrets.BUF_TOKEN }}
-          input: 'crates/proto/proto'
+          input: 'proto/penumbra'

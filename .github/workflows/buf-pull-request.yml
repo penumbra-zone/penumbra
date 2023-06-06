@@ -36,7 +36,7 @@ jobs:
         with:
           input: 'proto'
           # The 'main' branch of the GitHub repository that defines the module.
-          against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=crates/proto'
+          against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=proto'
 
   protobuf-fresh:
     name: Compile protobuf specs to rust code
