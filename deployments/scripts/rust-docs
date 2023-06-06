@@ -20,6 +20,8 @@ export RUSTDOCFLAGS="--enable-index-page -Zunstable-options --cfg docsrs"
 cargo +nightly-2023-05-15 doc --no-deps \
   -p tendermint \
   -p tendermint-config \
+  -p ibc-types \
+  -p ibc-types2 \
   -p tower-abci \
   -p jmt \
   -p ark-ff \
