@@ -13,7 +13,7 @@ use super::{Path, PathCache, PathEntry, RoutingParams, SharedPathCache};
 
 #[async_trait]
 pub trait PathSearch: StateRead + Clone + 'static {
-    /// Find the best route from `src` to `dst` with estimated price at most
+    /// Find the best route from `src` to `dst` with estimated price strictly less than
     /// `params.price_limit`, also returning the spill price for the next-best
     /// route, if one exists.
     #[instrument(skip(self, src, dst, params), fields(max_hops = params.max_hops))]
@@ -51,7 +51,7 @@ pub trait PathSearch: StateRead + Clone + 'static {
         tracing::debug!(price = %path.price, spill_price = %spill_price.unwrap_or_else(|| 0u64.into()), ?src, ?nodes, "found path");
 
         match price_limit {
-            Some(price_limit) if path.price > price_limit => {
+            Some(price_limit) if path.price >= price_limit => {
                 tracing::debug!(price = %path.price, price_limit = %price_limit, "path too expensive");
                 Ok((None, None))
             }
