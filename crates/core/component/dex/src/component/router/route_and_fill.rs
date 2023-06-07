@@ -132,16 +132,17 @@ pub trait RouteAndFill: StateWrite + Sized {
     {
         tracing::debug!(?delta_1, ?asset_1, ?asset_2, "starting route_and_fill");
         // Output of asset 2
-        let mut outer_lambda_2 = 0u64.into();
+        let mut total_output_2 = 0u64.into();
         // Unfilled output of asset 1
-        let mut outer_unfilled_1 = delta_1;
+        let mut total_unfilled_1 = delta_1;
 
         // All traces of trades that were executed.
         let mut traces: Vec<Vec<Value>> = Vec::new();
 
-        // Continuously route and fill until either:
+        // Termination conditions:
         // 1. We have no more delta_1 remaining
         // 2. A path can no longer be found
+        // 3. We have reached the `RoutingParams` specified price limit
         loop {
             // Find the best route between the two assets in the trading pair.
             let (path, spill_price) = self
@@ -159,65 +160,56 @@ pub trait RouteAndFill: StateWrite + Sized {
                 break;
             }
 
-            (outer_lambda_2, outer_unfilled_1) = {
-                // path found, fill as much as we can
-                let delta_1 = Value {
-                    amount: outer_unfilled_1,
-                    asset_id: asset_1,
-                };
+            let delta_1 = Value {
+                amount: total_unfilled_1,
+                asset_id: asset_1,
+            };
 
-                tracing::debug!(?path, delta_1 = ?delta_1.amount, "found path, starting to fill up to spill price");
+            tracing::debug!(?path, delta_1 = ?delta_1.amount, "found path, filling up to spill price");
 
-                let execution = Arc::get_mut(self)
-                    .expect("expected state to have no other refs")
-                    .fill_route(delta_1, &path, spill_price)
-                    .await
-                    .context("error filling along best path")?;
+            let execution = Arc::get_mut(self)
+                .expect("expected state to have no other refs")
+                .fill_route(delta_1, &path, spill_price)
+                .await
+                .context("error filling along best path")?;
 
-                // Ensure that we've actually executed, or else bail out.
-                let Some(accurate_max_price) = execution.max_price()? else {
-                    tracing::debug!("no traces in execution, exiting route_and_fill");
-                    break
-                };
-
-                tracing::info!(max_price = %accurate_max_price, "max price of execution");
-
-                // If there's a top-level price limit, check the actual max
-                // price of the execution against it.  This is necessary because
-                // the price obtained in the path search is only an estimate,
-                // not an exact amount.
-                if let Some(price_limit) = params.price_limit {
-                    if accurate_max_price >= price_limit {
-                        tracing::debug!(
-                            "actual max price is not less than price limit, exiting route_and_fill"
-                        );
-                        break;
-                    }
-                }
-
-                // Append the traces from this execution to the outer traces.
-                traces.append(&mut execution.traces.clone());
-
+            // Immediately track the execution in the state.
+            (total_output_2, total_unfilled_1) = {
                 let lambda_2 = execution.output;
                 let unfilled_1 = Value {
-                    amount: outer_unfilled_1
+                    amount: total_unfilled_1
                         .checked_sub(&execution.input.amount)
                         .expect("unable to subtract unfilled input from total input"),
                     asset_id: asset_1,
                 };
-                tracing::debug!(lambda_2 = ?lambda_2.amount, unfilled_1 = ?unfilled_1.amount, "filled along best path");
+                tracing::debug!(input = ?delta_1.amount, output = ?lambda_2.amount, unfilled = ?unfilled_1.amount, "filled along best path");
 
                 assert_eq!(lambda_2.asset_id, asset_2);
                 assert_eq!(unfilled_1.asset_id, asset_1);
 
-                // The output of asset 2 is the sum of all the `lambda_2` values,
-                // and the unfilled amount becomes the new `delta_1`.
-                (outer_lambda_2 + lambda_2.amount, unfilled_1.amount)
+                // Append the traces from this execution to the outer traces.
+                traces.append(&mut execution.traces.clone());
+
+                (total_output_2 + lambda_2.amount, unfilled_1.amount)
             };
 
-            if outer_unfilled_1.value() == 0 {
-                tracing::debug!("filled all of delta_1, exiting route_and_fill");
+            if total_unfilled_1.value() == 0 {
+                tracing::debug!("filled all input, exiting route_and_fill");
                 break;
+            }
+
+            // Ensure that we've actually executed, or else bail out.
+            let Some(accurate_max_price) = execution.max_price()? else {
+                    tracing::debug!("no traces in execution, exiting route_and_fill");
+                    break
+                };
+
+            // Check that the execution price is below the price limit, if one is set.
+            if let Some(price_limit) = params.price_limit {
+                if accurate_max_price >= price_limit {
+                    tracing::debug!(accurate_max_price = ?accurate_max_price, price_limit = ?price_limit, "execution price above price limit, exiting route_and_fill");
+                    break;
+                }
             }
         }
 
@@ -225,11 +217,11 @@ pub trait RouteAndFill: StateWrite + Sized {
             traces,
             input: Value {
                 asset_id: asset_1,
-                amount: delta_1 - outer_unfilled_1,
+                amount: delta_1 - total_unfilled_1,
             },
             output: Value {
                 asset_id: asset_2,
-                amount: outer_lambda_2,
+                amount: total_output_2,
             },
         })
     }

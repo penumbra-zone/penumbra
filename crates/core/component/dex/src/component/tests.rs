@@ -769,9 +769,6 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
     let penumbra = asset::REGISTRY.parse_unit("penumbra");
     let test_usd = asset::REGISTRY.parse_unit("test_usd");
 
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let test_usd = asset::REGISTRY.parse_unit("test_usd");
-
     tracing::info!(penumbra_id= ?penumbra.id());
     tracing::info!(test_usd_id = ?test_usd.id());
 
@@ -826,16 +823,16 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
 
     tracing::info!("we are triggering the arbitrage logic");
 
-    let op = tokio::time::timeout(
+    let arb_profit = tokio::time::timeout(
         tokio::time::Duration::from_secs(2),
         state.arbitrage(penumbra.id(), vec![penumbra.id(), test_usd.id()]),
     )
     .await??;
 
-    tracing::info!("the arbitrage logic has concluded!");
+    tracing::info!(profit = ?arb_profit, "the arbitrage logic has concluded!");
 
     tracing::info!("fetching the `ArbExecution`");
     let arb_execution = state.arb_execution(0).await?.expect("arb was performed");
-    println!("arb_execution: {arb_execution:?}");
+    tracing::info!(?arb_execution, "fetched arb execution!");
     Ok(())
 }
