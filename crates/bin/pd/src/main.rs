@@ -160,7 +160,7 @@ enum TestnetCommand {
         /// URL of the remote Tendermint RPC endpoint for bootstrapping connection.
         #[clap(
             env = "PENUMBRA_PD_JOIN_URL",
-            default_value = "http://testnet.penumbra.zone:26657"
+            default_value = "https://rpc.testnet.penumbra.zone"
         )]
         node: Url,
         /// Human-readable name to identify node on network

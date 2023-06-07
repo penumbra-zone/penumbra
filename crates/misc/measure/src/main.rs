@@ -26,7 +26,7 @@ pub struct Opt {
     #[clap(
         short,
         long,
-        default_value = "http://testnet.penumbra.zone:8080",
+        default_value = "https://grpc.testnet.penumbra.zone",
         env = "PENUMBRA_NODE_PD_URL",
         parse(try_from_str = url::Url::parse)
     )]
@@ -35,7 +35,7 @@ pub struct Opt {
     /// The URL for the Tendermint RPC endpoint of the remote node.
     #[clap(
         long,
-        default_value = "http://testnet.penumbra.zone:26657",
+        default_value = "https://rpc.testnet.penumbra.zone",
         env = "PENUMBRA_NODE_TM_URL"
     )]
     tendermint_url: Url,

@@ -34,7 +34,7 @@ pub struct Opt {
     #[clap(
         short,
         long,
-        default_value = "http://testnet.penumbra.zone:8080",
+        default_value = "https://grpc.testnet.penumbra.zone",
         env = "PENUMBRA_NODE_PD_URL",
         parse(try_from_str = Url::parse),
     )]
