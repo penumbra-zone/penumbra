@@ -782,7 +782,7 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
      *
      * The arbitrage logic should detect that it can sell 1 penumbra for 110 test_usd,
      * (Position A), and buy it back for 100 test_usd (Position B), and thus make a profit
-     * of 10 test_usd. The execution price on the cycle is 0.909 penumbra/test_usd/penumbra, and the
+     * of 0.1 penumbra. The execution price on the cycle is 0.909 penumbra/test_usd/penumbra, and the
      * spill price is 1 penumbra/test_usd/penumbra.
      *
      * So the arbitrage logic found a profitable cycle, and executed it. In this setup,
@@ -830,6 +830,8 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
     .await??;
 
     tracing::info!(profit = ?arb_profit, "the arbitrage logic has concluded!");
+    let profit: Value = "0.1penumbra".parse().unwrap();
+    assert_eq!(arb_profit, profit);
 
     tracing::info!("fetching the `ArbExecution`");
     let arb_execution = state.arb_execution(0).await?.expect("arb was performed");
