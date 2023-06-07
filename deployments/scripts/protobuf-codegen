@@ -5,12 +5,16 @@ set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
 
+# Purge the output dirs, to ensure that the codegen is complete:
+# if upstream removed files, we want them removed from all outputs, too.
+echo "Cleaning output dirs..."
+for d in proto/rust-vendored proto/go crates/proto/src/gen ; do
+    rm -r "${repo_root}/${d}/"
+    mkdir -p "${repo_root}/${d}/"
+done
+
 echo "Pulling proto dependencies from BSR..."
 pushd "${repo_root}/proto/"
-# Purge the vendor dir, to ensure that the codegen is complete:
-# if upstream removed files, we want them removed here, too.
-rm -rf rust-vendored/
-mkdir rust-vendored
 # Make sure the lockfile is up to date.
 buf mod update penumbra
 buf export penumbra --output rust-vendored/

@@ -118,10 +118,6 @@ pub mod penumbra {
 
             include!("gen/penumbra.client.v1alpha1.serde.rs");
 
-            pub mod tendermint_proxy {
-                pub use crate::cosmos::base::tendermint::v1beta1::*;
-            }
-
             // TODO(hdevalence): do we want any of this code?
 
             use async_stream::try_stream;
@@ -258,22 +254,6 @@ pub mod penumbra {
         pub mod v1alpha1 {
             include!("gen/penumbra.custody.v1alpha1.rs");
             include!("gen/penumbra.custody.v1alpha1.serde.rs");
-        }
-    }
-}
-
-pub mod cosmos {
-    pub mod base {
-        pub mod query {
-            pub mod v1beta1 {
-                include!("gen/cosmos.base.query.v1beta1.rs");
-            }
-        }
-
-        pub mod tendermint {
-            pub mod v1beta1 {
-                include!("gen/cosmos.base.tendermint.v1beta1.rs");
-            }
         }
     }
 }
