@@ -1,5 +1,5 @@
 use anyhow::Result;
-use penumbra_crypto::Value;
+use penumbra_crypto::{fixpoint::U128x128, Amount, Value};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
@@ -10,6 +10,46 @@ pub struct SwapExecution {
     pub traces: Vec<Vec<Value>>,
     pub input: Value,
     pub output: Value,
+}
+
+impl SwapExecution {
+    pub fn max_price(&self) -> Result<Option<U128x128>> {
+        let Some(aggregate_input )= self.aggregate_input() else {
+            return Ok(None)
+        };
+
+        let Some(aggregate_output) = self.aggregate_output() else {
+            return Ok(None)
+        };
+
+        let price = U128x128::ratio(aggregate_input, aggregate_output)?;
+
+        Ok(Some(price))
+    }
+
+    fn aggregate_input(&self) -> Option<Amount> {
+        self.traces
+            .iter()
+            .fold(Some(Amount::zero()), |acc, execution_trace| {
+                acc.and_then(|acc_input| {
+                    execution_trace
+                        .first()
+                        .map(|input| acc_input + input.amount)
+                })
+            })
+    }
+
+    fn aggregate_output(&self) -> Option<Amount> {
+        self.traces
+            .iter()
+            .fold(Some(Amount::zero()), |acc, execution_trace| {
+                acc.and_then(|acc_output| {
+                    execution_trace
+                        .last()
+                        .map(|output| acc_output + output.amount)
+                })
+            })
+    }
 }
 
 impl TypeUrl for SwapExecution {
