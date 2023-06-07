@@ -159,17 +159,6 @@ pub trait RouteAndFill: StateWrite + Sized {
                 break;
             }
 
-            // If we have already taken this path, then we could be stuck in a loop.
-            // This branch is part of testnet 53's arb cycle bug fix. This is probably
-            // not the best way to fix this bug, but it's a start.
-            // TODO(erwan): remove this branch once we have a better fix.
-            if prev_path == path {
-                tracing::debug!("path is the same as previous path, exiting route_and_fill");
-                break;
-            }
-
-            prev_path = path.clone();
-
             (outer_lambda_2, outer_unfilled_1) = {
                 // path found, fill as much as we can
                 let delta_1 = Value {
@@ -186,17 +175,19 @@ pub trait RouteAndFill: StateWrite + Sized {
                     .context("error filling along best path")?;
 
                 // Ensure that we've actually executed, or else bail out.
-                let Some(actual_max_price) = execution.max_price() else {
+                let Some(accurate_max_price) = execution.max_price()? else {
                     tracing::debug!("no traces in execution, exiting route_and_fill");
-                    break;
+                    break
                 };
+
+                tracing::info!(max_price = %accurate_max_price, "max price of execution");
 
                 // If there's a top-level price limit, check the actual max
                 // price of the execution against it.  This is necessary because
                 // the price obtained in the path search is only an estimate,
                 // not an exact amount.
                 if let Some(price_limit) = params.price_limit {
-                    if actual_max_price >= price_limit {
+                    if accurate_max_price >= price_limit {
                         tracing::debug!(
                             "actual max price is not less than price limit, exiting route_and_fill"
                         );
