@@ -26,32 +26,7 @@ impl SwapExecution {
         let price = U128x128::ratio(input.amount, output.amount)?;
         Ok(Some(price))
     }
-
-    pub fn aggregate_input(&self) -> Option<Amount> {
-        self.traces
-            .iter()
-            .fold(Some(Amount::zero()), |acc, execution_trace| {
-                acc.and_then(|acc_input| {
-                    execution_trace
-                        .first()
-                        .map(|input| acc_input + input.amount)
-                })
-            })
-    }
-
-    pub fn aggregate_output(&self) -> Option<Amount> {
-        self.traces
-            .iter()
-            .fold(Some(Amount::zero()), |acc, execution_trace| {
-                acc.and_then(|acc_output| {
-                    execution_trace
-                        .last()
-                        .map(|output| acc_output + output.amount)
-                })
-            })
-    }
 }
-
 impl TypeUrl for SwapExecution {
     const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapExecution";
 }
