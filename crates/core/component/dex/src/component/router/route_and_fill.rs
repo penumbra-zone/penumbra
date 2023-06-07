@@ -207,7 +207,11 @@ pub trait RouteAndFill: StateWrite + Sized {
             // Check that the execution price is below the price limit, if one is set.
             if let Some(price_limit) = params.price_limit {
                 if accurate_max_price >= price_limit {
-                    tracing::debug!(accurate_max_price = ?accurate_max_price, price_limit = ?price_limit, "execution price above price limit, exiting route_and_fill");
+                    tracing::debug!(
+                        ?accurate_max_price,
+                        ?price_limit,
+                        "execution price above price limit, exiting route_and_fill"
+                    );
                     break;
                 }
             }
