@@ -175,6 +175,9 @@ spec:
           volumeMounts:
             - name: pv-{{ $pd_name }}
               mountPath: /home
+          env:
+            - name: RUST_LOG
+              value: info,pd=debug,penumbra=debug
           command:
             - pd
             - start
