@@ -375,6 +375,7 @@ impl TryFrom<&[u8]> for SwapPlaintext {
             .map_err(|_| anyhow!("error fetching address bytes"))?;
         let pb_address = pb_crypto::Address {
             inner: address_bytes.to_vec(),
+            alt_bech32m: String::new(),
         };
         let rseed: [u8; 32] = bytes[224..256]
             .try_into()

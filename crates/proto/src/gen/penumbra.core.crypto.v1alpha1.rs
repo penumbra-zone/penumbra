@@ -10,11 +10,22 @@ pub struct Fee {
     #[prost(message, optional, tag = "2")]
     pub asset_id: ::core::option::Option<AssetId>,
 }
+/// A Penumbra address.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Address {
+    /// The bytes of the address.
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+    /// Alternatively, a Bech32m-encoded string representation of the `inner`
+    /// bytes.
+    ///
+    /// NOTE: implementations are not required to support parsing this field.
+    /// Implementations should prefer to encode the bytes in all messages they
+    /// produce. Implementations must not accept messages with both `inner` and
+    /// `alt_bech32m` set.
+    #[prost(string, tag = "2")]
+    pub alt_bech32m: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -99,11 +110,22 @@ pub struct BalanceCommitment {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+/// A Penumbra asset ID.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AssetId {
+    /// The bytes of the asset ID.
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+    /// Alternatively, a Bech32m-encoded string representation of the `inner`
+    /// bytes.
+    ///
+    /// NOTE: implementations are not required to support parsing this field.
+    /// Implementations should prefer to encode the bytes in all messages they
+    /// produce. Implementations must not accept messages with both `inner` and
+    /// `alt_bech32m` set.
+    #[prost(string, tag = "2")]
+    pub alt_bech32m: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

@@ -338,8 +338,18 @@ pub struct Position {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PositionId {
+    /// The bytes of the position ID.
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+    /// Alternatively, a Bech32m-encoded string representation of the `inner`
+    /// bytes.
+    ///
+    /// NOTE: implementations are not required to support parsing this field.
+    /// Implementations should prefer to encode the bytes in all messages they
+    /// produce. Implementations must not accept messages with both `inner` and
+    /// `alt_bech32m` set.
+    #[prost(string, tag = "2")]
+    pub alt_bech32m: ::prost::alloc::string::String,
 }
 /// The state of a position.
 #[allow(clippy::derive_partial_eq_without_eq)]
