@@ -42,7 +42,7 @@ pub struct BatchSwapOutputData {
     /// The trading pair associated with the batch swap.
     pub trading_pair: TradingPair,
     /// The starting block height of the epoch for which the batch swap data is valid.
-    pub epoch_height: u64,
+    pub epoch_starting_height: u64,
 }
 
 impl BatchSwapOutputData {
@@ -99,7 +99,11 @@ impl ToConstraintField<Fq> for BatchSwapOutputData {
         public_inputs.extend(U128x128::from(self.unfilled_2).to_field_elements().unwrap());
         public_inputs.extend(Fq::from(self.height).to_field_elements().unwrap());
         public_inputs.extend(self.trading_pair.to_field_elements().unwrap());
-        public_inputs.extend(Fq::from(self.epoch_height).to_field_elements().unwrap());
+        public_inputs.extend(
+            Fq::from(self.epoch_starting_height)
+                .to_field_elements()
+                .unwrap(),
+        );
         Some(public_inputs)
     }
 }
@@ -113,7 +117,7 @@ pub struct BatchSwapOutputDataVar {
     pub unfilled_2: U128x128Var,
     pub height: FqVar,
     pub trading_pair: TradingPairVar,
-    pub epoch_height: FqVar,
+    pub epoch_starting_height: FqVar,
 }
 
 impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
@@ -143,8 +147,8 @@ impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
             || Ok(output_data.trading_pair),
             mode,
         )?;
-        let epoch_height =
-            FqVar::new_variable(cs, || Ok(Fq::from(output_data.epoch_height)), mode)?;
+        let epoch_starting_height =
+            FqVar::new_variable(cs, || Ok(Fq::from(output_data.epoch_starting_height)), mode)?;
 
         Ok(Self {
             delta_1,
@@ -155,7 +159,7 @@ impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
             unfilled_2,
             trading_pair,
             height,
-            epoch_height,
+            epoch_starting_height,
         })
     }
 }
@@ -178,7 +182,7 @@ impl From<BatchSwapOutputData> for pb::BatchSwapOutputData {
             unfilled_1: Some(s.unfilled_1.into()),
             unfilled_2: Some(s.unfilled_2.into()),
             height: s.height,
-            epoch_height: s.epoch_height,
+            epoch_starting_height: s.epoch_starting_height,
             trading_pair: Some(s.trading_pair.into()),
         }
     }
@@ -275,7 +279,7 @@ impl TryFrom<pb::BatchSwapOutputData> for BatchSwapOutputData {
                 .trading_pair
                 .ok_or_else(|| anyhow!("Missing trading_pair"))?
                 .try_into()?,
-            epoch_height: s.epoch_height,
+            epoch_starting_height: s.epoch_starting_height,
         })
     }
 }
@@ -385,7 +389,7 @@ mod tests {
                     unfilled_2: Amount::from(1u32),
                     height: 1,
                     trading_pair,
-                    epoch_height: 1,
+                    epoch_starting_height: 1,
                 },
             };
             let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
@@ -411,7 +415,7 @@ mod tests {
             unfilled_2: Amount::from(50u64),
             height: 0u64,
             trading_pair,
-            epoch_height: 0u64,
+            epoch_starting_height: 0u64,
         };
 
         // Now suppose our user's contribution is:

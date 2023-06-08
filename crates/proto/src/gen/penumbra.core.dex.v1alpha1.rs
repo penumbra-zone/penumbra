@@ -271,7 +271,7 @@ pub struct BatchSwapOutputData {
     pub trading_pair: ::core::option::Option<TradingPair>,
     /// The starting block height of the epoch for which the batch swap data is valid.
     #[prost(uint64, tag = "9")]
-    pub epoch_height: u64,
+    pub epoch_starting_height: u64,
 }
 /// The trading function for a specific pair.
 /// For a pair (asset_1, asset_2), a trading function is defined by:

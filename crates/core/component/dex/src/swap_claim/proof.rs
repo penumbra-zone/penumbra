@@ -152,7 +152,8 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
 
         // Validate the swap commitment's height matches the output data's height (i.e. the clearing price height).
         let block = position_bits.block()?;
-        let note_commitment_block_height_var = output_data_var.epoch_height.clone() + block;
+        let note_commitment_block_height_var =
+            output_data_var.epoch_starting_height.clone() + block;
         output_data_var
             .height
             .enforce_equal(&note_commitment_block_height_var)?;
@@ -241,7 +242,7 @@ impl ParameterSetup for SwapClaimCircuit {
             unfilled_2: Amount::from(10u64),
             height: 0,
             trading_pair: swap_plaintext.trading_pair,
-            epoch_height: 0,
+            epoch_starting_height: 0,
         };
         let note_blinding_1 = Fq::from(1);
         let note_blinding_2 = Fq::from(1);
@@ -434,7 +435,7 @@ mod tests {
             unfilled_2: Amount::from(50u64),
             height: height.into(),
             trading_pair: swap_plaintext.trading_pair,
-            epoch_height: position.epoch().into(),
+            epoch_starting_height: position.epoch().into(),
         };
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
@@ -524,7 +525,7 @@ mod tests {
             unfilled_2: Amount::from(1000000u64),
             height: height.into(),
             trading_pair: swap_plaintext.trading_pair,
-            epoch_height: position.epoch().into(),
+            epoch_starting_height: position.epoch().into(),
         };
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 

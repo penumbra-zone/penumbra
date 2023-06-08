@@ -248,7 +248,7 @@ fn swap_claim_proof_happy_path() {
         unfilled_2: Amount::from(50u64),
         height: height.into(),
         trading_pair: swap_plaintext.trading_pair,
-        epoch_height: position.epoch().into(),
+        epoch_starting_height: position.epoch().into(),
     };
     let (lambda_1, lambda_2) = output_data
         .pro_rata_outputs((delta_1_i.try_into().unwrap(), delta_2_i.try_into().unwrap()));
