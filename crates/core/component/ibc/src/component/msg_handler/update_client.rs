@@ -98,7 +98,7 @@ impl MsgHandler for MsgUpdateClient {
             let options = trusted_client_state.as_light_client_options()?;
             let verifier = ProdVerifier::default();
 
-            let verdict = verifier.verify(
+            let verdict = verifier.verify_update_header(
                 untrusted_state,
                 trusted_state,
                 &options,

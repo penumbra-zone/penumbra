@@ -39,13 +39,13 @@ penumbra-view             = { path = "../../view" }
 
 # Penumbra dependencies
 decaf377 = { version = "0.4" }
-tendermint = { version = "0.31.1", features = ["rust-crypto"] }
+tendermint = { version = "0.32.0", features = ["rust-crypto"] }
 jmt = "0.6"
 
 # External dependencies
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
 
-ibc-proto = { version = "=0.31.0-alpha.1" }
+ibc-proto = { version = "0.31.0" }
 ark-ff = { version = "0.4", default-features = false }
 ed25519-consensus = "2"
 futures = "0.3"

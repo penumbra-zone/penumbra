@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use chrono::DateTime;
 use penumbra_proto::{self as proto};
 
@@ -16,6 +18,7 @@ use proto::client::v1alpha1::GetStatusResponse;
 use proto::client::v1alpha1::GetTxRequest;
 use proto::client::v1alpha1::GetTxResponse;
 use proto::DomainType;
+use proto::Message;
 use tendermint::abci::Code;
 use tendermint::block::Height;
 use tendermint_rpc::{Client, HttpClient};
@@ -281,6 +284,10 @@ impl TendermintProxyService for TendermintProxy {
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error querying abci: {e}")))?;
 
+        // TODO: these conversions exist because the penumbra proto files define
+        // their own proxy methods, since tendermint odesn't include them, and this results
+        // in duplicated proto types relative to the tendermint-proto ones.
+
         // The tendermint-rs `Timestamp` type is a newtype wrapper
         // around a `time::PrimitiveDateTime` however it's private so we
         // have to use string parsing to get to the prost type we want :(
@@ -359,7 +366,7 @@ impl TendermintProxyService for TendermintProxy {
                         .map(|e| proto::tendermint::types::Evidence {
                             sum: Some( match e {
                                 tendermint::evidence::Evidence::DuplicateVote(e) => {
-                                   let e2 = tendermint_proto::types::DuplicateVoteEvidence::from(e.clone());
+                                   let e2 = tendermint_proto::types::DuplicateVoteEvidence::from(e.deref().clone());
                                     proto::tendermint::types::evidence::Sum::DuplicateVoteEvidence(proto::tendermint::types::DuplicateVoteEvidence{
                                     vote_a: Some(proto::tendermint::types::Vote{
                                         r#type: match e.votes().0.vote_type {
@@ -409,16 +416,16 @@ impl TendermintProxyService for TendermintProxy {
                                     validator_power: e2.validator_power,
                                     timestamp: e2.timestamp.map(|t| pbjson_types::Timestamp{seconds: t.seconds, nanos: t.nanos}),
                                 })
-                            },
-                                // This variant is currently unimplemented in tendermint-rs, so we can't supply
-                                // conversions for it.
-                                tendermint::evidence::Evidence::LightClientAttackEvidence => proto::tendermint::types::evidence::Sum::LightClientAttackEvidence(proto::tendermint::types::LightClientAttackEvidence{
-                                    conflicting_block: None,
-                                    common_height: -1,
-                                    byzantine_validators: vec![],
-                                    timestamp: None,
-                                    total_voting_power: -1,
-                                }),
+                                },
+                                tendermint::evidence::Evidence::LightClientAttack(e) => {
+                                   let e2 = tendermint_proto::types::LightClientAttackEvidence::from(e.deref().clone());
+                                   let e2_bytes = e2.encode_to_vec();
+                                   let e3 = proto::tendermint::types::LightClientAttackEvidence::decode(e2_bytes.as_slice()).expect("can decode encoded data");
+                                    proto::tendermint::types::evidence::Sum::LightClientAttackEvidence(
+                                        e3
+                                    )
+                                }
+
                         }),
                         })
                         .collect(),

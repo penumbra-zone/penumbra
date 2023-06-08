@@ -49,7 +49,7 @@ parking_lot = "0.12"
 clap = { version = "3", features = ["derive", "env"] }
 camino = "1"
 async-trait = "0.1"
-tendermint = "0.31.1"
+tendermint = "0.32.0"
 sha2 = "0.10.1"
 toml = "0.5"
 ed25519-consensus = "2.1"
@@ -59,9 +59,9 @@ atty = "0.2"
 tempfile = "3.3.0"
 assert_cmd = "2.0"
 base64 = "0.20"
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
 
-ibc-proto = "=0.31.0-alpha.1"
+ibc-proto = "0.31.0"
 
 [build-dependencies]
 vergen = "5"
