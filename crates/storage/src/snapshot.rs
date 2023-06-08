@@ -2,7 +2,7 @@ use std::{any::Any, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::BorshDeserialize;
 use jmt::{
     storage::{HasPreimage, LeafNode, Node, NodeKey, TreeReader},
     KeyHash, Sha256Jmt,

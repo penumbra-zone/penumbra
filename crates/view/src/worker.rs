@@ -224,22 +224,22 @@ impl Worker {
                             // Record every possible permutation.
 
                             let lp_nft = LpNft::new(position_id, position::State::Opened);
-                            let id = lp_nft.asset_id();
+                            let _id = lp_nft.asset_id();
                             let denom = lp_nft.denom();
                             self.storage.record_asset(denom).await?;
 
                             let lp_nft = LpNft::new(position_id, position::State::Closed);
-                            let id = lp_nft.asset_id();
+                            let _id = lp_nft.asset_id();
                             let denom = lp_nft.denom();
                             self.storage.record_asset(denom).await?;
 
                             let lp_nft = LpNft::new(position_id, position::State::Withdrawn);
-                            let id = lp_nft.asset_id();
+                            let _id = lp_nft.asset_id();
                             let denom = lp_nft.denom();
                             self.storage.record_asset(denom).await?;
 
                             let lp_nft = LpNft::new(position_id, position::State::Claimed);
-                            let id = lp_nft.asset_id();
+                            let _id = lp_nft.asset_id();
                             let denom = lp_nft.denom();
                             self.storage.record_asset(denom).await?;
 
