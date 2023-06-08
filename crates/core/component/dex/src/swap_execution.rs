@@ -1,5 +1,5 @@
 use anyhow::Result;
-use penumbra_crypto::{fixpoint::U128x128, Amount, Value};
+use penumbra_crypto::{fixpoint::U128x128, Value};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 

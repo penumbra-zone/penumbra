@@ -700,7 +700,7 @@ impl Storage {
             pool.get()?
                 .prepare_cached("SELECT * FROM assets")?
                 .query_and_then([], |row| {
-                    let asset_id: Vec<u8> = row.get("asset_id")?;
+                    let _asset_id: Vec<u8> = row.get("asset_id")?;
                     let denom: String = row.get("denom")?;
 
                     let denom_metadata = asset::REGISTRY
@@ -723,7 +723,7 @@ impl Storage {
             pool.get()?
                 .prepare_cached("SELECT * FROM assets WHERE asset_id = ?1")?
                 .query_and_then([id], |row| {
-                    let asset_id: Vec<u8> = row.get("asset_id")?;
+                    let _asset_id: Vec<u8> = row.get("asset_id")?;
                     let denom: String = row.get("denom")?;
                     let denom_metadata = asset::REGISTRY
                         .parse_denom(&denom)
@@ -747,7 +747,7 @@ impl Storage {
             pool.get()?
                 .prepare_cached("SELECT * FROM assets WHERE denom LIKE ?1 ESCAPE '\\'")?
                 .query_and_then([pattern], |row| {
-                    let asset_id: Vec<u8> = row.get("asset_id")?;
+                    let _asset_id: Vec<u8> = row.get("asset_id")?;
                     let denom: String = row.get("denom")?;
                     let denom_metadata = asset::REGISTRY
                         .parse_denom(&denom)
