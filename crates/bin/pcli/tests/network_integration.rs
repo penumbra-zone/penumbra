@@ -56,8 +56,8 @@ fn load_wallet_into_tmpdir() -> TempDir {
             "keys",
             "import",
             "phrase",
-            SEED_PHRASE,
         ])
+        .write_stdin(SEED_PHRASE)
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     setup_cmd
         .assert()
