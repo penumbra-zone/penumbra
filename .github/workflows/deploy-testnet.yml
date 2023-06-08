@@ -57,3 +57,9 @@ jobs:
 
       - name: bounce grpcui
         run: kubectl rollout restart deployment grpcui-testnet
+
+      # TODO: Set up some tagging logic to associate osiris versions with specific releases.
+      # This workflow only runs on new tags, so it won't bounce osiris often, but it'll always
+      # pull the latest image when it does. That *might* not be what we want.
+      - name: bounce osiris
+        run: kubectl rollout restart deployment osiris-testnet

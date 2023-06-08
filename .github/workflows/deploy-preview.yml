@@ -63,3 +63,6 @@ jobs:
 
       - name: bounce grpcui
         run: kubectl rollout restart deployment grpcui-preview
+
+      - name: bounce osiris
+        run: kubectl rollout restart deployment osiris-preview
