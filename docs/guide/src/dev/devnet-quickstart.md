@@ -20,7 +20,7 @@ This will write configs to `~/.penumbra/testnet_data/`.
 You'll probably want to set `RUST_LOG`.  Here's one suggestion:
 
 ```shell
-export RUST_LOG="warn,pd=debug,penumbra=debug,jmt=info"
+export RUST_LOG="info,pd=debug,penumbra=debug"
 ```
 
 To run `pd`, run
