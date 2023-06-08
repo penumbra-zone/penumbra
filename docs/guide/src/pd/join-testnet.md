@@ -54,7 +54,7 @@ testnet data directory.  It's useful to set the `RUST_LOG` environment variable
 to get information about what it's doing:
 
 ```shell
-export RUST_LOG="info,pd=debug,penumbra=debug" # or some other logging level
+export RUST_LOG="info,pd=debug,penumbra=debug,jmt=debug" # or some other logging level
 ```
 
 ```shell

@@ -7,7 +7,7 @@ ExecStart=/usr/local/bin/pd start --home $HOME/.penumbra/testnet_data/node0/pd
 Restart=on-failure
 RestartSec=5
 User=$USER
-Environment=RUST_LOG=info,pd=debug,penumbra=debug
+Environment=RUST_LOG=info,pd=debug,penumbra=debug,jmt=debug
 
 [Install]
 WantedBy=default.target

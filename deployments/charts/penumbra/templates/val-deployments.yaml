@@ -177,7 +177,7 @@ spec:
               mountPath: /home
           env:
             - name: RUST_LOG
-              value: info,pd=debug,penumbra=debug
+              value: info,pd=debug,penumbra=debug,jmt=debug
           command:
             - pd
             - start

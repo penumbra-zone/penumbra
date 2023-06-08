@@ -12,7 +12,7 @@ services:
   pd-node0:
     image: ghcr.io/penumbra-zone/penumbra:latest
     environment:
-      - RUST_LOG=pd=debug
+      - RUST_LOG=info,pd=debug,penumbra=debug,jmt=debug
     command: >-
       sh -c
       "
@@ -27,8 +27,6 @@ services:
     volumes:
       - ~/.penumbra:/pd
     user: "${UID:-1000}"
-    environment:
-      - RUST_LOG=info,pd=debug,penumbra=debug
     ports:
       - "26658:26658"
       - "8080:8080"
