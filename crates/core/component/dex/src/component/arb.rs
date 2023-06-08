@@ -72,15 +72,6 @@ pub trait Arbitrage: StateWrite + Sized {
             return Ok(Value { amount: 0u64.into(), asset_id: arb_token });
         };
 
-        tracing::info!(
-            ?filled_input,
-            ?output,
-            ?unfilled_input,
-            ?total_output,
-            ?arb_profit,
-            "arbitrage successful"
-        );
-
         if arb_profit == 0u64.into() {
             // If we didn't make any profit, we don't need to do anything,
             // and we can just discard the state delta entirely.
@@ -89,12 +80,16 @@ pub trait Arbitrage: StateWrite + Sized {
                 amount: 0u64.into(),
                 asset_id: arb_token,
             });
+        } else {
+            tracing::info!(
+                ?filled_input,
+                ?output,
+                ?unfilled_input,
+                ?total_output,
+                ?arb_profit,
+                "arbitrage successful"
+            );
         }
-
-        tracing::debug!(
-            ?arb_profit,
-            "successfully arbitraged positions, burning profit"
-        );
 
         // TODO: this is a bit nasty, can it be simplified?
         // should this even be done "inside" the method, or all the way at the top?
