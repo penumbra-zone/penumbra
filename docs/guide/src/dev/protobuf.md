@@ -13,10 +13,6 @@ We use [buf] to auto-publish the protobuf schemas at
 [buf.build/penumbra-zone/penumbra][protobuf], and to generate Go and Typescript packages.
 The Rust code files are generated with our own tooling, located at `tools/proto-compiler`.
 
-Our custom tooling for generating the Rust files will also shape the Serde implementations
-of the derived Rust types to have more favorable JSON output (such as rendering
-addresses as [Bech32]-encoded strings).
-
 ## Installing protoc
 
 The `protoc` tool is required to generate our protobuf specs via `tools/proto-compiler`.
