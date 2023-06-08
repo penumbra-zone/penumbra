@@ -4,7 +4,7 @@ use std::{
 };
 
 use penumbra_compact_block::CompactBlock;
-use penumbra_crypto::{asset::DenomMetadata, FullViewingKey, Nullifier};
+use penumbra_crypto::{FullViewingKey, Nullifier};
 use penumbra_dex::lp::{position, LpNft};
 use penumbra_proto::client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient;
 use penumbra_proto::{
@@ -263,21 +263,32 @@ impl Worker {
                         .is_some()
                     {
                         continue;
+                    } else {
+                        // If the asset is unknown, we may be able to query for its denom metadata and store that.
+
+                        if let Some(denom_metadata) = self
+                            .specific_client
+                            .denom_metadata_by_id(DenomMetadataByIdRequest {
+                                asset_id: Some(note_record.note.asset_id().into()),
+                                chain_id: chain_id.clone(),
+                            })
+                            .await?
+                            .into_inner()
+                            .denom_metadata
+                        {
+                            // If we get metadata: great, record it.
+                            self.storage
+                                .record_asset(denom_metadata.try_into()?)
+                                .await?;
+                        } else {
+                            // Otherwise we are dealing with an unknown/novel asset ID, but we don't have the original raw denom field naming the asset.
+                            // For now, we can just record the asset ID with the denom value as "Unknown".
+
+                            self.storage
+                                .record_unknown_asset(note_record.note.asset_id())
+                                .await?;
+                        }
                     }
-
-                    let denom_metadata: DenomMetadata = self
-                        .specific_client
-                        .denom_metadata_by_id(DenomMetadataByIdRequest {
-                            asset_id: Some(note_record.note.asset_id().into()),
-                            chain_id: chain_id.clone(),
-                        })
-                        .await?
-                        .into_inner()
-                        .denom_metadata
-                        .ok_or_else(|| anyhow::anyhow!("asset not found"))?
-                        .try_into()?;
-
-                    self.storage.record_asset(denom_metadata).await?;
                 }
 
                 // Commit the block to the database.

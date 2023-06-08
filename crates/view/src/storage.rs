@@ -841,7 +841,7 @@ impl Storage {
                 // and check if we should break out of the loop.
                 if amount_cutoff {
                     // We know all the notes are of the same type, so adding raw quantities makes sense.
-                    amount_total = amount_total + amount;
+                    amount_total += amount;
                     if amount_total >= amount_to_spend.unwrap_or_default() {
                         break;
                     }
@@ -930,7 +930,26 @@ impl Storage {
 
     pub async fn record_asset(&self, asset: DenomMetadata) -> anyhow::Result<()> {
         let asset_id = asset.id().to_bytes().to_vec();
-        let denom = asset.base_denom().denom.to_string();
+        let denom = asset.base_denom().denom;
+
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            pool.get()?
+                .execute(
+                    "INSERT OR IGNORE INTO assets (asset_id, denom) VALUES (?1, ?2)",
+                    (asset_id, denom),
+                )
+                .map_err(anyhow::Error::from)
+        })
+        .await??;
+
+        Ok(())
+    }
+
+    pub async fn record_unknown_asset(&self, id: asset::Id) -> anyhow::Result<()> {
+        let asset_id = id.to_bytes().to_vec();
+        let denom = "Unknown".to_string();
 
         let pool = self.pool.clone();
 
