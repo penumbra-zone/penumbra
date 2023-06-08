@@ -1,4 +1,5 @@
 [Penumbra Guide](./README.md)
+- [Using the web wallet](./extension.md)
 - [Using `pcli`](./pcli.md)
   - [Installing `pcli`](./pcli/install.md)
   - [Generating a Wallet](./pcli/wallet.md)
@@ -10,7 +11,6 @@
 - [Using `pd`](./pd.md)
   - [Building `pd`](./pd/build.md)
   - [Joining a Testnet](./pd/join-testnet.md)
-- [Using the web wallet](./extension.md)
 - [Development](./dev.md)
   - [Devnet Quickstart](./dev/devnet-quickstart.md)
   - [SQLite compilation setup](./dev/sqlx.md)
