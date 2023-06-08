@@ -18,14 +18,21 @@ use crate::{
 /// a block's batch swap flows.
 #[async_trait]
 pub trait HandleBatchSwaps: StateWrite + Sized {
-    #[instrument(skip(self, trading_pair, batch_data, block_height, epoch_height, params))]
+    #[instrument(skip(
+        self,
+        trading_pair,
+        batch_data,
+        block_height,
+        epoch_starting_height,
+        params
+    ))]
     async fn handle_batch_swaps(
         self: &mut Arc<Self>,
         trading_pair: TradingPair,
         batch_data: SwapFlow,
         // TODO: why not read these 2 from the state?
         block_height: u64,
-        epoch_height: u64,
+        epoch_starting_height: u64,
         params: RoutingParams,
     ) -> Result<()>
     where
@@ -86,7 +93,7 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         };
         let output_data = BatchSwapOutputData {
             height: block_height,
-            epoch_height,
+            epoch_starting_height,
             trading_pair,
             delta_1,
             delta_2,
