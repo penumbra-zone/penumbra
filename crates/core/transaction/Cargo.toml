@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-transaction"
-version = "0.53.1"
+version = "0.54.0"
 edition = "2021"
 
 [dependencies]

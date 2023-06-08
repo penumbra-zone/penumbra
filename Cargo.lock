@@ -1811,7 +1811,7 @@ dependencies = [
 
 [[package]]
 name = "decaf377-fmd"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "ark-ff",
  "ark-serialize",
@@ -1826,7 +1826,7 @@ dependencies = [
 
 [[package]]
 name = "decaf377-ka"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "ark-ff",
  "decaf377",
@@ -3686,7 +3686,7 @@ checksum = "e5ce46fe64a9d73be07dcbe690a38ce1b293be448fd8ce1e6c1b8062c9f72c6a"
 
 [[package]]
 name = "narsil"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "async-stream 0.2.1",
@@ -4132,7 +4132,7 @@ dependencies = [
 
 [[package]]
 name = "pcli"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4203,7 +4203,7 @@ dependencies = [
 
 [[package]]
 name = "pclientd"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -4255,7 +4255,7 @@ dependencies = [
 
 [[package]]
 name = "pd"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4383,7 +4383,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-app"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4442,7 +4442,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-chain"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4467,7 +4467,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-compact-block"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4494,7 +4494,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-component"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4504,7 +4504,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-crypto"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "aes 0.8.2",
  "anyhow",
@@ -4550,7 +4550,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-custody"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "base64 0.20.0",
@@ -4575,7 +4575,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-dao"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4604,7 +4604,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-dex"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4651,7 +4651,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-distributions"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4667,7 +4667,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-eddy"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4685,7 +4685,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-ibc"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4716,7 +4716,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-measure"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "bytesize",
@@ -4737,7 +4737,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-proof-params"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4767,7 +4767,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-proto"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "async-stream 0.2.1",
@@ -4795,7 +4795,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sct"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4820,7 +4820,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-shielded-pool"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4847,7 +4847,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-stake"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4887,7 +4887,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-storage"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4912,7 +4912,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-tct"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "ark-ed-on-bls12-377",
  "ark-ff",
@@ -4943,7 +4943,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-tct-property-test"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "futures",
@@ -4956,7 +4956,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-tct-visualize"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "axum 0.5.17",
@@ -4986,7 +4986,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-tendermint-proxy"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -5017,7 +5017,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-tower-trace"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "futures",
  "hex",
@@ -5038,7 +5038,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-transaction"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "aes 0.7.5",
  "anyhow",
@@ -5087,7 +5087,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-view"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "async-stream 0.2.1",
@@ -5137,7 +5137,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-wallet"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -5169,7 +5169,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-wasm"
-version = "0.53.1"
+version = "0.54.0"
 dependencies = [
  "anyhow",
  "base64 0.20.0",
