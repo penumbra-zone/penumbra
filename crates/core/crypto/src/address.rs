@@ -153,7 +153,11 @@ impl DomainType for Address {
 
 impl From<Address> for pb::Address {
     fn from(a: Address) -> Self {
-        pb::Address { inner: a.to_vec() }
+        pb::Address {
+            inner: a.to_vec(),
+            // Always produce encodings without the alt format.
+            alt_bech32m: String::new(),
+        }
     }
 }
 
@@ -161,7 +165,16 @@ impl TryFrom<pb::Address> for Address {
     type Error = anyhow::Error;
 
     fn try_from(value: pb::Address) -> Result<Self, Self::Error> {
-        (&value.inner).try_into()
+        match (value.inner.is_empty(), value.alt_bech32m.is_empty()) {
+            (false, true) => value.inner.try_into(),
+            (true, false) => value.alt_bech32m.parse(),
+            (false, false) => Err(anyhow::anyhow!(
+                "Address proto has both inner and alt_bech32m fields set"
+            )),
+            (true, true) => Err(anyhow::anyhow!(
+                "Address proto has neither inner nor alt_bech32m fields set"
+            )),
+        }
     }
 }
 
@@ -188,6 +201,7 @@ impl std::str::FromStr for Address {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         pb::Address {
             inner: bech32str::decode(s, bech32str::address::BECH32_PREFIX, bech32str::Bech32m)?,
+            alt_bech32m: String::new(),
         }
         .try_into()
     }
@@ -265,11 +279,25 @@ mod tests {
         let ivk = fvk.incoming();
         let (dest, _dtk_d) = ivk.payment_address(0u32.into());
 
-        let encoded_addr = format!("{dest}");
+        let bech32m_addr = format!("{dest}");
 
-        let addr = Address::from_str(&encoded_addr).expect("can decode valid address");
+        let addr = Address::from_str(&bech32m_addr).expect("can decode valid address");
+
+        use penumbra_proto::Message;
+
+        let proto_addr = dest.encode_to_vec();
+        let proto_addr_bech32m = pb::Address {
+            inner: Vec::new(),
+            alt_bech32m: bech32m_addr,
+        }
+        .encode_to_vec();
+
+        let addr2 = Address::decode(proto_addr.as_ref()).expect("can decode valid address");
+        let addr3 = Address::decode(proto_addr_bech32m.as_ref()).expect("can decode valid address");
 
         assert_eq!(addr, dest);
+        assert_eq!(addr2, dest);
+        assert_eq!(addr3, dest);
     }
 
     #[test]

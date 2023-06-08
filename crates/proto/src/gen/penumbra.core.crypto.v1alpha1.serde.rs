@@ -102,9 +102,15 @@ impl serde::Serialize for Address {
         if !self.inner.is_empty() {
             len += 1;
         }
+        if !self.alt_bech32m.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.crypto.v1alpha1.Address", len)?;
         if !self.inner.is_empty() {
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
+        }
+        if !self.alt_bech32m.is_empty() {
+            struct_ser.serialize_field("altBech32m", &self.alt_bech32m)?;
         }
         struct_ser.end()
     }
@@ -117,11 +123,14 @@ impl<'de> serde::Deserialize<'de> for Address {
     {
         const FIELDS: &[&str] = &[
             "inner",
+            "alt_bech32m",
+            "altBech32m",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Inner,
+            AltBech32m,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -144,6 +153,7 @@ impl<'de> serde::Deserialize<'de> for Address {
                     {
                         match value {
                             "inner" => Ok(GeneratedField::Inner),
+                            "altBech32m" | "alt_bech32m" => Ok(GeneratedField::AltBech32m),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -164,6 +174,7 @@ impl<'de> serde::Deserialize<'de> for Address {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut inner__ = None;
+                let mut alt_bech32m__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Inner => {
@@ -174,10 +185,17 @@ impl<'de> serde::Deserialize<'de> for Address {
                                 Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::AltBech32m => {
+                            if alt_bech32m__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("altBech32m"));
+                            }
+                            alt_bech32m__ = Some(map.next_value()?);
+                        }
                     }
                 }
                 Ok(Address {
                     inner: inner__.unwrap_or_default(),
+                    alt_bech32m: alt_bech32m__.unwrap_or_default(),
                 })
             }
         }
@@ -745,9 +763,15 @@ impl serde::Serialize for AssetId {
         if !self.inner.is_empty() {
             len += 1;
         }
+        if !self.alt_bech32m.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.crypto.v1alpha1.AssetId", len)?;
         if !self.inner.is_empty() {
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
+        }
+        if !self.alt_bech32m.is_empty() {
+            struct_ser.serialize_field("altBech32m", &self.alt_bech32m)?;
         }
         struct_ser.end()
     }
@@ -760,11 +784,14 @@ impl<'de> serde::Deserialize<'de> for AssetId {
     {
         const FIELDS: &[&str] = &[
             "inner",
+            "alt_bech32m",
+            "altBech32m",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Inner,
+            AltBech32m,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -787,6 +814,7 @@ impl<'de> serde::Deserialize<'de> for AssetId {
                     {
                         match value {
                             "inner" => Ok(GeneratedField::Inner),
+                            "altBech32m" | "alt_bech32m" => Ok(GeneratedField::AltBech32m),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -807,6 +835,7 @@ impl<'de> serde::Deserialize<'de> for AssetId {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut inner__ = None;
+                let mut alt_bech32m__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Inner => {
@@ -817,10 +846,17 @@ impl<'de> serde::Deserialize<'de> for AssetId {
                                 Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::AltBech32m => {
+                            if alt_bech32m__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("altBech32m"));
+                            }
+                            alt_bech32m__ = Some(map.next_value()?);
+                        }
                     }
                 }
                 Ok(AssetId {
                     inner: inner__.unwrap_or_default(),
+                    alt_bech32m: alt_bech32m__.unwrap_or_default(),
                 })
             }
         }

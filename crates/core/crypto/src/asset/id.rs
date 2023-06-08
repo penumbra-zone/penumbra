@@ -34,6 +34,8 @@ impl From<Id> for pb::AssetId {
     fn from(id: Id) -> Self {
         pb::AssetId {
             inner: id.0.to_bytes().to_vec(),
+            // Never produce a proto encoding with the alt string encoding.
+            alt_bech32m: String::new(),
         }
     }
 }
@@ -41,11 +43,16 @@ impl From<Id> for pb::AssetId {
 impl TryFrom<pb::AssetId> for Id {
     type Error = anyhow::Error;
     fn try_from(value: pb::AssetId) -> Result<Self, Self::Error> {
-        let bytes: [u8; 32] = value.inner.try_into().map_err(|_| {
-            anyhow::anyhow!("could not deserialize Asset ID: input vec is not 32 bytes")
-        })?;
-        let inner = Fq::from_bytes(bytes)?;
-        Ok(Id(inner))
+        match (value.inner.is_empty(), value.alt_bech32m.is_empty()) {
+            (false, true) => value.inner.as_slice().try_into(),
+            (true, false) => value.alt_bech32m.parse(),
+            (false, false) => Err(anyhow::anyhow!(
+                "AssetId proto has both inner and alt_bech32m fields set"
+            )),
+            (true, true) => Err(anyhow::anyhow!(
+                "AssetId proto has neither inner nor alt_bech32m fields set"
+            )),
+        }
     }
 }
 
@@ -98,7 +105,11 @@ impl std::str::FromStr for Id {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let inner = bech32str::decode(s, bech32str::asset_id::BECH32_PREFIX, bech32str::Bech32m)?;
-        pb::AssetId { inner }.try_into()
+        pb::AssetId {
+            inner,
+            alt_bech32m: String::new(),
+        }
+        .try_into()
     }
 }
 
@@ -145,5 +156,36 @@ impl Id {
                 .hash(base_denom.as_bytes())
                 .as_bytes(),
         ))
+    }
+}
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::*;
+
+    #[test]
+    fn asset_id_encoding() {
+        let id = Id::from_raw_denom("upenumbra");
+
+        let bech32m_id = format!("{id}");
+
+        let id2 = Id::from_str(&bech32m_id).expect("can decode valid asset id");
+
+        use penumbra_proto::Message;
+
+        let proto = id.encode_to_vec();
+        let proto2 = pb::AssetId {
+            inner: Vec::new(),
+            alt_bech32m: bech32m_id,
+        }
+        .encode_to_vec();
+
+        let id3 = Id::decode(proto.as_ref()).expect("can decode valid asset id");
+        let id4 = Id::decode(proto2.as_ref()).expect("can decode valid asset id");
+
+        assert_eq!(id2, id);
+        assert_eq!(id3, id);
+        assert_eq!(id4, id);
     }
 }

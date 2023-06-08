@@ -11,8 +11,19 @@ message Fee {
     AssetId asset_id = 2;
 }
 
+// A Penumbra address.
 message Address {
+    // The bytes of the address.
     bytes inner = 1;
+    
+    // Alternatively, a Bech32m-encoded string representation of the `inner`
+    // bytes.
+    // 
+    // NOTE: implementations are not required to support parsing this field.
+    // Implementations should prefer to encode the bytes in all messages they
+    // produce. Implementations must not accept messages with both `inner` and
+    // `alt_bech32m` set.
+    string alt_bech32m = 2;
 }
 
 message AddressView {
@@ -63,8 +74,19 @@ message BalanceCommitment {
     bytes inner = 1;
 }
 
+// A Penumbra asset ID.
 message AssetId {
+    // The bytes of the asset ID.
     bytes inner = 1;
+    
+    // Alternatively, a Bech32m-encoded string representation of the `inner`
+    // bytes.
+    // 
+    // NOTE: implementations are not required to support parsing this field.
+    // Implementations should prefer to encode the bytes in all messages they
+    // produce. Implementations must not accept messages with both `inner` and
+    // `alt_bech32m` set.
+    string alt_bech32m = 2;
 }
 
 message Amount {

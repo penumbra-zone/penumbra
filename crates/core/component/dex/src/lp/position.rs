@@ -196,7 +196,11 @@ impl std::str::FromStr for Id {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let inner = bech32str::decode(s, bech32str::lp_id::BECH32_PREFIX, bech32str::Bech32m)?;
-        pb::PositionId { inner }.try_into()
+        pb::PositionId {
+            inner,
+            alt_bech32m: String::new(),
+        }
+        .try_into()
     }
 }
 
@@ -265,13 +269,20 @@ impl TryFrom<pb::PositionId> for Id {
     type Error = anyhow::Error;
 
     fn try_from(value: pb::PositionId) -> Result<Self, Self::Error> {
-        Ok(Self(
-            value
+        match (value.inner.is_empty(), value.alt_bech32m.is_empty()) {
+            (false, true) => Ok(Id(value
                 .inner
                 .as_slice()
                 .try_into()
-                .context("expected 32-byte id")?,
-        ))
+                .context("expected 32-byte id")?)),
+            (true, false) => value.alt_bech32m.parse(),
+            (false, false) => Err(anyhow::anyhow!(
+                "AssetId proto has both inner and alt_bech32m fields set"
+            )),
+            (true, true) => Err(anyhow::anyhow!(
+                "AssetId proto has neither inner nor alt_bech32m fields set"
+            )),
+        }
     }
 }
 
@@ -279,6 +290,8 @@ impl From<Id> for pb::PositionId {
     fn from(value: Id) -> Self {
         Self {
             inner: value.0.to_vec(),
+            // Never produce a proto encoding with the alt field set.
+            alt_bech32m: String::new(),
         }
     }
 }
