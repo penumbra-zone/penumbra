@@ -1,3 +1,4 @@
+use std::io::Read;
 use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
@@ -24,11 +25,9 @@ pub enum KeysCmd {
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ImportCmd {
-    /// Import from an existing seed phrase.
-    Phrase {
-        /// A 24 word phrase in quotes.
-        seed_phrase: String,
-    },
+    /// Import wallet from an existing 24-word seed phrase. Will prompt for input interactively.
+    /// Also accepts input from stdin, for use with pipes.
+    Phrase,
 }
 
 #[derive(Debug, clap::Subcommand)]
@@ -79,8 +78,23 @@ impl KeysCmd {
                 wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                 self.archive_wallet(&wallet)?;
             }
-            KeysCmd::Import(ImportCmd::Phrase { seed_phrase }) => {
-                let wallet = KeyStore::from_seed_phrase(SeedPhrase::from_str(seed_phrase)?);
+            KeysCmd::Import(ImportCmd::Phrase) => {
+                let mut seed_phrase = String::new();
+                // The `rpassword` crate doesn't support reading from stdin, so we check
+                // for an interactive session. We must support non-interactive use cases,
+                // for integration with other tooling.
+                if atty::is(atty::Stream::Stdin) {
+                    seed_phrase = rpassword::prompt_password("Enter seed phrase: ")?;
+                } else {
+                    while let Ok(n_bytes) = std::io::stdin().lock().read_to_string(&mut seed_phrase)
+                    {
+                        if n_bytes == 0 {
+                            break;
+                        }
+                        seed_phrase = seed_phrase.trim().to_string();
+                    }
+                }
+                let wallet = KeyStore::from_seed_phrase(SeedPhrase::from_str(&seed_phrase)?);
                 wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                 self.archive_wallet(&wallet)?;
             }
