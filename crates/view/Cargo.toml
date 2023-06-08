@@ -33,7 +33,7 @@ penumbra-compact-block = { path = "../core/component/compact-block", default-fea
 penumbra-app           = { path = "../core/app" }
 penumbra-transaction   = { path = "../core/transaction" }
 
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "0.2.x" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
 
 tokio = { version = "1.22", features = ["full"] }
 tokio-stream = { version = "0.1.8", features = ["sync"] }
@@ -56,7 +56,7 @@ parking_lot = "0.12"
 clap = { version = "3", features = ["derive"] }
 camino = "1"
 async-trait = "0.1"
-tendermint = "0.31.1"
+tendermint = "0.32.0"
 sha2 = "0.10.1"
 ed25519-consensus = "2.1"
 r2d2 = "0.8"
