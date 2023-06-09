@@ -419,9 +419,11 @@ impl U128x128Var {
         // xbar * 2^128 = qbar * ybar + r
 
         // use a division oracle to compute (qbar, r) out-of-circut
-        // Constrain xbar * 2^128 = qbar * ybar + r
+        // Constrain xbar * 2^128 = qbar * ybar + r (below)
         // Constrain 0 <= r
         // Constrain r < qbar
+        // Constrain divisor to be non-zero:
+        rhs.enforce_not_equal(&U128x128Var::zero())?;
 
         // OOC division
         let xbar_ooc = self.value().unwrap_or_default();
