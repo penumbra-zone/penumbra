@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types::core::{
+use ibc_types2::core::{
     ics02_client::{client_state::ClientState, height::Height},
     ics04_channel::{channel::State as ChannelState, packet::Packet},
     ics24_host::identifier::{ChannelId, PortId},

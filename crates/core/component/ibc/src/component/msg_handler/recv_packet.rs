@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types::core::{
+use ibc_types2::core::{
     ics02_client::height::Height as IBCHeight,
     ics03_connection::connection::State as ConnectionState,
     ics04_channel::{

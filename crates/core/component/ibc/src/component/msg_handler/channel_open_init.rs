@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types::core::{
+use ibc_types2::core::{
     ics04_channel::{
         channel::{ChannelEnd, Counterparty, State},
         msgs::chan_open_init::MsgChannelOpenInit,

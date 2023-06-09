@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use ibc_types::clients::ics07_tendermint;
+use ibc_types2::clients::ics07_tendermint;
 
-use ibc_types::{
+use ibc_types2::{
     clients::ics07_tendermint::{
         client_state::ClientState as TendermintClientState,
         consensus_state::ConsensusState as TendermintConsensusState,
@@ -417,7 +417,7 @@ mod tests {
 
     use super::*;
     use ibc_proto::protobuf::Protobuf;
-    use ibc_types::core::ics02_client::msgs::create_client::MsgCreateClient;
+    use ibc_types2::core::ics02_client::msgs::create_client::MsgCreateClient;
     use penumbra_chain::component::StateWriteExt;
     use penumbra_component::ActionHandler;
     use penumbra_storage::{ArcStateDeltaExt, StateDelta};

@@ -8,11 +8,9 @@
 /// token transfers.
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types::core::ics04_channel::msgs::{
-    acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
-    chan_close_init::MsgChannelCloseInit, chan_open_ack::MsgChannelOpenAck,
-    chan_open_confirm::MsgChannelOpenConfirm, chan_open_init::MsgChannelOpenInit,
-    chan_open_try::MsgChannelOpenTry, recv_packet::MsgRecvPacket, timeout::MsgTimeout,
+use ibc_types2::core::channel::msgs::{
+    MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
+    MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket, MsgTimeout,
 };
 use penumbra_storage::{StateRead, StateWrite};
 

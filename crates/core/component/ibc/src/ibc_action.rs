@@ -1,5 +1,5 @@
 use ibc_proto::protobuf::Protobuf;
-use ibc_types::core::{
+use ibc_types2::core::{
     ics02_client::msgs::{
         create_client::{MsgCreateClient, TYPE_URL as CREATE_CLIENT},
         update_client::{MsgUpdateClient, TYPE_URL as UPDATE_CLIENT},
