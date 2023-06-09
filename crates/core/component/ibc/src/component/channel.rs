@@ -4,17 +4,12 @@ use super::state_key;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use ibc_types::core::{
-    ics02_client::consensus_state::ConsensusState,
-    ics03_connection::connection::ConnectionEnd,
-    ics04_channel::{
-        channel::ChannelEnd,
-        msgs::{
-            acknowledgement::MsgAcknowledgement, recv_packet::MsgRecvPacket, timeout::MsgTimeout,
-        },
-        packet::Packet,
-    },
-    ics24_host::identifier::{ChannelId, PortId},
+use ibc_types2::core::{
+    channel::msgs::{MsgAcknowledgement, MsgRecvPacket, MsgTimeout},
+    channel::{ChannelEnd, ChannelId, Packet, PortId},
+    // TODO: resolve this type
+    client::ConsensusState,
+    connection::ConnectionEnd,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};

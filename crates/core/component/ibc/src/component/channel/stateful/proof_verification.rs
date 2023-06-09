@@ -3,26 +3,37 @@ use crate::component::client::StateReadExt;
 // NOTE: where should this code live after the refactor to actionhandlers?
 
 use super::super::*;
-use ibc_types::{
-    clients::ics07_tendermint::{
-        client_state::ClientState as TendermintClientState,
-        consensus_state::ConsensusState as TendermintConsensusState,
-    },
+use ibc_types2::{
     core::{
-        ics02_client::client_state::ClientState,
+        // TODO: resolve this type
+        client::ClientState,
+        //
+        client::Height,
+        
+        // TODO: resolve this function
         ics04_channel::context::calculate_block_delay,
-        ics23_commitment::{
-            commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot},
-            merkle::{apply_prefix, MerkleProof},
+        //
+
+        commitment::{
+            MerklePrefix,  MerkleRoot, MerkleProof
+                
+            // TODO: resolve these 
+            merkle::{apply_prefix},
             specs::ProofSpecs,
         },
+        
+        client::ClientId,
+
         ics24_host::{
             identifier::ClientId,
             path::{AckPath, ChannelEndPath, CommitmentPath, ReceiptPath, SeqRecvPath},
             Path,
         },
     },
-    Height,
+    lightclients::tendermint::{
+        client_state::ClientState as TendermintClientState,
+        consensus_state::ConsensusState as TendermintConsensusState,
+    },
 };
 
 use anyhow::Context;
@@ -315,7 +326,7 @@ mod inner {
 
             TendermintClientState::verify_delay_passed(
                 current_timestamp.into(),
-                ibc_types::Height::new(0, current_height)?,
+                ibc_types2::client::Height::new(0, current_height)?,
                 processed_time,
                 processed_height,
                 delay_period_time,

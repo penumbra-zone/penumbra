@@ -2850,7 +2850,7 @@ dependencies = [
 [[package]]
 name = "ibc-types"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#2cce80529226b3b8e5a9805d9c4995d931647428"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#0e3cf3290d1d58232634f7bac77701e81f0ae767"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2874,6 +2874,202 @@ dependencies = [
  "time 0.3.19",
  "tracing",
  "uint",
+]
+
+[[package]]
+name = "ibc-types-core-channel"
+version = "0.2.0"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#0e3cf3290d1d58232634f7bac77701e81f0ae767"
+dependencies = [
+ "bytes",
+ "derive_more",
+ "displaydoc",
+ "ibc-proto",
+ "ibc-types-core-client",
+ "ibc-types-core-connection",
+ "ibc-types-domain-type",
+ "ibc-types-identifier",
+ "ibc-types-timestamp",
+ "ics23",
+ "num-traits",
+ "prost",
+ "safe-regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha2 0.10.6",
+ "subtle-encoding",
+ "tendermint",
+ "tendermint-proto",
+ "time 0.3.19",
+ "tracing",
+]
+
+[[package]]
+name = "ibc-types-core-client"
+version = "0.2.0"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#0e3cf3290d1d58232634f7bac77701e81f0ae767"
+dependencies = [
+ "bytes",
+ "derive_more",
+ "displaydoc",
+ "ibc-proto",
+ "ibc-types-domain-type",
+ "ibc-types-identifier",
+ "ibc-types-timestamp",
+ "ics23",
+ "num-traits",
+ "prost",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha2 0.10.6",
+ "subtle-encoding",
+ "tendermint",
+ "tendermint-proto",
+ "time 0.3.19",
+]
+
+[[package]]
+name = "ibc-types-core-commitment"
+version = "0.2.0"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#0e3cf3290d1d58232634f7bac77701e81f0ae767"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "derive_more",
+ "displaydoc",
+ "dyn-clone",
+ "erased-serde",
+ "ibc-proto",
+ "ibc-types-domain-type",
+ "ibc-types-identifier",
+ "ibc-types-timestamp",
+ "ics23",
+ "num-traits",
+ "primitive-types",
+ "prost",
+ "safe-regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha2 0.10.6",
+ "subtle-encoding",
+ "tendermint",
+ "tendermint-light-client-verifier",
+ "tendermint-proto",
+ "time 0.3.19",
+ "tracing",
+ "uint",
+]
+
+[[package]]
+name = "ibc-types-core-connection"
+version = "0.2.0"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#0e3cf3290d1d58232634f7bac77701e81f0ae767"
+dependencies = [
+ "bytes",
+ "derive_more",
+ "displaydoc",
+ "ibc-proto",
+ "ibc-types-core-client",
+ "ibc-types-domain-type",
+ "ibc-types-identifier",
+ "ibc-types-timestamp",
+ "ics23",
+ "num-traits",
+ "prost",
+ "safe-regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha2 0.10.6",
+ "subtle-encoding",
+ "tendermint",
+ "tendermint-proto",
+ "time 0.3.19",
+]
+
+[[package]]
+name = "ibc-types-domain-type"
+version = "0.2.0"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#0e3cf3290d1d58232634f7bac77701e81f0ae767"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "prost",
+]
+
+[[package]]
+name = "ibc-types-identifier"
+version = "0.2.0"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#0e3cf3290d1d58232634f7bac77701e81f0ae767"
+dependencies = [
+ "displaydoc",
+ "serde",
+]
+
+[[package]]
+name = "ibc-types-lightclients-tendermint"
+version = "0.2.0"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#0e3cf3290d1d58232634f7bac77701e81f0ae767"
+dependencies = [
+ "bytes",
+ "derive_more",
+ "displaydoc",
+ "dyn-clone",
+ "ibc-proto",
+ "ibc-types-core-client",
+ "ibc-types-core-commitment",
+ "ibc-types-core-connection",
+ "ibc-types-domain-type",
+ "ibc-types-identifier",
+ "ibc-types-timestamp",
+ "ics23",
+ "num-traits",
+ "primitive-types",
+ "prost",
+ "safe-regex",
+ "sha2 0.10.6",
+ "subtle-encoding",
+ "tendermint",
+ "tendermint-light-client-verifier",
+ "tendermint-proto",
+ "time 0.3.19",
+ "tracing",
+ "uint",
+]
+
+[[package]]
+name = "ibc-types-timestamp"
+version = "0.2.0"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#0e3cf3290d1d58232634f7bac77701e81f0ae767"
+dependencies = [
+ "bytes",
+ "displaydoc",
+ "num-traits",
+ "prost",
+ "serde",
+ "serde_json",
+ "subtle-encoding",
+ "tendermint",
+ "tendermint-proto",
+ "time 0.3.19",
+]
+
+[[package]]
+name = "ibc-types2"
+version = "0.2.0"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#0e3cf3290d1d58232634f7bac77701e81f0ae767"
+dependencies = [
+ "ibc-types-core-channel",
+ "ibc-types-core-client",
+ "ibc-types-core-commitment",
+ "ibc-types-core-connection",
+ "ibc-types-domain-type",
+ "ibc-types-identifier",
+ "ibc-types-lightclients-tendermint",
+ "ibc-types-timestamp",
 ]
 
 [[package]]
@@ -4503,7 +4699,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "hex",
  "ibc-proto",
- "ibc-types",
+ "ibc-types2",
  "metrics",
  "once_cell",
  "pbjson-types",

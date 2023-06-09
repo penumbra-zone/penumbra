@@ -1,6 +1,6 @@
 use ibc_proto::protobuf::Protobuf;
-use ibc_types::clients::ics07_tendermint as tm;
-use ibc_types::core::{
+use ibc_types2::clients::ics07_tendermint as tm;
+use ibc_types2::core::{
     ics02_client::client_state::ClientState,
     ics03_connection::connection::{ConnectionEnd, Counterparty},
     ics04_channel::{channel::ChannelEnd, packet::Packet},

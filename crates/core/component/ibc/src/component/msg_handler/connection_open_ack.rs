@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use ibc_types::core::{
+use ibc_types2::core::{
     ics02_client::{client_state::ClientState, consensus_state::ConsensusState, height::Height},
     ics03_connection::{
         connection::{ConnectionEnd, Counterparty, State},

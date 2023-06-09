@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use ibc_types::{
+use ibc_types2::{
     applications::transfer::{acknowledgement::TokenTransferAcknowledgement, VERSION},
     core::{
         ics04_channel::{
