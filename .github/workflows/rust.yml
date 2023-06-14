@@ -1,28 +1,22 @@
-on: [pull_request]
-
 name: Rust CI
+on: pull_request
 
 jobs:
   test:
     name: Test Suite
     runs-on: buildjet-16vcpu-ubuntu-2004
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           lfs: true
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: taiki-e/install-action@nextest
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
       - name: Load rust cache
         uses: Swatinem/rust-cache@v2
       - name: Run tests with nextest
-        uses: actions-rs/cargo@v1
-        with:
-          command: nextest
-          args: run --release
+        run: cargo nextest run --release
         env:
           CARGO_TERM_COLOR: always
 
@@ -30,34 +24,68 @@ jobs:
     name: Rustfmt
     runs-on: buildjet-16vcpu-ubuntu-2004
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
+          components: rustfmt
       - name: Load rust cache
         uses: Swatinem/rust-cache@v2
-      - run: rustup component add rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+      - run: cargo fmt --all -- --check
 
-  #clippy:
-  #  name: Clippy
-  #  runs-on: buildjet-16vcpu-ubuntu-2004
-  #  steps:
-  #    - uses: actions/checkout@v2
-  #    - uses: actions-rs/toolchain@v1
-  #      with:
-  #        profile: minimal
-  #        toolchain: stable
-  #        override: true
-  #    - name: Load rust cache
-  #      uses: Swatinem/rust-cache@v2
-  #    - run: rustup component add clippy
-  #    - uses: actions-rs/cargo@v1
-  #      with:
-  #        command: clippy
-  #        args: -- -D warnings
+  check:
+    name: Check for warnings
+    runs-on: buildjet-16vcpu-ubuntu-2004
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          lfs: true
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Load rust cache
+        uses: Swatinem/rust-cache@v2
+      - name: Run cargo check, failing on warnings
+        run: cargo check --release
+        env:
+          # The `-D warnings` option causes an error on warnings;
+          # we must duplicate the rustflags from `.cargo/config.toml`.
+          RUSTFLAGS: "-D warnings --cfg tokio_unstable"
+
+  wasm:
+    name: Build WASM
+    runs-on: buildjet-16vcpu-ubuntu-2004
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          lfs: true
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Load rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: build wasm32 target
+        run: cargo build --release --target wasm32-unknown-unknown
+        # TODO: consider failing on warnings here. A few dead-code
+        # warnings, leaving as-is because wasm is undergoing rapid dev
+        # in support of web extension.
+        working-directory: crates/wasm
+
+      # Download prebuilt binary for wasm-pack; faster than `cargo install`.
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: 'latest'
+
+      # `wasm-pack build` will automatically compile to target wasm32-unknown-unknown,
+      # but we run it as a separate task to isolate potential failures in the build pipeline.
+      - name: run wasm-pack build
+        run: wasm-pack build
+        working-directory: crates/wasm
+
+      # Always show the results of `cargo tree`, even if the tests failed, since that
+      # output will be immediately useful in debugging.
+      - name: display mio deps
+        run: cargo tree --invert mio --edges features
+        if: always()
