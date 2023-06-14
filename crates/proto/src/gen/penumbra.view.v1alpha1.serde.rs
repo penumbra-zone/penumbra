@@ -9,9 +9,15 @@ impl serde::Serialize for AddressByIndexRequest {
         if self.address_index.is_some() {
             len += 1;
         }
+        if self.display_confirm {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.AddressByIndexRequest", len)?;
         if let Some(v) = self.address_index.as_ref() {
             struct_ser.serialize_field("addressIndex", v)?;
+        }
+        if self.display_confirm {
+            struct_ser.serialize_field("displayConfirm", &self.display_confirm)?;
         }
         struct_ser.end()
     }
@@ -25,11 +31,14 @@ impl<'de> serde::Deserialize<'de> for AddressByIndexRequest {
         const FIELDS: &[&str] = &[
             "address_index",
             "addressIndex",
+            "display_confirm",
+            "displayConfirm",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             AddressIndex,
+            DisplayConfirm,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -52,6 +61,7 @@ impl<'de> serde::Deserialize<'de> for AddressByIndexRequest {
                     {
                         match value {
                             "addressIndex" | "address_index" => Ok(GeneratedField::AddressIndex),
+                            "displayConfirm" | "display_confirm" => Ok(GeneratedField::DisplayConfirm),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -72,6 +82,7 @@ impl<'de> serde::Deserialize<'de> for AddressByIndexRequest {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut address_index__ = None;
+                let mut display_confirm__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::AddressIndex => {
@@ -80,10 +91,17 @@ impl<'de> serde::Deserialize<'de> for AddressByIndexRequest {
                             }
                             address_index__ = map.next_value()?;
                         }
+                        GeneratedField::DisplayConfirm => {
+                            if display_confirm__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("displayConfirm"));
+                            }
+                            display_confirm__ = Some(map.next_value()?);
+                        }
                     }
                 }
                 Ok(AddressByIndexRequest {
                     address_index: address_index__,
+                    display_confirm: display_confirm__.unwrap_or_default(),
                 })
             }
         }
@@ -1064,9 +1082,15 @@ impl serde::Serialize for EphemeralAddressRequest {
         if self.address_index.is_some() {
             len += 1;
         }
+        if self.display_confirm {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.EphemeralAddressRequest", len)?;
         if let Some(v) = self.address_index.as_ref() {
             struct_ser.serialize_field("addressIndex", v)?;
+        }
+        if self.display_confirm {
+            struct_ser.serialize_field("displayConfirm", &self.display_confirm)?;
         }
         struct_ser.end()
     }
@@ -1080,11 +1104,14 @@ impl<'de> serde::Deserialize<'de> for EphemeralAddressRequest {
         const FIELDS: &[&str] = &[
             "address_index",
             "addressIndex",
+            "display_confirm",
+            "displayConfirm",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             AddressIndex,
+            DisplayConfirm,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -1107,6 +1134,7 @@ impl<'de> serde::Deserialize<'de> for EphemeralAddressRequest {
                     {
                         match value {
                             "addressIndex" | "address_index" => Ok(GeneratedField::AddressIndex),
+                            "displayConfirm" | "display_confirm" => Ok(GeneratedField::DisplayConfirm),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -1127,6 +1155,7 @@ impl<'de> serde::Deserialize<'de> for EphemeralAddressRequest {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut address_index__ = None;
+                let mut display_confirm__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::AddressIndex => {
@@ -1135,10 +1164,17 @@ impl<'de> serde::Deserialize<'de> for EphemeralAddressRequest {
                             }
                             address_index__ = map.next_value()?;
                         }
+                        GeneratedField::DisplayConfirm => {
+                            if display_confirm__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("displayConfirm"));
+                            }
+                            display_confirm__ = Some(map.next_value()?);
+                        }
                     }
                 }
                 Ok(EphemeralAddressRequest {
                     address_index: address_index__,
+                    display_confirm: display_confirm__.unwrap_or_default(),
                 })
             }
         }

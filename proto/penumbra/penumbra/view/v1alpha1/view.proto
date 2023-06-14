@@ -142,6 +142,7 @@ message TransactionPlannerResponse {
 
 message AddressByIndexRequest {
   core.crypto.v1alpha1.AddressIndex address_index = 1;
+  bool display_confirm = 2;
 }
 
 message AddressByIndexResponse {
@@ -159,6 +160,7 @@ message IndexByAddressResponse {
 
 message EphemeralAddressRequest {
   core.crypto.v1alpha1.AddressIndex address_index = 1;
+  bool display_confirm = 2;
 }
 
 message EphemeralAddressResponse {
