@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use tendermint::abci::request::{PrepareProposal, ProcessProposal};
 use tendermint::abci::{ConsensusRequest, InfoRequest, MempoolRequest, SnapshotRequest};
 use tendermint::v0_34::abci::request::{
     BeginBlock, CheckTx, DeliverTx, EndBlock, InitChain, Query, Request,
@@ -29,11 +30,11 @@ impl RequestExt for ConsensusRequest {
             ConsensusRequest::InitChain(InitChain { chain_id, .. }) => {
                 error_span!(parent: &p, "InitChain", ?chain_id)
             }
-            ConsensusRequest::PrepareProposal(_) => {
-                unimplemented!("PrepareProposal is not supported by Tendermint v0.34.x")
+            ConsensusRequest::PrepareProposal(PrepareProposal { height, .. }) => {
+                error_span!(parent: &p, "PrepareProposal", ?height)
             }
-            ConsensusRequest::ProcessProposal(_) => {
-                unimplemented!("ProcessProposal is not supported by Tendermint v0.34.x")
+            ConsensusRequest::ProcessProposal(ProcessProposal { height, .. }) => {
+                error_span!(parent: &p, "ProcessProposal", ?height)
             }
         }
     }
