@@ -1,4 +1,7 @@
-use std::fmt::{Debug, Display};
+use std::{
+    fmt::{Debug, Display},
+    iter::zip,
+};
 
 mod div;
 mod from;
@@ -394,6 +397,67 @@ impl U128x128Var {
         })
     }
 
+    pub fn to_bits_le(&self) -> Vec<Boolean<Fq>> {
+        let lo_128_bits = self.limbs[0]
+            .to_bits_le()
+            .into_iter()
+            .chain(self.limbs[1].to_bits_le())
+            .collect::<Vec<_>>();
+        let hi_128_bits = self.limbs[2]
+            .to_bits_le()
+            .into_iter()
+            .chain(self.limbs[3].to_bits_le())
+            .collect::<Vec<_>>();
+        lo_128_bits.into_iter().chain(hi_128_bits).collect()
+    }
+
+    /// This function enforces the ordering between `self` and `other`.
+    pub fn enforce_cmp(
+        &self,
+        other: &U128x128Var,
+        ordering: std::cmp::Ordering,
+    ) -> Result<(), SynthesisError> {
+        // Collect bits from each limb to be compared.
+        let self_bits: Vec<Boolean<Fq>> = self.to_bits_le().into_iter().rev().collect();
+        let other_bits: Vec<Boolean<Fq>> = other.to_bits_le().into_iter().rev().collect();
+
+        // Now starting at the most significant side, compare bits.
+        let mut acc: Boolean<Fq> = Boolean::constant(true);
+        for (self_bit, other_bit) in zip(self_bits, other_bits) {
+            match ordering {
+                std::cmp::Ordering::Equal => unimplemented!("use `EqGadget` instead"),
+                std::cmp::Ordering::Less => {
+                    // Self must be less than other, so we want to "stop" (hit 0)
+                    // when we hit the most significant bit where other=1, self=0
+                    // self p | other q | desired output = !(!p /\ q)
+                    //   1    |   1     | 1
+                    //   1    |   0     | 1
+                    //   0    |   0     | 1
+                    //   0    |   1     | 0
+                    //
+                    // !(!p /\ q) by De Morgan is equivalent to p \/ !q:
+                    let this_bit_eq = self_bit.or(&other_bit.not())?;
+                    acc = acc.and(&this_bit_eq)?;
+                }
+                std::cmp::Ordering::Greater => {
+                    // Self must be greater than other, so we want to "stop" (hit 0)
+                    // when we hit the most significant bit where self=1, other=0
+                    // self p | other q | desired output = !(p /\ !q)
+                    //   1    |   1     | 1
+                    //   1    |   0     | 0
+                    //   0    |   0     | 1
+                    //   0    |   1     | 1
+                    // !(p /\ !q) by De Morgan is equivalent to !p \/ q:
+                    let this_bit_eq = (self_bit.not()).or(&other_bit)?;
+                    acc = acc.and(&this_bit_eq)?;
+                }
+            }
+        }
+
+        acc.enforce_equal(&Boolean::constant(false))?;
+        Ok(())
+    }
+
     pub fn checked_div(
         self,
         rhs: &Self,
@@ -418,11 +482,8 @@ impl U128x128Var {
         // qbar = xbar / ybar * 2^128
         // xbar * 2^128 = qbar * ybar + r
 
-        // use a division oracle to compute (qbar, r) out-of-circut
-        // Constrain xbar * 2^128 = qbar * ybar + r (below)
-        // Constrain 0 <= r
-        // Constrain r < qbar
-        // Constrain divisor to be non-zero:
+        // use a division oracle to compute (qbar, r) out-of-circuit (OOC)
+        // Constrain: divisor is non-zero
         rhs.enforce_not_equal(&U128x128Var::zero())?;
 
         // OOC division
@@ -431,8 +492,7 @@ impl U128x128Var {
         let Ok((quo_ooc, rem_ooc)) = stub_div_rem_u384_by_u256(xbar_ooc.0, ybar_ooc.0) else {
             return Err(SynthesisError::Unsatisfiable);
         };
-
-        // Goal: Constrain xbar * 2^128 = qbar * ybar + r
+        // Constrain: xbar * 2^128 = qbar * ybar + r
         // We already have xbar as bits, so we have xbar * 2^128 "for free" by rearranging limbs
         // Need the bits of qbar * ybar + r => need bits of qbar, ybar, r + mul constraint
 
@@ -440,8 +500,12 @@ impl U128x128Var {
         let y = rhs;
         let q = U128x128Var::new_witness(cs.clone(), || Ok(U128x128(quo_ooc)))?;
         // r isn't a U128x128, but we can reuse the codepath for constraining its bits as limb values
-        let r = U128x128Var::new_witness(cs, || Ok(U128x128(rem_ooc)))?.limbs;
+        let r_var = U128x128Var::new_witness(cs, || Ok(U128x128(rem_ooc)))?;
+        // Constrain r < ybar: this also constrains that r is non-negative, i.e. that 0 <= r
+        // i.e. the remainder cannot be greater than the divisor (`y` also called `rhs`)
+        r_var.enforce_cmp(rhs, core::cmp::Ordering::Less)?;
 
+        let r = r_var.limbs;
         let qbar = &q.limbs;
         let ybar = &y.limbs;
         let xbar = &x.limbs;
@@ -745,12 +809,17 @@ mod test {
             let a_var = U128x128Var::new_witness(cs.clone(), || Ok(self.a))?;
             let b_var = U128x128Var::new_witness(cs.clone(), || Ok(self.b))?;
             let c_public_var = U128x128Var::new_input(cs.clone(), || Ok(self.c))?;
-            let c_public_rounded_down_var =
-                U128x128Var::new_input(cs.clone(), || Ok(self.rounded_down_c))?;
-            let c_var = a_var.checked_mul(&b_var)?;
+            let c_public_rounded_down_var = U128x128Var::new_input(cs, || Ok(self.rounded_down_c))?;
+            let c_var = a_var.clone().checked_mul(&b_var)?;
             c_var.enforce_equal(&c_public_var)?;
-            let c_rounded_down = c_var.round_down();
+            let c_rounded_down = c_var.clone().round_down();
             c_rounded_down.enforce_equal(&c_public_rounded_down_var)?;
+
+            // Also check that a < c
+            a_var.enforce_cmp(&c_var, std::cmp::Ordering::Less)?;
+
+            // Also check that c > a
+            c_var.enforce_cmp(&a_var, std::cmp::Ordering::Greater)?;
             Ok(())
         }
     }
@@ -826,7 +895,7 @@ mod test {
         ) -> ark_relations::r1cs::Result<()> {
             let a_var = U128x128Var::new_witness(cs.clone(), || Ok(self.a))?;
             let b_var = U128x128Var::new_witness(cs.clone(), || Ok(self.b))?;
-            let c_public_var = U128x128Var::new_input(cs.clone(), || Ok(self.c))?;
+            let c_public_var = U128x128Var::new_input(cs, || Ok(self.c))?;
             let c_var = a_var.checked_add(&b_var)?;
             c_var.enforce_equal(&c_public_var)?;
             Ok(())

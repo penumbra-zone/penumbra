@@ -199,7 +199,7 @@ fn swap_proof_parameters_vs_current_swap_circuit() {
 }
 
 #[test]
-fn swap_claim_proof_happy_path() {
+fn swap_claim_parameters_vs_current_swap_claim_circuit() {
     let pk = &*SWAPCLAIM_PROOF_PROVING_KEY;
     let vk = &*SWAPCLAIM_PROOF_VERIFICATION_KEY;
 
@@ -262,7 +262,7 @@ fn swap_claim_proof_happy_path() {
 
     let proof = SwapClaimProof::prove(
         &mut rng,
-        &pk,
+        pk,
         swap_plaintext,
         state_commitment_proof,
         nk,
