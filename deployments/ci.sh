@@ -281,6 +281,7 @@ function update_image_for_running_deployment() {
 }
 
 function main() {
+    # TODO: to deploy older versions, e.g. v0.53.1, an override is necessary here
     if is_patch_release ; then
         echo "Release target '$PENUMBRA_VERSION' is a patch release; will preserve testnet while bumping version."
         update_image_for_running_deployment
