@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use penumbra_crypto::{
     asset::{self, Unit},
     fixpoint::U128x128,
@@ -62,6 +62,11 @@ impl BuyOrder {
     /// Eventually we'll need to plumb in an asset::Cache so this isn't FromStr
     pub fn parse_str(input: &str) -> Result<Self> {
         let (desired_str, price_str, fee) = parse_parts(input)?;
+        if !desired_str.chars().all(|c| c.is_alphanumeric() || c == '.')
+            || !price_str.chars().all(|c| c.is_alphanumeric() || c == '.')
+        {
+            bail!("usage: NUMBERunit@NUMBERunit")
+        }
 
         let desired_unit = extract_unit(desired_str)?;
         let desired = desired_str.parse::<Value>()?;
@@ -147,6 +152,11 @@ impl SellOrder {
     /// Eventually we'll need to plumb in an asset::Cache so this isn't FromStr
     pub fn parse_str(input: &str) -> Result<Self> {
         let (offered_str, price_str, fee) = parse_parts(input)?;
+        if !offered_str.chars().all(|c| c.is_alphanumeric() || c == '.')
+            || !price_str.chars().all(|c| c.is_alphanumeric() || c == '.')
+        {
+            bail!("usage: NUMBERunit@NUMBERunit")
+        }
 
         let offered_unit = extract_unit(offered_str)?;
         let offered = offered_str.parse::<Value>()?;
