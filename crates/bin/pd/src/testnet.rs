@@ -286,3 +286,8 @@ pub fn get_testnet_dir(testnet_dir: Option<PathBuf>) -> PathBuf {
         None => canonicalize_path("~/.penumbra/testnet_data"),
     }
 }
+
+/// Check that a [Url] has all the necessary parts defined for use as a CLI arg.
+pub fn url_has_necessary_parts(url: &Url) -> bool {
+    url.scheme() != "" && url.has_host() && url.port().is_some()
+}

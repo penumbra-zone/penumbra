@@ -15,6 +15,7 @@ use futures::stream::TryStreamExt;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::testnet::{
     generate::testnet_generate, get_testnet_dir, join::testnet_join, parse_tm_address,
+    url_has_necessary_parts,
 };
 use penumbra_proto::client::v1alpha1::{
     oblivious_query_service_server::ObliviousQueryServiceServer,
@@ -227,8 +228,17 @@ async fn main() -> anyhow::Result<()> {
                 ?grpc_bind,
                 ?grpc_auto_https,
                 ?metrics_bind,
+                ?tendermint_addr,
                 "starting pd"
             );
+
+            // Ensure we have all necessary parts in the URL
+            if !url_has_necessary_parts(&tendermint_addr) {
+                anyhow::bail!(
+                    "Failed to parse '--tendermint-addr' as URL: {}",
+                    tendermint_addr
+                )
+            }
 
             let mut rocks_path = home.clone();
             rocks_path.push("rocksdb");
