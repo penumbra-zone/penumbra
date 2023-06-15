@@ -291,6 +291,10 @@ mod tests {
             alt_bech32m: bech32m_addr,
         }
         .encode_to_vec();
+        let proto_addr_direct: pb::Address = dest.into();
+        let addr_from_proto: Address = proto_addr_direct
+            .try_into()
+            .expect("can convert from proto back to address");
 
         let addr2 = Address::decode(proto_addr.as_ref()).expect("can decode valid address");
         let addr3 = Address::decode(proto_addr_bech32m.as_ref()).expect("can decode valid address");
@@ -298,6 +302,7 @@ mod tests {
         assert_eq!(addr, dest);
         assert_eq!(addr2, dest);
         assert_eq!(addr3, dest);
+        assert_eq!(addr_from_proto, dest);
     }
 
     #[test]

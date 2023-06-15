@@ -153,6 +153,9 @@ mod test {
             let (own_address, _) = fvk.ephemeral_address(rng, AddressIndex::from(address_index));
             let ivk = fvk.incoming();
             assert!(ivk.views_address(&own_address));
+
+            let derived_address_index = fvk.address_index(&own_address);
+            assert_eq!(derived_address_index.expect("index exists").account, AddressIndex::from(address_index).account);
         }
     }
 
