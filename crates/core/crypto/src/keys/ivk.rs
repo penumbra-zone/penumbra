@@ -131,6 +131,7 @@ impl IncomingViewingKeyVar {
 #[cfg(test)]
 mod test {
     use crate::keys::{SeedPhrase, SpendKey};
+    use proptest::prelude::*;
 
     use super::*;
 
@@ -141,6 +142,18 @@ mod test {
         let ivk = spend_key.full_viewing_key().incoming();
         let own_address = ivk.payment_address(AddressIndex::from(0u32)).0;
         assert!(ivk.views_address(&own_address));
+    }
+
+    proptest! {
+        #[test]
+        fn views_address_succeeds_on_own_ephemeral_address(address_index in any::<u32>()) {
+            let rng = rand::rngs::OsRng;
+            let spend_key = SpendKey::from_seed_phrase(SeedPhrase::generate(rng), 0);
+            let fvk = spend_key.full_viewing_key();
+            let (own_address, _) = fvk.ephemeral_address(rng, AddressIndex::from(address_index));
+            let ivk = fvk.incoming();
+            assert!(ivk.views_address(&own_address));
+        }
     }
 
     #[test]
