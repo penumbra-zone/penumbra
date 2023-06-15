@@ -919,4 +919,91 @@ mod test {
             (pk, vk)
         }
     }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(5))]
+        #[test]
+        fn compare(
+            a_int in any::<u64>(),
+            c_int in any::<u64>(),
+        ) {
+            // a < b
+            let a =
+                if a_int == u64::MAX {
+                    U128x128::from(a_int - 1)
+                } else {
+                    U128x128::from(a_int)
+                };
+            let b = (a + U128x128::from(1u64)).expect("should not overflow");
+            // c > d
+            let c =
+                if c_int == 0 {
+                    U128x128::from(c_int + 1)
+                } else {
+                    U128x128::from(c_int)
+                };
+            let d = (c - U128x128::from(1u64)).expect("should not underflow");
+
+            let circuit = TestComparisonCircuit {
+                a,
+                b,
+                c,
+                d,
+            };
+
+            let (pk, vk) = TestComparisonCircuit::generate_prepared_test_parameters();
+            let mut rng = OsRng;
+
+            let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+            .expect("should be able to form proof");
+
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+                &vk,
+                &[],
+                &proof,
+            );
+            assert!(proof_result.is_ok());
+        }
+    }
+
+    struct TestComparisonCircuit {
+        a: U128x128,
+        b: U128x128,
+        c: U128x128,
+        d: U128x128,
+    }
+
+    impl ConstraintSynthesizer<Fq> for TestComparisonCircuit {
+        fn generate_constraints(
+            self,
+            cs: ConstraintSystemRef<Fq>,
+        ) -> ark_relations::r1cs::Result<()> {
+            // a < b
+            let a_var = U128x128Var::new_witness(cs.clone(), || Ok(self.a))?;
+            let b_var = U128x128Var::new_witness(cs.clone(), || Ok(self.b))?;
+            a_var.enforce_cmp(&b_var, std::cmp::Ordering::Less)?;
+            // c > d
+            let c_var = U128x128Var::new_witness(cs.clone(), || Ok(self.c))?;
+            let d_var = U128x128Var::new_witness(cs, || Ok(self.d))?;
+            c_var.enforce_cmp(&d_var, std::cmp::Ordering::Greater)?;
+
+            Ok(())
+        }
+    }
+
+    impl ParameterSetup for TestComparisonCircuit {
+        fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+            let num: [u8; 32] = [0u8; 32];
+            let a = U128x128::from_bytes(num);
+            let b = U128x128::from_bytes(num);
+            let c = U128x128::from_bytes(num);
+            let d = U128x128::from_bytes(num);
+            let circuit = TestComparisonCircuit { a, b, c, d };
+            let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
+                circuit, &mut OsRng,
+            )
+            .expect("can perform circuit specific setup");
+            (pk, vk)
+        }
+    }
 }
