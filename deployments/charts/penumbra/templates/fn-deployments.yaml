@@ -151,6 +151,7 @@ spec:
           command:
             - tendermint
             - start
+            - --log_level=rpc-server:debug
             - --home=/home/.tendermint
         - name: pd
           image: "{{ $.Values.penumbra.image }}:{{ $.Values.penumbra.version | default $.Chart.AppVersion }}"

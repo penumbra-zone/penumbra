@@ -123,6 +123,8 @@ pub struct AddressByIndexRequest {
     pub address_index: ::core::option::Option<
         super::super::core::crypto::v1alpha1::AddressIndex,
     >,
+    #[prost(bool, tag = "2")]
+    pub display_confirm: bool,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -152,6 +154,8 @@ pub struct EphemeralAddressRequest {
     pub address_index: ::core::option::Option<
         super::super::core::crypto::v1alpha1::AddressIndex,
     >,
+    #[prost(bool, tag = "2")]
+    pub display_confirm: bool,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

@@ -18,8 +18,8 @@ export RUSTDOCFLAGS="--enable-index-page -Zunstable-options --cfg docsrs"
 # indexes is overwritten on each cargo doc invocation.
 
 cargo +nightly-2023-05-15 doc --no-deps \
-  -p tendermint@0.31.1 \
-  -p tendermint-config@0.31.1 \
+  -p tendermint@0.32.0 \
+  -p tendermint-config@0.32.0 \
   -p ibc-types \
   -p tower-abci \
   -p jmt \
