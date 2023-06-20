@@ -1,4 +1,4 @@
-use ibc_types2::core::ics03_connection::version::Version;
+use ibc_types2::core::connection::Version;
 use once_cell::sync::Lazy;
 use penumbra_proto::{core::ibc::v1alpha1 as pb, DomainType, TypeUrl};
 

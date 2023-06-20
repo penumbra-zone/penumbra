@@ -332,7 +332,7 @@ pub trait StateReadExt: StateRead {
         &self,
         client_id: &ClientId,
         height: &Height,
-    ) -> Result<ibc_types::timestamp::Timestamp> {
+    ) -> Result<ibc_types2::timestamp::Timestamp> {
         let timestamp_nanos = self
             .get_proto::<u64>(&state_key::client_processed_times(client_id, height))
             .await?
@@ -342,7 +342,7 @@ pub trait StateReadExt: StateRead {
                 )
             })?;
 
-        ibc_types::timestamp::Timestamp::from_nanoseconds(timestamp_nanos)
+        ibc_types2::timestamp::Timestamp::from_nanoseconds(timestamp_nanos)
             .context("invalid client update time")
     }
 

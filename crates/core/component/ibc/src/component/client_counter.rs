@@ -1,12 +1,8 @@
 use anyhow::anyhow;
 
-use ibc_types2::core::ics02_client::client_state::ClientState;
-
 use ibc_proto::google::protobuf::Any;
-use ibc_types2::core::{
-    ics02_client::{height::Height, trust_threshold::TrustThreshold},
-    ics24_host::identifier::{ChainId, ConnectionId},
-};
+use ibc_types2::core::client::Height;
+use ibc_types2::core::connection::{ChainId, ConnectionId};
 use penumbra_chain::component::PENUMBRA_PROOF_SPECS;
 use penumbra_proto::{core::ibc::v1alpha1 as pb, DomainType, TypeUrl};
 
