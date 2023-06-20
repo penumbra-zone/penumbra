@@ -1,12 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types2::core::{
-    ics03_connection::connection::{ConnectionEnd, State as ConnectionState},
-    ics04_channel::{
-        channel::{ChannelEnd, Counterparty, State as ChannelState},
-        msgs::chan_open_try::MsgChannelOpenTry,
-    },
-    ics24_host::identifier::PortId,
+    channel::{msgs::MsgChannelOpenTry, ChannelEnd, Counterparty, PortId, State as ChannelState},
+    connection::{ConnectionEnd, State as ConnectionState},
 };
 use penumbra_storage::{StateRead, StateWrite};
 

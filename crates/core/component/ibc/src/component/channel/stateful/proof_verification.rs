@@ -3,41 +3,21 @@ use crate::component::client::StateReadExt;
 // NOTE: where should this code live after the refactor to actionhandlers?
 
 use super::super::*;
+use core::time::Duration;
 use ibc_types2::{
     core::{
-        // TODO: resolve this type
-        client::ClientState,
-        //
-        client::Height,
-        
-        // TODO: resolve this function
-        ics04_channel::context::calculate_block_delay,
-        //
-
-        commitment::{
-            MerklePrefix,  MerkleRoot, MerkleProof
-                
-            // TODO: resolve these 
-            merkle::{apply_prefix},
-            specs::ProofSpecs,
-        },
-        
         client::ClientId,
-
-        ics24_host::{
-            identifier::ClientId,
-            path::{AckPath, ChannelEndPath, CommitmentPath, ReceiptPath, SeqRecvPath},
-            Path,
-        },
+        client::Height,
+        commitment::{MerklePrefix, MerkleProof, MerkleRoot},
     },
     lightclients::tendermint::{
         client_state::ClientState as TendermintClientState,
         consensus_state::ConsensusState as TendermintConsensusState,
     },
+    path::{AckPath, ChannelEndPath, CommitmentPath, Path, ReceiptPath, SeqRecvPath},
 };
 
-use anyhow::Context;
-use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+use num_traits::float::FloatCore;
 use penumbra_chain::component::StateReadExt as _;
 use prost::Message;
 use sha2::{Digest, Sha256};
@@ -74,37 +54,41 @@ pub fn commit_acknowledgement(ack_data: &[u8]) -> Vec<u8> {
     Sha256::digest(ack_data).to_vec()
 }
 
+pub fn calculate_block_delay(
+    delay_period_time: &Duration,
+    max_expected_time_per_block: &Duration,
+) -> u64 {
+    if max_expected_time_per_block.is_zero() {
+        return 0;
+    }
+
+    FloatCore::ceil(delay_period_time.as_secs_f64() / max_expected_time_per_block.as_secs_f64())
+        as u64
+}
+
 fn verify_merkle_absence_proof(
-    proof_specs: &ProofSpecs,
-    prefix: &CommitmentPrefix,
-    proof: &CommitmentProofBytes,
-    root: &CommitmentRoot,
+    proof_specs: &[ics23::ProofSpec],
+    prefix: &MerklePrefix,
+    proof: &MerkleProof,
+    root: &MerkleRoot,
     path: impl Into<Path>,
 ) -> anyhow::Result<()> {
-    let merkle_path = apply_prefix(prefix, vec![path.into().to_string()]);
-    let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
-        .context("invalid merkle proof")?
-        .into();
-
-    merkle_proof.verify_non_membership(proof_specs, root.clone().into(), merkle_path)?;
+    let merkle_path = prefix.apply(vec![path.into().to_string()]);
+    proof.verify_non_membership(proof_specs, root.clone().into(), merkle_path)?;
 
     Ok(())
 }
 
 fn verify_merkle_proof(
-    proof_specs: &ProofSpecs,
-    prefix: &CommitmentPrefix,
-    proof: &CommitmentProofBytes,
-    root: &CommitmentRoot,
+    proof_specs: &[ics23::ProofSpec],
+    prefix: &MerklePrefix,
+    proof: &MerkleProof,
+    root: &MerkleRoot,
     path: impl Into<Path>,
     value: Vec<u8>,
 ) -> anyhow::Result<()> {
-    let merkle_path = apply_prefix(prefix, vec![path.into().to_string()]);
-    let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
-        .context("invalid merkle proof")?
-        .into();
-
-    merkle_proof.verify_membership(proof_specs, root.clone().into(), merkle_path, value, 0)?;
+    let merkle_path = prefix.apply(vec![path.into().to_string()]);
+    proof.verify_membership(proof_specs, root.clone().into(), merkle_path, value, 0)?;
 
     Ok(())
 }
@@ -114,7 +98,7 @@ pub trait ChannelProofVerifier: StateReadExt {
     async fn verify_channel_proof(
         &self,
         connection: &ConnectionEnd,
-        proof: &CommitmentProofBytes,
+        proof: &MerkleProof,
         proof_height: &Height,
         channel_id: &ChannelId,
         port_id: &PortId,
@@ -292,7 +276,7 @@ mod inner {
         async fn get_trusted_client_and_consensus_state(
             &self,
             client_id: &ClientId,
-            height: &ibc_types::Height,
+            height: &Height,
             connection: &ConnectionEnd,
         ) -> anyhow::Result<(TendermintClientState, TendermintConsensusState)> {
             let trusted_client_state = self.get_client_state(client_id).await?;
@@ -326,7 +310,7 @@ mod inner {
 
             TendermintClientState::verify_delay_passed(
                 current_timestamp.into(),
-                ibc_types2::client::Height::new(0, current_height)?,
+                Height::new(0, current_height)?,
                 processed_time,
                 processed_height,
                 delay_period_time,

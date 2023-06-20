@@ -7,8 +7,6 @@ use async_trait::async_trait;
 use ibc_types2::core::{
     channel::msgs::{MsgAcknowledgement, MsgRecvPacket, MsgTimeout},
     channel::{ChannelEnd, ChannelId, Packet, PortId},
-    // TODO: resolve this type
-    client::ConsensusState,
     connection::ConnectionEnd,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};

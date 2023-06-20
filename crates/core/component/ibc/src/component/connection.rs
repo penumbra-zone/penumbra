@@ -3,9 +3,7 @@ use async_trait::async_trait;
 // TODO(erwan): remove in polish MERGEBLOCK
 // use ibc_types2::core::ics02_client::client_def::AnyClient;
 // use ibc_types2::core::ics02_client::client_def::ClientDef;
-use ibc_types2::core::{
-    ics03_connection::connection::ConnectionEnd, ics24_host::identifier::ConnectionId,
-};
+use ibc_types2::core::{connection::ConnectionEnd, connection::ConnectionId};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 
