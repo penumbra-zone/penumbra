@@ -41,7 +41,7 @@ impl DomainType for MemoPlan {
 impl From<MemoPlan> for pb::MemoPlan {
     fn from(msg: MemoPlan) -> Self {
         let sender = Some(msg.plaintext.sender.into());
-        let text = msg.plaintext.text.into();
+        let text = msg.plaintext.text;
         Self {
             plaintext: Some(pb::MemoPlaintext { sender, text }),
             key: msg.key.to_vec().into(),

@@ -254,16 +254,13 @@ impl TxCmd {
                 let to = to
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
+                let memo_ephemeral_address =
+                    app.fvk.ephemeral_address(OsRng, AddressIndex::new(*from)).0;
 
-                let memo = memo.as_ref().map(|m| {
-                    let memo_ephemeral_address =
-                        app.fvk.ephemeral_address(OsRng, AddressIndex::new(*from)).0;
-
-                    MemoPlaintext {
-                        sender: memo_ephemeral_address,
-                        text: m.clone(),
-                    }
-                });
+                let memo_plaintext = MemoPlaintext {
+                    sender: memo_ephemeral_address,
+                    text: memo.clone().unwrap_or_default(),
+                };
 
                 let plan = plan::send(
                     app.fvk.account_group_id(),
@@ -273,7 +270,7 @@ impl TxCmd {
                     fee,
                     to,
                     AddressIndex::new(*from),
-                    memo,
+                    Some(memo_plaintext),
                 )
                 .await?;
                 app.build_and_submit_transaction(plan).await?;
