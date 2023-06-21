@@ -80,7 +80,9 @@ jobs:
           ./deployments/scripts/protobuf-codegen
           s="$(git status --porcelain)"
           if [[ -n "$s" ]]; then
-              echo "ERROR: protobuf files must be regenerated and committed:"
+              echo "ERROR: protobuf files must be regenerated and committed."
+              echo "Run this command locally: ./deployments/scripts/protobuf-codegen"
+              echo "These are the files that reported differences:"
               echo "$s"
               exit 1
           else
