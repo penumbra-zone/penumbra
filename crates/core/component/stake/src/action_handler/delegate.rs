@@ -20,7 +20,7 @@ impl ActionHandler for Delegate {
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let d = self;
         let next_rate_data = state
-            .next_validator_rate(&d.validator_identity)
+            .current_validator_rate(&d.validator_identity)
             .await?
             .ok_or_else(|| anyhow::anyhow!("unknown validator identity {}", d.validator_identity))?
             .clone();

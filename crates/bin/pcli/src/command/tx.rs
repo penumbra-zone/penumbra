@@ -433,7 +433,7 @@ impl TxCmd {
 
                 let mut client = app.specific_client().await?;
                 let rate_data: RateData = client
-                    .next_validator_rate(tonic::Request::new(to.into()))
+                    .current_validator_rate(tonic::Request::new(to.into()))
                     .await?
                     .into_inner()
                     .try_into()?;
@@ -479,7 +479,7 @@ impl TxCmd {
 
                 let mut client = app.specific_client().await?;
                 let rate_data: RateData = client
-                    .next_validator_rate(tonic::Request::new(from.into()))
+                    .current_validator_rate(tonic::Request::new(from.into()))
                     .await?
                     .into_inner()
                     .try_into()?;

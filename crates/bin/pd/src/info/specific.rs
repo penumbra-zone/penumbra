@@ -41,6 +41,8 @@ use proto::client::v1alpha1::ArbExecutionResponse;
 use proto::client::v1alpha1::ArbExecutionsRequest;
 use proto::client::v1alpha1::ArbExecutionsResponse;
 use proto::client::v1alpha1::BatchSwapOutputDataResponse;
+use proto::client::v1alpha1::CurrentValidatorRateRequest;
+use proto::client::v1alpha1::CurrentValidatorRateResponse;
 use proto::client::v1alpha1::DenomMetadataByIdResponse;
 use proto::client::v1alpha1::LiquidityPositionByIdRequest;
 use proto::client::v1alpha1::LiquidityPositionByIdResponse;
@@ -460,6 +462,36 @@ impl SpecificQueryService for Info {
         Ok(tonic::Response::new(ValidatorPenaltyResponse {
             penalty: Some(penalty.into()),
         }))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn current_validator_rate(
+        &self,
+        request: tonic::Request<CurrentValidatorRateRequest>,
+    ) -> Result<tonic::Response<CurrentValidatorRateResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+        let identity_key = request
+            .into_inner()
+            .identity_key
+            .ok_or_else(|| tonic::Status::invalid_argument("empty message"))?
+            .try_into()
+            .map_err(|_| tonic::Status::invalid_argument("invalid identity key"))?;
+
+        let rate_data = state
+            .current_validator_rate(&identity_key)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        match rate_data {
+            Some(r) => Ok(tonic::Response::new(CurrentValidatorRateResponse {
+                data: Some(r.into()),
+            })),
+            None => Err(Status::not_found("current validator rate not found")),
+        }
     }
 
     #[instrument(skip(self, request))]

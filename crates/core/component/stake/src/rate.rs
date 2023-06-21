@@ -1,6 +1,7 @@
 //! Staking reward and delegation token exchange rates.
 
 use penumbra_crypto::{stake::Penalty, Amount};
+use penumbra_proto::client::v1alpha1::CurrentValidatorRateResponse;
 use penumbra_proto::{
     client::v1alpha1::NextValidatorRateResponse, core::stake::v1alpha1 as pb, DomainType, TypeUrl,
 };
@@ -269,6 +270,25 @@ impl TryFrom<NextValidatorRateResponse> for RateData {
         value
             .data
             .ok_or_else(|| anyhow::anyhow!("empty NextValidatorRateResponse message"))?
+            .try_into()
+    }
+}
+
+impl From<RateData> for CurrentValidatorRateResponse {
+    fn from(r: RateData) -> Self {
+        CurrentValidatorRateResponse {
+            data: Some(r.into()),
+        }
+    }
+}
+
+impl TryFrom<CurrentValidatorRateResponse> for RateData {
+    type Error = anyhow::Error;
+
+    fn try_from(value: CurrentValidatorRateResponse) -> Result<Self, Self::Error> {
+        value
+            .data
+            .ok_or_else(|| anyhow::anyhow!("empty CurrentValidatorRateResponse message"))?
             .try_into()
     }
 }

@@ -1,5 +1,5 @@
 use penumbra_proto::{
-    client::v1alpha1::NextValidatorRateRequest,
+    client::v1alpha1::{CurrentValidatorRateRequest, NextValidatorRateRequest},
     core::crypto::v1alpha1 as pb,
     serializers::bech32str::{self, validator_identity_key::BECH32_PREFIX},
     DomainType, TypeUrl,
@@ -85,6 +85,25 @@ impl TryFrom<NextValidatorRateRequest> for IdentityKey {
         value
             .identity_key
             .ok_or_else(|| anyhow::anyhow!("empty NextValidatorRateRequest message"))?
+            .try_into()
+    }
+}
+
+impl From<IdentityKey> for CurrentValidatorRateRequest {
+    fn from(k: IdentityKey) -> Self {
+        CurrentValidatorRateRequest {
+            identity_key: Some(k.into()),
+            chain_id: Default::default(),
+        }
+    }
+}
+
+impl TryFrom<CurrentValidatorRateRequest> for IdentityKey {
+    type Error = anyhow::Error;
+    fn try_from(value: CurrentValidatorRateRequest) -> Result<Self, Self::Error> {
+        value
+            .identity_key
+            .ok_or_else(|| anyhow::anyhow!("empty CurrentValidatorRateRequest message"))?
             .try_into()
     }
 }
