@@ -23,9 +23,19 @@ impl<S: StateRead + 'static> PathEntry<S> {
     /// Update this entry with the new path, if it's better than the existing one.
     pub fn update(&mut self, new_path: Path<S>) {
         if new_path.price < self.path.price {
-            tracing::debug!(new_price = %new_path.price, old_price = %self.path.price, "updating path");
+            tracing::debug!(new_price = %new_path.price, old_price = %self.path.price, "found better path, updating cache");
             self.spill = Some(std::mem::replace(&mut self.path, new_path));
             self.active = true;
+        } else if let Some(spill) = &self.spill {
+            if new_path.price < spill.price {
+                tracing::debug!(new_spill_price = %new_path.price, old_spill_price = %spill.price, "found better spill path, updating cache");
+                self.spill = Some(new_path);
+                self.active = true;
+            } else {
+                tracing::debug!(new_price = %new_path.price, old_price = %self.path.price, "found worse spill path, ignoring");
+            }
+        } else {
+            tracing::debug!(new_price = %new_path.price, old_price = %self.path.price, "found worse path, ignoring");
         }
     }
 }
