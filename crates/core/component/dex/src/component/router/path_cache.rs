@@ -20,22 +20,23 @@ pub(super) struct PathEntry<S: StateRead + 'static> {
 }
 
 impl<S: StateRead + 'static> PathEntry<S> {
-    /// Update this entry with the new path, if it's better than the existing one.
+    /// Update the best path or spill price if the new path is better, otherwise do nothing.
     pub fn update(&mut self, new_path: Path<S>) {
         if new_path.price < self.path.price {
-            tracing::debug!(new_price = %new_path.price, old_price = %self.path.price, "found better path, updating cache");
+            tracing::debug!(new_price = %new_path.price, old_price = %self.path.price, "new path is better than best path, updating cache");
             self.spill = Some(std::mem::replace(&mut self.path, new_path));
             self.active = true;
         } else if let Some(spill) = &self.spill {
             if new_path.price < spill.price {
-                tracing::debug!(new_spill_price = %new_path.price, old_spill_price = %spill.price, "found better spill path, updating cache");
+                tracing::debug!(new_spill_price = %new_path.price, old_spill_price = %spill.price, "new path is better than spill path, updating cache");
                 self.spill = Some(new_path);
                 self.active = true;
             } else {
-                tracing::debug!(new_price = %new_path.price, old_price = %self.path.price, "found worse spill & path, ignoring");
+                // The new path is worse than both the best path and the spill path.
+                tracing::debug!(new_price = %new_path.price, old_price = %self.path.price, "new path is worse than best path and spill path, ignore");
             }
         } else {
-            tracing::debug!(new_price = %new_path.price, old_price = %self.path.price, "found worse path, and setting spill");
+            tracing::debug!(new_spill_price= %new_path.price, "new path is worse than best path, but is a suitable spill path, updating cache");
             self.spill = Some(new_path);
             self.active = true;
         }
