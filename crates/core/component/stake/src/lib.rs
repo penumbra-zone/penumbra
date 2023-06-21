@@ -38,3 +38,6 @@ pub use changes::DelegationChanges;
 pub use current_consensus_keys::CurrentConsensusKeys;
 pub use funding_stream::{FundingStream, FundingStreams};
 pub use uptime::Uptime;
+
+#[cfg(test)]
+mod tests;
