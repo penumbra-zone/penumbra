@@ -1,20 +1,13 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use ibc_types2::clients::ics07_tendermint;
 
-use ibc_types2::{
-    clients::ics07_tendermint::{
-        client_state::ClientState as TendermintClientState,
-        consensus_state::ConsensusState as TendermintConsensusState,
-        header::Header as TendermintHeader,
-    },
-    core::{
-        ics02_client::{
-            client_state::ClientState, client_type::ClientType, consensus_state::ConsensusState,
-            height::Height, msgs::update_client::MsgUpdateClient,
-        },
-        ics24_host::identifier::ClientId,
-    },
+use ibc_types2::core::client::msgs::MsgUpdateClient;
+use ibc_types2::core::client::ClientId;
+use ibc_types2::core::client::Height;
+use ibc_types2::lightclients::tendermint::{
+    client_state::ClientState as TendermintClientState,
+    consensus_state::ConsensusState as TendermintConsensusState,
+    header::Header as TendermintHeader,
 };
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
@@ -162,13 +155,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         self.put("ibc_client_counter".into(), counter);
     }
 
-    fn put_client(&mut self, client_id: &ClientId, client_state: impl ClientState) {
-        let client_state = client_state
-            .as_any()
-            .downcast_ref::<ics07_tendermint::client_state::ClientState>()
-            .expect("not a tendermint client state")
-            .to_owned();
-
+    fn put_client(&mut self, client_id: &ClientId, client_state: TendermintClientState) {
         self.put_proto(
             state_key::client_type(client_id),
             client_state.client_type().as_str().to_string(),
@@ -192,38 +179,29 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     fn put_penumbra_consensus_state(
         &mut self,
         height: Height,
-        consensus_state: impl ConsensusState,
+        consensus_state: TendermintConsensusState,
     ) {
         // NOTE: this is an implementation detail of the Penumbra ICS2 implementation, so
         // it's not in the same path namespace.
-
-        // let tm = consensus_state;
-        let tm = consensus_state
-            .as_any()
-            .downcast_ref::<ics07_tendermint::consensus_state::ConsensusState>()
-            .expect("not an tendermint consensus state")
-            .to_owned();
-        self.put(format!("penumbra_consensus_states/{height}"), tm);
+        self.put(
+            format!("penumbra_consensus_states/{height}"),
+            consensus_state,
+        );
     }
 
     async fn put_verified_consensus_state(
         &mut self,
         height: Height,
         client_id: ClientId,
-        consensus_state: impl ConsensusState,
+        consensus_state: TendermintConsensusState,
     ) -> Result<()> {
-        let consensus_state = consensus_state
-            .as_any()
-            .downcast_ref::<ics07_tendermint::consensus_state::ConsensusState>()
-            .expect("not a tendermint consensus state")
-            .to_owned();
         self.put(
             state_key::verified_client_consensus_state(&client_id, &height),
             consensus_state,
         );
 
         let current_height = self.get_block_height().await?;
-        let current_time: ibc_types::timestamp::Timestamp =
+        let current_time: ibc_types2::timestamp::Timestamp =
             self.get_block_timestamp().await?.into();
 
         self.put_proto::<u64>(
@@ -233,7 +211,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 
         self.put(
             state_key::client_processed_heights(&client_id, &height),
-            ibc_types::Height::new(0, current_height)?,
+            ibc_types2::core::client::Height::new(0, current_height)?,
         );
 
         // update verified heights
