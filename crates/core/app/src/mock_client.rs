@@ -47,8 +47,8 @@ impl MockClient {
             anyhow::ensure!(
                 root == expected_root,
                 format!(
-                    "client sct root should match chain state: {:?} != {:?}",
-                    root, expected_root
+                    "client sct root should match chain state: {:?} != {:?} (height: {})",
+                    root, expected_root, height
                 )
             );
         }
