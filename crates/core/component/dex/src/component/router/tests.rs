@@ -7,8 +7,7 @@ use penumbra_storage::{StateDelta, StateWrite};
 use rand_core::OsRng;
 use std::sync::Arc;
 
-//use crate::temp_storage_ext::TempStorageExt;
-
+use crate::lp::SellOrder;
 use crate::{
     component::{
         router::{FillRoute, HandleBatchSwaps, Path},
@@ -1458,33 +1457,136 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
 /// - cost(S > C > T): 1
 ///
 /// The reproduction forces the path search to explore the paths in the order:
-/// 1 -> evaluate(S>B>T) (best_path = S>A>T, price=9, spill=None)
-/// 2 -> evaluate(S>C>T) (best_path = S>C>T, price=1, spill=9)
-/// 3 -> evaluate(S>A>T) (best_path = S>A>T, price=1, spill=4)
+/// 1 -> evaluate(S>A>T) (best_path = S>A>T, price=0.3, spill=None)
+/// 2 -> evaluate(S>C>T) (best_path = S>C>T, price=0.1, spill=0.3)
+/// 3 -> evaluate(S>B>T) (best_path = S>A>T, price=0.1, spill=0.2)
 /// instead of:
-/// 1 -> evaluate(S>B>T) (best_path = S>A>T, price=9, spill=None)
-/// 2 -> evaluate(S>C>T) (best_path = S>C>T, price=1, spill=9)
-/// 3 -> evaluate(S>A>T) (best_path = S>A>T, price=1, spill=9)
+/// 1 -> evaluate(S>A>T) (best_path = S>A>T, price=0.3, spill=None)
+/// 2 -> evaluate(S>C>T) (best_path = S>C>T, price=0.1, spill=0.3)
+/// 3 -> evaluate(S>A>T) (best_path = S>A>T, price=0.1, spill=0.3)
 ///
 ///
 ///               ┌─────┐
-///        3      │     │    3
+///        1      │     │  0.3
 ///      ┌───────►│  A  ├────────┐
 ///      │        │     │        │
 ///      │        └─────┘        │
 ///      │                       ▼
 ///   ┌──┴──┐     ┌─────┐     ┌─────┐
-///   │     │ 2   │     │ 2   │     │
+///   │     │ 1   │     │ 0.2 │     │
 ///   │  S  ├───► │  B  ├───► │  T  │
 ///   │     │     │     │     │     │
 ///   └──┬──┘     └─────┘     └─────┘
 ///      │                       ▲
-/// 1    │        ┌─────┐        │
-///      │        │     │        │  1
+///   1  │        ┌─────┐        │
+///      │        │     │        │ 0.1
 ///      └──────► │  C  ├────────┘
 ///               │     │
 ///               └─────┘
 ///
-async fn path_search_testnet_53_1_reproduction() -> Result<()> {
-    todo!()
+async fn path_search_testnet_53_1_reproduction() -> anyhow::Result<()> {
+    use crate::component::router::PathCache;
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
+    let mut state = StateDelta::new(storage.latest_snapshot());
+
+    // Both source and target (S and T)
+    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+
+    // Asset A
+    let gm = asset::REGISTRY.parse_unit("gm");
+    // Asset B
+    let gn = asset::REGISTRY.parse_unit("gn");
+    // Asset C
+    let pusd = asset::REGISTRY.parse_unit("test_usd");
+
+    let s_a = SellOrder::parse_str("1gm@1penumbra")
+        .unwrap()
+        .into_position(OsRng);
+    let a_t = SellOrder::parse_str("1penumbra@0.3gm")
+        .unwrap()
+        .into_position(OsRng);
+
+    let s_b = SellOrder::parse_str("1gn@1penumbra")
+        .unwrap()
+        .into_position(OsRng);
+    let b_t = SellOrder::parse_str("1penumbra@0.2gn")
+        .unwrap()
+        .into_position(OsRng);
+
+    let s_c = SellOrder::parse_str("1test_usd@1penumbra")
+        .unwrap()
+        .into_position(OsRng);
+    let c_t = SellOrder::parse_str("1penumbra@0.1test_usd")
+        .unwrap()
+        .into_position(OsRng);
+
+    state.put_position(s_a);
+    state.put_position(a_t);
+    state.put_position(s_b);
+    state.put_position(b_t);
+    state.put_position(s_c);
+    state.put_position(c_t);
+
+    let cache = PathCache::begin(penumbra.id(), state.fork());
+    let mut cache_guard = cache.lock();
+    let mut identity_path = cache_guard.0.get_mut(&penumbra.id()).unwrap().path.fork();
+
+    let pen_gm_pen = identity_path
+        .fork()
+        .extend_to(gm.id())
+        .await?
+        .unwrap()
+        .extend_to(penumbra.id())
+        .await?
+        .unwrap();
+
+    let pen_gn_pen = identity_path
+        .fork()
+        .extend_to(gn.id())
+        .await?
+        .unwrap()
+        .extend_to(penumbra.id())
+        .await?
+        .unwrap();
+
+    let pen_pusd_pen = identity_path
+        .fork()
+        .extend_to(pusd.id())
+        .await?
+        .unwrap()
+        .extend_to(penumbra.id())
+        .await?
+        .unwrap();
+
+    cache_guard.consider(pen_gm_pen);
+    cache_guard.consider(pen_pusd_pen);
+    cache_guard.consider(pen_gn_pen);
+
+    let Some(path_entry) = cache_guard.0.remove(&penumbra.id()) else {
+        panic!("Path entry not found");
+    };
+
+    let path_price = path_entry.path.price;
+    let spill_price = path_entry.spill.unwrap().price;
+    tracing::debug!("path start: {}", path_entry.path.start);
+    tracing::debug!("hops: {:?}", path_entry.path.nodes);
+
+    let correct_path_price = U128x128::ratio(1u64, 10u64).unwrap();
+    let correct_spill_price = U128x128::ratio(2u64, 10u64).unwrap();
+
+    assert_eq!(
+        path_price, correct_path_price,
+        "check that the path price is correct (correct={}, actual={})",
+        path_price, correct_path_price
+    );
+    assert_eq!(
+        spill_price,
+        U128x128::ratio(2u64, 10u64).unwrap(),
+        "check that the spill price is correct (correct={}, actual={})",
+        spill_price,
+        correct_spill_price
+    );
+
+    Ok(())
 }
