@@ -1439,3 +1439,52 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
         .unwrap();
     Ok(())
 }
+
+#[tokio::test]
+/// This test reproduces a chain divergence bug that occured in testnet v0.53.1
+/// The bug occured during path search and would cause the reported spill price
+/// to be dependent on the order of sub-path relaxation which is non-deterministic.
+/// The bug was located in the condition of mutation of the `PathCache`. Previously,
+/// we would only mutate the cache if the new path was better than the previous path.
+/// But this is not sufficient, because the new path may be worse than the current path
+/// but have a lower cost than the spill path. As a result, the reported spill price
+/// would sometime be worse than the actual second best path in the graph.
+///
+/// We reproduce the bug using a simple liquidity graph containing three routes:
+/// a source (S), a target (T), and intermediary hops (A, B, C). Here are the different
+/// paths in the graph:
+/// - cost(S > A > T): 9
+/// - cost(S > B > T): 4
+/// - cost(S > C > T): 1
+///
+/// The reproduction forces the path search to explore the paths in the order:
+/// 1 -> evaluate(S>B>T) (best_path = S>A>T, price=9, spill=None)
+/// 2 -> evaluate(S>C>T) (best_path = S>C>T, price=1, spill=9)
+/// 3 -> evaluate(S>A>T) (best_path = S>A>T, price=1, spill=4)
+/// instead of:
+/// 1 -> evaluate(S>B>T) (best_path = S>A>T, price=9, spill=None)
+/// 2 -> evaluate(S>C>T) (best_path = S>C>T, price=1, spill=9)
+/// 3 -> evaluate(S>A>T) (best_path = S>A>T, price=1, spill=9)
+///
+///
+///               ┌─────┐
+///        3      │     │    3
+///      ┌───────►│  A  ├────────┐
+///      │        │     │        │
+///      │        └─────┘        │
+///      │                       ▼
+///   ┌──┴──┐     ┌─────┐     ┌─────┐
+///   │     │ 2   │     │ 2   │     │
+///   │  S  ├───► │  B  ├───► │  T  │
+///   │     │     │     │     │     │
+///   └──┬──┘     └─────┘     └─────┘
+///      │                       ▲
+/// 1    │        ┌─────┐        │
+///      │        │     │        │  1
+///      └──────► │  C  ├────────┘
+///               │     │
+///               └─────┘
+///
+async fn path_search_testnet_53_1_reproduction() -> Result<()> {
+    todo!()
+}
