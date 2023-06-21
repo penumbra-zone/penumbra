@@ -26,19 +26,29 @@ impl<S: StateRead + 'static> PathEntry<S> {
             tracing::debug!(new_price = %new_path.price, old_price = %self.path.price, "new path is better than best path, updating cache");
             self.spill = Some(std::mem::replace(&mut self.path, new_path));
             self.active = true;
-        } else if let Some(spill) = &self.spill {
-            if new_path.price < spill.price {
+        } else {
+            // The new path is worse than the best path, but it might be better than the spill path.
+            self.update_spill(new_path);
+        }
+    }
+
+    /// Update the spill price if the new path is better, or if the spill price has not
+    /// been set yet. Otherwise do nothing.
+    fn update_spill(&mut self, new_path: Path<S>) {
+        match &self.spill {
+            Some(spill) if new_path.price < spill.price => {
                 tracing::debug!(new_spill_price = %new_path.price, old_spill_price = %spill.price, "new path is better than spill path, updating cache");
                 self.spill = Some(new_path);
                 self.active = true;
-            } else {
-                // The new path is worse than both the best path and the spill path.
-                tracing::debug!(new_price = %new_path.price, old_price = %self.path.price, "new path is worse than best path and spill path, ignore");
             }
-        } else {
-            tracing::debug!(new_spill_price= %new_path.price, "new path is worse than best path, but is a suitable spill path, updating cache");
-            self.spill = Some(new_path);
-            self.active = true;
+            Some(spill) => {
+                tracing::debug!(new_spill_price = %new_path.price, old_spill_price = %spill.price, "new path is worse than spill path, ignore");
+            }
+            None => {
+                tracing::debug!(new_spill_price = %new_path.price, "new path is a suitable spill path, updating cache");
+                self.spill = Some(new_path);
+                self.active = true;
+            }
         }
     }
 }
