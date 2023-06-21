@@ -341,10 +341,14 @@ mod tests {
     fn sum_balance_commitments() {
         use ark_ff::Field;
 
-        let pen_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
-        let atom_denom = asset::REGISTRY
-            .parse_denom("HubPort/HubChannel/uatom")
-            .unwrap();
+        let pen_denom = crate::asset::Cache::with_known_assets()
+            .get_unit("upenumbra")
+            .unwrap()
+            .base();
+        let atom_denom = crate::asset::Cache::with_known_assets()
+            .get_unit("utest_atom")
+            .unwrap()
+            .base();
 
         let pen_id = asset::Id::from(pen_denom);
         let atom_id = asset::Id::from(atom_denom);
@@ -416,8 +420,14 @@ mod tests {
 
     #[test]
     fn value_parsing_happy() {
-        let upenumbra_base_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
-        let nala_base_denom = asset::REGISTRY.parse_denom("nala").unwrap();
+        let upenumbra_base_denom = crate::asset::Cache::with_known_assets()
+            .get_unit("upenumbra")
+            .unwrap()
+            .base();
+        let nala_base_denom = crate::asset::Cache::with_known_assets()
+            .get_unit("unala")
+            .unwrap()
+            .base();
         let cache = [upenumbra_base_denom.clone(), nala_base_denom.clone()]
             .into_iter()
             .collect::<asset::Cache>();
@@ -433,7 +443,7 @@ mod tests {
         assert_eq!(v2.asset_id, upenumbra_base_denom.id());
         assert_eq!(v2, v2.format(&cache).parse().unwrap());
 
-        let v1: Value = "1nala".parse().unwrap();
+        let v1: Value = "1unala".parse().unwrap();
         assert_eq!(v1.amount, 1u64.into());
         assert_eq!(v1.asset_id, nala_base_denom.id());
         assert_eq!(v1, v1.format(&cache).parse().unwrap());
@@ -447,10 +457,11 @@ mod tests {
 
     #[test]
     fn format_picks_best_unit() {
-        let upenumbra_base_denom = asset::REGISTRY.parse_denom("upenumbra").unwrap();
-        let cache = [upenumbra_base_denom.clone()]
-            .into_iter()
-            .collect::<asset::Cache>();
+        let upenumbra_base_denom = crate::asset::Cache::with_known_assets()
+            .get_unit("upenumbra")
+            .unwrap()
+            .base();
+        let cache = [upenumbra_base_denom].into_iter().collect::<asset::Cache>();
 
         let v1: Value = "999upenumbra".parse().unwrap();
         let v2: Value = "1000upenumbra".parse().unwrap();

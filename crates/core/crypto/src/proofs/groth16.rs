@@ -109,7 +109,7 @@ mod tests {
 
             let value_to_send = Value {
                 amount: value_amount.into(),
-                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
             };
 
             let note = Note::generate(&mut rng, &sender, value_to_send);
@@ -153,7 +153,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: value_amount.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
         };
 
         let note = Note::generate(&mut rng, &sender, value_to_send);
@@ -220,7 +220,7 @@ mod tests {
 
             let value_to_send = Value {
                 amount: value_amount.into(),
-                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
             };
 
             let note = Note::generate(&mut rng, &dest, value_to_send);
@@ -260,7 +260,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: value_amount.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
         };
 
         let note = Note::generate(&mut rng, &dest, value_to_send);
@@ -306,7 +306,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: value_amount.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
         };
 
         let note = Note::generate(&mut rng, &dest, value_to_send);
@@ -347,7 +347,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: value_amount.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
         };
 
         let note = Note::generate(&mut rng, &sender, value_to_send);
@@ -409,7 +409,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: value_amount.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
         };
 
         let note = Note::generate(&mut rng, &sender, value_to_send);
@@ -467,7 +467,7 @@ mod tests {
 
             let value_to_send = Value {
                 amount: value_amount.into(),
-                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
             };
 
             let note = Note::generate(&mut rng, &wrong_sender, value_to_send);
@@ -523,7 +523,7 @@ mod tests {
 
             let value_to_send = Value {
                 amount: value_amount.into(),
-                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
             };
 
             let note = Note::generate(&mut rng, &sender, value_to_send);
@@ -579,7 +579,7 @@ mod tests {
 
         let value_to_send = Value {
             amount: value_amount.into(),
-            asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
         };
 
         let note = Note::generate(&mut rng, &sender, value_to_send);
@@ -634,7 +634,7 @@ mod tests {
 
             let value_to_send = Value {
                 amount: value_amount.into(),
-                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
             };
 
             let note = Note::generate(&mut rng, &sender, value_to_send);
@@ -692,7 +692,7 @@ mod tests {
 
             let value_to_send = Value {
                 amount: 0u64.into(),
-                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
             };
 
             let note = Note::generate(&mut rng, &sender, value_to_send);

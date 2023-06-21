@@ -161,8 +161,8 @@ mod tests {
     fn lpnft_denom_parsing_roundtrip() {
         let pair = DirectedTradingPair {
             start: penumbra_crypto::STAKING_TOKEN_ASSET_ID.clone(),
-            end: penumbra_crypto::asset::REGISTRY
-                .parse_denom("cube")
+            end: asset::Cache::with_known_assets()
+                .get_unit("cube")
                 .unwrap()
                 .id(),
         };

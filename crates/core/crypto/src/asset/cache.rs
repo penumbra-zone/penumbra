@@ -17,11 +17,11 @@ pub struct Cache {
 }
 
 impl Cache {
-    fn _get_by_id(&self, id: Id) -> Option<DenomMetadata> {
+    pub fn get_by_id(&self, id: Id) -> Option<DenomMetadata> {
         self.cache.get(&id).cloned()
     }
 
-    fn _get_unit(&self, raw_denom: &str) -> Option<Unit> {
+    pub fn get_unit(&self, raw_denom: &str) -> Option<Unit> {
         self.units.get(raw_denom).cloned()
     }
 
@@ -159,6 +159,30 @@ impl Cache {
                     }],
                 )),
             },
+            DenomMetadata {
+                inner: Arc::new(denom_metadata::Inner::new(
+                    "ucube".to_string(),
+                    vec![denom_metadata::BareDenomUnit {
+                        exponent: 1,
+                        denom: "cube".to_string(),
+                    }],
+                )),
+            },
+            DenomMetadata {
+                inner: Arc::new(denom_metadata::Inner::new(
+                    "unala".to_string(),
+                    vec![
+                        denom_metadata::BareDenomUnit {
+                            exponent: 6,
+                            denom: "nala".to_string(),
+                        },
+                        denom_metadata::BareDenomUnit {
+                            exponent: 3,
+                            denom: "mnala".to_string(),
+                        },
+                    ],
+                )),
+            },
         ];
 
         cache.extend(known_assets);
@@ -229,7 +253,7 @@ impl Extend<DenomMetadata> for Cache {
             self.cache.insert(id, denom.clone());
 
             for unit in denom.units() {
-                self.units.insert(unit.base().base_denom().denom, unit);
+                self.units.insert(unit.to_string(), unit);
             }
         }
     }

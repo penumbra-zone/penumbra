@@ -202,8 +202,14 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
 impl ParameterSetup for SwapClaimCircuit {
     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
         let trading_pair = TradingPair {
-            asset_1: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-            asset_2: asset::REGISTRY.parse_denom("nala").unwrap().id(),
+            asset_1: asset::Cache::with_known_assets()
+                .get_unit("upenumbra")
+                .unwrap()
+                .id(),
+            asset_2: asset::Cache::with_known_assets()
+                .get_unit("nala")
+                .unwrap()
+                .id(),
         };
 
         let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);
@@ -221,7 +227,10 @@ impl ParameterSetup for SwapClaimCircuit {
             delta_2_i,
             claim_fee: Fee(Value {
                 amount: 3u64.into(),
-                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                asset_id: asset::Cache::with_known_assets()
+                    .get_unit("upenumbra")
+                    .unwrap()
+                    .id(),
             }),
             claim_address: address,
             rseed: Rseed([1u8; 32]),

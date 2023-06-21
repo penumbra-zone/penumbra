@@ -488,12 +488,20 @@ mod test {
     }
 
     // Two sample denom/asset id pairs, for testing
-    static DENOM_1: Lazy<asset::DenomMetadata> =
-        Lazy::new(|| asset::REGISTRY.parse_denom("a").unwrap());
+    static DENOM_1: Lazy<asset::DenomMetadata> = Lazy::new(|| {
+        crate::asset::Cache::with_known_assets()
+            .get_unit("cube")
+            .unwrap()
+            .base()
+    });
     static ASSET_ID_1: Lazy<asset::Id> = Lazy::new(|| DENOM_1.id());
 
-    static DENOM_2: Lazy<asset::DenomMetadata> =
-        Lazy::new(|| asset::REGISTRY.parse_denom("b").unwrap());
+    static DENOM_2: Lazy<asset::DenomMetadata> = Lazy::new(|| {
+        crate::asset::Cache::with_known_assets()
+            .get_unit("nala")
+            .unwrap()
+            .base()
+    });
     static ASSET_ID_2: Lazy<asset::Id> = Lazy::new(|| DENOM_2.id());
 
     fn gen_expression() -> impl proptest::strategy::Strategy<Value = Expression> {

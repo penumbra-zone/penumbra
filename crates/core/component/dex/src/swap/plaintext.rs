@@ -429,8 +429,14 @@ mod tests {
         let ovk = fvk.outgoing();
         let (dest, _dtk_d) = ivk.payment_address(0u32.into());
         let trading_pair = TradingPair::new(
-            asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-            asset::REGISTRY.parse_denom("nala").unwrap().id(),
+            asset::Cache::with_known_assets()
+                .get_unit("upenumbra")
+                .unwrap()
+                .id(),
+            asset::Cache::with_known_assets()
+                .get_unit("nala")
+                .unwrap()
+                .id(),
         );
 
         let swap = SwapPlaintext::new(
@@ -440,7 +446,10 @@ mod tests {
             1u64.into(),
             Fee(Value {
                 amount: 3u64.into(),
-                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                asset_id: asset::Cache::with_known_assets()
+                    .get_unit("upenumbra")
+                    .unwrap()
+                    .id(),
             }),
             dest,
         );

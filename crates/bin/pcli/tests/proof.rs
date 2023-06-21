@@ -41,7 +41,10 @@ fn spend_proof_parameters_vs_current_spend_circuit() {
 
     let value_to_send = Value {
         amount: 1u64.into(),
-        asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        asset_id: asset::Cache::with_known_assets()
+            .get_unit("upenumbra")
+            .unwrap()
+            .id(),
     };
 
     let note = Note::generate(&mut OsRng, &sender, value_to_send);
@@ -92,7 +95,10 @@ fn delegator_vote_proof_parameters_vs_current_delegator_vote_circuit() {
 
     let value_to_send = Value {
         amount: 2u64.into(),
-        asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        asset_id: asset::Cache::with_known_assets()
+            .get_unit("upenumbra")
+            .unwrap()
+            .id(),
     };
 
     let note = Note::generate(&mut OsRng, &sender, value_to_send);
@@ -306,7 +312,10 @@ fn output_proof_parameters_vs_current_output_circuit() {
 
     let value_to_send = Value {
         amount: 1u64.into(),
-        asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        asset_id: asset::Cache::with_known_assets()
+            .get_unit("upenumbra")
+            .unwrap()
+            .id(),
     };
     let v_blinding = Fr::rand(&mut OsRng);
 
@@ -344,7 +353,10 @@ fn nullifier_derivation_parameters_vs_current_nullifier_derivation_circuit() {
 
     let value_to_send = Value {
         amount: 1u128.into(),
-        asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+        asset_id: asset::Cache::with_known_assets()
+            .get_unit("upenumbra")
+            .unwrap()
+            .id(),
     };
 
     let note = Note::generate(&mut rng, &sender, value_to_send);
