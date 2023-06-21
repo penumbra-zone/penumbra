@@ -1,6 +1,6 @@
 use std::{ops::Deref, sync::Arc};
 
-use penumbra_app::{app::App, MockClient, TempStorageExt};
+use crate::{app::App, MockClient, TempStorageExt};
 use penumbra_chain::{
     component::{StateReadExt, StateWriteExt},
     test_keys,
@@ -13,7 +13,7 @@ use penumbra_transaction::Transaction;
 use rand_core::SeedableRng;
 use tendermint::abci;
 
-use crate::{
+use penumbra_dex::{
     component::{Dex, StateReadExt as _},
     swap::{SwapPlaintext, SwapPlan},
     swap_claim::SwapClaimPlan,
@@ -75,12 +75,10 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     // Execute EndBlock for the Dex, to actually execute the swaps...
     Dex::end_block(&mut state, &end_block).await;
     ShieldedPool::end_block(&mut state, &end_block).await;
+
     let mut state_tx = state.try_begin_transaction().unwrap();
-    // let s = Arc::get_mut(&mut state).unwrap();
-    // App::end_block(s, &end_block).await;
-    // ... and for the App, to correctly write out the SCT with the data we'll use next.
-    // TODO: this was removed, is this needed for the test? i think it's handled in App::end_block?
-    // App::finish_sct_block(&mut state_tx).await;
+    // ... and for the App, call `finish_block` to correctly write out the SCT with the data we'll use next.
+    App::finish_block(&mut state_tx).await;
 
     state_tx.apply();
 
@@ -183,12 +181,11 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
     // Execute EndBlock for the Dex, to actually execute the swaps...
     Dex::end_block(&mut state, &end_block).await;
     ShieldedPool::end_block(&mut state, &end_block).await;
+
     let mut state_tx = state.try_begin_transaction().unwrap();
-    // let s = Arc::get_mut(&mut state).unwrap();
-    // App::end_block(s, &end_block).await;
-    // ... and for the App, to correctly write out the SCT with the data we'll use next.
-    // TODO: this was removed, is this needed for the test? i think it's handled in App::end_block?
-    // App::finish_sct_block(&mut state_tx).await;
+    // ... and for the App, call `finish_block` to correctly write out the SCT with the data we'll use next.
+    App::finish_block(&mut state_tx).await;
+
     state_tx.apply();
 
     Ok(())

@@ -9,5 +9,8 @@ pub use temp_storage_ext::TempStorageExt;
 pub mod app;
 pub mod governance;
 
+#[cfg(test)]
+mod tests;
+
 /// Temporary compat wrapper for duplicate trait impls
 pub struct Compat<'a, T>(&'a T);
