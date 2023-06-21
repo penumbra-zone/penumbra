@@ -53,6 +53,10 @@ fn fmt_hex<T: AsRef<[u8]>>(data: T, f: &mut std::fmt::Formatter) -> std::fmt::Re
 
 use once_cell::sync::Lazy;
 
-pub static STAKING_TOKEN_DENOM: Lazy<asset::DenomMetadata> =
-    Lazy::new(|| asset::REGISTRY.parse_denom("upenumbra").unwrap());
+pub static STAKING_TOKEN_DENOM: Lazy<asset::DenomMetadata> = Lazy::new(|| {
+    crate::asset::Cache::with_known_assets()
+        .get_unit("upenumbra")
+        .unwrap()
+        .base()
+});
 pub static STAKING_TOKEN_ASSET_ID: Lazy<asset::Id> = Lazy::new(|| STAKING_TOKEN_DENOM.id());

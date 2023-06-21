@@ -119,7 +119,10 @@ impl ParameterSetup for SwapCircuit {
             delta_2_i: 1u64.into(),
             claim_fee: Fee(Value {
                 amount: 3u64.into(),
-                asset_id: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
+                asset_id: asset::Cache::with_known_assets()
+                    .get_unit("upenumbra")
+                    .unwrap()
+                    .id(),
             }),
             claim_address: address,
             rseed: Rseed([1u8; 32]),

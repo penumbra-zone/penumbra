@@ -81,7 +81,10 @@ mod tests {
     #[test]
     fn test_registry_native_token() {
         // We should be able to use `parse_base` with the valid base denomination.
-        let base_denom = REGISTRY.parse_denom("upenumbra").unwrap();
+        let base_denom = crate::asset::Cache::with_known_assets()
+            .get_unit("upenumbra")
+            .unwrap()
+            .base();
         assert_eq!(format!("{base_denom}"), "upenumbra".to_string());
 
         // If we try to use `parse_base` with a display denomination, we should get `None`.
@@ -141,7 +144,10 @@ mod tests {
 
     #[test]
     fn best_unit_for() {
-        let base_denom = REGISTRY.parse_denom("upenumbra").unwrap();
+        let base_denom = crate::asset::Cache::with_known_assets()
+            .get_unit("upenumbra")
+            .unwrap()
+            .base();
 
         assert_eq!(
             base_denom.best_unit_for(0u64.into()).to_string(),
@@ -194,11 +200,12 @@ mod tests {
     }
 
     #[test]
-    fn test_registry_fallthrough() {
-        // We should be able to use `parse_base` with a base denomination for assets
-        // not included in the hardcoded registry.
-        let base_denom = REGISTRY.parse_denom("cube").unwrap();
-        assert_eq!(format!("{base_denom}"), "cube".to_string());
+    fn test_get_unit() {
+        let unit = crate::asset::Cache::with_known_assets()
+            .get_unit("cube")
+            .unwrap();
+
+        assert_eq!(format!("{unit}"), "cube".to_string());
     }
 
     proptest! {

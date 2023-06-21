@@ -223,10 +223,14 @@ impl Inner {
                 .as_bytes(),
         ));
 
+        // Perform validity check for each unit.
+
         for unit in &units {
             assert_ne!(unit.exponent, 0);
             assert_ne!(&unit.denom, &base_denom);
         }
+
+        // Add the base denom as a unit.
 
         units.push(BareDenomUnit {
             exponent: 0,

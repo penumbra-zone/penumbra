@@ -372,8 +372,14 @@ mod tests {
     impl ParameterSetup for ProRataOutputCircuit {
         fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
             let trading_pair = TradingPair {
-                asset_1: asset::REGISTRY.parse_denom("upenumbra").unwrap().id(),
-                asset_2: asset::REGISTRY.parse_denom("nala").unwrap().id(),
+                asset_1: asset::Cache::with_known_assets()
+                    .get_unit("upenumbra")
+                    .unwrap()
+                    .id(),
+                asset_2: asset::Cache::with_known_assets()
+                    .get_unit("nala")
+                    .unwrap()
+                    .id(),
             };
             let circuit = ProRataOutputCircuit {
                 delta_1_i: Amount::from(1u32),
