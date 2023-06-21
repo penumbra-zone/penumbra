@@ -57,9 +57,9 @@ dependencies = [
 
 [[package]]
 name = "aes"
-version = "0.8.2"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "433cfd6710c9986c576a25ca913c39d66a6474107b406f34f91d4a8923395241"
+checksum = "ac1f845298e95f983ff1944b728ae08b8cebab80d684f0a832ed0fc74dfa27e2"
 dependencies = [
  "cfg-if 1.0.0",
  "cipher 0.4.4",
@@ -178,9 +178,9 @@ dependencies = [
 
 [[package]]
 name = "anstyle"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41ed9a86bf92ae6580e0a31281f65a1b1d867c0cc68d5346e2ae128dddfa6a7d"
+checksum = "3a30da5c5f2d5e72842e00bcb57657162cdabef0931f40e2deb9b4140440cecd"
 
 [[package]]
 name = "anyhow"
@@ -221,7 +221,7 @@ dependencies = [
  "derivative",
  "digest 0.10.7",
  "rayon",
- "sha2 0.10.6",
+ "sha2 0.10.7",
 ]
 
 [[package]]
@@ -418,9 +418,9 @@ checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
 
 [[package]]
 name = "arrayvec"
-version = "0.7.3"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8868f09ff8cea88b079da74ae569d9b8c62a23c68c746240b704ee6f7525c89c"
+checksum = "96d30a06541fbafbc7f82ed10c06164cfbd2c401138f6addd8404629c4b16711"
 
 [[package]]
 name = "asn1-rs"
@@ -984,7 +984,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c2f0dc9a68c6317d884f97cc36cf5a3d20ba14ce404227df55e1af708ab04bc"
 dependencies = [
  "arrayref",
- "arrayvec 0.7.3",
+ "arrayvec 0.7.4",
  "constant_time_eq 0.2.6",
 ]
 
@@ -1473,9 +1473,9 @@ checksum = "e496a50fda8aacccc86d7529e2c1e0892dbd0f898a6b5645b5561b89c3210efa"
 
 [[package]]
 name = "cpufeatures"
-version = "0.2.7"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e4c1eaa2012c47becbbad2ab175484c2a84d1185b566fb2cc5b8707343dfe58"
+checksum = "03e69e28e9f7f77debdedbaafa2866e1de9ba56df55a8bd7cfc724c25a09987c"
 dependencies = [
  "libc",
 ]
@@ -2866,7 +2866,7 @@ dependencies = [
 [[package]]
 name = "ibc-types"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#8f822b903a539bb2e4145bb6081a7c7fd32c5df9"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#14d3725670d746baf25c0d11a2644f1ea361d7be"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2882,7 +2882,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "subtle-encoding",
  "tendermint",
  "tendermint-light-client-verifier",
@@ -2895,7 +2895,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-channel"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#8f822b903a539bb2e4145bb6081a7c7fd32c5df9"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#14d3725670d746baf25c0d11a2644f1ea361d7be"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2913,7 +2913,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "subtle-encoding",
  "tendermint",
  "tendermint-proto",
@@ -2924,7 +2924,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-client"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#8f822b903a539bb2e4145bb6081a7c7fd32c5df9"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#14d3725670d746baf25c0d11a2644f1ea361d7be"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2939,7 +2939,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "subtle-encoding",
  "tendermint",
  "tendermint-proto",
@@ -2949,7 +2949,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-commitment"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#8f822b903a539bb2e4145bb6081a7c7fd32c5df9"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#14d3725670d746baf25c0d11a2644f1ea361d7be"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2969,7 +2969,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "subtle-encoding",
  "tendermint",
  "tendermint-light-client-verifier",
@@ -2982,7 +2982,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-connection"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#8f822b903a539bb2e4145bb6081a7c7fd32c5df9"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#14d3725670d746baf25c0d11a2644f1ea361d7be"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2999,7 +2999,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "subtle-encoding",
  "tendermint",
  "tendermint-proto",
@@ -3009,7 +3009,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-domain-type"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#8f822b903a539bb2e4145bb6081a7c7fd32c5df9"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#14d3725670d746baf25c0d11a2644f1ea361d7be"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3019,7 +3019,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-identifier"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#8f822b903a539bb2e4145bb6081a7c7fd32c5df9"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#14d3725670d746baf25c0d11a2644f1ea361d7be"
 dependencies = [
  "displaydoc",
  "serde",
@@ -3028,12 +3028,13 @@ dependencies = [
 [[package]]
 name = "ibc-types-lightclients-tendermint"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#8f822b903a539bb2e4145bb6081a7c7fd32c5df9"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#14d3725670d746baf25c0d11a2644f1ea361d7be"
 dependencies = [
  "bytes",
  "derive_more",
  "displaydoc",
  "dyn-clone",
+ "erased-serde",
  "ibc-proto",
  "ibc-types-core-client",
  "ibc-types-core-commitment",
@@ -3046,7 +3047,10 @@ dependencies = [
  "primitive-types",
  "prost",
  "safe-regex",
- "sha2 0.10.6",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha2 0.10.7",
  "subtle-encoding",
  "tendermint",
  "tendermint-light-client-verifier",
@@ -3059,7 +3063,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-path"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#8f822b903a539bb2e4145bb6081a7c7fd32c5df9"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#14d3725670d746baf25c0d11a2644f1ea361d7be"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3080,7 +3084,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-timestamp"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#8f822b903a539bb2e4145bb6081a7c7fd32c5df9"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#14d3725670d746baf25c0d11a2644f1ea361d7be"
 dependencies = [
  "bytes",
  "displaydoc",
@@ -3097,7 +3101,7 @@ dependencies = [
 [[package]]
 name = "ibc-types2"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#8f822b903a539bb2e4145bb6081a7c7fd32c5df9"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#14d3725670d746baf25c0d11a2644f1ea361d7be"
 dependencies = [
  "ibc-types-core-channel",
  "ibc-types-core-client",
@@ -3135,7 +3139,7 @@ dependencies = [
  "prost",
  "ripemd",
  "serde",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "sha3",
 ]
 
@@ -3343,7 +3347,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "serde",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "thiserror",
  "tracing",
 ]
@@ -3972,9 +3976,9 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "openssl"
-version = "0.10.54"
+version = "0.10.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69b3f656a17a6cbc115b5c7a40c616947d213ba182135b014d6051b73ab6f019"
+checksum = "345df152bc43501c5eb9e4654ff05f794effb78d4efe3d53abc158baddc0703d"
 dependencies = [
  "bitflags 1.3.2",
  "cfg-if 1.0.0",
@@ -4004,9 +4008,9 @@ checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.88"
+version = "0.9.90"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2ce0f250f34a308dcfdbb351f511359857d4ed2134ba715a4eadd46e1ffd617"
+checksum = "374533b0e45f3a7ced10fcaeccca020e66656bc03dac384f852e4e5a7a8104a6"
 dependencies = [
  "cc",
  "libc",
@@ -4037,11 +4041,11 @@ checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 
 [[package]]
 name = "parity-scale-codec"
-version = "3.5.0"
+version = "3.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ddb756ca205bd108aee3c62c6d3c994e1df84a59b9d6d4a5ea42ee1fd5a9a28"
+checksum = "2287753623c76f953acd29d15d8100bcab84d29db78fb6f352adb3c53e83b967"
 dependencies = [
- "arrayvec 0.7.3",
+ "arrayvec 0.7.4",
  "bitvec",
  "byte-slice-cast",
  "impl-trait-for-tuples",
@@ -4051,9 +4055,9 @@ dependencies = [
 
 [[package]]
 name = "parity-scale-codec-derive"
-version = "3.1.4"
+version = "3.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86b26a931f824dd4eca30b3e43bb4f31cd5f0d3a403c5f5ff27106b805bfde7b"
+checksum = "2b6937b5e67bfba3351b87b040d48352a2fcb6ad72f81855412ce97b45c8f110"
 dependencies = [
  "proc-macro-crate 1.3.1",
  "proc-macro2 1.0.60",
@@ -4277,7 +4281,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with 1.14.0",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "tempfile",
  "tendermint",
  "tokio",
@@ -4546,7 +4550,7 @@ dependencies = [
 name = "penumbra-crypto"
 version = "0.55.0"
 dependencies = [
- "aes 0.8.2",
+ "aes 0.8.3",
  "anyhow",
  "ark-ff",
  "ark-groth16",
@@ -4583,7 +4587,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "thiserror",
  "tracing",
 ]
@@ -4635,7 +4639,7 @@ dependencies = [
  "penumbra-storage",
  "prost",
  "serde",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "tendermint",
  "tendermint-light-client-verifier",
  "tokio",
@@ -4684,7 +4688,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "tendermint",
  "tendermint-light-client-verifier",
  "tokio",
@@ -4751,7 +4755,7 @@ dependencies = [
  "penumbra-storage",
  "prost",
  "serde",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "tendermint",
  "tendermint-light-client-verifier",
  "tokio",
@@ -4805,7 +4809,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "tracing",
 ]
 
@@ -4823,7 +4827,7 @@ dependencies = [
  "futures",
  "hex",
  "ibc-proto",
- "ibc-types",
+ "ibc-types2",
  "ics23",
  "pbjson",
  "pbjson-types",
@@ -4944,7 +4948,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "pin-project",
  "rocksdb",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "smallvec",
  "tempfile",
  "tendermint",
@@ -5168,7 +5172,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "serde_json",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "tendermint",
  "tokio",
  "tokio-stream",
@@ -5306,9 +5310,9 @@ checksum = "26072860ba924cbfa98ea39c8c19b4dd6a4a25423dbdf219c1eca91aa0cf6964"
 
 [[package]]
 name = "plotters"
-version = "0.3.4"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2538b639e642295546c50fcd545198c9d64ee2a38620a628724a3b266d5fbf97"
+checksum = "d2c224ba00d7cadd4d5c660deaf2098e5e80e07846537c51f9cfa4be50c1fd45"
 dependencies = [
  "num-traits",
  "plotters-backend",
@@ -5319,15 +5323,15 @@ dependencies = [
 
 [[package]]
 name = "plotters-backend"
-version = "0.3.4"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "193228616381fecdc1224c62e96946dfbc73ff4384fba576e052ff8c1bea8142"
+checksum = "9e76628b4d3a7581389a35d5b6e2139607ad7c75b17aed325f210aa91f4a9609"
 
 [[package]]
 name = "plotters-svg"
-version = "0.3.3"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9a81d2759aae1dae668f783c308bc5c8ebd191ff4184aaa1b37f65a6ae5a56f"
+checksum = "38f6d39893cca0701371e3c27294f09797214b86f1fb951b89ade8ec04e2abab"
 dependencies = [
  "plotters-backend",
 ]
@@ -6456,9 +6460,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.96"
+version = "1.0.97"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "057d394a50403bcac12672b2b18fb387ab6d289d957dab67dd201875391e52f1"
+checksum = "bdf3bf93142acad5821c99197022e170842cdbc1c30482b98750c688c640842a"
 dependencies = [
  "indexmap",
  "itoa",
@@ -6620,9 +6624,9 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.10.6"
+version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82e6b795fe2e3b1e845bafcb27aa35405c4d47cdfc92af5fc8d3002f76cebdc0"
+checksum = "479fb9d862239e610720565ca91403019f2f00410f1864c5aa7479b950a76ed8"
 dependencies = [
  "cfg-if 1.0.0",
  "cpufeatures",
@@ -7006,7 +7010,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "serde_repr",
- "sha2 0.10.6",
+ "sha2 0.10.7",
  "signature",
  "subtle",
  "subtle-encoding",
@@ -7613,9 +7617,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-attributes"
-version = "0.1.24"
+version = "0.1.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f57e3ca2a01450b1a921183a9c9cbfda207fd822cef4ccb00a65402cbba7a74"
+checksum = "8803eee176538f94ae9a14b55b2804eb7e1441f8210b1c31290b3bccdccff73b"
 dependencies = [
  "proc-macro2 1.0.60",
  "quote 1.0.28",
@@ -7881,11 +7885,10 @@ dependencies = [
 
 [[package]]
 name = "want"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ce8a968cb1cd110d136ff8b819a556d6fb6d919363c61534f6860c7eb172ba0"
+checksum = "bfa7760aed19e106de2c7c0b581b509f2f25d3dacaf737cb82ac61bc6d760b0e"
 dependencies = [
- "log",
  "try-lock",
 ]
 

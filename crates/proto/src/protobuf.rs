@@ -43,9 +43,7 @@ pub trait TypeUrl {
 // that shouldn't depend on the Penumbra proto framework.
 
 use crate::core::crypto::v1alpha1::{BindingSignature, SpendAuthSignature, SpendVerificationKey};
-use crate::core::ibc::v1alpha1::IbcAction;
 use decaf377_rdsa::{Binding, Signature, SpendAuth, VerificationKey};
-use ibc_rs::clients::ics07_tendermint;
 
 impl TypeUrl for Signature<SpendAuth> {
     const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.SpendAuthSignature";
@@ -176,17 +174,16 @@ impl TryFrom<crate::core::crypto::v1alpha1::ConsensusKey> for tendermint::Public
 }
 
 // IBC-rs impls
-
-extern crate ibc_types as ibc_rs;
+extern crate ibc_types2;
 
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use ibc_proto::ibc::core::connection::v1::ConnectionEnd as RawConnectionEnd;
 
-use ibc_rs::core::ics03_connection::connection::ConnectionEnd;
-use ibc_rs::core::ics04_channel::channel::ChannelEnd;
-use ibc_rs::Height;
+use ibc_types2::core::channel::ChannelEnd;
+use ibc_types2::core::client::Height;
+use ibc_types2::core::connection::ConnectionEnd;
 
 impl TypeUrl for ConnectionEnd {
     const TYPE_URL: &'static str = "/ibc.core.connection.v1.ConnectionEnd";
@@ -197,10 +194,10 @@ impl TypeUrl for ChannelEnd {
 impl TypeUrl for Height {
     const TYPE_URL: &'static str = "/ibc.core.client.v1.Height";
 }
-impl TypeUrl for ics07_tendermint::client_state::ClientState {
+impl TypeUrl for ibc_types2::lightclients::tendermint::client_state::ClientState {
     const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.ClientState";
 }
-impl TypeUrl for ics07_tendermint::consensus_state::ConsensusState {
+impl TypeUrl for ibc_types2::lightclients::tendermint::consensus_state::ConsensusState {
     const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.ConsensusState";
 }
 
@@ -214,16 +211,17 @@ impl DomainType for Height {
     type Proto = RawHeight;
 }
 
-impl DomainType for ics07_tendermint::client_state::ClientState {
+impl DomainType for ibc_types2::lightclients::tendermint::client_state::ClientState {
     type Proto = Any;
 }
-impl DomainType for ics07_tendermint::consensus_state::ConsensusState {
+impl DomainType for ibc_types2::lightclients::tendermint::consensus_state::ConsensusState {
     type Proto = Any;
 }
 
+/*
 impl<T> From<T> for IbcAction
 where
-    T: ibc_types::tx_msg::Msg,
+    T: ibc_types2::tx_msg::Msg,
 {
     fn from(v: T) -> Self {
         let any = pbjson_types::Any {
@@ -236,3 +234,4 @@ where
         }
     }
 }
+*/

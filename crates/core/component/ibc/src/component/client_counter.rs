@@ -106,12 +106,14 @@ impl From<ClientConnections> for pb::ClientConnections {
 pub(crate) mod ics02_validation {
     use anyhow::{anyhow, Result};
     use ibc_proto::google::protobuf::Any;
-    use ibc_types2::clients::ics07_tendermint::{
-        client_state::{ClientState as TendermintClientState, TENDERMINT_CLIENT_STATE_TYPE_URL},
-        consensus_state::{
-            ConsensusState as TendermintConsensusState, TENDERMINT_CONSENSUS_STATE_TYPE_URL,
-        },
-        header::{Header as TendermintHeader, TENDERMINT_HEADER_TYPE_URL},
+    use ibc_types2::lightclients::tendermint::client_state::{
+        ClientState as TendermintClientState, TENDERMINT_CLIENT_STATE_TYPE_URL,
+    };
+    use ibc_types2::lightclients::tendermint::consensus_state::{
+        ConsensusState as TendermintConsensusState, TENDERMINT_CONSENSUS_STATE_TYPE_URL,
+    };
+    use ibc_types2::lightclients::tendermint::header::{
+        Header as TendermintHeader, TENDERMINT_HEADER_TYPE_URL,
     };
 
     pub fn is_tendermint_header_state(header: &Any) -> bool {

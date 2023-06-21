@@ -17,6 +17,7 @@ anyhow = "1.0"
 subtle-encoding = "0.5"
 bech32 = "0.8"
 penumbra-storage = { path = "../storage", optional = true }
+ibc-types2 = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main", features = ["std"]}
 pin-project = "1"
 async-trait = "0.1.52"
 async-stream = "0.2.0"
@@ -26,14 +27,13 @@ pbjson = "0.5"
 pbjson-types = "0.5"
 
 ibc-proto = { version = "0.31.0", default-features = false, features = ["std"] }
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
+#ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
 
 ics23 = "0.10.1"
 tendermint = "0.32.0"
 
 [build-dependencies]
 anyhow = "1"
-
 [features]
 rpc = ["dep:tonic", "ibc-proto/client"]
 penumbra-storage = ["dep:penumbra-storage"]
