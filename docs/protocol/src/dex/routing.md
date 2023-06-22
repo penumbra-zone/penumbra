@@ -1,16 +1,17 @@
-# On-Chain Routing
+## Overview
 
 The problem of routing a desired trade on Penumbra can be thought of as a special case of the [minimum-cost flow problem](https://en.wikipedia.org/wiki/Minimum-cost_flow_problem): given an input of the source asset `S`, we want to find the flow to the target asset `T` with the minimum cost (the best execution price).
 
 Penumbra's liquidity positions are each individual constant-sum AMMs with their own reserves, fees, and price.  Each position allows exchanging some amount of the asset `A` for asset `B` at a fixed price, or vice versa.
 
-This means liquidity on Penumbra can be thought of as existing at two different levels of resolution: a "macro-scale" graph consisting of trading pairs between assets, and a "micro-scale" multigraph with one edge for each individual position.
+This means that liquidity on Penumbra can be thought of as existing at two different levels of resolution:
+
+- a "macro-scale" graph consisting of trading pairs between assets
+- a "micro-scale" multigraph with one edge for each individual position.
 
 In the "micro-scale" view, each edge in the multigraph is a single position, has a linear cost function and a maximum capacity: the position has a constant price (marginal cost), so the cost of routing through the position increases linearly until the reserves are exhausted.
 
 In the "macro-scale" view, each edge in the graph has a **convex** cost function, representing the aggregation of all of the positions on that pair: as the cheapest positions are traded against, the price (marginal cost) increases, and so the cost of routing flow through the edge varies with the amount of flow.
-
-## Idea
 
 To route trades on Penumbra, we can switch back and forth between these two views, solving routing by _spilling successive shortest paths_.
 
@@ -22,13 +23,9 @@ Since the fill path $P$ and the spill path $P'$ might overlap, it's possible tha
 
 The intuition on why this should be a reasonable approach is the expectation that in practice, routes will break down coarsely over different paths and finely among positions within a path, rather than having many tiny positions on many different paths, all of which are price-competitive.
 
-## Pathfinding (Spill Phase)
+## Path search
 
-The high-level idea is to use a variant of Bellman-Ford to explore paths via edge relaxation, bounding the size of the graph traversal by constraining both the overall path length as well as the maximum out-degree during edge relaxation.
-
-### Path Length
-
-This should be a top-level parameter; lower is better.  For trades, length $3$ or $4$ seems useful.  We want to be able to compose stableswaps between different bridge representations with a trading pair providing price discovery between dissimilar assets.  Length $3$ could be a reasonable starting point.
+We aim to find the most efficient route from a source asset ($S$) to a destination asset ($T$) subject to a routing price limit. The high-level idea is to use a variant of Bellman-Ford to explore paths via edge relaxation, bounding the size of the graph traversal by constraining both the overall path length as well as the maximum out-degree during edge relaxation.
 
 ### Candidate Sets
 
@@ -45,82 +42,8 @@ One idea for $c(A)$ is to choose:
 
 [^1]: We say that two IBC-bridged assets $A$, $A'$ are IBC-similar if they are different path representations of the same underlying asset (e.g., ATOM via Cosmos Hub vs ATOM via Osmosis)
 
-In this way, even if the dynamically-selected candidates were completely manipulated, routing would still consider reasonable routes (e.g., through the staking token). 
+In this way, even if the dynamically-selected candidates were completely manipulated, routing would still consider reasonable routes (e.g., through the native token). 
 
-Choosing $N = 2$ would result in $|c(A)| = 5$, which seems reasonable together with the path length bounds: length $3$ searching could consider at most $5^3 = 125$ paths, and length $5$ searching could consider at most $5^5 = 3125$ paths (in practice, much fewer, because of pruning as described below).
-
-The liquidity-based candidates will require us to maintain an index of the total liquidity on each pair. The IBC-similar candidates will require us to maintain an index of IBC families. As an intermediate step along the way, we could consider a stub candidate set consisting of $T$, $U$, and 3 assets chosen in an implementation-defined way (e.g., the 3 assets for which positions exist in storage order, or something), if that's easier to get started.
-
-### Paths
-
-The information we need to record about a path is bundled into a `Path` structure, something like
-
-```rust
-struct Path<S: StateRead + StateWrite> {
-    /// The start point of the path
-    pub start: asset::Id,
-    /// The nodes along the path, implicitly defining the end
-    pub nodes: Vec<asset::Id>,
-    /// An estimate of the end-to-end effective price along the path
-    pub price: U128x128,
-    /// A forked view of the state after traveling along this path. 
-    pub state: StateDelta<S>,
-}
-
-impl<S: StateRead + StateWrite> Path<S> {
-    pub fn end(&self) -> &asset::Id {
-        self.nodes.last().unwrap_or(&self.start)
-    }
-    
-    pub fn begin(start: asset::Id, state: StateDelta<S>) {
-        Self {
-            start,
-            nodes: Vec::new(),
-            price: 1u64.into(),
-            state,
-        }
-    }
-    
-    pub fn state(&self) -> &StateDelta<S> {
-        &self.state
-    }
-}
-```
-
-The `Path` structure maintains the path itself (the list of assets along the path), an end-to-end price estimate for an infinitesimally-sized trade along the path, and a state fork used to ensure that the path doesn't double-count liquidity during routing.
-
-To extend a `Path` to a `new_end`, we query for the least-price position on the pair `(end, new_end)`, multiply its effective price into `price`, push `new_end` into `nodes`, fork the `state`, and deindex the position in the forked state (to ensure we never double-count the same liquidity, even if we routed back along a cycle).  This could look something like this:
-
-```rust
-impl<S: StateRead + StateWrite> Path<S> {
-    // We can't clone, because StateDelta only has an explicit fork() on purpose
-    pub fn fork(&self) -> Self {
-        Self {
-            start: self.start.clone(),
-            nodes: self.nodes.clone(),
-            price: self.price.clone(),
-            state: self.state.fork(),
-        }
-    }
-    
-    // Making this consuming forces callers to explicitly fork the path first.
-    pub async fn extend_to(mut self, new_end: asset::Id) -> Result<Option<Path<S>>> {
-        let Some(position) = state.best_position(self.end(), &new_end).await? else {
-            return Ok(None)
-        };
-        // Deindex the position we "consumed" in this and all descendant state forks,
-        // ensuring we don't double-count liquidity while traversing cycles.
-        self.state.deindex_position(position.id());
-        
-        // Update and return the path.
-        self.price *= best_price_position.effective_price();
-        self.nodes.push(new_end)
-        Ok(Some(self))
-    }
-}
-```
-
-The important detail here is that we don't want the future returned by the path extension method to have a lifetime bounded by `'self`, because we want it to be `'static` and therefore spawnable, allowing us to explore all possible path extensions in parallel.  This might require bounding `S: 'static` as well, although every instantiation of `S` we use should be anyways.
 
 ### Traversal
 
@@ -132,88 +55,138 @@ At each iteration, we iterate over each candidate path, and relax it along each 
 
 The [SPFA](https://en.wikipedia.org/wiki/Shortest_path_faster_algorithm) optimization is to also record whether the best-path-to-$A$ was updated in the last iteration. If not, we know that every possible relaxation is worse than a known alternative, so we can skip relaxing it in later iterations.
 
-Ideally, we would consider all relaxations for a given depth in concurrent tasks. To do this, we need to share the path registry, with something like
-```rust
-// Shared between tasks as Arc<Mutex<PathCache>>
-pub struct PathCache<S>(pub BTreeMap<asset::Id, (Path<S>, bool)>);
 
-impl<S> PathCache<S> {
-    // Initializes a new PathCache with the identity path.
-    pub fn begin(start: asset::Id, state: StateDelta<S>) -> Arc<Mutex<Self>> {
-        let identity = Path::begin(start, state);
-        let mut cache = BTreeMap::new();
-        cache.insert(start, (identity, true));
-        Arc::new(Mutex::new(Self(cache)))
-    }
-    
-    // Consider a new candidate path.
-    pub fn consider(&mut self, path: Path<S>) {
-        self.0.entry(*path.end())
-            .and_modify(|existing| {
-                // compare-and-swap
-            })
-            .or_insert_with(|| (path, true))
-    }
-}
+We consider all relaxations for a given depth in concurrent tasks. We use a shared cache that records the best intermediate route for each asset.
+
+After `max_length` iterations, the `PathEntry` for target asset $T$ contains the shortest path to $T$, along with a spill path (the next-best path to $T$).
+
+
+## Routing Execution (Fill Phase)
+
+In the fill phase, we have a path to fill, represented as a `Vec<asset::Id>` or  $(\mathsf a_0, \mathsf a_1, \ldots, \mathsf a_n)$, and an estimate of the spill price for the next-best path.  The spill price indicates how much we can fill and still know we're on the optimal route. Our goal is to fill as much of the trade intent $\Delta$ as possible, until we get a marginal price that's worse than the spill price.
+
+### Optimal execution along a route: `fill_route`
+
+After performing path search, we know that a route $\langle a_{src}, ..., a_{dst}\rangle$ exists with positive capacity and a path price that is equal to or better than some spill price. Executing over the route means filling against the best available positions at each hop. At each filling iteration, we need to discover what's the maximum amount of flow that we can push through without causing a marginal price increase.
+
+To achieve this, the DEX engine assembles a _frontier of positions_ $F$, which is comprised of the best positions for each hop along the path: $F = (P_1, P_2 ..., P_n)$ where $P_i$ is the best position for the directed pair $a_{i-1} \rightarrow a_i$.
+
+
+```
+///   Swapping S for T, routed along (S->A, A->B, B->C, C->T),
+///   each pair has a stack of positions that have some capacity and price
+/// 
+///   ┌───┐    ┌─────┐       ┌─────┐       ┌─────┐       ┌─────┐
+///   │   │    │     │       │ B1  │       │     │       │     │
+///   │   │    │     │    ┌► │     ├───┐   │ C1  │       │ T1  │
+///   │   ├──► │ A1  ├────┘  ├─────┤   └─► │     ├───┐   │     │
+///   │   │    │     │       │     │       │     │   │   │     │
+///   │   │    │     ├─────► │     ├─────► │     │   ├─► │     │
+///   │ S │    ├─────┤       │ B2  │       │     ├───┴─► │     │
+///   │   │    │     ├─────► │     ├──┐    ├─────┤       │     │
+///   │   ├──► │ A2  │       │     │  └──► │ C2  ├─────► │     │
+///   │   │    │     │       ├─────┤       ├─────┤       ├─────┤
+///   │   │    │     ├─────► │ B3  ├─────► │ C3  ├─────► │     │
+///   └───┘    ├─────┤       │     │       │     │       │     │
+///            │     │       ├─────┤       ├─────┤       │ T2  │
+///            │     │       │     │       │     │       │     │
+///            │     │       │     │       │     │       │     │
+///            │     │       ├─────┤       ├─────┤       │     │
+///            │     │       │     │       │     │       │     │
+///            └─────┘       └─────┘       └─────┘       └─────┘
+/// 
+///              A              B             C             T
+/// 
+/// 
+/// ┌────┬────────────────┐  As we route input along the route,
+/// │ #  │  Frontier      │  we exhaust the inventory of the best
+/// │    │                │  positions, thus making the frontier change.
+/// ├────┼─────────────── │
+/// │ 1  │ A1, B1, C1, T1 │
+/// │    │                │  Routing execution deals with two challenges:
+/// ├────┼─────────────── │
+/// │ 2  │ A1, B2, C1, T1 │  -> capacity constraints along a route: some position
+/// │    │                │     provision less inventory than needed to fill
+/// ├────┼─────────────── │     the swap.
+/// │ 3  │ A2, B2, C2, T1 │
+/// │    │                │
+/// ├────┼─────────────── │  -> exactly filling all the reserves so as to not
+/// │ 4  │ A2, B3, C3, T2 │     leave any dust positions behind.
+/// │    │                │
+/// └────┴────────────────┘  Our example above starts with a frontier where B1 is
+///                          the most constraining position in the frontier set.
+///                          Routing as much input as possible means completely
+///                          filling B1. The following frontier assembled contains
+///                          the next best available position for the pair A->B,
+///                          that is B2.
 ```
 
-Then, at each iteration, we can extract the active paths...
-```rust
-let active_paths = cache.lock().0.values()
-                .filter_map(|(path, active)| if active {
-                    Some(path.fork())
-                } else {
-                    None
-                })
-                .collect::<Vec<_>>();
+
+
+#### Sensing constraints
+
+In the simple case, each position in the frontier has enough inventory to satisfy routing to the next hop in the route until the target is reached. But this is not always the case, so we need to be able to sense which positions in the frontier are constraint and pick the most limiting one.
+
+We implement a capacity sensing routing that returns the index of the most limiting constraint in the frontier. The routine operates statelessly, and works as follow:
+First, it pulls every position in the frontier and simulates execution of the input against those positions, passing the filled amounts forward to the next position in the frontier. If at some point an unfilled amount is returned, it means the current position is a constraint. When that happens, we record the index of the position, passing the output of the trade to the next position. This last point is important because it means that picking the most limiting constraint is equivalent to picking the last recorded one.
+
+Summary:
+
+
+1. Pull each position in the frontier $F = \langle P_1, ... P_n\rangle$
+2. Execute the entirety of the input  $\Delta$ against the first position
+3. If a trade returns some unfilled amount $\Lambda_1$ that means we have sensed a constraint, record the position and proceed with executing $\Lambda_2$ against the next position.
+4. Repeat until we have traversed the entire frontier.
+ 
+
 ```
-...and then concurrently relax them along candidate edges:
-```rust
-let mut js = JoinSet::new();
-for path in active_paths {
-    let cache2 = cache.clone();
-    js.spawn(async move {
-        // Exact candidate set computation TBD
-        // (need to plumb in the source and target?)
-        let candidates = path.state().candidates(path.end()).await?;
-        let mut js2 = JoinSet::new();
-        for new_end in candidates {
-            let new_path = path.fork();
-            let cache3 = cache2.clone();
-            js2.spawn(async move {
-                let new_path = new_path.extend_to(new_end).await?;
-                cache3.lock().consider(new_path);
-                anyhow::Ok(())
-            })
-        }
-        // Wait for all candidates to be considered
-        while let Some(task) = js2.join_next().await {
-            task??
-        }
-    })
-}
-// Wait for all candidates of all active paths to be considered
-while let Some(task) = js.join_next().await {
-    task??
-}
+/// We show a frontier composed of assets: <S, A, B, C, T>, connected by
+/// liquidity positions of various capacity and cost. The most limiting
+/// constraint detected is (*).
+///         ┌─────┐      ┌─────┐      ┌─────┐      ┌─────┐      ┌─────┐
+///         │     │      │     │      │     │      │     ├──────┤     │
+///         │     │      │     │      │     │      │     │      │     │
+///         │     ├──────┤     │      │     │      │     │      │     │
+/// Swap In │     │      │     │      │     │      │     │      │     │
+///         │     │      │     ├──────┤     │      │     │      │     │
+///     │   │     │      │     │      │     ├──────┤     │      │     │
+///     └─► │ src │      │  A  │      │  B  │  (*) │  C  │      │ dst ├─────┐
+///         │     │      │     │      │     ├──┬───┤     │      │     │     │
+///         │     │      │     │      │     │  │   │     │      │     │     ▼
+///         │     │      │     ├───┬──┤     │  │   │     │      │     │ Swap Out
+///         │     ├──┬───┤     │   │  │     │  │   │     │      │     │
+///         │     │  │   │     │   │  │     │  │   │     │      │     │
+///         │     │  │   │     │   │  │     │  │   │     ├───┬──┤     │
+///         └─────┘  │   └─────┘   │  └─────┘  │   └─────┘   │  └─────┘
+///                  │             │           │             │
+///                  └─────────────┴─────┬─────┴─────────────┘
+///                                      │
+///                                      │
+///                                      ▼
+/// 
+///                           Capacity constraints at each
+///                           hop on the frontier.
 ```
-After `max_length` iterations, the entry in the path cache for the target asset $T$ is the shortest path to $T$. This still isn't quite what we want, though, because we want not just the shortest path but also the next-shortest path.  To fix that, we can change the `PathCache` to store the second-best path while we write in the first one.
+#### Filling
 
-Once we obtain the best path to $T$ and the spill price (from the second-best path), we're ready to move to the fill phase.
+Filling involves transforming an input asset $A$ into a corresponding output asset $B$, using a trading function and some reserves. If no constraint was found, we can simply route forward from the source, and execute against each position in the frontier until we have reached the target asset. However, if a constraint was found, we have to determine the maximum amount of input $\Delta^*$ that we can route through and make sure that we consume the reserves of the constraining position _exactly_, to not leave any dust behind.
 
-## Execution (Fill Phase)
 
-In the fill phase, we have a path to fill along, represented as a `Vec<asset::Id>`, and an estimate of the spill price for the next-best path.  The spill price indicates how much we can fill and still know we're on the optimal route.  Our goal is to fill as much of the trade intent $\Delta_0$ as possible, until we get a marginal price that's worse than the spill price.
+##### Filling forward
 
+Filling forward is trivial. For a given input, we pull each position and fill them. Since no unfilled amount is returned we can simply proceed forward, updating the reserves and pulling the next position:
+
+$\Lambda_2 = \Delta_1 \frac {p} {q \gamma}$
+
+##### Filling backward
+
+Filling backward is more complicated because we need to ensure every position preceding the constraining hop is zeroed out. This is because the DEX engine only has access to a finite amount of precision and as a result perform divison can be lossy by some $\epsilon$, perpetually preventing a position to be deindexed.
+
+Suppose that the limiting constraint is a index $j$, we compute $\Delta_1^* = \frac {p_2 \gamma} {p_1} R_2$
+
+The goal is to propagate rounding loss backwards to the input and forwards the output. That means that for a constraint at index $j$, we fill backward from $j$ to the first position, and forward from $j$ to the last position. For backward fills, we compute $\Delta_1^* = \Lambda_2 \frac {p_2 \gamma} {p_1}$ and manually zero-out the $R_2$ of each position. The forward fill part works as described previously. There is no extra work to do because that segment of the path contains no constraints as we have reduced the flow to match the exact capacity of the frontier.
+
+### Termination conditions
 Termination conditions:
-- we have completely filled the desired fill amount $\Delta_0$
-- we have partially filled $\Delta'_0 < \Delta_0$, and filling more would have a higher marginal price than the spill price.
-
-Suppose the path is $(\mathsf a_0, \mathsf a_1, \ldots, \mathsf a_n)$, and write $P_i$ for the set of open positions on the pair $(\mathsf a_{i-1}, \mathsf a_i)$, ordered by price.
-Filling some amount $\Delta_0'$ along this path will use up the open positions along each component pair in order.  Write $(k_1, \ldots, k_n)$ for the number of positions consumed (i.e., have their reserves completely exhausted) during the fill.
-
-While filling, our problem is to determine which position along the route we should consume next -- i.e., which position is the constraining one. We want to do this without assuming the existence of a numeraire, which we can do by simulating a test execution of the entire reserves of the active position on the first hop through to the end of the path. At each step, the intermediate output from the previous trade will either be greater than or less than the reserves of the active position on the next hop.  If the output is less than the reserves of the next position, the previous position was a capacity constraint.  The last capacity constraint on the path is the one we lift first.
-
-- [ ] Restructure slightly in terms of frontiers
-- [ ] Explain traces
-
+- we have completely filled the desired fill amount, $\Delta$,
+- we have a partial fill, $\Delta^* \lt \Delta$, but the marginal price has reached the spill price.
