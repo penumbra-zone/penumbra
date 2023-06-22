@@ -1,12 +1,9 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types2::core::{
-    ics03_connection::connection::{ConnectionEnd, State as ConnectionState},
-    ics04_channel::{
-        channel::{ChannelEnd, Counterparty, State as ChannelState},
-        msgs::chan_open_ack::MsgChannelOpenAck,
-    },
-    ics24_host::identifier::PortId,
+    channel::channel::State as ChannelState, channel::msgs::MsgChannelOpenAck, channel::ChannelEnd,
+    channel::Counterparty, channel::PortId, commitment::MerkleProof, connection::ConnectionEnd,
+    connection::State as ConnectionState,
 };
 use penumbra_storage::{StateRead, StateWrite};
 
@@ -49,7 +46,7 @@ impl MsgHandler for MsgChannelOpenAck {
             Counterparty::new(self.port_id_on_a.clone(), Some(self.chan_id_on_a.clone()));
 
         let expected_connection_hops = vec![connection
-            .counterparty()
+            .counterparty
             .connection_id
             .clone()
             .ok_or_else(|| anyhow::anyhow!("no counterparty connection id provided"))?];
@@ -62,10 +59,12 @@ impl MsgHandler for MsgChannelOpenAck {
             version: self.version_on_b.clone(),
         };
 
+        let proof = MerkleProof::try_from(self.proof_chan_end_on_b.clone())?;
+
         state
             .verify_channel_proof(
                 &connection,
-                &self.proof_chan_end_on_b,
+                &proof,
                 &self.proof_height_on_b,
                 &self.chan_id_on_b,
                 &channel.remote.port_id,

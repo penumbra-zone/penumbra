@@ -3,7 +3,9 @@ use async_trait::async_trait;
 
 use ibc_types2::core::client::msgs::MsgUpdateClient;
 use ibc_types2::core::client::ClientId;
+use ibc_types2::core::client::ClientType;
 use ibc_types2::core::client::Height;
+
 use ibc_types2::lightclients::tendermint::{
     client_state::ClientState as TendermintClientState,
     consensus_state::ConsensusState as TendermintConsensusState,
@@ -158,7 +160,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     fn put_client(&mut self, client_id: &ClientId, client_state: TendermintClientState) {
         self.put_proto(
             state_key::client_type(client_id),
-            client_state.client_type().as_str().to_string(),
+            ibc_types2::lightclients::tendermint::client_type().to_string(),
         );
 
         self.put(state_key::client_state(client_id), client_state);
@@ -296,7 +298,7 @@ pub trait StateReadExt: StateRead {
         &self,
         client_id: &ClientId,
         height: &Height,
-    ) -> Result<ibc_types::Height> {
+    ) -> Result<ibc_types2::core::client::Height> {
         self.get(&state_key::client_processed_heights(client_id, height))
             .await?
             .ok_or_else(|| {
@@ -395,7 +397,7 @@ mod tests {
 
     use super::*;
     use ibc_proto::protobuf::Protobuf;
-    use ibc_types2::core::ics02_client::msgs::create_client::MsgCreateClient;
+    use ibc_types2::{core::client::msgs::MsgCreateClient, DomainType};
     use penumbra_chain::component::StateWriteExt;
     use penumbra_component::ActionHandler;
     use penumbra_storage::{ArcStateDeltaExt, StateDelta};

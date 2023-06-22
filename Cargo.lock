@@ -2866,7 +2866,7 @@ dependencies = [
 [[package]]
 name = "ibc-types"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#a571ff9428b218c6378844172def7e509cfb7b2d"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2895,7 +2895,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-channel"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#a571ff9428b218c6378844172def7e509cfb7b2d"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2924,7 +2924,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-client"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#a571ff9428b218c6378844172def7e509cfb7b2d"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2949,7 +2949,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-commitment"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#a571ff9428b218c6378844172def7e509cfb7b2d"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2982,7 +2982,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-connection"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#a571ff9428b218c6378844172def7e509cfb7b2d"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3009,7 +3009,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-domain-type"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#a571ff9428b218c6378844172def7e509cfb7b2d"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3019,7 +3019,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-identifier"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#a571ff9428b218c6378844172def7e509cfb7b2d"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
 dependencies = [
  "displaydoc",
  "serde",
@@ -3028,7 +3028,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-lightclients-tendermint"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#a571ff9428b218c6378844172def7e509cfb7b2d"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3063,7 +3063,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-path"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#a571ff9428b218c6378844172def7e509cfb7b2d"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3084,7 +3084,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-timestamp"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#a571ff9428b218c6378844172def7e509cfb7b2d"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
 dependencies = [
  "bytes",
  "displaydoc",
@@ -3101,7 +3101,7 @@ dependencies = [
 [[package]]
 name = "ibc-types2"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#a571ff9428b218c6378844172def7e509cfb7b2d"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
 dependencies = [
  "ibc-types-core-channel",
  "ibc-types-core-client",
@@ -6292,9 +6292,9 @@ dependencies = [
 
 [[package]]
 name = "scale-info"
-version = "2.7.0"
+version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b569c32c806ec3abdf3b5869fb8bf1e0d275a7c1c9b0b05603d9464632649edf"
+checksum = "ad560913365790f17cbf12479491169f01b9d46d29cfc7422bf8c64bdc61b731"
 dependencies = [
  "cfg-if 1.0.0",
  "derive_more",
@@ -6304,9 +6304,9 @@ dependencies = [
 
 [[package]]
 name = "scale-info-derive"
-version = "2.6.0"
+version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53012eae69e5aa5c14671942a5dd47de59d4cdcff8532a6dd0e081faf1119482"
+checksum = "19df9bd9ace6cc2fe19387c96ce677e823e07d017ceed253e7bb3d1d1bd9c73b"
 dependencies = [
  "proc-macro-crate 1.3.1",
  "proc-macro2 1.0.60",

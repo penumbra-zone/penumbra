@@ -1,13 +1,10 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types2::core::{
-    ics02_client::{client_state::ClientState, consensus_state::ConsensusState, height::Height},
-    ics03_connection::{
-        connection::{ConnectionEnd, Counterparty, State},
-        msgs::conn_open_ack::MsgConnectionOpenAck,
-    },
-    ics24_host::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath},
+    client::Height,
+    connection::{msgs::MsgConnectionOpenAck, ConnectionEnd, Counterparty, State},
 };
+use ibc_types2::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
 use penumbra_chain::component::{StateReadExt as _, PENUMBRA_COMMITMENT_PREFIX};
 use penumbra_storage::{StateRead, StateWrite};
 
@@ -54,23 +51,23 @@ impl MsgHandler for MsgConnectionOpenAck {
 
         // verify that the counterparty committed a TRYOPEN connection with us as the
         // counterparty
-        let expected_counterparty = Counterparty::new(
-            connection.client_id().clone(),     // client ID (local)
-            Some(self.conn_id_on_a.clone()),    // connection ID (local)
-            PENUMBRA_COMMITMENT_PREFIX.clone(), // commitment prefix (local)
-        );
+        let expected_counterparty = Counterparty {
+            client_id: connection.client_id.clone(), // client ID (local)
+            connection_id: Some(self.conn_id_on_a.clone()), // connection ID (local)
+            prefix: PENUMBRA_COMMITMENT_PREFIX.clone(), // commitment prefix (local)
+        };
 
         // the connection we expect the counterparty to have committed
-        let expected_conn = ConnectionEnd::new(
-            State::TryOpen,
-            connection.counterparty().client_id().clone(),
-            expected_counterparty.clone(),
-            vec![self.version.clone()],
-            connection.delay_period(),
-        );
+        let expected_conn = ConnectionEnd {
+            state: State::TryOpen,
+            client_id: connection.counterparty.client_id.clone(),
+            counterparty: expected_counterparty.clone(),
+            versions: vec![self.version.clone()],
+            delay_period: connection.delay_period,
+        };
 
         // get the stored client state for the counterparty
-        let trusted_client_state = state.get_client_state(connection.client_id()).await?;
+        let trusted_client_state = state.get_client_state(&connection.client_id).await?;
 
         // check if the client is frozen
         // TODO: should we also check if the client is expired here?
@@ -80,7 +77,7 @@ impl MsgHandler for MsgConnectionOpenAck {
 
         // get the stored consensus state for the counterparty
         let trusted_consensus_state = state
-            .get_verified_consensus_state(self.proofs_height_on_b, connection.client_id().clone())
+            .get_verified_consensus_state(self.proofs_height_on_b, connection.client_id.clone())
             .await?;
 
         // PROOF VERIFICATION
@@ -90,13 +87,13 @@ impl MsgHandler for MsgConnectionOpenAck {
             msg.proofs_height_on_b = ?self.proofs_height_on_b,
         );
         tracing::debug!(
-            counterparty_prefix = ?connection.counterparty().prefix(),
+            counterparty_prefix = ?connection.counterparty.prefix,
         );
         tracing::debug!(
             msg.proof_conn_end_on_b = ?self.proof_conn_end_on_b,
         );
         tracing::debug!(
-            trusted_consensus_state_root = ?trusted_consensus_state.root(),
+            trusted_consensus_state_root = ?trusted_consensus_state.root,
         );
         tracing::debug!(
             connection_path = %ConnectionPath::new(&self.conn_id_on_b),
@@ -107,7 +104,7 @@ impl MsgHandler for MsgConnectionOpenAck {
         trusted_client_state
             .verify_connection_state(
                 self.proofs_height_on_b,
-                connection.counterparty().prefix(),
+                connection.counterparty.prefix,
                 &self.proof_conn_end_on_b,
                 trusted_consensus_state.root(),
                 &ConnectionPath::new(&self.conn_id_on_b),

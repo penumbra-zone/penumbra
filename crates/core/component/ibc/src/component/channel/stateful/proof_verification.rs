@@ -4,6 +4,7 @@ use crate::component::client::StateReadExt;
 
 use super::super::*;
 use core::time::Duration;
+use ibc_proto::protobuf::Protobuf;
 use ibc_types2::{
     core::{
         client::ClientId,
@@ -105,7 +106,7 @@ pub trait ChannelProofVerifier: StateReadExt {
         expected_channel: &ChannelEnd,
     ) -> anyhow::Result<()> {
         // get the stored client state for the counterparty
-        let trusted_client_state = self.get_client_state(connection.client_id()).await?;
+        let trusted_client_state = self.get_client_state(&connection.client_id).await?;
 
         // check if the client is frozen
         // TODO: should we also check if the client is expired here?
@@ -115,20 +116,21 @@ pub trait ChannelProofVerifier: StateReadExt {
 
         // get the stored consensus state for the counterparty
         let trusted_consensus_state = self
-            .get_verified_consensus_state(*proof_height, connection.client_id().clone())
+            .get_verified_consensus_state(*proof_height, connection.client_id.clone())
             .await?;
 
-        let client_def = trusted_client_state;
+        trusted_client_state.verify_height(*proof_height)?;
+        let value = expected_channel.encode_vec();
 
-        // PROOF VERIFICATION. verify that our counterparty committed expected_channel to its
-        // state.
-        client_def.verify_channel_state(
-            *proof_height,
-            connection.counterparty().prefix(),
+        verify_merkle_proof(
+            &trusted_client_state.proof_specs,
+            &MerklePrefix {
+                key_prefix: connection.counterparty.prefix,
+            },
             proof,
-            trusted_consensus_state.root(),
-            &ChannelEndPath::new(port_id, channel_id),
-            expected_channel,
+            &trusted_consensus_state.root,
+            ChannelEndPath::new(port_id, channel_id),
+            value,
         )?;
 
         Ok(())
@@ -146,7 +148,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
     ) -> anyhow::Result<()> {
         let (trusted_client_state, trusted_consensus_state) = self
             .get_trusted_client_and_consensus_state(
-                connection.client_id(),
+                &connection.client_id,
                 &msg.proof_height_on_a,
                 connection,
             )
@@ -159,12 +161,15 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
         };
 
         let commitment_bytes = commit_packet(&msg.packet);
+        let proof: MerkleProof = msg.proof_commitment_on_a.clone().try_into()?;
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
-            connection.counterparty().prefix(),
-            &msg.proof_commitment_on_a,
-            trusted_consensus_state.root(),
+            &MerklePrefix {
+                key_prefix: connection.counterparty.prefix,
+            },
+            &proof,
+            &trusted_consensus_state.root,
             commitment_path,
             commitment_bytes,
         )?;
@@ -179,7 +184,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
     ) -> anyhow::Result<()> {
         let (trusted_client_state, trusted_consensus_state) = self
             .get_trusted_client_and_consensus_state(
-                connection.client_id(),
+                &connection.client_id,
                 &msg.proof_height_on_b,
                 connection,
             )
@@ -191,11 +196,15 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             sequence: msg.packet.sequence,
         };
 
+        let proof: MerkleProof = msg.proof_acked_on_b.clone().try_into()?;
+
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
-            connection.counterparty().prefix(),
-            &msg.proof_acked_on_b,
-            trusted_consensus_state.root(),
+            &MerklePrefix {
+                key_prefix: connection.counterparty.prefix,
+            },
+            &proof,
+            &trusted_consensus_state.root,
             ack_path,
             msg.acknowledgement.clone().into(),
         )?;
@@ -210,7 +219,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
     ) -> anyhow::Result<()> {
         let (trusted_client_state, trusted_consensus_state) = self
             .get_trusted_client_and_consensus_state(
-                connection.client_id(),
+                &connection.client_id,
                 &msg.proof_height_on_b,
                 connection,
             )
@@ -223,11 +232,15 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
 
         let seq_path = SeqRecvPath(msg.packet.port_on_b.clone(), msg.packet.chan_on_b.clone());
 
+        let proof: MerkleProof = msg.proof_unreceived_on_b.clone().try_into()?;
+
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
-            connection.counterparty().prefix(),
-            &msg.proof_unreceived_on_b,
-            trusted_consensus_state.root(),
+            &MerklePrefix {
+                key_prefix: connection.counterparty.prefix,
+            },
+            &proof,
+            &trusted_consensus_state.root,
             seq_path,
             seq_bytes,
         )?;
@@ -242,7 +255,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
     ) -> anyhow::Result<()> {
         let (trusted_client_state, trusted_consensus_state) = self
             .get_trusted_client_and_consensus_state(
-                connection.client_id(),
+                &connection.client_id,
                 &msg.proof_height_on_b,
                 connection,
             )
@@ -254,11 +267,15 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             sequence: msg.packet.sequence,
         };
 
+        let proof = MerkleProof::try_from(msg.proof_unreceived_on_b.clone())?;
+
         verify_merkle_absence_proof(
             &trusted_client_state.proof_specs,
-            connection.counterparty().prefix(),
-            &msg.proof_unreceived_on_b,
-            trusted_consensus_state.root(),
+            &MerklePrefix {
+                key_prefix: connection.counterparty.prefix,
+            },
+            &proof,
+            &trusted_consensus_state.root,
             receipt_path,
         )?;
 
@@ -304,7 +321,7 @@ mod inner {
             // NOTE: hardcoded for now, should probably be a chain parameter.
             let max_time_per_block = std::time::Duration::from_secs(20);
 
-            let delay_period_time = connection.delay_period();
+            let delay_period_time = connection.delay_period;
             let delay_period_blocks =
                 calculate_block_delay(&delay_period_time, &max_time_per_block);
 

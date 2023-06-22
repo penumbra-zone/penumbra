@@ -27,7 +27,7 @@ pub trait StateWriteExt: StateWrite {
             connection.clone(),
         );
         self.put(
-            state_key::connections::by_client_id(connection.client_id(), connection_id),
+            state_key::connections::by_client_id(&connection.client_id, connection_id),
             connection.clone(),
         );
         let counter = self
@@ -45,7 +45,7 @@ pub trait StateWriteExt: StateWrite {
             connection.clone(),
         );
         self.put(
-            state_key::connections::by_client_id(connection.client_id(), connection_id),
+            state_key::connections::by_client_id(&connection.client_id, connection_id),
             connection,
         );
     }

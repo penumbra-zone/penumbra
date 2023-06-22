@@ -204,7 +204,7 @@ pub fn validate_penumbra_client_state(
 ) -> Result<(), anyhow::Error> {
     let tm_client_state = ics02_validation::get_tendermint_client_state(client_state)?;
 
-    if tm_client_state.frozen_height().is_some() {
+    if tm_client_state.frozen_height.is_some() {
         return Err(anyhow::anyhow!("invalid client state: frozen"));
     }
 
