@@ -1,7 +1,10 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types2::core::{
-    channel::{msgs::MsgChannelOpenTry, ChannelEnd, Counterparty, PortId, State as ChannelState},
+    channel::{
+        channel::State as ChannelState, msgs::MsgChannelOpenTry, ChannelEnd, Counterparty, PortId,
+    },
+    commitment::MerkleProof,
     connection::{ConnectionEnd, State as ConnectionState},
 };
 use penumbra_storage::{StateRead, StateWrite};
@@ -37,7 +40,7 @@ impl MsgHandler for MsgChannelOpenTry {
             ordering: self.ordering,
             remote: Counterparty::new(self.port_id_on_b.clone(), None),
             connection_hops: vec![connection_on_b
-                .counterparty()
+                .counterparty
                 .connection_id
                 .clone()
                 .ok_or_else(|| anyhow::anyhow!("no counterparty connection id provided"))?],
@@ -46,10 +49,12 @@ impl MsgHandler for MsgChannelOpenTry {
 
         tracing::debug!(?self, ?expected_channel_on_a);
 
+        let proof = MerkleProof::try_from(self.proof_chan_end_on_a.clone())?;
+
         state
             .verify_channel_proof(
                 &connection_on_b,
-                &self.proof_chan_end_on_a,
+                &proof,
                 &self.proof_height_on_a,
                 &self.chan_id_on_a,
                 &self.port_id_on_a,

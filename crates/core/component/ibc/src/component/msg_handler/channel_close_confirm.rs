@@ -1,12 +1,12 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types2::core::{
-    ics03_connection::connection::State as ConnectionState,
-    ics04_channel::{
-        channel::{ChannelEnd, Counterparty, State as ChannelState},
-        msgs::chan_close_confirm::MsgChannelCloseConfirm,
+    channel::{
+        channel::State as ChannelState, msgs::MsgChannelCloseConfirm, ChannelEnd, Counterparty,
+        PortId,
     },
-    ics24_host::identifier::PortId,
+    commitment::MerkleProof,
+    connection::State as ConnectionState,
 };
 use penumbra_storage::StateWrite;
 
@@ -56,7 +56,7 @@ impl MsgHandler for MsgChannelCloseConfirm {
         }
 
         let expected_connection_hops = vec![connection
-            .counterparty()
+            .counterparty
             .connection_id
             .clone()
             .ok_or_else(|| anyhow::anyhow!("no counterparty connection id provided"))?];
@@ -72,10 +72,12 @@ impl MsgHandler for MsgChannelCloseConfirm {
             version: channel.version.clone(),
         };
 
+        let proof = MerkleProof::try_from(self.proof_chan_end_on_a.clone())?;
+
         state
             .verify_channel_proof(
                 &connection,
-                &self.proof_chan_end_on_a,
+                &proof,
                 &self.proof_height_on_a,
                 &channel
                     .remote
