@@ -121,11 +121,19 @@ pub struct AssetId {
     /// bytes.
     ///
     /// NOTE: implementations are not required to support parsing this field.
-    /// Implementations should prefer to encode the bytes in all messages they
+    /// Implementations should prefer to encode the `inner` bytes in all messages they
     /// produce. Implementations must not accept messages with both `inner` and
-    /// `alt_bech32m` set.
+    /// `alt_bech32m` set.  This field exists for convenience of RPC users.
     #[prost(string, tag = "2")]
     pub alt_bech32m: ::prost::alloc::string::String,
+    /// Alternatively, a base denomination string which should be hashed to obtain the asset ID.
+    ///
+    /// NOTE: implementations are not required to support parsing this field.
+    /// Implementations should prefer to encode the bytes in all messages they
+    /// produce. Implementations must not accept messages with both `inner` and
+    /// `alt_base_denom` set.  This field exists for convenience of RPC users.
+    #[prost(string, tag = "3")]
+    pub alt_base_denom: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
