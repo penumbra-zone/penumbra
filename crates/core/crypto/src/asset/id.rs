@@ -36,6 +36,8 @@ impl From<Id> for pb::AssetId {
             inner: id.0.to_bytes().to_vec(),
             // Never produce a proto encoding with the alt string encoding.
             alt_bech32m: String::new(),
+            // Never produce a proto encoding with the alt base denom.
+            alt_base_denom: String::new(),
         }
     }
 }
@@ -43,15 +45,21 @@ impl From<Id> for pb::AssetId {
 impl TryFrom<pb::AssetId> for Id {
     type Error = anyhow::Error;
     fn try_from(value: pb::AssetId) -> Result<Self, Self::Error> {
-        match (value.inner.is_empty(), value.alt_bech32m.is_empty()) {
-            (false, true) => value.inner.as_slice().try_into(),
-            (true, false) => value.alt_bech32m.parse(),
-            (false, false) => Err(anyhow::anyhow!(
-                "AssetId proto has both inner and alt_bech32m fields set"
-            )),
-            (true, true) => Err(anyhow::anyhow!(
-                "AssetId proto has neither inner nor alt_bech32m fields set"
-            )),
+        if !value.inner.is_empty() {
+            if !value.alt_base_denom.is_empty() || !value.alt_bech32m.is_empty() {
+                return Err(anyhow::anyhow!(
+                    "AssetId proto has both inner and alt_bech32m or alt_base_denom fields set"
+                ));
+            }
+            value.inner.as_slice().try_into()
+        } else if !value.alt_bech32m.is_empty() {
+            value.alt_bech32m.parse()
+        } else if !value.alt_base_denom.is_empty() {
+            Ok(Self::from_raw_denom(&value.alt_base_denom))
+        } else {
+            Err(anyhow::anyhow!(
+                "AssetId proto has neither inner nor alt_bech32m nor alt_base_denom fields set"
+            ))
         }
     }
 }
@@ -108,6 +116,7 @@ impl std::str::FromStr for Id {
         pb::AssetId {
             inner,
             alt_bech32m: String::new(),
+            alt_base_denom: String::new(),
         }
         .try_into()
     }
@@ -176,16 +185,23 @@ mod tests {
 
         let proto = id.encode_to_vec();
         let proto2 = pb::AssetId {
-            inner: Vec::new(),
             alt_bech32m: bech32m_id,
+            ..Default::default()
+        }
+        .encode_to_vec();
+        let proto3 = pb::AssetId {
+            alt_base_denom: "upenumbra".to_owned(),
+            ..Default::default()
         }
         .encode_to_vec();
 
         let id3 = Id::decode(proto.as_ref()).expect("can decode valid asset id");
         let id4 = Id::decode(proto2.as_ref()).expect("can decode valid asset id");
+        let id5 = Id::decode(proto3.as_ref()).expect("can decode valid asset id");
 
         assert_eq!(id2, id);
         assert_eq!(id3, id);
         assert_eq!(id4, id);
+        assert_eq!(id5, id);
     }
 }
