@@ -1590,3 +1590,31 @@ async fn path_search_testnet_53_1_reproduction() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+/// Assert that operations on `PathCache` are commutative by
+/// checking that we always find the correct best path and spill path
+/// for all possible update ordering.
+///               0.01
+/// ┌───────────────────────────────┐
+/// │                               │
+/// │         ┌─────┐            ┌──▼──┐
+/// │         │     │    1       │     │
+/// │  ┌──────┤  S  ├───────────►│  B  │◄────┐
+/// │  │      │     │            │     │     │
+/// │  │      └──▲──┘            └──┬──┘     │
+/// │  │         │                  │ 1      │
+/// │  │0.9   ┌──┴──┐            ┌──▼──┐     │
+/// │  │      │     │      0.8   │     │     │
+/// └──┼──────┤  D  │◄───────────┤  C  │     │ 0.01
+///    │      │     │            │     │     │
+///    │      └──┬──┘            └──▲──┘     │
+///    │         │ 1                │ 0.99   │
+///    │      ┌──▼──┐            ┌──▼──┐     │
+///    │      │     │     0.1    │     │     │
+///    └─────►│  E  ├───────────►│  T  ├─────┘
+///           │     │            │     │
+///           └─────┘            └─────┘
+async fn path_search_commutative() -> anyhow::Result<()> {
+    todo!("TODO(erwan)")
+}
