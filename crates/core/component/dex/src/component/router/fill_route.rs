@@ -183,7 +183,7 @@ async fn fill_route_inner<S: StateWrite + Sized>(
 
     // We need to save these positions, because we mutated their state, even
     // if we didn't fully consume their reserves.
-    frontier.save();
+    frontier.save().await?;
 
     // Input consists of the sum of the first value of each trace.
     let input = frontier
@@ -361,10 +361,11 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         })
     }
 
-    fn save(&mut self) {
+    async fn save(&mut self) -> Result<()> {
         for position in &self.positions {
-            self.state.put_position(position.clone());
+            self.state.put_position(position.clone()).await?;
         }
+        Ok(())
     }
 
     /// Apply the [`FrontierTx`] to the frontier, returning the input and output
@@ -427,7 +428,9 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         // discard it, so write its updated reserves before we replace it on the
         // frontier.  The other positions will be written out either when
         // they're fully consumed, or when we finish filling.
-        self.state.put_position(self.positions[index].clone());
+        self.state
+            .put_position(self.positions[index].clone())
+            .await?;
 
         loop {
             let pair = &self.pairs[index];
