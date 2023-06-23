@@ -2866,7 +2866,7 @@ dependencies = [
 [[package]]
 name = "ibc-types"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#e512c6fb9bb0cd20cbe8bc80bfa7182c6f182b7b"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2895,7 +2895,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-channel"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#e512c6fb9bb0cd20cbe8bc80bfa7182c6f182b7b"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2924,7 +2924,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-client"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#e512c6fb9bb0cd20cbe8bc80bfa7182c6f182b7b"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2949,7 +2949,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-commitment"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#e512c6fb9bb0cd20cbe8bc80bfa7182c6f182b7b"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2982,7 +2982,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-connection"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#e512c6fb9bb0cd20cbe8bc80bfa7182c6f182b7b"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3009,7 +3009,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-domain-type"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#e512c6fb9bb0cd20cbe8bc80bfa7182c6f182b7b"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3019,7 +3019,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-identifier"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#e512c6fb9bb0cd20cbe8bc80bfa7182c6f182b7b"
 dependencies = [
  "displaydoc",
  "serde",
@@ -3028,7 +3028,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-lightclients-tendermint"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#e512c6fb9bb0cd20cbe8bc80bfa7182c6f182b7b"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3063,7 +3063,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-path"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#e512c6fb9bb0cd20cbe8bc80bfa7182c6f182b7b"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3084,7 +3084,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-timestamp"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#e512c6fb9bb0cd20cbe8bc80bfa7182c6f182b7b"
 dependencies = [
  "bytes",
  "displaydoc",
@@ -3099,9 +3099,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-types-transfer"
+version = "0.2.0"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#e512c6fb9bb0cd20cbe8bc80bfa7182c6f182b7b"
+dependencies = [
+ "displaydoc",
+ "serde",
+]
+
+[[package]]
 name = "ibc-types2"
 version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#908fcf28a801e9d65908dc7d090c59f624241bb1"
+source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#e512c6fb9bb0cd20cbe8bc80bfa7182c6f182b7b"
 dependencies = [
  "ibc-types-core-channel",
  "ibc-types-core-client",
@@ -3112,6 +3121,7 @@ dependencies = [
  "ibc-types-lightclients-tendermint",
  "ibc-types-path",
  "ibc-types-timestamp",
+ "ibc-types-transfer",
 ]
 
 [[package]]
@@ -5105,7 +5115,7 @@ dependencies = [
  "derivative",
  "hex",
  "ibc-proto",
- "ibc-types",
+ "ibc-types2",
  "num-bigint",
  "once_cell",
  "pbjson-types",
@@ -7617,9 +7627,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-attributes"
-version = "0.1.25"
+version = "0.1.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8803eee176538f94ae9a14b55b2804eb7e1441f8210b1c31290b3bccdccff73b"
+checksum = "5f4f31f56159e98206da9efd823404b79b6ef3143b4a7ab76e67b1751b25a4ab"
 dependencies = [
  "proc-macro2 1.0.60",
  "quote 1.0.28",

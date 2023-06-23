@@ -1,4 +1,4 @@
-use ibc_types2::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_types2::core::channel::{ChannelId, PortId};
 use penumbra_crypto::{
     asset::{self, DenomMetadata},
     value, Address, Amount, Balance, EffectHash, EffectingData,

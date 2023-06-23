@@ -1,4 +1,4 @@
-use self::stateful::proof_verification::commit_acknowledgement;
+use crate::component::proof_verification::{commit_acknowledgement, commit_packet};
 
 use super::state_key;
 use anyhow::Result;
@@ -11,10 +11,6 @@ use ibc_types2::core::{
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
-
-pub(crate) mod stateful;
-
-use stateful::proof_verification::commit_packet;
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {

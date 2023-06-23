@@ -1,13 +1,13 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types2::core::{
-    ics02_client::height::Height as IBCHeight,
-    ics03_connection::connection::State as ConnectionState,
-    ics04_channel::{
+    channel::{
         channel::{Order as ChannelOrder, State as ChannelState},
-        msgs::recv_packet::MsgRecvPacket,
+        msgs::MsgRecvPacket,
+        PortId,
     },
-    ics24_host::identifier::PortId,
+    client::Height as IBCHeight,
+    connection::State as ConnectionState,
 };
 use penumbra_chain::component::StateReadExt;
 use penumbra_storage::StateWrite;
@@ -15,10 +15,9 @@ use penumbra_storage::StateWrite;
 use crate::{
     component::{
         app_handler::{AppHandlerCheck, AppHandlerExecute},
-        channel::{
-            stateful::proof_verification::PacketProofVerifier, StateReadExt as _, StateWriteExt,
-        },
+        channel::{StateReadExt as _, StateWriteExt},
         connection::StateReadExt as _,
+        proof_verification::PacketProofVerifier,
         transfer::Ics20Transfer,
         MsgHandler,
     },

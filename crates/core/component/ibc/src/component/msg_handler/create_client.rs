@@ -1,8 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types2::core::{
-    ics02_client::{client_state::ClientState, msgs::create_client::MsgCreateClient},
-    ics24_host::identifier::ClientId,
+use ibc_types2::{
+    core::client::{msgs::MsgCreateClient, ClientId},
+    lightclients::tendermint::{client_type, TENDERMINT_CLIENT_TYPE},
 };
 use penumbra_storage::StateWrite;
 
@@ -38,7 +38,7 @@ impl MsgHandler for MsgCreateClient {
 
         // get the current client counter
         let id_counter = state.client_counter().await?;
-        let client_id = ClientId::new(client_state.client_type(), id_counter.0)?;
+        let client_id = ClientId::new(client_type(), id_counter.0)?;
 
         tracing::info!("creating client {:?}", client_id);
 

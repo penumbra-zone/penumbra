@@ -1,24 +1,23 @@
 use ibc_proto::protobuf::Protobuf;
-use ibc_types2::clients::ics07_tendermint as tm;
-use ibc_types2::core::{
-    ics02_client::client_state::ClientState,
-    ics03_connection::connection::{ConnectionEnd, Counterparty},
-    ics04_channel::{channel::ChannelEnd, packet::Packet},
-    ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+use ibc_types2::lightclients::tendermint::client_state::ClientState as TendermintClientState;
+use ibc_types2::lightclients::tendermint::header::Header as TendermintHeader;
+use ibc_types2::{
+    core::{
+        channel::{ChannelEnd, ChannelId, Packet, PortId},
+        client::ClientId,
+        connection::{ConnectionEnd, ConnectionId, Counterparty},
+    },
+    lightclients::tendermint::TENDERMINT_CLIENT_TYPE,
 };
 use tendermint::abci::{Event, EventAttributeIndexExt};
 
-pub fn create_client(client_id: ClientId, client_state: tm::client_state::ClientState) -> Event {
+pub fn create_client(client_id: ClientId, client_state: TendermintClientState) -> Event {
     Event::new(
         "create_client",
         vec![
             ("client_id", client_id.to_string()).index(),
             // BUG: impl Display for ClientType is wrong and doesn't match as_str
-            (
-                "client_type",
-                client_state.client_type().as_str().to_owned(),
-            )
-                .index(),
+            ("client_type", TENDERMINT_CLIENT_TYPE.to_owned()).index(),
             ("consensus_height", client_state.latest_height().to_string()).index(),
         ],
     )
@@ -26,24 +25,20 @@ pub fn create_client(client_id: ClientId, client_state: tm::client_state::Client
 
 pub fn update_client(
     client_id: ClientId,
-    client_state: tm::client_state::ClientState,
-    header: tm::header::Header,
+    client_state: TendermintClientState,
+    header: TendermintHeader,
 ) -> Event {
-    // AYFKM
-    let header_hex_proto_bytes =
-        <ibc_types::clients::ics07_tendermint::header::Header as Protobuf<
-            ibc_proto::ibc::lightclients::tendermint::v1::Header,
-        >>::encode_to_hex_string(&header);
+    // AYFK
+    // lol
+    let header_hex_proto_bytes = <TendermintHeader as Protobuf<
+        ibc_proto::ibc::lightclients::tendermint::v1::Header,
+    >>::encode_to_hex_string(&header);
     Event::new(
         "update_client",
         vec![
             ("client_id", client_id.to_string()).index(),
             // BUG: impl Display for ClientType is wrong and doesn't match as_str
-            (
-                "client_type",
-                client_state.client_type().as_str().to_owned(),
-            )
-                .index(),
+            ("client_type", TENDERMINT_CLIENT_TYPE.to_owned()).index(),
             ("consensus_height", header.height().to_string()).index(),
             // We need to encode the header as hex-encoded proto-encoded bytes.
             ("header", header_hex_proto_bytes).index(),
@@ -61,15 +56,12 @@ pub fn connection_open_init(
         vec![
             ("connection_id", connection_id.to_string()).index(),
             ("client_id", client_id.to_string()).index(),
-            (
-                "counterparty_client_id",
-                counterparty.client_id().to_string(),
-            )
-                .index(),
+            ("counterparty_client_id", counterparty.client_id.to_string()).index(),
             (
                 "counterparty_connection_id",
                 counterparty
-                    .connection_id()
+                    .connection_id
+                    .clone()
                     .map(|id| id.to_string())
                     .unwrap_or_default(),
             )
@@ -88,15 +80,12 @@ pub fn connection_open_try(
         vec![
             ("connection_id", connection_id.to_string()).index(),
             ("client_id", client_id.to_string()).index(),
-            (
-                "counterparty_client_id",
-                counterparty.client_id().to_string(),
-            )
-                .index(),
+            ("counterparty_client_id", counterparty.client_id.to_string()).index(),
             (
                 "counterparty_connection_id",
                 counterparty
-                    .connection_id()
+                    .connection_id
+                    .clone()
                     .map(|id| id.to_string())
                     .unwrap_or_default(),
             )
@@ -110,17 +99,18 @@ pub fn connection_open_ack(connection_id: &ConnectionId, connection_end: &Connec
         "connection_open_ack",
         vec![
             ("connection_id", connection_id.to_string()).index(),
-            ("client_id", connection_end.client_id().to_string()).index(),
+            ("client_id", connection_end.client_id.to_string()).index(),
             (
                 "counterparty_client_id",
-                connection_end.counterparty().client_id().to_string(),
+                connection_end.counterparty.client_id.to_string(),
             )
                 .index(),
             (
                 "counterparty_connection_id",
                 connection_end
-                    .counterparty()
-                    .connection_id()
+                    .counterparty
+                    .connection_id
+                    .clone()
                     .map(|id| id.to_string())
                     .unwrap_or_default(),
             )
@@ -137,17 +127,18 @@ pub fn connection_open_confirm(
         "connection_open_confirm",
         vec![
             ("connection_id", connection_id.to_string()).index(),
-            ("client_id", connection_end.client_id().to_string()).index(),
+            ("client_id", connection_end.client_id.to_string()).index(),
             (
                 "counterparty_client_id",
-                connection_end.counterparty().client_id().to_string(),
+                connection_end.counterparty.client_id.to_string(),
             )
                 .index(),
             (
                 "counterparty_connection_id",
                 connection_end
-                    .counterparty()
-                    .connection_id()
+                    .counterparty
+                    .connection_id
+                    .clone()
                     .map(|id| id.to_string())
                     .unwrap_or_default(),
             )

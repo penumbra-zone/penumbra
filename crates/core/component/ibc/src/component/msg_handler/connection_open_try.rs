@@ -1,19 +1,16 @@
-use anyhow::Result;
+use crate::component::proof_verification;
+use crate::version::pick_connection_version;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
+use ibc_types2::core::commitment::{MerklePrefix, MerkleProof};
+use ibc_types2::lightclients::tendermint::client_state::ClientState as TendermintClientState;
+use ibc_types2::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
 use ibc_types2::{
-    core::{
-        ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
-        ics03_connection::{
-            connection::{ConnectionEnd, Counterparty, State as ConnectionState},
-            msgs::conn_open_try::MsgConnectionOpenTry,
-            version::pick_version,
-        },
-        ics24_host::{
-            identifier::ConnectionId,
-            path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath},
-        },
+    core::client::Height as IBCHeight,
+    core::connection::{
+        msgs::MsgConnectionOpenTry, ConnectionEnd, ConnectionId, Counterparty,
+        State as ConnectionState,
     },
-    Height as IBCHeight,
 };
 use penumbra_chain::component::{StateReadExt as _, PENUMBRA_COMMITMENT_PREFIX};
 use penumbra_storage::{StateRead, StateWrite};
@@ -73,21 +70,21 @@ impl MsgHandler for MsgConnectionOpenTry {
         //     .unwrap_or_else(|| SUPPORTED_VERSIONS.clone());
         let supported_versions = SUPPORTED_VERSIONS.clone();
 
-        pick_version(&supported_versions, &self.versions_on_a.clone())?;
+        pick_connection_version(&supported_versions, &self.versions_on_a.clone())?;
 
         // expected_conn is the conn that we expect to have been committed to on the counterparty
         // chain
-        let expected_conn = ConnectionEnd::new(
-            ConnectionState::Init,
-            self.counterparty.client_id().clone(),
-            Counterparty::new(
-                self.client_id_on_b.clone(),
-                None,
-                PENUMBRA_COMMITMENT_PREFIX.clone(),
-            ),
-            self.versions_on_a.clone(),
-            self.delay_period,
-        );
+        let expected_conn = ConnectionEnd {
+            state: ConnectionState::Init,
+            client_id: self.counterparty.client_id.clone(),
+            counterparty: Counterparty {
+                client_id: self.client_id_on_b.clone(),
+                connection_id: None,
+                prefix: PENUMBRA_COMMITMENT_PREFIX.clone(),
+            },
+            versions: self.versions_on_a.clone(),
+            delay_period: self.delay_period,
+        };
 
         // get the stored client state for the counterparty
         let trusted_client_state = state.get_client_state(&self.client_id_on_b).await?;
@@ -102,17 +99,21 @@ impl MsgHandler for MsgConnectionOpenTry {
         let trusted_consensus_state = state
             .get_verified_consensus_state(
                 self.proofs_height_on_a,
-                self.counterparty.client_id().clone(),
+                self.counterparty.client_id.clone(),
             )
             .await?;
 
         // PROOF VERIFICATION
         // 1. verify that the counterparty chain committed the expected_conn to its state
-        trusted_client_state.verify_connection_state(
+        let proof_conn_end_on_a = MerkleProof::try_from(self.proof_conn_end_on_a.clone())?;
+        proof_verification::verify_connection_state(
+            &trusted_client_state,
             self.proofs_height_on_a,
-            self.counterparty.prefix(),
-            &self.proof_conn_end_on_a,
-            trusted_consensus_state.root(),
+            &ibc_types2::core::commitment::MerklePrefix {
+                key_prefix: self.counterparty.prefix.clone(),
+            },
+            &proof_conn_end_on_a,
+            &trusted_consensus_state.root,
             &ConnectionPath::new(
                 self.counterparty
                     .connection_id
@@ -120,18 +121,29 @@ impl MsgHandler for MsgConnectionOpenTry {
                     .ok_or_else(|| anyhow::anyhow!("counterparty connection id is not set"))?,
             ),
             &expected_conn,
-        )?;
+        )
+        .context("failed to verify connection state")?;
 
         // 2. verify that the counterparty chain committed the correct ClientState (that was
         //    provided in the msg)
-        trusted_client_state.verify_client_full_state(
+        let proof_client_state_of_b_on_a =
+            MerkleProof::try_from(self.proof_client_state_of_b_on_a.clone())?;
+
+        let client_state_of_b_on_a: TendermintClientState =
+            self.client_state_of_b_on_a.clone().try_into()?;
+
+        proof_verification::verify_client_full_state(
+            &trusted_client_state,
             self.proofs_height_on_a,
-            self.counterparty.prefix(),
-            &self.proof_client_state_of_b_on_a,
-            trusted_consensus_state.root(),
-            &ClientStatePath::new(self.counterparty.client_id()),
-            self.client_state_of_b_on_a.clone(),
-        )?;
+            &MerklePrefix {
+                key_prefix: self.counterparty.prefix.clone(),
+            },
+            &proof_client_state_of_b_on_a,
+            &trusted_consensus_state.root,
+            &ClientStatePath::new(&self.counterparty.client_id),
+            client_state_of_b_on_a,
+        )
+        .context("couldn't verify client state")?;
 
         let expected_consensus = state
             .get_penumbra_consensus_state(self.consensus_height_of_b_on_a)
@@ -139,31 +151,39 @@ impl MsgHandler for MsgConnectionOpenTry {
 
         // 3. verify that the counterparty chain stored the correct consensus state of Penumbra at
         //    the given consensus height
-        trusted_client_state.verify_client_consensus_state(
+        let proof_consensus_state_of_b_on_a =
+            MerkleProof::try_from(self.proof_consensus_state_of_b_on_a.clone())?;
+        proof_verification::verify_client_consensus_state(
+            &trusted_client_state,
             self.proofs_height_on_a,
-            self.counterparty.prefix(),
-            &self.proof_consensus_state_of_b_on_a,
-            trusted_consensus_state.root(),
+            &MerklePrefix {
+                key_prefix: self.counterparty.prefix.clone(),
+            },
+            &proof_consensus_state_of_b_on_a,
+            &trusted_consensus_state.root,
             &ClientConsensusStatePath::new(
-                self.counterparty.client_id(),
+                &self.counterparty.client_id,
                 &self.consensus_height_of_b_on_a,
             ),
-            &expected_consensus,
-        )?;
+            expected_consensus,
+        )
+        .context("couldn't verify client consensus state")?;
 
         // VALIDATION SUCCESSSFUL, now execute
         //
         // new_conn is the new connection that we will open on this chain
-        let mut new_conn = ConnectionEnd::new(
-            ConnectionState::TryOpen,
-            self.client_id_on_b.clone(),
-            self.counterparty.clone(),
-            self.versions_on_a.clone(),
-            self.delay_period,
-        );
-        new_conn.set_version(
-            pick_version(&SUPPORTED_VERSIONS.to_vec(), &self.versions_on_a.clone()).unwrap(),
-        );
+        let mut new_conn = ConnectionEnd {
+            state: ConnectionState::TryOpen,
+            client_id: self.client_id_on_b.clone(),
+            counterparty: self.counterparty.clone(),
+            versions: self.versions_on_a.clone(),
+            delay_period: self.delay_period,
+        };
+
+        new_conn.versions = vec![pick_connection_version(
+            &SUPPORTED_VERSIONS.to_vec(),
+            &self.versions_on_a.clone(),
+        )?];
 
         let new_connection_id = ConnectionId::new(state.get_connection_counter().await.unwrap().0);
 

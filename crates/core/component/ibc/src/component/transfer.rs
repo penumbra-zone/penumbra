@@ -3,20 +3,16 @@ use std::str::FromStr;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types2::{
-    applications::transfer::{acknowledgement::TokenTransferAcknowledgement, VERSION},
-    core::{
-        ics04_channel::{
-            channel::Order as ChannelOrder,
-            msgs::{
-                acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
-                chan_close_init::MsgChannelCloseInit, chan_open_ack::MsgChannelOpenAck,
-                chan_open_confirm::MsgChannelOpenConfirm, chan_open_init::MsgChannelOpenInit,
-                chan_open_try::MsgChannelOpenTry, recv_packet::MsgRecvPacket, timeout::MsgTimeout,
-            },
-            Version,
+    core::channel::{
+        channel::Order as ChannelOrder,
+        msgs::{
+            MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
+            MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket,
+            MsgTimeout,
         },
-        ics24_host::identifier::{ChannelId, PortId},
+        ChannelId, PortId, Version,
     },
+    transfer::acknowledgement::TokenTransferAcknowledgement,
 };
 use penumbra_crypto::{asset, asset::DenomMetadata, Address, Amount, Value};
 use penumbra_proto::{
@@ -121,7 +117,7 @@ impl AppHandlerCheck for Ics20Transfer {
                 "channel order must be unordered for Ics20 transfer"
             ));
         }
-        let ics20_version = Version::new(VERSION.to_string());
+        let ics20_version = Version::new("ics20-1".to_string());
         if msg.version_proposal != ics20_version {
             return Err(anyhow::anyhow!(
                 "channel version must be ics20 for Ics20 transfer"
@@ -137,7 +133,7 @@ impl AppHandlerCheck for Ics20Transfer {
                 "channel order must be unordered for Ics20 transfer"
             ));
         }
-        let ics20_version = Version::new(VERSION.to_string());
+        let ics20_version = Version::new("ics20-1".to_string());
 
         if msg.version_supported_on_a != ics20_version {
             return Err(anyhow::anyhow!(
@@ -149,7 +145,7 @@ impl AppHandlerCheck for Ics20Transfer {
     }
 
     async fn chan_open_ack_check<S: StateRead>(_state: S, msg: &MsgChannelOpenAck) -> Result<()> {
-        let ics20_version = Version::new(VERSION.to_string());
+        let ics20_version = Version::new("ics20-1".to_string());
         if msg.version_on_b != ics20_version {
             return Err(anyhow::anyhow!(
                 "counterparty version must be ics20-1 for Ics20 transfer"
