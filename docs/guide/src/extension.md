@@ -33,8 +33,8 @@ The image files will become out of data quickly, requiring maitnenance, and bloa
 -->
 
 <picture>
-  <source srcset="../web-extension-sync-progress.png" media="(prefers-color-scheme: dark)" />
-  <img src="../web-extension-sync-progress.png" />
+  <source srcset="web-extension-sync-progress.png" media="(prefers-color-scheme: dark)" />
+  <img src="web-extension-sync-progress.png" />
 </picture>
 
 ## Obtaining funds
