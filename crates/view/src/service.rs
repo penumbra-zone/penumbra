@@ -1277,4 +1277,11 @@ impl ViewProtocolService for ViewService {
             position_ids: ids.into_iter().map(Into::into).collect(),
         }))
     }
+
+    async fn authorize_and_build(
+        &self,
+        _request: tonic::Request<pb::AuthorizeAndBuildRequest>,
+    ) -> Result<tonic::Response<pb::AuthorizeAndBuildResponse>, tonic::Status> {
+        unimplemented!("authorize_and_build")
+    }
 }
