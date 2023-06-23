@@ -71,29 +71,6 @@ pub trait PositionRead: StateRead {
         }
     }
 
-    async fn worst_position(
-        &self,
-        pair: &DirectedTradingPair,
-    ) -> Result<Option<position::Position>> {
-        // Since the other direction might not have any positions, we need to
-        // fetch the last one in the index.
-        //
-        // TODO: Maybe we should have a separate index for this?
-        let positions_by_price = self.positions_by_price(pair);
-        let positions = positions_by_price.collect::<Vec<_>>().await;
-
-        let id = match positions.last() {
-            Some(id) => match id {
-                Ok(id) => id.clone(),
-                Err(e) => {
-                    return Err(anyhow::anyhow!("{}", e).context("failed to fetch worst position"));
-                }
-            },
-            None => return Ok(None),
-        };
-        self.position_by_id(&id).await
-    }
-
     /// Fetch the list of pending position closures.
     fn pending_position_closures(&self) -> im::Vector<position::Id> {
         self.object_get(state_key::pending_position_closures())
