@@ -62,3 +62,4 @@ serde_json = "1.0.96"
 tracing-subscriber = "0.3.17"
 penumbra-transaction = { path = "../../transaction" }
 rand_chacha = "0.3"
+itertools = "0.11"
