@@ -81,7 +81,22 @@ service ViewProtocolService {
   rpc BroadcastTransaction(BroadcastTransactionRequest) returns (BroadcastTransactionResponse);
 
   // Query for owned position IDs for the given trading pair and in the given position state.
-   rpc OwnedPositionIds(OwnedPositionIdsRequest) returns (OwnedPositionIdsResponse);
+  rpc OwnedPositionIds(OwnedPositionIdsRequest) returns (OwnedPositionIdsResponse);
+
+  // Authorize a transaction plan and build the transaction.
+  rpc AuthorizeAndBuild(AuthorizeAndBuildRequest) returns (AuthorizeAndBuildResponse);
+}
+
+message AuthorizeAndBuildRequest {
+  // The transaction plan to authorize and build.
+  core.transaction.v1alpha1.TransactionPlan transaction_plan = 1;
+  // The authorization data to use to authorize the transaction plan.
+  core.transaction.v1alpha1.AuthorizationData authorization_data = 2;
+}
+
+message AuthorizeAndBuildResponse {
+  // The transaction that was built.
+  core.transaction.v1alpha1.Transaction transaction = 1;
 }
 
 message BroadcastTransactionRequest {

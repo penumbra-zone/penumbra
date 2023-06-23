@@ -1,5 +1,28 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuthorizeAndBuildRequest {
+    /// The transaction plan to authorize and build.
+    #[prost(message, optional, tag = "1")]
+    pub transaction_plan: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::TransactionPlan,
+    >,
+    /// The authorization data to use to authorize the transaction plan.
+    #[prost(message, optional, tag = "2")]
+    pub authorization_data: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::AuthorizationData,
+    >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuthorizeAndBuildResponse {
+    /// The transaction that was built.
+    #[prost(message, optional, tag = "1")]
+    pub transaction: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::Transaction,
+    >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BroadcastTransactionRequest {
     /// The transaction to broadcast.
     #[prost(message, optional, tag = "1")]
@@ -1136,6 +1159,26 @@ pub mod view_protocol_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        /// Authorize a transaction plan and build the transaction.
+        pub async fn authorize_and_build(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AuthorizeAndBuildRequest>,
+        ) -> Result<tonic::Response<super::AuthorizeAndBuildResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/AuthorizeAndBuild",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
     }
 }
 /// Generated client implementations.
@@ -1384,6 +1427,11 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::OwnedPositionIdsRequest>,
         ) -> Result<tonic::Response<super::OwnedPositionIdsResponse>, tonic::Status>;
+        /// Authorize a transaction plan and build the transaction.
+        async fn authorize_and_build(
+            &self,
+            request: tonic::Request<super::AuthorizeAndBuildRequest>,
+        ) -> Result<tonic::Response<super::AuthorizeAndBuildResponse>, tonic::Status>;
     }
     /// The view protocol is used by a view client, who wants to do some
     /// transaction-related actions, to request data from a view service, which is
@@ -2280,6 +2328,46 @@ pub mod view_protocol_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = OwnedPositionIdsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/AuthorizeAndBuild" => {
+                    #[allow(non_camel_case_types)]
+                    struct AuthorizeAndBuildSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::UnaryService<super::AuthorizeAndBuildRequest>
+                    for AuthorizeAndBuildSvc<T> {
+                        type Response = super::AuthorizeAndBuildResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AuthorizeAndBuildRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).authorize_and_build(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AuthorizeAndBuildSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
