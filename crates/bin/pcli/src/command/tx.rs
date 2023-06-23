@@ -9,7 +9,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::{Fq, Fr};
-use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_types2::core::channel::{ChannelId, PortId};
 use penumbra_crypto::{
     asset::{self, DenomMetadata},
     keys::AddressIndex,

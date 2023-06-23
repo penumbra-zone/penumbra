@@ -43,6 +43,7 @@ pub trait TypeUrl {
 // that shouldn't depend on the Penumbra proto framework.
 
 use crate::core::crypto::v1alpha1::{BindingSignature, SpendAuthSignature, SpendVerificationKey};
+use crate::core::ibc::v1alpha1::IbcAction;
 use decaf377_rdsa::{Binding, Signature, SpendAuth, VerificationKey};
 
 impl TypeUrl for Signature<SpendAuth> {
@@ -219,15 +220,22 @@ impl DomainType for ibc_types2::lightclients::tendermint::consensus_state::Conse
     type Proto = Any;
 }
 
-/*
 impl<T> From<T> for IbcAction
 where
-    T: ibc_types2::tx_msg::Msg,
+    T: ibc_types2::DomainType
+        + ibc_types2::TypeUrl
+        + std::marker::Send
+        + std::marker::Sync
+        + 'static,
+    <T as TryFrom<<T as ibc_types2::DomainType>::Proto>>::Error: std::marker::Send,
+    <T as TryFrom<<T as ibc_types2::DomainType>::Proto>>::Error: std::marker::Sync,
+    <T as TryFrom<<T as ibc_types2::DomainType>::Proto>>::Error: std::error::Error,
 {
     fn from(v: T) -> Self {
+        let value_bytes = v.encode_to_vec();
         let any = pbjson_types::Any {
-            type_url: v.type_url(),
-            value: v.to_any().value.into(),
+            type_url: T::TYPE_URL.to_string(),
+            value: value_bytes.into(),
         };
 
         Self {
@@ -235,4 +243,3 @@ where
         }
     }
 }
-*/

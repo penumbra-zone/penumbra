@@ -6,7 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = []
+default = ["std"]
+std = ["ibc-types2/std"]
 sct-divergence-check = ["penumbra-view/sct-divergence-check"]
 # Enable to use rayon parallelism for crypto operations
 parallel = ["penumbra-crypto/parallel"]
@@ -59,7 +60,7 @@ atty = "0.2"
 tempfile = "3.3.0"
 assert_cmd = "2.0"
 base64 = "0.20"
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
+ibc-types2 = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
 
 ibc-proto = "0.31.0"
 
