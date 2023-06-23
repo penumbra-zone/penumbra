@@ -1,3 +1,4 @@
+use core::panic;
 use futures::StreamExt;
 use penumbra_crypto::MockFlowCiphertext;
 use penumbra_crypto::{asset, fixpoint::U128x128, Amount, Value};
@@ -1468,20 +1469,20 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
 ///
 ///               ┌─────┐
 ///        1      │     │  0.3
-///      ┌───────►│  A  ├────────┐
-///      │        │     │        │
+///      ┌───────►│ gm  ├────────┐
+///      │        │ A   │        │
 ///      │        └─────┘        │
 ///      │                       ▼
 ///   ┌──┴──┐     ┌─────┐     ┌─────┐
 ///   │     │ 1   │     │ 0.2 │     │
-///   │  S  ├───► │  B  ├───► │  T  │
-///   │     │     │     │     │     │
+///   │ pen ├───► │ gn  ├───► │ pen │
+///   │ S   │     │ B   │     │ T   │
 ///   └──┬──┘     └─────┘     └─────┘
 ///      │                       ▲
 ///   1  │        ┌─────┐        │
 ///      │        │     │        │ 0.1
-///      └──────► │  C  ├────────┘
-///               │     │
+///      └──────► │ usd ├────────┘
+///               │ C   │
 ///               └─────┘
 ///
 async fn path_search_testnet_53_1_reproduction() -> anyhow::Result<()> {
@@ -1594,27 +1595,242 @@ async fn path_search_testnet_53_1_reproduction() -> anyhow::Result<()> {
 #[tokio::test]
 /// Assert that operations on `PathCache` are commutative by
 /// checking that we always find the correct best path and spill path
-/// for all possible update ordering.
-///               0.01
-/// ┌───────────────────────────────┐
-/// │                               │
-/// │         ┌─────┐            ┌──▼──┐
-/// │         │     │    1       │     │
-/// │  ┌──────┤  S  ├───────────►│  B  │◄────┐
-/// │  │      │     │            │     │     │
-/// │  │      └──▲──┘            └──┬──┘     │
-/// │  │         │                  │ 1      │
-/// │  │0.9   ┌──┴──┐            ┌──▼──┐     │
-/// │  │      │     │      0.8   │     │     │
-/// └──┼──────┤  D  │◄───────────┤  C  │     │ 0.01
-///    │      │     │            │     │     │
-///    │      └──┬──┘            └──▲──┘     │
-///    │         │ 1                │ 0.99   │
-///    │      ┌──▼──┐            ┌──▼──┐     │
-///    │      │     │     0.1    │     │     │
-///    └─────►│  E  ├───────────►│  T  ├─────┘
-///           │     │            │     │
-///           └─────┘            └─────┘
+/// for all possible update ordering. This test is useful scaffolding
+/// for a future fuzzing suite.
+///
+///      ┌─────┐            ┌─────┐
+///      │     │    1       │     │
+///      │ btc ├───────────►│ gm  ├─────┐
+///      │ S   │            │ A   │     │
+///      └──┬──┘            └──┬──┘     │
+///         │  1               │ 0.3    │
+///      ┌──▼──┐            ┌──▼──┐     │
+///      │     │     0.2    │     │     │ 0.9
+/// ┌────┤ usd │◄───────────┤ gn  │     │
+/// │    │ C   │            │ B   │     │
+/// │    └──┬──┘            └──┬──┘     │
+/// │ 0.99  │ 0.7              │ 0.3    │
+/// │    ┌──▼──┐            ┌──▼──┐     │
+/// │    │     │     0.01   │     │     │
+/// │    │ atom├───────────►│ pen │◄────┘
+/// │    │ D   │            │ T   │
+/// │    └─────┘            └─────┘
+/// │                          ▲
+/// └──────────────────────────┘
+/// Here we route from `btc` to `pen`, there are multiple paths:
+/// 1. `btc -> usd -> pen` with cost 1 * 0.99 = 0.99
+/// 2. `btc -> usd -> atom -> pen` with cost 1 * 0.7 * 0.01 = 0.007
+/// 3. `btc -> gm -> pen` with cost 1 * 0.9 = 0.9
+/// 4. `btc -> gm -> gn -> pen` with cost 1 * 0.3 * 0.3 = 0.09
+/// 5. `btc -> gm -> gn -> usd -> pen` with cost 1 * 0.3 * 0.2 * 0.99 = 0.0594
+/// 6. `btc -> gm -> gn -> usd -> atom -> pen` with cost 1 * 0.3 * 0.2 * 0.7 * 0.01 = 0.00042
+/// The best path is #6 (cost 0.00042) and the spill path is #2 (cost 0.007).
+///
+/// This test generate all possible update orderings and checks that
+/// the best path and spill path are always the same. A better test
+/// would be to generate random liquidity graphs and check that the
+/// best path and spill path are always the same, but this is a good
+/// start.
 async fn path_search_commutative() -> anyhow::Result<()> {
-    todo!("TODO(erwan)")
+    use crate::component::router::PathCache;
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
+    let mut state = StateDelta::new(storage.latest_snapshot());
+
+    // Both source and target (S and T)
+    let btc = asset::REGISTRY.parse_unit("btcumbra");
+    let gm = asset::REGISTRY.parse_unit("gm");
+    let gn = asset::REGISTRY.parse_unit("gn");
+    let usd = asset::REGISTRY.parse_unit("test_usd");
+    let pen = asset::REGISTRY.parse_unit("test_pen");
+    let atom = asset::REGISTRY.parse_unit("test_atom");
+
+    let s_a = SellOrder::parse_str("1gm@1btcumbra")
+        .unwrap()
+        .into_position(OsRng);
+
+    let s_c = SellOrder::parse_str("1test_usd@1btcumbra")
+        .unwrap()
+        .into_position(OsRng);
+
+    let a_b = SellOrder::parse_str("1gn@0.3gm")
+        .unwrap()
+        .into_position(OsRng);
+
+    let a_t = SellOrder::parse_str("1test_pen@0.9gm")
+        .unwrap()
+        .into_position(OsRng);
+
+    let b_t = SellOrder::parse_str("1test_pen@0.3gn")
+        .unwrap()
+        .into_position(OsRng);
+
+    let b_c = SellOrder::parse_str("1test_usd@0.2gn")
+        .unwrap()
+        .into_position(OsRng);
+
+    let c_t = SellOrder::parse_str("1test_pen@0.99test_usd")
+        .unwrap()
+        .into_position(OsRng);
+
+    let c_d = SellOrder::parse_str("1test_atom@0.7test_usd")
+        .unwrap()
+        .into_position(OsRng);
+
+    let d_t = SellOrder::parse_str("1test_pen@0.01test_atom")
+        .unwrap()
+        .into_position(OsRng);
+
+    state.put_position(s_a);
+    state.put_position(s_c);
+    state.put_position(a_b);
+    state.put_position(a_t);
+    state.put_position(b_t);
+    state.put_position(b_c);
+    state.put_position(c_t);
+    state.put_position(c_d);
+    state.put_position(d_t);
+
+    let cache = PathCache::begin(btc.id(), state.fork());
+    let mut cache_guard = cache.lock();
+    let mut identity_path = cache_guard.0.get_mut(&btc.id()).unwrap().path.fork();
+
+    let btc_usd_pen = identity_path
+        .fork()
+        .extend_to(usd.id())
+        .await?
+        .unwrap()
+        .extend_to(pen.id())
+        .await?
+        .unwrap();
+
+    let btc_usd_atom_pen = identity_path
+        .fork()
+        .extend_to(usd.id())
+        .await?
+        .unwrap()
+        .extend_to(atom.id())
+        .await?
+        .unwrap()
+        .extend_to(pen.id())
+        .await?
+        .unwrap();
+
+    let btc_gm_pen = identity_path
+        .fork()
+        .extend_to(gm.id())
+        .await?
+        .unwrap()
+        .extend_to(pen.id())
+        .await?
+        .unwrap();
+
+    let btc_gm_gn_pen = identity_path
+        .fork()
+        .extend_to(gm.id())
+        .await?
+        .unwrap()
+        .extend_to(gn.id())
+        .await?
+        .unwrap()
+        .extend_to(pen.id())
+        .await?
+        .unwrap();
+
+    let btc_gm_gn_usd_pen = identity_path
+        .fork()
+        .extend_to(gm.id())
+        .await?
+        .unwrap()
+        .extend_to(gn.id())
+        .await?
+        .unwrap()
+        .extend_to(usd.id())
+        .await?
+        .unwrap()
+        .extend_to(pen.id())
+        .await?
+        .unwrap();
+
+    let btc_gm_gn_usd_atom_pen = identity_path
+        .fork()
+        .extend_to(gm.id())
+        .await?
+        .unwrap()
+        .extend_to(gn.id())
+        .await?
+        .unwrap()
+        .extend_to(usd.id())
+        .await?
+        .unwrap()
+        .extend_to(atom.id())
+        .await?
+        .unwrap()
+        .extend_to(pen.id())
+        .await?
+        .unwrap();
+
+    let mut all_paths = vec![
+        btc_usd_pen,
+        btc_usd_atom_pen,
+        btc_gm_pen,
+        btc_gm_gn_pen,
+        btc_gm_gn_usd_pen,
+        btc_gm_gn_usd_atom_pen,
+    ];
+
+    // Since `Path<S>` isn't clone-able, we can't enumerate all combinations on `all_paths`
+    // directly. Instead, we use a vector of indices and fork the path at each index.
+    use itertools::Itertools;
+    let indices = (0..all_paths.len()).collect_vec();
+
+    let all_combinations: Vec<_> = indices.iter().permutations(indices.len()).collect();
+
+    for combination in all_combinations {
+        let sequence_of_updates = combination
+            .iter()
+            .map(|index| all_paths[**index].fork())
+            .collect_vec();
+        let cache2 = PathCache::begin(btc.id(), state.fork());
+        let mut cache_guard2 = cache2.lock();
+        for (i, path) in sequence_of_updates.into_iter().enumerate() {
+            tracing::debug!(i, path_price = %path.price);
+            cache_guard2.consider(path);
+        }
+
+        let Some(path_entry) = cache_guard2.0.remove(&pen.id()) else {
+             panic!("path entry not found");
+        };
+
+        let best_path = path_entry.path;
+        let spill_path = path_entry.spill.unwrap();
+
+        let path_price = best_path.price;
+        let spill_price = spill_path.price;
+        tracing::debug!(best_path_start = %best_path.start);
+        tracing::debug!(best_path_hops = ?best_path.nodes);
+
+        tracing::debug!(spill_start = %spill_path.start);
+        tracing::debug!(spill_hops = ?spill_path.nodes);
+
+        // `U128x128` can be approximated to `f64` for comparison purposes.
+        let path_price_f64: f64 = path_price.into();
+        let spill_price_f64: f64 = spill_price.into();
+
+        let correct_path_price = 0.00042f64;
+        let correct_spill_price = 0.007f64;
+
+        assert_eq!(
+            correct_path_price, path_price_f64,
+            "check that the path price is correct (correct={}, actual={})",
+            correct_path_price, path_price_f64
+        );
+        assert_eq!(
+            correct_spill_price, spill_price_f64,
+            "check that the spill price is correct (correct={}, actual={})",
+            correct_spill_price, spill_price
+        );
+    }
+
+    Ok(())
 }
