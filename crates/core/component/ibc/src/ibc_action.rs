@@ -1,20 +1,20 @@
 use ibc_proto::protobuf::Protobuf;
-use ibc_types2::{
-    core::{
-        channel::msgs::{
-            MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
-            MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket,
-            MsgTimeout,
-        },
-        client::msgs::{MsgCreateClient, MsgUpdateClient},
-        connection::msgs::{
-            MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-            MsgConnectionOpenTry,
-        },
+use ibc_types2::core::{
+    channel::msgs::{
+        MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
+        MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket, MsgTimeout,
     },
-    DomainType, TypeUrl,
+    client::msgs::{MsgCreateClient, MsgUpdateClient},
+    connection::msgs::{
+        MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry,
+    },
 };
+
+use ibc_types2::DomainType as IbcTypesDomainType;
+use ibc_types2::TypeUrl as IbcTypesTypeUrl;
+
 use penumbra_proto::core::ibc::v1alpha1::{self as pb};
+use penumbra_proto::{DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -124,7 +124,7 @@ impl TryFrom<pb::IbcAction> for IbcAction {
         let raw_action_bytes = raw_action.value.clone();
 
         Ok(match action_type {
-            CREATE_CLIENT => {
+            MsgCreateClient::TYPE_URL => {
                 let msg = MsgCreateClient::decode(raw_action_bytes)?;
                 IbcAction::CreateClient(msg)
             }

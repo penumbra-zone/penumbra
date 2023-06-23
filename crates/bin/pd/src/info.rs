@@ -21,11 +21,11 @@ use ibc_proto::ibc::core::{
     channel::v1::{QueryConnectionChannelsRequest, QueryConnectionChannelsResponse},
     connection::v1::{QueryConnectionsRequest, QueryConnectionsResponse},
 };
-use ibc_types::core::{
-    ics03_connection::connection::IdentifiedConnectionEnd,
-    ics04_channel::channel::IdentifiedChannelEnd,
-    ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
-};
+use ibc_types2::core::channel::IdentifiedChannelEnd;
+use ibc_types2::core::channel::{ChannelId, PortId};
+use ibc_types2::core::client::ClientId;
+use ibc_types2::core::connection::ConnectionId;
+use ibc_types2::core::connection::IdentifiedConnectionEnd;
 use penumbra_chain::component::AppHashRead;
 use penumbra_ibc::component::ChannelStateReadExt as _;
 use penumbra_ibc::component::ClientStateReadExt as _;
@@ -298,7 +298,8 @@ impl Info {
                 let mut client_states = vec![];
                 for client_idx in 0..client_counter {
                     // NOTE: currently, we only look up tendermint clients, because we only support tendermint clients.
-                    let client_id = ClientId(format!("07-tendermint-{}", client_idx));
+                    let client_id =
+                        ClientId::from_str(format!("07-tendermint-{}", client_idx).as_str())?;
                     let client_state = snapshot.get_client_state(&client_id).await;
                     let id_client = IdentifiedClientState {
                         client_id: client_id.to_string(),
