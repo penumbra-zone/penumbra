@@ -8,11 +8,9 @@ use penumbra_storage::StateWrite;
 
 use crate::component::{
     app_handler::{AppHandlerCheck, AppHandlerExecute},
-    channel::{
-        stateful::proof_verification::{commit_packet, PacketProofVerifier},
-        StateReadExt as _, StateWriteExt as _,
-    },
+    channel::{StateReadExt as _, StateWriteExt as _},
     connection::StateReadExt as _,
+    proof_verification::{commit_packet, PacketProofVerifier},
     transfer::Ics20Transfer,
     MsgHandler,
 };

@@ -1,10 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types2::core::{
-    ics03_connection::{
-        connection::ConnectionEnd, msgs::conn_open_init::MsgConnectionOpenInit, version::Version,
-    },
-    ics24_host::identifier::ConnectionId,
+use ibc_types2::core::connection::{
+    msgs::MsgConnectionOpenInit, ConnectionEnd, ConnectionId, Version,
 };
 
 use crate::{
@@ -17,7 +14,7 @@ use crate::{
     event,
 };
 
-use ibc_types2::core::ics03_connection::connection::State as ConnectionState;
+use ibc_types2::core::connection::State as ConnectionState;
 use penumbra_storage::StateWrite;
 
 #[async_trait]
@@ -39,13 +36,13 @@ impl MsgHandler for MsgConnectionOpenInit {
 
         let compatible_versions = vec![Version::default()];
 
-        let new_connection_end = ConnectionEnd::new(
-            ConnectionState::Init,
-            self.client_id_on_a.clone(),
-            self.counterparty.clone(),
-            compatible_versions,
-            self.delay_period,
-        );
+        let new_connection_end = ConnectionEnd {
+            state: ConnectionState::Init,
+            client_id: self.client_id_on_a.clone(),
+            counterparty: self.counterparty.clone(),
+            versions: compatible_versions,
+            delay_period: self.delay_period,
+        };
 
         // commit the connection, this also increments the connection counter
         state

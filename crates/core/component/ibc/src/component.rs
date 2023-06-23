@@ -9,6 +9,7 @@ mod ibc_component;
 mod metrics;
 mod msg_handler;
 mod packet;
+mod proof_verification;
 mod state_key;
 mod transfer;
 

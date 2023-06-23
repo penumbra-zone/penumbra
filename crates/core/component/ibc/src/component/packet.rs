@@ -1,9 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types2::core::{
-    ics02_client::{client_state::ClientState, height::Height},
-    ics04_channel::{channel::State as ChannelState, packet::Packet},
-    ics24_host::identifier::{ChannelId, PortId},
+    channel::{channel::State as ChannelState, ChannelId, Packet, PortId},
+    client::Height,
 };
 use penumbra_storage::{StateRead, StateWrite};
 
@@ -62,7 +61,7 @@ impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
         Self {
             source_port: withdrawal.source_port.clone(),
             source_channel: withdrawal.source_channel.clone(),
-            timeout_height: ibc_types::Height::new(0, withdrawal.timeout_height).unwrap(),
+            timeout_height: Height::new(0, withdrawal.timeout_height).unwrap(),
             timeout_timestamp: withdrawal.timeout_time,
             data: withdrawal.packet_data(),
 
@@ -103,11 +102,11 @@ pub trait SendPacketRead: StateRead {
             })?;
 
         // check that the client state is active so we don't do accidental sends on frozen clients.
-        let client_state = self.get_client_state(connection.client_id()).await?;
+        let client_state = self.get_client_state(&connection.client_id).await?;
         if client_state.is_frozen() {
             return Err(anyhow::anyhow!(
                 "client {} is frozen",
-                connection.client_id()
+                &connection.client_id
             ));
         }
 
@@ -163,7 +162,7 @@ pub trait SendPacketWrite: StateWrite {
             port_on_b: PortId::default(),
 
             timeout_height_on_b: packet.timeout_height.into(),
-            timeout_timestamp_on_b: ibc_types::timestamp::Timestamp::from_nanoseconds(
+            timeout_timestamp_on_b: ibc_types2::timestamp::Timestamp::from_nanoseconds(
                 packet.timeout_timestamp,
             )
             .unwrap(),

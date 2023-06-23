@@ -12,8 +12,9 @@ use penumbra_storage::{StateRead, StateWrite};
 use crate::{
     component::{
         app_handler::{AppHandlerCheck, AppHandlerExecute},
-        channel::{stateful::proof_verification::ChannelProofVerifier, StateWriteExt},
+        channel::StateWriteExt,
         connection::StateReadExt,
+        proof_verification::ChannelProofVerifier,
         transfer::Ics20Transfer,
         MsgHandler,
     },

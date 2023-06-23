@@ -1,15 +1,10 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types2::{
-    clients::ics07_tendermint::{
-        client_state::ClientState as TendermintClientState,
-        consensus_state::ConsensusState as TendermintConsensusState,
-        header::Header as TendermintHeader,
-    },
-    core::{
-        ics02_client::{client_state::ClientState, msgs::update_client::MsgUpdateClient},
-        ics24_host::identifier::ClientId,
-    },
+    core::{client::msgs::MsgUpdateClient, client::ClientId},
+    lightclients::tendermint::client_state::ClientState as TendermintClientState,
+    lightclients::tendermint::consensus_state::ConsensusState as TendermintConsensusState,
+    lightclients::tendermint::header::Header as TendermintHeader,
 };
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_storage::{StateRead, StateWrite};

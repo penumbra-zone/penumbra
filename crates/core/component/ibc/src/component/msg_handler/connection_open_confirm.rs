@@ -1,12 +1,11 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types2::core::{
-    ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
-    ics03_connection::{
-        connection::{ConnectionEnd, Counterparty, State},
-        msgs::conn_open_confirm::MsgConnectionOpenConfirm,
+use ibc_types2::{
+    core::{
+        commitment::{MerklePrefix, MerkleProof},
+        connection::{msgs::MsgConnectionOpenConfirm, ConnectionEnd, Counterparty, State},
     },
-    ics24_host::path::ConnectionPath,
+    path::ConnectionPath,
 };
 use penumbra_chain::component::PENUMBRA_COMMITMENT_PREFIX;
 use penumbra_storage::{StateRead, StateWrite};
@@ -15,7 +14,7 @@ use crate::{
     component::{
         client::StateReadExt as _,
         connection::{StateReadExt as _, StateWriteExt as _},
-        MsgHandler,
+        proof_verification, MsgHandler,
     },
     event,
 };
@@ -46,20 +45,20 @@ impl MsgHandler for MsgConnectionOpenConfirm {
         // (TRYOPEN)
         let connection = verify_previous_connection(&state, self).await?;
 
-        let expected_conn = ConnectionEnd::new(
-            State::Open,
-            connection.counterparty().client_id().clone(),
-            Counterparty::new(
-                connection.client_id().clone(),
-                Some(self.conn_id_on_b.clone()),
-                PENUMBRA_COMMITMENT_PREFIX.clone(),
-            ),
-            connection.versions().to_vec(),
-            connection.delay_period(),
-        );
+        let expected_conn = ConnectionEnd {
+            state: State::Open,
+            client_id: connection.counterparty.client_id.clone(),
+            counterparty: Counterparty {
+                client_id: connection.client_id.clone(),
+                connection_id: Some(self.conn_id_on_b.clone()),
+                prefix: PENUMBRA_COMMITMENT_PREFIX.clone(),
+            },
+            versions: connection.versions.to_vec(),
+            delay_period: connection.delay_period,
+        };
 
         // get the trusted client state for the counterparty
-        let trusted_client_state = state.get_client_state(connection.client_id()).await?;
+        let trusted_client_state = state.get_client_state(&connection.client_id).await?;
 
         // check if the client is frozen
         // TODO: should we also check if the client is expired here?
@@ -69,23 +68,25 @@ impl MsgHandler for MsgConnectionOpenConfirm {
 
         // get the stored consensus state for the counterparty
         let trusted_consensus_state = state
-            .get_verified_consensus_state(self.proof_height_on_a, connection.client_id().clone())
+            .get_verified_consensus_state(self.proof_height_on_a, connection.client_id.clone())
             .await?;
 
         // PROOF VERIFICATION
         // in connectionOpenConfirm, only the inclusion of the connection state must be
         // verified, not the client or consensus states.
-        trusted_client_state.verify_connection_state(
+
+        let proof_conn_end_on_a = MerkleProof::try_from(self.proof_conn_end_on_a.clone())?;
+        proof_verification::verify_connection_state(
+            &trusted_client_state,
             self.proof_height_on_a,
-            connection.counterparty().prefix(),
-            &self.proof_conn_end_on_a,
-            trusted_consensus_state.root(),
-            &ConnectionPath::new(
-                connection
-                    .counterparty()
-                    .connection_id()
-                    .ok_or_else(|| anyhow::anyhow!("invalid counterparty"))?,
-            ),
+            &MerklePrefix {
+                key_prefix: connection.counterparty.prefix,
+            },
+            &proof_conn_end_on_a,
+            &trusted_consensus_state.root,
+            &ConnectionPath::new(connection.counterparty.connection_id.as_ref().ok_or_else(
+                || anyhow::anyhow!("missing counterparty in connection open confirm"),
+            )?),
             &expected_conn,
         )?;
 
@@ -96,7 +97,7 @@ impl MsgHandler for MsgConnectionOpenConfirm {
             .ok_or_else(|| anyhow::anyhow!("no connection with the given ID"))
             .unwrap();
 
-        connection.set_state(State::Open);
+        connection.state = State::Open;
 
         state.update_connection(&self.conn_id_on_b, connection.clone());
 

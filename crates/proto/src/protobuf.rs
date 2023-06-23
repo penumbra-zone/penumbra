@@ -184,6 +184,7 @@ use ibc_proto::ibc::core::connection::v1::ConnectionEnd as RawConnectionEnd;
 use ibc_types2::core::channel::ChannelEnd;
 use ibc_types2::core::client::Height;
 use ibc_types2::core::connection::ConnectionEnd;
+use ibc_types2::lightclients::tendermint::client_state::ClientState;
 
 impl TypeUrl for ConnectionEnd {
     const TYPE_URL: &'static str = "/ibc.core.connection.v1.ConnectionEnd";
@@ -211,7 +212,7 @@ impl DomainType for Height {
     type Proto = RawHeight;
 }
 
-impl DomainType for ibc_types2::lightclients::tendermint::client_state::ClientState {
+impl DomainType for ClientState {
     type Proto = Any;
 }
 impl DomainType for ibc_types2::lightclients::tendermint::consensus_state::ConsensusState {

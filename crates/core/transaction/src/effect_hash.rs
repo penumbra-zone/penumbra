@@ -1,6 +1,7 @@
 use blake2b_simd::{Hash, Params};
 use decaf377::FieldExt;
 use decaf377_fmd::Clue;
+use ibc_types2::DomainType as _;
 use penumbra_crypto::{EffectHash, Fee, FullViewingKey, NotePayload, PayloadKey};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},

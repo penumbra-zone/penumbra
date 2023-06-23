@@ -13,6 +13,7 @@ pub mod event;
 mod ibc_action;
 mod ibc_token;
 mod ics20_withdrawal;
+mod version;
 
 pub use ibc_action::IbcAction;
 pub use ibc_token::IbcToken;

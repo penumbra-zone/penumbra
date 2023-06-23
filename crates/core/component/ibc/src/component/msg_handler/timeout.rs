@@ -1,23 +1,19 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types2::core::{
-    ics04_channel::{
-        channel::{Order as ChannelOrder, State as ChannelState},
-        msgs::timeout::MsgTimeout,
-    },
-    ics24_host::identifier::PortId,
+use ibc_types2::core::channel::{
+    channel::{Order as ChannelOrder, State as ChannelState},
+    msgs::MsgTimeout,
+    PortId,
 };
 use penumbra_storage::StateWrite;
 
 use crate::{
     component::{
         app_handler::{AppHandlerCheck, AppHandlerExecute},
-        channel::{
-            stateful::proof_verification::{commit_packet, PacketProofVerifier},
-            StateReadExt as _, StateWriteExt,
-        },
+        channel::{StateReadExt as _, StateWriteExt},
         client::StateReadExt,
         connection::StateReadExt as _,
+        proof_verification::{commit_packet, PacketProofVerifier},
         transfer::Ics20Transfer,
         MsgHandler,
     },
@@ -64,7 +60,7 @@ impl MsgHandler for MsgTimeout {
             .ok_or_else(|| anyhow::anyhow!("connection not found for channel"))?;
 
         let chain_ts = state
-            .get_client_update_time(connection.client_id(), &self.proof_height_on_b)
+            .get_client_update_time(&connection.client_id, &self.proof_height_on_b)
             .await?;
         let chain_height = self.proof_height_on_b;
 
