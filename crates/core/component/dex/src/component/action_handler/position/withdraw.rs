@@ -66,7 +66,7 @@ impl ActionHandler for PositionWithdraw {
         }
 
         metadata.state = position::State::Withdrawn;
-        state.put_position(metadata);
+        state.put_position(metadata).await?;
 
         Ok(())
     }

@@ -39,7 +39,7 @@ impl ActionHandler for PositionOpen {
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // Write the newly opened position.
-        state.put_position(self.position.clone());
+        state.put_position(self.position.clone()).await?;
 
         Ok(())
     }

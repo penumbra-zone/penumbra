@@ -104,7 +104,7 @@ pub trait PositionManager: StateWrite + PositionRead {
             );
 
             position.state = position::State::Closed;
-            self.put_position(position);
+            self.put_position(position).await?;
         }
         self.object_delete(state_key::pending_position_closures());
         Ok(())
@@ -112,7 +112,7 @@ pub trait PositionManager: StateWrite + PositionRead {
 
     /// Writes a position to the state, updating all necessary indexes.
     #[tracing::instrument(level = "debug", skip(self, position), fields(id = ?position.id()))]
-    fn put_position(&mut self, position: position::Position) {
+    async fn put_position(&mut self, position: position::Position) -> Result<()> {
         let id = position.id();
         tracing::debug!(?position);
         // Clear any existing indexes of the position, since changes to the
@@ -123,6 +123,8 @@ pub trait PositionManager: StateWrite + PositionRead {
             self.index_position(&position);
         }
         self.put(state_key::position_by_id(&id), position);
+
+        Ok(())
     }
 
     /// Returns the list of candidate assets to route through for a trade from `from`.
