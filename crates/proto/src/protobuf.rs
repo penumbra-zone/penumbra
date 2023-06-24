@@ -222,14 +222,8 @@ impl DomainType for ibc_types2::lightclients::tendermint::consensus_state::Conse
 
 impl<T> From<T> for IbcAction
 where
-    T: ibc_types2::DomainType
-        + ibc_types2::TypeUrl
-        + std::marker::Send
-        + std::marker::Sync
-        + 'static,
-    <T as TryFrom<<T as ibc_types2::DomainType>::Proto>>::Error: std::marker::Send,
-    <T as TryFrom<<T as ibc_types2::DomainType>::Proto>>::Error: std::marker::Sync,
-    <T as TryFrom<<T as ibc_types2::DomainType>::Proto>>::Error: std::error::Error,
+    T: ibc_types2::DomainType + ibc_types2::TypeUrl + Send + Sync + 'static,
+    <T as TryFrom<<T as ibc_types2::DomainType>::Proto>>::Error: Send + Sync + std::error::Error,
 {
     fn from(v: T) -> Self {
         let value_bytes = v.encode_to_vec();
