@@ -63,11 +63,8 @@ impl SwapPlaintext {
     pub fn output_notes(&self, batch_data: &BatchSwapOutputData) -> (Note, Note) {
         let (output_1_rseed, output_2_rseed) = self.output_rseeds();
 
-        let (lambda_1_i, lambda_2_i) = batch_data.pro_rata_outputs((
-            // TODO: fix up amount conversions
-            self.delta_1_i.try_into().unwrap(),
-            self.delta_2_i.try_into().unwrap(),
-        ));
+        let (lambda_1_i, lambda_2_i) =
+            batch_data.pro_rata_outputs((self.delta_1_i, self.delta_2_i));
 
         let output_1_note = Note::from_parts(
             self.claim_address,

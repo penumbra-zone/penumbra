@@ -6,7 +6,7 @@ use penumbra_crypto::{
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
-use rand_core::{CryptoRng, OsRng, RngCore};
+use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use super::{Body, Spend};
@@ -99,7 +99,7 @@ impl SpendPlan {
         anchor: tct::Root,
     ) -> SpendProof {
         SpendProof::prove(
-            &mut OsRng,
+            &mut rand_core::OsRng,
             &penumbra_proof_params::SPEND_PROOF_PROVING_KEY,
             state_commitment_proof.clone(),
             self.note.clone(),

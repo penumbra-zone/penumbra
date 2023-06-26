@@ -40,11 +40,9 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
     {
         let (delta_1, delta_2) = (batch_data.0.mock_decrypt(), batch_data.1.mock_decrypt());
 
-        tracing::debug!(?delta_1, ?delta_2, ?trading_pair);
+        tracing::debug!(?delta_1, ?delta_2, ?trading_pair, "decrypted batch swaps");
 
-        // Depending on the contents of the batch swap inputs, we might need to path search in either direction.
         let swap_execution_1_for_2 = if delta_1.value() > 0 {
-            // There is input for asset 1, so we need to route for asset 1 -> asset 2
             Some(
                 self.route_and_fill(
                     trading_pair.asset_1(),
@@ -55,13 +53,11 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
                 .await?,
             )
         } else {
-            // There was no input for asset 1, so there's 0 output for asset 2 from this side.
-            tracing::debug!("no input for asset 1, skipping 1=>2 execution");
+            tracing::debug!("no input for asset 1, skipping 1=>2 routing and execution");
             None
         };
 
         let swap_execution_2_for_1 = if delta_2.value() > 0 {
-            // There is input for asset 2, so we need to route for asset 2 -> asset 1
             Some(
                 self.route_and_fill(
                     trading_pair.asset_2(),
@@ -72,7 +68,6 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
                 .await?,
             )
         } else {
-            // There was no input for asset 2, so there's 0 output for asset 1 from this side.
             tracing::debug!("no input for asset 2, skipping 2=>1 execution");
             None
         };
@@ -102,10 +97,6 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             unfilled_1,
             unfilled_2,
         };
-
-        // TODO: how does this work when there are trades in both directions?
-        // Won't that mix up the traces? Should the SwapExecution be indexed by
-        // the _DirectedTradingPair_?
 
         // Fetch the swap execution object that should have been modified during the routing and filling.
         tracing::debug!(
