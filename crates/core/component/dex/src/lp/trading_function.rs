@@ -28,15 +28,18 @@ impl TradingFunction {
     /// unfilled amount of the input asset, the updated reserves, and the output
     /// amount.
     ///
-    /// Errors if the asset type of the input does not match either end of this
+    /// # Errors
+    /// This method errors if:
+    /// - the asset type of the input does not match either end of this
     /// `TradingFunction`'s `TradingPair`.
+    /// - an overflow occurs during execution.
     pub fn fill(
         &self,
         input: Value,
         reserves: &Reserves,
     ) -> anyhow::Result<(Value, Reserves, Value)> {
         if input.asset_id == self.pair.asset_1() {
-            let (unfilled, new_reserves, output) = self.component.fill(input.amount, reserves);
+            let (unfilled, new_reserves, output) = self.component.fill(input.amount, reserves)?;
             Ok((
                 Value {
                     amount: unfilled,
@@ -50,8 +53,10 @@ impl TradingFunction {
             ))
         } else if input.asset_id == self.pair.asset_2() {
             let flipped_reserves = reserves.flip();
-            let (unfilled, new_reserves, output) =
-                self.component.flip().fill(input.amount, &flipped_reserves);
+            let (unfilled, new_reserves, output) = self
+                .component
+                .flip()
+                .fill(input.amount, &flipped_reserves)?;
             Ok((
                 Value {
                     amount: unfilled,
@@ -74,10 +79,13 @@ impl TradingFunction {
 
     /// Attempts to compute the input value required to produce the given output
     /// value, returning the input value and updated reserves if successful.
+    /// Returns `None` if the output value exceeds the liquidity of the reserves.
     ///
-    /// Errors if the asset type of the input does not match either end of this
-    /// `TradingFunction`'s `TradingPair`.  Returns `None` if the output value
-    /// exceeds the liquidity of the reserves.
+    /// # Errors
+    /// This method errors if:
+    /// - The asset type of the output does not match either end of this
+    ///  `TradingFunction`'s `TradingPair`.
+    /// - An overflow occurs during the computation.
     pub fn fill_output(
         &self,
         reserves: &Reserves,
@@ -86,7 +94,7 @@ impl TradingFunction {
         if output.asset_id == self.pair.asset_2() {
             Ok(self
                 .component
-                .fill_output(reserves, output.amount)
+                .fill_output(reserves, output.amount)?
                 .map(|(new_reserves, input)| {
                     (
                         new_reserves,
@@ -101,7 +109,7 @@ impl TradingFunction {
             let flipped_reserves = reserves.flip();
             let flipped_function = self.component.flip();
             Ok(flipped_function
-                .fill_output(&flipped_reserves, output.amount)
+                .fill_output(&flipped_reserves, output.amount)?
                 .map(|(new_reserves, input)| {
                     (
                         // ... then flip the reserves back.
@@ -221,20 +229,28 @@ impl BareTradingFunction {
         unimplemented!()
     }
 
-    /// Determines the amount of asset 1 that can be filled for a given amount of asset 2,
+    /// Determine the amount of asset 1 that can be filled for a given amount of asset 2,
     /// propagating rounding error to the input amount `delta_1` rather than the output amount `lambda_2`.
+    /// Returns `None` if the amount of asset 2 is greater than the reserves of asset 2.
+    ///
+    /// # Errors
+    /// This method returns an error if an overflow occurs when computing the fillable amount of asset 1.
     #[instrument(skip(self, reserves, lambda_2))]
-    pub fn fill_output(&self, reserves: &Reserves, lambda_2: Amount) -> Option<(Reserves, Amount)> {
+    pub fn fill_output(
+        &self,
+        reserves: &Reserves,
+        lambda_2: Amount,
+    ) -> anyhow::Result<Option<(Reserves, Amount)>> {
         if lambda_2 > reserves.r2 {
             tracing::debug!(?reserves, ?lambda_2, "lambda_2 > r2, no fill possible");
-            return None;
+            return Ok(None);
         }
         // We must work backwards to infer what `delta_1` (input) correspond
         // exactly to a fill of `lambda_2 = r2`.
         // lambda_2 = effective_price * delta_1
         // and since p,q != 0, effective_price != 0:
         // delta_1 = r2 * effective_price^-1
-        let fillable_delta_1 = self.convert_to_delta_1(lambda_2.into());
+        let fillable_delta_1 = self.convert_to_delta_1(lambda_2.into())?;
 
         // We burn the rouding error by apply `ceil` to delta_1:
         //
@@ -257,13 +273,21 @@ impl BareTradingFunction {
             ?new_reserves,
             "computed reverse fill"
         );
-        Some((new_reserves, fillable_delta_1_exact))
+        Ok(Some((new_reserves, fillable_delta_1_exact)))
     }
 
     /// Fills a trade of asset 1 to asset 2 against the given reserves,
     /// returning the unfilled amount of asset 1, the updated reserves, and the
     /// output amount of asset 2.
-    pub fn fill(&self, delta_1: Amount, reserves: &Reserves) -> (Amount, Reserves, Amount) {
+    ///
+    /// # Errors
+    /// This method errors if an overflow occurs when computing the trade output amount,
+    /// or the fillable amount of asset 1.
+    pub fn fill(
+        &self,
+        delta_1: Amount,
+        reserves: &Reserves,
+    ) -> anyhow::Result<(Amount, Reserves, Amount)> {
         // We distinguish two cases, which only differ in their rounding
         // behavior.
         //
@@ -295,7 +319,7 @@ impl BareTradingFunction {
         // rounding loss, we prefer to first compute the numerator `(gamma * delta_1 * q)`, and then
         // perform division.
         let delta_1_fp = U128x128::from(delta_1);
-        let tentative_lambda_2 = self.convert_to_lambda_2(delta_1_fp);
+        let tentative_lambda_2 = self.convert_to_lambda_2(delta_1_fp)?;
 
         if tentative_lambda_2 <= reserves.r2.into() {
             // Observe that for the case when `tentative_lambda_2` equals
@@ -306,7 +330,7 @@ impl BareTradingFunction {
                 r1: reserves.r1 + delta_1,
                 r2: reserves.r2 - lambda_2,
             };
-            (0u64.into(), new_reserves, lambda_2)
+            Ok((0u64.into(), new_reserves, lambda_2))
         } else {
             let r2: U128x128 = reserves.r2.into();
             // In this case, we don't have enough reserves to completely execute
@@ -324,7 +348,7 @@ impl BareTradingFunction {
             // r2 = effective_price * delta_1, and since p,q != 0, effective_price != 0:
             // delta_1 = r2 * effective_price^-1
             let r2 = U128x128::from(r2);
-            let fillable_delta_1 = self.convert_to_delta_1(r2);
+            let fillable_delta_1 = self.convert_to_delta_1(r2)?;
 
             // We burn the rouding error by apply `ceil` to delta_1:
             //
@@ -352,7 +376,7 @@ impl BareTradingFunction {
                 r1: reserves.r1 + fillable_delta_1_exact,
                 r2: 0u64.into(),
             };
-            (unfilled_amount, new_reserves, reserves.r2)
+            Ok((unfilled_amount, new_reserves, reserves.r2))
         }
     }
 
