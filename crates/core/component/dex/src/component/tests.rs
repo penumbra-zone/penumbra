@@ -64,8 +64,8 @@ async fn single_limit_order() -> anyhow::Result<()> {
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
 
     let pair = DirectedTradingPair::new(gm.id(), gn.id());
 
@@ -245,8 +245,8 @@ async fn multiple_limit_orders() -> anyhow::Result<()> {
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
 
     let pair = DirectedTradingPair::new(gm.id(), gn.id());
 
@@ -421,8 +421,8 @@ async fn multiple_limit_orders() -> anyhow::Result<()> {
 /// Test that submitting a position that provisions no inventory fails.
 async fn empty_order_fails() -> anyhow::Result<()> {
     use penumbra_component::ActionHandler;
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
 
     let pair = DirectedTradingPair::new(gm.id(), gn.id());
 
@@ -456,8 +456,8 @@ async fn position_create_and_retrieve() -> anyhow::Result<()> {
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
 
     let price1: Amount = 1u64.into();
     let buy_1 = Position::new(
@@ -527,8 +527,10 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
 
     let pair_gn_penumbra = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
@@ -591,8 +593,10 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     //                  │    ┌───────┐      ┌──────┐       ┌──────┐
     //                  └───▶│ 1pusd │─────▶│ 20gm │──────▶│ 20gn │
     //                       └───────┘      └──────┘       └──────┘
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let pusd = asset::REGISTRY.parse_unit("test_usd");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let pusd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
 
     tracing::info!(gm_id = ?gm.id());
     tracing::info!(gn_id = ?gn.id());
@@ -708,9 +712,13 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
 
     tracing::info!(gm_id = ?gm.id());
     tracing::info!(gn_id = ?gn.id());
@@ -766,8 +774,12 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let test_usd = asset::REGISTRY.parse_unit("test_usd");
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+    let test_usd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
 
     tracing::info!(penumbra_id= ?penumbra.id());
     tracing::info!(test_usd_id = ?test_usd.id());

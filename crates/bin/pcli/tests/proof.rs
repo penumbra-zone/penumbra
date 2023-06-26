@@ -156,8 +156,9 @@ fn swap_proof_parameters_vs_current_swap_circuit() {
     let ivk_recipient = fvk_recipient.incoming();
     let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
     let trading_pair = TradingPair::new(gm.id(), gn.id());
 
     let delta_1 = Amount::from(100_000u64);
@@ -218,8 +219,8 @@ fn swap_claim_parameters_vs_current_swap_claim_circuit() {
     let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
     let nk = *sk_recipient.nullifier_key();
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
     let trading_pair = TradingPair::new(gm.id(), gn.id());
 
     let delta_1_i = Amount::from(2u64);

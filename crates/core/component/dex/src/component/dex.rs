@@ -67,12 +67,30 @@ impl Component for Dex {
                 *STAKING_TOKEN_ASSET_ID,
                 vec![
                     *STAKING_TOKEN_ASSET_ID,
-                    asset::REGISTRY.parse_unit("gm").id(),
-                    asset::REGISTRY.parse_unit("gn").id(),
-                    asset::REGISTRY.parse_unit("test_usd").id(),
-                    asset::REGISTRY.parse_unit("test_btc").id(),
-                    asset::REGISTRY.parse_unit("test_atom").id(),
-                    asset::REGISTRY.parse_unit("test_osmo").id(),
+                    asset::Cache::with_known_assets()
+                        .get_unit("gm")
+                        .unwrap()
+                        .id(),
+                    asset::Cache::with_known_assets()
+                        .get_unit("gn")
+                        .unwrap()
+                        .id(),
+                    asset::Cache::with_known_assets()
+                        .get_unit("test_usd")
+                        .unwrap()
+                        .id(),
+                    asset::Cache::with_known_assets()
+                        .get_unit("test_btc")
+                        .unwrap()
+                        .id(),
+                    asset::Cache::with_known_assets()
+                        .get_unit("test_atom")
+                        .unwrap()
+                        .id(),
+                    asset::Cache::with_known_assets()
+                        .get_unit("test_osmo")
+                        .unwrap()
+                        .id(),
                 ],
             )
             .await
@@ -80,7 +98,9 @@ impl Component for Dex {
 
         if arb_burn.amount != 0u64.into() {
             // TODO: hack to avoid needing an asset cache for nice debug output
-            let unit = asset::REGISTRY.parse_unit("penumbra");
+            let unit = asset::Cache::with_known_assets()
+                .get_unit("penumbra")
+                .unwrap();
             let burn = format!("{}{}", unit.format_value(arb_burn.amount), unit);
             tracing::info!(%burn, "executed arbitrage opportunity");
         }

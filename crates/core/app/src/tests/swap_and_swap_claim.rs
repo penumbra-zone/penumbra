@@ -44,8 +44,8 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
 
     // 2. Create a Swap action
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
     let trading_pair = TradingPair::new(gm.id(), gn.id());
 
     let delta_1 = Amount::from(100_000u64);
@@ -150,8 +150,8 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
 
     // 2. Create a Swap action
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
     let trading_pair = TradingPair::new(gm.id(), gn.id());
 
     let delta_1 = Amount::from(100_000u64);
