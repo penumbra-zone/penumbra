@@ -1751,11 +1751,11 @@ async fn path_search_commutative() -> anyhow::Result<()> {
         .get_unit("test_atom")
         .unwrap();
 
-    let s_a = SellOrder::parse_str("1gm@1btcumbra")
+    let s_a = SellOrder::parse_str("1gm@1test_btc")
         .unwrap()
         .into_position(OsRng);
 
-    let s_c = SellOrder::parse_str("1test_usd@1btcumbra")
+    let s_c = SellOrder::parse_str("1test_usd@1test_btc")
         .unwrap()
         .into_position(OsRng);
 
@@ -1763,11 +1763,11 @@ async fn path_search_commutative() -> anyhow::Result<()> {
         .unwrap()
         .into_position(OsRng);
 
-    let a_t = SellOrder::parse_str("1test_pen@0.9gm")
+    let a_t = SellOrder::parse_str("1penumbra@0.9gm")
         .unwrap()
         .into_position(OsRng);
 
-    let b_t = SellOrder::parse_str("1test_pen@0.3gn")
+    let b_t = SellOrder::parse_str("1penumbra@0.3gn")
         .unwrap()
         .into_position(OsRng);
 
@@ -1775,7 +1775,7 @@ async fn path_search_commutative() -> anyhow::Result<()> {
         .unwrap()
         .into_position(OsRng);
 
-    let c_t = SellOrder::parse_str("1test_pen@0.99test_usd")
+    let c_t = SellOrder::parse_str("1penumbra@0.99test_usd")
         .unwrap()
         .into_position(OsRng);
 
@@ -1783,7 +1783,7 @@ async fn path_search_commutative() -> anyhow::Result<()> {
         .unwrap()
         .into_position(OsRng);
 
-    let d_t = SellOrder::parse_str("1test_pen@0.01test_atom")
+    let d_t = SellOrder::parse_str("1penumbra@0.01test_atom")
         .unwrap()
         .into_position(OsRng);
 
@@ -1923,8 +1923,8 @@ async fn path_search_commutative() -> anyhow::Result<()> {
         let path_price_f64: f64 = path_price.into();
         let spill_price_f64: f64 = spill_price.into();
 
-        let correct_path_price = 0.00042f64;
-        let correct_spill_price = 0.007f64;
+        let correct_path_price = 0.042f64;
+        let correct_spill_price = 0.7f64;
 
         assert_eq!(
             correct_path_price, path_price_f64,
