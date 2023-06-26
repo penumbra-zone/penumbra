@@ -260,18 +260,6 @@ impl BareTradingFunction {
         Some((new_reserves, fillable_delta_1_exact))
     }
 
-    /*
-       pub fn fill2(&self, reserves: &Reserves, delta_1: Amount) -> (Amount, Reserves, Amount) {
-           if let Some((reserves, lambda_2)) = self.fill_input(reserves, delta_1) {
-               (0u64.into(), reserves, lambda_2)
-           } else {
-               let (reserves, fillable_delta_1) = self.fill_output(reserves, lambda_2);
-               let unfilled_amount = delta_1 - fillable_delta_1_exact;
-               (unfilled_amount, reserves, lambda_2)
-           }
-       }
-    */
-
     /// Fills a trade of asset 1 to asset 2 against the given reserves,
     /// returning the unfilled amount of asset 1, the updated reserves, and the
     /// output amount of asset 2.
@@ -299,7 +287,11 @@ impl BareTradingFunction {
         // executing against it again on a subsequent iteration, even though it
         // was essentially filled.
 
-        // The trade output `lambda_2` is given by `bid_price * delta_1`, however, to avoid
+        // The effective price is the conversion rate between `2` and `1`:
+        // effective_price = (q/[gamma*p])
+        // effective_price_inv = gamma*(p/q)
+
+        // The trade output `lambda_2` is given by `effective_price * delta_1`, however, to avoid
         // rounding loss, we prefer to first compute the numerator `(gamma * delta_1 * q)`, and then
         // perform division.
         let delta_1_fp = U128x128::from(delta_1);
@@ -341,10 +333,10 @@ impl BareTradingFunction {
 
             // How to show that: `unfilled_amount >= 0`:
             // In this branch, we have:
-            //      lambda_2 > R_2, where lambda_2 = delta_1 * bid_price:
-            //      delta_1 * bid_price > R_2, in other words:
-            //  <=> delta_1 > R_2 * (bid_price)^-1, in other words:
-            //      delta_1 > R_2 * ask_price
+            //      lambda_2 > R_2, where lambda_2 = delta_1 * effective_price:
+            //      delta_1 * effective_price > R_2, in other words:
+            //  <=> delta_1 > R_2 * (effective_price)^-1, in other words:
+            //      delta_1 > R_2 * effective_price_inv
             //
             //  fillable_delta_1_exact = ceil(RHS) is integral (rounded), and
             //  delta_1 is integral by definition.
@@ -373,7 +365,10 @@ impl BareTradingFunction {
         self.effective_price().to_bytes()
     }
 
-    /// Delta_1 * effective_price_inv = Lambda_2
+    /// Returns the conversion rate from `1` to `2`, that is
+    /// used to compute the trade output `lambda_2` from the
+    /// input `delta_1`:
+    /// `delta_1 * effective_price_inv = lambda_2`
     pub fn effective_price_inv(&self) -> U128x128 {
         let p = U128x128::from(self.p);
         let q = U128x128::from(self.q);
@@ -383,7 +378,10 @@ impl BareTradingFunction {
         numerator.checked_div(&q).expect("q != 0")
     }
 
-    /// Delta_1 = Lambda_2 * effective_price
+    /// Returns the conversion rate from `2` to `1`, that is
+    /// used to compute the trade input `delta_1` from the
+    /// output `lambda_2`:
+    /// `lambda_2 * effective_price = delta_1`
     pub fn effective_price(&self) -> U128x128 {
         let p = U128x128::from(self.p);
         let q = U128x128::from(self.q);
@@ -393,7 +391,7 @@ impl BareTradingFunction {
         q.checked_div(&denominator).expect("q, gamma != 0")
     }
 
-    /// Converts an amount `delta_1` into `lambda_2`, using the bid price.
+    /// Converts an amount `delta_1` into `lambda_2`, using the id effective price inverse.
     pub fn convert_to_lambda_2(&self, delta_1: U128x128) -> U128x128 {
         let p = U128x128::from(self.p);
         let q = U128x128::from(self.q);
@@ -403,7 +401,7 @@ impl BareTradingFunction {
         numerator.checked_div(&q).expect("q != 0")
     }
 
-    /// Converts an amount of `lambda_2` into `delta_1`, using the ask price.
+    /// Converts an amount of `lambda_2` into `delta_1`, using the effective price.
     pub fn convert_to_delta_1(&self, lambda_2: U128x128) -> U128x128 {
         let p = U128x128::from(self.p);
         let q = U128x128::from(self.q);
@@ -611,7 +609,7 @@ mod tests {
 
     #[test]
     /// Test that the `convert_to_delta_1` and `convert_to_lambda_2` helper functions
-    /// are aligned with `bid_price` and `ask_price` calculations.
+    /// are aligned with `effective_price` and `effective_price_inv` calculations.
     fn test_conversion_helpers() {
         let btf = BareTradingFunction {
             fee: 150,
