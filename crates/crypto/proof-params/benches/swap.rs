@@ -44,8 +44,8 @@ fn swap_proving_time(c: &mut Criterion) {
     let ivk_recipient = fvk_recipient.incoming();
     let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
     let trading_pair = TradingPair::new(gm.id(), gn.id());
 
     let delta_1 = Amount::from(1u64);

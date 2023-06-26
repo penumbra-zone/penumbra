@@ -409,8 +409,8 @@ mod tests {
     #[test]
     fn happy_path_bsod_pro_rata() {
         // Example Chain-wide swap output data
-        let gm = asset::REGISTRY.parse_unit("gm");
-        let gn = asset::REGISTRY.parse_unit("gn");
+        let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+        let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
         let trading_pair = TradingPair::new(gm.id(), gn.id());
         let bsod = BatchSwapOutputData {
             delta_1: Amount::from(200u64),

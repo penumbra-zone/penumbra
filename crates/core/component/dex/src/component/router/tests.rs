@@ -32,8 +32,11 @@ async fn path_search_basic() {
     let state = Arc::new(state);
 
     // Try routing from "gm" to "penumbra".
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
 
     tracing::info!(src = %gm, dst = %penumbra, "searching for path");
     let (_path, _spill) = state
@@ -72,11 +75,13 @@ async fn path_extension_basic() {
     create_test_positions_basic(&mut state, true);
 
     // Create a new path starting at "gm".
-    let gm = asset::REGISTRY.parse_unit("gm");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
     let path = Path::begin(gm.id(), state);
 
     // Extend the path to "gn".
-    let gn = asset::REGISTRY.parse_unit("gn");
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
     let mut path = path
         .extend_to(gn.id())
         .await
@@ -88,7 +93,10 @@ async fn path_extension_basic() {
 
     // Extending directly to "penumbra" should fail as there
     // are no positions from GN <-> Penumbra.
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+
     assert!(
         path.fork()
             .extend_to(penumbra.id())
@@ -99,7 +107,10 @@ async fn path_extension_basic() {
     );
 
     // Extend further to "pusd".
-    let pusd = asset::REGISTRY.parse_unit("test_usd");
+    let pusd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
+
     let path = path
         .extend_to(pusd.id())
         .await
@@ -110,7 +121,10 @@ async fn path_extension_basic() {
     assert_eq!(path.start, gm.id(), "path starts on gm");
 
     // Extend further to "penumbra".
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+
     let path = path
         .extend_to(penumbra.id())
         .await
@@ -156,10 +170,18 @@ async fn path_extension_basic() {
 }
 
 fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let pusd = asset::REGISTRY.parse_unit("test_usd");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+
+    let pusd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
+
     tracing::debug!(id = ?gm.id(), unit = %gm);
     tracing::debug!(id = ?gn.id(), unit = %gn);
     tracing::debug!(id = ?penumbra.id(), unit = %penumbra);
@@ -392,8 +414,11 @@ async fn position_get_best_price() -> anyhow::Result<()> {
     let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
 
     let pair = DirectedTradingPair::new(gn.id(), penumbra.id());
     let position_1 = Position::new(
@@ -467,8 +492,9 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
 
     let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
 
@@ -529,10 +555,17 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
             Lambda_2 = 2000 + 2500
     */
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let pusd = asset::REGISTRY.parse_unit("test_usd");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+
+    let pusd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
 
     let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
     let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
@@ -634,10 +667,17 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
             Lambda_2 = $10,000 + $3100 + 6 * $3000 = $29,100
     */
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let pusd = asset::REGISTRY.parse_unit("test_usd");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+
+    let pusd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
 
     let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
     let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
@@ -732,10 +772,17 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
             ------------------------------------------------------------------------------------------------------------
     */
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let pusd = asset::REGISTRY.parse_unit("test_usd");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+
+    let pusd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
 
     let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
     let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
@@ -819,10 +866,17 @@ async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
             ------------------------------------------------------------------------------------------------------------
     */
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let pusd = asset::REGISTRY.parse_unit("test_usd");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+
+    let pusd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
 
     let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
     let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
@@ -899,8 +953,11 @@ async fn simple_route() -> anyhow::Result<()> {
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
 
     let pair_1 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
@@ -936,8 +993,11 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
 
     let pair_1 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
@@ -1008,9 +1068,13 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
 
     let pair_gn_penumbra = DirectedUnitPair::new(gn.clone(), penumbra.clone());
     let pair_gm_gn = DirectedUnitPair::new(gm.clone(), gn.clone());
@@ -1156,9 +1220,13 @@ async fn fill_dust_route() -> anyhow::Result<()> {
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
 
     let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
     let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
@@ -1217,9 +1285,13 @@ async fn fill_route_dust() -> () {
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
 
     let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
     let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
@@ -1273,10 +1345,17 @@ async fn fill_route_with_dust_constraint() -> anyhow::Result<()> {
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let pusd = asset::REGISTRY.parse_unit("test_usd");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+
+    let pusd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
 
     let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
     let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
@@ -1349,11 +1428,21 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
-    let pusd = asset::REGISTRY.parse_unit("test_usd");
-    let btc = asset::REGISTRY.parse_unit("test_btc");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+
+    let pusd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
+
+    let btc = asset::Cache::with_known_assets()
+        .get_unit("test_btc")
+        .unwrap();
 
     let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
     let pair_2 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
@@ -1492,14 +1581,20 @@ async fn path_search_testnet_53_1_reproduction() -> anyhow::Result<()> {
     let mut state = StateDelta::new(storage.latest_snapshot());
 
     // Both source and target (S and T)
-    let penumbra = asset::REGISTRY.parse_unit("penumbra");
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
 
     // Asset A
-    let gm = asset::REGISTRY.parse_unit("gm");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
     // Asset B
-    let gn = asset::REGISTRY.parse_unit("gn");
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
     // Asset C
-    let pusd = asset::REGISTRY.parse_unit("test_usd");
+    let pusd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
 
     let s_a = SellOrder::parse_str("1gm@1penumbra")
         .unwrap()
@@ -1638,12 +1733,23 @@ async fn path_search_commutative() -> anyhow::Result<()> {
     let mut state = StateDelta::new(storage.latest_snapshot());
 
     // Both source and target (S and T)
-    let btc = asset::REGISTRY.parse_unit("btcumbra");
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
-    let usd = asset::REGISTRY.parse_unit("test_usd");
-    let pen = asset::REGISTRY.parse_unit("test_pen");
-    let atom = asset::REGISTRY.parse_unit("test_atom");
+    let btc = asset::Cache::with_known_assets()
+        .get_unit("test_btc")
+        .unwrap();
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let usd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
+
+    let pen = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+    let atom = asset::Cache::with_known_assets()
+        .get_unit("test_atom")
+        .unwrap();
 
     let s_a = SellOrder::parse_str("1gm@1btcumbra")
         .unwrap()

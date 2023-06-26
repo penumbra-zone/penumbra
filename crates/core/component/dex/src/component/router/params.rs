@@ -14,14 +14,34 @@ impl Default for RoutingParams {
         Self {
             price_limit: None,
             fixed_candidates: Arc::new(vec![
-                asset::REGISTRY.parse_unit("test_usd").id(),
-                asset::REGISTRY.parse_unit("penumbra").id(),
-                // TODO: remove after fixing candidate set implementation?
-                asset::REGISTRY.parse_unit("gm").id(),
-                asset::REGISTRY.parse_unit("gn").id(),
-                asset::REGISTRY.parse_unit("test_atom").id(),
-                asset::REGISTRY.parse_unit("test_osmo").id(),
-                asset::REGISTRY.parse_unit("test_btc").id(),
+                asset::Cache::with_known_assets()
+                    .get_unit("test_usd")
+                    .unwrap()
+                    .id(),
+                asset::Cache::with_known_assets()
+                    .get_unit("penumbra")
+                    .unwrap()
+                    .id(),
+                asset::Cache::with_known_assets()
+                    .get_unit("gm")
+                    .unwrap()
+                    .id(),
+                asset::Cache::with_known_assets()
+                    .get_unit("gn")
+                    .unwrap()
+                    .id(),
+                asset::Cache::with_known_assets()
+                    .get_unit("test_atom")
+                    .unwrap()
+                    .id(),
+                asset::Cache::with_known_assets()
+                    .get_unit("test_osmo")
+                    .unwrap()
+                    .id(),
+                asset::Cache::with_known_assets()
+                    .get_unit("test_btc")
+                    .unwrap()
+                    .id(),
             ]),
             max_hops: 4,
         }

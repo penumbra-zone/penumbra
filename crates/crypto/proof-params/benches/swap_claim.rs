@@ -60,8 +60,8 @@ fn swap_claim_proving_time(c: &mut Criterion) {
     let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
     let nk = *sk_recipient.nullifier_key();
 
-    let gm = asset::REGISTRY.parse_unit("gm");
-    let gn = asset::REGISTRY.parse_unit("gn");
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
     let trading_pair = TradingPair::new(gm.id(), gn.id());
 
     let delta_1_i = Amount::from(2u64);

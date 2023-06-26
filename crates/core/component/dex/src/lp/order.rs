@@ -354,8 +354,8 @@ mod tests {
     fn parse_buy_order_basic() {
         // TODO: should have a way to build an asset::Cache for known assets
         let mut cache = asset::Cache::default();
-        let gm = asset::REGISTRY.parse_unit("gm");
-        let gn = asset::REGISTRY.parse_unit("gn");
+        let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+        let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
         cache.extend([gm.base(), gn.base()]);
 
         let buy_str_1 = "123.444gm@2gn/10bps";
@@ -390,8 +390,8 @@ mod tests {
     fn parse_sell_order_basic() {
         // TODO: should have a way to build an asset::Cache for known assets
         let mut cache = asset::Cache::default();
-        let gm = asset::REGISTRY.parse_unit("gm");
-        let gn = asset::REGISTRY.parse_unit("gn");
+        let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+        let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
         cache.extend([gm.base(), gn.base()]);
 
         let sell_str_1 = "123.444gm@2gn/10bps";
