@@ -232,7 +232,6 @@ mod tests {
 
     use super::*;
     use crate::{
-        asset,
         keys::{SeedPhrase, SpendKey},
         Value,
     };

@@ -46,7 +46,10 @@ impl Component for Dex {
                 .handle_batch_swaps(
                     trading_pair,
                     swap_flows,
-                    end_block.height.try_into().expect("missing height"),
+                    end_block
+                        .height
+                        .try_into()
+                        .expect("height is part of the end block data"),
                     current_epoch.start_height,
                     // Always include both ends of the target pair as fixed candidates.
                     RoutingParams::default_with_extra_candidates([
@@ -55,7 +58,7 @@ impl Component for Dex {
                     ]),
                 )
                 .await
-                .expect("unable to process batch swaps");
+                .expect("handling batch swaps is infaillible");
         }
 
         // Then, perform arbitrage:
@@ -122,7 +125,7 @@ pub trait StateReadExt: StateRead {
         self.get(&state_key::arb_execution(height)).await
     }
 
-    // Get the swap flow for the given trading pair accumulated in this block so far.
+    /// Get the swap flow for the given trading pair accumulated in this block so far.
     fn swap_flow(&self, pair: &TradingPair) -> SwapFlow {
         self.swap_flows().get(pair).cloned().unwrap_or_default()
     }

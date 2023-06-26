@@ -30,21 +30,6 @@ impl TryFrom<pbd::SwapClaimView> for SwapClaimView {
     type Error = anyhow::Error;
 
     fn try_from(v: pbd::SwapClaimView) -> Result<Self, Self::Error> {
-        // let swap_claim = v
-        //     .swap_claim
-        //     .ok_or_else(|| anyhow::anyhow!("missing swap_claim field"))?
-        //     .try_into()?;
-
-        // match (v.output_1, v.output_2) {
-        //     (Some(output_1), Some(output_2)) => Ok(SwapClaimView::Visible {
-        //         swap_claim,
-        //         output_1: output_1.try_into()?,
-        //         output_2: output_2.try_into()?,
-        //     }),
-        //     (None, None) => Ok(SwapClaimView::Opaque { swap_claim }),
-        //     _ => Err(anyhow::anyhow!("malformed swap_claim view")),
-        // }
-
         match v
             .swap_claim_view
             .ok_or_else(|| anyhow::anyhow!("missing swap field"))?

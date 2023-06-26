@@ -215,8 +215,9 @@ impl BareTradingFunction {
         }
     }
 
+    #[deprecated(note = "this method is not yet implemented")]
     pub fn fill_input(&self, _reserves: &Reserves, _delta_1: Amount) -> Option<(Reserves, Amount)> {
-        todo!()
+        unimplemented!()
     }
 
     /// Determines the amount of asset 1 that can be filled for a given amount of asset 2,
@@ -423,9 +424,9 @@ impl BareTradingFunction {
     }
 
     /// Compose two trading functions together
-    /// TODO(erwan): might have a use for working out capacity, but probably to deprecate.
+    #[deprecated(note = "this method is not yet implemented")]
     pub fn compose(&self, _phi: BareTradingFunction) -> BareTradingFunction {
-        todo!()
+        unimplemented!()
     }
 }
 
