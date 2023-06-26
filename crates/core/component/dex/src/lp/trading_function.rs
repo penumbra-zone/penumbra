@@ -571,7 +571,9 @@ mod tests {
 
         let delta_1 = 10_000_000u64.into();
         let delta_2 = 0u64.into();
-        let (lambda_1, new_reserves, lambda_2) = btf.fill(delta_1, &old_reserves);
+        let (lambda_1, new_reserves, lambda_2) = btf
+            .fill(delta_1, &old_reserves)
+            .expect("filling can't fail");
         // Conservation of value:
         assert_eq!(old_reserves.r1 + delta_1, new_reserves.r1 + lambda_1);
         assert_eq!(old_reserves.r2 + delta_2, new_reserves.r2 + lambda_2);
@@ -591,7 +593,9 @@ mod tests {
         let delta_1 = 600_000_000u64.into();
         let delta_2 = 0u64.into();
 
-        let (lambda_1, new_reserves, lambda_2) = btf.fill(delta_1, &old_reserves);
+        let (lambda_1, new_reserves, lambda_2) = btf
+            .fill(delta_1, &old_reserves)
+            .expect("filling can't fail");
         // Conservation of value:
         assert_eq!(old_reserves.r1 + delta_1, new_reserves.r1 + lambda_1);
         assert_eq!(old_reserves.r2 + delta_2, new_reserves.r2 + lambda_2);
@@ -616,7 +620,9 @@ mod tests {
         };
 
         let delta_1 = 100u64.into();
-        let (lambda_1, new_reserves, lambda_2) = btf.fill(delta_1, &old_reserves);
+        let (lambda_1, new_reserves, lambda_2) = btf
+            .fill(delta_1, &old_reserves)
+            .expect("filling can't fail");
 
         // Conservation of value:
         assert_eq!(old_reserves.r1 + delta_1, new_reserves.r1 + lambda_1);
@@ -638,8 +644,11 @@ mod tests {
 
         let one = U128x128::from(1u64);
 
-        assert_eq!(btf.effective_price(), btf.convert_to_delta_1(one));
-        assert_eq!(btf.effective_price_inv(), btf.convert_to_lambda_2(one));
+        assert_eq!(btf.effective_price(), btf.convert_to_delta_1(one).unwrap());
+        assert_eq!(
+            btf.effective_price_inv(),
+            btf.convert_to_lambda_2(one).unwrap()
+        );
     }
 
     #[test]
