@@ -16,9 +16,11 @@ The Rust code files are generated with our own tooling, located at `tools/proto-
 ## Installing protoc
 
 The `protoc` tool is required to generate our protobuf specs via `tools/proto-compiler`.
-Obtain the most recent pre-compiled binary from the [`protoc` website].
+We mandate the use of a specific major version of the `protoc` tool, to make outputs
+predictable. Currently, the supported version is `23.x`. Obtain the most recent
+pre-compiled binary from the [`protoc` website] for that major version.
 After installing, run `protoc --version` and confirm you're running
-at least `3.21.8` (or newer). Don't install `protoc` from package managers
+at least `23.3` (or newer). Don't install `protoc` from package managers
 such as `apt`, as those versions are often outdated, and will not work
 with Penumbra.
 
@@ -59,9 +61,8 @@ buf mod update
 
 Then commit and PR in the results.
 
-[`protoc` website]: https://grpc.io/docs/protoc-installation/#install-pre-compiled-binaries-any-os
+[`protoc` website]: https://protobuf.dev/downloads/
 [proto-compiler]: https://github.com/penumbra-zone/penumbra/tree/main/tools/proto-compiler
 [gRPC]: https://grpc.io/
 [protobuf]: https://buf.build/penumbra-zone/penumbra
 [buf]: https://buf.build/
-[Bech32]: https://en.bitcoin.it/wiki/Bech32

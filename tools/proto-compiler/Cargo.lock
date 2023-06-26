@@ -568,6 +568,7 @@ dependencies = [
 name = "penumbra-proto-compiler"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "ibc-proto",
  "ics23",
  "pbjson",

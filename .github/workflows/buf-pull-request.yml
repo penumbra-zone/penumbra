@@ -1,5 +1,10 @@
 name: Protobuf
 on: pull_request
+env:
+  # We set the desired protoc version at the workflow level,
+  # so that multiple steps can consume it. N.B. this value must
+  # match the const set in `tools/proto-compiler/src/main.rs`.
+  PROTOC_VERSION: "23.3"
 jobs:
   lint:
     name: Lint protobuf
@@ -66,10 +71,6 @@ jobs:
           cd /tmp
           curl -sSfL -O https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
           unzip protoc-${PROTOC_VERSION}-linux-x86_64.zip -d $HOME/.local
-        env:
-          # N.B. the major version is omitted in the download URLs,
-          # so "21.8" actually means "3.21.8".
-          PROTOC_VERSION: "21.8"
 
       # N.B. The freshness check can have false negatives, if `prost` output
       # is superficially but not substantively different. That's OK for now:
@@ -82,6 +83,7 @@ jobs:
           if [[ -n "$s" ]]; then
               echo "ERROR: protobuf files must be regenerated and committed."
               echo "Run this command locally: ./deployments/scripts/protobuf-codegen"
+              echo "Make sure you're running protoc $(cut -f1 -d. <<< ${PROTOC_VERSION}).x locally."
               echo "These are the files that reported differences:"
               echo "$s"
               exit 1
