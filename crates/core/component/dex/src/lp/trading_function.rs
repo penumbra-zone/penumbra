@@ -386,33 +386,28 @@ impl BareTradingFunction {
         let p = U128x128::from(self.p);
         let q = U128x128::from(self.q);
 
-        let denominator = (p * self.gamma()).expect("0 < gamma <= 1");
+        let denominator = (p * self.gamma()).expect("1/2 <= gamma <= 1");
 
         q.checked_div(&denominator).expect("q, gamma != 0")
     }
 
     /// Converts an amount `delta_1` into `lambda_2`, using the id effective price inverse.
-    pub fn convert_to_lambda_2(&self, delta_1: U128x128) -> U128x128 {
-        let p = U128x128::from(self.p);
-        let q = U128x128::from(self.q);
-
-        let numerator = (p * self.gamma()).expect("0 < gamma <= 1, so no overflow is possible");
-        let numerator = (numerator * delta_1).expect("reserves are at most 112 bits wide");
-        numerator.checked_div(&q).expect("q != 0")
+    pub fn convert_to_lambda_2(&self, delta_1: U128x128) -> anyhow::Result<U128x128> {
+        let lambda_2 = self.effective_price_inv() * delta_1;
+        Ok(lambda_2?)
     }
 
     /// Converts an amount of `lambda_2` into `delta_1`, using the effective price.
-    pub fn convert_to_delta_1(&self, lambda_2: U128x128) -> U128x128 {
-        let p = U128x128::from(self.p);
-        let q = U128x128::from(self.q);
-
-        let numerator = (q * lambda_2).expect("reserves are at most 112 bits wide");
-        let denominator = (p * self.gamma()).expect("0 < gamma <= 1, so no overflow is possible");
-        numerator.checked_div(&denominator).expect("p, gamma != 0")
+    pub fn convert_to_delta_1(&self, lambda_2: U128x128) -> anyhow::Result<U128x128> {
+        let delta_1 = self.effective_price() * lambda_2;
+        Ok(delta_1?)
     }
 
-    /// Returns `gamma` i.e. the complement of the fee percentage.
-    /// The fee is expressed in basis points (0 <= fee < 10_000), where 10_000 bps = 100%.
+    /// Returns `gamma` i.e. the fee percentage.
+    /// The fee is expressed in basis points (0 <= fee < 5000), where 5000bps = 50%.
+    ///
+    /// ## Bounds:
+    /// Since the fee `f` is bound by `0 <= < 5_000`, we have `1/2 <= gamma <= 1`.
     ///
     /// ## Examples:
     ///     * A fee of 0% (0 bps) results in a discount factor of 1.
