@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types2::core::{
     client::Height,
-    commitment::{MerkleProof, MerkleRoot},
+    commitment::MerkleProof,
     connection::{msgs::MsgConnectionOpenAck, ConnectionEnd, Counterparty, State},
 };
 use ibc_types2::lightclients::tendermint::client_state::ClientState as TendermintClientState;

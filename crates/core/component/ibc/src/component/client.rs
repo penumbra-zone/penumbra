@@ -65,7 +65,6 @@ pub(crate) trait Ics2ClientExt: StateWrite {
 
         self.record(event::update_client(
             msg_update_client.client_id.clone(),
-            client_state,
             tm_header,
         ));
         Ok(())
@@ -396,7 +395,6 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
-    use ibc_proto::protobuf::Protobuf;
     use ibc_types2::{core::client::msgs::MsgCreateClient, DomainType};
     use penumbra_chain::component::StateWriteExt;
     use penumbra_component::ActionHandler;

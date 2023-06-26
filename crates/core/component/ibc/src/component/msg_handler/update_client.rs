@@ -135,11 +135,7 @@ impl MsgHandler for MsgUpdateClient {
                 )
                 .await?;
 
-            state.record(event::update_client(
-                self.client_id.clone(),
-                client_state,
-                trusted_header,
-            ));
+            state.record(event::update_client(self.client_id.clone(), trusted_header));
 
             return Ok(());
         } else {

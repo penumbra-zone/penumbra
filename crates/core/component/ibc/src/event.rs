@@ -23,11 +23,7 @@ pub fn create_client(client_id: ClientId, client_state: TendermintClientState) -
     )
 }
 
-pub fn update_client(
-    client_id: ClientId,
-    client_state: TendermintClientState,
-    header: TendermintHeader,
-) -> Event {
+pub fn update_client(client_id: ClientId, header: TendermintHeader) -> Event {
     // AYFK
     // lol
     let header_hex_proto_bytes = <TendermintHeader as Protobuf<

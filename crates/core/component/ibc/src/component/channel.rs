@@ -4,11 +4,7 @@ use super::state_key;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use ibc_types2::core::{
-    channel::msgs::{MsgAcknowledgement, MsgRecvPacket, MsgTimeout},
-    channel::{ChannelEnd, ChannelId, Packet, PortId},
-    connection::ConnectionEnd,
-};
+use ibc_types2::core::channel::{ChannelEnd, ChannelId, Packet, PortId};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 
