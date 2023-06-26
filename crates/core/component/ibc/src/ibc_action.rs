@@ -1,4 +1,3 @@
-use ibc_proto::protobuf::Protobuf;
 use ibc_types2::core::{
     channel::msgs::{
         MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,

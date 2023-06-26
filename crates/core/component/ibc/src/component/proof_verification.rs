@@ -13,7 +13,7 @@ use ibc_types2::{
         client::ClientId,
         client::Height,
         commitment::{MerklePrefix, MerkleProof, MerkleRoot},
-        connection::{ConnectionEnd, ConnectionId},
+        connection::ConnectionEnd,
     },
     lightclients::tendermint::{
         client_state::ClientState as TendermintClientState,

@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types2::{
     core::client::{msgs::MsgCreateClient, ClientId},
-    lightclients::tendermint::{client_type, TENDERMINT_CLIENT_TYPE},
+    lightclients::tendermint::client_type,
 };
 use penumbra_storage::StateWrite;
 

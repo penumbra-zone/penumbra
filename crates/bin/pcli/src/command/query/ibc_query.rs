@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use colored_json::prelude::*;
 use ibc_types2::core::channel::ChannelEnd;
 use ibc_types2::core::connection::ConnectionEnd;
 use ibc_types2::lightclients::tendermint::client_state::ClientState as TendermintClientState;
