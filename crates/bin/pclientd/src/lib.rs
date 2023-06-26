@@ -219,8 +219,9 @@ impl Opt {
             }
             Command::Start { bind_addr } => {
                 tracing::info!(?opt.home, ?bind_addr, ?opt.node, "starting pclientd");
-
-                let config = PclientdConfig::load(opt.config_path())?;
+                let config = PclientdConfig::load(opt.config_path()).context(
+                    "Failed to load pclientd config file. Have you run `pclientd init` with a FVK?",
+                )?;
                 let storage = opt.load_or_init_sqlite(&config.fvk).await?;
 
                 let proxy_channel = tonic::transport::Channel::from_shared(opt.node.to_string())
