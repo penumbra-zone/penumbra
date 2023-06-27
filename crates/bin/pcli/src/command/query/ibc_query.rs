@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use colored_json::ToColoredJson;
 use ibc_types2::core::channel::ChannelEnd;
 use ibc_types2::core::connection::ConnectionEnd;
 use ibc_types2::lightclients::tendermint::client_state::ClientState as TendermintClientState;
@@ -37,11 +38,8 @@ impl IbcCmd {
                     .context("Client {client_id} not found")?;
 
                 let client_state = TendermintClientState::decode(value.value.as_ref())?;
-                /*
                 let client_state_json = serde_json::to_string_pretty(&client_state)?;
-                restore this once we have serde impls
-                */
-                println!("{:?}", client_state);
+                println!("{}", client_state_json.to_colored_json_auto()?);
             }
             IbcCmd::Connection { connection_id } => {
                 let key = format!("connections/{connection_id}");
@@ -57,9 +55,8 @@ impl IbcCmd {
                     .context(format!("Connection {connection_id} not found"))?;
 
                 let connection = ConnectionEnd::decode(value.value.as_ref())?;
-                // restore this once we have serde impls
-                // let connection_json = serde_json::to_string_pretty(&connection)?;
-                println!("{:?}", connection);
+                let connection_json = serde_json::to_string_pretty(&connection)?;
+                println!("{}", connection_json.to_colored_json_auto()?);
             }
             IbcCmd::Channel { port, channel_id } => {
                 let key = format!("channelEnds/ports/{port}/channels/{channel_id}");
@@ -75,9 +72,8 @@ impl IbcCmd {
                     .context(format!("Channel {port}:{channel_id} not found"))?;
 
                 let channel = ChannelEnd::decode(value.value.as_ref())?;
-                // restore this once we have serde impls
-                // let connection_json = serde_json::to_string_pretty(&connection)?;
-                println!("{:?}", channel);
+                let channel_json = serde_json::to_string_pretty(&channel)?;
+                println!("{}", channel_json.to_colored_json_auto()?);
             }
         }
 
