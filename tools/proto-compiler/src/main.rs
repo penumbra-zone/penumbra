@@ -1,35 +1,6 @@
-use anyhow::Context;
 use std::path::PathBuf;
-use std::process::Command;
-
-const PROTOC_TARGET_MAJOR_VERSION: i32 = 23;
-const DEV_DOCS_URL: &str = "https://guide.penumbra.zone/main/dev/protobuf.html";
-
-/// Inspect local version of `protoc` binary and ensure it's compatible
-/// with the supported major version. We do this to ensure that the
-/// binary outputs are generated stably across many workstation setups.
-fn check_protoc_version() -> anyhow::Result<()> {
-    let output = Command::new("protoc")
-        .args(["--version"])
-        .output()
-        .context(format!(
-            "Could not find protoc. Is it installed? See dev docs at {}",
-            DEV_DOCS_URL
-        ))?;
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let stdout_parts = stdout.trim().split(' ').collect::<Vec<&str>>();
-    let version = stdout_parts.last().unwrap();
-    let version_parts = version.split('.').collect::<Vec<&str>>();
-    let major_version: i32 = version_parts.first().unwrap().parse().unwrap();
-    if major_version != PROTOC_TARGET_MAJOR_VERSION {
-        let msg = format!("This tool expects protoc version {PROTOC_TARGET_MAJOR_VERSION}.x, but {version} is installed locally.\nPlease install a compatible version. For more info, see {DEV_DOCS_URL}");
-        anyhow::bail!(msg);
-    }
-    Ok(())
-}
 
 fn main() -> anyhow::Result<()> {
-    check_protoc_version()?;
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     println!("{}", root.display());
     let target_dir = root
