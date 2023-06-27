@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet},
     pin::Pin,
 };
 
@@ -240,7 +240,7 @@ fn breakdown_route(route: &[asset::Id]) -> Result<Vec<DirectedTradingPair>> {
 }
 
 type PositionsByPrice =
-    HashMap<DirectedTradingPair, Pin<Box<dyn Stream<Item = Result<position::Id>> + Send>>>;
+    BTreeMap<DirectedTradingPair, Pin<Box<dyn Stream<Item = Result<position::Id>> + Send>>>;
 
 /// A frontier of least-priced positions along a route.
 struct Frontier<S> {
@@ -312,7 +312,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         // We want to ensure that any particular position is used at most once over the route,
         // even if the route has cycles at the macro-scale. To do this, we store the streams
         // of positions for each pair, taking care to only construct one stream per distinct pair.
-        let mut positions_by_price = HashMap::new();
+        let mut positions_by_price = BTreeMap::new();
         for pair in &pairs {
             positions_by_price
                 .entry(pair.clone())
