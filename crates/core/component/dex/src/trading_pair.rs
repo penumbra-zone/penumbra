@@ -205,11 +205,7 @@ impl TryFrom<pb::TradingPair> for TradingPair {
             .ok_or_else(|| anyhow::anyhow!("missing trading pair asset2"))?
             .try_into()?;
         let trading_pair = TradingPair::new(asset_1, asset_2);
-        let result = Self { asset_1, asset_2 };
-        if trading_pair != result {
-            return Err(anyhow::anyhow!("non-canonical trading pair"));
-        }
-        Ok(result)
+        Ok(trading_pair)
     }
 }
 
