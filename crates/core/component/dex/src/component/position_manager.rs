@@ -117,10 +117,10 @@ pub trait PositionManager: StateWrite + PositionRead {
         tracing::debug!(?position);
         // Clear any existing indexes of the position, since changes to the
         // reserves or the position state might have invalidated them.
-        self.deindex_position(&position);
+        self.deindex_position_by_price(&position);
         // Only index the position's liquidity if it is active.
         if position.state == position::State::Opened {
-            self.index_position(&position);
+            self.index_position_by_price(&position);
         }
         self.put(state_key::position_by_id(&id), position);
 
@@ -153,7 +153,7 @@ impl<T: StateWrite + ?Sized> PositionManager for T {}
 
 #[async_trait]
 pub(super) trait Inner: StateWrite {
-    fn index_position(&mut self, position: &position::Position) {
+    fn index_position_by_price(&mut self, position: &position::Position) {
         let (pair, phi) = (position.phi.pair, &position.phi);
         let id = position.id();
         if position.reserves.r2 != 0u64.into() {
@@ -185,7 +185,7 @@ pub(super) trait Inner: StateWrite {
         }
     }
 
-    fn deindex_position(&mut self, position: &Position) {
+    fn deindex_position_by_price(&mut self, position: &Position) {
         let id = position.id();
         tracing::debug!("deindexing position");
         let pair12 = DirectedTradingPair {
