@@ -2,11 +2,10 @@ use penumbra_crypto::{
     asset, balance,
     proofs::groth16::UndelegateClaimProof,
     stake::{IdentityKey, Penalty, UnbondingToken},
-    Amount, FieldExt, Fr,
+    Amount, FieldExt, Fq, Fr,
 };
 use penumbra_proof_params::UNDELEGATECLAIM_PROOF_PROVING_KEY;
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
-use rand_core::OsRng;
 
 use serde::{Deserialize, Serialize};
 
@@ -26,6 +25,10 @@ pub struct UndelegateClaimPlan {
     /// The blinding factor that will be used for the balance commitment.
     /// The action's contribution to the transaction's value balance.
     pub balance_blinding: Fr,
+    /// The first blinding factor used for generating the ZK proof.
+    pub proof_blinding_r: Fq,
+    /// The second blinding factor used for generating the ZK proof.
+    pub proof_blinding_s: Fq,
 }
 
 impl UndelegateClaimPlan {
@@ -50,7 +53,8 @@ impl UndelegateClaimPlan {
     /// Construct the [`UndelegateClaimProof`] required by the [`UndelegateClaimBody`] described by this [`UndelegateClaimPlan`].
     pub fn undelegate_claim_proof(&self) -> UndelegateClaimProof {
         UndelegateClaimProof::prove(
-            &mut OsRng,
+            self.proof_blinding_r,
+            self.proof_blinding_s,
             &UNDELEGATECLAIM_PROOF_PROVING_KEY,
             self.unbonding_amount,
             self.balance_blinding,
@@ -95,6 +99,8 @@ impl From<UndelegateClaimPlan> for pb::UndelegateClaimPlan {
             penalty: Some(msg.penalty.into()),
             unbonding_amount: Some(msg.unbonding_amount.into()),
             balance_blinding: msg.balance_blinding.to_bytes().to_vec(),
+            proof_blinding_r: msg.proof_blinding_r.to_bytes().to_vec(),
+            proof_blinding_s: msg.proof_blinding_s.to_bytes().to_vec(),
         }
     }
 }
@@ -102,6 +108,15 @@ impl From<UndelegateClaimPlan> for pb::UndelegateClaimPlan {
 impl TryFrom<pb::UndelegateClaimPlan> for UndelegateClaimPlan {
     type Error = anyhow::Error;
     fn try_from(msg: pb::UndelegateClaimPlan) -> Result<Self, Self::Error> {
+        let proof_blinding_r_bytes: [u8; 32] = msg
+            .proof_blinding_r
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("malformed r in `DelegatorVotePlan`"))?;
+        let proof_blinding_s_bytes: [u8; 32] = msg
+            .proof_blinding_s
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("malformed s in `DelegatorVotePlan`"))?;
+
         Ok(Self {
             validator_identity: msg
                 .validator_identity
@@ -122,6 +137,8 @@ impl TryFrom<pb::UndelegateClaimPlan> for UndelegateClaimPlan {
                     .map_err(|_| anyhow::anyhow!("expected 32 bytes"))?,
             )
             .map_err(|_| anyhow::anyhow!("invalid balance_blinding"))?,
+            proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes)?,
+            proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes)?,
         })
     }
 }

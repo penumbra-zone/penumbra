@@ -188,6 +188,10 @@ message UndelegateClaimPlan {
   crypto.v1alpha1.Amount unbonding_amount = 5;
   // The blinding factor to use for the balance commitment.
   bytes balance_blinding = 6;
+  // The first blinding factor to use for the ZK undelegate claim proof.
+  bytes proof_blinding_r = 7;
+  // The second blinding factor to use for the ZK undelegate claim proof.
+  bytes proof_blinding_s = 8;
 }
 
 // A list of pending delegations and undelegations.

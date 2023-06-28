@@ -1,3 +1,4 @@
+use ark_ff::UniformRand;
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
@@ -7,7 +8,7 @@ use penumbra_crypto::{
     proofs::groth16::{UndelegateClaimCircuit, UndelegateClaimProof},
     rdsa,
     stake::{IdentityKey, Penalty, UnbondingToken},
-    Amount,
+    Amount, Fq,
 };
 use penumbra_proof_params::UNDELEGATECLAIM_PROOF_PROVING_KEY;
 
@@ -15,6 +16,8 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
 fn prove(
+    r: Fq,
+    s: Fq,
     unbonding_amount: Amount,
     balance_blinding: Fr,
     balance_commitment: balance::Commitment,
@@ -22,7 +25,8 @@ fn prove(
     penalty: Penalty,
 ) {
     let _proof = UndelegateClaimProof::prove(
-        &mut OsRng,
+        r,
+        s,
         &UNDELEGATECLAIM_PROOF_PROVING_KEY,
         unbonding_amount,
         balance_blinding,
@@ -46,9 +50,14 @@ fn undelegate_claim_proving_time(c: &mut Criterion) {
     let balance = penalty.balance_for_claim(unbonding_id, unbonding_amount);
     let balance_commitment = balance.commit(balance_blinding);
 
+    let r = Fq::rand(&mut OsRng);
+    let s = Fq::rand(&mut OsRng);
+
     c.bench_function("undelegate claim proving", |b| {
         b.iter(|| {
             prove(
+                r,
+                s,
                 unbonding_amount,
                 balance_blinding,
                 balance_commitment,
