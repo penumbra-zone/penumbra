@@ -1,3 +1,4 @@
+use ark_ff::UniformRand;
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
@@ -5,7 +6,7 @@ use decaf377::Fr;
 use penumbra_crypto::{
     asset, balance,
     keys::{SeedPhrase, SpendKey},
-    Amount, Balance, Fee, Value,
+    Amount, Balance, Fee, Fq, Value,
 };
 use penumbra_dex::{
     swap::proof::{SwapCircuit, SwapProof},
@@ -19,6 +20,8 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
 fn prove(
+    r: Fq,
+    s: Fq,
     swap_plaintext: SwapPlaintext,
     fee_blinding: Fr,
     balance_commitment: balance::Commitment,
@@ -26,7 +29,8 @@ fn prove(
     fee_commitment: balance::Commitment,
 ) {
     let _proof = SwapProof::prove(
-        &mut OsRng,
+        r,
+        s,
         &SWAP_PROOF_PROVING_KEY,
         swap_plaintext,
         fee_blinding,
@@ -81,9 +85,14 @@ fn swap_proving_time(c: &mut Criterion) {
     balance -= value_fee;
     let balance_commitment = balance.commit(Fr::from(0u64));
 
+    let r = Fq::rand(&mut OsRng);
+    let s = Fq::rand(&mut OsRng);
+
     c.bench_function("swap proving", |b| {
         b.iter(|| {
             prove(
+                r,
+                s,
                 swap_plaintext.clone(),
                 Fr::from(0u64),
                 balance_commitment,

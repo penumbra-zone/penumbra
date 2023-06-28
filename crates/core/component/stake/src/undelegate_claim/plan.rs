@@ -111,11 +111,11 @@ impl TryFrom<pb::UndelegateClaimPlan> for UndelegateClaimPlan {
         let proof_blinding_r_bytes: [u8; 32] = msg
             .proof_blinding_r
             .try_into()
-            .map_err(|_| anyhow::anyhow!("malformed r in `DelegatorVotePlan`"))?;
+            .map_err(|_| anyhow::anyhow!("malformed r in `UndelegateClaimPlan`"))?;
         let proof_blinding_s_bytes: [u8; 32] = msg
             .proof_blinding_s
             .try_into()
-            .map_err(|_| anyhow::anyhow!("malformed s in `DelegatorVotePlan`"))?;
+            .map_err(|_| anyhow::anyhow!("malformed s in `UndelegateClaimPlan`"))?;
 
         Ok(Self {
             validator_identity: msg

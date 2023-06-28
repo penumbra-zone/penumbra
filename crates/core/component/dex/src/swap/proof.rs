@@ -9,7 +9,7 @@ use ark_snark::SNARK;
 use decaf377::{Bls12_377, FieldExt};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
-use rand_core::{CryptoRngCore, OsRng};
+use rand_core::OsRng;
 
 use penumbra_crypto::{
     asset,
@@ -149,8 +149,9 @@ pub struct SwapProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
 impl SwapProof {
     #![allow(clippy::too_many_arguments)]
-    pub fn prove<R: CryptoRngCore>(
-        rng: &mut R,
+    pub fn prove(
+        blinding_r: Fq,
+        blinding_s: Fq,
         pk: &ProvingKey<Bls12_377>,
         swap_plaintext: SwapPlaintext,
         fee_blinding: Fr,
@@ -165,8 +166,10 @@ impl SwapProof {
             swap_commitment,
             fee_commitment,
         };
-        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(pk, circuit, rng)
-            .map_err(|err| anyhow::anyhow!(err))?;
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
+            circuit, pk, blinding_r, blinding_s,
+        )
+        .map_err(|err| anyhow::anyhow!(err))?;
         let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];
         Proof::serialize_compressed(&proof, &mut proof_bytes[..]).expect("can serialize Proof");
         Ok(Self(proof_bytes))
@@ -240,7 +243,7 @@ impl TryFrom<pb::ZkSwapProof> for SwapProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_ff::PrimeField;
+    use ark_ff::{PrimeField, UniformRand};
     use penumbra_crypto::{
         keys::{SeedPhrase, SpendKey},
         Amount, Balance, Value,
@@ -298,20 +301,24 @@ mod tests {
         balance -= value_fee;
         let balance_commitment = balance.commit(fee_blinding);
 
-            let proof = SwapProof::prove(
-                &mut rng,
-                &pk,
-                swap_plaintext,
-                fee_blinding,
-                balance_commitment,
-                swap_commitment,
-                fee_commitment
-            )
-            .expect("can create proof");
+        let blinding_r = Fq::rand(&mut rng);
+        let blinding_s = Fq::rand(&mut rng);
 
-            let proof_result = proof.verify(&vk, balance_commitment, swap_commitment, fee_commitment);
+        let proof = SwapProof::prove(
+            blinding_r,
+            blinding_s,
+            &pk,
+            swap_plaintext,
+            fee_blinding,
+            balance_commitment,
+            swap_commitment,
+            fee_commitment
+        )
+        .expect("can create proof");
 
-            assert!(proof_result.is_ok());
+        let proof_result = proof.verify(&vk, balance_commitment, swap_commitment, fee_commitment);
+
+        assert!(proof_result.is_ok());
         }
     }
 }

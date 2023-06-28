@@ -91,6 +91,10 @@ message SwapPlan {
   dex.v1alpha1.SwapPlaintext swap_plaintext = 1;
   // The blinding factor for the fee commitment. The fee in the SwapPlan is private to prevent linkability with the SwapClaim.
   bytes fee_blinding = 2;
+  // The first blinding factor to use for the ZK swap proof.
+  bytes proof_blinding_r = 3;
+  // The second blinding factor to use for the ZK swap proof.
+  bytes proof_blinding_s = 4;
 }
 
 message SwapClaimPlan {
