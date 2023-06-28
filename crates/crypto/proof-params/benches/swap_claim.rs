@@ -1,3 +1,4 @@
+use ark_ff::UniformRand;
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
@@ -20,6 +21,8 @@ use rand_core::OsRng;
 
 #[allow(clippy::too_many_arguments)]
 fn prove(
+    r: Fq,
+    s: Fq,
     swap_plaintext: SwapPlaintext,
     state_commitment_proof: tct::Proof,
     nk: NullifierKey,
@@ -34,7 +37,8 @@ fn prove(
     output_data: BatchSwapOutputData,
 ) {
     let _proof = SwapClaimProof::prove(
-        &mut OsRng,
+        r,
+        s,
         &SWAPCLAIM_PROOF_PROVING_KEY,
         swap_plaintext,
         state_commitment_proof,
@@ -107,9 +111,14 @@ fn swap_claim_proving_time(c: &mut Criterion) {
     let note_commitment_1 = output_1_note.commit();
     let note_commitment_2 = output_2_note.commit();
 
+    let r = Fq::rand(&mut OsRng);
+    let s = Fq::rand(&mut OsRng);
+
     c.bench_function("swap claim proving", |b| {
         b.iter(|| {
             prove(
+                r,
+                s,
                 swap_plaintext.clone(),
                 state_commitment_proof.clone(),
                 nk,

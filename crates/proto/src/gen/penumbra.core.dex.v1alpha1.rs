@@ -150,6 +150,12 @@ pub struct SwapClaimPlan {
     /// The epoch duration, used in proving.
     #[prost(uint64, tag = "4")]
     pub epoch_duration: u64,
+    /// The first blinding factor to use for the ZK swap claim proof.
+    #[prost(bytes = "vec", tag = "5")]
+    pub proof_blinding_r: ::prost::alloc::vec::Vec<u8>,
+    /// The second blinding factor to use for the ZK swap claim proof.
+    #[prost(bytes = "vec", tag = "6")]
+    pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

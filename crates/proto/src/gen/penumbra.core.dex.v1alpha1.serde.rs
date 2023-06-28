@@ -2413,6 +2413,12 @@ impl serde::Serialize for SwapClaimPlan {
         if self.epoch_duration != 0 {
             len += 1;
         }
+        if !self.proof_blinding_r.is_empty() {
+            len += 1;
+        }
+        if !self.proof_blinding_s.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.dex.v1alpha1.SwapClaimPlan", len)?;
         if let Some(v) = self.swap_plaintext.as_ref() {
             struct_ser.serialize_field("swapPlaintext", v)?;
@@ -2425,6 +2431,12 @@ impl serde::Serialize for SwapClaimPlan {
         }
         if self.epoch_duration != 0 {
             struct_ser.serialize_field("epochDuration", ToString::to_string(&self.epoch_duration).as_str())?;
+        }
+        if !self.proof_blinding_r.is_empty() {
+            struct_ser.serialize_field("proofBlindingR", pbjson::private::base64::encode(&self.proof_blinding_r).as_str())?;
+        }
+        if !self.proof_blinding_s.is_empty() {
+            struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
         }
         struct_ser.end()
     }
@@ -2443,6 +2455,10 @@ impl<'de> serde::Deserialize<'de> for SwapClaimPlan {
             "outputData",
             "epoch_duration",
             "epochDuration",
+            "proof_blinding_r",
+            "proofBlindingR",
+            "proof_blinding_s",
+            "proofBlindingS",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2451,6 +2467,8 @@ impl<'de> serde::Deserialize<'de> for SwapClaimPlan {
             Position,
             OutputData,
             EpochDuration,
+            ProofBlindingR,
+            ProofBlindingS,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2476,6 +2494,8 @@ impl<'de> serde::Deserialize<'de> for SwapClaimPlan {
                             "position" => Ok(GeneratedField::Position),
                             "outputData" | "output_data" => Ok(GeneratedField::OutputData),
                             "epochDuration" | "epoch_duration" => Ok(GeneratedField::EpochDuration),
+                            "proofBlindingR" | "proof_blinding_r" => Ok(GeneratedField::ProofBlindingR),
+                            "proofBlindingS" | "proof_blinding_s" => Ok(GeneratedField::ProofBlindingS),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2499,6 +2519,8 @@ impl<'de> serde::Deserialize<'de> for SwapClaimPlan {
                 let mut position__ = None;
                 let mut output_data__ = None;
                 let mut epoch_duration__ = None;
+                let mut proof_blinding_r__ = None;
+                let mut proof_blinding_s__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::SwapPlaintext => {
@@ -2529,6 +2551,22 @@ impl<'de> serde::Deserialize<'de> for SwapClaimPlan {
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::ProofBlindingR => {
+                            if proof_blinding_r__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("proofBlindingR"));
+                            }
+                            proof_blinding_r__ = 
+                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::ProofBlindingS => {
+                            if proof_blinding_s__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("proofBlindingS"));
+                            }
+                            proof_blinding_s__ = 
+                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
                     }
                 }
                 Ok(SwapClaimPlan {
@@ -2536,6 +2574,8 @@ impl<'de> serde::Deserialize<'de> for SwapClaimPlan {
                     position: position__.unwrap_or_default(),
                     output_data: output_data__,
                     epoch_duration: epoch_duration__.unwrap_or_default(),
+                    proof_blinding_r: proof_blinding_r__.unwrap_or_default(),
+                    proof_blinding_s: proof_blinding_s__.unwrap_or_default(),
                 })
             }
         }

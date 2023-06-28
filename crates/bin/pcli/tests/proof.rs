@@ -278,8 +278,12 @@ fn swap_claim_parameters_vs_current_swap_claim_circuit() {
     let note_commitment_1 = output_1_note.commit();
     let note_commitment_2 = output_2_note.commit();
 
+    let blinding_r = Fq::rand(&mut rng);
+    let blinding_s = Fq::rand(&mut rng);
+
     let proof = SwapClaimProof::prove(
-        &mut rng,
+        blinding_r,
+        blinding_s,
         pk,
         swap_plaintext,
         state_commitment_proof,
