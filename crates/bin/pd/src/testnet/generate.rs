@@ -259,6 +259,10 @@ fn parse_allocations(input: impl Read) -> Result<Vec<genesis::Allocation>> {
         res.push(record);
     }
 
+    if res.len() < 1 {
+        anyhow::bail!("parsed no entries from allocations input file; is the file valid CSV?");
+    }
+
     Ok(res)
 }
 
@@ -335,4 +339,47 @@ where
     }
 
     deserializer.deserialize_any(U64StringVisitor)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_allocations_from_good_csv() -> anyhow::Result<()> {
+        let csv_content = r#"
+"amount","denom","address"
+"100000","udelegation_penumbravalid1jzcc6vsm29am9ggs8z0d7s9jk9uf8tfrqg7hglc9ufs7r23nu5yqtw77ex","penumbrav2t1tntrwl92wmud955405mhduuvlxqksa00d2yqe3npjafvley64pal4sre3jcjhq5xjmrs56hk2fs8u648zcaarnz57rynqa0vtaxyd6rwev225lx4kku3lrjktrcacjyw5070nj"
+"100000","upenumbra","penumbrav2t1tntrwl92wmud955405mhduuvlxqksa00d2yqe3npjafvley64pal4sre3jcjhq5xjmrs56hk2fs8u648zcaarnz57rynqa0vtaxyd6rwev225lx4kku3lrjktrcacjyw5070nj"
+"100000","udelegation_penumbravalid1p2hfuch2p8rshyc90qa23gqk82s74tqcu3x2x3y5tfwpzth4vvrq2gv283","penumbrav2t1ctq4cm9fjewj790alfka634n2t32vh32vqnfufw2dpegw7c2a3lw9np2f4pcthl2w2ke4a32cdmmnurd95sjreu92vey3fwj9ccjz2hpudd9kz9xqlwqp39sly8knl0e2esqjw"
+"100000","upenumbra","penumbrav2t1ctq4cm9fjewj790alfka634n2t32vh32vqnfufw2dpegw7c2a3lw9np2f4pcthl2w2ke4a32cdmmnurd95sjreu92vey3fwj9ccjz2hpudd9kz9xqlwqp39sly8knl0e2esqjw"
+"100000","udelegation_penumbravalid182k8x46hg5vx3ez8ec58ze5yd6a3q4q3fkx45ddt5jahnzz0xyyqdtz7hc","penumbrav2t1ks2ee68kf96zs3p2af2pzcu7p36uep5gynwc38slvs8kpcyk0t0gdseww4aulntzaq9vurahmka99c4frpgehtteur29p5kt39a2qv0nd89etty36s55knlv7e98kl93p8farz"
+"100000","upenumbra","penumbrav2t1ks2ee68kf96zs3p2af2pzcu7p36uep5gynwc38slvs8kpcyk0t0gdseww4aulntzaq9vurahmka99c4frpgehtteur29p5kt39a2qv0nd89etty36s55knlv7e98kl93p8farz"
+"100000","udelegation_penumbravalid1t2hr2lj5n2jt3hftzjw3strjllnakc7jtw234d229x3zakhaqsqsg9yarw","penumbrav2t1wvjml4xqa70x3ypqa530npy8ygsftyjxc2wfgh4t7yftja7cfrlr7temqcerhnkd6g7qe75r7wg0ny9vvf4wcrd9rttvuhj9fy20yx630g26khmnxd2zvjnhm2t3wqu59e7nzk"
+"100000","upenumbra","penumbrav2t1wvjml4xqa70x3ypqa530npy8ygsftyjxc2wfgh4t7yftja7cfrlr7temqcerhnkd6g7qe75r7wg0ny9vvf4wcrd9rttvuhj9fy20yx630g26khmnxd2zvjnhm2t3wqu59e7nzk"
+"#;
+        let allos = parse_allocations(csv_content.as_bytes())?;
+
+        let a1 = &allos[0];
+        assert!(a1.denom == "udelegation_penumbravalid1jzcc6vsm29am9ggs8z0d7s9jk9uf8tfrqg7hglc9ufs7r23nu5yqtw77ex");
+        assert!(a1.address == Address::from_str("penumbrav2t1tntrwl92wmud955405mhduuvlxqksa00d2yqe3npjafvley64pal4sre3jcjhq5xjmrs56hk2fs8u648zcaarnz57rynqa0vtaxyd6rwev225lx4kku3lrjktrcacjyw5070nj")?);
+        assert!(a1.amount.value() == 100000);
+
+        let a2 = &allos[1];
+        assert!(a2.denom == "upenumbra");
+        assert!(a2.address == Address::from_str("penumbrav2t1tntrwl92wmud955405mhduuvlxqksa00d2yqe3npjafvley64pal4sre3jcjhq5xjmrs56hk2fs8u648zcaarnz57rynqa0vtaxyd6rwev225lx4kku3lrjktrcacjyw5070nj")?);
+        assert!(a2.amount.value() == 100000);
+
+        Ok(())
+    }
+
+    #[test]
+    fn parse_allocations_from_bad_csv() -> anyhow::Result<()> {
+        let csv_content = r#"
+"amount","denom","address"\n"100000","udelegation_penumbravalid1jzcc6vsm29am9ggs8z0d7s9jk9uf8tfrqg7hglc9ufs7r23nu5yqtw77ex","penumbrav2t1tntrwl92wmud955405mhduuvlxqksa00d2yqe3npjafvley64pal4sre3jcjhq5xjmrs56hk2fs8u648zcaarnz57rynqa0vtaxyd6rwev225lx4kku3lrjktrcacjyw5070nj"\n"100000","upenumbra","penumbrav2t1tntrwl92wmud955405mhduuvlxqksa00d2yqe3npjafvley64pal4sre3jcjhq5xjmrs56hk2fs8u648zcaarnz57rynqa0vtaxyd6rwev225lx4kku3lrjktrcacjyw5070nj"\n"100000","udelegation_penumbravalid1p2hfuch2p8rshyc90qa23gqk82s74tqcu3x2x3y5tfwpzth4vvrq2gv283","penumbrav2t1ctq4cm9fjewj790alfka634n2t32vh32vqnfufw2dpegw7c2a3lw9np2f4pcthl2w2ke4a32cdmmnurd95sjreu92vey3fwj9ccjz2hpudd9kz9xqlwqp39sly8knl0e2esqjw"\n"100000","upenumbra","penumbrav2t1ctq4cm9fjewj790alfka634n2t32vh32vqnfufw2dpegw7c2a3lw9np2f4pcthl2w2ke4a32cdmmnurd95sjreu92vey3fwj9ccjz2hpudd9kz9xqlwqp39sly8knl0e2esqjw"\n"100000","udelegation_penumbravalid182k8x46hg5vx3ez8ec58ze5yd6a3q4q3fkx45ddt5jahnzz0xyyqdtz7hc","penumbrav2t1ks2ee68kf96zs3p2af2pzcu7p36uep5gynwc38slvs8kpcyk0t0gdseww4aulntzaq9vurahmka99c4frpgehtteur29p5kt39a2qv0nd89etty36s55knlv7e98kl93p8farz"\n"100000","upenumbra","penumbrav2t1ks2ee68kf96zs3p2af2pzcu7p36uep5gynwc38slvs8kpcyk0t0gdseww4aulntzaq9vurahmka99c4frpgehtteur29p5kt39a2qv0nd89etty36s55knlv7e98kl93p8farz"\n"100000","udelegation_penumbravalid1t2hr2lj5n2jt3hftzjw3strjllnakc7jtw234d229x3zakhaqsqsg9yarw","penumbrav2t1wvjml4xqa70x3ypqa530npy8ygsftyjxc2wfgh4t7yftja7cfrlr7temqcerhnkd6g7qe75r7wg0ny9vvf4wcrd9rttvuhj9fy20yx630g26khmnxd2zvjnhm2t3wqu59e7nzk"\n"100000","upenumbra","penumbrav2t1wvjml4xqa70x3ypqa530npy8ygsftyjxc2wfgh4t7yftja7cfrlr7temqcerhnkd6g7qe75r7wg0ny9vvf4wcrd9rttvuhj9fy20yx630g26khmnxd2zvjnhm2t3wqu59e7nzk"\n
+"#;
+        let result = parse_allocations(csv_content.as_bytes());
+        assert!(result.is_err());
+        Ok(())
+    }
 }
