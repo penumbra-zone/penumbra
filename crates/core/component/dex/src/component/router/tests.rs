@@ -169,7 +169,7 @@ async fn path_extension_basic() {
     // TODO: test synthetic liquidity
 }
 
-fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
+async fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
     let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
 
     let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
