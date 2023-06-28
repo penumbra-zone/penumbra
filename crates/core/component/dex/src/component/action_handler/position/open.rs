@@ -24,6 +24,7 @@ impl ActionHandler for PositionOpen {
         //  + the trading function coefficients are non-zero,
         //  + the trading function doesn't specify a cyclic pair,
         //  + the fee is <=50%.
+        //  + if the position is a limit-order, it only quotes one asset.
         self.position.check_stateless()?;
         // This is a temporary check that limits DEX values to 60 bits.
         // To lift this check, delete this line and the method it invokes.

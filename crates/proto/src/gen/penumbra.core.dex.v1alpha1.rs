@@ -333,6 +333,10 @@ pub struct Position {
     pub state: ::core::option::Option<PositionState>,
     #[prost(message, optional, tag = "4")]
     pub reserves: ::core::option::Option<Reserves>,
+    /// / If set to true, the position is a limit-order and will be closed
+    /// / immediately after being filled.
+    #[prost(bool, tag = "5")]
+    pub close_on_fill: bool,
 }
 /// A hash of a `Position`.
 #[allow(clippy::derive_partial_eq_without_eq)]

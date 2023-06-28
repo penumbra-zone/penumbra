@@ -124,7 +124,7 @@ message SwapClaimView {
     crypto.v1alpha1.NoteView output_1 = 2;
     crypto.v1alpha1.NoteView output_2 = 3;
   }
-  message Opaque { 
+  message Opaque {
     dex.v1alpha1.SwapClaim swap_claim = 1;
   }
   oneof swap_claim_view {
@@ -221,21 +221,24 @@ message Position {
   bytes nonce = 2;
   PositionState state = 3;
   Reserves reserves = 4;
+  /// If set to true, the position is a limit-order and will be closed
+  /// immediately after being filled.
+  bool close_on_fill = 5;
 }
 
 // A hash of a `Position`.
 message PositionId {
   // The bytes of the position ID.
   bytes inner = 1;
-  
+
   // Alternatively, a Bech32m-encoded string representation of the `inner`
   // bytes.
-  // 
+  //
   // NOTE: implementations are not required to support parsing this field.
   // Implementations should prefer to encode the bytes in all messages they
   // produce. Implementations must not accept messages with both `inner` and
   // `alt_bech32m` set.
-    string alt_bech32m = 2;
+  string alt_bech32m = 2;
 }
 
 // The state of a position.
@@ -337,7 +340,7 @@ message SwapExecution {
     repeated crypto.v1alpha1.Value value = 1;
   }
   repeated Trace traces = 1;
-  
+
   // The total input amount for this execution.
   crypto.v1alpha1.Value input = 2;
   // The total output amount for this execution.

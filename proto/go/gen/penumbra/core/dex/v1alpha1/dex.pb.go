@@ -1311,6 +1311,9 @@ type Position struct {
 	Nonce    []byte         `protobuf:"bytes,2,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	State    *PositionState `protobuf:"bytes,3,opt,name=state,proto3" json:"state,omitempty"`
 	Reserves *Reserves      `protobuf:"bytes,4,opt,name=reserves,proto3" json:"reserves,omitempty"`
+	// / If set to true, the position is a limit-order and will be closed
+	// / immediately after being filled.
+	CloseOnFill bool `protobuf:"varint,5,opt,name=close_on_fill,json=closeOnFill,proto3" json:"close_on_fill,omitempty"`
 }
 
 func (x *Position) Reset() {
@@ -1371,6 +1374,13 @@ func (x *Position) GetReserves() *Reserves {
 		return x.Reserves
 	}
 	return nil
+}
+
+func (x *Position) GetCloseOnFill() bool {
+	if x != nil {
+		return x.CloseOnFill
+	}
+	return false
 }
 
 // A hash of a `Position`.
