@@ -43,7 +43,10 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
     let mut height = 1;
 
     // 0. Simulate BeginBlock
+    // TODO: Would be nice to call `App::begin_block` but creating the `abci::request::BeginBlock` is tricky
+    // App::begin_block(&mut state_tx).await;
     let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_block_height(height);
     state_tx.put_epoch_by_height(
         height,
         penumbra_chain::Epoch {
@@ -51,7 +54,6 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
             start_height: 0,
         },
     );
-    state_tx.put_block_height(height);
     state_tx.apply();
 
     // 1. Create a validator
@@ -92,6 +94,7 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
     let end_block = abci::request::EndBlock {
         height: height.try_into().unwrap(),
     };
+    tracing::info!("END_BLOCK 1");
     // Execute EndBlock for the staking component.
     Staking::end_block(&mut state, &end_block).await;
     // To store the new validator, the epoch needs to end:
@@ -103,8 +106,25 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
 
     state_tx.apply();
 
+    let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
+    // TODO: generalize StateRead/StateWrite impls from impl for &S to impl for Deref<Target=S>
+    client.sync_to(height, state.deref()).await?;
+    tracing::info!("synced first time");
+
     // Increment the block height
     height = height + 1;
+
+    // Simulate BeginBlock
+    let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_block_height(height);
+    state_tx.put_epoch_by_height(
+        height,
+        penumbra_chain::Epoch {
+            index: 0,
+            start_height: 0,
+        },
+    );
+    state_tx.apply();
 
     // 2. Delegate to the validator
     let unbonded_amount = 100u32;
@@ -134,6 +154,7 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
     let end_block = abci::request::EndBlock {
         height: height.try_into().unwrap(),
     };
+    tracing::info!("END_BLOCK 2");
     // Execute EndBlock for the staking component, to actually execute the delegation...
     Staking::end_block(&mut state, &end_block).await;
     ShieldedPool::end_block(&mut state, &end_block).await;
@@ -146,6 +167,18 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
 
     // Increment the block height
     height = height + 1;
+
+    // Simulate BeginBlock
+    let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_block_height(height);
+    state_tx.put_epoch_by_height(
+        height,
+        penumbra_chain::Epoch {
+            index: 0,
+            start_height: 0,
+        },
+    );
+    state_tx.apply();
 
     // Null case: no slashing. Undelegate immediately and see that there are no penalties.
     let undelegate = Undelegate {
@@ -177,9 +210,6 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
 
     state_tx.apply();
 
-    // Increment the block height
-    height = height + 1;
-
     // 6. Create an UndelegateClaim action
 
     // To do this, we need to have an auth path for the undelegate nft note, which
@@ -190,6 +220,21 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
     let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
     // TODO: generalize StateRead/StateWrite impls from impl for &S to impl for Deref<Target=S>
     client.sync_to(height, state.deref()).await?;
+
+    // Increment the block height
+    height = height + 1;
+
+    // Simulate BeginBlock
+    let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_block_height(height);
+    state_tx.put_epoch_by_height(
+        height,
+        penumbra_chain::Epoch {
+            index: 0,
+            start_height: 0,
+        },
+    );
+    state_tx.apply();
 
     // let output_data = state.output_data(height, trading_pair).await?.unwrap();
 
