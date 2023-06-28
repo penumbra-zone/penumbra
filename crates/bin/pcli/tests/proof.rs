@@ -328,8 +328,11 @@ fn output_proof_parameters_vs_current_output_circuit() {
     let note_commitment = note.commit();
     let balance_commitment = (-Balance::from(value_to_send)).commit(v_blinding);
 
+    let blinding_r = Fq::rand(&mut OsRng);
+    let blinding_s = Fq::rand(&mut OsRng);
     let proof = OutputProof::prove(
-        &mut rng,
+        blinding_r,
+        blinding_s,
         pk,
         note,
         v_blinding,
