@@ -1,12 +1,11 @@
 use penumbra_crypto::{
     keys::{IncomingViewingKey, NullifierKey},
-    FullViewingKey, Value,
+    FieldExt, Fq, FullViewingKey, Value,
 };
 use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 
-use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use tct::Position;
 
@@ -22,6 +21,10 @@ pub struct SwapClaimPlan {
     pub position: Position,
     pub output_data: BatchSwapOutputData,
     pub epoch_duration: u64,
+    /// The first blinding factor used for generating the ZK proof.
+    pub proof_blinding_r: Fq,
+    /// The second blinding factor used for generating the ZK proof.
+    pub proof_blinding_s: Fq,
 }
 
 impl SwapClaimPlan {
@@ -59,7 +62,8 @@ impl SwapClaimPlan {
 
         let nullifier = nk.derive_nullifier(self.position, &self.swap_plaintext.swap_commitment());
         SwapClaimProof::prove(
-            &mut OsRng,
+            self.proof_blinding_r,
+            self.proof_blinding_s,
             &SWAPCLAIM_PROOF_PROVING_KEY,
             self.swap_plaintext.clone(),
             state_commitment_proof.clone(),
@@ -129,6 +133,8 @@ impl From<SwapClaimPlan> for pb::SwapClaimPlan {
             position: msg.position.into(),
             output_data: Some(msg.output_data.into()),
             epoch_duration: msg.epoch_duration,
+            proof_blinding_r: msg.proof_blinding_r.to_bytes().to_vec(),
+            proof_blinding_s: msg.proof_blinding_s.to_bytes().to_vec(),
         }
     }
 }
@@ -136,6 +142,15 @@ impl From<SwapClaimPlan> for pb::SwapClaimPlan {
 impl TryFrom<pb::SwapClaimPlan> for SwapClaimPlan {
     type Error = anyhow::Error;
     fn try_from(msg: pb::SwapClaimPlan) -> Result<Self, Self::Error> {
+        let proof_blinding_r_bytes: [u8; 32] = msg
+            .proof_blinding_r
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("malformed r in `SwapClaimPlan`"))?;
+        let proof_blinding_s_bytes: [u8; 32] = msg
+            .proof_blinding_s
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("malformed s in `SwapClaimPlan`"))?;
+
         Ok(Self {
             swap_plaintext: msg
                 .swap_plaintext
@@ -147,6 +162,8 @@ impl TryFrom<pb::SwapClaimPlan> for SwapClaimPlan {
                 .ok_or_else(|| anyhow::anyhow!("missing output_data"))?
                 .try_into()?,
             epoch_duration: msg.epoch_duration,
+            proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes)?,
+            proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes)?,
         })
     }
 }

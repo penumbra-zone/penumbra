@@ -106,6 +106,10 @@ message SwapClaimPlan {
   dex.v1alpha1.BatchSwapOutputData output_data = 3;
   // The epoch duration, used in proving.
   uint64 epoch_duration = 4;
+  // The first blinding factor to use for the ZK swap claim proof.
+  bytes proof_blinding_r = 5;
+  // The second blinding factor to use for the ZK swap claim proof.
+  bytes proof_blinding_s = 6;
 }
 
 message SwapView {

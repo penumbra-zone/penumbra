@@ -405,6 +405,8 @@ impl TxCmd {
                         position: swap_record.position,
                         output_data: swap_record.output_data,
                         epoch_duration: params.epoch_duration,
+                        proof_blinding_r: Fq::rand(&mut OsRng),
+                        proof_blinding_s: Fq::rand(&mut OsRng),
                     })
                     .plan(app.view(), account_group_id, AddressIndex::new(*source))
                     .await

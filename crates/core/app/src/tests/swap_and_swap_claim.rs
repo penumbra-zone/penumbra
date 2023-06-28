@@ -1,3 +1,4 @@
+use ark_ff::UniformRand;
 use std::{ops::Deref, sync::Arc};
 
 use crate::{app::App, MockClient, TempStorageExt};
@@ -6,7 +7,7 @@ use penumbra_chain::{
     test_keys,
 };
 use penumbra_component::{ActionHandler, Component};
-use penumbra_crypto::{asset, Address, Amount, Fee};
+use penumbra_crypto::{asset, Address, Amount, Fee, Fq};
 use penumbra_shielded_pool::component::ShieldedPool;
 use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
 use penumbra_transaction::Transaction;
@@ -105,6 +106,8 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
         position: swap_auth_path.position(),
         output_data,
         epoch_duration,
+        proof_blinding_r: Fq::rand(&mut rng),
+        proof_blinding_s: Fq::rand(&mut rng),
     };
     let claim = claim_plan.swap_claim(&test_keys::FULL_VIEWING_KEY, &swap_auth_path);
 
