@@ -399,6 +399,10 @@ message SpendPlan {
     bytes randomizer = 3;
     // The blinding factor to use for the value commitment.
     bytes value_blinding = 4;
+    // The first blinding factor to use for the ZK spend proof.
+    bytes proof_blinding_r = 5;
+    // The second blinding factor to use for the ZK spend proof.
+    bytes proof_blinding_s = 6;
 }
 
 message OutputPlan {

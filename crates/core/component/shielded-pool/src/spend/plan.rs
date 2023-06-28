@@ -1,7 +1,7 @@
 use ark_ff::UniformRand;
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::{
-    proofs::groth16::SpendProof, Address, FieldExt, Fr, FullViewingKey, Note, Nullifier, Rseed,
+    proofs::groth16::SpendProof, Address, FieldExt, Fq, Fr, FullViewingKey, Note, Nullifier, Rseed,
     Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
@@ -19,6 +19,8 @@ pub struct SpendPlan {
     pub position: tct::Position,
     pub randomizer: Fr,
     pub value_blinding: Fr,
+    pub proof_blinding_r: Fq,
+    pub proof_blinding_s: Fq,
 }
 
 impl SpendPlan {
@@ -33,6 +35,8 @@ impl SpendPlan {
             position,
             randomizer: Fr::rand(rng),
             value_blinding: Fr::rand(rng),
+            proof_blinding_r: Fq::rand(rng),
+            proof_blinding_s: Fq::rand(rng),
         }
     }
 
@@ -99,7 +103,8 @@ impl SpendPlan {
         anchor: tct::Root,
     ) -> SpendProof {
         SpendProof::prove(
-            &mut rand_core::OsRng,
+            self.proof_blinding_r,
+            self.proof_blinding_s,
             &penumbra_proof_params::SPEND_PROOF_PROVING_KEY,
             state_commitment_proof.clone(),
             self.note.clone(),
@@ -139,6 +144,8 @@ impl From<SpendPlan> for pb::SpendPlan {
             position: u64::from(msg.position),
             randomizer: msg.randomizer.to_bytes().to_vec().into(),
             value_blinding: msg.value_blinding.to_bytes().to_vec().into(),
+            proof_blinding_r: msg.proof_blinding_r.to_bytes().to_vec().into(),
+            proof_blinding_s: msg.proof_blinding_s.to_bytes().to_vec().into(),
         }
     }
 }
@@ -154,6 +161,8 @@ impl TryFrom<pb::SpendPlan> for SpendPlan {
             position: msg.position.into(),
             randomizer: Fr::from_bytes(msg.randomizer.as_ref().try_into()?)?,
             value_blinding: Fr::from_bytes(msg.value_blinding.as_ref().try_into()?)?,
+            proof_blinding_r: Fq::from_bytes(msg.proof_blinding_r.as_ref().try_into()?)?,
+            proof_blinding_s: Fq::from_bytes(msg.proof_blinding_s.as_ref().try_into()?)?,
         })
     }
 }
