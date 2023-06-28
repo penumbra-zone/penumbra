@@ -97,12 +97,6 @@ pub trait PositionManager: StateWrite + PositionRead {
                 .await?
                 .expect("value balance mechanism should have ensured position exists");
 
-            assert_eq!(
-                position.state,
-                position::State::Opened,
-                "value balance mechanism should have ensured position is Opened"
-            );
-
             position.state = position::State::Closed;
             self.put_position(position).await?;
         }
@@ -120,7 +114,7 @@ pub trait PositionManager: StateWrite + PositionRead {
         self.deindex_position_by_price(&position);
 
         // If the position is a limit order, check if it has been filled
-        // and mark it as closed if so. 
+        // and mark it as closed if so.
         let position = self.handle_limit_order(position);
 
         // Only index the position's liquidity if it is active.

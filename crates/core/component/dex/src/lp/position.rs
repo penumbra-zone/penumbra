@@ -141,10 +141,11 @@ impl Position {
             Err(anyhow!("cyclical pairs aren't allowed"))
         } else if self.phi.component.fee > MAX_FEE_BPS {
             Err(anyhow!("fee cannot be greater than 50% (5000bps)"))
-        } else if self.close_on_fill 
-             && self.reserves_for(self.phi.pair.asset_1()).unwrap() != Amount::zero()
-                && self.reserves_for(self.phi.pair.asset_2()).unwrap() != Amount::zero() {
-                Err(anyhow!("a limit order cannot provision both assets"))
+        } else if self.close_on_fill
+            && self.reserves_for(self.phi.pair.asset_1()).unwrap() != Amount::zero()
+            && self.reserves_for(self.phi.pair.asset_2()).unwrap() != Amount::zero()
+        {
+            Err(anyhow!("a limit order cannot provision both assets"))
         } else {
             Ok(())
         }
