@@ -121,7 +121,7 @@ They are searching for a collision between the following two sets:
 
 If the attacker has a target set of $2^{N}$ addresses, she can find a collision
 after $2^{M - N}$ steps. Thus for a prefix length of $M$ bits, we get $M-N$ bits
-of security$. For a targeted security level of 80 bits and a target set of size $2^{40}$,
+of security. For a targeted security level of 80 bits and a target set of size $2^{40}$,
 we need a prefix length of 120 bits, which corresponds to 24 characters of the Bech32m
 address, excluding the human-readable prefix and separator.
 
