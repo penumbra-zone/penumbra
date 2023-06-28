@@ -197,8 +197,11 @@ fn swap_proof_parameters_vs_current_swap_circuit() {
     balance -= value_fee;
     let balance_commitment = balance.commit(fee_blinding);
 
+    let blinding_r = Fq::rand(&mut OsRng);
+    let blinding_s = Fq::rand(&mut OsRng);
     let proof = SwapProof::prove(
-        &mut rng,
+        blinding_r,
+        blinding_s,
         pk,
         swap_plaintext,
         fee_blinding,

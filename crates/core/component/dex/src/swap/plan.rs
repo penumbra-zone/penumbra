@@ -2,9 +2,9 @@ use anyhow::{anyhow, Context, Result};
 use ark_ff::{UniformRand, Zero};
 
 use penumbra_crypto::Balance;
-use penumbra_crypto::{FieldExt, Fr, FullViewingKey, Value};
+use penumbra_crypto::{FieldExt, Fq, Fr, FullViewingKey, Value};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
-use rand_core::{CryptoRng, OsRng, RngCore};
+use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 // TODO: rename action::Body to SwapBody
@@ -16,6 +16,8 @@ use super::{action as swap, proof::SwapProof, Swap, SwapPlaintext};
 pub struct SwapPlan {
     pub swap_plaintext: SwapPlaintext,
     pub fee_blinding: Fr,
+    pub proof_blinding_r: Fq,
+    pub proof_blinding_s: Fq,
 }
 
 impl SwapPlan {
@@ -26,6 +28,8 @@ impl SwapPlan {
         SwapPlan {
             fee_blinding,
             swap_plaintext,
+            proof_blinding_r: Fq::rand(rng),
+            proof_blinding_s: Fq::rand(rng),
         }
     }
 
@@ -57,7 +61,8 @@ impl SwapPlan {
         let balance_commitment =
             self.transparent_balance().commit(Fr::zero()) + self.fee_commitment();
         SwapProof::prove(
-            &mut OsRng,
+            self.proof_blinding_r,
+            self.proof_blinding_s,
             &SWAP_PROOF_PROVING_KEY,
             self.swap_plaintext.clone(),
             self.fee_blinding,
@@ -117,6 +122,8 @@ impl From<SwapPlan> for pb::SwapPlan {
         Self {
             swap_plaintext: Some(msg.swap_plaintext.into()),
             fee_blinding: msg.fee_blinding.to_bytes().to_vec(),
+            proof_blinding_r: msg.proof_blinding_r.to_bytes().to_vec(),
+            proof_blinding_s: msg.proof_blinding_s.to_bytes().to_vec(),
         }
     }
 }
@@ -124,6 +131,15 @@ impl From<SwapPlan> for pb::SwapPlan {
 impl TryFrom<pb::SwapPlan> for SwapPlan {
     type Error = anyhow::Error;
     fn try_from(msg: pb::SwapPlan) -> Result<Self, Self::Error> {
+        let proof_blinding_r_bytes: [u8; 32] = msg
+            .proof_blinding_r
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("malformed r in `SwapPlan`"))?;
+        let proof_blinding_s_bytes: [u8; 32] = msg
+            .proof_blinding_s
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("malformed s in `SwapPlan`"))?;
+
         let fee_blinding_bytes: [u8; 32] = msg.fee_blinding[..]
             .try_into()
             .map_err(|_| anyhow!("expected 32 byte fee blinding"))?;
@@ -134,6 +150,8 @@ impl TryFrom<pb::SwapPlan> for SwapPlan {
                 .ok_or_else(|| anyhow!("missing swap_plaintext"))?
                 .try_into()
                 .context("swap plaintext malformed")?,
+            proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes)?,
+            proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes)?,
         })
     }
 }
