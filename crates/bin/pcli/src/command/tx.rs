@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
-use decaf377::Fr;
+use decaf377::{Fq, Fr};
 use ibc_types::core::ics24_host::identifier::{ChannelId, PortId};
 use penumbra_crypto::{
     asset::{self, DenomMetadata},
@@ -573,6 +573,8 @@ impl TxCmd {
                                 penalty,
                                 unbonding_amount,
                                 balance_blinding: Fr::rand(&mut OsRng),
+                                proof_blinding_r: Fq::rand(&mut OsRng),
+                                proof_blinding_s: Fq::rand(&mut OsRng),
                             })
                             .fee(fee.clone())
                             .plan(

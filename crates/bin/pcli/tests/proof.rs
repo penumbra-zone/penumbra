@@ -411,8 +411,12 @@ fn undelegate_claim_parameters_vs_current_undelegate_claim_circuit() {
     let balance = penalty.balance_for_claim(unbonding_id, unbonding_amount);
     let balance_commitment = balance.commit(balance_blinding);
 
+    let blinding_r = Fq::rand(&mut rng);
+    let blinding_s = Fq::rand(&mut rng);
+
     let proof = UndelegateClaimProof::prove(
-        &mut rng,
+        blinding_r,
+        blinding_s,
         pk,
         unbonding_amount,
         balance_blinding,

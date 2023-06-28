@@ -64,8 +64,6 @@ mod tests {
     fn undelegate_claim_proof_happy_path(validator_randomness in fr_strategy(), balance_blinding in fr_strategy(), value1_amount in 2..200u64, penalty_amount in 0..200u64) {
             let (pk, vk) = UndelegateClaimCircuit::generate_prepared_test_parameters();
 
-            let mut rng = OsRng;
-
             let sk = rdsa::SigningKey::new_from_field(validator_randomness);
             let validator_identity = IdentityKey((&sk).into());
             let unbonding_amount = Amount::from(value1_amount);
@@ -77,8 +75,11 @@ mod tests {
             let balance = penalty.balance_for_claim(unbonding_id, unbonding_amount);
             let balance_commitment = balance.commit(balance_blinding);
 
+            let blinding_r = Fq::rand(&mut OsRng);
+            let blinding_s = Fq::rand(&mut OsRng);
             let proof = UndelegateClaimProof::prove(
-                &mut rng,
+                blinding_r,
+                blinding_s,
                 &pk,
                 unbonding_amount,
                 balance_blinding,
