@@ -17,13 +17,16 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
 fn prove(
+    r: Fq,
+    s: Fq,
     note: Note,
     v_blinding: Fr,
     balance_commitment: balance::Commitment,
     note_commitment: note::Commitment,
 ) {
     let _proof = OutputProof::prove(
-        &mut OsRng,
+        r,
+        s,
         &OUTPUT_PROOF_PROVING_KEY,
         note,
         v_blinding,
@@ -51,9 +54,14 @@ fn output_proving_time(c: &mut Criterion) {
     let balance_commitment = (-Balance::from(value_to_send)).commit(v_blinding);
     let note_commitment = note.commit();
 
+    let r = Fq::rand(&mut OsRng);
+    let s = Fq::rand(&mut OsRng);
+
     c.bench_function("output proving", |b| {
         b.iter(|| {
             prove(
+                r,
+                s,
                 note.clone(),
                 v_blinding,
                 balance_commitment,

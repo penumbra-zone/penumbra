@@ -686,4 +686,10 @@ pub struct OutputPlan {
     /// The blinding factor to use for the value commitment.
     #[prost(bytes = "bytes", tag = "4")]
     pub value_blinding: ::prost::bytes::Bytes,
+    /// The first blinding factor to use for the ZK output proof.
+    #[prost(bytes = "bytes", tag = "5")]
+    pub proof_blinding_r: ::prost::bytes::Bytes,
+    /// The second blinding factor to use for the ZK output proof.
+    #[prost(bytes = "bytes", tag = "6")]
+    pub proof_blinding_s: ::prost::bytes::Bytes,
 }

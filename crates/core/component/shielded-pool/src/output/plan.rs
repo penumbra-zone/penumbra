@@ -4,10 +4,10 @@ use penumbra_crypto::{
     keys::{IncomingViewingKey, OutgoingViewingKey},
     proofs::groth16::OutputProof,
     symmetric::WrappedMemoKey,
-    Address, FieldExt, Fr, Note, PayloadKey, Rseed, Value, STAKING_TOKEN_ASSET_ID,
+    Address, FieldExt, Fq, Fr, Note, PayloadKey, Rseed, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
-use rand_core::{CryptoRng, OsRng, RngCore};
+use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use super::{Body, Output};
@@ -20,6 +20,8 @@ pub struct OutputPlan {
     pub dest_address: Address,
     pub rseed: Rseed,
     pub value_blinding: Fr,
+    pub proof_blinding_r: Fq,
+    pub proof_blinding_s: Fq,
 }
 
 impl OutputPlan {
@@ -36,6 +38,8 @@ impl OutputPlan {
             dest_address,
             rseed,
             value_blinding,
+            proof_blinding_r: Fq::rand(rng),
+            proof_blinding_s: Fq::rand(rng),
         }
     }
 
@@ -77,9 +81,10 @@ impl OutputPlan {
         let balance_commitment = self.balance().commit(self.value_blinding);
         let note_commitment = note.commit();
         OutputProof::prove(
-            &mut OsRng,
+            self.proof_blinding_r,
+            self.proof_blinding_s,
             &penumbra_proof_params::OUTPUT_PROOF_PROVING_KEY,
-            note.clone(),
+            note,
             self.value_blinding,
             balance_commitment,
             note_commitment,
@@ -138,6 +143,8 @@ impl From<OutputPlan> for pb::OutputPlan {
             dest_address: Some(msg.dest_address.into()),
             rseed: msg.rseed.to_bytes().to_vec().into(),
             value_blinding: msg.value_blinding.to_bytes().to_vec().into(),
+            proof_blinding_r: msg.proof_blinding_r.to_bytes().to_vec().into(),
+            proof_blinding_s: msg.proof_blinding_s.to_bytes().to_vec().into(),
         }
     }
 }
@@ -156,6 +163,8 @@ impl TryFrom<pb::OutputPlan> for OutputPlan {
                 .try_into()?,
             rseed: Rseed(msg.rseed.as_ref().try_into()?),
             value_blinding: Fr::from_bytes(msg.value_blinding.as_ref().try_into()?)?,
+            proof_blinding_r: Fq::from_bytes(msg.proof_blinding_r.as_ref().try_into()?)?,
+            proof_blinding_s: Fq::from_bytes(msg.proof_blinding_s.as_ref().try_into()?)?,
         })
     }
 }
