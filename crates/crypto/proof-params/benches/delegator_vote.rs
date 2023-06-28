@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use ark_ff::UniformRand;
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
@@ -9,7 +10,7 @@ use penumbra_crypto::{
     keys::{NullifierKey, SeedPhrase, SpendKey},
     proofs::groth16::{DelegatorVoteCircuit, DelegatorVoteProof},
     rdsa::{SpendAuth, VerificationKey},
-    Note, Nullifier, Value,
+    Fq, Note, Nullifier, Value,
 };
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
 use penumbra_tct as tct;
@@ -17,7 +18,10 @@ use penumbra_tct as tct;
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
+#[allow(clippy::too_many_arguments)]
 fn prove(
+    r: Fq,
+    s: Fq,
     state_commitment_proof: tct::Proof,
     note: Note,
     spend_auth_randomizer: Fr,
@@ -30,7 +34,8 @@ fn prove(
     start_position: tct::Position,
 ) {
     let _proof = DelegatorVoteProof::prove(
-        &mut OsRng,
+        r,
+        s,
         &DELEGATOR_VOTE_PROOF_PROVING_KEY,
         state_commitment_proof,
         note,
@@ -77,9 +82,14 @@ fn delegator_vote_proving_time(c: &mut Criterion) {
         .unwrap();
     let start_position = sct.witness(first_note_commitment).unwrap().position();
 
+    let r = Fq::rand(&mut OsRng);
+    let s = Fq::rand(&mut OsRng);
+
     c.bench_function("delegator proving", |b| {
         b.iter(|| {
             prove(
+                r,
+                s,
                 state_commitment_proof.clone(),
                 note.clone(),
                 spend_auth_randomizer,

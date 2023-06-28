@@ -646,6 +646,12 @@ impl serde::Serialize for DelegatorVotePlan {
         if !self.randomizer.is_empty() {
             len += 1;
         }
+        if !self.proof_blinding_r.is_empty() {
+            len += 1;
+        }
+        if !self.proof_blinding_s.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.DelegatorVotePlan", len)?;
         if self.proposal != 0 {
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
@@ -668,6 +674,12 @@ impl serde::Serialize for DelegatorVotePlan {
         if !self.randomizer.is_empty() {
             struct_ser.serialize_field("randomizer", pbjson::private::base64::encode(&self.randomizer).as_str())?;
         }
+        if !self.proof_blinding_r.is_empty() {
+            struct_ser.serialize_field("proofBlindingR", pbjson::private::base64::encode(&self.proof_blinding_r).as_str())?;
+        }
+        if !self.proof_blinding_s.is_empty() {
+            struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
+        }
         struct_ser.end()
     }
 }
@@ -689,6 +701,10 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
             "unbonded_amount",
             "unbondedAmount",
             "randomizer",
+            "proof_blinding_r",
+            "proofBlindingR",
+            "proof_blinding_s",
+            "proofBlindingS",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -700,6 +716,8 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
             StakedNotePosition,
             UnbondedAmount,
             Randomizer,
+            ProofBlindingR,
+            ProofBlindingS,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -728,6 +746,8 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                             "stakedNotePosition" | "staked_note_position" => Ok(GeneratedField::StakedNotePosition),
                             "unbondedAmount" | "unbonded_amount" => Ok(GeneratedField::UnbondedAmount),
                             "randomizer" => Ok(GeneratedField::Randomizer),
+                            "proofBlindingR" | "proof_blinding_r" => Ok(GeneratedField::ProofBlindingR),
+                            "proofBlindingS" | "proof_blinding_s" => Ok(GeneratedField::ProofBlindingS),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -754,6 +774,8 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                 let mut staked_note_position__ = None;
                 let mut unbonded_amount__ = None;
                 let mut randomizer__ = None;
+                let mut proof_blinding_r__ = None;
+                let mut proof_blinding_s__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Proposal => {
@@ -806,6 +828,22 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                                 Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::ProofBlindingR => {
+                            if proof_blinding_r__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("proofBlindingR"));
+                            }
+                            proof_blinding_r__ = 
+                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::ProofBlindingS => {
+                            if proof_blinding_s__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("proofBlindingS"));
+                            }
+                            proof_blinding_s__ = 
+                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
                     }
                 }
                 Ok(DelegatorVotePlan {
@@ -816,6 +854,8 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                     staked_note_position: staked_note_position__.unwrap_or_default(),
                     unbonded_amount: unbonded_amount__,
                     randomizer: randomizer__.unwrap_or_default(),
+                    proof_blinding_r: proof_blinding_r__.unwrap_or_default(),
+                    proof_blinding_s: proof_blinding_s__.unwrap_or_default(),
                 })
             }
         }

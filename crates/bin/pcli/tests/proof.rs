@@ -127,8 +127,12 @@ fn delegator_vote_proof_parameters_vs_current_delegator_vote_circuit() {
     let rk: VerificationKey<SpendAuth> = rsk.into();
     let nf = nk.derive_nullifier(state_commitment_proof.position(), &note_commitment);
 
+    let blinding_r = Fq::rand(&mut OsRng);
+    let blinding_s = Fq::rand(&mut OsRng);
+
     let proof = DelegatorVoteProof::prove(
-        &mut OsRng,
+        blinding_r,
+        blinding_s,
         pk,
         state_commitment_proof,
         note,
