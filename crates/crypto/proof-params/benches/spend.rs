@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use ark_ff::UniformRand;
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
@@ -9,7 +10,7 @@ use penumbra_crypto::{
     keys::{NullifierKey, SeedPhrase, SpendKey},
     proofs::groth16::{SpendCircuit, SpendProof},
     rdsa::{SpendAuth, VerificationKey},
-    Note, Nullifier, Value,
+    Fq, Note, Nullifier, Value,
 };
 use penumbra_proof_params::SPEND_PROOF_PROVING_KEY;
 use penumbra_tct as tct;
@@ -18,6 +19,8 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
 fn prove(
+    r: Fq,
+    s: Fq,
     state_commitment_proof: tct::Proof,
     note: Note,
     v_blinding: Fr,
@@ -30,7 +33,8 @@ fn prove(
     rk: VerificationKey<SpendAuth>,
 ) {
     let _proof = SpendProof::prove(
-        &mut OsRng,
+        r,
+        s,
         &SPEND_PROOF_PROVING_KEY,
         state_commitment_proof,
         note,
@@ -71,9 +75,14 @@ fn spend_proving_time(c: &mut Criterion) {
     let rk: VerificationKey<SpendAuth> = rsk.into();
     let nf = nk.derive_nullifier(state_commitment_proof.position(), &note_commitment);
 
+    let r = Fq::rand(&mut OsRng);
+    let s = Fq::rand(&mut OsRng);
+
     c.bench_function("spend proving", |b| {
         b.iter(|| {
             prove(
+                r,
+                s,
                 state_commitment_proof.clone(),
                 note.clone(),
                 v_blinding,

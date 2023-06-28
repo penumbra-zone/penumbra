@@ -19,7 +19,6 @@ use ark_snark::SNARK;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
-use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
 use crate::proofs::groth16::{gadgets, ParameterSetup, VerifyingKeyExt};
@@ -226,8 +225,11 @@ pub struct SpendProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
 impl SpendProof {
     #![allow(clippy::too_many_arguments)]
-    pub fn prove<R: CryptoRng + Rng>(
-        rng: &mut R,
+    /// Generate a `SpendProof` given the proving key, public inputs,
+    /// witness data, and two random elements `blinding_r` and `blinding_s`.
+    pub fn prove(
+        blinding_r: Fq,
+        blinding_s: Fq,
         pk: &ProvingKey<Bls12_377>,
         state_commitment_proof: tct::Proof,
         note: Note,
@@ -252,8 +254,10 @@ impl SpendProof {
             nullifier,
             rk,
         };
-        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(pk, circuit, rng)
-            .map_err(|err| anyhow::anyhow!(err))?;
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
+            circuit, pk, blinding_r, blinding_s,
+        )
+        .map_err(|err| anyhow::anyhow!(err))?;
         let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];
         Proof::serialize_compressed(&proof, &mut proof_bytes[..]).expect("can serialize Proof");
         Ok(Self(proof_bytes))

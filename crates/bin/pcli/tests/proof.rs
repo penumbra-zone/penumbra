@@ -11,7 +11,7 @@ use penumbra_crypto::{
     },
     rdsa::{self, SpendAuth, VerificationKey},
     stake::{IdentityKey, Penalty, UnbondingToken},
-    Amount, Balance, Fee, Note, Value,
+    Amount, Balance, Fee, Fq, Note, Value,
 };
 use penumbra_dex::{
     swap::proof::SwapProof, swap::SwapPlaintext, swap_claim::proof::SwapClaimProof,
@@ -62,8 +62,12 @@ fn spend_proof_parameters_vs_current_spend_circuit() {
     let rk: VerificationKey<SpendAuth> = rsk.into();
     let nf = nk.derive_nullifier(0.into(), &note_commitment);
 
+    // Random elements to provide ZK (see Section 3.2 Groth16 paper, bottom of page 17)
+    let blinding_r = Fq::rand(&mut OsRng);
+    let blinding_s = Fq::rand(&mut OsRng);
     let proof = SpendProof::prove(
-        &mut OsRng,
+        blinding_r,
+        blinding_s,
         pk,
         note_commitment_proof,
         note,

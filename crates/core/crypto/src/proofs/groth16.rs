@@ -28,6 +28,7 @@ mod tests {
         stake::{IdentityKey, Penalty, UnbondingToken},
         Address, Amount, Balance, Rseed,
     };
+    use ark_ff::UniformRand;
     use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, ProvingKey, VerifyingKey};
     use ark_r1cs_std::prelude::*;
     use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
@@ -371,8 +372,11 @@ mod tests {
         let rk: VerificationKey<SpendAuth> = rsk.into();
         let nf = nk.derive_nullifier(state_commitment_proof.position(), &note_commitment);
 
+        let blinding_r = Fq::rand(&mut OsRng);
+        let blinding_s = Fq::rand(&mut OsRng);
         let proof = SpendProof::prove(
-            &mut rng,
+            blinding_r,
+            blinding_s,
             &pk,
             state_commitment_proof,
             note,
@@ -426,8 +430,11 @@ mod tests {
         let rk: VerificationKey<SpendAuth> = rsk.into();
         let nf = nk.derive_nullifier(0.into(), &note_commitment);
 
+        let blinding_r = Fq::rand(&mut OsRng);
+        let blinding_s = Fq::rand(&mut OsRng);
         let proof = SpendProof::prove(
-            &mut rng,
+            blinding_r,
+            blinding_s,
             &pk,
             state_commitment_proof,
             note,
@@ -487,8 +494,11 @@ mod tests {
             // Note that this will blow up in debug mode as the constraint
             // system is unsatisified (ark-groth16 has a debug check for this).
             // In release mode the proof will be created, but will fail to verify.
+            let blinding_r = Fq::rand(&mut OsRng);
+            let blinding_s = Fq::rand(&mut OsRng);
             let proof = SpendProof::prove(
-                &mut rng,
+                blinding_r,
+                blinding_s,
                 &pk,
                 state_commitment_proof,
                 note,
@@ -541,8 +551,11 @@ mod tests {
 
             let incorrect_nf = nk.derive_nullifier(5.into(), &note_commitment);
 
+            let blinding_r = Fq::rand(&mut OsRng);
+            let blinding_s = Fq::rand(&mut OsRng);
             let proof = SpendProof::prove(
-                &mut rng,
+                blinding_r,
+                blinding_s,
                 &pk,
                 state_commitment_proof,
                 note,
@@ -595,8 +608,11 @@ mod tests {
         let rk: VerificationKey<SpendAuth> = rsk.into();
         let nf = nk.derive_nullifier(0.into(), &note_commitment);
 
+        let blinding_r = Fq::rand(&mut OsRng);
+        let blinding_s = Fq::rand(&mut OsRng);
         let proof = SpendProof::prove(
-            &mut rng,
+            blinding_r,
+            blinding_s,
             &pk,
             state_commitment_proof,
             note,
@@ -655,8 +671,11 @@ mod tests {
                 .randomize(&incorrect_spend_auth_randomizer);
             let incorrect_rk: VerificationKey<SpendAuth> = incorrect_rsk.into();
 
+            let blinding_r = Fq::rand(&mut OsRng);
+            let blinding_s = Fq::rand(&mut OsRng);
             let proof = SpendProof::prove(
-                &mut rng,
+                blinding_r,
+                blinding_s,
                 &pk,
                 state_commitment_proof,
                 note,
@@ -710,8 +729,11 @@ mod tests {
             let rk: VerificationKey<SpendAuth> = rsk.into();
             let nf = nk.derive_nullifier(0.into(), &note_commitment);
 
+            let blinding_r = Fq::rand(&mut OsRng);
+            let blinding_s = Fq::rand(&mut OsRng);
             let proof = SpendProof::prove(
-                &mut rng,
+                blinding_r,
+                blinding_s,
                 &pk,
                 state_commitment_proof,
                 note,
