@@ -25,6 +25,8 @@ use serde_json::Value;
 use tempfile::{tempdir, NamedTempFile, TempDir};
 
 use penumbra_chain::test_keys::{ADDRESS_0_STR, ADDRESS_1_STR, SEED_PHRASE};
+use penumbra_proto::core::transaction::v1alpha1::TransactionView as ProtoTransactionView;
+use penumbra_transaction::view::TransactionView;
 
 // The number "1020" is chosen so that this is bigger than u64::MAX
 // when accounting for the 10e18 scaling factor from the base denom.
@@ -109,6 +111,10 @@ fn get_validator(tmpdir: &TempDir) -> String {
 fn transaction_send_from_addr_0_to_addr_1() {
     let tmpdir = load_wallet_into_tmpdir();
 
+    // Create a memo that we can inspect later, to confirm transaction
+    // is viewable post-send.
+    let memo_text = "Time is an illusion. Lunchtime doubly so.";
+
     // Send to self: tokens were distributed to `ADDRESS_0_STR`, in our test
     // we'll send `TEST_ASSET` to `ADDRESS_1_STR` and then check our balance.
     let mut send_cmd = Command::cargo_bin("pcli").unwrap();
@@ -121,10 +127,66 @@ fn transaction_send_from_addr_0_to_addr_1() {
             TEST_ASSET,
             "--to",
             ADDRESS_1_STR,
+            "--memo",
+            &memo_text,
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-    send_cmd.assert().success();
 
+    // Look up the transaction id from the command output so we can view it,
+    // to exercise the `pcli view tx` code.
+    let send_stdout = send_cmd.unwrap().stdout;
+    let tx_regex = Regex::new(r"[0-9a-f]{64}").unwrap();
+    let s = std::str::from_utf8(&send_stdout).unwrap();
+    let captures = tx_regex.captures(s);
+    let tx_id = &captures.expect("can find transaction id within 'pcli send tx' output")[0];
+    let mut view_cmd = Command::cargo_bin("pcli").unwrap();
+    view_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "tx",
+            "--raw",
+            &tx_id,
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    view_cmd.assert().success();
+
+    // Convert the raw JSON to a protobuf TransactionView, then convert
+    // that to a domain type.
+    let view_output = view_cmd.output().unwrap();
+    let view_stdout: String = std::str::from_utf8(&view_output.stdout)
+        .unwrap()
+        .to_string();
+    let view_json: Value =
+        serde_json::from_str(&view_stdout).expect("can parse JSON from 'pcli view tx'");
+
+    let tvp: ProtoTransactionView = serde_json::value::from_value(view_json).unwrap();
+    let tv: TransactionView = tvp.try_into().unwrap();
+    // There will be a lot of ActionViews in the body... let's just check that one is a Spend.
+    assert!(matches!(
+        &tv.body_view.action_views[0],
+        penumbra_transaction::ActionView::Spend(_)
+    ));
+
+    // Inspect the TransactionView and ensure that we can read the memo text.
+    let mv = tv
+        .body_view
+        .memo_view
+        .expect("can find MemoView in TransactionView");
+    match mv {
+        penumbra_transaction::MemoView::Visible { plaintext, .. } => {
+            assert!(plaintext.text == memo_text);
+        }
+        penumbra_transaction::MemoView::Opaque { .. } => {
+            assert!(
+                false,
+                "MemoView for transaction was Opaque! We should be able to read this memo."
+            );
+        }
+    }
+
+    // Now we inspect our wallet balance to ensure the funds were transferred correctly.
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
         .args([
