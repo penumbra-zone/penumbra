@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use futures::Stream;
 use futures::StreamExt;
-use penumbra_crypto::asset;
+use penumbra_crypto::{asset, Amount};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{EscapedByteSlice, StateRead, StateWrite};
 
@@ -114,10 +114,15 @@ pub trait PositionManager: StateWrite + PositionRead {
     #[tracing::instrument(level = "debug", skip(self, position), fields(id = ?position.id()))]
     async fn put_position(&mut self, position: position::Position) -> Result<()> {
         let id = position.id();
-        tracing::debug!(?position);
+        tracing::debug!(?position, "processing position");
         // Clear any existing indexes of the position, since changes to the
         // reserves or the position state might have invalidated them.
         self.deindex_position_by_price(&position);
+
+        // If the position is a limit order, check if it has been filled
+        // and mark it as closed if so. 
+        let position = self.handle_limit_order(position);
+
         // Only index the position's liquidity if it is active.
         if position.state == position::State::Opened {
             self.index_position_by_price(&position);
@@ -125,6 +130,44 @@ pub trait PositionManager: StateWrite + PositionRead {
         self.put(state_key::position_by_id(&id), position);
 
         Ok(())
+    }
+
+    /// Handle a limit order position, marking it as closed if it is filled,
+    /// recording its `limit_order_asset` if has newly been created. If the
+    /// position is not a limit order, ignore.
+    fn handle_limit_order(&self, position: Position) -> Position {
+        match position.limit_order_asset {
+            Some(asset_id) => {
+                if position
+                    .reserves_for(asset_id)
+                    .expect("limit order asset is part of reserves")
+                    == Amount::zero()
+                {
+                    Position {
+                        state: position::State::Closed,
+                        ..position
+                    }
+                } else {
+                    position
+                }
+            }
+            None if position.close_on_fill => {
+                let limit_order_asset = if position
+                    .reserves_for(position.phi.pair.asset_1())
+                    .expect("reserves contain asset_1")
+                    == Amount::zero()
+                {
+                    Some(position.phi.pair.asset_2())
+                } else {
+                    Some(position.phi.pair.asset_1())
+                };
+                Position {
+                    limit_order_asset,
+                    ..position
+                }
+            }
+            None => return position,
+        }
     }
 
     /// Returns the list of candidate assets to route through for a trade from `from`.

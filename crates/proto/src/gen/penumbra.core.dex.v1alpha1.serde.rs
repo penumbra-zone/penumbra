@@ -601,6 +601,9 @@ impl serde::Serialize for Position {
         if self.reserves.is_some() {
             len += 1;
         }
+        if self.close_on_fill {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.dex.v1alpha1.Position", len)?;
         if let Some(v) = self.phi.as_ref() {
             struct_ser.serialize_field("phi", v)?;
@@ -613,6 +616,9 @@ impl serde::Serialize for Position {
         }
         if let Some(v) = self.reserves.as_ref() {
             struct_ser.serialize_field("reserves", v)?;
+        }
+        if self.close_on_fill {
+            struct_ser.serialize_field("closeOnFill", &self.close_on_fill)?;
         }
         struct_ser.end()
     }
@@ -628,6 +634,8 @@ impl<'de> serde::Deserialize<'de> for Position {
             "nonce",
             "state",
             "reserves",
+            "close_on_fill",
+            "closeOnFill",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -636,6 +644,7 @@ impl<'de> serde::Deserialize<'de> for Position {
             Nonce,
             State,
             Reserves,
+            CloseOnFill,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -661,6 +670,7 @@ impl<'de> serde::Deserialize<'de> for Position {
                             "nonce" => Ok(GeneratedField::Nonce),
                             "state" => Ok(GeneratedField::State),
                             "reserves" => Ok(GeneratedField::Reserves),
+                            "closeOnFill" | "close_on_fill" => Ok(GeneratedField::CloseOnFill),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -684,6 +694,7 @@ impl<'de> serde::Deserialize<'de> for Position {
                 let mut nonce__ = None;
                 let mut state__ = None;
                 let mut reserves__ = None;
+                let mut close_on_fill__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Phi => {
@@ -712,6 +723,12 @@ impl<'de> serde::Deserialize<'de> for Position {
                             }
                             reserves__ = map.next_value()?;
                         }
+                        GeneratedField::CloseOnFill => {
+                            if close_on_fill__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("closeOnFill"));
+                            }
+                            close_on_fill__ = Some(map.next_value()?);
+                        }
                     }
                 }
                 Ok(Position {
@@ -719,6 +736,7 @@ impl<'de> serde::Deserialize<'de> for Position {
                     nonce: nonce__.unwrap_or_default(),
                     state: state__,
                     reserves: reserves__,
+                    close_on_fill: close_on_fill__.unwrap_or_default(),
                 })
             }
         }

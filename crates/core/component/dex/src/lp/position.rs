@@ -29,6 +29,11 @@ pub struct Position {
     /// duplicate position [`Id`]s, so it can track position ownership with a
     /// sequence of stateful NFTs based on the [`Id`].
     pub nonce: [u8; 32],
+    /// Set to `true` if a position is a limit-order, meaning that it will be closed
+    /// after being filled against.
+    pub close_on_fill: bool,
+    /// Set to the `asset::Id` of the asset provided in a limit-order, `None` otherwise.
+    pub limit_order_asset: Option<asset::Id>,
 }
 
 impl std::fmt::Debug for Position {
@@ -89,6 +94,8 @@ impl Position {
             nonce: nonce_bytes,
             state: State::Opened,
             reserves,
+            close_on_fill: false,
+            limit_order_asset: None,
         }
     }
 
@@ -134,6 +141,10 @@ impl Position {
             Err(anyhow!("cyclical pairs aren't allowed"))
         } else if self.phi.component.fee > MAX_FEE_BPS {
             Err(anyhow!("fee cannot be greater than 50% (5000bps)"))
+        } else if self.close_on_fill 
+             && self.reserves_for(self.phi.pair.asset_1()).unwrap() != Amount::zero()
+                && self.reserves_for(self.phi.pair.asset_2()).unwrap() != Amount::zero() {
+                Err(anyhow!("a limit order cannot provision both assets"))
         } else {
             Ok(())
         }
@@ -345,6 +356,7 @@ impl From<Position> for pb::Position {
             reserves: Some(p.reserves.into()),
             phi: Some(p.phi.into()),
             nonce: p.nonce.to_vec(),
+            close_on_fill: p.close_on_fill,
         }
     }
 }
@@ -370,6 +382,8 @@ impl TryFrom<pb::Position> for Position {
                 .as_slice()
                 .try_into()
                 .context("expected 32-byte nonce")?,
+            close_on_fill: p.close_on_fill,
+            limit_order_asset: None,
         })
     }
 }
