@@ -88,6 +88,10 @@ message DelegatorVotePlan {
   crypto.v1alpha1.Amount unbonded_amount = 6;
   // The randomizer to use for the proof of spend capability.
   bytes randomizer = 7;
+  // The first blinding factor to use for the ZK delegator vote proof.
+  bytes proof_blinding_r = 8;
+  // The second blinding factor to use for the ZK delegator vote proof.
+  bytes proof_blinding_s = 9;
 }
 
 message DaoDeposit {

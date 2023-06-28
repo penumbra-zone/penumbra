@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use ark_ff::UniformRand;
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
@@ -9,7 +10,7 @@ use penumbra_crypto::{
     keys::Diversifier,
     note,
     proofs::groth16::{OutputCircuit, OutputProof},
-    Address, Balance, Note, Rseed, Value,
+    Address, Balance, Fq, Note, Rseed, Value,
 };
 use penumbra_proof_params::OUTPUT_PROOF_PROVING_KEY;
 
