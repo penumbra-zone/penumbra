@@ -4,7 +4,7 @@ use anyhow::Ok;
 use async_trait::async_trait;
 use futures::StreamExt;
 use penumbra_crypto::Value;
-use penumbra_crypto::{asset, Amount, MockFlowCiphertext};
+use penumbra_crypto::{asset, Amount};
 use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
 use rand_core::OsRng;
 
@@ -547,8 +547,8 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     assert!(trading_pair.asset_1() == penumbra.id());
 
     // Add the amount of each asset being swapped to the batch swap flow.
-    swap_flow.0 += MockFlowCiphertext::new(0u32.into());
-    swap_flow.1 += MockFlowCiphertext::new(gn.value(1u32.into()).amount);
+    swap_flow.0 += 0u32.into();
+    swap_flow.1 += gn.value(1u32.into()).amount;
 
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)
@@ -652,8 +652,8 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     assert!(trading_pair.asset_1() == penumbra.id());
 
     // Add the amount of each asset being swapped to the batch swap flow.
-    swap_flow.0 += MockFlowCiphertext::new(Amount::from(10u32) * penumbra.unit_amount());
-    swap_flow.1 += MockFlowCiphertext::new(Amount::from(0u32) * gn.unit_amount());
+    swap_flow.0 += Amount::from(10u32) * penumbra.unit_amount();
+    swap_flow.1 += Amount::from(0u32) * gn.unit_amount();
 
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)

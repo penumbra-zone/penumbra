@@ -8,11 +8,6 @@ import "penumbra/core/crypto/v1alpha1/crypto.proto";
 message Swap {
   // Contains the Swap proof.
   crypto.v1alpha1.ZKSwapProof proof = 1;
-  // MockFlowCiphertext dropped until flow encryption/ABCI++ available
-  // // Encrypted amount of asset 1 of the trading pair.
-  // MockFlowCiphertext enc_amount_1 = 2;
-  // // Encrypted amount of asset 2 of the trading pair.
-  // MockFlowCiphertext enc_amount_2 = 3;
   // Encapsulates the authorized fields of the Swap action, used in signing.
   SwapBody body = 4;
 }
@@ -79,11 +74,6 @@ message SwapPlaintext {
   crypto.v1alpha1.Address claim_address = 5;
   // Swap rseed (blinding factors are derived from this)
   bytes rseed = 6;
-}
-
-message MockFlowCiphertext {
-  // Represents this transaction's contribution to flow's value.
-  crypto.v1alpha1.Amount value = 1;
 }
 
 message SwapPlan {

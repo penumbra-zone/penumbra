@@ -2,12 +2,13 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_crypto::{asset, Amount, SwapFlow, Value};
+use penumbra_crypto::{asset, Amount, Value};
 use penumbra_storage::StateWrite;
 use tracing::instrument;
 
 use crate::{
     component::{
+        flow::SwapFlow,
         router::{FillRoute, PathSearch, RoutingParams},
         PositionManager, StateWriteExt,
     },
@@ -38,7 +39,7 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
     where
         Self: 'static,
     {
-        let (delta_1, delta_2) = (batch_data.0.mock_decrypt(), batch_data.1.mock_decrypt());
+        let (delta_1, delta_2) = (batch_data.0, batch_data.1);
 
         tracing::debug!(?delta_1, ?delta_2, ?trading_pair, "decrypted batch swaps");
 

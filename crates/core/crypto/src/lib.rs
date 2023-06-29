@@ -12,7 +12,6 @@ pub mod eddy;
 mod effect_hash;
 mod fee;
 pub mod fixpoint;
-mod flow;
 mod governance;
 pub mod keys;
 pub mod memo;
@@ -32,7 +31,6 @@ pub use asset::Amount;
 pub use balance::Balance;
 pub use effect_hash::{EffectHash, EffectingData};
 pub use fee::Fee;
-pub use flow::{MockFlowCiphertext, SwapFlow};
 pub use governance::{
     key::GovernanceKey,
     proposal_nft::{self, ProposalNft},
