@@ -1940,3 +1940,120 @@ async fn path_search_commutative() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+/// Asserts that `path_search` produces unique results even if multiple
+/// paths have the exact same cost.
+async fn path_search_unique() -> anyhow::Result<()> {
+    use crate::component::router::PathCache;
+    let _ = tracing_subscriber::fmt::try_init();
+    let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
+    let mut state = StateDelta::new(storage.latest_snapshot());
+
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    let pen = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+
+    let atom = asset::Cache::with_known_assets()
+        .get_unit("test_atom")
+        .unwrap();
+
+    let s_a = SellOrder::parse_str("1gm@1penumbra")
+        .unwrap()
+        .into_position(OsRng);
+
+    let s_b = SellOrder::parse_str("1gn@1penumbra")
+        .unwrap()
+        .into_position(OsRng);
+
+    let a_t = SellOrder::parse_str("1test_atom@1gm")
+        .unwrap()
+        .into_position(OsRng);
+
+    let b_t = SellOrder::parse_str("1test_atom@1gn")
+        .unwrap()
+        .into_position(OsRng);
+
+    state.put_position(s_a).await.unwrap();
+    state.put_position(s_b).await.unwrap();
+    state.put_position(a_t).await.unwrap();
+    state.put_position(b_t).await.unwrap();
+
+    let cache = PathCache::begin(pen.id(), state.fork());
+    let mut cache_guard = cache.lock();
+    let mut identity_path = cache_guard.0.get_mut(&pen.id()).unwrap().path.fork();
+
+    let pen_gm_atom = identity_path
+        .fork()
+        .extend_to(gm.id())
+        .await?
+        .unwrap()
+        .extend_to(atom.id())
+        .await?
+        .unwrap();
+
+    let pen_gn_atom = identity_path
+        .fork()
+        .extend_to(gn.id())
+        .await?
+        .unwrap()
+        .extend_to(atom.id())
+        .await?
+        .unwrap();
+
+    let mut all_paths = vec![pen_gm_atom, pen_gn_atom];
+
+    // Since `Path<S>` isn't clone-able, we can't enumerate all combinations on `all_paths`
+    // directly. Instead, we use a vector of indices and fork the path at each index.
+    use itertools::Itertools;
+    let indices = (0..all_paths.len()).collect_vec();
+
+    let all_combinations: Vec<_> = indices.iter().permutations(indices.len()).collect();
+
+    for combination in all_combinations {
+        let sequence_of_updates = combination
+            .iter()
+            .map(|index| all_paths[**index].fork())
+            .collect_vec();
+        let cache2 = PathCache::begin(pen.id(), state.fork());
+        let mut cache_guard2 = cache2.lock();
+        for (i, path) in sequence_of_updates.into_iter().enumerate() {
+            tracing::debug!(i, path_price = %path.price);
+            cache_guard2.consider(path);
+        }
+
+        let Some(path_entry) = cache_guard2.0.remove(&atom.id()) else {
+             panic!("path entry not found");
+        };
+
+        let best_path = path_entry.path;
+
+        let path_price = best_path.price;
+        tracing::debug!(best_path_start = %best_path.start);
+        tracing::debug!(best_path_hops = ?best_path.nodes);
+
+        // `U128x128` can be approximated to `f64` for comparison purposes.
+        let path_price_f64: f64 = path_price.into();
+
+        let correct_path_price = 1f64;
+
+        assert_eq!(
+            correct_path_price, path_price_f64,
+            "check that the path price is correct (correct={}, actual={})",
+            correct_path_price, path_price_f64
+        );
+
+        assert_eq!(best_path.nodes.len(), 2, "check that the path has 2 hops");
+        assert_eq!(
+            best_path.nodes[1],
+            gn.id(),
+            "check that the middle hop is gn"
+        );
+    }
+
+    Ok(())
+}
