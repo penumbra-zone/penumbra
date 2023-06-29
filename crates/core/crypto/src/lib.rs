@@ -8,7 +8,6 @@ pub use decaf377_rdsa as rdsa;
 mod address;
 pub mod asset;
 pub mod balance;
-pub mod eddy;
 mod effect_hash;
 mod fee;
 pub mod fixpoint;
