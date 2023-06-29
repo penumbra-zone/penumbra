@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types2::{
     core::{
-        commitment::{MerklePrefix, MerkleProof},
+        commitment::MerkleProof,
         connection::{msgs::MsgConnectionOpenConfirm, ConnectionEnd, Counterparty, State},
     },
     path::ConnectionPath,
@@ -79,9 +79,7 @@ impl MsgHandler for MsgConnectionOpenConfirm {
         proof_verification::verify_connection_state(
             &trusted_client_state,
             self.proof_height_on_a,
-            &MerklePrefix {
-                key_prefix: connection.counterparty.prefix,
-            },
+            &connection.counterparty.prefix,
             &proof_conn_end_on_a,
             &trusted_consensus_state.root,
             &ConnectionPath::new(connection.counterparty.connection_id.as_ref().ok_or_else(

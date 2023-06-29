@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types::core::ics23_commitment::merkle::MerkleProof;
+use ibc_types2::core::commitment::{MerklePrefix, MerkleProof};
 use once_cell::sync::Lazy;
 use penumbra_proto::Message;
 use penumbra_storage::{RootHash, Snapshot};
@@ -10,8 +10,9 @@ use tendermint::merkle::proof::ProofOps as TendermintMerkleProof;
 pub static PENUMBRA_PROOF_SPECS: Lazy<Vec<ics23::ProofSpec>> =
     Lazy::new(|| vec![penumbra_storage::ics23_spec(), apphash_spec()]);
 
-pub static PENUMBRA_COMMITMENT_PREFIX: Lazy<Vec<u8>> =
-    Lazy::new(|| APPHASH_DOMSEP.as_bytes().to_vec());
+pub static PENUMBRA_COMMITMENT_PREFIX: Lazy<MerklePrefix> = Lazy::new(|| MerklePrefix {
+    key_prefix: APPHASH_DOMSEP.as_bytes().to_vec(),
+});
 
 static APPHASH_DOMSEP: &str = "PenumbraAppHash";
 

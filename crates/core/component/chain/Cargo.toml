@@ -15,8 +15,7 @@ penumbra-component = { path = "../component", optional = true }
 decaf377 = "0.4"
 
 tendermint = "0.32.0"
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
-
+ibc-types2 = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
 ics23 = "0.10.1"
 
 # Crates.io deps
