@@ -5,20 +5,20 @@ use std::fmt::{Debug, Display};
 
 use proptest::{arbitrary::*, prelude::*};
 
-use penumbra_tct::{storage::InMemory, validate, Commitment, Tree, Witness};
+use penumbra_tct::{storage::InMemory, validate, StateCommitment, Tree, Witness};
 
 const MAX_USED_COMMITMENTS: usize = 3;
 const MAX_TIER_ACTIONS: usize = 10;
 
 #[derive(Debug, Copy, Clone, Arbitrary)]
-#[proptest(params("Vec<Commitment>"))]
+#[proptest(params("Vec<StateCommitment>"))]
 enum Action {
     Serialize,
     EvaluateRoot,
     EndEpoch,
     EndBlock,
-    Insert(Witness, Commitment),
-    Forget(Commitment),
+    Insert(Witness, StateCommitment),
+    Forget(StateCommitment),
 }
 
 impl Action {
@@ -53,7 +53,7 @@ proptest! {
     fn incremental_serialize(
         sparse in any::<bool>(),
         actions in
-            prop::collection::vec(any::<Commitment>(), 1..MAX_USED_COMMITMENTS)
+            prop::collection::vec(any::<StateCommitment>(), 1..MAX_USED_COMMITMENTS)
                 .prop_flat_map(|commitments| {
                     prop::collection::vec(any_with::<Action>(commitments), 1..MAX_TIER_ACTIONS)
                 })

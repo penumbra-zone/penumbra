@@ -29,11 +29,11 @@ pub struct TransactionPerspective {
     /// to decrypt the wrapped_memo_key, which will be used to decrypt the
     /// memo in the transaction. This needs to be done only once, because
     /// there is one memo shared between all outputs.
-    pub payload_keys: BTreeMap<note::Commitment, PayloadKey>,
+    pub payload_keys: BTreeMap<note::StateCommitment, PayloadKey>,
     /// Mapping of nullifiers spent in this transaction to notes.
     pub spend_nullifiers: BTreeMap<Nullifier, Note>,
     /// The openings of note commitments referred to in the transaction but otherwise not included in the transaction.
-    pub advice_notes: BTreeMap<note::Commitment, Note>,
+    pub advice_notes: BTreeMap<note::StateCommitment, Note>,
     /// The views of any relevant address.
     pub address_views: Vec<AddressView>,
     /// Any relevant denoms for viewed assets.

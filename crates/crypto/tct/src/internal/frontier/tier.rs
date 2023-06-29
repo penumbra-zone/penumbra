@@ -380,7 +380,11 @@ where
         }
     }
 
-    fn uninitialized_out_of_order_insert_commitment(&mut self, index: u64, commitment: Commitment) {
+    fn uninitialized_out_of_order_insert_commitment(
+        &mut self,
+        index: u64,
+        commitment: StateCommitment,
+    ) {
         // We very temporarily swap the inner for the uninitialized hash, so we can manipulate it as
         // an owned value, then we put the real thing immediately back
         let inner = std::mem::replace(&mut self.inner, Inner::Hash(Hash::uninitialized()));

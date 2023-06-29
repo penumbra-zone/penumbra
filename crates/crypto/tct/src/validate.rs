@@ -18,7 +18,7 @@ use crate::prelude::*;
 pub fn index(tree: &Tree) -> Result<(), IndexMalformed> {
     // A reverse index from positions back to the commitments that are supposed to map to their
     // hashes
-    let reverse_index: BTreeMap<Position, Commitment> = tree
+    let reverse_index: BTreeMap<Position, StateCommitment> = tree
         .commitments_unordered()
         .map(|(commitment, position)| (position, commitment))
         .collect();
@@ -96,15 +96,15 @@ pub enum IndexError {
         /// The position of the leaf that was found to have the wrong commitment.
         position: Position,
         /// The commitment that was expected.
-        expected_commitment: Commitment,
+        expected_commitment: StateCommitment,
         /// The commitment that was found.
-        actual_commitment: Commitment,
+        actual_commitment: StateCommitment,
     },
     /// A commitment in the index doesn't match the hash in the tree at that position.
     #[error("mismatched hash for commitment {commitment:?} at position `{position:?}`: found {found_hash:?}, expected {expected_hash:?}")]
     HashMismatch {
         /// The commitment which should have the found hash.
-        commitment: Commitment,
+        commitment: StateCommitment,
         /// The position that commitment maps to in the index.
         position: Position,
         /// The expected hash value of that commitment.
@@ -169,7 +169,7 @@ pub enum WitnessError {
     #[error("unwitnessed commitment {commitment:?} at position `{position:?}`")]
     UnwitnessedCommitment {
         /// The commitment that was not present in the tree.
-        commitment: Commitment,
+        commitment: StateCommitment,
         /// The position at which it was supposed to appear.
         position: Position,
     },

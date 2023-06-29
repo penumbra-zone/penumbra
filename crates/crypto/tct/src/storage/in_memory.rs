@@ -9,7 +9,7 @@ pub struct InMemory {
     position: StoredPosition,
     forgotten: Forgotten,
     hashes: BTreeMap<Position, BTreeMap<u8, Hash>>,
-    commitments: BTreeMap<Position, Commitment>,
+    commitments: BTreeMap<Position, StateCommitment>,
 }
 
 impl InMemory {
@@ -45,7 +45,7 @@ impl InMemory {
     }
 
     /// Get an iterator of all the commitments stored.
-    pub fn commitments(&self) -> impl Iterator<Item = (Position, Commitment)> + '_ {
+    pub fn commitments(&self) -> impl Iterator<Item = (Position, StateCommitment)> + '_ {
         self.commitments
             .iter()
             .map(|(position, commitment)| (*position, *commitment))
@@ -109,7 +109,7 @@ impl Read for InMemory {
     type HashesIter<'a> =
         Box<dyn Iterator<Item = Result<(Position, u8, Hash), Self::Error>> + Send + 'a>;
     type CommitmentsIter<'a> =
-        Box<dyn Iterator<Item = Result<(Position, Commitment), Self::Error>> + Send + 'a>;
+        Box<dyn Iterator<Item = Result<(Position, StateCommitment), Self::Error>> + Send + 'a>;
 
     fn position(&mut self) -> Result<StoredPosition, Self::Error> {
         Ok(self.position)
@@ -131,7 +131,7 @@ impl Read for InMemory {
         Box::new(InMemory::hashes(self).map(Ok))
     }
 
-    fn commitment(&mut self, position: Position) -> Result<Option<Commitment>, Self::Error> {
+    fn commitment(&mut self, position: Position) -> Result<Option<StateCommitment>, Self::Error> {
         Ok(self.commitments.get(&position).cloned())
     }
 
@@ -174,7 +174,7 @@ impl Write for InMemory {
     fn add_commitment(
         &mut self,
         position: Position,
-        commitment: Commitment,
+        commitment: StateCommitment,
     ) -> Result<(), Self::Error> {
         // Only insert if nothing is already there
         match self.commitments.entry(position) {

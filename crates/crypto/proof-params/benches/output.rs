@@ -23,7 +23,7 @@ fn prove(
     note: Note,
     v_blinding: Fr,
     balance_commitment: balance::Commitment,
-    note_commitment: note::Commitment,
+    note_commitment: note::StateCommitment,
 ) {
     let _proof = OutputProof::prove(
         r,

@@ -47,7 +47,7 @@ pub struct OutputCircuit {
     /// balance commitment of the new note,
     pub balance_commitment: balance::Commitment,
     /// note commitment of the new note,
-    pub note_commitment: note::Commitment,
+    pub note_commitment: note::StateCommitment,
 }
 
 impl OutputCircuit {
@@ -134,7 +134,7 @@ impl OutputProof {
         note: Note,
         v_blinding: Fr,
         balance_commitment: balance::Commitment,
-        note_commitment: note::Commitment,
+        note_commitment: note::StateCommitment,
     ) -> anyhow::Result<Self> {
         let circuit = OutputCircuit {
             note,
@@ -163,7 +163,7 @@ impl OutputProof {
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
         balance_commitment: balance::Commitment,
-        note_commitment: note::Commitment,
+        note_commitment: note::StateCommitment,
     ) -> anyhow::Result<()> {
         let proof =
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;

@@ -74,7 +74,7 @@ impl<Item: OutOfOrderOwned> OutOfOrderOwned for Leaf<Item> {
     fn uninitialized_out_of_order_insert_commitment_owned(
         this: Insert<Self>,
         index: u64,
-        commitment: Commitment,
+        commitment: StateCommitment,
     ) -> Self {
         Leaf(Item::uninitialized_out_of_order_insert_commitment_owned(
             this.map(|leaf| leaf.0),

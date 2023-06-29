@@ -113,7 +113,11 @@ impl<Item: OutOfOrder> OutOfOrder for Leaf<Item> {
         }
     }
 
-    fn uninitialized_out_of_order_insert_commitment(&mut self, index: u64, commitment: Commitment) {
+    fn uninitialized_out_of_order_insert_commitment(
+        &mut self,
+        index: u64,
+        commitment: StateCommitment,
+    ) {
         self.item
             .uninitialized_out_of_order_insert_commitment(index, commitment)
     }

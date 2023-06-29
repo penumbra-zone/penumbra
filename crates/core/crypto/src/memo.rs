@@ -134,7 +134,7 @@ impl MemoCiphertext {
     pub fn decrypt_outgoing(
         wrapped_memo_key: &WrappedMemoKey,
         wrapped_ovk: OvkWrappedKey,
-        cm: note::Commitment,
+        cm: note::StateCommitment,
         cv: balance::Commitment,
         ovk: &OutgoingViewingKey,
         epk: &ka::Public,

@@ -14,7 +14,11 @@ pub struct Proof(
 impl Proof {
     /// Construct a new [`Proof`] of inclusion for a given [`Commitment`], index, and authentication
     /// path from root to leaf.
-    pub fn new(commitment: Commitment, position: Position, auth_path: [[Hash; 3]; 24]) -> Self {
+    pub fn new(
+        commitment: StateCommitment,
+        position: Position,
+        auth_path: [[Hash; 3]; 24],
+    ) -> Self {
         use crate::internal::path::{Leaf, Node};
 
         let position = position.into();
@@ -53,7 +57,7 @@ impl Proof {
     }
 
     /// Generate a dummy [`Proof`] for a given commitment.
-    pub fn dummy<R: Rng + ?Sized>(rng: &mut R, commitment: Commitment) -> Self {
+    pub fn dummy<R: Rng + ?Sized>(rng: &mut R, commitment: StateCommitment) -> Self {
         let dummy_position = 0u64.into();
         let dummy_auth_path: [[Hash; 3]; 24] = [[Hash::new(Fq::rand(rng)); 3]; 24];
         Self::new(commitment, dummy_position, dummy_auth_path)
@@ -69,7 +73,7 @@ impl Proof {
     }
 
     /// Get the commitment whose inclusion is witnessed by the proof.
-    pub fn commitment(&self) -> Commitment {
+    pub fn commitment(&self) -> StateCommitment {
         self.0.leaf
     }
 

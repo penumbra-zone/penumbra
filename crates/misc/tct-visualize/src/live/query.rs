@@ -12,7 +12,7 @@ use tokio::sync::watch;
 
 use penumbra_tct::{
     structure::{self, Hash},
-    Commitment, Tree,
+    StateCommitment, Tree,
 };
 
 /// An [`axum`] [`Router`] that serves a `GET` endpoint mirroring the immutable methods of [`Tree`].
@@ -132,7 +132,7 @@ fn forgotten(tree: watch::Receiver<Tree>, mark_change: Arc<watch::Sender<()>>) -
 }
 
 fn witness(tree: watch::Receiver<Tree>, mark_change: Arc<watch::Sender<()>>) -> MethodRouter {
-    get(|Path(commitment): Path<Commitment>| async move {
+    get(|Path(commitment): Path<StateCommitment>| async move {
         if let Some(witness) = marking_change(mark_change, tree, |tree| tree.witness(commitment)) {
             Ok(Json(json!({
                 "commitment": witness.commitment(),
@@ -150,7 +150,7 @@ fn witness(tree: watch::Receiver<Tree>, mark_change: Arc<watch::Sender<()>>) -> 
 }
 
 fn position_of(tree: watch::Receiver<Tree>, mark_change: Arc<watch::Sender<()>>) -> MethodRouter {
-    get(|Path(commitment): Path<Commitment>| async move {
+    get(|Path(commitment): Path<StateCommitment>| async move {
         if let Some(position) =
             marking_change(mark_change, tree, |tree| tree.position_of(commitment))
         {

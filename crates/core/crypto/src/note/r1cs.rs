@@ -97,8 +97,8 @@ impl StateCommitmentVar {
     }
 }
 
-impl AllocVar<note::Commitment, Fq> for StateCommitmentVar {
-    fn new_variable<T: std::borrow::Borrow<note::Commitment>>(
+impl AllocVar<note::StateCommitment, Fq> for StateCommitmentVar {
+    fn new_variable<T: std::borrow::Borrow<note::StateCommitment>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: ark_r1cs_std::prelude::AllocationMode,
@@ -109,14 +109,14 @@ impl AllocVar<note::Commitment, Fq> for StateCommitmentVar {
             AllocationMode::Constant => unimplemented!(),
             AllocationMode::Input => {
                 let note_commitment1 = f()?;
-                let note_commitment: note::Commitment = *note_commitment1.borrow();
+                let note_commitment: note::StateCommitment = *note_commitment1.borrow();
                 let inner = FqVar::new_input(cs, || Ok(note_commitment.0))?;
 
                 Ok(Self { inner })
             }
             AllocationMode::Witness => {
                 let note_commitment1 = f()?;
-                let note_commitment: note::Commitment = *note_commitment1.borrow();
+                let note_commitment: note::StateCommitment = *note_commitment1.borrow();
                 let inner = FqVar::new_witness(cs, || Ok(note_commitment.0))?;
 
                 Ok(Self { inner })
@@ -126,7 +126,7 @@ impl AllocVar<note::Commitment, Fq> for StateCommitmentVar {
 }
 
 impl R1CSVar<Fq> for StateCommitmentVar {
-    type Value = note::Commitment;
+    type Value = note::StateCommitment;
 
     fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
         self.inner.cs()
@@ -134,7 +134,7 @@ impl R1CSVar<Fq> for StateCommitmentVar {
 
     fn value(&self) -> Result<Self::Value, SynthesisError> {
         let inner = self.inner.value()?;
-        Ok(note::Commitment(inner))
+        Ok(note::StateCommitment(inner))
     }
 }
 

@@ -272,7 +272,11 @@ where
         }
     }
 
-    fn uninitialized_out_of_order_insert_commitment(&mut self, index: u64, commitment: Commitment) {
+    fn uninitialized_out_of_order_insert_commitment(
+        &mut self,
+        index: u64,
+        commitment: StateCommitment,
+    ) {
         if let Some(ref mut inner) = self.inner {
             inner.uninitialized_out_of_order_insert_commitment(index, commitment);
         }

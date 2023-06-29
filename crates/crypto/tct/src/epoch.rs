@@ -18,7 +18,7 @@ pub(crate) mod block;
 /// This is one epoch in a [`Tree`].
 #[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
 pub struct Builder {
-    index: HashedMap<Commitment, index::within::Epoch>,
+    index: HashedMap<StateCommitment, index::within::Epoch>,
     inner: Arc<frontier::Top<frontier::Tier<frontier::Item>>>,
 }
 
@@ -34,7 +34,7 @@ impl Default for Builder {
 /// A finalized epoch builder, ready to be inserted into a [`Tree`].
 #[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
 pub struct Finalized {
-    pub(super) index: HashedMap<Commitment, index::within::Epoch>,
+    pub(super) index: HashedMap<StateCommitment, index::within::Epoch>,
     pub(super) inner: Insert<complete::Top<complete::Tier<complete::Item>>>,
 }
 
@@ -149,7 +149,11 @@ impl Builder {
     ///
     /// - the [`epoch::Builder`](Builder) is full, or
     /// - the most recent block is full.
-    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), InsertError> {
+    pub fn insert(
+        &mut self,
+        witness: Witness,
+        commitment: StateCommitment,
+    ) -> Result<(), InsertError> {
         let item = match witness {
             Witness::Keep => commitment.into(),
             Witness::Forget => Hash::of(commitment).into(),

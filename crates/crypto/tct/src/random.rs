@@ -4,7 +4,7 @@ use ark_ed_on_bls12_377::Fq;
 use decaf377::FieldExt;
 use rand::{distributions::Distribution, Rng};
 
-use super::Commitment;
+use super::StateCommitment;
 use crate::{
     builder::{block, epoch},
     structure::Hash,
@@ -25,13 +25,13 @@ impl Distribution<Fq> for UniformFq {
     }
 }
 
-impl Distribution<Commitment> for UniformFq {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Commitment {
-        Commitment(self.sample(rng))
+impl Distribution<StateCommitment> for UniformFq {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> StateCommitment {
+        StateCommitment(self.sample(rng))
     }
 }
 
-impl Commitment {
+impl StateCommitment {
     /// Generate a random [`Commitment`].
     pub fn random(mut rng: impl Rng) -> Self {
         rng.sample(UniformFq)

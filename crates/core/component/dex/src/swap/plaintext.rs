@@ -9,7 +9,7 @@ use once_cell::sync::Lazy;
 use penumbra_proto::{
     core::crypto::v1alpha1 as pb_crypto, core::dex::v1alpha1 as pb, DomainType, TypeUrl,
 };
-use penumbra_tct::Commitment;
+use penumbra_tct::StateCommitment;
 use poseidon377::{hash_1, hash_4, hash_7};
 use rand_core::{CryptoRng, RngCore};
 
@@ -92,7 +92,7 @@ impl SwapPlaintext {
     // Constructs the unique asset ID for a swap as a poseidon hash of the input data for the swap.
     //
     // https://protocol.penumbra.zone/main/zswap/swap.html#swap-actions
-    pub fn swap_commitment(&self) -> Commitment {
+    pub fn swap_commitment(&self) -> StateCommitment {
         let inner = hash_7(
             &DOMAIN_SEPARATOR,
             (
@@ -116,7 +116,7 @@ impl SwapPlaintext {
             ),
         );
 
-        Commitment(inner)
+        StateCommitment(inner)
     }
 
     pub fn diversified_generator(&self) -> &decaf377::Element {

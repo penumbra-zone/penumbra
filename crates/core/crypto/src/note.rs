@@ -12,7 +12,7 @@ use thiserror;
 mod r1cs;
 pub use r1cs::{NoteVar, StateCommitmentVar};
 
-pub use penumbra_tct::Commitment;
+pub use penumbra_tct::StateCommitment;
 
 use crate::{
     asset, balance, fmd, ka,
@@ -220,7 +220,7 @@ impl Note {
     /// Decrypt wrapped OVK to generate the transmission key and ephemeral secret
     pub fn decrypt_key(
         wrapped_ovk: OvkWrappedKey,
-        cm: Commitment,
+        cm: StateCommitment,
         cv: balance::Commitment,
         ovk: &OutgoingViewingKey,
         epk: &ka::Public,
@@ -245,7 +245,7 @@ impl Note {
     pub fn decrypt_outgoing(
         ciphertext: &NoteCiphertext,
         wrapped_ovk: OvkWrappedKey,
-        cm: Commitment,
+        cm: StateCommitment,
         cv: balance::Commitment,
         ovk: &OutgoingViewingKey,
         epk: &ka::Public,
@@ -297,7 +297,7 @@ impl Note {
     }
 
     /// Create the note commitment for this note.
-    pub fn commit(&self) -> Commitment {
+    pub fn commit(&self) -> StateCommitment {
         self::commitment(
             self.note_blinding(),
             self.value,
@@ -319,7 +319,7 @@ pub fn commitment(
     diversified_generator: decaf377::Element,
     transmission_key_s: Fq,
     clue_key: &fmd::ClueKey,
-) -> Commitment {
+) -> StateCommitment {
     let commit = poseidon377::hash_6(
         &NOTECOMMIT_DOMAIN_SEP,
         (
@@ -332,7 +332,7 @@ pub fn commitment(
         ),
     );
 
-    Commitment(commit)
+    StateCommitment(commit)
 }
 
 /// Create a note commitment from the blinding factor, value, and address.
@@ -340,7 +340,7 @@ pub fn commitment_from_address(
     address: Address,
     value: Value,
     note_blinding: Fq,
-) -> Result<Commitment, Error> {
+) -> Result<StateCommitment, Error> {
     let transmission_key_s =
         Fq::from_bytes(address.transmission_key().0).map_err(|_| Error::InvalidTransmissionKey)?;
     let commit = poseidon377::hash_6(
@@ -355,7 +355,7 @@ pub fn commitment_from_address(
         ),
     );
 
-    Ok(Commitment(commit))
+    Ok(StateCommitment(commit))
 }
 
 impl std::fmt::Debug for Note {

@@ -9,7 +9,7 @@ use bytes::Bytes;
 use decaf377_fmd::Clue;
 use penumbra_crypto::{
     memo::{MemoCiphertext, MemoPlaintext},
-    note::Commitment,
+    note::StateCommitment,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     Fee, Fr, FullViewingKey, Note, Nullifier, PayloadKey, TransactionContext,
 };
@@ -86,7 +86,7 @@ impl Transaction {
     pub fn payload_keys(
         &self,
         fvk: &FullViewingKey,
-    ) -> anyhow::Result<BTreeMap<Commitment, PayloadKey>> {
+    ) -> anyhow::Result<BTreeMap<StateCommitment, PayloadKey>> {
         let mut result = BTreeMap::new();
 
         for action in self.actions() {

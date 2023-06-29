@@ -17,7 +17,7 @@ use penumbra_tct_visualize::render;
 use rand::{seq::SliceRandom, Rng, RngCore, SeedableRng};
 use rand_distr::Binomial;
 
-use penumbra_tct::{self as tct, Commitment, Tree, Witness};
+use penumbra_tct::{self as tct, StateCommitment, Tree, Witness};
 use tct::structure::Hash;
 
 /// Visualize the structure of the Tiered Commitment Tree.
@@ -325,12 +325,12 @@ fn dot_command() -> io::Result<(impl Write, impl Read)> {
 }
 
 /// Generate a random valid commitment by rejection sampling
-fn gen_commitment<R: Rng>(rng: &mut R) -> Commitment {
+fn gen_commitment<R: Rng>(rng: &mut R) -> StateCommitment {
     let mut bytes = [0u8; 32];
 
     loop {
         rng.fill(&mut bytes);
-        if let Ok(commitment) = Commitment::try_from(bytes) {
+        if let Ok(commitment) = StateCommitment::try_from(bytes) {
             return commitment;
         }
     }

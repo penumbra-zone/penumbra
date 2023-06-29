@@ -14,7 +14,7 @@ use crate::{prelude::*, Witness};
 /// This is one block in an [`epoch`](crate::builder::epoch), which is one epoch in a [`Tree`].
 #[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
 pub struct Builder {
-    index: HashedMap<Commitment, index::within::Block>,
+    index: HashedMap<StateCommitment, index::within::Block>,
     inner: Arc<frontier::Top<Item>>,
 }
 
@@ -31,7 +31,7 @@ impl Default for Builder {
 /// [`Tree`].
 #[derive(Derivative, Debug, Clone, Serialize, Deserialize)]
 pub struct Finalized {
-    pub(in super::super) index: HashedMap<Commitment, index::within::Block>,
+    pub(in super::super) index: HashedMap<StateCommitment, index::within::Block>,
     pub(in super::super) inner: Insert<complete::Top<complete::Item>>,
 }
 
@@ -137,7 +137,11 @@ impl Builder {
     /// # Errors
     ///
     /// Returns [`InsertError`] if the block is full.
-    pub fn insert(&mut self, witness: Witness, commitment: Commitment) -> Result<(), InsertError> {
+    pub fn insert(
+        &mut self,
+        witness: Witness,
+        commitment: StateCommitment,
+    ) -> Result<(), InsertError> {
         let item = match witness {
             Witness::Keep => commitment.into(),
             Witness::Forget => Hash::of(commitment).into(),

@@ -8,7 +8,7 @@ use super::{SwapCiphertext, SwapPlaintext};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::SwapPayload", into = "pb::SwapPayload")]
 pub struct SwapPayload {
-    pub commitment: penumbra_tct::Commitment,
+    pub commitment: penumbra_tct::StateCommitment,
     pub encrypted_swap: SwapCiphertext,
 }
 

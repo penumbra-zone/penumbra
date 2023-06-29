@@ -35,7 +35,7 @@ pub struct SwapCircuit {
     /// Balance commitment of the swap.
     pub balance_commitment: balance::Commitment,
     /// Swap commitment.
-    pub swap_commitment: tct::Commitment,
+    pub swap_commitment: tct::StateCommitment,
     /// Balance commitment of the fee.
     pub fee_commitment: balance::Commitment,
 }
@@ -45,7 +45,7 @@ impl SwapCircuit {
         swap_plaintext: SwapPlaintext,
         fee_blinding: Fr,
         balance_commitment: balance::Commitment,
-        swap_commitment: tct::Commitment,
+        swap_commitment: tct::StateCommitment,
         fee_commitment: balance::Commitment,
     ) -> Self {
         Self {
@@ -156,7 +156,7 @@ impl SwapProof {
         swap_plaintext: SwapPlaintext,
         fee_blinding: Fr,
         balance_commitment: balance::Commitment,
-        swap_commitment: tct::Commitment,
+        swap_commitment: tct::StateCommitment,
         fee_commitment: balance::Commitment,
     ) -> anyhow::Result<Self> {
         let circuit = SwapCircuit {
@@ -190,7 +190,7 @@ impl SwapProof {
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
         balance_commitment: balance::Commitment,
-        swap_commitment: tct::Commitment,
+        swap_commitment: tct::StateCommitment,
         fee_commitment: balance::Commitment,
     ) -> anyhow::Result<()> {
         let proof =

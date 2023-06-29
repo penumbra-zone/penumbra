@@ -25,7 +25,7 @@ fn prove(
     swap_plaintext: SwapPlaintext,
     fee_blinding: Fr,
     balance_commitment: balance::Commitment,
-    swap_commitment: tct::Commitment,
+    swap_commitment: tct::StateCommitment,
     fee_commitment: balance::Commitment,
 ) {
     let _proof = SwapProof::prove(

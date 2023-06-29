@@ -13,7 +13,7 @@ pub mod r1cs;
 use super::{AddressIndex, DiversifierKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
 use crate::{
     fmd, ka,
-    note::Commitment,
+    note::StateCommitment,
     prf,
     rdsa::{SpendAuth, VerificationKey},
     Address, AddressView, Fq, Fr, Note, Nullifier,
@@ -132,7 +132,7 @@ impl FullViewingKey {
     pub fn derive_nullifier(
         &self,
         pos: penumbra_tct::Position,
-        state_commitment: &Commitment,
+        state_commitment: &StateCommitment,
     ) -> Nullifier {
         self.nk.derive_nullifier(pos, state_commitment)
     }

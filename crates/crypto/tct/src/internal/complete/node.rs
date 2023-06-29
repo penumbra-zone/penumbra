@@ -223,7 +223,7 @@ impl<Child: Height + OutOfOrderOwned + Clone> OutOfOrderOwned for Node<Child> {
     fn uninitialized_out_of_order_insert_commitment_owned(
         this: Insert<Self>,
         index: u64,
-        commitment: Commitment,
+        commitment: StateCommitment,
     ) -> Self {
         let (which_way, index) = WhichWay::at(<Self as Height>::Height::HEIGHT, index);
 

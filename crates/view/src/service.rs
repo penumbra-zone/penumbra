@@ -30,7 +30,7 @@ use penumbra_proto::{
     DomainType,
 };
 use penumbra_stake::rate::RateData;
-use penumbra_tct::{Commitment, Proof};
+use penumbra_tct::{Proof, StateCommitment};
 use penumbra_transaction::{
     plan::TransactionPlan, AuthorizationData, Transaction, TransactionPerspective, WitnessData,
 };
@@ -1074,8 +1074,8 @@ impl ViewProtocolService for ViewService {
             .get_ref()
             .note_commitments
             .iter()
-            .map(|nc| Commitment::try_from(nc.clone()))
-            .collect::<Result<Vec<Commitment>, _>>()
+            .map(|nc| StateCommitment::try_from(nc.clone()))
+            .collect::<Result<Vec<StateCommitment>, _>>()
             .map_err(|_| {
                 tonic::Status::new(
                     tonic::Code::InvalidArgument,

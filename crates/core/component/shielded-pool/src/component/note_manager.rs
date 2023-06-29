@@ -6,7 +6,7 @@ use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::{SctManager as _, StateReadExt as _};
 use penumbra_storage::StateWrite;
 use penumbra_tct as tct;
-use tct::Commitment;
+use tct::StateCommitment;
 use tracing::instrument;
 
 use crate::{event, state_key};
@@ -85,7 +85,7 @@ pub trait NoteManager: StateWrite {
     }
 
     #[instrument(skip(self, note_commitment))]
-    async fn add_rolled_up_payload(&mut self, note_commitment: Commitment) {
+    async fn add_rolled_up_payload(&mut self, note_commitment: StateCommitment) {
         tracing::debug!(?note_commitment);
 
         // 0. Record an ABCI event for transaction indexing.
@@ -98,7 +98,7 @@ pub trait NoteManager: StateWrite {
             .expect("inserting into the state commitment tree should not fail because we should budget commitments per block (currently unimplemented)");
 
         // 2. Finally, record it to be inserted into the compact block:
-        let mut payloads: im::Vector<(tct::Position, Commitment)> = self
+        let mut payloads: im::Vector<(tct::Position, StateCommitment)> = self
             .object_get(state_key::pending_rolled_up_notes())
             .unwrap_or_default();
         payloads.push_back((position, note_commitment));
@@ -110,7 +110,7 @@ pub trait NoteManager: StateWrite {
             .unwrap_or_default()
     }
 
-    async fn pending_rolled_up_payloads(&self) -> im::Vector<(tct::Position, Commitment)> {
+    async fn pending_rolled_up_payloads(&self) -> im::Vector<(tct::Position, StateCommitment)> {
         self.object_get(state_key::pending_rolled_up_notes())
             .unwrap_or_default()
     }

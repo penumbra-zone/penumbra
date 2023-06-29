@@ -123,7 +123,11 @@ pub(crate) trait OutOfOrder {
     ///
     /// If the commitment is already set, overwrites it. If the index is outside the bounds of the
     /// structure, does nothing.
-    fn uninitialized_out_of_order_insert_commitment(&mut self, index: u64, commitment: Commitment);
+    fn uninitialized_out_of_order_insert_commitment(
+        &mut self,
+        index: u64,
+        commitment: StateCommitment,
+    );
 }
 
 /// Owned version of [`OutOfOrder::insert_commitment`], used for complete nodes.
@@ -139,7 +143,7 @@ pub(crate) trait OutOfOrderOwned: Sized {
     fn uninitialized_out_of_order_insert_commitment_owned(
         this: Insert<Self>,
         index: u64,
-        commitment: Commitment,
+        commitment: StateCommitment,
     ) -> Self;
 }
 

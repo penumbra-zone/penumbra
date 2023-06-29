@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(try_from = "pb::SpendableNoteRecord", into = "pb::SpendableNoteRecord")]
 pub struct SpendableNoteRecord {
-    pub note_commitment: note::Commitment,
+    pub note_commitment: note::StateCommitment,
     pub note: Note,
     pub address_index: AddressIndex,
     pub nullifier: Nullifier,
