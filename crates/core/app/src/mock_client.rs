@@ -11,8 +11,8 @@ use penumbra_tct as tct;
 pub struct MockClient {
     latest_height: u64,
     fvk: FullViewingKey,
-    notes: BTreeMap<note::Commitment, Note>,
-    swaps: BTreeMap<tct::Commitment, SwapPlaintext>,
+    notes: BTreeMap<note::StateCommitment, Note>,
+    swaps: BTreeMap<tct::StateCommitment, SwapPlaintext>,
     sct: penumbra_tct::Tree,
 }
 
@@ -129,15 +129,15 @@ impl MockClient {
         (self.latest_height, self.sct.root())
     }
 
-    pub fn note_by_commitment(&self, commitment: &note::Commitment) -> Option<Note> {
+    pub fn note_by_commitment(&self, commitment: &note::StateCommitment) -> Option<Note> {
         self.notes.get(commitment).cloned()
     }
 
-    pub fn swap_by_commitment(&self, commitment: &note::Commitment) -> Option<SwapPlaintext> {
+    pub fn swap_by_commitment(&self, commitment: &note::StateCommitment) -> Option<SwapPlaintext> {
         self.swaps.get(commitment).cloned()
     }
 
-    pub fn witness(&self, commitment: note::Commitment) -> Option<penumbra_tct::Proof> {
+    pub fn witness(&self, commitment: note::StateCommitment) -> Option<penumbra_tct::Proof> {
         self.sct.witness(commitment)
     }
 }

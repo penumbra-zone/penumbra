@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(try_from = "pb::SwapRecord", into = "pb::SwapRecord")]
 pub struct SwapRecord {
-    pub swap_commitment: tct::Commitment,
+    pub swap_commitment: tct::StateCommitment,
     pub swap: SwapPlaintext,
     pub position: tct::Position,
     pub nullifier: Nullifier,

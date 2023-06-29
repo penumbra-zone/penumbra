@@ -34,7 +34,7 @@ pub fn epoch_anchor_by_index(index: u64) -> String {
     format!("sct/epoch_anchor/{index}")
 }
 
-pub fn note_source(note_commitment: &note::Commitment) -> String {
+pub fn note_source(note_commitment: &note::StateCommitment) -> String {
     format!("sct/note_source/{note_commitment}")
 }
 

@@ -27,7 +27,7 @@ use r2d2_sqlite::{
 };
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, num::NonZeroU64, str::FromStr, sync::Arc, time::Duration};
-use tct::Commitment;
+use tct::StateCommitment;
 use tokio::{
     sync::broadcast::{self, error::RecvError},
     task::spawn_blocking,
@@ -267,7 +267,7 @@ impl Storage {
     /// Query for a note by its note commitment, optionally waiting until the note is detected.
     pub async fn note_by_commitment(
         &self,
-        note_commitment: tct::Commitment,
+        note_commitment: tct::StateCommitment,
         await_detection: bool,
     ) -> anyhow::Result<SpendableNoteRecord> {
         // Start subscribing now, before querying for whether we already
@@ -341,7 +341,7 @@ impl Storage {
     /// Query for a swap by its swap commitment, optionally waiting until the note is detected.
     pub async fn swap_by_commitment(
         &self,
-        swap_commitment: tct::Commitment,
+        swap_commitment: tct::StateCommitment,
         await_detection: bool,
     ) -> anyhow::Result<SwapRecord> {
         // Start subscribing now, before querying for whether we already
@@ -1048,8 +1048,8 @@ impl Storage {
     /// observed during scanning.
     pub async fn scan_advice(
         &self,
-        note_commitments: Vec<note::Commitment>,
-    ) -> anyhow::Result<BTreeMap<note::Commitment, Note>> {
+        note_commitments: Vec<note::StateCommitment>,
+    ) -> anyhow::Result<BTreeMap<note::StateCommitment, Note>> {
         if note_commitments.is_empty() {
             return Ok(BTreeMap::new());
         }
@@ -1236,27 +1236,27 @@ impl Storage {
                 let height_spent = filtered_block.height as i64;
                 let nullifier = nullifier.to_bytes().to_vec();
 
-                let spent_commitment: Option<Commitment> = dbtx.prepare_cached(
+                let spent_commitment: Option<StateCommitment> = dbtx.prepare_cached(
                     "UPDATE spendable_notes SET height_spent = ?1 WHERE nullifier = ?2 RETURNING note_commitment"
                 )?
                 .query_and_then(
                     (height_spent, &nullifier),
                     |row| {
                         let bytes: Vec<u8> = row.get("note_commitment")?;
-                        Commitment::try_from(&bytes[..]).context("invalid commitment bytes")
+                        StateCommitment::try_from(&bytes[..]).context("invalid commitment bytes")
                     }
                 )?
                 .next()
                 .transpose()?;
 
-                let swap_commitment: Option<Commitment> = dbtx.prepare_cached(
+                let swap_commitment: Option<StateCommitment> = dbtx.prepare_cached(
                         "UPDATE swaps SET height_claimed = ?1 WHERE nullifier = ?2 RETURNING swap_commitment"
                     )?
                     .query_and_then(
                         (height_spent, &nullifier),
                         |row| {
                             let bytes: Vec<u8> = row.get("swap_commitment")?;
-                            Commitment::try_from(&bytes[..]).context("invalid commitment bytes")
+                            StateCommitment::try_from(&bytes[..]).context("invalid commitment bytes")
                         }
                     )?
                     .next()

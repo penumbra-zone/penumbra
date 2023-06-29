@@ -54,9 +54,9 @@ pub struct SwapClaimCircuit {
     /// Batch swap output data
     pub output_data: BatchSwapOutputData,
     /// Note commitment of first output note
-    pub note_commitment_1: note::Commitment,
+    pub note_commitment_1: note::StateCommitment,
     /// Note commitment of second output note
-    pub note_commitment_2: note::Commitment,
+    pub note_commitment_2: note::StateCommitment,
 }
 
 impl SwapClaimCircuit {
@@ -73,8 +73,8 @@ impl SwapClaimCircuit {
         nullifier: Nullifier,
         claim_fee: Fee,
         output_data: BatchSwapOutputData,
-        note_commitment_1: note::Commitment,
-        note_commitment_2: note::Commitment,
+        note_commitment_1: note::StateCommitment,
+        note_commitment_2: note::StateCommitment,
     ) -> Self {
         Self {
             swap_plaintext,
@@ -255,8 +255,8 @@ impl ParameterSetup for SwapClaimCircuit {
         };
         let note_blinding_1 = Fq::from(1);
         let note_blinding_2 = Fq::from(1);
-        let note_commitment_1 = tct::Commitment(Fq::from(1));
-        let note_commitment_2 = tct::Commitment(Fq::from(2));
+        let note_commitment_1 = tct::StateCommitment(Fq::from(1));
+        let note_commitment_2 = tct::StateCommitment(Fq::from(2));
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
         let circuit = SwapClaimCircuit {
@@ -301,8 +301,8 @@ impl SwapClaimProof {
         lambda_2: Amount,
         note_blinding_1: Fq,
         note_blinding_2: Fq,
-        note_commitment_1: tct::Commitment,
-        note_commitment_2: tct::Commitment,
+        note_commitment_1: tct::StateCommitment,
+        note_commitment_2: tct::StateCommitment,
         output_data: BatchSwapOutputData,
     ) -> anyhow::Result<Self> {
         let circuit = SwapClaimCircuit {
@@ -341,8 +341,8 @@ impl SwapClaimProof {
         nullifier: Nullifier,
         fee: Fee,
         output_data: BatchSwapOutputData,
-        note_commitment_1: tct::Commitment,
-        note_commitment_2: tct::Commitment,
+        note_commitment_1: tct::StateCommitment,
+        note_commitment_2: tct::StateCommitment,
     ) -> anyhow::Result<()> {
         let proof =
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;

@@ -62,8 +62,8 @@ impl TryFrom<pb::SwapClaim> for SwapClaim {
 pub struct Body {
     pub nullifier: Nullifier,
     pub fee: Fee,
-    pub output_1_commitment: tct::Commitment,
-    pub output_2_commitment: tct::Commitment,
+    pub output_1_commitment: tct::StateCommitment,
+    pub output_2_commitment: tct::StateCommitment,
     pub output_data: BatchSwapOutputData,
 }
 

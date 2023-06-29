@@ -29,7 +29,7 @@ pub enum PayloadKind {
 }
 
 impl PayloadKind {
-    pub(crate) fn nonce(&self, commitment: Option<note::Commitment>) -> [u8; 12] {
+    pub(crate) fn nonce(&self, commitment: Option<note::StateCommitment>) -> [u8; 12] {
         match self {
             Self::Note => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             Self::MemoKey => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -103,7 +103,7 @@ impl PayloadKey {
     }
 
     /// Use Blake2b-256 to derive an encryption key from the OVK and public fields for swaps.
-    pub fn derive_swap(ovk: &OutgoingViewingKey, cm: note::Commitment) -> Self {
+    pub fn derive_swap(ovk: &OutgoingViewingKey, cm: note::StateCommitment) -> Self {
         let cm_bytes: [u8; 32] = cm.into();
 
         let mut kdf_params = blake2b_simd::Params::new();
@@ -118,7 +118,7 @@ impl PayloadKey {
     }
 
     /// Encrypt a swap using the `PayloadKey`.
-    pub fn encrypt_swap(&self, plaintext: Vec<u8>, commitment: note::Commitment) -> Vec<u8> {
+    pub fn encrypt_swap(&self, plaintext: Vec<u8>, commitment: note::StateCommitment) -> Vec<u8> {
         let cipher = ChaCha20Poly1305::new(&self.0);
         let nonce_bytes = PayloadKind::Swap.nonce(Some(commitment));
         let nonce = Nonce::from_slice(&nonce_bytes);
@@ -132,7 +132,7 @@ impl PayloadKey {
     pub fn decrypt_swap(
         &self,
         ciphertext: Vec<u8>,
-        commitment: note::Commitment,
+        commitment: note::StateCommitment,
     ) -> Result<Vec<u8>> {
         let cipher = ChaCha20Poly1305::new(&self.0);
 
@@ -197,7 +197,7 @@ impl OutgoingCipherKey {
     pub(crate) fn derive(
         ovk: &OutgoingViewingKey,
         cv: balance::Commitment,
-        cm: note::Commitment,
+        cm: note::StateCommitment,
         epk: &ka::Public,
     ) -> Self {
         let cv_bytes: [u8; 32] = cv.into();

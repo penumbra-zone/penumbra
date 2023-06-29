@@ -4,12 +4,12 @@ use crate::prelude::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Derivative, Serialize, Deserialize)]
 pub struct Item {
     hash: Hash,
-    commitment: Commitment,
+    commitment: StateCommitment,
 }
 
 impl Item {
     /// Create a new `Item` from a [`Hash`](struct@Hash).
-    pub fn new(hash: Hash, commitment: Commitment) -> Self {
+    pub fn new(hash: Hash, commitment: StateCommitment) -> Self {
         Self { hash, commitment }
     }
 }
@@ -79,7 +79,7 @@ impl OutOfOrderOwned for Item {
     fn uninitialized_out_of_order_insert_commitment_owned(
         this: Insert<Self>,
         index: u64,
-        commitment: Commitment,
+        commitment: StateCommitment,
     ) -> Self {
         if index != 0 {
             panic!("non-zero index when inserting commitment");

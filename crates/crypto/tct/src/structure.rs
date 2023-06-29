@@ -58,7 +58,7 @@ pub enum Kind {
     /// A leaf node at the bottom of the tree.
     Leaf {
         /// The witnessed commitment at this leaf, or `None` if this leaf was forgotten.
-        commitment: Option<Commitment>,
+        commitment: Option<StateCommitment>,
     },
     /// An internal node within the tree.
     Internal {
@@ -358,7 +358,7 @@ mod test {
 
         let mut top: frontier::Top<Item> = frontier::Top::new(frontier::TrackForgotten::No);
         for i in 0..MAX_SIZE_TO_TEST {
-            top.insert(Commitment(i.into()).into()).unwrap();
+            top.insert(StateCommitment(i.into()).into()).unwrap();
         }
 
         fn check_leaves(index: &mut [u64; 9], node: Node) {
@@ -380,7 +380,7 @@ mod test {
 
         let mut top: frontier::Top<Item> = frontier::Top::new(frontier::TrackForgotten::No);
         for i in 0..MAX_SIZE_TO_TEST {
-            top.insert(Commitment(i.into()).into()).unwrap();
+            top.insert(StateCommitment(i.into()).into()).unwrap();
             let root = Node::root(&top);
             check(root, Place::Frontier);
         }
@@ -419,7 +419,7 @@ mod test {
         let mut tree = crate::Tree::new();
 
         for i in 0..MAX_SIZE_TO_TEST {
-            tree.insert(crate::Witness::Keep, Commitment(i.into()))
+            tree.insert(crate::Witness::Keep, StateCommitment(i.into()))
                 .unwrap();
             let root = tree.structure();
             check(root, 24);

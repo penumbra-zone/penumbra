@@ -474,7 +474,11 @@ where
         }
     }
 
-    fn uninitialized_out_of_order_insert_commitment(&mut self, index: u64, commitment: Commitment) {
+    fn uninitialized_out_of_order_insert_commitment(
+        &mut self,
+        index: u64,
+        commitment: StateCommitment,
+    ) {
         use ElemsMut::*;
         use WhichWay::*;
 
@@ -486,7 +490,7 @@ where
         fn recur_sibling<Sibling>(
             sibling: &mut Arc<Insert<Sibling>>,
             index: u64,
-            commitment: Commitment,
+            commitment: StateCommitment,
         ) where
             Sibling: OutOfOrderOwned + Clone,
         {

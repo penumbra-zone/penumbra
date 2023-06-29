@@ -3,11 +3,11 @@ use crate::prelude::*;
 /// The hash of the most-recently-inserted item, stored at the tip of the frontier.
 #[derive(Debug, Clone, Copy, Derivative, Serialize, Deserialize)]
 pub struct Item {
-    item: Insert<(Commitment, Hash)>,
+    item: Insert<(StateCommitment, Hash)>,
 }
 
-impl From<Commitment> for Item {
-    fn from(commitment: Commitment) -> Self {
+impl From<StateCommitment> for Item {
+    fn from(commitment: StateCommitment) -> Self {
         Self {
             item: Insert::Keep((commitment, Hash::of(commitment))),
         }
@@ -105,7 +105,11 @@ impl OutOfOrder for Item {
         }
     }
 
-    fn uninitialized_out_of_order_insert_commitment(&mut self, index: u64, commitment: Commitment) {
+    fn uninitialized_out_of_order_insert_commitment(
+        &mut self,
+        index: u64,
+        commitment: StateCommitment,
+    ) {
         if index == 0 {
             let hash = match self.item {
                 Insert::Keep((_drop_old_commitment, hash)) => hash,

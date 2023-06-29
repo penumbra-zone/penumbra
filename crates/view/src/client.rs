@@ -88,14 +88,14 @@ pub trait ViewClient {
     fn note_by_commitment(
         &mut self,
         account_group_id: AccountGroupId,
-        note_commitment: note::Commitment,
+        note_commitment: note::StateCommitment,
     ) -> Pin<Box<dyn Future<Output = Result<SpendableNoteRecord>> + Send + 'static>>;
 
     /// Queries for a specific swap by commitment, returning immediately if it is not found.
     fn swap_by_commitment(
         &mut self,
         account_group_id: AccountGroupId,
-        swap_commitment: penumbra_tct::Commitment,
+        swap_commitment: penumbra_tct::StateCommitment,
     ) -> Pin<Box<dyn Future<Output = Result<SwapRecord>> + Send + 'static>>;
 
     /// Queries for a specific nullifier's status, returning immediately if it is not found.
@@ -119,7 +119,7 @@ pub trait ViewClient {
     fn await_note_by_commitment(
         &mut self,
         account_group_id: AccountGroupId,
-        note_commitment: note::Commitment,
+        note_commitment: note::StateCommitment,
     ) -> Pin<Box<dyn Future<Output = Result<SpendableNoteRecord>> + Send + 'static>>;
 
     /// Returns authentication paths for the given note commitments.
@@ -405,7 +405,7 @@ where
     fn note_by_commitment(
         &mut self,
         account_group_id: AccountGroupId,
-        note_commitment: note::Commitment,
+        note_commitment: note::StateCommitment,
     ) -> Pin<Box<dyn Future<Output = Result<SpendableNoteRecord>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
@@ -464,7 +464,7 @@ where
     fn swap_by_commitment(
         &mut self,
         account_group_id: AccountGroupId,
-        swap_commitment: penumbra_tct::Commitment,
+        swap_commitment: penumbra_tct::StateCommitment,
     ) -> Pin<Box<dyn Future<Output = Result<SwapRecord>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
@@ -493,7 +493,7 @@ where
     fn await_note_by_commitment(
         &mut self,
         account_group_id: AccountGroupId,
-        note_commitment: note::Commitment,
+        note_commitment: note::StateCommitment,
     ) -> Pin<Box<dyn Future<Output = Result<SpendableNoteRecord>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {

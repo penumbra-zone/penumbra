@@ -19,7 +19,7 @@ use crate::state_key;
 //#[async_trait(?Send)]
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    async fn note_source(&self, commitment: note::Commitment) -> Result<Option<NoteSource>> {
+    async fn note_source(&self, commitment: note::StateCommitment) -> Result<Option<NoteSource>> {
         self.get(&state_key::note_source(&commitment)).await
     }
 
@@ -69,7 +69,7 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 pub trait SctManager: StateWrite {
     async fn add_sct_commitment(
         &mut self,
-        commitment: tct::Commitment,
+        commitment: tct::StateCommitment,
         source: Option<NoteSource>,
     ) -> Result<tct::Position> {
         // Record in the SCT

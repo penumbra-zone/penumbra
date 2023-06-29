@@ -4,7 +4,7 @@ use penumbra_chain::{NoteSource, SpendInfo};
 use penumbra_compact_block::CompactBlock;
 use penumbra_crypto::Nullifier;
 use penumbra_proto::DomainType;
-use penumbra_tct::Commitment;
+use penumbra_tct::StateCommitment;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ShieldedPool {
@@ -26,8 +26,8 @@ pub enum ShieldedPool {
     /// Queries the source of a given commitment.
     Commitment {
         /// The commitment to query.
-        #[clap(parse(try_from_str = Commitment::parse_hex))]
-        commitment: Commitment,
+        #[clap(parse(try_from_str = StateCommitment::parse_hex))]
+        commitment: StateCommitment,
     },
     /// Queries the note source of a given nullifier.
     Nullifier {

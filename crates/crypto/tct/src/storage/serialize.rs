@@ -168,7 +168,7 @@ impl Serializer {
     pub fn commitments(
         self,
         tree: &crate::Tree,
-    ) -> impl Iterator<Item = (Position, Commitment)> + Send + Sync + '_ {
+    ) -> impl Iterator<Item = (Position, StateCommitment)> + Send + Sync + '_ {
         let mut stack = vec![vec![tree.structure()]];
 
         std::iter::from_fn(move || {

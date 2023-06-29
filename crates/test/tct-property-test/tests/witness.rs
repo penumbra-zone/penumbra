@@ -5,18 +5,18 @@ use std::collections::HashSet;
 
 use proptest::{arbitrary::*, prelude::*};
 
-use penumbra_tct::{validate, Commitment, Tree, Witness};
+use penumbra_tct::{validate, StateCommitment, Tree, Witness};
 
 const MAX_USED_COMMITMENTS: usize = 3;
 const MAX_TIER_ACTIONS: usize = 10;
 
 #[derive(Debug, Copy, Clone, Arbitrary)]
-#[proptest(params("Vec<Commitment>"))]
+#[proptest(params("Vec<StateCommitment>"))]
 enum Action {
     EndBlock,
     EndEpoch,
-    Forget(Commitment),
-    Insert(Witness, Commitment),
+    Forget(StateCommitment),
+    Insert(Witness, StateCommitment),
 }
 
 impl Action {
@@ -89,7 +89,7 @@ proptest! {
     #[test]
     fn index_correct(
         actions in
-            prop::collection::vec(any::<Commitment>(), 1..MAX_USED_COMMITMENTS)
+            prop::collection::vec(any::<StateCommitment>(), 1..MAX_USED_COMMITMENTS)
                 .prop_flat_map(|commitments| {
                     prop::collection::vec(any_with::<Action>(commitments), 1..MAX_TIER_ACTIONS)
                 })
@@ -126,7 +126,7 @@ proptest! {
     #[test]
     fn validate_index(
         actions in
-            prop::collection::vec(any::<Commitment>(), 1..MAX_USED_COMMITMENTS)
+            prop::collection::vec(any::<StateCommitment>(), 1..MAX_USED_COMMITMENTS)
                 .prop_flat_map(|commitments| {
                     prop::collection::vec(any_with::<Action>(commitments), 1..MAX_TIER_ACTIONS)
                 })
@@ -141,7 +141,7 @@ proptest! {
     #[test]
     fn verify_all_proofs(
         actions in
-            prop::collection::vec(any::<Commitment>(), 1..MAX_USED_COMMITMENTS)
+            prop::collection::vec(any::<StateCommitment>(), 1..MAX_USED_COMMITMENTS)
                 .prop_flat_map(|commitments| {
                     prop::collection::vec(any_with::<Action>(commitments), 1..MAX_TIER_ACTIONS)
                 })
@@ -156,7 +156,7 @@ proptest! {
     #[test]
     fn validate_cached_hashes(
         actions in
-            prop::collection::vec(any::<Commitment>(), 1..MAX_USED_COMMITMENTS)
+            prop::collection::vec(any::<StateCommitment>(), 1..MAX_USED_COMMITMENTS)
                 .prop_flat_map(|commitments| {
                     prop::collection::vec(any_with::<Action>(commitments), 1..MAX_TIER_ACTIONS)
                 })
@@ -172,7 +172,7 @@ proptest! {
     #[test]
     fn validate_forgotten(
         actions in
-            prop::collection::vec(any::<Commitment>(), 1..MAX_USED_COMMITMENTS)
+            prop::collection::vec(any::<StateCommitment>(), 1..MAX_USED_COMMITMENTS)
                 .prop_flat_map(|commitments| {
                     prop::collection::vec(any_with::<Action>(commitments), 1..MAX_TIER_ACTIONS)
                 })

@@ -71,9 +71,9 @@ pub struct ViewServer {
     latest_height: u64,
     epoch_duration: u64,
     fvk: FullViewingKey,
-    notes: BTreeMap<note::Commitment, SpendableNoteRecord>,
+    notes: BTreeMap<note::StateCommitment, SpendableNoteRecord>,
     notes_by_nullifier: BTreeMap<Nullifier, SpendableNoteRecord>,
-    swaps: BTreeMap<tct::Commitment, SwapRecord>,
+    swaps: BTreeMap<tct::StateCommitment, SwapRecord>,
     denoms: BTreeMap<Id, DenomMetadata>,
     nct: penumbra_tct::Tree,
 }

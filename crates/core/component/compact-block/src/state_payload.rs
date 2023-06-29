@@ -13,7 +13,7 @@ use penumbra_chain::NoteSource;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::StatePayload", into = "pb::StatePayload")]
 pub enum StatePayload {
-    RolledUp(note::Commitment),
+    RolledUp(note::StateCommitment),
     Note {
         source: NoteSource,
         note: Box<NotePayload>,
@@ -37,7 +37,7 @@ impl<'a> std::fmt::Debug for StatePayloadDebugKind<'a> {
 }
 
 impl StatePayload {
-    pub fn commitment(&self) -> &note::Commitment {
+    pub fn commitment(&self) -> &note::StateCommitment {
         match self {
             Self::RolledUp(commitment) => commitment,
             Self::Note { note, .. } => &note.note_commitment,
@@ -54,8 +54,8 @@ impl StatePayload {
     }
 }
 
-impl From<note::Commitment> for StatePayload {
-    fn from(commitment: note::Commitment) -> Self {
+impl From<note::StateCommitment> for StatePayload {
+    fn from(commitment: note::StateCommitment) -> Self {
         Self::RolledUp(commitment)
     }
 }

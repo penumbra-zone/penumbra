@@ -10,7 +10,7 @@ use crate::{asset::Amount, ka, note, FullViewingKey, Note, NoteCiphertext};
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::NotePayload", into = "pb::NotePayload")]
 pub struct NotePayload {
-    pub note_commitment: note::Commitment,
+    pub note_commitment: note::StateCommitment,
     pub ephemeral_key: ka::Public,
     pub encrypted_note: NoteCiphertext,
 }

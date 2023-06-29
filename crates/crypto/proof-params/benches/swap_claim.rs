@@ -32,8 +32,8 @@ fn prove(
     lambda_2: Amount,
     note_blinding_1: Fq,
     note_blinding_2: Fq,
-    note_commitment_1: tct::Commitment,
-    note_commitment_2: tct::Commitment,
+    note_commitment_1: tct::StateCommitment,
+    note_commitment_2: tct::StateCommitment,
     output_data: BatchSwapOutputData,
 ) {
     let _proof = SwapClaimProof::prove(

@@ -152,7 +152,7 @@ impl Hash {
 
     /// Hash an individual commitment to be inserted into the tree.
     #[inline]
-    pub fn of(item: Commitment) -> Hash {
+    pub fn of(item: StateCommitment) -> Hash {
         Self(hash_1(&DOMAIN_SEPARATOR, item.0))
     }
 

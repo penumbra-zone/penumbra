@@ -54,7 +54,7 @@ impl<Item: GetHash + Height + OutOfOrderOwned + Clone> OutOfOrderOwned for Top<I
     fn uninitialized_out_of_order_insert_commitment_owned(
         this: Insert<Self>,
         index: u64,
-        commitment: Commitment,
+        commitment: StateCommitment,
     ) -> Self {
         Top {
             inner: Nested::uninitialized_out_of_order_insert_commitment_owned(

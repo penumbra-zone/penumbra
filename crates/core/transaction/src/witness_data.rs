@@ -7,12 +7,12 @@ use penumbra_tct as tct;
 #[derive(Clone, Debug)]
 pub struct WitnessData {
     pub anchor: tct::Root,
-    pub state_commitment_proofs: BTreeMap<note::Commitment, tct::Proof>,
+    pub state_commitment_proofs: BTreeMap<note::StateCommitment, tct::Proof>,
 }
 
 impl WitnessData {
     /// Add proof to the existing witness data
-    pub fn add_proof(&mut self, nc: note::Commitment, proof: tct::Proof) {
+    pub fn add_proof(&mut self, nc: note::StateCommitment, proof: tct::Proof) {
         self.state_commitment_proofs.insert(nc, proof);
     }
 }

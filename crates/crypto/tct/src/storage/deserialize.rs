@@ -46,7 +46,7 @@ pub fn from_reader<R: Read>(reader: &mut R) -> Result<Tree, R::Error> {
 /// of the tree can lead to internal invariant violations.
 pub struct LoadCommitments {
     inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>,
-    index: HashedMap<Commitment, index::within::Tree>,
+    index: HashedMap<StateCommitment, index::within::Tree>,
 }
 
 impl LoadCommitments {
@@ -63,7 +63,7 @@ impl LoadCommitments {
     }
 
     /// Insert a commitment at a given position.
-    pub fn insert(&mut self, position: Position, commitment: Commitment) {
+    pub fn insert(&mut self, position: Position, commitment: StateCommitment) {
         self.inner
             .uninitialized_out_of_order_insert_commitment(position.into(), commitment);
         self.index.insert(commitment, u64::from(position).into());
@@ -78,8 +78,8 @@ impl LoadCommitments {
     }
 }
 
-impl Extend<(Position, Commitment)> for LoadCommitments {
-    fn extend<T: IntoIterator<Item = (Position, Commitment)>>(&mut self, iter: T) {
+impl Extend<(Position, StateCommitment)> for LoadCommitments {
+    fn extend<T: IntoIterator<Item = (Position, StateCommitment)>>(&mut self, iter: T) {
         for (position, commitment) in iter {
             self.insert(position, commitment);
         }
@@ -89,7 +89,7 @@ impl Extend<(Position, Commitment)> for LoadCommitments {
 /// Builder for loading hashes to create a [`Tree`].
 pub struct LoadHashes {
     inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>,
-    index: HashedMap<Commitment, index::within::Tree>,
+    index: HashedMap<StateCommitment, index::within::Tree>,
 }
 
 impl LoadHashes {

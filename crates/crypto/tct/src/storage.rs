@@ -64,7 +64,7 @@ pub trait AsyncRead {
         Self: 'a;
 
     /// The type of stream returned by [`AsyncRead::commitments`].
-    type CommitmentsStream<'a>: Stream<Item = Result<(Position, Commitment), Self::Error>>
+    type CommitmentsStream<'a>: Stream<Item = Result<(Position, StateCommitment), Self::Error>>
         + Unpin
         + 'a
     where
@@ -83,7 +83,10 @@ pub trait AsyncRead {
     fn hashes(&mut self) -> Self::HashesStream<'_>;
 
     /// Fetch the commitment at the given position, if it exists.
-    async fn commitment(&mut self, position: Position) -> Result<Option<Commitment>, Self::Error>;
+    async fn commitment(
+        &mut self,
+        position: Position,
+    ) -> Result<Option<StateCommitment>, Self::Error>;
 
     /// Get the full list of all commitments stored, indexed by position.
     fn commitments(&mut self) -> Self::CommitmentsStream<'_>;
@@ -114,7 +117,7 @@ pub trait AsyncWrite: AsyncRead {
     async fn add_commitment(
         &mut self,
         position: Position,
-        commitment: Commitment,
+        commitment: StateCommitment,
     ) -> Result<(), Self::Error>;
 
     /// Delete every stored [`struct@Hash`] whose height is less than `below_height` and whose
@@ -149,7 +152,7 @@ pub trait Read {
         Self: 'a;
 
     /// The type of iterator returned when reading commitments from the database.
-    type CommitmentsIter<'a>: Iterator<Item = Result<(Position, Commitment), Self::Error>> + 'a
+    type CommitmentsIter<'a>: Iterator<Item = Result<(Position, StateCommitment), Self::Error>> + 'a
     where
         Self: 'a;
 
@@ -167,7 +170,7 @@ pub trait Read {
     fn hashes(&mut self) -> Self::HashesIter<'_>;
 
     /// Fetch a specific commitment at the given position, if it exists.
-    fn commitment(&mut self, position: Position) -> Result<Option<Commitment>, Self::Error>;
+    fn commitment(&mut self, position: Position) -> Result<Option<StateCommitment>, Self::Error>;
 
     /// Get the full list of all commitments stored, indexed by position.
     #[allow(clippy::type_complexity)]
@@ -198,7 +201,7 @@ pub trait Write: Read {
     fn add_commitment(
         &mut self,
         position: Position,
-        commitment: Commitment,
+        commitment: StateCommitment,
     ) -> Result<(), Self::Error>;
 
     /// Delete every stored [`struct@Hash`] whose height is less than `below_height` and whose
@@ -255,7 +258,7 @@ pub struct StoreCommitment {
     /// The position of the commitment.
     pub position: Position,
     /// The commitment itself.
-    pub commitment: Commitment,
+    pub commitment: StateCommitment,
 }
 
 /// An update to the underlying storage that constitutes deleting a range of hashes and commitments.

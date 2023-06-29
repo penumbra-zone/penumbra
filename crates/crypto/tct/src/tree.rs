@@ -18,7 +18,7 @@ pub(crate) use epoch::block;
 /// [`Commitment`]s.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tree {
-    index: HashedMap<Commitment, index::within::Tree>,
+    index: HashedMap<StateCommitment, index::within::Tree>,
     inner: Arc<frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>>,
 }
 
@@ -157,7 +157,7 @@ impl Tree {
 
     // Assemble a tree from its two parts without checking any invariants.
     pub(crate) fn unchecked_from_parts(
-        index: HashedMap<Commitment, index::within::Tree>,
+        index: HashedMap<StateCommitment, index::within::Tree>,
         inner: frontier::Top<frontier::Tier<frontier::Tier<frontier::Item>>>,
     ) -> Self {
         Self {
@@ -196,7 +196,7 @@ impl Tree {
     pub fn insert(
         &mut self,
         witness: Witness,
-        commitment: Commitment,
+        commitment: StateCommitment,
     ) -> Result<Position, InsertError> {
         let item = match witness {
             Witness::Keep => commitment.into(),
@@ -269,7 +269,7 @@ impl Tree {
     ///
     /// If the index is not witnessed in this tree, return `None`.
     #[instrument(level = "trace", skip(self))]
-    pub fn witness(&self, commitment: Commitment) -> Option<Proof> {
+    pub fn witness(&self, commitment: StateCommitment) -> Option<Proof> {
         let &index = if let Some(index) = self.index.get(&commitment) {
             index
         } else {
@@ -301,7 +301,7 @@ impl Tree {
     /// Returns `true` if the commitment was previously witnessed (and now is forgotten), and `false` if
     /// it was not witnessed.
     #[instrument(level = "trace", skip(self))]
-    pub fn forget(&mut self, commitment: Commitment) -> bool {
+    pub fn forget(&mut self, commitment: StateCommitment) -> bool {
         let mut forgotten = false;
 
         if let Some(&within_epoch) = self.index.get(&commitment) {
@@ -320,7 +320,7 @@ impl Tree {
 
     /// Get the position in this [`Tree`] of the given [`Commitment`], if it is currently witnessed.
     #[instrument(level = "trace", skip(self))]
-    pub fn position_of(&self, commitment: Commitment) -> Option<Position> {
+    pub fn position_of(&self, commitment: StateCommitment) -> Option<Position> {
         let position = self.index.get(&commitment).map(|index| Position(*index));
         trace!(?position);
         position
@@ -725,7 +725,9 @@ impl Tree {
     /// Unlike [`commitments_unordered`](Tree::commitments_unordered), this guarantees that
     /// commitments will be returned in order, but it may be slower by a constant factor.
     #[instrument(level = "trace", skip(self))]
-    pub fn commitments(&self) -> impl Iterator<Item = (Position, Commitment)> + Send + Sync + '_ {
+    pub fn commitments(
+        &self,
+    ) -> impl Iterator<Item = (Position, StateCommitment)> + Send + Sync + '_ {
         crate::storage::serialize::Serializer::default().commitments(self)
     }
 
@@ -736,7 +738,7 @@ impl Tree {
     #[instrument(level = "trace", skip(self))]
     pub fn commitments_unordered(
         &self,
-    ) -> impl Iterator<Item = (Commitment, Position)> + Send + Sync + '_ {
+    ) -> impl Iterator<Item = (StateCommitment, Position)> + Send + Sync + '_ {
         self.index.iter().map(|(c, p)| (*c, Position(*p)))
     }
 

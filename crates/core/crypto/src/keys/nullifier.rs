@@ -6,7 +6,7 @@ use decaf377::r1cs::FqVar;
 use penumbra_tct as tct;
 
 use crate::{
-    note::{Commitment, StateCommitmentVar},
+    note::{StateCommitment, StateCommitmentVar},
     nullifier::{Nullifier, NullifierVar, NULLIFIER_DOMAIN_SEP},
     Fq,
 };
@@ -21,7 +21,7 @@ impl NullifierKey {
     pub fn derive_nullifier(
         &self,
         pos: penumbra_tct::Position,
-        state_commitment: &Commitment,
+        state_commitment: &StateCommitment,
     ) -> Nullifier {
         Nullifier(hash_3(
             &NULLIFIER_DOMAIN_SEP,

@@ -6,7 +6,7 @@ use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{Address, FullViewingKey};
 
 use penumbra_crypto::keys::{AddressIndex, SpendKey};
-use penumbra_tct::{Commitment, Proof, Tree};
+use penumbra_tct::{Proof, StateCommitment, Tree};
 use penumbra_transaction::plan::TransactionPlan;
 use penumbra_transaction::{AuthorizationData, Transaction, WitnessData};
 use rand_core::OsRng;
@@ -124,7 +124,7 @@ pub fn build_transaction(
 }
 
 fn witness(nct: Tree, plan: TransactionPlan) -> WitnessData {
-    let note_commitments: Vec<Commitment> = plan
+    let note_commitments: Vec<StateCommitment> = plan
         .spend_plans()
         .filter(|plan| plan.note.amount() != 0u64.into())
         .map(|spend| spend.note.commit().into())

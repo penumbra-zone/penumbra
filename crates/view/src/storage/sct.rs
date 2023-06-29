@@ -7,7 +7,7 @@ use r2d2_sqlite::rusqlite::Transaction;
 use penumbra_tct::{
     storage::{Read, StoredPosition, Write},
     structure::Hash,
-    Commitment, Forgotten, Position,
+    Forgotten, Position, StateCommitment,
 };
 
 pub struct TreeStore<'a, 'c: 'a>(pub &'a mut Transaction<'c>);
@@ -19,7 +19,7 @@ impl Read for TreeStore<'_, '_> {
     where
         Self: 'a;
 
-    type CommitmentsIter<'a> = Box<dyn Iterator<Item = Result<(Position, Commitment), Self::Error>>
+    type CommitmentsIter<'a> = Box<dyn Iterator<Item = Result<(Position, StateCommitment), Self::Error>>
         + 'a>
     where
         Self: 'a;
@@ -121,7 +121,7 @@ impl Read for TreeStore<'_, '_> {
         )
     }
 
-    fn commitment(&mut self, position: Position) -> Result<Option<Commitment>, Self::Error> {
+    fn commitment(&mut self, position: Position) -> Result<Option<StateCommitment>, Self::Error> {
         let position = u64::from(position) as i64;
 
         let mut stmt = self
@@ -137,7 +137,7 @@ impl Read for TreeStore<'_, '_> {
             .map(|bytes| {
                 <[u8; 32]>::try_from(bytes)
                     .map_err(|_| anyhow::anyhow!("commitment was of incorrect length"))
-                    .and_then(|array| Commitment::try_from(array).map_err(Into::into))
+                    .and_then(|array| StateCommitment::try_from(array).map_err(Into::into))
             })
             .transpose()
     }
@@ -168,7 +168,9 @@ impl Read for TreeStore<'_, '_> {
                         let commitment: Vec<u8> = row.get("commitment")?;
                         let commitment = <[u8; 32]>::try_from(commitment)
                             .map_err(|_| anyhow::anyhow!("commitment was of incorrect length"))
-                            .and_then(|array| Commitment::try_from(array).map_err(Into::into))?;
+                            .and_then(|array| {
+                                StateCommitment::try_from(array).map_err(Into::into)
+                            })?;
                         Ok::<_, anyhow::Error>((Position::from(position as u64), commitment))
                     })
                     .context("couldn't query database")
@@ -237,7 +239,7 @@ impl Write for TreeStore<'_, '_> {
     fn add_commitment(
         &mut self,
         position: Position,
-        commitment: Commitment,
+        commitment: StateCommitment,
     ) -> Result<(), Self::Error> {
         let position = u64::from(position) as i64;
         let commitment = <[u8; 32]>::from(commitment).to_vec();
@@ -275,7 +277,7 @@ impl Write for TreeStore<'_, '_> {
 mod test {
     use super::*;
 
-    use penumbra_tct::{Commitment, Witness};
+    use penumbra_tct::{StateCommitment, Witness};
 
     #[test]
     fn tree_store_spot_check() {
@@ -293,13 +295,13 @@ mod test {
 
         // Make some kind of tree:
         let mut tree = penumbra_tct::Tree::new();
-        tree.insert(Witness::Keep, Commitment::try_from([0; 32]).unwrap())
+        tree.insert(Witness::Keep, StateCommitment::try_from([0; 32]).unwrap())
             .unwrap();
         tree.end_block().unwrap();
-        tree.insert(Witness::Forget, Commitment::try_from([1; 32]).unwrap())
+        tree.insert(Witness::Forget, StateCommitment::try_from([1; 32]).unwrap())
             .unwrap();
         tree.end_epoch().unwrap();
-        tree.insert(Witness::Keep, Commitment::try_from([2; 32]).unwrap())
+        tree.insert(Witness::Keep, StateCommitment::try_from([2; 32]).unwrap())
             .unwrap();
 
         // Write the tree to the database:

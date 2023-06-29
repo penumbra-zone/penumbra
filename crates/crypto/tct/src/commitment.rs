@@ -5,7 +5,7 @@ use poseidon377::Fq;
 /// A commitment to a note or swap.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(into = "pb::StateCommitment", try_from = "pb::StateCommitment")]
-pub struct Commitment(pub Fq);
+pub struct StateCommitment(pub Fq);
 
 /// An error when decoding a commitment from a hex string.
 #[derive(Clone, Debug, thiserror::Error)]
@@ -18,32 +18,32 @@ pub enum ParseCommitmentError {
     InvalidCommitment(#[from] InvalidStateCommitment),
 }
 
-impl Commitment {
+impl StateCommitment {
     /// Parse a hex string as a [`Commitment`].
-    pub fn parse_hex(str: &str) -> Result<Commitment, ParseCommitmentError> {
+    pub fn parse_hex(str: &str) -> Result<StateCommitment, ParseCommitmentError> {
         let bytes = hex::decode(str)?;
-        Ok(Commitment::try_from(&bytes[..])?)
+        Ok(StateCommitment::try_from(&bytes[..])?)
     }
 }
 
-impl TypeUrl for Commitment {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Commitment";
+impl TypeUrl for StateCommitment {
+    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.StateCommitment";
 }
 
-impl DomainType for Commitment {
+impl DomainType for StateCommitment {
     type Proto = pb::StateCommitment;
 }
 
 #[cfg(test)]
 mod test_serde {
-    use super::Commitment;
+    use super::StateCommitment;
 
     #[test]
     fn roundtrip_json_zero() {
-        let commitment = Commitment::try_from([0; 32]).unwrap();
+        let commitment = StateCommitment::try_from([0; 32]).unwrap();
         let bytes = serde_json::to_vec(&commitment).unwrap();
         println!("{bytes:?}");
-        let deserialized: Commitment = serde_json::from_slice(&bytes).unwrap();
+        let deserialized: StateCommitment = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(commitment, deserialized);
     }
 
@@ -61,8 +61,8 @@ mod test_serde {
      */
 }
 
-impl From<Commitment> for pb::StateCommitment {
-    fn from(nc: Commitment) -> Self {
+impl From<StateCommitment> for pb::StateCommitment {
+    fn from(nc: StateCommitment) -> Self {
         Self {
             inner: nc.0.to_bytes().to_vec(),
         }
@@ -74,7 +74,7 @@ impl From<Commitment> for pb::StateCommitment {
 #[error("Invalid note commitment")]
 pub struct InvalidStateCommitment;
 
-impl TryFrom<pb::StateCommitment> for Commitment {
+impl TryFrom<pb::StateCommitment> for StateCommitment {
     type Error = InvalidStateCommitment;
 
     fn try_from(value: pb::StateCommitment) -> Result<Self, Self::Error> {
@@ -84,17 +84,17 @@ impl TryFrom<pb::StateCommitment> for Commitment {
 
         let inner = Fq::from_bytes(bytes).map_err(|_| InvalidStateCommitment)?;
 
-        Ok(Commitment(inner))
+        Ok(StateCommitment(inner))
     }
 }
 
-impl std::fmt::Display for Commitment {
+impl std::fmt::Display for StateCommitment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&hex::encode(&self.0.to_bytes()[..]))
     }
 }
 
-impl std::fmt::Debug for Commitment {
+impl std::fmt::Debug for StateCommitment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
             "note::Commitment({})",
@@ -103,32 +103,32 @@ impl std::fmt::Debug for Commitment {
     }
 }
 
-impl From<Commitment> for [u8; 32] {
-    fn from(commitment: Commitment) -> [u8; 32] {
+impl From<StateCommitment> for [u8; 32] {
+    fn from(commitment: StateCommitment) -> [u8; 32] {
         commitment.0.to_bytes()
     }
 }
 
-impl TryFrom<[u8; 32]> for Commitment {
+impl TryFrom<[u8; 32]> for StateCommitment {
     type Error = InvalidStateCommitment;
 
-    fn try_from(bytes: [u8; 32]) -> Result<Commitment, Self::Error> {
+    fn try_from(bytes: [u8; 32]) -> Result<StateCommitment, Self::Error> {
         let inner = Fq::from_bytes(bytes).map_err(|_| InvalidStateCommitment)?;
 
-        Ok(Commitment(inner))
+        Ok(StateCommitment(inner))
     }
 }
 
 // TODO: remove? aside from sqlx is there a use case for non-proto conversion from byte slices?
-impl TryFrom<&[u8]> for Commitment {
+impl TryFrom<&[u8]> for StateCommitment {
     type Error = InvalidStateCommitment;
 
-    fn try_from(slice: &[u8]) -> Result<Commitment, Self::Error> {
+    fn try_from(slice: &[u8]) -> Result<StateCommitment, Self::Error> {
         let bytes: [u8; 32] = slice[..].try_into().map_err(|_| InvalidStateCommitment)?;
 
         let inner = Fq::from_bytes(bytes).map_err(|_| InvalidStateCommitment)?;
 
-        Ok(Commitment(inner))
+        Ok(StateCommitment(inner))
     }
 }
 
@@ -141,18 +141,18 @@ mod arbitrary {
     use ark_ff::{BigInteger256, PrimeField};
     use proptest::strategy::Strategy;
 
-    use super::Commitment;
+    use super::StateCommitment;
 
     // Arbitrary implementation for [`Commitment`]s.
-    impl proptest::arbitrary::Arbitrary for Commitment {
-        type Parameters = Vec<Commitment>;
+    impl proptest::arbitrary::Arbitrary for StateCommitment {
+        type Parameters = Vec<StateCommitment>;
 
         fn arbitrary_with(args: Self::Parameters) -> Self::Strategy {
             FqStrategy(args.into_iter().map(|commitment| commitment.0).collect())
-                .prop_map(Commitment)
+                .prop_map(StateCommitment)
         }
 
-        type Strategy = proptest::strategy::Map<FqStrategy, fn(Fq) -> Commitment>;
+        type Strategy = proptest::strategy::Map<FqStrategy, fn(Fq) -> StateCommitment>;
     }
 
     /// A [`proptest`] [`Strategy`](proptest::strategy::Strategy) for generating [`Fq`]s.

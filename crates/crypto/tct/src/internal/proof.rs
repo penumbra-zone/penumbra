@@ -18,7 +18,7 @@ use crate::prelude::*;
 pub struct Proof<Tree: Height> {
     pub(crate) position: u64,
     pub(crate) auth_path: AuthPath<Tree>,
-    pub(crate) leaf: Commitment,
+    pub(crate) leaf: StateCommitment,
 }
 
 impl<Tree: Height> Proof<Tree> {
@@ -94,7 +94,7 @@ where
     fn try_from(proof: pb::StateCommitmentProof) -> Result<Self, Self::Error> {
         let position = proof.position;
         let auth_path = proof.auth_path.try_into().map_err(|_| ProofDecodeError)?;
-        let leaf = Commitment(
+        let leaf = StateCommitment(
             Fq::from_bytes(
                 proof
                     .note_commitment

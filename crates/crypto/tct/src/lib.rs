@@ -64,7 +64,7 @@ pub mod validate;
 
 #[doc(inline)]
 pub use {
-    commitment::Commitment,
+    commitment::StateCommitment,
     internal::hash::Forgotten,
     internal::hash::DOMAIN_SEPARATOR,
     proof::Proof,
@@ -119,7 +119,7 @@ mod prelude {
             StoredPosition, Update, Write,
         },
         structure::{self, HashOrNode, HashedNode, Kind, Node, Place},
-        Commitment, Position, Proof, Root, Tree,
+        Position, Proof, Root, StateCommitment, Tree,
     };
 
     // We use the hash map from `im`, but with the fast "hash prehashed data" hasher from `hash_hasher`

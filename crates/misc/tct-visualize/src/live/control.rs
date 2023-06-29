@@ -14,7 +14,7 @@ use tokio::{sync::watch, task::spawn_blocking};
 
 use penumbra_tct::{
     builder::{block, epoch},
-    Commitment, Tree, Witness,
+    StateCommitment, Tree, Witness,
 };
 
 /// An [`axum`] [`Router`] that serves a `POST` endpoint for updating the [`Tree`].
@@ -84,7 +84,7 @@ fn insert<R: Rng + Send + 'static>(
     #[derive(Deserialize)]
     struct Insert {
         witness: Witness,
-        commitment: Option<Commitment>,
+        commitment: Option<StateCommitment>,
         #[serde(default = "one")]
         repeat: u16,
     }
@@ -125,7 +125,7 @@ fn insert<R: Rng + Send + 'static>(
                         tree.insert(
                             witness,
                             // If no commitment is specified, generate a random one
-                            commitment.unwrap_or_else(|| Commitment::random(&mut *rng.lock())),
+                            commitment.unwrap_or_else(|| StateCommitment::random(&mut *rng.lock())),
                         )
                     }));
                 }
@@ -151,7 +151,7 @@ fn insert<R: Rng + Send + 'static>(
     )
 }
 
-fn random_commitments<R: Rng>(mut rng: R, tree: &Tree, amount: usize) -> Vec<Commitment> {
+fn random_commitments<R: Rng>(mut rng: R, tree: &Tree, amount: usize) -> Vec<StateCommitment> {
     tree.commitments_unordered()
         .map(|(c, _)| c)
         .collect::<Vec<_>>()
@@ -167,7 +167,7 @@ fn forget<R: Rng + Send + 'static>(
 ) -> MethodRouter {
     #[derive(Deserialize)]
     struct Forget {
-        commitment: Option<Commitment>,
+        commitment: Option<StateCommitment>,
         #[serde(default = "one")]
         repeat: u16,
     }

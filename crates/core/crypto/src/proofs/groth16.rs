@@ -40,7 +40,7 @@ mod tests {
     use penumbra_proto::core::crypto::v1alpha1 as pb;
     use penumbra_tct as tct;
     use rand_core::OsRng;
-    use tct::Commitment;
+    use tct::StateCommitment;
 
     use crate::{note, Note, Value};
 
@@ -833,7 +833,7 @@ mod tests {
         }
     }
 
-    fn make_random_note_commitment(address: Address) -> Commitment {
+    fn make_random_note_commitment(address: Address) -> StateCommitment {
         let note = Note::from_parts(
             address,
             Value::from_str("1upenumbra").expect("valid value"),

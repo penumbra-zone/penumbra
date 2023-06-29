@@ -11,7 +11,7 @@ impl SwapCiphertext {
     pub fn decrypt(
         &self,
         ovk: &OutgoingViewingKey,
-        commitment: note::Commitment,
+        commitment: note::StateCommitment,
     ) -> Result<SwapPlaintext> {
         let payload_key = PayloadKey::derive_swap(ovk, commitment);
         self.decrypt_with_payload_key(&payload_key, commitment)
@@ -20,7 +20,7 @@ impl SwapCiphertext {
     pub fn decrypt_with_payload_key(
         &self,
         payload_key: &PayloadKey,
-        commitment: note::Commitment,
+        commitment: note::StateCommitment,
     ) -> Result<SwapPlaintext> {
         let swap_ciphertext = self.0;
         let decryption_result = payload_key
