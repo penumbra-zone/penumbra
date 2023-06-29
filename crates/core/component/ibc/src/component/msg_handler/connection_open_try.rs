@@ -2,7 +2,7 @@ use crate::component::proof_verification;
 use crate::version::pick_connection_version;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use ibc_types2::core::commitment::{MerklePrefix, MerkleProof};
+use ibc_types2::core::commitment::MerkleProof;
 use ibc_types2::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types2::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
 use ibc_types2::{
@@ -109,9 +109,7 @@ impl MsgHandler for MsgConnectionOpenTry {
         proof_verification::verify_connection_state(
             &trusted_client_state,
             self.proofs_height_on_a,
-            &ibc_types2::core::commitment::MerklePrefix {
-                key_prefix: self.counterparty.prefix.clone(),
-            },
+            &self.counterparty.prefix,
             &proof_conn_end_on_a,
             &trusted_consensus_state.root,
             &ConnectionPath::new(
@@ -135,9 +133,7 @@ impl MsgHandler for MsgConnectionOpenTry {
         proof_verification::verify_client_full_state(
             &trusted_client_state,
             self.proofs_height_on_a,
-            &MerklePrefix {
-                key_prefix: self.counterparty.prefix.clone(),
-            },
+            &self.counterparty.prefix,
             &proof_client_state_of_b_on_a,
             &trusted_consensus_state.root,
             &ClientStatePath::new(&self.counterparty.client_id),
@@ -156,9 +152,7 @@ impl MsgHandler for MsgConnectionOpenTry {
         proof_verification::verify_client_consensus_state(
             &trusted_client_state,
             self.proofs_height_on_a,
-            &MerklePrefix {
-                key_prefix: self.counterparty.prefix.clone(),
-            },
+            &self.counterparty.prefix,
             &proof_consensus_state_of_b_on_a,
             &trusted_consensus_state.root,
             &ClientConsensusStatePath::new(

@@ -243,12 +243,11 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
         };
 
         let commitment_bytes = commit_packet(&msg.packet);
-        let proof: MerkleProof = msg.proof_commitment_on_a.clone().try_into()?;
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
             &connection.counterparty.prefix.clone().into(),
-            &proof,
+            &msg.proof_commitment_on_a,
             &trusted_consensus_state.root,
             commitment_path,
             commitment_bytes,
@@ -276,12 +275,10 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             sequence: msg.packet.sequence,
         };
 
-        let proof: MerkleProof = msg.proof_acked_on_b.clone().try_into()?;
-
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
             &connection.counterparty.prefix.clone().into(),
-            &proof,
+            &msg.proof_acked_on_b,
             &trusted_consensus_state.root,
             ack_path,
             msg.acknowledgement.clone().into(),
@@ -310,12 +307,10 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
 
         let seq_path = SeqRecvPath(msg.packet.port_on_b.clone(), msg.packet.chan_on_b.clone());
 
-        let proof: MerkleProof = msg.proof_unreceived_on_b.clone().try_into()?;
-
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
             &connection.counterparty.prefix.clone().into(),
-            &proof,
+            &msg.proof_unreceived_on_b,
             &trusted_consensus_state.root,
             seq_path,
             seq_bytes,
@@ -343,12 +338,10 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             sequence: msg.packet.sequence,
         };
 
-        let proof = MerkleProof::try_from(msg.proof_unreceived_on_b.clone())?;
-
         verify_merkle_absence_proof(
             &trusted_client_state.proof_specs,
             &connection.counterparty.prefix.clone().into(),
-            &proof,
+            &msg.proof_unreceived_on_b,
             &trusted_consensus_state.root,
             receipt_path,
         )?;

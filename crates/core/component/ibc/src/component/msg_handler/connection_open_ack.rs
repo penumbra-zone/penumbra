@@ -107,9 +107,7 @@ impl MsgHandler for MsgConnectionOpenAck {
         proof_verification::verify_connection_state(
             &trusted_client_state,
             self.proofs_height_on_b,
-            &ibc_types2::core::commitment::MerklePrefix {
-                key_prefix: connection.counterparty.prefix.clone(),
-            },
+            &connection.counterparty.prefix,
             &conn_end_on_b_proof,
             &trusted_consensus_state.root,
             &ConnectionPath::new(&self.conn_id_on_b),
@@ -127,9 +125,7 @@ impl MsgHandler for MsgConnectionOpenAck {
         proof_verification::verify_client_full_state(
             &trusted_client_state,
             self.proofs_height_on_b,
-            &ibc_types2::core::commitment::MerklePrefix {
-                key_prefix: connection.counterparty.prefix.clone(),
-            },
+            &connection.counterparty.prefix,
             &proof_client_state_of_a_on_b,
             &trusted_consensus_state.root,
             &ClientStatePath::new(&connection.counterparty.client_id),
@@ -148,9 +144,7 @@ impl MsgHandler for MsgConnectionOpenAck {
         proof_verification::verify_client_consensus_state(
             &trusted_client_state,
             self.proofs_height_on_b,
-            &ibc_types2::core::commitment::MerklePrefix {
-                key_prefix: connection.counterparty.prefix,
-            },
+            &connection.counterparty.prefix,
             &proof_consensus_state_of_a_on_b,
             &trusted_consensus_state.root,
             &ClientConsensusStatePath::new(
