@@ -3,7 +3,6 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_component::ActionHandler;
-use penumbra_crypto::MockFlowCiphertext;
 use penumbra_proof_params::SWAP_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
 
@@ -44,8 +43,8 @@ impl ActionHandler for Swap {
         let mut swap_flow = state.swap_flow(&swap.body.trading_pair);
 
         // Add the amount of each asset being swapped to the batch swap flow.
-        swap_flow.0 += MockFlowCiphertext::new(swap.body.delta_1_i);
-        swap_flow.1 += MockFlowCiphertext::new(swap.body.delta_2_i);
+        swap_flow.0 += swap.body.delta_1_i;
+        swap_flow.1 += swap.body.delta_2_i;
 
         // Set the batch swap flow for the trading pair.
         state.put_swap_flow(&swap.body.trading_pair, swap_flow);

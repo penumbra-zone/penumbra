@@ -4,13 +4,16 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_component::Component;
-use penumbra_crypto::{asset, SwapFlow, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use tendermint::v0_34::abci;
 use tracing::instrument;
 
-use crate::{state_key, BatchSwapOutputData, DirectedTradingPair, SwapExecution, TradingPair};
+use crate::{
+    component::flow::SwapFlow, state_key, BatchSwapOutputData, DirectedTradingPair, SwapExecution,
+    TradingPair,
+};
 
 use super::{
     router::{HandleBatchSwaps, RoutingParams},

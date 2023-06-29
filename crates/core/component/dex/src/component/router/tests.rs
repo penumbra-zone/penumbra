@@ -1,6 +1,5 @@
 use core::panic;
 use futures::StreamExt;
-use penumbra_crypto::MockFlowCiphertext;
 use penumbra_crypto::{asset, fixpoint::U128x128, Amount, Value};
 use penumbra_storage::ArcStateDeltaExt;
 use penumbra_storage::TempStorage;
@@ -1024,8 +1023,8 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     assert!(trading_pair.asset_1() == penumbra.id());
 
     // Add the amount of each asset being swapped to the batch swap flow.
-    swap_flow.0 += MockFlowCiphertext::new(0u32.into());
-    swap_flow.1 += MockFlowCiphertext::new(1u32.into());
+    swap_flow.0 += 0u32.into();
+    swap_flow.1 += 1u32.into();
 
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)
@@ -1167,8 +1166,8 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     assert!(trading_pair.asset_1() == gm.id());
 
     // Add the amount of each asset being swapped to the batch swap flow.
-    swap_flow.0 += MockFlowCiphertext::new(1_000_000_000_000u64.into());
-    swap_flow.1 += MockFlowCiphertext::new(0u32.into());
+    swap_flow.0 += 1_000_000_000_000u64.into();
+    swap_flow.1 += 0u32.into();
 
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)

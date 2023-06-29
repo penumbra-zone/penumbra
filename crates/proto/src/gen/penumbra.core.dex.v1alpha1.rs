@@ -5,11 +5,6 @@ pub struct Swap {
     /// Contains the Swap proof.
     #[prost(message, optional, tag = "1")]
     pub proof: ::core::option::Option<super::super::crypto::v1alpha1::ZkSwapProof>,
-    /// MockFlowCiphertext dropped until flow encryption/ABCI++ available
-    /// // Encrypted amount of asset 1 of the trading pair.
-    /// MockFlowCiphertext enc_amount_1 = 2;
-    /// // Encrypted amount of asset 2 of the trading pair.
-    /// MockFlowCiphertext enc_amount_2 = 3;
     /// Encapsulates the authorized fields of the Swap action, used in signing.
     #[prost(message, optional, tag = "4")]
     pub body: ::core::option::Option<SwapBody>,
@@ -111,13 +106,6 @@ pub struct SwapPlaintext {
     /// Swap rseed (blinding factors are derived from this)
     #[prost(bytes = "vec", tag = "6")]
     pub rseed: ::prost::alloc::vec::Vec<u8>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MockFlowCiphertext {
-    /// Represents this transaction's contribution to flow's value.
-    #[prost(message, optional, tag = "1")]
-    pub value: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
