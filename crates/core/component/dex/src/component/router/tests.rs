@@ -2031,15 +2031,19 @@ async fn path_search_unique() -> anyhow::Result<()> {
         };
 
         let best_path = path_entry.path;
+        let spill_path = path_entry.spill.unwrap();
 
         let path_price = best_path.price;
+        let spill_price = spill_path.price;
+
         tracing::debug!(best_path_start = %best_path.start);
         tracing::debug!(best_path_hops = ?best_path.nodes);
 
         // `U128x128` can be approximated to `f64` for comparison purposes.
         let path_price_f64: f64 = path_price.into();
-
+        let spill_price_f64: f64 = spill_price.into();
         let correct_path_price = 1f64;
+        let correct_spill_price = 1f64;
 
         assert_eq!(
             correct_path_price, path_price_f64,
@@ -2047,11 +2051,22 @@ async fn path_search_unique() -> anyhow::Result<()> {
             correct_path_price, path_price_f64
         );
 
+        assert_eq!(
+            correct_spill_price, spill_price_f64,
+            "check that the path price is correct (correct={}, actual={})",
+            correct_path_price, path_price_f64
+        );
+
         assert_eq!(best_path.nodes.len(), 2, "check that the path has 2 hops");
         assert_eq!(
-            best_path.nodes[1],
+            best_path.nodes[0],
+            gm.id(),
+            "check that the best middle hop is gm"
+        );
+        assert_eq!(
+            spill_path.nodes[0],
             gn.id(),
-            "check that the middle hop is gn"
+            "check that spill middle hop is gn"
         );
     }
 
