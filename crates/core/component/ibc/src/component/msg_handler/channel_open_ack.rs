@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types2::core::{
     channel::channel::State as ChannelState, channel::msgs::MsgChannelOpenAck, channel::ChannelEnd,
-    channel::Counterparty, channel::PortId, commitment::MerkleProof, connection::ConnectionEnd,
+    channel::Counterparty, channel::PortId, connection::ConnectionEnd,
     connection::State as ConnectionState,
 };
 use penumbra_storage::{StateRead, StateWrite};
@@ -57,12 +57,10 @@ impl MsgHandler for MsgChannelOpenAck {
             version: self.version_on_b.clone(),
         };
 
-        let proof = MerkleProof::try_from(self.proof_chan_end_on_b.clone())?;
-
         state
             .verify_channel_proof(
                 &connection,
-                &proof,
+                &self.proof_chan_end_on_b,
                 &self.proof_height_on_b,
                 &self.chan_id_on_b,
                 &channel.remote.port_id,

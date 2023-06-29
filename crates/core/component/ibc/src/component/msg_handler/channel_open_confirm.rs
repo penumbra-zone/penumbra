@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types2::core::{
     channel::channel::State as ChannelState, channel::msgs::MsgChannelOpenConfirm,
-    channel::ChannelEnd, channel::Counterparty, channel::PortId, commitment::MerkleProof,
+    channel::ChannelEnd, channel::Counterparty, channel::PortId,
     connection::State as ConnectionState,
 };
 use penumbra_storage::StateWrite;
@@ -64,12 +64,10 @@ impl MsgHandler for MsgChannelOpenConfirm {
             version: channel.version.clone(),
         };
 
-        let proof = MerkleProof::try_from(self.proof_chan_end_on_a.clone())?;
-
         state
             .verify_channel_proof(
                 &connection,
-                &proof,
+                &self.proof_chan_end_on_a,
                 &self.proof_height_on_a,
                 &channel
                     .remote

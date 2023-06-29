@@ -4,7 +4,6 @@ use ibc_types2::core::{
     channel::{
         channel::State as ChannelState, msgs::MsgChannelOpenTry, ChannelEnd, Counterparty, PortId,
     },
-    commitment::MerkleProof,
     connection::{ConnectionEnd, State as ConnectionState},
 };
 use penumbra_storage::{StateRead, StateWrite};
@@ -50,12 +49,10 @@ impl MsgHandler for MsgChannelOpenTry {
 
         tracing::debug!(?self, ?expected_channel_on_a);
 
-        let proof = MerkleProof::try_from(self.proof_chan_end_on_a.clone())?;
-
         state
             .verify_channel_proof(
                 &connection_on_b,
-                &proof,
+                &self.proof_chan_end_on_a,
                 &self.proof_height_on_a,
                 &self.chan_id_on_a,
                 &self.port_id_on_a,
