@@ -921,6 +921,86 @@ mod test {
     }
 
     proptest! {
+        #![proptest_config(ProptestConfig::with_cases(1))]
+        #[test]
+        fn division(
+            a_int in any::<u64>(),
+            b_int in any::<u64>(),
+        ) {
+            let a = U128x128::from(a_int);
+            let b = U128x128::from(b_int);
+
+            // We can't divide by zero
+            if b_int == 0 {
+                return Ok(())
+            }
+
+            let result = a.checked_div(&b);
+
+            let expected_c = result.expect("result should not overflow");
+
+            let circuit = TestDivisionCircuit {
+                a,
+                b,
+                c: expected_c,
+            };
+
+            let (pk, vk) = TestDivisionCircuit::generate_prepared_test_parameters();
+            let mut rng = OsRng;
+
+            let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+            .expect("should be able to form proof");
+
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+                &vk,
+                &expected_c.to_field_elements().unwrap(),
+                &proof,
+            );
+            assert!(proof_result.is_ok());
+        }
+    }
+
+    struct TestDivisionCircuit {
+        a: U128x128,
+        b: U128x128,
+
+        // c = a / b
+        pub c: U128x128,
+    }
+
+    impl ConstraintSynthesizer<Fq> for TestDivisionCircuit {
+        fn generate_constraints(
+            self,
+            cs: ConstraintSystemRef<Fq>,
+        ) -> ark_relations::r1cs::Result<()> {
+            let a_var = U128x128Var::new_witness(cs.clone(), || Ok(self.a))?;
+            let b_var = U128x128Var::new_witness(cs.clone(), || Ok(self.b))?;
+            let c_public_var = U128x128Var::new_input(cs.clone(), || Ok(self.c))?;
+            let c_var = a_var.checked_div(&b_var, cs)?;
+            c_var.enforce_equal(&c_public_var)?;
+            Ok(())
+        }
+    }
+
+    impl ParameterSetup for TestDivisionCircuit {
+        fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+            let num: [u8; 32] = [1u8; 32];
+            let a = U128x128::from_bytes(num);
+            let b = U128x128::from_bytes(num);
+            let circuit = TestDivisionCircuit {
+                a,
+                b,
+                c: a.checked_div(&b).unwrap(),
+            };
+            let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
+                circuit, &mut OsRng,
+            )
+            .expect("can perform circuit specific setup");
+            (pk, vk)
+        }
+    }
+
+    proptest! {
         #![proptest_config(ProptestConfig::with_cases(5))]
         #[test]
         fn compare(
