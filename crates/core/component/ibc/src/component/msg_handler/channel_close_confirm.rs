@@ -5,7 +5,6 @@ use ibc_types2::core::{
         channel::State as ChannelState, msgs::MsgChannelCloseConfirm, ChannelEnd, Counterparty,
         PortId,
     },
-    commitment::MerkleProof,
     connection::State as ConnectionState,
 };
 use penumbra_storage::StateWrite;
@@ -70,12 +69,10 @@ impl MsgHandler for MsgChannelCloseConfirm {
             version: channel.version.clone(),
         };
 
-        let proof = MerkleProof::try_from(self.proof_chan_end_on_a.clone())?;
-
         state
             .verify_channel_proof(
                 &connection,
-                &proof,
+                &self.proof_chan_end_on_a,
                 &self.proof_height_on_a,
                 &channel
                     .remote
