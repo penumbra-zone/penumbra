@@ -240,6 +240,7 @@ fn into_position_inner<R: CryptoRngCore>(
     // Setting p = desired, q = offered gives k = offered * desired in both cases.
     let p = desired.amount;
     let q = offered.amount;
+
     Position::new(
         rng,
         DirectedTradingPair {
