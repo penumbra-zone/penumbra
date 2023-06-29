@@ -22,7 +22,7 @@ pub(super) struct PathEntry<S: StateRead + 'static> {
 impl<S: StateRead + 'static> PathEntry<S> {
     /// Update the best path or spill price if the new path is better, otherwise do nothing.
     pub fn update(&mut self, new_path: Path<S>) {
-        if new_path.price < self.path.price {
+        if new_path < self.path {
             tracing::debug!(new_price = %new_path.price, old_price = %self.path.price, "new path is better than best path, updating cache");
             self.spill = Some(std::mem::replace(&mut self.path, new_path));
             self.active = true;
