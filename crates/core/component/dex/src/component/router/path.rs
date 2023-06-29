@@ -2,6 +2,7 @@ use anyhow::Result;
 
 use penumbra_crypto::{asset, fixpoint::U128x128};
 use penumbra_storage::{StateDelta, StateRead};
+use std::cmp::Ordering;
 use tracing::Instrument;
 
 use crate::{component::PositionRead, DirectedTradingPair};
@@ -95,6 +96,33 @@ impl<S: StateRead + 'static> Path<S> {
                 tracing::debug!(?e, "failed to extend path due to overflow");
                 Ok(None)
             }
+        }
+    }
+}
+
+impl<S: StateRead + 'static> PartialEq for Path<S> {
+    fn eq(&self, other: &Self) -> bool {
+        self.price == other.price && self.nodes == other.nodes
+    }
+}
+
+impl<S: StateRead + 'static> PartialOrd for Path<S> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<S: StateRead + 'static> Eq for Path<S> {}
+
+impl<S: StateRead + 'static> Ord for Path<S> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.price.cmp(&other.price) {
+            Ordering::Equal => match self.nodes.len().cmp(&other.nodes.len()) {
+                Ordering::Greater => Ordering::Greater,
+                Ordering::Equal => self.nodes.cmp(&other.nodes),
+                Ordering::Less => Ordering::Less,
+            },
+            less_or_more => less_or_more,
         }
     }
 }
