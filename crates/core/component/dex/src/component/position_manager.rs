@@ -113,9 +113,11 @@ pub trait PositionManager: StateWrite + PositionRead {
         // reserves or the position state might have invalidated them.
         self.deindex_position_by_price(&position);
 
-        // If the position is a limit order, check if it has been filled
-        // and mark it as closed if so.
-        let position = self.handle_limit_order(position);
+        // We pull the position from the state inconditionally, since we will
+        // always need to update the position's liquidity index.
+        let prev = self.position_by_id(&id).await?;
+
+        let position = self.handle_limit_order(prev, position);
 
         // Only index the position's liquidity if it is active.
         if position.state == position::State::Opened {
@@ -126,16 +128,21 @@ pub trait PositionManager: StateWrite + PositionRead {
         Ok(())
     }
 
-    /// Handle a limit order position, marking it as closed if it is filled,
-    /// recording its `limit_order_asset` if has newly been created. If the
-    /// position is not a limit order, ignore.
-    fn handle_limit_order(&self, position: Position) -> Position {
-        match position.limit_order_asset {
-            Some(asset_id) => {
-                if position
-                    .reserves_for(asset_id)
-                    .expect("limit order asset is part of reserves")
-                    == Amount::zero()
+    /// Handle a limit order, inspecting it previous state to determine if it
+    /// has been filled, and if so, marking it as closed. If the position is
+    /// not a limit order, or has not been filled, it is returned unchanged.
+    fn handle_limit_order(
+        &self,
+        prev_position: Option<position::Position>,
+        position: Position,
+    ) -> Position {
+        match prev_position {
+            Some(_) if position.close_on_fill => {
+                // It's technically possible for a limit order to be partially filled,
+                // and unfilled on the other side. In this case, we would close it prematurely.
+                // However, because of the arbitrage dynamics we expect that in practice an order
+                // gets completely filled or not at all.
+                if position.reserves.r1 == Amount::zero() || position.reserves.r2 == Amount::zero()
                 {
                     Position {
                         state: position::State::Closed,
@@ -145,22 +152,7 @@ pub trait PositionManager: StateWrite + PositionRead {
                     position
                 }
             }
-            None if position.close_on_fill => {
-                let limit_order_asset = if position
-                    .reserves_for(position.phi.pair.asset_1())
-                    .expect("reserves contain asset_1")
-                    == Amount::zero()
-                {
-                    Some(position.phi.pair.asset_2())
-                } else {
-                    Some(position.phi.pair.asset_1())
-                };
-                Position {
-                    limit_order_asset,
-                    ..position
-                }
-            }
-            None => return position,
+            _ => position,
         }
     }
 
@@ -174,14 +166,9 @@ pub trait PositionManager: StateWrite + PositionRead {
         fixed_candidates: Arc<Vec<asset::Id>>,
     ) -> Result<Vec<asset::Id>> {
         let candidates = BTreeSet::from_iter(fixed_candidates.iter().cloned());
-
-        // TODO: fill in an implementation that does dynamic candidate
-        // selection, but without scanning every single position in every graph
-        // traversal iteration.
-        //
-        // Perhaps the per-asset candidate sets should actually be computed once
-        // per block and stored as a BTreeMap in the object store?
-
+        // TODO: do dynamic candidate selection based on liquidity (tracked by #2750)
+        // Idea: each block, compute the per-asset candidate set and store it
+        // in the object store as a BTreeMap.
         Ok(candidates.into_iter().collect())
     }
 }
