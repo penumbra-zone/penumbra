@@ -31,7 +31,10 @@ pub mod validator;
 
 pub use delegate::Delegate;
 pub use undelegate::Undelegate;
-pub use undelegate_claim::{UndelegateClaim, UndelegateClaimBody, UndelegateClaimPlan};
+pub use undelegate_claim::{
+    UndelegateClaim, UndelegateClaimBody, UndelegateClaimCircuit, UndelegateClaimPlan,
+    UndelegateClaimProof,
+};
 
 pub use self::metrics::register_metrics;
 pub use changes::DelegationChanges;

@@ -4,13 +4,12 @@ use ark_relations::r1cs::{
 };
 use decaf377::Fr;
 use penumbra_crypto::{
-    asset, balance,
-    proofs::groth16::{UndelegateClaimCircuit, UndelegateClaimProof},
-    rdsa,
+    asset, balance, rdsa,
     stake::{IdentityKey, Penalty, UnbondingToken},
     Amount, Fq,
 };
 use penumbra_proof_params::UNDELEGATECLAIM_PROOF_PROVING_KEY;
+use penumbra_stake::{UndelegateClaimCircuit, UndelegateClaimProof};
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;

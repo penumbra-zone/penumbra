@@ -6,9 +6,7 @@ use decaf377::Fr;
 use penumbra_crypto::{
     asset,
     keys::{SeedPhrase, SpendKey},
-    proofs::groth16::{
-        DelegatorVoteProof, NullifierDerivationProof, OutputProof, SpendProof, UndelegateClaimProof,
-    },
+    proofs::groth16::{DelegatorVoteProof, NullifierDerivationProof, OutputProof, SpendProof},
     rdsa::{self, SpendAuth, VerificationKey},
     stake::{IdentityKey, Penalty, UnbondingToken},
     Amount, Balance, Fee, Fq, Note, Value,
@@ -25,6 +23,7 @@ use penumbra_proof_params::{
     SWAP_PROOF_PROVING_KEY, SWAP_PROOF_VERIFICATION_KEY, UNDELEGATECLAIM_PROOF_PROVING_KEY,
     UNDELEGATECLAIM_PROOF_VERIFICATION_KEY,
 };
+use penumbra_stake::UndelegateClaimProof;
 use penumbra_tct as tct;
 use rand_core::OsRng;
 
