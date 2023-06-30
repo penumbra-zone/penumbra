@@ -32,6 +32,7 @@ ark-relations = "0.4"
 penumbra-tct = { path = "../tct/", features = ["r1cs"] }
 criterion = { version = "0.4", features = ["html_reports"] }
 penumbra-dex = { path = "../../core/component/dex/" }
+penumbra-stake = { path = "../../core/component/stake/" }
 
 [build-dependencies]
 regex = {version = "1", optional=true }

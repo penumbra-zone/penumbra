@@ -1,10 +1,11 @@
 use penumbra_crypto::{
     balance,
-    proofs::groth16::UndelegateClaimProof,
     stake::{IdentityKey, Penalty},
 };
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
+
+use crate::undelegate_claim::proof::UndelegateClaimProof;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::UndelegateClaimBody", into = "pb::UndelegateClaimBody")]

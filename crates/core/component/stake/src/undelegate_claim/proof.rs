@@ -1,8 +1,7 @@
 use ark_groth16::r1cs_to_qap::LibsnarkReduction;
 use ark_r1cs_std::uint8::UInt8;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use decaf377::FieldExt;
-use decaf377::{Bls12_377, Fq, Fr};
+use decaf377::Bls12_377;
 
 use ark_ff::ToConstraintField;
 use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey};
@@ -12,11 +11,15 @@ use ark_snark::SNARK;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use rand_core::OsRng;
 
-use crate::asset::{AmountVar, AssetIdVar};
-use crate::proofs::groth16::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
-use crate::stake::{Penalty, PenaltyVar};
-use crate::{asset, balance, balance::commitment::BalanceCommitmentVar, Amount};
-use crate::{Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::{
+    asset,
+    asset::{AmountVar, AssetIdVar},
+    balance,
+    balance::commitment::BalanceCommitmentVar,
+    proofs::groth16::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES},
+    stake::{Penalty, PenaltyVar},
+    Amount, Balance, FieldExt, Fq, Fr, Value, STAKING_TOKEN_ASSET_ID,
+};
 
 #[derive(Clone, Debug)]
 pub struct UndelegateClaimCircuit {
@@ -180,5 +183,62 @@ impl TryFrom<pb::ZkUndelegateClaimProof> for UndelegateClaimProof {
 
     fn try_from(proto: pb::ZkUndelegateClaimProof) -> Result<Self, Self::Error> {
         Ok(UndelegateClaimProof(proto.inner[..].try_into()?))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ark_ff::{PrimeField, UniformRand};
+    use decaf377::{Fq, Fr};
+    use penumbra_crypto::{
+        rdsa,
+        stake::{IdentityKey, Penalty, UnbondingToken},
+        Amount,
+    };
+    use proptest::prelude::*;
+    use rand_core::OsRng;
+
+    fn fr_strategy() -> BoxedStrategy<Fr> {
+        any::<[u8; 32]>()
+            .prop_map(|bytes| Fr::from_le_bytes_mod_order(&bytes[..]))
+            .boxed()
+    }
+
+    proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2))]
+    #[test]
+    fn undelegate_claim_proof_happy_path(validator_randomness in fr_strategy(), balance_blinding in fr_strategy(), value1_amount in 2..200u64, penalty_amount in 0..200u64) {
+            let (pk, vk) = UndelegateClaimCircuit::generate_prepared_test_parameters();
+
+            let sk = rdsa::SigningKey::new_from_field(validator_randomness);
+            let validator_identity = IdentityKey((&sk).into());
+            let unbonding_amount = Amount::from(value1_amount);
+
+            let start_epoch_index = 1;
+            let unbonding_token = UnbondingToken::new(validator_identity, start_epoch_index);
+            let unbonding_id = unbonding_token.id();
+            let penalty = Penalty(penalty_amount);
+            let balance = penalty.balance_for_claim(unbonding_id, unbonding_amount);
+            let balance_commitment = balance.commit(balance_blinding);
+
+            let blinding_r = Fq::rand(&mut OsRng);
+            let blinding_s = Fq::rand(&mut OsRng);
+            let proof = UndelegateClaimProof::prove(
+                blinding_r,
+                blinding_s,
+                &pk,
+                unbonding_amount,
+                balance_blinding,
+                balance_commitment,
+                unbonding_id,
+                penalty
+            )
+            .expect("can create proof");
+
+            let proof_result = proof.verify(&vk, balance_commitment, unbonding_id, penalty);
+
+            assert!(proof_result.is_ok());
+        }
     }
 }

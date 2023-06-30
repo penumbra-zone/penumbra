@@ -9,9 +9,10 @@ use ark_serialize::CanonicalSerialize;
 use decaf377::Bls12_377;
 use penumbra_crypto::proofs::groth16::{
     DelegatorVoteCircuit, NullifierDerivationCircuit, OutputCircuit, ParameterSetup, ProvingKeyExt,
-    SpendCircuit, UndelegateClaimCircuit, VerifyingKeyExt,
+    SpendCircuit, VerifyingKeyExt,
 };
 use penumbra_dex::{swap::proof::SwapCircuit, swap_claim::proof::SwapClaimCircuit};
+use penumbra_stake::UndelegateClaimCircuit;
 
 fn main() -> Result<()> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

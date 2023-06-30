@@ -34,6 +34,13 @@ penumbra-dao = { path = "../dao", default-features = false }
 penumbra-chain = { path = "../chain", default-features = false }
 
 # Penumbra dependencies
+decaf377 = {version = "0.4", features = ["r1cs"] }
+ark-r1cs-std = {version = "0.4", default-features = false }
+ark-relations = "0.4"
+ark-ff = { version = "0.4", default_features = false }
+ark-serialize = "0.4"
+ark-groth16 = {version = "0.4", default-features = false}
+ark-snark = "0.4"
 tokio = { version = "1.21.1", features = ["full", "tracing"], optional = true }
 im = { version = "15.1.0", optional = true }
 futures = { version = "0.3", optional = true }
@@ -60,6 +67,7 @@ ed25519-consensus = "2"
 rand_chacha = "0.3"
 penumbra-transaction = { path = "../../transaction", features = ["parallel"] }
 tracing-subscriber = "0.3"
+proptest = "1" 
 
 [build-dependencies]
 vergen = "5"
