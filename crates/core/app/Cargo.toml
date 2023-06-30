@@ -16,6 +16,7 @@ penumbra-component = { path = "../component/component" }
 penumbra-chain = { path = "../component/chain", features = ["component"] }
 penumbra-shielded-pool = { path = "../component/shielded-pool", features = ["component"] }
 penumbra-stake = { path = "../component/stake" }
+penumbra-governance = { path = "../component/governance" }
 penumbra-sct = { path = "../component/sct" }
 penumbra-dao = { path = "../component/dao" }
 penumbra-dex = { path = "../component/dex" }

@@ -4499,6 +4499,7 @@ dependencies = [
  "penumbra-dao",
  "penumbra-dex",
  "penumbra-distributions",
+ "penumbra-governance",
  "penumbra-ibc",
  "penumbra-proof-params",
  "penumbra-proto",
@@ -4772,6 +4773,34 @@ dependencies = [
  "rand_core 0.6.4",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "penumbra-governance"
+version = "0.55.0"
+dependencies = [
+ "anyhow",
+ "ark-ff",
+ "async-trait",
+ "blake2b_simd 0.5.11",
+ "bytes",
+ "decaf377-rdsa",
+ "im",
+ "metrics",
+ "penumbra-chain",
+ "penumbra-component",
+ "penumbra-crypto",
+ "penumbra-proof-params",
+ "penumbra-proto",
+ "penumbra-sct",
+ "penumbra-storage",
+ "penumbra-tct",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "regex",
+ "serde",
+ "tendermint",
+ "tracing",
 ]
 
 [[package]]
@@ -5167,6 +5196,7 @@ dependencies = [
  "penumbra-crypto",
  "penumbra-dao",
  "penumbra-dex",
+ "penumbra-governance",
  "penumbra-ibc",
  "penumbra-proof-params",
  "penumbra-proto",

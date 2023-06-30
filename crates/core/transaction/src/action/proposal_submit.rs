@@ -1,7 +1,8 @@
 use ark_ff::Zero;
 use serde::{Deserialize, Serialize};
 
-use penumbra_crypto::{asset::Amount, Balance, Fr, ProposalNft, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::{asset::Amount, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_governance::ProposalNft;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 use crate::{proposal::Proposal, ActionView, IsAction, TransactionPerspective};

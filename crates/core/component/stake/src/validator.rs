@@ -1,12 +1,12 @@
 //! Penumbra validators and related structures.
 
-use penumbra_crypto::{Address, GovernanceKey};
+use penumbra_crypto::Address;
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use serde_unit_struct::{Deserialize_unit_struct, Serialize_unit_struct};
 use serde_with::{serde_as, DisplayFromStr};
 
-use crate::{FundingStream, FundingStreams, IdentityKey};
+use crate::{FundingStream, FundingStreams, GovernanceKey, IdentityKey};
 
 mod bonding;
 mod definition;

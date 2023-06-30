@@ -2,9 +2,8 @@ use anyhow::Context;
 use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
-use penumbra_crypto::{
-    proofs::groth16::DelegatorVoteProof, Amount, Nullifier, Value, VotingReceiptToken,
-};
+use penumbra_crypto::{proofs::groth16::DelegatorVoteProof, Amount, Nullifier, Value};
+use penumbra_governance::VotingReceiptToken;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 

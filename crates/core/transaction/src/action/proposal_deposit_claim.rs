@@ -3,8 +3,9 @@ use serde::{Deserialize, Serialize};
 
 use penumbra_crypto::{
     asset::{self, Amount, DenomMetadata},
-    balance, Balance, Fr, ProposalNft, Value, STAKING_TOKEN_ASSET_ID,
+    balance, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_governance::ProposalNft;
 use penumbra_proto::core::governance::v1alpha1 as pb;
 
 use crate::{

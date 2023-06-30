@@ -13,6 +13,7 @@ penumbra-tct = { path = "../../crypto/tct" }
 penumbra-proof-params = { path = "../../crypto/proof-params/", features = ["proving-keys"] }
 penumbra-crypto = { path = "../crypto/" }
 penumbra-chain = { path = "../component/chain/", default-features = false }
+penumbra-governance = { path = "../component/governance/", default-features = false }
 penumbra-shielded-pool = { path = "../component/shielded-pool/", default-features = false }
 penumbra-stake = { path = "../component/stake", default-features = false }
 penumbra-ibc = { path = "../component/ibc/", default-features = false }

@@ -3,8 +3,8 @@ use decaf377::{FieldExt, Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_crypto::{
     proofs::groth16::DelegatorVoteProof, Amount, FullViewingKey, Note, Nullifier,
-    VotingReceiptToken,
 };
+use penumbra_governance::VotingReceiptToken;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;

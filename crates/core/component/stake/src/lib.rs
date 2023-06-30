@@ -35,11 +35,13 @@ pub use undelegate_claim::{
 };
 
 mod delegation_token;
+mod governance_key;
 mod identity_key;
 mod penalty;
 mod unbonding_token;
 
 pub use delegation_token::DelegationToken;
+pub use governance_key::GovernanceKey;
 pub use identity_key::IdentityKey;
 pub use penalty::{Penalty, PenaltyVar};
 pub use unbonding_token::UnbondingToken;

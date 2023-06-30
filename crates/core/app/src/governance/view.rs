@@ -12,11 +12,11 @@ use penumbra_chain::{
 };
 use penumbra_crypto::{
     asset::{self, Amount},
-    GovernanceKey, Nullifier, Value, STAKING_TOKEN_DENOM,
+    Nullifier, Value, STAKING_TOKEN_DENOM,
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_shielded_pool::component::{StateReadExt as _, SupplyRead};
-use penumbra_stake::{DelegationToken, IdentityKey};
+use penumbra_stake::{DelegationToken, GovernanceKey, IdentityKey};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
 use penumbra_transaction::{

@@ -5,9 +5,10 @@ use crate::testnet::{generate_tm_config, parse_tm_address, write_configs, Valida
 use anyhow::{Context, Result};
 use penumbra_chain::genesis;
 use penumbra_chain::{genesis::Allocation, params::ChainParameters};
-use penumbra_crypto::{keys::SpendKey, Address, GovernanceKey};
+use penumbra_crypto::{keys::SpendKey, Address};
 use penumbra_stake::{
-    validator::Validator, DelegationToken, FundingStream, FundingStreams, IdentityKey,
+    validator::Validator, DelegationToken, FundingStream, FundingStreams, GovernanceKey,
+    IdentityKey,
 };
 use serde::{de, Deserialize};
 use std::{
