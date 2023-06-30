@@ -1,12 +1,11 @@
 use anyhow::{Context, Result};
-use penumbra_crypto::{
-    memo::MemoCiphertext, rdsa, symmetric::PayloadKey, Fr, FullViewingKey, Zero,
-};
+use penumbra_crypto::{rdsa, symmetric::PayloadKey, Fr, FullViewingKey, Zero};
 use rand_core::{CryptoRng, RngCore};
 
 use super::TransactionPlan;
 use crate::{
-    action::Action, AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
+    action::Action, memo::MemoCiphertext, AuthorizationData, AuthorizingData, Transaction,
+    TransactionBody, WitnessData,
 };
 
 impl TransactionPlan {

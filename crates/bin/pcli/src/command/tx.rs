@@ -13,7 +13,6 @@ use ibc_types2::core::channel::{ChannelId, PortId};
 use penumbra_crypto::{
     asset::{self, DenomMetadata},
     keys::AddressIndex,
-    memo::MemoPlaintext,
     Amount, Fee, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
@@ -27,7 +26,7 @@ use penumbra_proto::{
 };
 use penumbra_stake::rate::RateData;
 use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
-use penumbra_transaction::{proposal::ProposalToml, vote::Vote};
+use penumbra_transaction::{memo::MemoPlaintext, proposal::ProposalToml, vote::Vote};
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};
 use rand_core::OsRng;

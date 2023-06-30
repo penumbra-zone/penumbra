@@ -4,7 +4,6 @@ use tonic::transport::Channel;
 use anyhow::{Context, Result};
 use penumbra_crypto::{
     keys::{AccountGroupId, AddressIndex},
-    memo::MemoPlaintext,
     Address, Amount, Fee, FullViewingKey, Value,
 };
 use penumbra_proto::{
@@ -15,6 +14,7 @@ use penumbra_stake::rate::RateData;
 use penumbra_stake::validator;
 use penumbra_transaction::{
     action::{Proposal, ValidatorVote},
+    memo::MemoPlaintext,
     plan::TransactionPlan,
     proposal,
 };

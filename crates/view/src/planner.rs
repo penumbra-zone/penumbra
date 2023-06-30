@@ -11,7 +11,6 @@ use penumbra_crypto::{
     asset::Amount,
     asset::DenomMetadata,
     keys::{AccountGroupId, AddressIndex},
-    memo::MemoPlaintext,
     Address, Balance, Fee, Note, Value,
 };
 use penumbra_dao::DaoDeposit;
@@ -35,6 +34,7 @@ use penumbra_transaction::{
     action::{
         Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
     },
+    memo::MemoPlaintext,
     plan::{ActionPlan, DelegatorVotePlan, MemoPlan, TransactionPlan},
     proposal,
 };

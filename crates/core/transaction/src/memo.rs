@@ -6,7 +6,7 @@ use std::{
 use anyhow::anyhow;
 use rand_core::OsRng;
 
-use crate::{
+use penumbra_crypto::{
     balance, ka,
     keys::OutgoingViewingKey,
     note,
@@ -14,6 +14,7 @@ use crate::{
     Address, Note,
 };
 use penumbra_proto::core::transaction::v1alpha1 as pbt;
+
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 
 // This is the `MEMO_CIPHERTEXT_LEN_BYTES` - MAC size (16 bytes).
@@ -231,11 +232,12 @@ mod tests {
     use rand_core::OsRng;
 
     use super::*;
-    use crate::{
+    use decaf377::Fr;
+    use penumbra_crypto::{
+        asset,
         keys::{SeedPhrase, SpendKey},
         Value,
     };
-    use decaf377::Fr;
 
     use proptest::prelude::*;
 
@@ -291,7 +293,7 @@ mod tests {
 
         let value = Value {
             amount: 10u64.into(),
-            asset_id: crate::asset::Cache::with_known_assets()
+            asset_id: asset::Cache::with_known_assets()
                 .get_unit("upenumbra")
                 .unwrap()
                 .id(),

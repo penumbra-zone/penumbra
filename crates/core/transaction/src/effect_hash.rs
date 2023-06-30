@@ -652,7 +652,6 @@ mod tests {
     use penumbra_crypto::{
         asset,
         keys::{SeedPhrase, SpendKey},
-        memo::MemoPlaintext,
         Address, Fee, Note, Value, STAKING_TOKEN_ASSET_ID,
     };
     use penumbra_dex::{swap::SwapPlaintext, swap::SwapPlan, TradingPair};
@@ -661,6 +660,7 @@ mod tests {
     use rand_core::OsRng;
 
     use crate::{
+        memo::MemoPlaintext,
         plan::{CluePlan, MemoPlan, TransactionPlan},
         WitnessData,
     };
