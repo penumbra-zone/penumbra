@@ -1,6 +1,7 @@
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_crypto::{stake::IdentityKey, GovernanceKey};
+use penumbra_crypto::GovernanceKey;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_stake::IdentityKey;
 use serde::{Deserialize, Serialize};
 
 use crate::{vote::Vote, ActionView, IsAction, TransactionPerspective};

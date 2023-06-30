@@ -6,10 +6,11 @@ use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::asset::{DenomMetadata, Id};
 use penumbra_crypto::keys::AccountGroupId;
 use penumbra_crypto::{asset, keys::AddressIndex, note, Nullifier};
-use penumbra_crypto::{stake::IdentityKey, Address, Amount};
+use penumbra_crypto::{Address, Amount};
 use penumbra_proto::view::v1alpha1::{
     self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,
 };
+use penumbra_stake::IdentityKey;
 
 use penumbra_transaction::AuthorizationData;
 use penumbra_transaction::{plan::TransactionPlan, Transaction, WitnessData};

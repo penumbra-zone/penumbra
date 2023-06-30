@@ -15,11 +15,7 @@ use penumbra_chain::{
     genesis, Epoch, NoteSource,
 };
 use penumbra_component::Component;
-use penumbra_crypto::stake::Penalty;
-use penumbra_crypto::{
-    stake::{DelegationToken, IdentityKey},
-    Value, STAKING_TOKEN_ASSET_ID,
-};
+use penumbra_crypto::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dao::component::StateWriteExt as _;
 use penumbra_proto::{
     state::future::{DomainFuture, ProtoFuture},
@@ -45,7 +41,7 @@ use crate::{
     rate::{BaseRateData, RateData},
     state_key,
     validator::{self, Validator},
-    CurrentConsensusKeys, DelegationChanges, Uptime,
+    CurrentConsensusKeys, DelegationChanges, Penalty, Uptime, {DelegationToken, IdentityKey},
 };
 use crate::{Delegate, Undelegate};
 
@@ -241,7 +237,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 let penalty = self.get_chain_params().await?.slashing_penalty_downtime;
 
                 // Record the slashing penalty on this validator.
-                self.record_slashing_penalty(identity_key, penalty).await?;
+                self.record_slashing_penalty(identity_key, Penalty(penalty))
+                    .await?;
 
                 // The validator's delegation pool begins unbonding.  Jailed
                 // validators are not unbonded immediately, because they need to
@@ -264,7 +261,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 let penalty = self.get_chain_params().await?.slashing_penalty_misbehavior;
 
                 // Record the slashing penalty on this validator.
-                self.record_slashing_penalty(identity_key, penalty).await?;
+                self.record_slashing_penalty(identity_key, Penalty(penalty))
+                    .await?;
 
                 // Regardless of its current bonding state, the validator's
                 // delegation pool is unbonded immediately, because the

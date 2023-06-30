@@ -1,6 +1,7 @@
-use penumbra_crypto::stake::IdentityKey;
 use std::string::String;
 use tendermint::PublicKey;
+
+use crate::IdentityKey;
 
 pub fn current_base_rate() -> &'static str {
     "staking/base_rate/current"

@@ -2,36 +2,34 @@ use std::str::FromStr;
 
 use regex::Regex;
 
-use super::IdentityKey;
-use crate::asset;
+use penumbra_crypto::asset;
 
-/// Delegation tokens represent a share of a particular validator's delegation pool.
-pub struct DelegationToken {
+use crate::IdentityKey;
+
+/// Unbonding tokens represent staking tokens that are currently unbonding and
+/// subject to slashing.
+///
+/// Unbonding tokens are parameterized by the validator identity, and the epoch at
+/// which unbonding began.
+pub struct UnbondingToken {
     validator_identity: IdentityKey,
+    start_epoch_index: u64,
     base_denom: asset::DenomMetadata,
 }
 
-impl From<IdentityKey> for DelegationToken {
-    fn from(v: IdentityKey) -> Self {
-        DelegationToken::new(v)
-    }
-}
-
-impl From<&IdentityKey> for DelegationToken {
-    fn from(v: &IdentityKey) -> Self {
-        DelegationToken::new(v.clone())
-    }
-}
-
-impl DelegationToken {
-    pub fn new(validator_identity: IdentityKey) -> Self {
+impl UnbondingToken {
+    pub fn new(validator_identity: IdentityKey, start_epoch_index: u64) -> Self {
         // This format string needs to be in sync with the asset registry
         let base_denom = asset::REGISTRY
-            .parse_denom(&format!("udelegation_{validator_identity}"))
+            .parse_denom(&format!(
+                // "uu" is not a typo, these are micro-unbonding tokens
+                "uunbonding_epoch_{start_epoch_index}_{validator_identity}"
+            ))
             .expect("base denom format is valid");
-        DelegationToken {
+        UnbondingToken {
             validator_identity,
             base_denom,
+            start_epoch_index,
         }
     }
 
@@ -54,36 +52,53 @@ impl DelegationToken {
     pub fn validator(&self) -> IdentityKey {
         self.validator_identity.clone()
     }
+
+    pub fn start_epoch_index(&self) -> u64 {
+        self.start_epoch_index
+    }
 }
 
-impl TryFrom<asset::DenomMetadata> for DelegationToken {
+impl TryFrom<asset::DenomMetadata> for UnbondingToken {
     type Error = anyhow::Error;
+
     fn try_from(base_denom: asset::DenomMetadata) -> Result<Self, Self::Error> {
+        let base_string = base_denom.to_string();
+
         // Note: this regex must be in sync with both asset::REGISTRY
         // and VALIDATOR_IDENTITY_BECH32_PREFIX
-        let validator_identity =
-            Regex::new("udelegation_(?P<data>penumbravalid1[a-zA-HJ-NP-Z0-9]+)")
+        // The data capture group is used by asset::REGISTRY
+        let captures =
+            Regex::new("^uunbonding_(?P<data>epoch_(?P<start>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$")
                 .expect("regex is valid")
-                .captures(&base_denom.to_string())
+                .captures(base_string.as_ref())
                 .ok_or_else(|| {
                     anyhow::anyhow!(
-                        "base denom {} is not a delegation token",
+                        "base denom {} is not an unbonding token",
                         base_denom.to_string()
                     )
-                })?
-                .name("data")
-                .expect("data is a named capture")
-                .as_str()
-                .parse()?;
+                })?;
+
+        let validator_identity = captures
+            .name("validator")
+            .expect("validator is a named capture")
+            .as_str()
+            .parse()?;
+
+        let start_epoch_index = captures
+            .name("start")
+            .expect("start is a named capture")
+            .as_str()
+            .parse()?;
 
         Ok(Self {
             base_denom,
             validator_identity,
+            start_epoch_index,
         })
     }
 }
 
-impl FromStr for DelegationToken {
+impl FromStr for UnbondingToken {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         asset::REGISTRY
@@ -93,27 +108,27 @@ impl FromStr for DelegationToken {
     }
 }
 
-impl std::fmt::Display for DelegationToken {
+impl std::fmt::Display for UnbondingToken {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.base_denom.fmt(f)
     }
 }
 
-impl std::fmt::Debug for DelegationToken {
+impl std::fmt::Debug for UnbondingToken {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.base_denom.fmt(f)
     }
 }
 
-impl PartialEq for DelegationToken {
+impl PartialEq for UnbondingToken {
     fn eq(&self, other: &Self) -> bool {
         self.base_denom.eq(&other.base_denom)
     }
 }
 
-impl Eq for DelegationToken {}
+impl Eq for UnbondingToken {}
 
-impl std::hash::Hash for DelegationToken {
+impl std::hash::Hash for UnbondingToken {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.base_denom.hash(state)
     }
@@ -121,20 +136,22 @@ impl std::hash::Hash for DelegationToken {
 
 #[cfg(test)]
 mod tests {
-    use crate::rdsa::{SigningKey, SpendAuth};
+    use decaf377_rdsa::{SigningKey, SpendAuth};
 
     use super::*;
 
     #[test]
-    fn delegation_token_denomination_round_trip() {
+    fn unbonding_token_denomination_round_trip() {
         use rand_core::OsRng;
 
         let ik = IdentityKey(SigningKey::<SpendAuth>::new(OsRng).into());
+        let start = 782;
 
-        let token = DelegationToken::new(ik);
+        let token = UnbondingToken::new(ik, start);
 
         let denom = token.to_string();
-        let token2 = DelegationToken::from_str(&denom).unwrap();
+        println!("denom: {denom}");
+        let token2 = UnbondingToken::from_str(&denom).unwrap();
         let denom2 = token2.to_string();
 
         assert_eq!(denom, denom2);

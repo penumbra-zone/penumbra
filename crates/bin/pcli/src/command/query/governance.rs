@@ -7,8 +7,8 @@ use std::{
 use anyhow::{Context, Result};
 use futures::{StreamExt, TryStreamExt};
 use penumbra_app::governance::{self, state_key::*};
-use penumbra_crypto::stake::IdentityKey;
 use penumbra_proto::client::v1alpha1::{PrefixValueRequest, PrefixValueResponse};
+use penumbra_stake::IdentityKey;
 use penumbra_transaction::{
     proposal::{self, Proposal},
     vote::Vote,

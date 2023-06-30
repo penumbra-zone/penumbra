@@ -3,13 +3,11 @@ use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
 use decaf377::Fr;
-use penumbra_crypto::{
-    asset, balance, rdsa,
-    stake::{IdentityKey, Penalty, UnbondingToken},
-    Amount, Fq,
-};
+use penumbra_crypto::{asset, balance, rdsa, Amount, Fq};
 use penumbra_proof_params::UNDELEGATECLAIM_PROOF_PROVING_KEY;
-use penumbra_stake::{UndelegateClaimCircuit, UndelegateClaimProof};
+use penumbra_stake::{
+    IdentityKey, Penalty, UnbondingToken, UndelegateClaimCircuit, UndelegateClaimProof,
+};
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;

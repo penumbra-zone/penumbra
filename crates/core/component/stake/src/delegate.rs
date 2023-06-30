@@ -1,10 +1,8 @@
-use penumbra_crypto::{
-    asset::Amount,
-    stake::{DelegationToken, IdentityKey},
-    Balance, Value, STAKING_TOKEN_ASSET_ID,
-};
+use penumbra_crypto::{asset::Amount, Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
+
+use crate::{DelegationToken, IdentityKey};
 
 /// A transaction action adding stake to a validator's delegation pool.
 #[derive(Debug, Clone, Serialize, Deserialize)]

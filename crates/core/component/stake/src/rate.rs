@@ -1,6 +1,6 @@
 //! Staking reward and delegation token exchange rates.
 
-use penumbra_crypto::{stake::Penalty, Amount};
+use penumbra_crypto::Amount;
 use penumbra_proto::client::v1alpha1::CurrentValidatorRateResponse;
 use penumbra_proto::{
     client::v1alpha1::NextValidatorRateResponse, core::stake::v1alpha1 as pb, DomainType, TypeUrl,
@@ -8,7 +8,7 @@ use penumbra_proto::{
 use serde::{Deserialize, Serialize};
 
 use crate::{validator::State, FundingStream, IdentityKey};
-use crate::{Delegate, Undelegate};
+use crate::{Delegate, Penalty, Undelegate};
 
 /// Describes a validator's reward rate and voting power in some epoch.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
