@@ -9,7 +9,7 @@ use penumbra_proof_params::SWAPCLAIM_PROOF_VERIFICATION_KEY;
 use penumbra_shielded_pool::component::{NoteManager, StateReadExt as _};
 use penumbra_storage::{StateRead, StateWrite};
 
-use crate::{component::StateReadExt, swap_claim::SwapClaim};
+use crate::{component::StateReadExt, event, swap_claim::SwapClaim};
 
 #[async_trait]
 impl ActionHandler for SwapClaim {
@@ -79,6 +79,8 @@ impl ActionHandler for SwapClaim {
             .await;
 
         state.spend_nullifier(self.body.nullifier, source).await;
+
+        state.record(event::swap_claim(&self));
 
         Ok(())
     }

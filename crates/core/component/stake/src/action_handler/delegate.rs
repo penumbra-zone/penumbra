@@ -4,9 +4,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_storage::{StateRead, StateWrite};
 
-use crate::Delegate;
 use crate::{
-    action_handler::ActionHandler, component::StateWriteExt as _, validator, StateReadExt as _,
+    action_handler::ActionHandler, component::StateWriteExt as _, event, validator, Delegate,
+    StateReadExt as _,
 };
 
 #[async_trait]
@@ -92,6 +92,8 @@ impl ActionHandler for Delegate {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(?self, "queuing delegation for next epoch");
         state.stub_push_delegation(self.clone());
+
+        state.record(event::delegate(&self));
 
         Ok(())
     }

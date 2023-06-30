@@ -8,6 +8,7 @@ use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
     component::{StateReadExt, StateWriteExt, SwapManager},
+    event,
     swap::Swap,
 };
 
@@ -54,6 +55,8 @@ impl ActionHandler for Swap {
         state
             .add_swap_payload(self.body.payload.clone(), source)
             .await;
+
+        state.record(event::swap(&self));
 
         Ok(())
     }

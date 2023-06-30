@@ -8,6 +8,7 @@ use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
     component::{PositionManager, PositionRead},
+    event,
     lp::{action::PositionWithdraw, position},
 };
 
@@ -64,6 +65,8 @@ impl ActionHandler for PositionWithdraw {
                 metadata.state
             ));
         }
+
+        state.record(event::position_withdraw(&self, &metadata));
 
         metadata.state = position::State::Withdrawn;
         state.put_position(metadata).await?;

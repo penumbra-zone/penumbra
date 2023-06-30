@@ -40,7 +40,6 @@ use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
 use crate::{
-    event,
     funding_stream::Recipient,
     metrics,
     rate::{BaseRateData, RateData},
@@ -1259,14 +1258,12 @@ pub trait StateWriteExt: StateWrite {
     }
 
     fn stub_push_delegation(&mut self, delegation: Delegate) {
-        self.record(event::delegate(&delegation));
         let mut changes = self.stub_delegation_changes();
         changes.delegations.push(delegation);
         self.put_stub_delegation_changes(changes);
     }
 
     fn stub_push_undelegation(&mut self, undelegation: Undelegate) {
-        self.record(event::undelegate(&undelegation));
         let mut changes = self.stub_delegation_changes();
         changes.undelegations.push(undelegation);
         self.put_stub_delegation_changes(changes);
