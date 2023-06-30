@@ -24,6 +24,7 @@ mod transaction;
 mod witness_data;
 
 pub mod action;
+pub mod memo;
 pub mod plan;
 pub mod proposal;
 pub mod view;

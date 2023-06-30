@@ -8,7 +8,6 @@ use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377_fmd::Clue;
 use penumbra_crypto::{
-    memo::{MemoCiphertext, MemoPlaintext},
     note::StateCommitment,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
     Fee, Fr, FullViewingKey, Note, Nullifier, PayloadKey, TransactionContext,
@@ -27,6 +26,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     action::{DelegatorVote, ProposalSubmit, ProposalWithdraw, ValidatorVote},
+    memo::{MemoCiphertext, MemoPlaintext},
     view::{action_view::OutputView, MemoView, TransactionBodyView},
     Action, ActionView, Id, IsAction, TransactionPerspective, TransactionView,
 };

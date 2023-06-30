@@ -1,12 +1,10 @@
 use anyhow::Context;
-use penumbra_crypto::{
-    memo::{MemoCiphertext, MemoPlaintext},
-    symmetric::PayloadKey,
-    Address,
-};
+use penumbra_crypto::{symmetric::PayloadKey, Address};
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 
 use rand::{CryptoRng, RngCore};
+
+use crate::memo::{MemoCiphertext, MemoPlaintext};
 
 #[derive(Clone, Debug)]
 pub struct MemoPlan {

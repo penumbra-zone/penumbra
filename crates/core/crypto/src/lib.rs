@@ -13,7 +13,6 @@ mod fee;
 pub mod fixpoint;
 mod governance;
 pub mod keys;
-pub mod memo;
 pub mod note;
 mod note_payload;
 mod nullifier;

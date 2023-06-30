@@ -18,6 +18,7 @@ use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{Proposal, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote},
+    memo::MemoPlaintext,
     plan::{ActionPlan, DelegatorVotePlan, MemoPlan, TransactionPlan},
 };
 
@@ -25,7 +26,6 @@ use penumbra_transaction::{
 use rand_core::{CryptoRng, RngCore};
 // use tracing::instrument;
 
-use penumbra_crypto::memo::MemoPlaintext;
 use penumbra_crypto::Balance;
 
 /// A planner for a [`TransactionPlan`] that can fill in the required spends and change outputs upon

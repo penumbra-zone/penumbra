@@ -2,10 +2,7 @@ use anyhow::Context;
 use bytes::Bytes;
 use decaf377_fmd::Clue;
 use decaf377_rdsa::{Binding, Signature};
-use penumbra_crypto::{
-    memo::{MemoCiphertext, MemoPlaintext},
-    Fee,
-};
+use penumbra_crypto::Fee;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
 
 use serde::{Deserialize, Serialize};
@@ -17,7 +14,10 @@ pub use action_view::ActionView;
 use penumbra_tct as tct;
 pub use transaction_perspective::TransactionPerspective;
 
-use crate::{Action, Transaction, TransactionBody};
+use crate::{
+    memo::{MemoCiphertext, MemoPlaintext},
+    Action, Transaction, TransactionBody,
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pbt::TransactionView", into = "pbt::TransactionView")]
