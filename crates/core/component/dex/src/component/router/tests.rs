@@ -2071,3 +2071,117 @@ async fn path_search_unique() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+/// Test that a path with a smaller price is ordered before a path with a larger price.
+async fn path_compare_price() -> anyhow::Result<()> {
+    let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
+    let state = storage.latest_snapshot();
+    let mut state = StateDelta::new(state);
+
+    let small_price = U128x128::from(1u64);
+    let big_price = U128x128::from(100u64);
+
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    // The tests' quality hinges on the fact that id(gm) < id(gn)
+    assert!(gm.id() < gn.id());
+
+    let path1 = Path {
+        start: gm.id(),
+        nodes: vec![gn.id()],
+        price: big_price.clone(),
+        state: state.fork(),
+        span: tracing::debug_span!("path1"),
+    };
+
+    let path2 = Path {
+        start: gm.id(),
+        nodes: vec![gn.id(), gn.id()],
+        price: small_price.clone(),
+        state: state.fork(),
+        span: tracing::debug_span!("path2"),
+    };
+
+    // We have constructed two paths:
+    // - path1 has a high cost, but is short
+    // - path2 has a low cost, but is long
+    assert!(path2 < path1);
+    Ok(())
+}
+
+#[tokio::test]
+/// Test that two paths with equal prices are tie-breaked by the number of nodes.
+async fn path_compare_nodes() -> anyhow::Result<()> {
+    let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
+    let state = storage.latest_snapshot();
+    let mut state = StateDelta::new(state);
+
+    let price = U128x128::from(1u64);
+
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    // The tests' quality hinges on the fact that id(gm) < id(gn)
+    assert!(gm.id() < gn.id());
+
+    let path1 = Path {
+        start: gm.id(),
+        nodes: vec![gn.id(), gn.id()],
+        price: price.clone(),
+        state: state.fork(),
+        span: tracing::debug_span!("path1"),
+    };
+
+    let path2 = Path {
+        start: gm.id(),
+        nodes: vec![gn.id()],
+        price: price.clone(),
+        state: state.fork(),
+        span: tracing::debug_span!("path2"),
+    };
+
+    // We have constructed two paths, both with the same cost
+    // but path2 has fewer nodes than path1.
+    assert!(path2 < path1);
+    Ok(())
+}
+
+#[tokio::test]
+/// Test that two paths with equal prices and equal numbers of nodes are tie-breaked
+/// by the asset ids of the nodes.
+async fn path_compare_node_ids() -> anyhow::Result<()> {
+    let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
+    let state = storage.latest_snapshot();
+    let mut state = StateDelta::new(state);
+
+    let price = U128x128::from(1u64);
+
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+    // The tests' quality hinges on the fact that id(gm) < id(gn)
+    assert!(gm.id() < gn.id());
+
+    let path1 = Path {
+        start: gm.id(),
+        nodes: vec![gn.id()],
+        price: price.clone(),
+        state: state.fork(),
+        span: tracing::debug_span!("path1"),
+    };
+
+    let path2 = Path {
+        start: gm.id(),
+        nodes: vec![gm.id()],
+        price: price.clone(),
+        state: state.fork(),
+        span: tracing::debug_span!("path2"),
+    };
+
+    // We have constructed two paths, both with the same cost
+    // and length, but path2's intermediate node is smaller than path1's.
+    assert!(path2 < path1);
+    Ok(())
+}
