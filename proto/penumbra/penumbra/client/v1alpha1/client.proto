@@ -22,9 +22,11 @@ import "tendermint/types/validator.proto";
 // but requesting the asset denomination for a specific asset id is not, because
 // it reveals that the client has an interest in that asset specifically.
 service ObliviousQueryService {
+  // Returns a stream of `CompactBlockRangeResponse`s.
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream CompactBlockRangeResponse);
   rpc ChainParameters(ChainParametersRequest) returns (ChainParametersResponse);
   rpc EpochByHeight(EpochByHeightRequest) returns (EpochByHeightResponse);
+  // Returns a stream of `ValidatorInfoResponse`s.
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream ValidatorInfoResponse);
   rpc Info(InfoRequest) returns (InfoResponse);
 }
@@ -118,12 +120,17 @@ service SpecificQueryService {
   rpc SwapExecution(SwapExecutionRequest) returns (SwapExecutionResponse);
   rpc ArbExecution(ArbExecutionRequest) returns (ArbExecutionResponse);
 
+  // Returns a stream of `SwapExecutionsResponses`.
   rpc SwapExecutions(SwapExecutionsRequest) returns (stream SwapExecutionsResponse);
+  // Returns a stream of `ArbExecutionsResponses`.
   rpc ArbExecutions(ArbExecutionsRequest) returns (stream ArbExecutionsResponse);
 
+  // Returns a stream of `LiquidityPositionsResponse`s.
   rpc LiquidityPositions(LiquidityPositionsRequest) returns (stream LiquidityPositionsResponse);
   rpc LiquidityPositionById(LiquidityPositionByIdRequest) returns (LiquidityPositionByIdResponse);
+  // Returns a stream of `LiquidityPositionsByIdResponse`s.
   rpc LiquidityPositionsById(LiquidityPositionsByIdRequest) returns (stream LiquidityPositionsByIdResponse);
+  // Returns a stream of `LiquidityPositionsByPriceResponse`s.
   rpc LiquidityPositionsByPrice(LiquidityPositionsByPriceRequest) returns (stream LiquidityPositionsByPriceResponse);
 
   rpc Spread(SpreadRequest) returns (SpreadResponse);
@@ -140,6 +147,7 @@ service SpecificQueryService {
 
   // General-purpose prefixed key-value state query API, that can be used to query
   // arbitrary prefixes in the JMT storage.
+  // Returns a stream of `PrefixValueResponse`s.
   rpc PrefixValue(PrefixValueRequest) returns (stream PrefixValueResponse);
 }
 

@@ -733,6 +733,7 @@ pub mod view_protocol_service_client {
             self.inner.unary(request.into_request(), path, codec).await
         }
         /// Stream sync status updates until the view service has caught up with the core.chain.v1alpha1.
+        /// Returns a stream of `StatusStreamResponse`s.
         pub async fn status_stream(
             &mut self,
             request: impl tonic::IntoRequest<super::StatusStreamRequest>,
@@ -756,6 +757,7 @@ pub mod view_protocol_service_client {
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
         /// Queries for notes that have been accepted by the core.chain.v1alpha1.
+        /// Returns a stream of `NotesResponse`s.
         pub async fn notes(
             &mut self,
             request: impl tonic::IntoRequest<super::NotesRequest>,
@@ -778,6 +780,7 @@ pub mod view_protocol_service_client {
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
+        /// Returns a stream of `NotesForVotingResponse`s.
         pub async fn notes_for_voting(
             &mut self,
             request: impl tonic::IntoRequest<super::NotesForVotingRequest>,
@@ -845,6 +848,7 @@ pub mod view_protocol_service_client {
             self.inner.unary(request.into_request(), path, codec).await
         }
         /// Queries for assets.
+        /// Returns a stream of `AssetsResponse`s.
         pub async fn assets(
             &mut self,
             request: impl tonic::IntoRequest<super::AssetsRequest>,
@@ -967,7 +971,8 @@ pub mod view_protocol_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        /// Query for balance of a given address
+        /// Query for balance of a given address.
+        /// Returns a stream of `BalanceByAddressResponses`.
         pub async fn balance_by_address(
             &mut self,
             request: impl tonic::IntoRequest<super::BalanceByAddressRequest>,
@@ -1074,6 +1079,7 @@ pub mod view_protocol_service_client {
             self.inner.unary(request.into_request(), path, codec).await
         }
         /// Query for the full transactions in the given range of blocks.
+        /// Returns a stream of `TransactionInfoResponse`s.
         pub async fn transaction_info(
             &mut self,
             request: impl tonic::IntoRequest<super::TransactionInfoRequest>,
@@ -1292,6 +1298,7 @@ pub mod view_protocol_service_server {
             + Send
             + 'static;
         /// Stream sync status updates until the view service has caught up with the core.chain.v1alpha1.
+        /// Returns a stream of `StatusStreamResponse`s.
         async fn status_stream(
             &self,
             request: tonic::Request<super::StatusStreamRequest>,
@@ -1303,6 +1310,7 @@ pub mod view_protocol_service_server {
             + Send
             + 'static;
         /// Queries for notes that have been accepted by the core.chain.v1alpha1.
+        /// Returns a stream of `NotesResponse`s.
         async fn notes(
             &self,
             request: tonic::Request<super::NotesRequest>,
@@ -1313,6 +1321,7 @@ pub mod view_protocol_service_server {
             >
             + Send
             + 'static;
+        /// Returns a stream of `NotesForVotingResponse`s.
         async fn notes_for_voting(
             &self,
             request: tonic::Request<super::NotesForVotingRequest>,
@@ -1338,6 +1347,7 @@ pub mod view_protocol_service_server {
             + Send
             + 'static;
         /// Queries for assets.
+        /// Returns a stream of `AssetsResponse`s.
         async fn assets(
             &self,
             request: tonic::Request<super::AssetsRequest>,
@@ -1373,7 +1383,8 @@ pub mod view_protocol_service_server {
             >
             + Send
             + 'static;
-        /// Query for balance of a given address
+        /// Query for balance of a given address.
+        /// Returns a stream of `BalanceByAddressResponses`.
         async fn balance_by_address(
             &self,
             request: tonic::Request<super::BalanceByAddressRequest>,
@@ -1408,6 +1419,7 @@ pub mod view_protocol_service_server {
             + Send
             + 'static;
         /// Query for the full transactions in the given range of blocks.
+        /// Returns a stream of `TransactionInfoResponse`s.
         async fn transaction_info(
             &self,
             request: tonic::Request<super::TransactionInfoRequest>,

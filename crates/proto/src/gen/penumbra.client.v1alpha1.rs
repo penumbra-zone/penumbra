@@ -850,6 +850,7 @@ pub mod oblivious_query_service_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Returns a stream of `CompactBlockRangeResponse`s.
         pub async fn compact_block_range(
             &mut self,
             request: impl tonic::IntoRequest<super::CompactBlockRangeRequest>,
@@ -910,6 +911,7 @@ pub mod oblivious_query_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        /// Returns a stream of `ValidatorInfoResponse`s.
         pub async fn validator_info(
             &mut self,
             request: impl tonic::IntoRequest<super::ValidatorInfoRequest>,
@@ -1183,6 +1185,7 @@ pub mod specific_query_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        /// Returns a stream of `SwapExecutionsResponses`.
         pub async fn swap_executions(
             &mut self,
             request: impl tonic::IntoRequest<super::SwapExecutionsRequest>,
@@ -1205,6 +1208,7 @@ pub mod specific_query_service_client {
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
+        /// Returns a stream of `ArbExecutionsResponses`.
         pub async fn arb_executions(
             &mut self,
             request: impl tonic::IntoRequest<super::ArbExecutionsRequest>,
@@ -1227,6 +1231,7 @@ pub mod specific_query_service_client {
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
+        /// Returns a stream of `LiquidityPositionsResponse`s.
         pub async fn liquidity_positions(
             &mut self,
             request: impl tonic::IntoRequest<super::LiquidityPositionsRequest>,
@@ -1271,6 +1276,7 @@ pub mod specific_query_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        /// Returns a stream of `LiquidityPositionsByIdResponse`s.
         pub async fn liquidity_positions_by_id(
             &mut self,
             request: impl tonic::IntoRequest<super::LiquidityPositionsByIdRequest>,
@@ -1295,6 +1301,7 @@ pub mod specific_query_service_client {
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
+        /// Returns a stream of `LiquidityPositionsByPriceResponse`s.
         pub async fn liquidity_positions_by_price(
             &mut self,
             request: impl tonic::IntoRequest<super::LiquidityPositionsByPriceRequest>,
@@ -1441,6 +1448,7 @@ pub mod specific_query_service_client {
         }
         /// General-purpose prefixed key-value state query API, that can be used to query
         /// arbitrary prefixes in the JMT storage.
+        /// Returns a stream of `PrefixValueResponse`s.
         pub async fn prefix_value(
             &mut self,
             request: impl tonic::IntoRequest<super::PrefixValueRequest>,
@@ -1676,6 +1684,7 @@ pub mod oblivious_query_service_server {
             >
             + Send
             + 'static;
+        /// Returns a stream of `CompactBlockRangeResponse`s.
         async fn compact_block_range(
             &self,
             request: tonic::Request<super::CompactBlockRangeRequest>,
@@ -1694,6 +1703,7 @@ pub mod oblivious_query_service_server {
             >
             + Send
             + 'static;
+        /// Returns a stream of `ValidatorInfoResponse`s.
         async fn validator_info(
             &self,
             request: tonic::Request<super::ValidatorInfoRequest>,
@@ -2054,6 +2064,7 @@ pub mod specific_query_service_server {
             >
             + Send
             + 'static;
+        /// Returns a stream of `SwapExecutionsResponses`.
         async fn swap_executions(
             &self,
             request: tonic::Request<super::SwapExecutionsRequest>,
@@ -2064,6 +2075,7 @@ pub mod specific_query_service_server {
             >
             + Send
             + 'static;
+        /// Returns a stream of `ArbExecutionsResponses`.
         async fn arb_executions(
             &self,
             request: tonic::Request<super::ArbExecutionsRequest>,
@@ -2074,6 +2086,7 @@ pub mod specific_query_service_server {
             >
             + Send
             + 'static;
+        /// Returns a stream of `LiquidityPositionsResponse`s.
         async fn liquidity_positions(
             &self,
             request: tonic::Request<super::LiquidityPositionsRequest>,
@@ -2091,6 +2104,7 @@ pub mod specific_query_service_server {
             >
             + Send
             + 'static;
+        /// Returns a stream of `LiquidityPositionsByIdResponse`s.
         async fn liquidity_positions_by_id(
             &self,
             request: tonic::Request<super::LiquidityPositionsByIdRequest>,
@@ -2101,6 +2115,7 @@ pub mod specific_query_service_server {
             >
             + Send
             + 'static;
+        /// Returns a stream of `LiquidityPositionsByPriceResponse`s.
         async fn liquidity_positions_by_price(
             &self,
             request: tonic::Request<super::LiquidityPositionsByPriceRequest>,
@@ -2149,6 +2164,7 @@ pub mod specific_query_service_server {
             + 'static;
         /// General-purpose prefixed key-value state query API, that can be used to query
         /// arbitrary prefixes in the JMT storage.
+        /// Returns a stream of `PrefixValueResponse`s.
         async fn prefix_value(
             &self,
             request: tonic::Request<super::PrefixValueRequest>,
