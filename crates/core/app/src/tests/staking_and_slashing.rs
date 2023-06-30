@@ -236,6 +236,9 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
     );
     state_tx.apply();
 
+    tracing::info!("notes: {:?}", client.notes());
+    let commitment = undelegate.commitment();
+
     // let output_data = state.output_data(height, trading_pair).await?.unwrap();
 
     // let commitment = undelegate.body.payload.commitment;

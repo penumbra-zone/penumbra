@@ -133,6 +133,10 @@ impl MockClient {
         self.notes.get(commitment).cloned()
     }
 
+    pub fn notes(&self) -> &BTreeMap<note::Commitment, Note> {
+        &self.notes
+    }
+
     pub fn swap_by_commitment(&self, commitment: &note::Commitment) -> Option<SwapPlaintext> {
         self.swaps.get(commitment).cloned()
     }
