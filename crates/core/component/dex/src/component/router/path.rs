@@ -7,6 +7,14 @@ use tracing::Instrument;
 
 use crate::{component::PositionRead, DirectedTradingPair};
 
+/// A path is an ordered sequence of assets, implicitly defining a trading pair,
+/// and a price for trading along that path. It contains a forked view of the
+/// state after traveling along the path.
+///
+/// # Ordering
+/// The ordering of paths is based on their effective price estimate first,
+/// then their length, then their start asset, and finally their intermediary
+/// assets.
 pub(super) struct Path<S: StateRead + 'static> {
     /// The start point of the path
     pub start: asset::Id,
@@ -102,7 +110,7 @@ impl<S: StateRead + 'static> Path<S> {
 
 impl<S: StateRead + 'static> PartialEq for Path<S> {
     fn eq(&self, other: &Self) -> bool {
-        self.price == other.price && self.nodes == other.nodes
+        self.start == other.start && self.price == other.price && self.nodes == other.nodes
     }
 }
 
@@ -117,10 +125,11 @@ impl<S: StateRead + 'static> Eq for Path<S> {}
 impl<S: StateRead + 'static> Ord for Path<S> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.price.cmp(&other.price).then_with(|| {
-            self.nodes
-                .len()
-                .cmp(&other.nodes.len())
-                .then_with(|| self.nodes.cmp(&other.nodes))
+            self.nodes.len().cmp(&other.nodes.len()).then_with(|| {
+                self.start
+                    .cmp(&other.start)
+                    .then_with(|| self.nodes.cmp(&other.nodes))
+            })
         })
     }
 }
