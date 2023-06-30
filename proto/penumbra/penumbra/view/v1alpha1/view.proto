@@ -21,11 +21,14 @@ service ViewProtocolService {
   rpc Status(StatusRequest) returns (StatusResponse);
 
   // Stream sync status updates until the view service has caught up with the core.chain.v1alpha1.
+  // Returns a stream of `StatusStreamResponse`s.
   rpc StatusStream(StatusStreamRequest) returns (stream StatusStreamResponse);
 
   // Queries for notes that have been accepted by the core.chain.v1alpha1.
+  // Returns a stream of `NotesResponse`s.
   rpc Notes(NotesRequest) returns (stream NotesResponse);
 
+  // Returns a stream of `NotesForVotingResponse`s.
   rpc NotesForVoting(NotesForVotingRequest) returns (stream NotesForVotingResponse);
 
   // Returns authentication paths for the given note commitments.
@@ -39,6 +42,7 @@ service ViewProtocolService {
   rpc WitnessAndBuild(WitnessAndBuildRequest) returns (WitnessAndBuildResponse);
 
   // Queries for assets.
+  // Returns a stream of `AssetsResponse`s.
   rpc Assets(AssetsRequest) returns (stream AssetsResponse);
 
   // Query for the current chain parameters.
@@ -56,7 +60,8 @@ service ViewProtocolService {
   // Query for an ephemeral address
   rpc EphemeralAddress(EphemeralAddressRequest) returns (EphemeralAddressResponse);
 
-  // Query for balance of a given address
+  // Query for balance of a given address.
+  // Returns a stream of `BalanceByAddressResponses`.
   rpc BalanceByAddress(BalanceByAddressRequest) returns (stream BalanceByAddressResponse);
 
   // Query for a note by its note commitment, optionally waiting until the note is detected.
@@ -72,6 +77,7 @@ service ViewProtocolService {
   rpc TransactionInfoByHash(TransactionInfoByHashRequest) returns (TransactionInfoByHashResponse);
 
   // Query for the full transactions in the given range of blocks.
+  // Returns a stream of `TransactionInfoResponse`s.
   rpc TransactionInfo(TransactionInfoRequest) returns (stream TransactionInfoResponse);
 
   // Query for a transaction plan

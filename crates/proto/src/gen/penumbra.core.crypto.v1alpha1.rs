@@ -10,11 +10,13 @@ pub struct Fee {
     #[prost(message, optional, tag = "2")]
     pub asset_id: ::core::option::Option<AssetId>,
 }
-/// A Penumbra address.
+/// A Penumbra address. An address in Penumbra is a Bech32m-encoded
+/// string, with the human-readable prefix (HRP) `penumbrav2t`.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Address {
-    /// The bytes of the address.
+    /// The bytes of the address. Must be represented as a series of
+    /// `uint8` (i.e. values 0 through 255), with a length of 80 elements.
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
     /// Alternatively, a Bech32m-encoded string representation of the `inner`
@@ -135,6 +137,11 @@ pub struct AssetId {
     #[prost(string, tag = "3")]
     pub alt_base_denom: ::prost::alloc::string::String,
 }
+/// The quantity of a particular Asset. Represented as a 128-bit unsigned integer,
+/// split over two fields, `lo` and `hi`, representing the low- and high-order bytes
+/// of the 128-bit value, respectively. Clients must assemble these bits in their
+/// implementation into a `uint128` or comparable data structure, in order to model
+/// the Amount accurately.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Amount {

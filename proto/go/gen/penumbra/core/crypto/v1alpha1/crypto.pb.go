@@ -79,13 +79,15 @@ func (x *Fee) GetAssetId() *AssetId {
 	return nil
 }
 
-// A Penumbra address.
+// A Penumbra address. An address in Penumbra is a Bech32m-encoded
+// string, with the human-readable prefix (HRP) `penumbrav2t`.
 type Address struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The bytes of the address.
+	// The bytes of the address. Must be represented as a series of
+	// `uint8` (i.e. values 0 through 255), with a length of 80 elements.
 	Inner []byte `protobuf:"bytes,1,opt,name=inner,proto3" json:"inner,omitempty"`
 	// Alternatively, a Bech32m-encoded string representation of the `inner`
 	// bytes.
@@ -686,6 +688,11 @@ func (x *AssetId) GetAltBaseDenom() string {
 	return ""
 }
 
+// The quantity of a particular Asset. Represented as a 128-bit unsigned integer,
+// split over two fields, `lo` and `hi`, representing the low- and high-order bytes
+// of the 128-bit value, respectively. Clients must assemble these bits in their
+// implementation into a `uint128` or comparable data structure, in order to model
+// the Amount accurately.
 type Amount struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
