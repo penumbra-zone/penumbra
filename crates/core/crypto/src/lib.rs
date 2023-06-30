@@ -11,7 +11,6 @@ pub mod balance;
 mod effect_hash;
 mod fee;
 pub mod fixpoint;
-mod governance;
 pub mod keys;
 pub mod note;
 mod note_payload;
@@ -28,11 +27,6 @@ pub use asset::Amount;
 pub use balance::Balance;
 pub use effect_hash::{EffectHash, EffectingData};
 pub use fee::Fee;
-pub use governance::{
-    key::GovernanceKey,
-    proposal_nft::{self, ProposalNft},
-    voting_receipt_token::{self, VotingReceiptToken},
-};
 pub use keys::FullViewingKey;
 pub use note::{Note, NoteCiphertext, NoteView};
 pub use note_payload::NotePayload;

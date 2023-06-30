@@ -6,11 +6,12 @@ use async_trait::async_trait;
 use decaf377::Fq;
 use once_cell::sync::Lazy;
 use penumbra_chain::component::StateReadExt as _;
+use penumbra_crypto::STAKING_TOKEN_DENOM;
 use penumbra_crypto::{
     keys::{FullViewingKey, NullifierKey},
     rdsa::{VerificationKey, VerificationKeyBytes},
 };
-use penumbra_crypto::{ProposalNft, VotingReceiptToken, STAKING_TOKEN_DENOM};
+use penumbra_governance::{ProposalNft, VotingReceiptToken};
 use penumbra_sct::component::StateReadExt as _;
 use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateDelta, StateRead, StateWrite};

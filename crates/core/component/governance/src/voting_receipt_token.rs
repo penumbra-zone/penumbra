@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use regex::Regex;
 
-use crate::asset;
+use penumbra_crypto::asset;
 
 /// Unbonding tokens represent staking tokens that are currently unbonding and
 /// subject to slashing.
