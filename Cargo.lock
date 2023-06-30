@@ -4954,6 +4954,7 @@ dependencies = [
  "bech32",
  "bitvec",
  "decaf377",
+ "decaf377-rdsa",
  "ed25519-consensus",
  "futures",
  "hex",

@@ -2,8 +2,6 @@ use std::fmt::Display;
 
 use anyhow::Result;
 
-use penumbra_crypto::stake::Penalty;
-
 use super::{ChainParameters, Ratio};
 
 // The checks below validate that a parameter change is valid, since some parameter settings or
@@ -114,19 +112,19 @@ impl ChainParameters {
                 "base reward rate must be at least 1 basis point",
             ),
             (
-                *slashing_penalty_misbehavior >= Penalty(1),
+                *slashing_penalty_misbehavior >= 1,
                 "slashing penalty (misbehavior) must be at least 1 basis point",
             ),
             (
-                *slashing_penalty_misbehavior <= Penalty(100_000_000),
+                *slashing_penalty_misbehavior <= 100_000_000,
                 "slashing penalty (misbehavior) must be at most 10,000 basis points^2",
             ),
             (
-                *slashing_penalty_downtime >= Penalty(1),
+                *slashing_penalty_downtime >= 1,
                 "slashing penalty (downtime) must be at least 1 basis point",
             ),
             (
-                *slashing_penalty_downtime <= Penalty(100_000_000),
+                *slashing_penalty_downtime <= 100_000_000,
                 "slashing penalty (downtime) must be at most 10,000 basis points^2",
             ),
             (

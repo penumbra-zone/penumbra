@@ -14,7 +14,6 @@ use penumbra_crypto::{
     asset::{self, DenomMetadata},
     keys::AddressIndex,
     memo::MemoPlaintext,
-    stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken},
     Amount, Fee, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
@@ -27,7 +26,7 @@ use penumbra_proto::{
     core::dex::v1alpha1::PositionId,
 };
 use penumbra_stake::rate::RateData;
-use penumbra_stake::UndelegateClaimPlan;
+use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
 use penumbra_transaction::{proposal::ProposalToml, vote::Vote};
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};

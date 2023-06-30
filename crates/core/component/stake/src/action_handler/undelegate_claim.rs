@@ -3,12 +3,11 @@ use std::sync::Arc;
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use penumbra_chain::component::StateReadExt;
-use penumbra_crypto::stake::UnbondingToken;
 use penumbra_proof_params::UNDELEGATECLAIM_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::UndelegateClaim;
-use crate::{action_handler::ActionHandler, StateReadExt as _};
+use crate::{action_handler::ActionHandler, StateReadExt as _, UnbondingToken};
 
 #[async_trait]
 impl ActionHandler for UndelegateClaim {

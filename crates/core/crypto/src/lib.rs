@@ -20,7 +20,6 @@ mod nullifier;
 mod prf;
 pub mod proofs;
 pub mod rseed;
-pub mod stake;
 pub mod symmetric;
 mod transaction;
 pub mod value;

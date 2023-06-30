@@ -17,9 +17,10 @@ use penumbra_crypto::{
     balance,
     balance::commitment::BalanceCommitmentVar,
     proofs::groth16::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES},
-    stake::{Penalty, PenaltyVar},
     Amount, Balance, FieldExt, Fq, Fr, Value, STAKING_TOKEN_ASSET_ID,
 };
+
+use crate::{Penalty, PenaltyVar};
 
 #[derive(Clone, Debug)]
 pub struct UndelegateClaimCircuit {
@@ -191,13 +192,11 @@ mod tests {
     use super::*;
     use ark_ff::{PrimeField, UniformRand};
     use decaf377::{Fq, Fr};
-    use penumbra_crypto::{
-        rdsa,
-        stake::{IdentityKey, Penalty, UnbondingToken},
-        Amount,
-    };
+    use penumbra_crypto::{rdsa, Amount};
     use proptest::prelude::*;
     use rand_core::OsRng;
+
+    use crate::{IdentityKey, Penalty, UnbondingToken};
 
     fn fr_strategy() -> BoxedStrategy<Fr> {
         any::<[u8; 32]>()

@@ -1,11 +1,8 @@
-use penumbra_crypto::{
-    balance,
-    stake::{IdentityKey, Penalty},
-};
+use penumbra_crypto::balance;
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
-use crate::undelegate_claim::proof::UndelegateClaimProof;
+use crate::{IdentityKey, Penalty, UndelegateClaimProof};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::UndelegateClaimBody", into = "pb::UndelegateClaimBody")]

@@ -6,7 +6,7 @@ use penumbra_proto::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::rdsa::{SpendAuth, VerificationKey};
+use decaf377_rdsa::{SpendAuth, VerificationKey};
 
 /// The root of a validator's identity.
 ///

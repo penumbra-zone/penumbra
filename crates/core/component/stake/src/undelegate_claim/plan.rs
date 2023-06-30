@@ -1,14 +1,13 @@
-use penumbra_crypto::{
-    asset, balance,
-    stake::{IdentityKey, Penalty, UnbondingToken},
-    Amount, FieldExt, Fq, Fr,
-};
+use penumbra_crypto::{asset, balance, Amount, FieldExt, Fq, Fr};
 use penumbra_proof_params::UNDELEGATECLAIM_PROOF_PROVING_KEY;
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{UndelegateClaim, UndelegateClaimBody, UndelegateClaimProof};
+use crate::{
+    IdentityKey, Penalty, UnbondingToken, UndelegateClaim, UndelegateClaimBody,
+    UndelegateClaimProof,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "pb::UndelegateClaimPlan", into = "pb::UndelegateClaimPlan")]

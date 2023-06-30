@@ -1,8 +1,6 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![allow(clippy::clone_on_copy)]
 
-use penumbra_crypto::stake::IdentityKey;
-
 mod changes;
 mod current_consensus_keys;
 mod event;
@@ -35,6 +33,16 @@ pub use undelegate_claim::{
     UndelegateClaim, UndelegateClaimBody, UndelegateClaimCircuit, UndelegateClaimPlan,
     UndelegateClaimProof,
 };
+
+mod delegation_token;
+mod identity_key;
+mod penalty;
+mod unbonding_token;
+
+pub use delegation_token::DelegationToken;
+pub use identity_key::IdentityKey;
+pub use penalty::{Penalty, PenaltyVar};
+pub use unbonding_token::UnbondingToken;
 
 pub use self::metrics::register_metrics;
 pub use changes::DelegationChanges;

@@ -5,9 +5,7 @@ use parking_lot::Mutex;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
     asset::{self, DenomMetadata, Id},
-    note,
-    stake::{DelegationToken, IdentityKey},
-    Address, Amount, FieldExt, Fq, FullViewingKey, Note, Nullifier, Rseed, Value,
+    note, Address, Amount, FieldExt, Fq, FullViewingKey, Note, Nullifier, Rseed, Value,
 };
 use penumbra_dex::{
     lp::position::{self, Position, State},
@@ -19,6 +17,7 @@ use penumbra_proto::{
     },
     DomainType,
 };
+use penumbra_stake::{DelegationToken, IdentityKey};
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
 use r2d2_sqlite::{

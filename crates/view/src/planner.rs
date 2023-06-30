@@ -12,7 +12,6 @@ use penumbra_crypto::{
     asset::DenomMetadata,
     keys::{AccountGroupId, AddressIndex},
     memo::MemoPlaintext,
-    stake::IdentityKey,
     Address, Balance, Fee, Note, Value,
 };
 use penumbra_dao::DaoDeposit;
@@ -29,8 +28,8 @@ use penumbra_dex::{
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
-use penumbra_stake::UndelegateClaimPlan;
 use penumbra_stake::{rate::RateData, validator};
+use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{
     action::{

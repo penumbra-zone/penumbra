@@ -1,4 +1,5 @@
-use penumbra_crypto::{stake::IdentityKey, Nullifier};
+use penumbra_crypto::Nullifier;
+use penumbra_stake::IdentityKey;
 
 pub fn next_proposal_id() -> &'static str {
     "governance/next_proposal_id"

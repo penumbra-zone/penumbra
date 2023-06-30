@@ -7,7 +7,7 @@ use decaf377::{r1cs::FqVar, FieldExt, Fq};
 use penumbra_proto::{core::stake::v1alpha1 as pbs, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
-use crate::{
+use penumbra_crypto::{
     asset::{self, AmountVar, AssetIdVar},
     balance::BalanceVar,
     Amount, Balance, Value, ValueVar, STAKING_TOKEN_ASSET_ID,

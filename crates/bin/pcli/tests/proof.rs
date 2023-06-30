@@ -8,7 +8,6 @@ use penumbra_crypto::{
     keys::{SeedPhrase, SpendKey},
     proofs::groth16::{DelegatorVoteProof, NullifierDerivationProof, OutputProof, SpendProof},
     rdsa::{self, SpendAuth, VerificationKey},
-    stake::{IdentityKey, Penalty, UnbondingToken},
     Amount, Balance, Fee, Fq, Note, Value,
 };
 use penumbra_dex::{
@@ -23,7 +22,7 @@ use penumbra_proof_params::{
     SWAP_PROOF_PROVING_KEY, SWAP_PROOF_VERIFICATION_KEY, UNDELEGATECLAIM_PROOF_PROVING_KEY,
     UNDELEGATECLAIM_PROOF_VERIFICATION_KEY,
 };
-use penumbra_stake::UndelegateClaimProof;
+use penumbra_stake::{IdentityKey, Penalty, UnbondingToken, UndelegateClaimProof};
 use penumbra_tct as tct;
 use rand_core::OsRng;
 

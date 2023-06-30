@@ -1,10 +1,8 @@
-use penumbra_crypto::{
-    asset::Amount,
-    stake::{DelegationToken, IdentityKey, UnbondingToken},
-    Balance, Value,
-};
+use penumbra_crypto::{asset::Amount, Balance, Value};
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
+
+use crate::{DelegationToken, IdentityKey, UnbondingToken};
 
 /// A transaction action withdrawing stake from a validator's delegation pool.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
