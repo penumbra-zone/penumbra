@@ -5,8 +5,7 @@ use async_trait::async_trait;
 use penumbra_component::ActionHandler;
 use penumbra_storage::{StateRead, StateWrite};
 
-use crate::component::PositionManager;
-use crate::lp::action::PositionClose;
+use crate::{component::PositionManager, event, lp::action::PositionClose};
 
 #[async_trait]
 /// Debits an opened position NFT and credits a closed position NFT.
@@ -29,6 +28,8 @@ impl ActionHandler for PositionClose {
         // transaction opens and closes a position, keeping liquidity live only
         // during that block's batch swap execution.
         state.queue_close_position(self.position_id);
+
+        state.record(event::position_close(&self));
 
         Ok(())
     }

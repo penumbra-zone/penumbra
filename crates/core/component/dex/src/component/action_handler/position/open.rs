@@ -7,6 +7,7 @@ use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
     component::{PositionManager, PositionRead},
+    event,
     lp::action::PositionOpen,
 };
 
@@ -40,6 +41,8 @@ impl ActionHandler for PositionOpen {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // Write the newly opened position.
         state.put_position(self.position.clone());
+
+        state.record(event::position_open(&self));
 
         Ok(())
     }

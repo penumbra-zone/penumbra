@@ -3,7 +3,7 @@ use tendermint::abci::{Event, EventAttributeIndexExt};
 
 pub fn delegate(delegate: &Delegate) -> Event {
     Event::new(
-        "delegate",
+        "action_delegate",
         [
             ("validator", delegate.validator_identity.to_string()).index(),
             ("amount", delegate.unbonded_amount.to_string()).no_index(),
@@ -13,7 +13,7 @@ pub fn delegate(delegate: &Delegate) -> Event {
 
 pub fn undelegate(undelegate: &Undelegate) -> Event {
     Event::new(
-        "undelegate",
+        "action_undelegate",
         [
             ("validator", undelegate.validator_identity.to_string()).index(),
             ("amount", undelegate.unbonded_amount.to_string()).no_index(),

@@ -6,8 +6,7 @@ use penumbra_component::ActionHandler;
 use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
 
-use crate::component::NoteManager;
-use crate::Output;
+use crate::{component::NoteManager, event, Output};
 
 #[async_trait]
 impl ActionHandler for Output {
@@ -34,6 +33,8 @@ impl ActionHandler for Output {
         state
             .add_note_payload(self.body.note_payload.clone(), source)
             .await;
+
+        state.record(event::output(&self.body.note_payload));
 
         Ok(())
     }

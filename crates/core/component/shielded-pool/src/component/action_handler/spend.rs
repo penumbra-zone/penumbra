@@ -9,7 +9,7 @@ use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
     component::{NoteManager, StateReadExt},
-    Spend,
+    event, Spend,
 };
 
 #[async_trait]
@@ -49,6 +49,9 @@ impl ActionHandler for Spend {
         let source = state.object_get("source").unwrap_or_default();
 
         state.spend_nullifier(self.body.nullifier, source).await;
+
+        // Also record an ABCI event for transaction indexing.
+        state.record(event::spend(&self.body.nullifier));
 
         Ok(())
     }

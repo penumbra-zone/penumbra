@@ -5,8 +5,10 @@ use async_trait::async_trait;
 use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateRead, StateWrite};
 
-use crate::Undelegate;
-use crate::{action_handler::ActionHandler, component::StateWriteExt as _, StateReadExt as _};
+use crate::{
+    action_handler::ActionHandler, component::StateWriteExt as _, event, StateReadExt as _,
+    Undelegate,
+};
 
 #[async_trait]
 impl ActionHandler for Undelegate {
@@ -68,6 +70,8 @@ impl ActionHandler for Undelegate {
             .register_denom(&self.unbonding_token().denom())
             .await?;
         // TODO: should we be tracking changes to token supply here or in end_epoch?
+
+        state.record(event::undelegate(&self));
 
         Ok(())
     }

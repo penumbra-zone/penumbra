@@ -9,7 +9,7 @@ use penumbra_tct as tct;
 use tct::Commitment;
 use tracing::instrument;
 
-use crate::{event, state_key};
+use crate::state_key;
 
 use super::SupplyWrite;
 
@@ -131,8 +131,6 @@ pub trait NoteManager: StateWrite {
                 spend_height: self.get_block_height().await.expect("block height is set"),
             },
         );
-        // Also record an ABCI event for transaction indexing.
-        self.record(event::spend(&nullifier));
 
         // Record the nullifier to be inserted into the compact block
         let mut nullifiers: im::Vector<Nullifier> = self
