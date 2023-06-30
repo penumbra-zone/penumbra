@@ -115,8 +115,6 @@ impl<S: StateRead + 'static> PartialOrd for Path<S> {
 impl<S: StateRead + 'static> Eq for Path<S> {}
 
 impl<S: StateRead + 'static> Ord for Path<S> {
-    /// First, we compare the price, then the path length, and
-    /// finally the nodes themselves.
     fn cmp(&self, other: &Self) -> Ordering {
         self.price.cmp(&other.price).then_with(|| {
             self.nodes
