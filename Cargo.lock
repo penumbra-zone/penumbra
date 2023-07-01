@@ -4617,7 +4617,10 @@ version = "0.55.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "hex",
+ "penumbra-proto",
  "penumbra-storage",
+ "penumbra-tct",
  "tendermint",
 ]
 
@@ -5340,6 +5343,7 @@ dependencies = [
  "once_cell",
  "pbjson-types",
  "penumbra-chain",
+ "penumbra-component",
  "penumbra-crypto",
  "penumbra-dao",
  "penumbra-dex",

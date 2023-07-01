@@ -6,7 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+penumbra-proto = { path = "../../../proto" }
 penumbra-storage = { path = "../../../storage" }
+penumbra-tct = { path = "../../../crypto/tct" }
 async-trait = "0.1.52"
 anyhow = "1"
 tendermint = "0.32.0"
+hex = "0.4"

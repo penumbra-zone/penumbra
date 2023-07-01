@@ -1,7 +1,9 @@
 use blake2b_simd::{Hash, Params};
 use decaf377::FieldExt;
 use decaf377_fmd::Clue;
-use penumbra_crypto::{EffectHash, FullViewingKey, NotePayload, PayloadKey};
+use penumbra_component::EffectHash;
+use penumbra_crypto::{FullViewingKey, NotePayload, PayloadKey};
+
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},
     swap, swap_claim, TradingPair,
@@ -19,14 +21,14 @@ use crate::{
     proposal, Action, Transaction, TransactionBody,
 };
 
-use penumbra_crypto::EffectingData as _;
+use penumbra_component::EffectingData as _;
 
 // Note: temporarily duplicate of crypto/EffectingData
 pub trait EffectingData {
     fn effect_hash(&self) -> EffectHash;
 }
 
-impl<'a, T: penumbra_crypto::EffectingData> EffectingData for crate::Compat<'a, T> {
+impl<'a, T: penumbra_component::EffectingData> EffectingData for crate::Compat<'a, T> {
     fn effect_hash(&self) -> EffectHash {
         self.0.effect_hash()
     }

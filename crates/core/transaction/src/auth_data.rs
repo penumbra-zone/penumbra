@@ -1,7 +1,5 @@
-use penumbra_crypto::{
-    rdsa::{Signature, SpendAuth},
-    EffectHash,
-};
+use penumbra_component::EffectHash;
+use penumbra_crypto::rdsa::{Signature, SpendAuth};
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 
 /// Authorization data returned in response to a

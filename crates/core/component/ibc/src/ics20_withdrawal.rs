@@ -1,7 +1,8 @@
 use ibc_types2::core::channel::{ChannelId, PortId};
+use penumbra_component::{EffectHash, EffectingData};
 use penumbra_crypto::{
     asset::{self, DenomMetadata},
-    value, Address, Amount, Balance, EffectHash, EffectingData,
+    value, Address, Amount, Balance,
 };
 use penumbra_proto::{
     core::ibc::v1alpha1::{self as pb, FungibleTokenPacketData},

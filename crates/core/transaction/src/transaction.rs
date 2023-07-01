@@ -7,10 +7,11 @@ use anyhow::{Context, Error};
 use ark_ff::Zero;
 use bytes::Bytes;
 use decaf377_fmd::Clue;
+use penumbra_component::TransactionContext;
 use penumbra_crypto::{
     note::StateCommitment,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
-    Fr, FullViewingKey, Note, Nullifier, PayloadKey, TransactionContext,
+    Fr, FullViewingKey, Note, Nullifier, PayloadKey,
 };
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_dex::{

@@ -1,8 +1,20 @@
 use penumbra_proto::{core::crypto::v1alpha1 as pb_crypto, DomainType, TypeUrl};
+use penumbra_tct as tct;
 
 /// Something that can be hashed to produce an [`EffectHash`].
 pub trait EffectingData {
     fn effect_hash(&self) -> EffectHash;
+}
+
+/// Stateless verification context for a transaction.
+///
+/// TODO: this is located in this crate just for convenience (at the bottom of the dep tree).
+#[derive(Clone, Debug)]
+pub struct TransactionContext {
+    /// The transaction's anchor.
+    pub anchor: tct::Root,
+    /// The transaction's effect hash.
+    pub effect_hash: EffectHash,
 }
 
 /// A hash of a transaction's _effecting data_, describing its effects on the

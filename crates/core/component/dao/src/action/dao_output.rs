@@ -1,7 +1,8 @@
 use std::convert::{TryFrom, TryInto};
 
 use anyhow::{Context, Error};
-use penumbra_crypto::{Address, Balance, EffectHash, EffectingData, Value};
+use penumbra_component::{EffectHash, EffectingData};
+use penumbra_crypto::{Address, Balance, Value};
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 #[derive(Clone, Debug)]

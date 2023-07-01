@@ -2,11 +2,12 @@ use std::convert::{TryFrom, TryInto};
 
 use anyhow::{Context, Error};
 use bytes::Bytes;
+use penumbra_component::{EffectHash, EffectingData};
 use penumbra_crypto::{
     balance,
     proofs::groth16::SpendProof,
     rdsa::{Signature, SpendAuth, VerificationKey},
-    EffectHash, EffectingData, FieldExt, Nullifier,
+    FieldExt, Nullifier,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as transaction, DomainType, TypeUrl};
 
