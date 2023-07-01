@@ -10,13 +10,14 @@ use decaf377_fmd::Clue;
 use penumbra_crypto::{
     note::StateCommitment,
     rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
-    Fee, Fr, FullViewingKey, Note, Nullifier, PayloadKey, TransactionContext,
+    Fr, FullViewingKey, Note, Nullifier, PayloadKey, TransactionContext,
 };
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
     swap::Swap,
 };
+use penumbra_fee::Fee;
 use penumbra_ibc::IbcAction;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, Message, TypeUrl};
 use penumbra_shielded_pool::{Output, Spend};

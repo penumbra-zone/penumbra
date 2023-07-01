@@ -7,6 +7,7 @@ use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use decaf377::{Bls12_377, FieldExt};
+use penumbra_fee::Fee;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use rand_core::OsRng;
@@ -17,7 +18,7 @@ use penumbra_crypto::{
     fmd, ka,
     keys::Diversifier,
     note::StateCommitmentVar,
-    Address, Fee, Fq, Fr, Rseed, Value,
+    Address, Fq, Fr, Rseed, Value,
 };
 
 use crate::{

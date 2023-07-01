@@ -1,5 +1,6 @@
 use anyhow::Context;
-use penumbra_crypto::{proofs::groth16::GROTH16_PROOF_LENGTH_BYTES, Balance, Fee, Nullifier};
+use penumbra_crypto::{proofs::groth16::GROTH16_PROOF_LENGTH_BYTES, Balance, Nullifier};
+use penumbra_fee::Fee;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 

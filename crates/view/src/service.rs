@@ -11,9 +11,10 @@ use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_crypto::{
     asset::{self},
     keys::{AccountGroupId, AddressIndex, FullViewingKey},
-    Amount, Fee, Value,
+    Amount, Value,
 };
 use penumbra_dex::{lp::position, TradingPair};
+use penumbra_fee::Fee;
 use penumbra_proto::{
     client::v1alpha1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,

@@ -6,6 +6,7 @@ use ark_relations::r1cs::SynthesisError;
 use decaf377::r1cs::FqVar;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
+use penumbra_fee::Fee;
 use penumbra_proto::{
     core::crypto::v1alpha1 as pb_crypto, core::dex::v1alpha1 as pb, DomainType, TypeUrl,
 };
@@ -15,7 +16,7 @@ use rand_core::{CryptoRng, RngCore};
 
 use penumbra_crypto::{
     asset, asset::AmountVar, ka, keys::OutgoingViewingKey, note::StateCommitmentVar,
-    value::ValueVar, Address, AddressVar, Amount, Fee, Note, PayloadKey, Rseed, Value,
+    value::ValueVar, Address, AddressVar, Amount, Note, PayloadKey, Rseed, Value,
 };
 
 use crate::{BatchSwapOutputData, TradingPair, TradingPairVar};

@@ -6,13 +6,14 @@ use decaf377::Fr;
 use penumbra_crypto::{
     asset, balance,
     keys::{SeedPhrase, SpendKey},
-    Amount, Balance, Fee, Fq, Value,
+    Amount, Balance, Fq, Value,
 };
 use penumbra_dex::{
     swap::proof::{SwapCircuit, SwapProof},
     swap::SwapPlaintext,
     TradingPair,
 };
+use penumbra_fee::Fee;
 use penumbra_proof_params::SWAP_PROOF_PROVING_KEY;
 use penumbra_tct as tct;
 

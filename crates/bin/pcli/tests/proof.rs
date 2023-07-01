@@ -8,12 +8,13 @@ use penumbra_crypto::{
     keys::{SeedPhrase, SpendKey},
     proofs::groth16::{DelegatorVoteProof, NullifierDerivationProof, OutputProof, SpendProof},
     rdsa::{self, SpendAuth, VerificationKey},
-    Amount, Balance, Fee, Fq, Note, Value,
+    Amount, Balance, Fq, Note, Value,
 };
 use penumbra_dex::{
     swap::proof::SwapProof, swap::SwapPlaintext, swap_claim::proof::SwapClaimProof,
     BatchSwapOutputData, TradingPair,
 };
+use penumbra_fee::Fee;
 use penumbra_proof_params::{
     DELEGATOR_VOTE_PROOF_PROVING_KEY, DELEGATOR_VOTE_PROOF_VERIFICATION_KEY,
     NULLIFIER_DERIVATION_PROOF_PROVING_KEY, NULLIFIER_DERIVATION_PROOF_VERIFICATION_KEY,
