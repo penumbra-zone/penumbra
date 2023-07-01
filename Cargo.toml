@@ -22,6 +22,7 @@ members = [
   "crates/core/component/dao",
   "crates/core/component/dex",
   "crates/core/component/sct",
+  "crates/core/component/fee",
   "crates/core/component/compact-block",
   "crates/core/component/distributions",
   "crates/core/component/stake",

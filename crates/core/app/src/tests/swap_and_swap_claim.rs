@@ -7,7 +7,8 @@ use penumbra_chain::{
     test_keys,
 };
 use penumbra_component::{ActionHandler, Component};
-use penumbra_crypto::{asset, Address, Amount, Fee, Fq};
+use penumbra_crypto::{asset, Address, Amount, Fq};
+use penumbra_fee::Fee;
 use penumbra_shielded_pool::component::ShieldedPool;
 use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
 use penumbra_transaction::Transaction;

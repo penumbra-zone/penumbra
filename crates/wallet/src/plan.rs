@@ -4,8 +4,9 @@ use tonic::transport::Channel;
 use anyhow::{Context, Result};
 use penumbra_crypto::{
     keys::{AccountGroupId, AddressIndex},
-    Address, Amount, Fee, FullViewingKey, Value,
+    Address, Amount, FullViewingKey, Value,
 };
+use penumbra_fee::Fee;
 use penumbra_proto::{
     client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient,
     view::v1alpha1::NotesRequest,

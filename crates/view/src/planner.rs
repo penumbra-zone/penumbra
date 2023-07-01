@@ -11,7 +11,7 @@ use penumbra_crypto::{
     asset::Amount,
     asset::DenomMetadata,
     keys::{AccountGroupId, AddressIndex},
-    Address, Balance, Fee, Note, Value,
+    Address, Balance, Note, Value,
 };
 use penumbra_dao::DaoDeposit;
 use penumbra_dex::{
@@ -24,6 +24,7 @@ use penumbra_dex::{
     swap_claim::SwapClaimPlan,
     TradingPair,
 };
+use penumbra_fee::Fee;
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};

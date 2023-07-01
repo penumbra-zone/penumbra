@@ -1,11 +1,12 @@
 use blake2b_simd::{Hash, Params};
 use decaf377::FieldExt;
 use decaf377_fmd::Clue;
-use penumbra_crypto::{EffectHash, Fee, FullViewingKey, NotePayload, PayloadKey};
+use penumbra_crypto::{EffectHash, FullViewingKey, NotePayload, PayloadKey};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},
     swap, swap_claim, TradingPair,
 };
+use penumbra_fee::Fee;
 use penumbra_proto::DomainType;
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimBody};
 
@@ -652,9 +653,10 @@ mod tests {
     use penumbra_crypto::{
         asset,
         keys::{SeedPhrase, SpendKey},
-        Address, Fee, Note, Value, STAKING_TOKEN_ASSET_ID,
+        Address, Note, Value, STAKING_TOKEN_ASSET_ID,
     };
     use penumbra_dex::{swap::SwapPlaintext, swap::SwapPlan, TradingPair};
+    use penumbra_fee::Fee;
     use penumbra_shielded_pool::{OutputPlan, SpendPlan};
     use penumbra_tct as tct;
     use rand_core::OsRng;

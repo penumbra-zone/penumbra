@@ -20,6 +20,7 @@ penumbra-chain = { path = "../core/component/chain" }
 penumbra-transaction = { path = "../core/transaction" }
 penumbra-app = { path = "../core/app" }
 penumbra-stake = { path = "../core/component/stake" }
+penumbra-fee = { path = "../core/component/fee" }
 penumbra-view = { path = "../view" }
 penumbra-custody = { path = "../custody" }
 

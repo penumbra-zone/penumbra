@@ -6,13 +6,14 @@ use decaf377::Fq;
 use penumbra_crypto::{
     asset,
     keys::{NullifierKey, SeedPhrase, SpendKey},
-    Amount, Fee, Nullifier,
+    Amount, Nullifier,
 };
 use penumbra_dex::{
     swap::SwapPlaintext,
     swap_claim::{SwapClaimCircuit, SwapClaimProof},
     BatchSwapOutputData, TradingPair,
 };
+use penumbra_fee::Fee;
 use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
 use penumbra_tct as tct;
 

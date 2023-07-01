@@ -1,6 +1,6 @@
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 
-use crate::{asset, balance, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::{asset, balance, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Fee(pub Value);

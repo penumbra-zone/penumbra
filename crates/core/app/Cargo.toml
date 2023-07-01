@@ -18,6 +18,7 @@ penumbra-shielded-pool = { path = "../component/shielded-pool", features = ["com
 penumbra-stake = { path = "../component/stake" }
 penumbra-governance = { path = "../component/governance" }
 penumbra-sct = { path = "../component/sct" }
+penumbra-fee = { path = "../component/fee" }
 penumbra-dao = { path = "../component/dao" }
 penumbra-dex = { path = "../component/dex" }
 penumbra-ibc = { path = "../component/ibc", features = ["component"] }

@@ -2,7 +2,7 @@
 //! creation.
 
 use anyhow::Result;
-use penumbra_crypto::{Address, Fee};
+use penumbra_crypto::Address;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
@@ -10,6 +10,7 @@ use penumbra_dex::{
     swap::SwapPlan,
     swap_claim::SwapClaimPlan,
 };
+use penumbra_fee::Fee;
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};

@@ -19,6 +19,7 @@ penumbra-stake = { path = "../component/stake", default-features = false }
 penumbra-ibc = { path = "../component/ibc/", default-features = false }
 penumbra-dao = { path = "../component/dao/", default-features = false }
 penumbra-dex = { path = "../component/dex/", default-features = false }
+penumbra-fee = { path = "../component/fee/", default-features = false }
 
 # Git deps
 ibc-types2 = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main", default-features = false }

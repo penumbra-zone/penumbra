@@ -29,6 +29,7 @@ penumbra-ibc           = { path = "../core/component/ibc", default-features = fa
 penumbra-dao           = { path = "../core/component/dao", default-features = false }
 penumbra-dex           = { path = "../core/component/dex", default-features = false }
 penumbra-sct           = { path = "../core/component/sct", default-features = false }
+penumbra-fee           = { path = "../core/component/fee", default-features = false }
 penumbra-compact-block = { path = "../core/component/compact-block", default-features = false }
 penumbra-app           = { path = "../core/app" }
 penumbra-transaction   = { path = "../core/transaction" }
