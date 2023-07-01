@@ -4530,6 +4530,52 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-asset"
+version = "0.55.0"
+dependencies = [
+ "aes 0.8.3",
+ "anyhow",
+ "ark-ff",
+ "ark-groth16",
+ "ark-r1cs-std",
+ "ark-relations",
+ "ark-serialize",
+ "ark-snark",
+ "ark-std",
+ "base64 0.20.0",
+ "bech32",
+ "blake2b_simd 0.5.11",
+ "bytes",
+ "chacha20poly1305",
+ "decaf377",
+ "decaf377-fmd",
+ "decaf377-ka",
+ "decaf377-rdsa",
+ "derivative",
+ "ethnum",
+ "f4jumble",
+ "frost377",
+ "hex",
+ "hmac 0.12.1",
+ "ibig",
+ "num-bigint",
+ "once_cell",
+ "pbkdf2",
+ "penumbra-proto",
+ "penumbra-tct",
+ "poseidon377",
+ "proptest",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2 0.10.7",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
 name = "penumbra-chain"
 version = "0.55.0"
 dependencies = [
@@ -4836,6 +4882,52 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-keys"
+version = "0.55.0"
+dependencies = [
+ "aes 0.8.3",
+ "anyhow",
+ "ark-ff",
+ "ark-groth16",
+ "ark-r1cs-std",
+ "ark-relations",
+ "ark-serialize",
+ "ark-snark",
+ "ark-std",
+ "base64 0.20.0",
+ "bech32",
+ "blake2b_simd 0.5.11",
+ "bytes",
+ "chacha20poly1305",
+ "decaf377",
+ "decaf377-fmd",
+ "decaf377-ka",
+ "decaf377-rdsa",
+ "derivative",
+ "ethnum",
+ "f4jumble",
+ "frost377",
+ "hex",
+ "hmac 0.12.1",
+ "ibig",
+ "num-bigint",
+ "once_cell",
+ "pbkdf2",
+ "penumbra-proto",
+ "penumbra-tct",
+ "poseidon377",
+ "proptest",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2 0.10.7",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
 name = "penumbra-measure"
 version = "0.55.0"
 dependencies = [
@@ -4854,6 +4946,52 @@ dependencies = [
  "tracing-subscriber 0.3.17",
  "url",
  "vergen",
+]
+
+[[package]]
+name = "penumbra-num"
+version = "0.55.0"
+dependencies = [
+ "aes 0.8.3",
+ "anyhow",
+ "ark-ff",
+ "ark-groth16",
+ "ark-r1cs-std",
+ "ark-relations",
+ "ark-serialize",
+ "ark-snark",
+ "ark-std",
+ "base64 0.20.0",
+ "bech32",
+ "blake2b_simd 0.5.11",
+ "bytes",
+ "chacha20poly1305",
+ "decaf377",
+ "decaf377-fmd",
+ "decaf377-ka",
+ "decaf377-rdsa",
+ "derivative",
+ "ethnum",
+ "f4jumble",
+ "frost377",
+ "hex",
+ "hmac 0.12.1",
+ "ibig",
+ "num-bigint",
+ "once_cell",
+ "pbkdf2",
+ "penumbra-proto",
+ "penumbra-tct",
+ "poseidon377",
+ "proptest",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2 0.10.7",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]
