@@ -4,7 +4,7 @@ use ibc_types2::{
     core::client::Height,
 };
 
-use penumbra_crypto::asset;
+use penumbra_asset::asset;
 
 use std::string::String;
 

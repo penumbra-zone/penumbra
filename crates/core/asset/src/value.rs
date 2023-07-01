@@ -10,18 +10,19 @@ use std::{
     str::FromStr,
 };
 
+use penumbra_num::{Amount, AmountVar};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::asset;
+use crate::asset::{AssetIdVar, Cache, DenomMetadata, Id, REGISTRY};
 
 #[derive(Deserialize, Serialize, Copy, Clone, Debug, PartialEq, Eq)]
 #[serde(try_from = "pb::Value", into = "pb::Value")]
 pub struct Value {
-    pub amount: asset::Amount,
+    pub amount: Amount,
     // The asset ID. 256 bits.
-    pub asset_id: asset::Id,
+    pub asset_id: Id,
 }
 
 /// Represents a value of a known or unknown denomination.
@@ -37,12 +38,12 @@ pub struct Value {
 #[serde(try_from = "pb::ValueView", into = "pb::ValueView")]
 pub enum ValueView {
     KnownDenom {
-        amount: asset::Amount,
-        denom: asset::DenomMetadata,
+        amount: Amount,
+        denom: DenomMetadata,
     },
     UnknownDenom {
-        amount: asset::Amount,
-        asset_id: asset::Id,
+        amount: Amount,
+        asset_id: Id,
     },
 }
 
@@ -52,15 +53,15 @@ impl ValueView {
         self.clone().into()
     }
 
-    /// Get the `asset::Id` of the underlying `Value`, without having to match on visibility.
-    pub fn asset_id(&self) -> asset::Id {
+    /// Get the `Id` of the underlying `Value`, without having to match on visibility.
+    pub fn asset_id(&self) -> Id {
         self.value().asset_id
     }
 }
 
 impl Value {
     /// Convert this `Value` into a `ValueView` with the given `Denom`.
-    pub fn view_with_denom(&self, denom: asset::DenomMetadata) -> anyhow::Result<ValueView> {
+    pub fn view_with_denom(&self, denom: DenomMetadata) -> anyhow::Result<ValueView> {
         if self.asset_id == denom.id() {
             Ok(ValueView::KnownDenom {
                 amount: self.amount,
@@ -75,8 +76,8 @@ impl Value {
         }
     }
 
-    /// Convert this `Value` into a `ValueView` using the given `asset::Cache`
-    pub fn view_with_cache(&self, cache: &asset::Cache) -> ValueView {
+    /// Convert this `Value` into a `ValueView` using the given `Cache`
+    pub fn view_with_cache(&self, cache: &Cache) -> ValueView {
         match cache.get(&self.asset_id) {
             Some(denom) => ValueView::KnownDenom {
                 amount: self.amount,
@@ -95,7 +96,7 @@ impl From<ValueView> for Value {
         match value {
             ValueView::KnownDenom { amount, denom } => Value {
                 amount,
-                asset_id: asset::Id::from(denom),
+                asset_id: Id::from(denom),
             },
             ValueView::UnknownDenom { amount, asset_id } => Value { amount, asset_id },
         }
@@ -200,10 +201,10 @@ impl TryFrom<pb::ValueView> for ValueView {
 }
 
 impl Value {
-    /// Use the provided [`asset::Cache`] to format this value.
+    /// Use the provided [`Cache`] to format this value.
     ///
     /// Returns the amount in terms of the asset ID if the denomination is not known.
-    pub fn format(&self, cache: &asset::Cache) -> String {
+    pub fn format(&self, cache: &Cache) -> String {
         cache
             .get(&self.asset_id)
             .map(|base_denom| {
@@ -220,8 +221,8 @@ impl Value {
 
 #[derive(Clone)]
 pub struct ValueVar {
-    pub amount: asset::AmountVar,
-    pub asset_id: asset::AssetIdVar,
+    pub amount: AmountVar,
+    pub asset_id: AssetIdVar,
 }
 
 impl AllocVar<Value, Fq> for ValueVar {
@@ -234,8 +235,8 @@ impl AllocVar<Value, Fq> for ValueVar {
         let cs = ns.cs();
         let inner: Value = *f()?.borrow();
 
-        let amount_var = asset::AmountVar::new_variable(cs.clone(), || Ok(inner.amount), mode)?;
-        let asset_id_var = asset::AssetIdVar::new_variable(cs, || Ok(inner.asset_id), mode)?;
+        let amount_var = AmountVar::new_variable(cs.clone(), || Ok(inner.amount), mode)?;
+        let asset_id_var = AssetIdVar::new_variable(cs, || Ok(inner.asset_id), mode)?;
         Ok(Self {
             amount: amount_var,
             asset_id: asset_id_var,
@@ -303,7 +304,7 @@ impl FromStr for Value {
             let numeric_str = captures.get(1).expect("matched regex").as_str();
             let asset_id_str = captures.get(2).expect("matched regex").as_str();
 
-            let asset_id = asset::Id::from_str(asset_id_str).expect("able to parse asset ID");
+            let asset_id = Id::from_str(asset_id_str).expect("able to parse asset ID");
             let amount = numeric_str.parse::<u64>().unwrap();
 
             Ok(Value {
@@ -314,7 +315,7 @@ impl FromStr for Value {
             let numeric_str = captures.get(1).expect("matched regex").as_str();
             let denom_str = captures.get(2).expect("matched regex").as_str();
 
-            let display_denom = asset::REGISTRY.parse_unit(denom_str);
+            let display_denom = REGISTRY.parse_unit(denom_str);
             let amount = display_denom.parse_value(numeric_str)?;
             let asset_id = display_denom.base().id();
 
@@ -350,8 +351,8 @@ mod tests {
             .unwrap()
             .base();
 
-        let pen_id = asset::Id::from(pen_denom);
-        let atom_id = asset::Id::from(atom_denom);
+        let pen_id = Id::from(pen_denom);
+        let atom_id = Id::from(atom_denom);
 
         // some values of different types
         let v1 = Value {
@@ -430,7 +431,7 @@ mod tests {
             .base();
         let cache = [upenumbra_base_denom.clone(), nala_base_denom.clone()]
             .into_iter()
-            .collect::<asset::Cache>();
+            .collect::<Cache>();
 
         let v1: Value = "1823.298penumbra".parse().unwrap();
         assert_eq!(v1.amount, 1823298000u64.into());
@@ -461,7 +462,7 @@ mod tests {
             .get_unit("upenumbra")
             .unwrap()
             .base();
-        let cache = [upenumbra_base_denom].into_iter().collect::<asset::Cache>();
+        let cache = [upenumbra_base_denom].into_iter().collect::<Cache>();
 
         let v1: Value = "999upenumbra".parse().unwrap();
         let v2: Value = "1000upenumbra".parse().unwrap();

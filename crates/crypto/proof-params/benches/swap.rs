@@ -2,18 +2,16 @@ use ark_ff::UniformRand;
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
-use decaf377::Fr;
-use penumbra_crypto::{
-    asset, balance,
-    keys::{SeedPhrase, SpendKey},
-    Amount, Balance, Fq, Value,
-};
+use decaf377::{Fq, Fr};
+use penumbra_asset::{asset, balance, Balance, Value};
+use penumbra_crypto::keys::{SeedPhrase, SpendKey};
 use penumbra_dex::{
     swap::proof::{SwapCircuit, SwapProof},
     swap::SwapPlaintext,
     TradingPair,
 };
 use penumbra_fee::Fee;
+use penumbra_num::Amount;
 use penumbra_proof_params::SWAP_PROOF_PROVING_KEY;
 use penumbra_tct as tct;
 

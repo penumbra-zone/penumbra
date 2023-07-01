@@ -4,7 +4,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 
 use futures::{StreamExt, TryStreamExt};
-use penumbra_crypto::{asset, Amount, Value};
+use penumbra_asset::{asset, Value};
+use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 

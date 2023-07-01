@@ -12,13 +12,13 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use rand_core::OsRng;
 
-use penumbra_crypto::{
+use penumbra_asset::{
     asset,
     balance::{self, commitment::BalanceCommitmentVar, BalanceVar},
-    fmd, ka,
-    keys::Diversifier,
-    note::StateCommitmentVar,
-    Address, Fq, Fr, Rseed, Value,
+    Value,
+};
+use penumbra_crypto::{
+    fmd, ka, keys::Diversifier, note::StateCommitmentVar, Address, Fq, Fr, Rseed,
 };
 
 use crate::{
@@ -245,10 +245,9 @@ impl TryFrom<pb::ZkSwapProof> for SwapProof {
 mod tests {
     use super::*;
     use ark_ff::{PrimeField, UniformRand};
-    use penumbra_crypto::{
-        keys::{SeedPhrase, SpendKey},
-        Amount, Balance, Value,
-    };
+    use penumbra_asset::{Balance, Value};
+    use penumbra_crypto::keys::{SeedPhrase, SpendKey};
+    use penumbra_num::Amount;
     use proptest::prelude::*;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {

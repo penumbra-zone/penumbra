@@ -1,4 +1,4 @@
-use penumbra_crypto::balance;
+use penumbra_asset::balance;
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 

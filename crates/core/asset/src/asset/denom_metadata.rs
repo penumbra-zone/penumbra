@@ -7,17 +7,22 @@ use std::{
 
 use anyhow::ensure;
 use ark_ff::fields::PrimeField;
+use decaf377::Fq;
+use penumbra_num::Amount;
 use penumbra_proto::{
     core::crypto::v1alpha1 as pb, view::v1alpha1::AssetsResponse, DomainType, TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{asset, Fq, Value};
+use crate::{
+    asset::{Id, REGISTRY},
+    Value,
+};
 
 use super::Denom;
 /// An asset denomination's metadata.
 ///
-/// Each denomination has a unique [`asset::Id`] and base unit, and may also
+/// Each denomination has a unique [`Id`] and base unit, and may also
 /// have other display units.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(try_from = "pb::DenomMetadata", into = "pb::DenomMetadata")]
@@ -28,7 +33,7 @@ pub struct DenomMetadata {
 // These are constructed by the asset registry.
 pub(super) struct Inner {
     // The Penumbra asset ID
-    id: asset::Id,
+    id: Id,
     base_denom: String,
     description: String,
     /// Sorted by priority order.
@@ -77,10 +82,10 @@ impl TryFrom<pb::DenomMetadata> for Inner {
         );
 
         // Compute the ID from the base denom to ensure we don't get confused.
-        let id = asset::Id::from_raw_denom(&base_denom);
+        let id = Id::from_raw_denom(&base_denom);
         // If the ID was supplied, we should check that it's consistent with the base denom.
         if let Some(supplied_id) = value.penumbra_asset_id {
-            let supplied_id = asset::Id::try_from(supplied_id)?;
+            let supplied_id = Id::try_from(supplied_id)?;
             ensure!(
                 id == supplied_id,
                 "denom metadata has mismatched penumbra asset ID"
@@ -153,7 +158,7 @@ impl TryFrom<&str> for DenomMetadata {
     type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        asset::REGISTRY
+        REGISTRY
             .parse_denom(value)
             .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", value))
     }
@@ -215,7 +220,7 @@ impl Inner {
     /// The base denom is added as a unit, so `units` can be empty and should
     /// not include a unit for the base denomination.
     pub fn new(base_denom: String, mut units: Vec<BareDenomUnit>) -> Self {
-        let id = asset::Id(Fq::from_le_bytes_mod_order(
+        let id = Id(Fq::from_le_bytes_mod_order(
             // XXX choice of hash function?
             blake2b_simd::Params::default()
                 .personal(b"Penumbra_AssetID")
@@ -255,8 +260,8 @@ impl Inner {
 }
 
 impl DenomMetadata {
-    /// Return the [`asset::Id`] associated with this denomination.
-    pub fn id(&self) -> asset::Id {
+    /// Return the [`Id`] associated with this denomination.
+    pub fn id(&self) -> Id {
         self.inner.id.clone()
     }
 
@@ -267,7 +272,7 @@ impl DenomMetadata {
     }
 
     /// Create a value of this denomination.
-    pub fn value(&self, amount: asset::Amount) -> Value {
+    pub fn value(&self, amount: Amount) -> Value {
         Value {
             amount,
             asset_id: self.id(),
@@ -309,13 +314,13 @@ impl DenomMetadata {
     ///
     /// This is defined as the largest unit smaller than the given value (so it
     /// has no leading zeros when formatted).
-    pub fn best_unit_for(&self, amount: asset::Amount) -> Unit {
+    pub fn best_unit_for(&self, amount: Amount) -> Unit {
         // Special case: use the default unit for 0
         if amount == 0u64.into() {
             return self.default_unit();
         }
         for (unit_index, unit) in self.inner.units.iter().enumerate() {
-            let unit_amount = asset::Amount::from(10u128.pow(unit.exponent as u32));
+            let unit_amount = Amount::from(10u128.pow(unit.exponent as u32));
             if amount >= unit_amount {
                 return Unit {
                     unit_index,
@@ -331,7 +336,7 @@ impl DenomMetadata {
     }
 
     pub fn default_for(denom: &Denom) -> Option<DenomMetadata> {
-        asset::REGISTRY.parse_denom(&denom.denom)
+        REGISTRY.parse_denom(&denom.denom)
     }
 
     pub fn is_opened_position_nft(&self) -> bool {
@@ -353,8 +358,8 @@ impl DenomMetadata {
     }
 }
 
-impl From<DenomMetadata> for asset::Id {
-    fn from(base: DenomMetadata) -> asset::Id {
+impl From<DenomMetadata> for Id {
+    fn from(base: DenomMetadata) -> Id {
         base.id()
     }
 }
@@ -404,13 +409,13 @@ impl Unit {
         }
     }
 
-    /// Return the [`asset::Id`] associated with this denomination.
-    pub fn id(&self) -> asset::Id {
+    /// Return the [`Id`] associated with this denomination.
+    pub fn id(&self) -> Id {
         self.inner.id.clone()
     }
 
-    pub fn format_value(&self, value: asset::Amount) -> String {
-        let power_of_ten = asset::Amount::from(10u128.pow(self.exponent().into()));
+    pub fn format_value(&self, value: Amount) -> String {
+        let power_of_ten = Amount::from(10u128.pow(self.exponent().into()));
         let v1 = value / power_of_ten;
         let v2 = value % power_of_ten;
 
@@ -425,14 +430,14 @@ impl Unit {
         // since they are after the decimal point.
         let v2_stripped = v2_str.trim_end_matches('0');
 
-        if v2 != asset::Amount::zero() {
+        if v2 != Amount::zero() {
             format!("{v1}.{v2_stripped}")
         } else {
             format!("{v1}")
         }
     }
 
-    pub fn parse_value(&self, value: &str) -> Result<asset::Amount, anyhow::Error> {
+    pub fn parse_value(&self, value: &str) -> Result<Amount, anyhow::Error> {
         let split: Vec<&str> = value.split('.').collect();
         if split.len() > 2 {
             Err(anyhow::anyhow!("expected only one decimal point"))
@@ -477,12 +482,12 @@ impl Unit {
             .exponent
     }
 
-    pub fn unit_amount(&self) -> asset::Amount {
+    pub fn unit_amount(&self) -> Amount {
         10u128.pow(self.exponent().into()).into()
     }
 
     /// Create a value of this unit, applying the correct exponent.
-    pub fn value(&self, amount: asset::Amount) -> Value {
+    pub fn value(&self, amount: Amount) -> Value {
         Value {
             asset_id: self.id(),
             amount: amount * self.unit_amount(),

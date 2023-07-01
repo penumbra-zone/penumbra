@@ -2,11 +2,13 @@ use std::collections::BTreeMap;
 use tonic::transport::Channel;
 
 use anyhow::{Context, Result};
+use penumbra_asset::Value;
 use penumbra_crypto::{
     keys::{AccountGroupId, AddressIndex},
-    Address, Amount, FullViewingKey, Value,
+    Address, FullViewingKey,
 };
 use penumbra_fee::Fee;
+use penumbra_num::Amount;
 use penumbra_proto::{
     client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient,
     view::v1alpha1::NotesRequest,

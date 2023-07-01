@@ -20,9 +20,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        asset,
         keys::{SeedPhrase, SpendKey},
-        Address, Balance, Rseed,
+        Address, Rseed,
     };
     use ark_ff::UniformRand;
     use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, ProvingKey, VerifyingKey};
@@ -30,6 +29,7 @@ mod tests {
     use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
     use ark_snark::SNARK;
     use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
+    use penumbra_asset::{asset, Balance, Value};
     use proptest::prelude::*;
 
     use decaf377_rdsa::{SpendAuth, VerificationKey};
@@ -38,7 +38,7 @@ mod tests {
     use rand_core::OsRng;
     use tct::StateCommitment;
 
-    use crate::{note, Note, Value};
+    use crate::{note, Note};
 
     use ark_ff::PrimeField;
 

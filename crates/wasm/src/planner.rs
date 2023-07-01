@@ -7,12 +7,12 @@ use std::{
 use anyhow::{anyhow, Result};
 
 use crate::note_record::SpendableNoteRecord;
+use penumbra_asset::{asset::DenomMetadata, Balance, Value};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::{
-    asset::Amount, asset::DenomMetadata, keys::AddressIndex, Address, FullViewingKey, Note, Value,
-};
+use penumbra_crypto::{keys::AddressIndex, Address, FullViewingKey, Note};
 use penumbra_dex::{swap::SwapPlaintext, swap::SwapPlan, swap_claim::SwapClaimPlan, TradingPair};
 use penumbra_fee::Fee;
+use penumbra_num::Amount;
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
 use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
@@ -25,8 +25,6 @@ use penumbra_transaction::{
 // use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
 // use tracing::instrument;
-
-use penumbra_crypto::Balance;
 
 /// A planner for a [`TransactionPlan`] that can fill in the required spends and change outputs upon
 /// finalization to make a transaction balance.

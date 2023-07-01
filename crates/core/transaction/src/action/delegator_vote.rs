@@ -2,8 +2,10 @@ use anyhow::Context;
 use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
-use penumbra_crypto::{proofs::groth16::DelegatorVoteProof, Amount, Nullifier, Value};
+use penumbra_asset::{balance, Value};
+use penumbra_crypto::{proofs::groth16::DelegatorVoteProof, Nullifier};
 use penumbra_governance::VotingReceiptToken;
+use penumbra_num::Amount;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 
@@ -20,7 +22,7 @@ pub struct DelegatorVote {
 }
 
 impl IsAction for DelegatorVote {
-    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+    fn balance_commitment(&self) -> balance::Commitment {
         Value {
             asset_id: VotingReceiptToken::new(self.body.proposal).id(),
             amount: self.body.unbonded_amount,

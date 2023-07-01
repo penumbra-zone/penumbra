@@ -23,6 +23,8 @@ parallel = ["penumbra-proof-params/parallel", "decaf377/parallel", "penumbra-cry
 penumbra-proto            = { path = "../../proto", features = ["rpc"] }
 penumbra-tct              = { path = "../../crypto/tct" }
 penumbra-crypto           = { path = "../../core/crypto", features = ["parallel"] }
+penumbra-num           = { path = "../../core/num", default-features=false }
+penumbra-asset           = { path = "../../core/asset", default-features=false }
 penumbra-chain            = { path = "../../core/component/chain", default-features = false }
 penumbra-shielded-pool    = { path = "../../core/component/shielded-pool", default-features = false }
 penumbra-stake            = { path = "../../core/component/stake", default-features = false }

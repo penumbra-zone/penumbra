@@ -1,12 +1,12 @@
-use crate::Amount;
 use ark_ff::{fields::PrimeField, ToConstraintField};
 use ark_serialize::CanonicalDeserialize;
-use decaf377::FieldExt;
+use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
+use penumbra_num::Amount;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
-use crate::{Fq, Value};
+use crate::Value;
 
 /// An identifier for an IBC asset type.
 ///

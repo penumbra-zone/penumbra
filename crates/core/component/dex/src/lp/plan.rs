@@ -1,6 +1,7 @@
+use penumbra_asset::{balance, Balance, Value};
 use penumbra_crypto::{
     rdsa::{Signature, SpendAuth},
-    Fr, Value, Zero,
+    Fr, Zero,
 };
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
@@ -48,11 +49,11 @@ impl PositionWithdrawPlan {
         }
     }
 
-    pub fn reserves_commitment(&self) -> penumbra_crypto::balance::Commitment {
+    pub fn reserves_commitment(&self) -> balance::Commitment {
         self.reserves.balance(&self.pair).commit(Fr::zero())
     }
 
-    pub fn balance(&self) -> penumbra_crypto::Balance {
+    pub fn balance(&self) -> Balance {
         // PositionWithdraw outputs will correspond to the final reserves
         // and a PositionWithdraw token.
         // Spends will be the PositionClose token.
@@ -137,7 +138,7 @@ impl PositionRewardClaimPlan {
         todo!()
     }
 
-    pub fn balance(&self) -> penumbra_crypto::Balance {
+    pub fn balance(&self) -> Balance {
         todo!()
     }
 }

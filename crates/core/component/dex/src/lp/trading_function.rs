@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
-use penumbra_crypto::{asset, fixpoint::U128x128, Amount, Value};
+use penumbra_asset::{asset, Value};
+use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
@@ -468,7 +469,9 @@ impl From<BareTradingFunction> for pb::BareTradingFunction {
 
 #[cfg(test)]
 mod tests {
-    use penumbra_crypto::{asset::Id, Fq, Zero};
+    use ark_ff::Zero;
+    use decaf377::Fq;
+    use penumbra_asset::asset::Id;
 
     use super::*;
 

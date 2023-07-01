@@ -11,14 +11,15 @@ use ark_snark::SNARK;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use rand_core::OsRng;
 
-use penumbra_crypto::{
-    asset,
-    asset::{AmountVar, AssetIdVar},
-    balance,
-    balance::commitment::BalanceCommitmentVar,
-    proofs::groth16::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES},
-    Amount, Balance, FieldExt, Fq, Fr, Value, STAKING_TOKEN_ASSET_ID,
+use penumbra_asset::{
+    asset, asset::AssetIdVar, balance, balance::commitment::BalanceCommitmentVar, Balance, Value,
+    STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_crypto::{
+    proofs::groth16::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES},
+    FieldExt, Fq, Fr,
+};
+use penumbra_num::{Amount, AmountVar};
 
 use crate::{Penalty, PenaltyVar};
 
@@ -192,7 +193,8 @@ mod tests {
     use super::*;
     use ark_ff::{PrimeField, UniformRand};
     use decaf377::{Fq, Fr};
-    use penumbra_crypto::{rdsa, Amount};
+    use penumbra_crypto::rdsa;
+    use penumbra_num::Amount;
     use proptest::prelude::*;
     use rand_core::OsRng;
 

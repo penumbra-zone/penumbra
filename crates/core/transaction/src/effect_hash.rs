@@ -650,10 +650,10 @@ impl EffectingData for TradingPair {
 
 #[cfg(test)]
 mod tests {
+    use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
     use penumbra_crypto::{
-        asset,
         keys::{SeedPhrase, SpendKey},
-        Address, Note, Value, STAKING_TOKEN_ASSET_ID,
+        Address, Note,
     };
     use penumbra_dex::{swap::SwapPlaintext, swap::SwapPlan, TradingPair};
     use penumbra_fee::Fee;
@@ -685,7 +685,7 @@ mod tests {
         let note0 = Note::generate(
             &mut OsRng,
             &addr,
-            penumbra_crypto::Value {
+            Value {
                 amount: 10000u64.into(),
                 asset_id: *STAKING_TOKEN_ASSET_ID,
             },
@@ -693,7 +693,7 @@ mod tests {
         let note1 = Note::generate(
             &mut OsRng,
             &addr,
-            penumbra_crypto::Value {
+            Value {
                 amount: 20000u64.into(),
                 asset_id: *STAKING_TOKEN_ASSET_ID,
             },

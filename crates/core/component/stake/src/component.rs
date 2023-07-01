@@ -10,12 +10,12 @@ use ::metrics::{decrement_gauge, gauge, increment_gauge};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
+use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::{
     component::{StateReadExt as _, StateWriteExt as _},
     genesis, Epoch, NoteSource,
 };
 use penumbra_component::Component;
-use penumbra_crypto::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dao::component::StateWriteExt as _;
 use penumbra_proto::{
     state::future::{DomainFuture, ProtoFuture},

@@ -8,13 +8,11 @@ use anyhow::{anyhow, Context};
 use async_stream::try_stream;
 use camino::Utf8Path;
 use futures::stream::{StreamExt, TryStreamExt};
-use penumbra_crypto::{
-    asset::{self},
-    keys::{AccountGroupId, AddressIndex, FullViewingKey},
-    Amount, Value,
-};
+use penumbra_asset::{asset, Value};
+use penumbra_crypto::keys::{AccountGroupId, AddressIndex, FullViewingKey};
 use penumbra_dex::{lp::position, TradingPair};
 use penumbra_fee::Fee;
+use penumbra_num::Amount;
 use penumbra_proto::{
     client::v1alpha1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,
@@ -369,7 +367,7 @@ impl ViewProtocolService for ViewService {
                     tonic::Status::invalid_argument(format!("Could not parse address: {e:#}"))
                 })?;
 
-            let value: penumbra_crypto::Value = output
+            let value: Value = output
                 .value
                 .ok_or_else(|| tonic::Status::invalid_argument("Missing value"))?
                 .try_into()

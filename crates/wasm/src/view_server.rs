@@ -1,6 +1,6 @@
 use anyhow::Context;
+use penumbra_asset::asset::{DenomMetadata, Id};
 use penumbra_compact_block::{CompactBlock, StatePayload};
-use penumbra_crypto::asset::{DenomMetadata, Id};
 use penumbra_crypto::{note, FullViewingKey, Nullifier};
 use penumbra_dex::lp::position::Position;
 use penumbra_dex::lp::LpNft;

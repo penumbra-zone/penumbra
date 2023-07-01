@@ -7,11 +7,12 @@ use decaf377::{r1cs::FqVar, FieldExt, Fq};
 use penumbra_proto::{core::stake::v1alpha1 as pbs, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
-use penumbra_crypto::{
-    asset::{self, AmountVar, AssetIdVar},
+use penumbra_asset::{
+    asset::{self, AssetIdVar},
     balance::BalanceVar,
-    Amount, Balance, Value, ValueVar, STAKING_TOKEN_ASSET_ID,
+    Balance, Value, ValueVar, STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_num::{Amount, AmountVar};
 
 /// Tracks slashing penalties applied to a validator in some epoch.
 ///

@@ -1,4 +1,4 @@
-use penumbra_crypto::Balance;
+use penumbra_asset::Balance;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_dex::{
     lp::{

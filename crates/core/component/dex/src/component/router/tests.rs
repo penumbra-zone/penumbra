@@ -1,6 +1,7 @@
 use core::panic;
 use futures::StreamExt;
-use penumbra_crypto::{asset, fixpoint::U128x128, Amount, Value};
+use penumbra_asset::{asset, Value};
+use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_storage::ArcStateDeltaExt;
 use penumbra_storage::TempStorage;
 use penumbra_storage::{StateDelta, StateWrite};

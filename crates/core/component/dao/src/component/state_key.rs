@@ -1,4 +1,4 @@
-use penumbra_crypto::asset;
+use penumbra_asset::asset;
 
 pub fn balance_for_asset(asset_id: asset::Id) -> String {
     format!("dao/asset/{asset_id}")

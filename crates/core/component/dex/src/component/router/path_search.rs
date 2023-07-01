@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_crypto::{asset, fixpoint::U128x128};
+use penumbra_asset::asset;
+use penumbra_num::fixpoint::U128x128;
 use penumbra_storage::{StateDelta, StateRead};
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};

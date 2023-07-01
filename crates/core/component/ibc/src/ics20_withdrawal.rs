@@ -1,8 +1,10 @@
 use ibc_types2::core::channel::{ChannelId, PortId};
-use penumbra_crypto::{
+use penumbra_asset::{
     asset::{self, DenomMetadata},
-    value, Address, Amount, Balance, EffectHash, EffectingData,
+    Balance, Value,
 };
+use penumbra_crypto::{Address, EffectHash, EffectingData};
+use penumbra_num::Amount;
 use penumbra_proto::{
     core::ibc::v1alpha1::{self as pb, FungibleTokenPacketData},
     DomainType, Message, TypeUrl,
@@ -37,8 +39,8 @@ pub struct Ics20Withdrawal {
     pub source_channel: ChannelId,
 }
 impl Ics20Withdrawal {
-    pub fn value(&self) -> value::Value {
-        penumbra_crypto::Value {
+    pub fn value(&self) -> Value {
+        Value {
             amount: self.amount,
             asset_id: self.denom.id(),
         }

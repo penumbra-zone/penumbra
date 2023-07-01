@@ -6,8 +6,9 @@ use std::{
 use anyhow::anyhow;
 use rand_core::OsRng;
 
+use penumbra_asset::balance;
 use penumbra_crypto::{
-    balance, ka,
+    ka,
     keys::OutgoingViewingKey,
     note,
     symmetric::{OvkWrappedKey, PayloadKey, PayloadKind, WrappedMemoKey},
@@ -233,11 +234,8 @@ mod tests {
 
     use super::*;
     use decaf377::Fr;
-    use penumbra_crypto::{
-        asset,
-        keys::{SeedPhrase, SpendKey},
-        Value,
-    };
+    use penumbra_asset::{asset, Value};
+    use penumbra_crypto::keys::{SeedPhrase, SpendKey};
 
     use proptest::prelude::*;
 

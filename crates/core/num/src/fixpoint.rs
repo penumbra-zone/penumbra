@@ -736,8 +736,6 @@ mod test {
     use proptest::prelude::*;
     use rand_core::OsRng;
 
-    use crate::proofs::groth16::ParameterSetup;
-
     use super::*;
 
     proptest! {
@@ -774,7 +772,7 @@ mod test {
                 rounded_down_c,
             };
 
-            let (pk, vk) = TestMultiplicationCircuit::generate_prepared_test_parameters();
+            let (pk, vk) = TestMultiplicationCircuit::generate_test_parameters();
             let mut rng = OsRng;
 
             let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
@@ -783,7 +781,7 @@ mod test {
             let mut pi = Vec::new();
             pi.extend_from_slice(&expected_c.to_field_elements().unwrap());
             pi.extend_from_slice(&rounded_down_c.to_field_elements().unwrap());
-            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
                 &vk,
                 &pi,
                 &proof,
@@ -824,7 +822,7 @@ mod test {
         }
     }
 
-    impl ParameterSetup for TestMultiplicationCircuit {
+    impl TestMultiplicationCircuit {
         fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
             let num: [u8; 32] = [0u8; 32];
             let a = U128x128::from_bytes(num);
@@ -865,13 +863,13 @@ mod test {
                 c: expected_c,
             };
 
-            let (pk, vk) = TestAdditionCircuit::generate_prepared_test_parameters();
+            let (pk, vk) = TestAdditionCircuit::generate_test_parameters();
             let mut rng = OsRng;
 
             let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
             .expect("should be able to form proof");
 
-            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
                 &vk,
                 &expected_c.to_field_elements().unwrap(),
                 &proof,
@@ -902,7 +900,7 @@ mod test {
         }
     }
 
-    impl ParameterSetup for TestAdditionCircuit {
+    impl TestAdditionCircuit {
         fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
             let num: [u8; 32] = [0u8; 32];
             let a = U128x128::from_bytes(num);
@@ -945,13 +943,13 @@ mod test {
                 c: expected_c,
             };
 
-            let (pk, vk) = TestDivisionCircuit::generate_prepared_test_parameters();
+            let (pk, vk) = TestDivisionCircuit::generate_test_parameters();
             let mut rng = OsRng;
 
             let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
             .expect("should be able to form proof");
 
-            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
                 &vk,
                 &expected_c.to_field_elements().unwrap(),
                 &proof,
@@ -982,7 +980,7 @@ mod test {
         }
     }
 
-    impl ParameterSetup for TestDivisionCircuit {
+    impl TestDivisionCircuit {
         fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
             let num: [u8; 32] = [1u8; 32];
             let a = U128x128::from_bytes(num);
@@ -1031,13 +1029,13 @@ mod test {
                 d,
             };
 
-            let (pk, vk) = TestComparisonCircuit::generate_prepared_test_parameters();
+            let (pk, vk) = TestComparisonCircuit::generate_test_parameters();
             let mut rng = OsRng;
 
             let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
             .expect("should be able to form proof");
 
-            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
                 &vk,
                 &[],
                 &proof,
@@ -1071,7 +1069,7 @@ mod test {
         }
     }
 
-    impl ParameterSetup for TestComparisonCircuit {
+    impl TestComparisonCircuit {
         fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
             let num: [u8; 32] = [0u8; 32];
             let a = U128x128::from_bytes(num);

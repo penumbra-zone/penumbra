@@ -1,4 +1,6 @@
-use penumbra_crypto::{asset, balance, Amount, FieldExt, Fq, Fr};
+use penumbra_asset::{asset, balance, Balance};
+use penumbra_crypto::{FieldExt, Fq, Fr};
+use penumbra_num::Amount;
 use penumbra_proof_params::UNDELEGATECLAIM_PROOF_PROVING_KEY;
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 
@@ -75,7 +77,7 @@ impl UndelegateClaimPlan {
         self.balance().commit(self.balance_blinding)
     }
 
-    pub fn balance(&self) -> penumbra_crypto::Balance {
+    pub fn balance(&self) -> Balance {
         self.penalty
             .balance_for_claim(self.unbonding_id(), self.unbonding_amount)
     }

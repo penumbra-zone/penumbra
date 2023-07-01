@@ -6,10 +6,10 @@ use std::{
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
-use penumbra_crypto::{
-    asset,
+use penumbra_asset::{asset, Value};
+use penumbra_num::{
     fixpoint::{Error, U128x128},
-    Amount, Value,
+    Amount,
 };
 use penumbra_storage::{StateDelta, StateRead, StateWrite};
 use tracing::instrument;

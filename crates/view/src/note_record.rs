@@ -1,5 +1,6 @@
+use penumbra_asset::Value;
 use penumbra_chain::NoteSource;
-use penumbra_crypto::{keys::AddressIndex, note, Note, Nullifier, Rseed, Value};
+use penumbra_crypto::{keys::AddressIndex, note, Note, Nullifier, Rseed};
 use penumbra_proto::{view::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 

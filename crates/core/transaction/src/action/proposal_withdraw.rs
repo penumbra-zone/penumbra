@@ -1,8 +1,10 @@
 use ark_ff::Zero;
 use serde::{Deserialize, Serialize};
 
-use penumbra_crypto::{asset::Amount, Balance, Fr, Value};
+use decaf377::Fr;
+use penumbra_asset::{balance, Balance, Value};
 use penumbra_governance::ProposalNft;
+use penumbra_num::Amount;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 use crate::{ActionView, IsAction, TransactionPerspective};
@@ -18,7 +20,7 @@ pub struct ProposalWithdraw {
 }
 
 impl IsAction for ProposalWithdraw {
-    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+    fn balance_commitment(&self) -> balance::Commitment {
         self.balance().commit(Fr::zero())
     }
 

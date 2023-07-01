@@ -3,18 +3,19 @@
 
 use ark_ff::UniformRand;
 use decaf377::Fr;
+use penumbra_asset::{asset, Balance, Value};
 use penumbra_crypto::{
-    asset,
     keys::{SeedPhrase, SpendKey},
     proofs::groth16::{DelegatorVoteProof, NullifierDerivationProof, OutputProof, SpendProof},
     rdsa::{self, SpendAuth, VerificationKey},
-    Amount, Balance, Fq, Note, Value,
+    Fq, Note,
 };
 use penumbra_dex::{
     swap::proof::SwapProof, swap::SwapPlaintext, swap_claim::proof::SwapClaimProof,
     BatchSwapOutputData, TradingPair,
 };
 use penumbra_fee::Fee;
+use penumbra_num::Amount;
 use penumbra_proof_params::{
     DELEGATOR_VOTE_PROOF_PROVING_KEY, DELEGATOR_VOTE_PROOF_VERIFICATION_KEY,
     NULLIFIER_DERIVATION_PROOF_PROVING_KEY, NULLIFIER_DERIVATION_PROOF_VERIFICATION_KEY,

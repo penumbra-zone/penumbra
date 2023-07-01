@@ -14,10 +14,12 @@ use penumbra_tct::StateCommitment;
 use poseidon377::{hash_1, hash_4, hash_7};
 use rand_core::{CryptoRng, RngCore};
 
+use penumbra_asset::{asset, Value, ValueVar};
 use penumbra_crypto::{
-    asset, asset::AmountVar, ka, keys::OutgoingViewingKey, note::StateCommitmentVar,
-    value::ValueVar, Address, AddressVar, Amount, Note, PayloadKey, Rseed, Value,
+    ka, keys::OutgoingViewingKey, note::StateCommitmentVar, Address, AddressVar, Note, PayloadKey,
+    Rseed,
 };
+use penumbra_num::{Amount, AmountVar};
 
 use crate::{BatchSwapOutputData, TradingPair, TradingPairVar};
 
@@ -386,7 +388,7 @@ impl TryFrom<&[u8]> for SwapPlaintext {
             delta_1_i: Amount::from_le_bytes(delta_1_bytes),
             delta_2_i: Amount::from_le_bytes(delta_2_bytes),
             claim_fee: Fee(Value {
-                amount: asset::Amount::from_le_bytes(fee_amount_bytes),
+                amount: Amount::from_le_bytes(fee_amount_bytes),
                 asset_id: asset::Id::try_from(fee_asset_id_bytes)?,
             }),
             claim_address: pb_address.try_into()?,
@@ -409,11 +411,8 @@ mod tests {
     use rand_core::OsRng;
 
     use super::*;
-    use penumbra_crypto::{
-        asset,
-        keys::{SeedPhrase, SpendKey},
-        Value,
-    };
+    use penumbra_asset::{asset, Value};
+    use penumbra_crypto::keys::{SeedPhrase, SpendKey};
 
     #[test]
     /// Check the swap plaintext can be encrypted and decrypted with the OVK.

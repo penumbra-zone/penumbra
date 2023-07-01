@@ -1,6 +1,6 @@
-use penumbra_crypto::fixpoint::U128x128;
 use penumbra_dex::lp::position::Position;
 use penumbra_dex::DirectedUnitPair;
+use penumbra_num::fixpoint::U128x128;
 use serde::Serialize;
 
 #[derive(Serialize)]

@@ -5,11 +5,13 @@ edition = "2021"
 
 [dependencies]
 # Workspace dependencies
+penumbra-asset = { path = "../../../core/asset", default-features = false  } 
 penumbra-proto = { path = "../../../proto", default-features = false }
 penumbra-storage = { path = "../../../storage", optional = true }
 penumbra-tct = { path = "../../../crypto/tct" }
 penumbra-crypto = { path = "../../crypto", default-features = false }
 penumbra-component = { path = "../component", optional = true }
+penumbra-num = { path = "../../../core/num", default-features = false  } 
 
 # Penumbra dependencies
 decaf377 = "0.4"

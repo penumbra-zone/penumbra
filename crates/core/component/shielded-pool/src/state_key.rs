@@ -1,4 +1,5 @@
-use penumbra_crypto::{asset, Nullifier};
+use penumbra_asset::asset;
+use penumbra_crypto::Nullifier;
 use std::string::String;
 
 pub fn token_supply(asset_id: &asset::Id) -> String {

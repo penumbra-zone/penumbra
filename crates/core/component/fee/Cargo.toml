@@ -17,6 +17,8 @@ penumbra-proto = { path = "../../../proto", default-features = false }
 penumbra-storage = { path = "../../../storage", optional = true }
 penumbra-crypto = { path = "../../crypto", default-features = false }
 penumbra-component = { path = "../component", optional = true }
+penumbra-asset = { path = "../../../core/asset", default-features = false }
+penumbra-num = { path = "../../../core/num", default-features = false }
 
 # Penumbra dependencies
 decaf377-rdsa = { version = "0.6" }

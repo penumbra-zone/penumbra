@@ -10,14 +10,12 @@ use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::{Fq, Fr};
 use ibc_types2::core::channel::{ChannelId, PortId};
-use penumbra_crypto::{
-    asset::{self, DenomMetadata},
-    keys::AddressIndex,
-    Amount, Value, STAKING_TOKEN_ASSET_ID,
-};
+use penumbra_asset::{asset, asset::DenomMetadata, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::keys::AddressIndex;
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_fee::Fee;
 use penumbra_ibc::Ics20Withdrawal;
+use penumbra_num::Amount;
 use penumbra_proto::{
     client::v1alpha1::{
         EpochByHeightRequest, LiquidityPositionByIdRequest, ProposalInfoRequest,

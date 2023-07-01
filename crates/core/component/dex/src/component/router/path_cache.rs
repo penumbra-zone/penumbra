@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use parking_lot::Mutex;
-use penumbra_crypto::asset;
+use penumbra_asset::asset;
 use penumbra_storage::{StateDelta, StateRead};
 
 use super::Path;

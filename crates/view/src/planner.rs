@@ -6,12 +6,11 @@ use std::{
 
 use anyhow::{anyhow, Result};
 
+use penumbra_asset::{asset::DenomMetadata, Balance, Value};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_crypto::{
-    asset::Amount,
-    asset::DenomMetadata,
     keys::{AccountGroupId, AddressIndex},
-    Address, Balance, Note, Value,
+    Address, Note,
 };
 use penumbra_dao::DaoDeposit;
 use penumbra_dex::{
@@ -26,6 +25,7 @@ use penumbra_dex::{
 };
 use penumbra_fee::Fee;
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
+use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
 use penumbra_stake::{rate::RateData, validator};

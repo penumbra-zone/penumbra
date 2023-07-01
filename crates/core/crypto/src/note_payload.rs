@@ -2,10 +2,11 @@ use anyhow::{Context, Error};
 
 use bytes::Bytes;
 
+use penumbra_num::Amount;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
-use crate::{asset::Amount, ka, note, FullViewingKey, Note, NoteCiphertext};
+use crate::{ka, note, FullViewingKey, Note, NoteCiphertext};
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::NotePayload", into = "pb::NotePayload")]
