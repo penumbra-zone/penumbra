@@ -1,25 +1,27 @@
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 
-use penumbra_crypto::{asset, balance, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_asset::{asset, balance, Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_crypto::Fr;
+use penumbra_num::Amount;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Fee(pub Value);
 
 impl Default for Fee {
     fn default() -> Self {
-        Fee::from_staking_token_amount(asset::Amount::zero())
+        Fee::from_staking_token_amount(Amount::zero())
     }
 }
 
 impl Fee {
-    pub fn from_staking_token_amount(amount: asset::Amount) -> Self {
+    pub fn from_staking_token_amount(amount: Amount) -> Self {
         Self(Value {
             amount,
             asset_id: *STAKING_TOKEN_ASSET_ID,
         })
     }
 
-    pub fn amount(&self) -> asset::Amount {
+    pub fn amount(&self) -> Amount {
         self.0.amount
     }
 

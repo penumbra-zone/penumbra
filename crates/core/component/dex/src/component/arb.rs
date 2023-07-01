@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use penumbra_asset::{asset, Value};
 use penumbra_chain::component::StateReadExt;
-use penumbra_crypto::{asset, Value};
 use penumbra_storage::{StateDelta, StateWrite};
 use tracing::instrument;
 

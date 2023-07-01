@@ -1,4 +1,4 @@
-use penumbra_crypto::asset::{self, DenomMetadata};
+use penumbra_asset::asset::{self, DenomMetadata};
 use penumbra_proto::{core::chain::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 

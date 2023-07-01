@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Context, Result};
 use ark_ff::{UniformRand, Zero};
 
-use penumbra_crypto::Balance;
-use penumbra_crypto::{FieldExt, Fq, Fr, FullViewingKey, Value};
+use penumbra_asset::{balance, Balance, Value};
+use penumbra_crypto::{FieldExt, Fq, Fr, FullViewingKey};
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -73,11 +73,11 @@ impl SwapPlan {
         .expect("can generate ZKSwapProof")
     }
 
-    pub fn fee_commitment(&self) -> penumbra_crypto::balance::Commitment {
+    pub fn fee_commitment(&self) -> balance::Commitment {
         self.swap_plaintext.claim_fee.commit(self.fee_blinding)
     }
 
-    pub fn transparent_balance(&self) -> penumbra_crypto::Balance {
+    pub fn transparent_balance(&self) -> Balance {
         let value_1 = Value {
             amount: self.swap_plaintext.delta_1_i,
             asset_id: self.swap_plaintext.trading_pair.asset_1(),
@@ -93,7 +93,7 @@ impl SwapPlan {
         balance
     }
 
-    pub fn balance(&self) -> penumbra_crypto::Balance {
+    pub fn balance(&self) -> Balance {
         // Swaps must have spends corresponding to:
         // - the input amount of asset 1
         // - the input amount of asset 2

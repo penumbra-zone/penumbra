@@ -1,6 +1,7 @@
 use ark_r1cs_std::prelude::*;
 use ark_r1cs_std::uint8::UInt8;
 use ark_relations::r1cs::SynthesisError;
+use penumbra_num::{Amount, AmountVar};
 use std::{
     collections::{btree_map, BTreeMap},
     fmt::{self, Debug, Formatter},
@@ -11,9 +12,9 @@ use std::{
 };
 
 use crate::{
-    asset::{self, AmountVar, AssetIdVar},
+    asset::{AssetIdVar, Id},
     value::ValueVar,
-    Amount, Value,
+    Value,
 };
 
 pub mod commitment;
@@ -32,7 +33,7 @@ use self::commitment::BalanceCommitmentVar;
 #[derive(Clone, Eq, Default)]
 pub struct Balance {
     negated: bool,
-    balance: BTreeMap<asset::Id, Imbalance<NonZeroU128>>,
+    balance: BTreeMap<Id, Imbalance<NonZeroU128>>,
 }
 
 impl Debug for Balance {
@@ -393,7 +394,9 @@ impl std::ops::Add for BalanceVar {
 
 #[cfg(test)]
 mod test {
-    use crate::{Fr, Zero, STAKING_TOKEN_ASSET_ID};
+    use crate::{asset::DenomMetadata, STAKING_TOKEN_ASSET_ID};
+    use ark_ff::Zero;
+    use decaf377::Fr;
     use once_cell::sync::Lazy;
     use proptest::prelude::*;
 
@@ -488,21 +491,21 @@ mod test {
     }
 
     // Two sample denom/asset id pairs, for testing
-    static DENOM_1: Lazy<asset::DenomMetadata> = Lazy::new(|| {
+    static DENOM_1: Lazy<DenomMetadata> = Lazy::new(|| {
         crate::asset::Cache::with_known_assets()
             .get_unit("cube")
             .unwrap()
             .base()
     });
-    static ASSET_ID_1: Lazy<asset::Id> = Lazy::new(|| DENOM_1.id());
+    static ASSET_ID_1: Lazy<Id> = Lazy::new(|| DENOM_1.id());
 
-    static DENOM_2: Lazy<asset::DenomMetadata> = Lazy::new(|| {
+    static DENOM_2: Lazy<DenomMetadata> = Lazy::new(|| {
         crate::asset::Cache::with_known_assets()
             .get_unit("nala")
             .unwrap()
             .base()
     });
-    static ASSET_ID_2: Lazy<asset::Id> = Lazy::new(|| DENOM_2.id());
+    static ASSET_ID_2: Lazy<Id> = Lazy::new(|| DENOM_2.id());
 
     fn gen_expression() -> impl proptest::strategy::Strategy<Value = Expression> {
         (

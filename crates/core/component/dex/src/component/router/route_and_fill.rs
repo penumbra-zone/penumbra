@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_crypto::{asset, Amount, Value};
+use penumbra_asset::{asset, Value};
+use penumbra_num::Amount;
 use penumbra_storage::StateWrite;
 use tracing::instrument;
 

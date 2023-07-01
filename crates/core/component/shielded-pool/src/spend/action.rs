@@ -2,8 +2,8 @@ use std::convert::{TryFrom, TryInto};
 
 use anyhow::{Context, Error};
 use bytes::Bytes;
+use penumbra_asset::balance;
 use penumbra_crypto::{
-    balance,
     proofs::groth16::SpendProof,
     rdsa::{Signature, SpendAuth, VerificationKey},
     EffectHash, EffectingData, FieldExt, Nullifier,

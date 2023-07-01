@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
-use penumbra_crypto::{asset::Cache, keys::IncomingViewingKey, Address, Note, NoteView, Value};
+use penumbra_asset::{asset::Cache, Value};
+use penumbra_crypto::{keys::IncomingViewingKey, Address, Note, NoteView};
 use penumbra_dex::{
     lp::position::Position,
     swap::SwapPlaintext,

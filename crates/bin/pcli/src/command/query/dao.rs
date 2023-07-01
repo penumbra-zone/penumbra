@@ -3,7 +3,8 @@ use futures::TryStreamExt;
 //use penumbra_app::dao;
 use penumbra_dao::component::state_key;
 
-use penumbra_crypto::{asset, Amount, Value};
+use penumbra_asset::{asset, Value};
+use penumbra_num::Amount;
 use penumbra_view::ViewClient;
 
 use crate::{command::query::dao, App};

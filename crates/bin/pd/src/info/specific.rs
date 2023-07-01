@@ -5,9 +5,9 @@ use async_stream::try_stream;
 use futures::StreamExt;
 use futures::TryStreamExt;
 use penumbra_app::governance::StateReadExt as _;
+use penumbra_asset::{asset, Value};
 use penumbra_chain::component::AppHashRead;
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_crypto::asset::{self};
 use penumbra_dex::component::router::RouteAndFill;
 use penumbra_dex::component::router::RoutingParams;
 use penumbra_dex::{
@@ -119,7 +119,7 @@ impl SpecificQueryService for Info {
             Some(setting) => setting,
         };
 
-        let input: penumbra_crypto::Value = request
+        let input: Value = request
             .input
             .ok_or_else(|| tonic::Status::invalid_argument("missing input parameter"))?
             .try_into()

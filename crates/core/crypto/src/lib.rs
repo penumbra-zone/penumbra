@@ -6,10 +6,7 @@ pub use decaf377_ka as ka;
 pub use decaf377_rdsa as rdsa;
 
 mod address;
-pub mod asset;
-pub mod balance;
 mod effect_hash;
-pub mod fixpoint;
 pub mod keys;
 pub mod note;
 mod note_payload;
@@ -19,11 +16,8 @@ pub mod proofs;
 pub mod rseed;
 pub mod symmetric;
 mod transaction;
-pub mod value;
 
 pub use address::{Address, AddressVar, AddressView};
-pub use asset::Amount;
-pub use balance::Balance;
 pub use effect_hash::{EffectHash, EffectingData};
 pub use keys::FullViewingKey;
 pub use note::{Note, NoteCiphertext, NoteView};
@@ -32,18 +26,7 @@ pub use nullifier::{Nullifier, NullifierVar};
 pub use rseed::Rseed;
 pub use symmetric::PayloadKey;
 pub use transaction::TransactionContext;
-pub use value::{Value, ValueVar, ValueView};
 
 fn fmt_hex<T: AsRef<[u8]>>(data: T, f: &mut std::fmt::Formatter) -> std::fmt::Result {
     write!(f, "{}", hex::encode(data))
 }
-
-use once_cell::sync::Lazy;
-
-pub static STAKING_TOKEN_DENOM: Lazy<asset::DenomMetadata> = Lazy::new(|| {
-    crate::asset::Cache::with_known_assets()
-        .get_unit("upenumbra")
-        .unwrap()
-        .base()
-});
-pub static STAKING_TOKEN_ASSET_ID: Lazy<asset::Id> = Lazy::new(|| STAKING_TOKEN_DENOM.id());

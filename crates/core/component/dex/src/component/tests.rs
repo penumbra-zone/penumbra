@@ -3,8 +3,8 @@ use std::sync::Arc;
 use anyhow::Ok;
 use async_trait::async_trait;
 use futures::StreamExt;
-use penumbra_crypto::Value;
-use penumbra_crypto::{asset, Amount};
+use penumbra_asset::{asset, Value};
+use penumbra_num::Amount;
 use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
 use rand_core::OsRng;
 

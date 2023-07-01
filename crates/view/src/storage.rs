@@ -2,15 +2,14 @@ use anyhow::{anyhow, Context};
 use camino::Utf8Path;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use penumbra_asset::{asset, asset::DenomMetadata, asset::Id, Value};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::{
-    asset::{self, DenomMetadata, Id},
-    note, Address, Amount, FieldExt, Fq, FullViewingKey, Note, Nullifier, Rseed, Value,
-};
+use penumbra_crypto::{note, Address, FieldExt, Fq, FullViewingKey, Note, Nullifier, Rseed};
 use penumbra_dex::{
     lp::position::{self, Position, State},
     TradingPair,
 };
+use penumbra_num::Amount;
 use penumbra_proto::{
     client::v1alpha1::{
         oblivious_query_service_client::ObliviousQueryServiceClient, ChainParametersRequest,

@@ -1,8 +1,8 @@
 use ark_ff::UniformRand;
 use decaf377_rdsa::{Signature, SpendAuth};
+use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_crypto::{
     proofs::groth16::SpendProof, Address, FieldExt, Fq, Fr, FullViewingKey, Note, Nullifier, Rseed,
-    Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
@@ -120,8 +120,8 @@ impl SpendPlan {
         .expect("can generate ZKSpendProof")
     }
 
-    pub fn balance(&self) -> penumbra_crypto::Balance {
-        penumbra_crypto::Value {
+    pub fn balance(&self) -> Balance {
+        Value {
             amount: self.note.value().amount,
             asset_id: self.note.value().asset_id,
         }

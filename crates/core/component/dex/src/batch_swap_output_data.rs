@@ -12,11 +12,8 @@ use penumbra_proto::{
 };
 use serde::{Deserialize, Serialize};
 
-use penumbra_crypto::{
-    asset::AmountVar,
-    fixpoint::{U128x128, U128x128Var},
-    Amount,
-};
+use penumbra_num::fixpoint::{U128x128, U128x128Var};
+use penumbra_num::{Amount, AmountVar};
 
 use crate::TradingPairVar;
 
@@ -300,7 +297,8 @@ mod tests {
     use ark_relations::r1cs::ConstraintSynthesizer;
     use ark_snark::SNARK;
     use decaf377::Bls12_377;
-    use penumbra_crypto::{asset, proofs::groth16::ParameterSetup};
+    use penumbra_asset::asset;
+    use penumbra_crypto::proofs::groth16::ParameterSetup;
     use rand_core::OsRng;
 
     use super::*;

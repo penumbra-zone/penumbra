@@ -1,4 +1,5 @@
 use decaf377_rdsa::{Signature, SpendAuth};
+use penumbra_asset::balance;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_stake::{GovernanceKey, IdentityKey};
 use serde::{Deserialize, Serialize};
@@ -16,7 +17,7 @@ pub struct ValidatorVote {
 }
 
 impl IsAction for ValidatorVote {
-    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+    fn balance_commitment(&self) -> balance::Commitment {
         Default::default()
     }
 

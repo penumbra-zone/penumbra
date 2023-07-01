@@ -14,11 +14,14 @@ pub use r1cs::{NoteVar, StateCommitmentVar};
 
 pub use penumbra_tct::StateCommitment;
 
+use penumbra_asset::{asset, balance, Value, ValueView};
+use penumbra_num::Amount;
+
 use crate::{
-    asset, balance, fmd, ka,
+    fmd, ka,
     keys::{Diversifier, IncomingViewingKey, OutgoingViewingKey},
     symmetric::{OutgoingCipherKey, OvkWrappedKey, PayloadKey, PayloadKind},
-    Address, AddressView, Fq, NotePayload, Rseed, Value, ValueView,
+    Address, AddressView, Fq, NotePayload, Rseed,
 };
 
 pub const NOTE_LEN_BYTES: usize = 160;
@@ -172,7 +175,7 @@ impl Note {
         self.value.asset_id
     }
 
-    pub fn amount(&self) -> asset::Amount {
+    pub fn amount(&self) -> Amount {
         self.value.amount
     }
 
@@ -477,7 +480,7 @@ impl TryFrom<&[u8]> for Note {
                 .try_into()
                 .map_err(|_| Error::NoteDeserializationError)?,
             Value {
-                amount: crate::asset::Amount::from_le_bytes(amount_bytes),
+                amount: Amount::from_le_bytes(amount_bytes),
                 asset_id: asset::Id(
                     Fq::from_bytes(asset_id_bytes).map_err(|_| Error::NoteDeserializationError)?,
                 ),
@@ -541,7 +544,7 @@ mod tests {
 
         let value = Value {
             amount: 10u64.into(),
-            asset_id: crate::asset::Cache::with_known_assets()
+            asset_id: asset::Cache::with_known_assets()
                 .get_unit("upenumbra")
                 .unwrap()
                 .id(),
@@ -577,7 +580,7 @@ mod tests {
 
         let value = Value {
             amount: 10u64.into(),
-            asset_id: crate::asset::Cache::with_known_assets()
+            asset_id: asset::Cache::with_known_assets()
                 .get_unit("upenumbra")
                 .unwrap()
                 .id(),
@@ -611,7 +614,7 @@ mod tests {
 
         let value = Value {
             amount: 10u64.into(),
-            asset_id: crate::asset::Cache::with_known_assets()
+            asset_id: asset::Cache::with_known_assets()
                 .get_unit("upenumbra")
                 .unwrap()
                 .id(),

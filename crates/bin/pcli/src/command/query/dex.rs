@@ -3,10 +3,7 @@ use comfy_table::{presets, Table};
 use futures::{Stream, StreamExt, TryStreamExt};
 use std::pin::Pin;
 
-use penumbra_crypto::{
-    asset::{self, DenomMetadata},
-    Value,
-};
+use penumbra_asset::{asset, asset::DenomMetadata, Value};
 use penumbra_dex::{
     lp::position::{self, Position},
     BatchSwapOutputData, DirectedTradingPair, SwapExecution, TradingPair,

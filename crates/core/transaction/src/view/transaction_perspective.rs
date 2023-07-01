@@ -1,7 +1,5 @@
-use penumbra_crypto::{
-    asset::{self},
-    note, AddressView, Note, NoteView, Nullifier, PayloadKey,
-};
+use penumbra_asset::asset;
+use penumbra_crypto::{note, AddressView, Note, NoteView, Nullifier, PayloadKey};
 use penumbra_proto::core::transaction::v1alpha1::{
     self as pb, NullifierWithNote, PayloadKeyWithCommitment,
 };

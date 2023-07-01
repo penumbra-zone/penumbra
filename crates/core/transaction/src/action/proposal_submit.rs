@@ -1,8 +1,10 @@
 use ark_ff::Zero;
 use serde::{Deserialize, Serialize};
 
-use penumbra_crypto::{asset::Amount, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID};
+use decaf377::Fr;
+use penumbra_asset::{balance, Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_governance::ProposalNft;
+use penumbra_num::Amount;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 use crate::{proposal::Proposal, ActionView, IsAction, TransactionPerspective};
@@ -20,7 +22,7 @@ pub struct ProposalSubmit {
 }
 
 impl IsAction for ProposalSubmit {
-    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+    fn balance_commitment(&self) -> balance::Commitment {
         self.balance().commit(Fr::zero())
     }
 

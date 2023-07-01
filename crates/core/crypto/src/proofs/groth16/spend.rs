@@ -23,16 +23,15 @@ use rand_core::OsRng;
 
 use crate::proofs::groth16::{gadgets, ParameterSetup, VerifyingKeyExt};
 use crate::{
-    balance,
-    balance::commitment::BalanceCommitmentVar,
     keys::{
         AuthorizationKeyVar, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
         RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
     },
     note,
     nullifier::NullifierVar,
-    Note, Nullifier, Rseed, Value,
+    Note, Nullifier, Rseed,
 };
+use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
 
 use super::GROTH16_PROOF_LENGTH_BYTES;
 

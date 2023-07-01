@@ -1,10 +1,10 @@
 use ark_ff::UniformRand;
 use decaf377::{FieldExt, Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_crypto::{
-    proofs::groth16::DelegatorVoteProof, Amount, FullViewingKey, Note, Nullifier,
-};
+use penumbra_asset::{Balance, Value};
+use penumbra_crypto::{proofs::groth16::DelegatorVoteProof, FullViewingKey, Note, Nullifier};
 use penumbra_governance::VotingReceiptToken;
+use penumbra_num::Amount;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
@@ -123,8 +123,8 @@ impl DelegatorVotePlan {
         fvk.derive_nullifier(self.position, &self.staked_note.commit())
     }
 
-    pub fn balance(&self) -> penumbra_crypto::Balance {
-        penumbra_crypto::Value {
+    pub fn balance(&self) -> Balance {
+        Value {
             amount: self.unbonded_amount,
             asset_id: VotingReceiptToken::new(self.proposal).id(),
         }

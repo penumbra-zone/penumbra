@@ -2,13 +2,16 @@ use ark_ff::UniformRand;
 use std::{ops::Deref, sync::Arc};
 
 use crate::{app::App, MockClient, TempStorageExt};
+use decaf377::Fq;
+use penumbra_asset::asset;
 use penumbra_chain::{
     component::{StateReadExt, StateWriteExt},
     test_keys,
 };
 use penumbra_component::{ActionHandler, Component};
-use penumbra_crypto::{asset, Address, Amount, Fq};
+use penumbra_crypto::Address;
 use penumbra_fee::Fee;
+use penumbra_num::Amount;
 use penumbra_shielded_pool::component::ShieldedPool;
 use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
 use penumbra_transaction::Transaction;

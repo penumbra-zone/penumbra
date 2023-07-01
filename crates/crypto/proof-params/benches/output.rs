@@ -5,12 +5,13 @@ use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
 use decaf377::Fr;
+use penumbra_asset::{balance, Balance, Value};
 use penumbra_crypto::{
-    balance, fmd, ka,
+    fmd, ka,
     keys::Diversifier,
     note,
     proofs::groth16::{OutputCircuit, OutputProof},
-    Address, Balance, Fq, Note, Rseed, Value,
+    Address, Fq, Note, Rseed,
 };
 use penumbra_proof_params::OUTPUT_PROOF_PROVING_KEY;
 

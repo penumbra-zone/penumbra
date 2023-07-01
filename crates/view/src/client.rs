@@ -2,11 +2,12 @@ use std::{collections::BTreeMap, future::Future, pin::Pin};
 
 use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
+use penumbra_asset::asset::{self, DenomMetadata, Id};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::asset::{DenomMetadata, Id};
 use penumbra_crypto::keys::AccountGroupId;
-use penumbra_crypto::{asset, keys::AddressIndex, note, Nullifier};
-use penumbra_crypto::{Address, Amount};
+use penumbra_crypto::Address;
+use penumbra_crypto::{keys::AddressIndex, note, Nullifier};
+use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{
     self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,
 };

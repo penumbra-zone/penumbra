@@ -14,7 +14,9 @@ use ibc_types2::{
     },
     transfer::acknowledgement::TokenTransferAcknowledgement,
 };
-use penumbra_crypto::{asset, asset::DenomMetadata, Address, Amount, Value};
+use penumbra_asset::{asset, asset::DenomMetadata, Value};
+use penumbra_crypto::Address;
+use penumbra_num::Amount;
 use penumbra_proto::{
     core::ibc::v1alpha1::FungibleTokenPacketData, StateReadProto, StateWriteProto,
 };

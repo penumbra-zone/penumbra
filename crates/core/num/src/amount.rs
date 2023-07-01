@@ -1,14 +1,12 @@
 use ark_ff::ToConstraintField;
 use ark_r1cs_std::{prelude::*, uint64::UInt64};
 use ark_relations::r1cs::SynthesisError;
+use decaf377::{Fq, Fr};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
-use crate::{
-    fixpoint::{convert_le_bits_to_fqvar, U128x128, U128x128Var},
-    Fq, Fr,
-};
+use crate::fixpoint::{convert_le_bits_to_fqvar, U128x128, U128x128Var};
 use decaf377::{r1cs::FqVar, FieldExt};
 
 #[derive(Serialize, Default, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]

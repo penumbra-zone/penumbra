@@ -28,6 +28,8 @@ penumbra-crypto = { path = "../../crypto", default-features = false }
 penumbra-sct = { path = "../sct", default-features = false }
 penumbra-component = { path = "../component", optional = true }
 penumbra-chain = { path = "../chain", default-features = false }
+penumbra-asset = { path = "../../../core/asset", default-features = false  } 
+penumbra-num = { path = "../../../core/num", default-features = false  } 
 
 # Penumbra dependencies
 decaf377-rdsa = { version = "0.6" }

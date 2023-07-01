@@ -1,4 +1,4 @@
-use crate::{address::AddressVar, note, value::ValueVar, Note};
+use crate::{address::AddressVar, note, Note};
 use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
@@ -6,6 +6,7 @@ use decaf377::{
     r1cs::{ElementVar, FqVar},
     Fq,
 };
+use penumbra_asset::ValueVar;
 
 use super::NOTECOMMIT_DOMAIN_SEP;
 

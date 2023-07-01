@@ -1,10 +1,11 @@
 use crate::dex_utils::replicate::math_utils;
 use ndarray::Array;
-use penumbra_crypto::{fixpoint::U128x128, Amount, Value};
+use penumbra_asset::Value;
 use penumbra_dex::{
     lp::{position::Position, Reserves},
     DirectedUnitPair,
 };
+use penumbra_num::{fixpoint::U128x128, Amount};
 use rand_core::OsRng;
 use tracing::field;
 

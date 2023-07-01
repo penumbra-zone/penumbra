@@ -1,9 +1,9 @@
 use anyhow::{anyhow, Result};
-use penumbra_crypto::{
+use penumbra_asset::{
     asset::{self, Unit},
-    fixpoint::U128x128,
-    Amount, Value,
+    Value,
 };
+use penumbra_num::{fixpoint::U128x128, Amount};
 use rand_core::CryptoRngCore;
 use regex::Regex;
 

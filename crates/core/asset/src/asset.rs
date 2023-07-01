@@ -1,6 +1,4 @@
 //! Asset types and identifiers.
-
-mod amount;
 mod cache;
 mod denom;
 mod denom_metadata;
@@ -8,7 +6,6 @@ mod id;
 mod r1cs;
 mod registry;
 
-pub use amount::{Amount, AmountVar};
 pub use cache::Cache;
 pub use denom::Denom;
 pub use denom_metadata::{DenomMetadata, Unit};
@@ -81,7 +78,7 @@ mod tests {
     #[test]
     fn test_registry_native_token() {
         // We should be able to use `parse_base` with the valid base denomination.
-        let base_denom = crate::asset::Cache::with_known_assets()
+        let base_denom = Cache::with_known_assets()
             .get_unit("upenumbra")
             .unwrap()
             .base();
@@ -144,7 +141,7 @@ mod tests {
 
     #[test]
     fn best_unit_for() {
-        let base_denom = crate::asset::Cache::with_known_assets()
+        let base_denom = Cache::with_known_assets()
             .get_unit("upenumbra")
             .unwrap()
             .base();
@@ -201,9 +198,7 @@ mod tests {
 
     #[test]
     fn test_get_unit() {
-        let unit = crate::asset::Cache::with_known_assets()
-            .get_unit("cube")
-            .unwrap();
+        let unit = Cache::with_known_assets().get_unit("cube").unwrap();
 
         assert_eq!(format!("{unit}"), "cube".to_string());
     }

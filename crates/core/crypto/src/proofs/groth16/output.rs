@@ -16,13 +16,14 @@ use ark_snark::SNARK;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use rand_core::OsRng;
 
-use crate::balance::BalanceVar;
 use crate::proofs::groth16::{
     gadgets, ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES,
 };
-use crate::{
-    balance, balance::commitment::BalanceCommitmentVar, keys::Diversifier, note, Address, Note,
-    Rseed, Value,
+use crate::{keys::Diversifier, note, Address, Note, Rseed};
+use penumbra_asset::{
+    balance,
+    balance::{commitment::BalanceCommitmentVar, BalanceVar},
+    Value,
 };
 
 // Public:

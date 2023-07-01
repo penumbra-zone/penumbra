@@ -12,12 +12,16 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use rand_core::OsRng;
 
+use penumbra_asset::{
+    asset::{self},
+    Value, ValueVar,
+};
 use penumbra_crypto::{
-    asset::{self, AmountVar},
     keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey},
     note::{self, NoteVar, StateCommitmentVar},
-    Amount, Fq, Nullifier, NullifierVar, Rseed, Value, ValueVar,
+    Fq, Nullifier, NullifierVar, Rseed,
 };
+use penumbra_num::{Amount, AmountVar};
 
 use crate::{
     batch_swap_output_data::BatchSwapOutputDataVar,
@@ -400,10 +404,8 @@ impl TryFrom<pb::ZkSwapClaimProof> for SwapClaimProof {
 mod tests {
     use super::*;
     use ark_ff::UniformRand;
-    use penumbra_crypto::{
-        keys::{SeedPhrase, SpendKey},
-        Amount,
-    };
+    use penumbra_crypto::keys::{SeedPhrase, SpendKey};
+    use penumbra_num::Amount;
     use proptest::prelude::*;
 
     proptest! {

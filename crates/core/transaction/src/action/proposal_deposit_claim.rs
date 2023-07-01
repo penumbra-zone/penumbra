@@ -1,11 +1,13 @@
 use ark_ff::Zero;
 use serde::{Deserialize, Serialize};
 
-use penumbra_crypto::{
-    asset::{self, Amount, DenomMetadata},
-    balance, Balance, Fr, Value, STAKING_TOKEN_ASSET_ID,
+use decaf377::Fr;
+use penumbra_asset::{
+    asset::{self, DenomMetadata},
+    balance, Balance, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_governance::ProposalNft;
+use penumbra_num::Amount;
 use penumbra_proto::core::governance::v1alpha1 as pb;
 
 use crate::{

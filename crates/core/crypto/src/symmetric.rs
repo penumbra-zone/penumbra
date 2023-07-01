@@ -4,10 +4,11 @@ use chacha20poly1305::{
     ChaCha20Poly1305, Key, Nonce,
 };
 use decaf377::FieldExt;
+use penumbra_asset::balance;
 use rand::{CryptoRng, RngCore};
 
 use crate::{
-    balance, ka,
+    ka,
     keys::{IncomingViewingKey, OutgoingViewingKey},
     note,
 };

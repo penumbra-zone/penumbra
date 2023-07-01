@@ -5,12 +5,12 @@ use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
 use decaf377::Fr;
+use penumbra_asset::{balance, Value};
 use penumbra_crypto::{
-    balance,
     keys::{NullifierKey, SeedPhrase, SpendKey},
     proofs::groth16::{DelegatorVoteCircuit, DelegatorVoteProof},
     rdsa::{SpendAuth, VerificationKey},
-    Fq, Note, Nullifier, Value,
+    Fq, Note, Nullifier,
 };
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
 use penumbra_tct as tct;

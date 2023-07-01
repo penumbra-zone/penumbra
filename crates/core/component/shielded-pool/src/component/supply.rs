@@ -1,10 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use penumbra_asset::asset::{self, DenomMetadata};
 use penumbra_chain::KnownAssets;
-use penumbra_crypto::{
-    asset::{self, DenomMetadata},
-    Amount,
-};
+use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 

@@ -20,8 +20,9 @@ use crate::{
     keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey},
     note,
     nullifier::NullifierVar,
-    Note, Nullifier, Rseed, Value,
+    Note, Nullifier, Rseed,
 };
+use penumbra_asset::Value;
 
 use super::GROTH16_PROOF_LENGTH_BYTES;
 

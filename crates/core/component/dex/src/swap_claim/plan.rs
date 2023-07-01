@@ -1,6 +1,7 @@
+use penumbra_asset::{Balance, Value};
 use penumbra_crypto::{
     keys::{IncomingViewingKey, NullifierKey},
-    FieldExt, Fq, FullViewingKey, Value,
+    FieldExt, Fq, FullViewingKey,
 };
 use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
@@ -106,7 +107,7 @@ impl SwapClaimPlan {
         ivk.views_address(&self.swap_plaintext.claim_address)
     }
 
-    pub fn balance(&self) -> penumbra_crypto::Balance {
+    pub fn balance(&self) -> Balance {
         // Only the pre-paid fee is contributed to the value balance
         // The rest is handled internally to the SwapClaim action.
         let value_fee = Value {

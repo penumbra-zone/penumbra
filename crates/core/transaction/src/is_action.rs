@@ -1,4 +1,5 @@
-use penumbra_crypto::{balance, Fr, Note, Value, Zero};
+use penumbra_asset::{balance, Value};
+use penumbra_crypto::{Fr, Note, Zero};
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_dex::{
     lp::{
@@ -90,7 +91,7 @@ impl IsAction for Spend {
 }
 
 impl IsAction for Delegate {
-    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+    fn balance_commitment(&self) -> balance::Commitment {
         self.balance().commit(Fr::zero())
     }
 
@@ -100,7 +101,7 @@ impl IsAction for Delegate {
 }
 
 impl IsAction for Undelegate {
-    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+    fn balance_commitment(&self) -> balance::Commitment {
         self.balance().commit(Fr::zero())
     }
 
@@ -110,7 +111,7 @@ impl IsAction for Undelegate {
 }
 
 impl IsAction for UndelegateClaim {
-    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+    fn balance_commitment(&self) -> balance::Commitment {
         self.body.balance_commitment
     }
 
@@ -120,7 +121,7 @@ impl IsAction for UndelegateClaim {
 }
 
 impl IsAction for IbcAction {
-    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+    fn balance_commitment(&self) -> balance::Commitment {
         Default::default()
     }
 
@@ -130,7 +131,7 @@ impl IsAction for IbcAction {
 }
 
 impl IsAction for Ics20Withdrawal {
-    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+    fn balance_commitment(&self) -> balance::Commitment {
         self.balance().commit(Fr::zero())
     }
 
@@ -262,7 +263,7 @@ impl IsAction for Swap {
 }
 
 impl IsAction for SwapClaim {
-    fn balance_commitment(&self) -> penumbra_crypto::balance::Commitment {
+    fn balance_commitment(&self) -> balance::Commitment {
         self.balance().commit(Fr::zero())
     }
 

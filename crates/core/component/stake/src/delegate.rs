@@ -1,4 +1,5 @@
-use penumbra_crypto::{asset::Amount, Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_num::Amount;
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 

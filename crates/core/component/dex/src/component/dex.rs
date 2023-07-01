@@ -2,9 +2,9 @@ use std::{collections::BTreeMap, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
+use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_component::Component;
-use penumbra_crypto::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use tendermint::v0_34::abci;

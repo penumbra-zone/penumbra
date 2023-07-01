@@ -6,14 +6,13 @@ use std::{
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use futures::{StreamExt, TryStreamExt};
+use penumbra_asset::{asset, Value, STAKING_TOKEN_DENOM};
 use penumbra_chain::{
     component::{StateReadExt as _, StateWriteExt as _},
     params::ChainParameters,
 };
-use penumbra_crypto::{
-    asset::{self, Amount},
-    Nullifier, Value, STAKING_TOKEN_DENOM,
-};
+use penumbra_crypto::Nullifier;
+use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_shielded_pool::component::{StateReadExt as _, SupplyRead};
 use penumbra_stake::{DelegationToken, GovernanceKey, IdentityKey};

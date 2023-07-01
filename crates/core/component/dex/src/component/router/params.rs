@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use penumbra_crypto::{asset, fixpoint::U128x128};
+use penumbra_asset::asset;
+use penumbra_num::fixpoint::U128x128;
 
 #[derive(Debug, Clone)]
 pub struct RoutingParams {

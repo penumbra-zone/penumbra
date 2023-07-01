@@ -12,6 +12,8 @@ penumbra-storage = { path = "../../storage" }
 penumbra-tct = { path = "../../crypto/tct" }
 penumbra-proof-params = { path = "../../crypto/proof-params" }
 penumbra-crypto = { path = "../crypto" }
+penumbra-asset = { path = "../asset" }
+penumbra-num = { path = "../num" }
 penumbra-component = { path = "../component/component" }
 penumbra-chain = { path = "../component/chain", features = ["component"] }
 penumbra-shielded-pool = { path = "../component/shielded-pool", features = ["component"] }

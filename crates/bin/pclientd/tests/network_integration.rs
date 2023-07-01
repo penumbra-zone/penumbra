@@ -9,6 +9,7 @@
 use assert_cmd::cargo::CommandCargoExt;
 use futures::StreamExt;
 use pclientd::PclientdConfig;
+use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::test_keys;
 use penumbra_custody::soft_kms;
 use penumbra_proto::{
@@ -108,9 +109,9 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
             outputs: vec![tpr::Output {
                 address: Some(test_keys::ADDRESS_1.clone().into()),
                 value: Some(
-                    penumbra_crypto::Value {
+                    Value {
                         amount: 1_000_000u64.into(),
-                        asset_id: penumbra_crypto::STAKING_TOKEN_ASSET_ID.clone(),
+                        asset_id: STAKING_TOKEN_ASSET_ID.clone(),
                     }
                     .into(),
                 ),

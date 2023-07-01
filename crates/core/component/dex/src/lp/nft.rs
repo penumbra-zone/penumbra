@@ -1,4 +1,4 @@
-use penumbra_crypto::asset;
+use penumbra_asset::asset;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use regex::Regex;
 
@@ -154,13 +154,14 @@ impl From<LpNft> for pb::LpNft {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use penumbra_asset::STAKING_TOKEN_ASSET_ID;
 
     use super::super::{super::DirectedTradingPair, position::*};
 
     #[test]
     fn lpnft_denom_parsing_roundtrip() {
         let pair = DirectedTradingPair {
-            start: penumbra_crypto::STAKING_TOKEN_ASSET_ID.clone(),
+            start: STAKING_TOKEN_ASSET_ID.clone(),
             end: asset::Cache::with_known_assets()
                 .get_unit("cube")
                 .unwrap()

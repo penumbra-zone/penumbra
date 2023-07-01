@@ -4,10 +4,11 @@ use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
 use decaf377::Fq;
+use penumbra_asset::Value;
 use penumbra_crypto::{
     keys::{NullifierKey, SeedPhrase, SpendKey},
     proofs::groth16::{NullifierDerivationCircuit, NullifierDerivationProof},
-    Note, Nullifier, Rseed, Value,
+    Note, Nullifier, Rseed,
 };
 use penumbra_proof_params::NULLIFIER_DERIVATION_PROOF_PROVING_KEY;
 use penumbra_tct as tct;

@@ -3,10 +3,10 @@ use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
 use decaf377::Fq;
+use penumbra_asset::asset;
 use penumbra_crypto::{
-    asset,
     keys::{NullifierKey, SeedPhrase, SpendKey},
-    Amount, Nullifier,
+    Nullifier,
 };
 use penumbra_dex::{
     swap::SwapPlaintext,
@@ -14,6 +14,7 @@ use penumbra_dex::{
     BatchSwapOutputData, TradingPair,
 };
 use penumbra_fee::Fee;
+use penumbra_num::Amount;
 use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
 use penumbra_tct as tct;
 

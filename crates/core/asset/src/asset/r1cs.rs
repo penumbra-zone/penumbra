@@ -5,6 +5,8 @@ use decaf377::{
     Fq,
 };
 
+use crate::asset::Id;
+
 use super::VALUE_GENERATOR_DOMAIN_SEP;
 
 #[derive(Clone)]
@@ -12,15 +14,15 @@ pub struct AssetIdVar {
     pub asset_id: FqVar,
 }
 
-impl AllocVar<crate::asset::Id, Fq> for AssetIdVar {
-    fn new_variable<T: std::borrow::Borrow<crate::asset::Id>>(
+impl AllocVar<Id, Fq> for AssetIdVar {
+    fn new_variable<T: std::borrow::Borrow<Id>>(
         cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: ark_r1cs_std::prelude::AllocationMode,
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let asset_id: crate::asset::Id = *f()?.borrow();
+        let asset_id: Id = *f()?.borrow();
         let inner_asset_id_var = FqVar::new_variable(cs, || Ok(asset_id.0), mode)?;
         Ok(Self {
             asset_id: inner_asset_id_var,
@@ -29,7 +31,7 @@ impl AllocVar<crate::asset::Id, Fq> for AssetIdVar {
 }
 
 impl R1CSVar<Fq> for AssetIdVar {
-    type Value = crate::asset::Id;
+    type Value = Id;
 
     fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
         self.asset_id.cs()
@@ -37,7 +39,7 @@ impl R1CSVar<Fq> for AssetIdVar {
 
     fn value(&self) -> Result<Self::Value, SynthesisError> {
         let asset_id_fq = self.asset_id.value()?;
-        Ok(crate::asset::Id(asset_id_fq))
+        Ok(Id(asset_id_fq))
     }
 }
 

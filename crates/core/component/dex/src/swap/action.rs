@@ -1,5 +1,7 @@
 use anyhow::Context;
-use penumbra_crypto::{balance, Amount, Balance, Fr, Value, Zero};
+use penumbra_asset::{balance, Balance, Value};
+use penumbra_crypto::{Fr, Zero};
+use penumbra_num::Amount;
 use penumbra_proto::{
     core::crypto::v1alpha1 as pbc, core::dex::v1alpha1 as pb, DomainType, TypeUrl,
 };

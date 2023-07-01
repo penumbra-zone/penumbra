@@ -6,7 +6,7 @@ use std::{
 };
 
 use anyhow::Context;
-use penumbra_crypto::Amount;
+use penumbra_num::Amount;
 use penumbra_proto::client::v1alpha1 as pb_client;
 use penumbra_proto::core::chain::v1alpha1 as pb_chain;
 

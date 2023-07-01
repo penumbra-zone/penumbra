@@ -1,6 +1,7 @@
 use anyhow::Result;
 
-use penumbra_crypto::{asset, fixpoint::U128x128};
+use penumbra_asset::asset;
+use penumbra_num::fixpoint::U128x128;
 use penumbra_storage::{StateDelta, StateRead};
 use std::cmp::Ordering;
 use tracing::Instrument;

@@ -7,7 +7,7 @@ use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
-use penumbra_crypto::asset::{self, AssetIdVar, Unit, REGISTRY};
+use penumbra_asset::asset::{self, AssetIdVar, Unit, REGISTRY};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
 #[serde(try_from = "pb::DirectedTradingPair", into = "pb::DirectedTradingPair")]
