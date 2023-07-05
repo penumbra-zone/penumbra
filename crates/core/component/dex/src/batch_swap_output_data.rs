@@ -298,7 +298,7 @@ mod tests {
     use ark_snark::SNARK;
     use decaf377::Bls12_377;
     use penumbra_asset::asset;
-    use penumbra_crypto::proofs::groth16::ParameterSetup;
+    use penumbra_proof_params::ParameterSetup;
     use rand_core::OsRng;
 
     use super::*;

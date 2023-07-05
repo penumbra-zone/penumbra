@@ -30,6 +30,8 @@ ark-groth16 = {version = "0.4", default-features = false}
 ark-snark = "0.4"
 ark-r1cs-std = {version = "0.4", default-features = false}
 ark-relations = "0.4"
+sha2 = "0.10.1"
+bech32 = "0.8.1"
 
 [dev-dependencies]
 penumbra-tct = { path = "../tct/", features = ["r1cs"] }

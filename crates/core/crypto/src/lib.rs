@@ -9,7 +9,6 @@ mod effect_hash;
 pub mod note;
 mod note_payload;
 mod nullifier;
-pub mod proofs;
 pub mod rseed;
 mod transaction;
 

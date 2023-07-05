@@ -1,8 +1,8 @@
 use ark_groth16::ProvingKey;
 use ark_serialize::CanonicalDeserialize;
 
+use crate::ProvingKeyExt;
 use decaf377::Bls12_377;
-use penumbra_crypto::proofs::groth16::ProvingKeyExt;
 
 pub fn output_proving_parameters() -> ProvingKey<Bls12_377> {
     let pk_params = include_bytes!("gen/output_pk.bin");

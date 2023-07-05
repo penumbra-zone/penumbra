@@ -15,11 +15,9 @@ use penumbra_asset::{
     asset, asset::AssetIdVar, balance, balance::commitment::BalanceCommitmentVar, Balance, Value,
     STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_crypto::{
-    proofs::groth16::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES},
-    FieldExt, Fq, Fr,
-};
+use penumbra_crypto::{FieldExt, Fq, Fr};
 use penumbra_num::{Amount, AmountVar};
+use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 
 use crate::{Penalty, PenaltyVar};
 

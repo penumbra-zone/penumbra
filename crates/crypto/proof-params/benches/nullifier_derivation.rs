@@ -5,9 +5,7 @@ use ark_relations::r1cs::{
 };
 use decaf377::Fq;
 use penumbra_asset::Value;
-use penumbra_crypto::{
-    Note, Nullifier, Rseed,
-};
+use penumbra_crypto::{Note, Nullifier, Rseed};
 use penumbra_keys::keys::{NullifierKey, SeedPhrase, SpendKey};
 use penumbra_proof_params::NULLIFIER_DERIVATION_PROOF_PROVING_KEY;
 use penumbra_shielded_pool::{NullifierDerivationCircuit, NullifierDerivationProof};

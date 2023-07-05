@@ -16,11 +16,9 @@ use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
 use penumbra_asset::Value;
-use penumbra_crypto::proofs::groth16::{ParameterSetup, VerifyingKeyExt};
 use penumbra_crypto::{note, Note, Nullifier, NullifierVar, Rseed};
 use penumbra_keys::keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
-
-use penumbra_crypto::proofs::groth16::GROTH16_PROOF_LENGTH_BYTES;
+use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 
 /// Groth16 proof for correct nullifier derivation.
 #[derive(Clone, Debug)]

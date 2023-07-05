@@ -7,9 +7,9 @@ use std::{
 use ark_groth16::{ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalSerialize;
 use decaf377::Bls12_377;
-use penumbra_crypto::proofs::groth16::{ParameterSetup, ProvingKeyExt, VerifyingKeyExt};
 use penumbra_dex::{swap::proof::SwapCircuit, swap_claim::proof::SwapClaimCircuit};
 use penumbra_governance::DelegatorVoteCircuit;
+use penumbra_proof_params::{ParameterSetup, ProvingKeyExt, VerifyingKeyExt};
 use penumbra_shielded_pool::{NullifierDerivationCircuit, OutputCircuit, SpendCircuit};
 use penumbra_stake::UndelegateClaimCircuit;
 
