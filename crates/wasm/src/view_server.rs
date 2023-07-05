@@ -1,5 +1,4 @@
 use anyhow::Context;
-use anyhow::Result;
 use indexed_db_futures::prelude::OpenDbRequest;
 use indexed_db_futures::{IdbDatabase, IdbQuerySource};
 use penumbra_asset::asset::{DenomMetadata, Id};
@@ -7,7 +6,6 @@ use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_crypto::{note, FullViewingKey, Nullifier};
 use penumbra_dex::lp::position::Position;
 use penumbra_dex::lp::LpNft;
-use penumbra_proto::core::crypto::v1alpha1::AssetId;
 use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
 use penumbra_proto::DomainType;
 use penumbra_tct as tct;
@@ -21,7 +19,7 @@ use tct::storage::{StoreCommitment, StoreHash, StoredPosition, Updates};
 use tct::{Forgotten, Tree};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
-use web_sys::{console as web_console, DomException};
+use web_sys::{console as web_console};
 
 use crate::note_record::SpendableNoteRecord;
 use crate::swap_record::SwapRecord;
