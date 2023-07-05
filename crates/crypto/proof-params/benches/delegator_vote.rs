@@ -7,10 +7,10 @@ use ark_relations::r1cs::{
 use decaf377::Fr;
 use penumbra_asset::{balance, Value};
 use penumbra_crypto::{
-    proofs::groth16::{DelegatorVoteCircuit, DelegatorVoteProof},
     rdsa::{SpendAuth, VerificationKey},
     Fq, Note, Nullifier,
 };
+use penumbra_governance::{DelegatorVoteCircuit, DelegatorVoteProof};
 use penumbra_keys::keys::{NullifierKey, SeedPhrase, SpendKey};
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
 use penumbra_tct as tct;

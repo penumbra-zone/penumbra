@@ -3,6 +3,7 @@ use std::str::FromStr;
 use ark_groth16::r1cs_to_qap::LibsnarkReduction;
 use ark_r1cs_std::{prelude::*, uint8::UInt8};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use decaf377::r1cs::ElementVar;
 use decaf377::FieldExt;
 use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
 
@@ -17,15 +18,15 @@ use penumbra_tct as tct;
 use rand_core::OsRng;
 use tct::r1cs::PositionVar;
 
-use crate::proofs::groth16::{gadgets, ParameterSetup, VerifyingKeyExt};
-use crate::{note, nullifier::NullifierVar, Note, Nullifier, Rseed};
 use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
+use penumbra_crypto::proofs::groth16::{ParameterSetup, VerifyingKeyExt};
+use penumbra_crypto::{note, Note, Nullifier, NullifierVar, Rseed};
 use penumbra_keys::keys::{
     AuthorizationKeyVar, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
 };
 
-use super::GROTH16_PROOF_LENGTH_BYTES;
+use penumbra_crypto::proofs::groth16::GROTH16_PROOF_LENGTH_BYTES;
 
 /// Groth16 proof for delegator voting.
 #[derive(Clone, Debug)]
@@ -157,12 +158,10 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         balance_commitment.enforce_equal(&claimed_balance_commitment_var)?;
 
         // Check elements were not identity.
-        gadgets::element_not_identity(
-            cs.clone(),
-            &Boolean::TRUE,
-            note_var.diversified_generator(),
-        )?;
-        gadgets::element_not_identity(cs, &Boolean::TRUE, ak_element_var.inner)?;
+        let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
+        identity
+            .conditional_enforce_not_equal(&note_var.diversified_generator(), &Boolean::TRUE)?;
+        identity.conditional_enforce_not_equal(&ak_element_var.inner, &Boolean::TRUE)?;
 
         // Additionally, check that the start position has a zero commitment index, since this is
         // the only sensible start time for a vote.
@@ -343,5 +342,94 @@ impl TryFrom<pb::ZkDelegatorVoteProof> for DelegatorVoteProof {
 
     fn try_from(proto: pb::ZkDelegatorVoteProof) -> Result<Self, Self::Error> {
         Ok(DelegatorVoteProof(proto.inner[..].try_into()?))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use ark_ff::{PrimeField, UniformRand};
+
+    use decaf377::{Fq, Fr};
+    use penumbra_asset::{asset, Value};
+    use penumbra_crypto::Nullifier;
+    use penumbra_keys::keys::{SeedPhrase, SpendKey};
+    use proptest::prelude::*;
+
+    fn fr_strategy() -> BoxedStrategy<Fr> {
+        any::<[u8; 32]>()
+            .prop_map(|bytes| Fr::from_le_bytes_mod_order(&bytes[..]))
+            .boxed()
+    }
+
+    proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2))]
+    #[test]
+    fn delegator_vote_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 1..2000000000u64, num_commitments in 0..2000u64) {
+        let (pk, vk) = DelegatorVoteCircuit::generate_prepared_test_parameters();
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ivk_sender = fvk_sender.incoming();
+        let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
+
+        let value_to_send = Value {
+            amount: value_amount.into(),
+            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
+        };
+
+        let note = Note::generate(&mut rng, &sender, value_to_send);
+        let note_commitment = note.commit();
+        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+        let nk = *sk_sender.nullifier_key();
+        let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
+        let mut sct = tct::Tree::new();
+
+        // Next, we simulate the case where the SCT is not empty by adding `num_commitments`
+        // unrelated items in the SCT.
+        for _ in 0..num_commitments {
+            let random_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
+            sct.insert(tct::Witness::Keep, random_note_commitment).unwrap();
+        }
+
+        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(note_commitment).unwrap();
+        sct.end_epoch().unwrap();
+
+        let first_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
+        sct.insert(tct::Witness::Keep, first_note_commitment).unwrap();
+        let start_position = sct.witness(first_note_commitment).unwrap().position();
+
+        let balance_commitment = value_to_send.commit(Fr::from(0u64));
+        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let nf = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
+
+        let blinding_r = Fq::rand(&mut OsRng);
+        let blinding_s = Fq::rand(&mut OsRng);
+
+        let proof = DelegatorVoteProof::prove(
+            blinding_r,
+            blinding_s,
+            &pk,
+            state_commitment_proof,
+            note,
+            spend_auth_randomizer,
+            ak,
+            nk,
+            anchor,
+            balance_commitment,
+            nf,
+            rk,
+            start_position,
+        )
+        .expect("can create proof");
+
+        let proof_result = proof.verify(&vk, anchor, balance_commitment, nf, rk, start_position);
+        assert!(proof_result.is_ok());
+        }
     }
 }

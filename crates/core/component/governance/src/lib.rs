@@ -1,3 +1,6 @@
+mod delegator_vote;
+pub use delegator_vote::proof::{DelegatorVoteCircuit, DelegatorVoteProof};
+
 pub mod proposal_nft;
 pub mod voting_receipt_token;
 
