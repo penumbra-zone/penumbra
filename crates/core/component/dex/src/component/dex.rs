@@ -45,6 +45,7 @@ impl Component for Dex {
 
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
         for (trading_pair, swap_flows) in state.swap_flows() {
+            let batch_start = std::time::Instant::now();
             state
                 .handle_batch_swaps(
                     trading_pair,
@@ -62,6 +63,10 @@ impl Component for Dex {
                 )
                 .await
                 .expect("handling batch swaps is infaillible");
+            metrics::histogram!(
+                crate::component::metrics::DEX_BATCH_DURATION,
+                batch_start.elapsed()
+            );
         }
 
         // Then, perform arbitrage:

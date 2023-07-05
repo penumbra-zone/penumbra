@@ -15,15 +15,46 @@ pub use metrics::*;
 
 /// Registers all metrics used by this crate.
 pub fn register_metrics() {
-    /*
-    // Sample code for reference -- delete when adding the first metric
-    register_counter!(MEMPOOL_CHECKTX_TOTAL);
-    describe_counter!(
-        MEMPOOL_CHECKTX_TOTAL,
-        "The total number of checktx requests made to the mempool"
+    register_histogram!(DEX_ARB_DURATION);
+    describe_histogram!(
+        DEX_ARB_DURATION,
+        Unit::Seconds,
+        "The time spent computing arbitrage during endblock phase"
     );
-     */
+    register_histogram!(DEX_BATCH_DURATION);
+    describe_histogram!(
+        DEX_BATCH_DURATION,
+        Unit::Seconds,
+        "The time spent executing batches within the DEX"
+    );
+    register_histogram!(DEX_PATH_SEARCH_DURATION);
+    describe_histogram!(
+        DEX_PATH_SEARCH_DURATION,
+        Unit::Seconds,
+        "The time spent searching for paths while executing trades within the DEX"
+    );
+    register_histogram!(DEX_ROUTE_FILL_DURATION);
+    describe_histogram!(
+        DEX_ROUTE_FILL_DURATION,
+        Unit::Seconds,
+        "The time spent filling routes while executing trades within the DEX"
+    );
+    register_histogram!(DEX_SWAP_DURATION);
+    describe_histogram!(
+        DEX_SWAP_DURATION,
+        Unit::Seconds,
+        "The time spent processing swaps within the DEX"
+    );
 }
 
-// Sample code for reference -- delete when adding the first metric
-// pub const MEMPOOL_CHECKTX_TOTAL: &str = "penumbra_pd_mempool_checktx_total";
+// We configure buckets for the DEX routing times manually, in order to ensure
+// Prometheus metrics are structed as a Histogram, rather than as a Summary.
+// These values are loosely based on the initial Summary output, and may need to be
+// updated over time.
+pub const DEX_BUCKETS: &[f64; 5] = &[0.00001, 0.0001, 0.001, 0.01, 0.1];
+
+pub const DEX_PATH_SEARCH_DURATION: &str = "penumbra_dex_path_search_duration_seconds";
+pub const DEX_ROUTE_FILL_DURATION: &str = "penumbra_dex_route_fill_duration_seconds";
+pub const DEX_ARB_DURATION: &str = "penumbra_dex_arb_duration_seconds";
+pub const DEX_BATCH_DURATION: &str = "penumbra_dex_batch_duration_seconds";
+pub const DEX_SWAP_DURATION: &str = "penumbra_dex_swap_duration_seconds";

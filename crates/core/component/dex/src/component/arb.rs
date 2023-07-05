@@ -28,6 +28,7 @@ pub trait Arbitrage: StateWrite + Sized {
         Self: 'static,
     {
         tracing::debug!(?arb_token, ?fixed_candidates, "beginning arb search");
+        let arb_start = std::time::Instant::now();
 
         // Work in a new `StateDelta`, so we can transactionally apply any state
         // changes, and roll them back if we fail (e.g., if for some reason we
@@ -118,7 +119,10 @@ pub trait Arbitrage: StateWrite + Sized {
                 },
             },
         );
-
+        metrics::histogram!(
+            crate::component::metrics::DEX_ARB_DURATION,
+            arb_start.elapsed()
+        );
         return Ok(Value {
             amount: arb_profit,
             asset_id: arb_token,
