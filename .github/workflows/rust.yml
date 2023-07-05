@@ -51,6 +51,24 @@ jobs:
           # we must duplicate the rustflags from `.cargo/config.toml`.
           RUSTFLAGS: "-D warnings --cfg tokio_unstable"
 
+  docs:
+    # We use a custom script to generate the index page for https://rustdoc.penumbra.zone,
+    # and refactors to rust deps can break that generation. Let's ensure this script exits 0
+    # on PRs, but we'll still only deploy after merge into main.
+    name: Check that rustdocs build OK
+    runs-on: buildjet-16vcpu-ubuntu-2004
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          lfs: true
+      - name: Install rust toolchain
+        # The script for rustdoc build requires nightly toolchain.
+        uses: dtolnay/rust-toolchain@nightly
+      - name: Load rust cache
+        uses: Swatinem/rust-cache@v2
+      - name: Build rustdocs
+        run: ./deployments/scripts/rust-docs
+
   wasm:
     name: Build WASM
     runs-on: buildjet-16vcpu-ubuntu-2004
