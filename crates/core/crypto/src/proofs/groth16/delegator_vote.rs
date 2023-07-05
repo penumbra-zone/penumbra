@@ -18,16 +18,12 @@ use rand_core::OsRng;
 use tct::r1cs::PositionVar;
 
 use crate::proofs::groth16::{gadgets, ParameterSetup, VerifyingKeyExt};
-use crate::{
-    keys::{
-        AuthorizationKeyVar, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
-        RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
-    },
-    note,
-    nullifier::NullifierVar,
-    Note, Nullifier, Rseed,
-};
+use crate::{note, nullifier::NullifierVar, Note, Nullifier, Rseed};
 use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
+use penumbra_keys::keys::{
+    AuthorizationKeyVar, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
+    RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
+};
 
 use super::GROTH16_PROOF_LENGTH_BYTES;
 
@@ -134,7 +130,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         note_commitment_var.enforce_equal(&claimed_note_commitment)?;
 
         // Nullifier integrity.
-        let nullifier_var = nk_var.derive_nullifier(&position_var, &claimed_note_commitment)?;
+        let nullifier_var = NullifierVar::derive(&nk_var, &position_var, &claimed_note_commitment)?;
         nullifier_var.enforce_equal(&claimed_nullifier_var)?;
 
         // Merkle auth path verification against the provided anchor.

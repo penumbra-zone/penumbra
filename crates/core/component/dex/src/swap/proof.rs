@@ -17,9 +17,8 @@ use penumbra_asset::{
     balance::{self, commitment::BalanceCommitmentVar, BalanceVar},
     Value,
 };
-use penumbra_crypto::{
-    fmd, ka, keys::Diversifier, note::StateCommitmentVar, Address, Fq, Fr, Rseed,
-};
+use penumbra_crypto::{fmd, ka, note::StateCommitmentVar, Fq, Fr, Rseed};
+use penumbra_keys::{keys::Diversifier, Address};
 
 use crate::{
     swap::{SwapPlaintext, SwapPlaintextVar},
@@ -246,7 +245,7 @@ mod tests {
     use super::*;
     use ark_ff::{PrimeField, UniformRand};
     use penumbra_asset::{Balance, Value};
-    use penumbra_crypto::keys::{SeedPhrase, SpendKey};
+    use penumbra_keys::keys::{SeedPhrase, SpendKey};
     use penumbra_num::Amount;
     use proptest::prelude::*;
 

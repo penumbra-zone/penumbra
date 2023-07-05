@@ -9,6 +9,7 @@ edition = "2021"
 # Workspace dependencies
 penumbra-proto = { path = "../proto" , features = ["rpc"] }
 penumbra-crypto = { path = "../core/crypto" }
+penumbra-keys = { path = "../core/keys" }
 penumbra-transaction = { path = "../core/transaction" }
 
 tokio = { version = "1.21.1", features = ["full"]}

@@ -7,12 +7,11 @@ use ark_relations::r1cs::{
 use decaf377::Fr;
 use penumbra_asset::{balance, Balance, Value};
 use penumbra_crypto::{
-    fmd, ka,
-    keys::Diversifier,
-    note,
+    fmd, ka, note,
     proofs::groth16::{OutputCircuit, OutputProof},
-    Address, Fq, Note, Rseed,
+    Fq, Note, Rseed,
 };
+use penumbra_keys::{keys::Diversifier, Address};
 use penumbra_proof_params::OUTPUT_PROOF_PROVING_KEY;
 
 use criterion::{criterion_group, criterion_main, Criterion};

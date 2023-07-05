@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
 use directories::ProjectDirs;
-use penumbra_crypto::keys::SeedPhrase;
+use penumbra_keys::keys::SeedPhrase;
 use rand_core::OsRng;
 use sha2::{Digest, Sha256};
 

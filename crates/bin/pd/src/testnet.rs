@@ -3,10 +3,8 @@
 use anyhow::Context;
 use directories::UserDirs;
 use penumbra_chain::genesis::AppState;
-use penumbra_crypto::{
-    keys::{SpendKey, SpendKeyBytes},
-    rdsa::{SigningKey, SpendAuth, VerificationKey},
-};
+use penumbra_crypto::rdsa::{SigningKey, SpendAuth, VerificationKey};
+use penumbra_keys::keys::{SpendKey, SpendKeyBytes};
 use penumbra_wallet::KeyStore;
 use rand::Rng;
 use rand_core::OsRng;

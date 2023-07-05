@@ -5,16 +5,16 @@ use ark_ff::UniformRand;
 use decaf377::Fr;
 use penumbra_asset::{asset, Balance, Value};
 use penumbra_crypto::{
-    keys::{SeedPhrase, SpendKey},
     proofs::groth16::{DelegatorVoteProof, NullifierDerivationProof, OutputProof, SpendProof},
     rdsa::{self, SpendAuth, VerificationKey},
-    Fq, Note,
+    Fq, Note, Nullifier,
 };
 use penumbra_dex::{
     swap::proof::SwapProof, swap::SwapPlaintext, swap_claim::proof::SwapClaimProof,
     BatchSwapOutputData, TradingPair,
 };
 use penumbra_fee::Fee;
+use penumbra_keys::keys::{SeedPhrase, SpendKey};
 use penumbra_num::Amount;
 use penumbra_proof_params::{
     DELEGATOR_VOTE_PROOF_PROVING_KEY, DELEGATOR_VOTE_PROOF_VERIFICATION_KEY,
@@ -60,7 +60,7 @@ fn spend_proof_parameters_vs_current_spend_circuit() {
     let v_blinding = Fr::rand(&mut OsRng);
     let balance_commitment = value_to_send.commit(v_blinding);
     let rk: VerificationKey<SpendAuth> = rsk.into();
-    let nf = nk.derive_nullifier(0.into(), &note_commitment);
+    let nf = Nullifier::derive(&nk, 0.into(), &note_commitment);
 
     // Random elements to provide ZK (see Section 3.2 Groth16 paper, bottom of page 17)
     let blinding_r = Fq::rand(&mut OsRng);
@@ -125,7 +125,7 @@ fn delegator_vote_proof_parameters_vs_current_delegator_vote_circuit() {
 
     let balance_commitment = value_to_send.commit(Fr::from(0u64));
     let rk: VerificationKey<SpendAuth> = rsk.into();
-    let nf = nk.derive_nullifier(state_commitment_proof.position(), &note_commitment);
+    let nf = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
     let blinding_r = Fq::rand(&mut OsRng);
     let blinding_s = Fq::rand(&mut OsRng);
@@ -253,7 +253,7 @@ fn swap_claim_parameters_vs_current_swap_claim_circuit() {
     let anchor = sct.root();
     let state_commitment_proof = sct.witness(swap_commitment).unwrap();
     let position = state_commitment_proof.position();
-    let nullifier: penumbra_crypto::Nullifier = nk.derive_nullifier(position, &swap_commitment);
+    let nullifier: penumbra_crypto::Nullifier = Nullifier::derive(&nk, position, &swap_commitment);
     let epoch_duration = 20;
     let height = epoch_duration * position.epoch() + position.block();
 
@@ -386,7 +386,7 @@ fn nullifier_derivation_parameters_vs_current_nullifier_derivation_circuit() {
     sct.insert(tct::Witness::Keep, note_commitment).unwrap();
     let state_commitment_proof = sct.witness(note_commitment).unwrap();
     let position = state_commitment_proof.position();
-    let nullifier = nk.derive_nullifier(state_commitment_proof.position(), &note_commitment);
+    let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
     let proof =
         NullifierDerivationProof::prove(&mut rng, pk, position, note.clone(), nk, nullifier)

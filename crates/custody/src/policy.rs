@@ -2,7 +2,7 @@
 
 use std::collections::HashSet;
 
-use penumbra_crypto::Address;
+use penumbra_keys::Address;
 use penumbra_transaction::plan::ActionPlan;
 use serde::{Deserialize, Serialize};
 

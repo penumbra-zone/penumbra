@@ -23,6 +23,7 @@ penumbra-proto         = { path = "../proto", features = ["rpc"] }
 penumbra-tct           = { path = "../crypto/tct" }
 penumbra-crypto        = { path = "../core/crypto" }
 penumbra-num        = { path = "../core/num" }
+penumbra-keys        = { path = "../core/keys" }
 penumbra-asset        = { path = "../core/asset" }
 penumbra-chain         = { path = "../core/component/chain" }
 penumbra-shielded-pool = { path = "../core/component/shielded-pool", default-features = false, features = ["proving-keys"] }

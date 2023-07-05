@@ -9,9 +9,12 @@ use async_stream::try_stream;
 use camino::Utf8Path;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_asset::{asset, Value};
-use penumbra_crypto::keys::{AccountGroupId, AddressIndex, FullViewingKey};
 use penumbra_dex::{lp::position, TradingPair};
 use penumbra_fee::Fee;
+use penumbra_keys::{
+    keys::{AccountGroupId, AddressIndex, FullViewingKey},
+    Address,
+};
 use penumbra_num::Amount;
 use penumbra_proto::{
     client::v1alpha1::{
@@ -359,7 +362,7 @@ impl ViewProtocolService for ViewService {
             .expiry_height(prq.expiry_height);
 
         for output in prq.outputs {
-            let address: penumbra_crypto::Address = output
+            let address: Address = output
                 .address
                 .ok_or_else(|| tonic::Status::invalid_argument("Missing address"))?
                 .try_into()
@@ -484,7 +487,7 @@ impl ViewProtocolService for ViewService {
                 tonic::Status::failed_precondition("Error retrieving full viewing key")
             })?;
 
-        let address: penumbra_crypto::Address = request
+        let address: Address = request
             .into_inner()
             .address
             .ok_or_else(|| tonic::Status::invalid_argument("Missing address"))?

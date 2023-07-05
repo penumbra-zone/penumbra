@@ -5,13 +5,10 @@ use chacha20poly1305::{
 };
 use decaf377::FieldExt;
 use penumbra_asset::balance;
+use penumbra_keys::keys::{IncomingViewingKey, OutgoingViewingKey};
 use rand::{CryptoRng, RngCore};
 
-use crate::{
-    ka,
-    keys::{IncomingViewingKey, OutgoingViewingKey},
-    note,
-};
+use crate::{ka, note};
 use penumbra_proto::core::transaction::v1alpha1::{self as pb};
 pub const PAYLOAD_KEY_LEN_BYTES: usize = 32;
 pub const OVK_WRAPPED_LEN_BYTES: usize = 48;
@@ -111,7 +108,7 @@ impl PayloadKey {
         kdf_params.personal(b"Penumbra_Payswap");
         kdf_params.hash_length(32);
         let mut kdf = kdf_params.to_state();
-        kdf.update(&ovk.0);
+        kdf.update(&ovk.to_bytes());
         kdf.update(&cm_bytes);
 
         let key = kdf.finalize();
@@ -208,7 +205,7 @@ impl OutgoingCipherKey {
         kdf_params.hash_length(32);
         kdf_params.personal(b"Penumbra_OutCiph");
         let mut kdf = kdf_params.to_state();
-        kdf.update(&ovk.0);
+        kdf.update(&ovk.to_bytes());
         kdf.update(&cv_bytes);
         kdf.update(&cm_bytes);
         kdf.update(&epk.0);

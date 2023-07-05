@@ -20,6 +20,7 @@ penumbra-chain = { path = "../chain", default-features = false }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 penumbra-asset = { path = "../../../core/asset", default-features = false  } 
 penumbra-num = { path = "../../../core/num", default-features = false  } 
+penumbra-keys = { path = "../../../core/keys", default-features = false  } 
 
 # Crates.io deps
 ark-ff = { version = "0.4", default_features = false }

@@ -15,10 +15,8 @@ use poseidon377::{hash_1, hash_4, hash_7};
 use rand_core::{CryptoRng, RngCore};
 
 use penumbra_asset::{asset, Value, ValueVar};
-use penumbra_crypto::{
-    ka, keys::OutgoingViewingKey, note::StateCommitmentVar, Address, AddressVar, Note, PayloadKey,
-    Rseed,
-};
+use penumbra_crypto::{ka, note::StateCommitmentVar, Note, PayloadKey, Rseed};
+use penumbra_keys::{keys::OutgoingViewingKey, Address, AddressVar};
 use penumbra_num::{Amount, AmountVar};
 
 use crate::{BatchSwapOutputData, TradingPair, TradingPairVar};
@@ -412,7 +410,7 @@ mod tests {
 
     use super::*;
     use penumbra_asset::{asset, Value};
-    use penumbra_crypto::keys::{SeedPhrase, SpendKey};
+    use penumbra_keys::keys::{SeedPhrase, SpendKey};
 
     #[test]
     /// Check the swap plaintext can be encrypted and decrypted with the OVK.

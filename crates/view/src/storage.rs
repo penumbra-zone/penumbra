@@ -4,11 +4,12 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use penumbra_asset::{asset, asset::DenomMetadata, asset::Id, Value};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::{note, Address, FieldExt, Fq, FullViewingKey, Note, Nullifier, Rseed};
+use penumbra_crypto::{note, FieldExt, Fq, Note, Nullifier, Rseed};
 use penumbra_dex::{
     lp::position::{self, Position, State},
     TradingPair,
 };
+use penumbra_keys::{Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::{
     client::v1alpha1::{
@@ -761,7 +762,7 @@ impl Storage {
         &self,
         include_spent: bool,
         asset_id: Option<asset::Id>,
-        address_index: Option<penumbra_crypto::keys::AddressIndex>,
+        address_index: Option<penumbra_keys::keys::AddressIndex>,
         amount_to_spend: Option<Amount>,
     ) -> anyhow::Result<Vec<SpendableNoteRecord>> {
         // If set, return spent notes as well as unspent notes.
@@ -861,7 +862,7 @@ impl Storage {
 
     pub async fn notes_for_voting(
         &self,
-        address_index: Option<penumbra_crypto::keys::AddressIndex>,
+        address_index: Option<penumbra_keys::keys::AddressIndex>,
         votable_at_height: u64,
     ) -> anyhow::Result<Vec<(SpendableNoteRecord, IdentityKey)>> {
         // If set, only return notes with the specified address index.

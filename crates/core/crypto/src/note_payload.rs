@@ -2,11 +2,12 @@ use anyhow::{Context, Error};
 
 use bytes::Bytes;
 
+use penumbra_keys::keys::FullViewingKey;
 use penumbra_num::Amount;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
-use crate::{ka, note, FullViewingKey, Note, NoteCiphertext};
+use crate::{ka, note, Note, NoteCiphertext};
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::NotePayload", into = "pb::NotePayload")]
@@ -31,7 +32,7 @@ impl NotePayload {
             return None;
         }
         // Make sure spendable by keys
-        if !fvk.controls(&note) {
+        if !note.controlled_by(fvk) {
             // This should be a warning, because no honestly generated note plaintext should
             // mismatch the FVK that can detect and decrypt it.
             tracing::warn!("decrypted note that is not spendable by provided full viewing key");

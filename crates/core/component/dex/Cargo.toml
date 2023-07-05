@@ -25,6 +25,7 @@ penumbra-tct = { path = "../../../crypto/tct", default-features = false }
 penumbra-proof-params = { path = "../../../crypto/proof-params" }
 penumbra-asset = { path = "../../../core/asset", default-features = false  } 
 penumbra-num = { path = "../../../core/num", default-features = false  } 
+penumbra-keys = { path = "../../../core/keys", default-features = false  } 
 
 # Penumbra dependencies
 poseidon377 = { version = "0.5", features = ["r1cs"] }

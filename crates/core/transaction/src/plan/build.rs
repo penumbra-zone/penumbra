@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
-use penumbra_crypto::{rdsa, symmetric::PayloadKey, Fr, FullViewingKey, Zero};
+use penumbra_crypto::{rdsa, symmetric::PayloadKey, Fr, Zero};
+use penumbra_keys::FullViewingKey;
 use rand_core::{CryptoRng, RngCore};
 
 use super::TransactionPlan;

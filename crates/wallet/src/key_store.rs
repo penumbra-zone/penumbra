@@ -1,5 +1,5 @@
 use anyhow::Context;
-use penumbra_crypto::keys::{SeedPhrase, SpendKey};
+use penumbra_keys::keys::{SeedPhrase, SpendKey};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 

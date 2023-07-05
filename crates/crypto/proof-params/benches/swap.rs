@@ -4,13 +4,13 @@ use ark_relations::r1cs::{
 };
 use decaf377::{Fq, Fr};
 use penumbra_asset::{asset, balance, Balance, Value};
-use penumbra_crypto::keys::{SeedPhrase, SpendKey};
 use penumbra_dex::{
     swap::proof::{SwapCircuit, SwapProof},
     swap::SwapPlaintext,
     TradingPair,
 };
 use penumbra_fee::Fee;
+use penumbra_keys::keys::{SeedPhrase, SpendKey};
 use penumbra_num::Amount;
 use penumbra_proof_params::SWAP_PROOF_PROVING_KEY;
 use penumbra_tct as tct;

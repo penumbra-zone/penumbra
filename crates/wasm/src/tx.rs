@@ -3,9 +3,9 @@ use std::str::FromStr;
 
 use anyhow::Context;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::{Address, FullViewingKey};
+use penumbra_keys::{Address, FullViewingKey};
 
-use penumbra_crypto::keys::{AddressIndex, SpendKey};
+use penumbra_keys::keys::{AddressIndex, SpendKey};
 use penumbra_tct::{Proof, StateCommitment, Tree};
 use penumbra_transaction::plan::TransactionPlan;
 use penumbra_transaction::{AuthorizationData, Transaction, WitnessData};

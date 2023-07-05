@@ -5,8 +5,9 @@ use penumbra_chain::{
     NoteSource,
 };
 use penumbra_compact_block::{CompactBlock, StatePayload};
-use penumbra_crypto::{FullViewingKey, Note, NotePayload, Nullifier};
+use penumbra_crypto::{Note, NotePayload, Nullifier};
 use penumbra_dex::swap::{SwapPayload, SwapPlaintext};
+use penumbra_keys::FullViewingKey;
 use penumbra_tct as tct;
 use tracing::Instrument;
 
@@ -139,7 +140,8 @@ pub async fn scan_block(
                         .expect("inserting a commitment must succeed");
 
                     let source = payload.source().cloned().unwrap_or_default();
-                    let nullifier = fvk.derive_nullifier(position, payload.commitment());
+                    let nullifier =
+                        Nullifier::derive(fvk.nullifier_key(), position, payload.commitment());
                     let address_index = fvk.incoming().index_for_diversifier(note.diversifier());
 
                     new_notes.push(SpendableNoteRecord {
@@ -177,7 +179,8 @@ pub async fn scan_block(
                     storage.give_advice(output_2).await?;
 
                     let source = payload.source().cloned().unwrap_or_default();
-                    let nullifier = fvk.derive_nullifier(position, payload.commitment());
+                    let nullifier =
+                        Nullifier::derive(fvk.nullifier_key(), position, payload.commitment());
 
                     new_swaps.push(SwapRecord {
                         swap_commitment: *payload.commitment(),

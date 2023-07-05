@@ -2,7 +2,8 @@ use anyhow::{anyhow, Context, Result};
 use ark_ff::{UniformRand, Zero};
 
 use penumbra_asset::{balance, Balance, Value};
-use penumbra_crypto::{FieldExt, Fq, Fr, FullViewingKey};
+use penumbra_crypto::{FieldExt, Fq, Fr};
+use penumbra_keys::FullViewingKey;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};

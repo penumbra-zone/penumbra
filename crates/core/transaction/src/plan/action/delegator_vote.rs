@@ -2,8 +2,9 @@ use ark_ff::UniformRand;
 use decaf377::{FieldExt, Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_asset::{Balance, Value};
-use penumbra_crypto::{proofs::groth16::DelegatorVoteProof, FullViewingKey, Note, Nullifier};
+use penumbra_crypto::{proofs::groth16::DelegatorVoteProof, Note, Nullifier};
 use penumbra_governance::VotingReceiptToken;
+use penumbra_keys::FullViewingKey;
 use penumbra_num::Amount;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
@@ -84,7 +85,11 @@ impl DelegatorVotePlan {
             vote: self.vote,
             value: self.staked_note.value(),
             unbonded_amount: self.unbonded_amount,
-            nullifier: fvk.derive_nullifier(self.position, &self.staked_note.commit()),
+            nullifier: Nullifier::derive(
+                &fvk.nullifier_key(),
+                self.position,
+                &self.staked_note.commit(),
+            ),
             rk: fvk.spend_verification_key().randomize(&self.randomizer),
         }
     }
@@ -120,7 +125,11 @@ impl DelegatorVotePlan {
 
     /// Construct the [`Nullifier`] associated with this [`DelegatorVotePlan`].
     pub fn nullifier(&self, fvk: &FullViewingKey) -> Nullifier {
-        fvk.derive_nullifier(self.position, &self.staked_note.commit())
+        Nullifier::derive(
+            &fvk.nullifier_key(),
+            self.position,
+            &self.staked_note.commit(),
+        )
     }
 
     pub fn balance(&self) -> Balance {

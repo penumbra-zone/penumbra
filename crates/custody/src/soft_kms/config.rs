@@ -1,5 +1,5 @@
 use crate::policy::AuthPolicy;
-use penumbra_crypto::keys::SpendKey;
+use penumbra_keys::keys::SpendKey;
 use serde::{Deserialize, Serialize};
 use serde_with::DisplayFromStr;
 
@@ -38,7 +38,7 @@ fn is_default<T: Default + Eq>(value: &T) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use penumbra_crypto::keys::SeedPhrase;
+    use penumbra_keys::keys::SeedPhrase;
 
     use crate::policy::PreAuthorizationPolicy;
 

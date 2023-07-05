@@ -1,5 +1,5 @@
 use decaf377_fmd::{Clue, ExpandedClueKey};
-use penumbra_crypto::Address;
+use penumbra_keys::Address;
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 
 use rand::{CryptoRng, RngCore};

@@ -2,10 +2,16 @@ use ark_ff::PrimeField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{r1cs::FqVar, FieldExt, Fq};
+use penumbra_tct as tct;
+use penumbra_tct::StateCommitment;
+use poseidon377::hash_3;
 
 use once_cell::sync::Lazy;
+use penumbra_keys::keys::{NullifierKey, NullifierKeyVar};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
+
+use crate::note::StateCommitmentVar;
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "pb::Nullifier", into = "pb::Nullifier")]
@@ -63,6 +69,19 @@ impl std::fmt::Debug for Nullifier {
 impl Nullifier {
     pub fn to_bytes(&self) -> [u8; 32] {
         self.0.to_bytes()
+    }
+
+    /// Derive the [`Nullifier`] for a positioned note or swap given its [`merkle::Position`]
+    /// and [`Commitment`].
+    pub fn derive(
+        nk: &NullifierKey,
+        pos: penumbra_tct::Position,
+        state_commitment: &StateCommitment,
+    ) -> Nullifier {
+        Nullifier(hash_3(
+            &NULLIFIER_DOMAIN_SEP,
+            (nk.0, state_commitment.0, (u64::from(pos)).into()),
+        ))
     }
 }
 
@@ -128,5 +147,27 @@ impl R1CSVar<Fq> for NullifierVar {
 impl EqGadget<Fq> for NullifierVar {
     fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
         self.inner.is_eq(&other.inner)
+    }
+}
+
+impl NullifierVar {
+    pub fn derive(
+        nk: &NullifierKeyVar,
+        position: &tct::r1cs::PositionVar,
+        state_commitment: &StateCommitmentVar,
+    ) -> Result<NullifierVar, SynthesisError> {
+        let cs = state_commitment.inner.cs();
+        let domain_sep = FqVar::new_constant(cs.clone(), *NULLIFIER_DOMAIN_SEP)?;
+        let nullifier = poseidon377::r1cs::hash_3(
+            cs,
+            &domain_sep,
+            (
+                nk.inner.clone(),
+                state_commitment.inner.clone(),
+                position.inner.clone(),
+            ),
+        )?;
+
+        Ok(NullifierVar { inner: nullifier })
     }
 }
