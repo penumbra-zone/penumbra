@@ -1,3 +1,4 @@
+use decaf377::Fq;
 use poseidon377::hash_3;
 
 use ark_r1cs_std::prelude::*;
@@ -8,7 +9,6 @@ use penumbra_tct as tct;
 use crate::{
     note::{StateCommitment, StateCommitmentVar},
     nullifier::{Nullifier, NullifierVar, NULLIFIER_DOMAIN_SEP},
-    Fq,
 };
 
 pub const NK_LEN_BYTES: usize = 32;
