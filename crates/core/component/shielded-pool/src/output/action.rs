@@ -4,13 +4,14 @@ use anyhow::{Context, Error};
 use bytes::Bytes;
 use penumbra_asset::balance;
 use penumbra_crypto::{
-    proofs::groth16::OutputProof,
     symmetric::{OvkWrappedKey, WrappedMemoKey},
     EffectHash, EffectingData, FieldExt, NotePayload,
 };
 use penumbra_proto::{
     core::crypto::v1alpha1 as pbc, core::transaction::v1alpha1 as pb, DomainType, TypeUrl,
 };
+
+use crate::OutputProof;
 
 #[derive(Clone, Debug)]
 pub struct Output {

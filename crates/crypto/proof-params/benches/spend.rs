@@ -7,12 +7,12 @@ use ark_relations::r1cs::{
 use decaf377::Fr;
 use penumbra_asset::{balance, Value};
 use penumbra_crypto::{
-    proofs::groth16::{SpendCircuit, SpendProof},
     rdsa::{SpendAuth, VerificationKey},
     Fq, Note, Nullifier,
 };
 use penumbra_keys::keys::{NullifierKey, SeedPhrase, SpendKey};
 use penumbra_proof_params::SPEND_PROOF_PROVING_KEY;
+use penumbra_shielded_pool::{SpendCircuit, SpendProof};
 use penumbra_tct as tct;
 
 use criterion::{criterion_group, criterion_main, Criterion};

@@ -4,11 +4,12 @@ use anyhow::{Context, Error};
 use bytes::Bytes;
 use penumbra_asset::balance;
 use penumbra_crypto::{
-    proofs::groth16::SpendProof,
     rdsa::{Signature, SpendAuth, VerificationKey},
     EffectHash, EffectingData, FieldExt, Nullifier,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as transaction, DomainType, TypeUrl};
+
+use crate::SpendProof;
 
 #[derive(Clone, Debug)]
 pub struct Spend {

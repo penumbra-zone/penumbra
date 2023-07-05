@@ -5,7 +5,6 @@ use ark_ff::UniformRand;
 use decaf377::Fr;
 use penumbra_asset::{asset, Balance, Value};
 use penumbra_crypto::{
-    proofs::groth16::{DelegatorVoteProof, NullifierDerivationProof, OutputProof, SpendProof},
     rdsa::{self, SpendAuth, VerificationKey},
     Fq, Note, Nullifier,
 };
@@ -14,6 +13,7 @@ use penumbra_dex::{
     BatchSwapOutputData, TradingPair,
 };
 use penumbra_fee::Fee;
+use penumbra_governance::DelegatorVoteProof;
 use penumbra_keys::keys::{SeedPhrase, SpendKey};
 use penumbra_num::Amount;
 use penumbra_proof_params::{
@@ -24,6 +24,7 @@ use penumbra_proof_params::{
     SWAP_PROOF_PROVING_KEY, SWAP_PROOF_VERIFICATION_KEY, UNDELEGATECLAIM_PROOF_PROVING_KEY,
     UNDELEGATECLAIM_PROOF_VERIFICATION_KEY,
 };
+use penumbra_shielded_pool::{NullifierDerivationProof, OutputProof, SpendProof};
 use penumbra_stake::{IdentityKey, Penalty, UnbondingToken, UndelegateClaimProof};
 use penumbra_tct as tct;
 use rand_core::OsRng;

@@ -31,12 +31,22 @@ penumbra-chain = { path = "../chain", default-features = false }
 penumbra-asset = { path = "../../../core/asset", default-features = false  } 
 penumbra-num = { path = "../../../core/num", default-features = false  } 
 penumbra-keys = { path = "../../../core/keys", default-features = false  } 
+decaf377-ka = { path = "../../../crypto/decaf377-ka/" }
+decaf377-fmd = { path = "../../../crypto/decaf377-fmd/" }
 
 # Penumbra dependencies
 decaf377-rdsa = { version = "0.6" }
+decaf377 = {version = "0.4", features = ["r1cs"] }
+poseidon377 = { version = "0.5", features = ["r1cs"] }
 
 # Crates.io dependencies
+base64 = "0.20"
+ark-r1cs-std = {version = "0.4", default-features = false }
+ark-relations = "0.4"
 ark-ff = { version = "0.4", default_features = false }
+ark-serialize = "0.4"
+ark-groth16 = {version = "0.4", default-features = false}
+ark-snark = "0.4"
 metrics = "0.19.0"
 serde = { version = "1", features = ["derive"] }
 tracing = "0.1"
@@ -49,4 +59,5 @@ rand_core = { version = "0.6.3", features = ["getrandom"] }
 rand = "0.8"
 im = "15.1"
 
-
+[dev-dependencies]
+proptest = "1"

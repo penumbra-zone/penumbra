@@ -1,9 +1,6 @@
 use ark_ff::UniformRand;
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_crypto::{
-    ka, proofs::groth16::OutputProof, symmetric::WrappedMemoKey, FieldExt, Fq, Fr, Note,
-    PayloadKey, Rseed,
-};
+use penumbra_crypto::{ka, symmetric::WrappedMemoKey, FieldExt, Fq, Fr, Note, PayloadKey, Rseed};
 use penumbra_keys::{
     keys::{IncomingViewingKey, OutgoingViewingKey},
     Address,
@@ -12,7 +9,7 @@ use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use super::{Body, Output};
+use super::{Body, Output, OutputProof};
 
 /// A planned [`Output`](Output).
 #[derive(Clone, Debug, Deserialize, Serialize)]

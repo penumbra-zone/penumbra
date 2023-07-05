@@ -7,8 +7,10 @@ pub mod component;
 pub mod event;
 pub mod state_key;
 
+pub mod nullifier_derivation;
 pub mod output;
 pub mod spend;
 
-pub use output::{Output, OutputPlan, OutputView};
-pub use spend::{Spend, SpendPlan, SpendView};
+pub use nullifier_derivation::{NullifierDerivationCircuit, NullifierDerivationProof};
+pub use output::{Output, OutputCircuit, OutputPlan, OutputProof, OutputView};
+pub use spend::{Spend, SpendCircuit, SpendPlan, SpendProof, SpendView};
