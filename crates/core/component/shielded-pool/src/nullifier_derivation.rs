@@ -15,12 +15,12 @@ use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
-use crate::proofs::groth16::{ParameterSetup, VerifyingKeyExt};
-use crate::{note, nullifier::NullifierVar, Note, Nullifier, Rseed};
 use penumbra_asset::Value;
+use penumbra_crypto::proofs::groth16::{ParameterSetup, VerifyingKeyExt};
+use penumbra_crypto::{note, Note, Nullifier, NullifierVar, Rseed};
 use penumbra_keys::keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
 
-use super::GROTH16_PROOF_LENGTH_BYTES;
+use penumbra_crypto::proofs::groth16::GROTH16_PROOF_LENGTH_BYTES;
 
 /// Groth16 proof for correct nullifier derivation.
 #[derive(Clone, Debug)]
@@ -187,5 +187,82 @@ impl TryFrom<pb::ZkNullifierDerivationProof> for NullifierDerivationProof {
 
     fn try_from(proto: pb::ZkNullifierDerivationProof) -> Result<Self, Self::Error> {
         Ok(NullifierDerivationProof(proto.inner[..].try_into()?))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ark_ff::UniformRand;
+    use ark_snark::SNARK;
+    use decaf377::{Fq, Fr};
+    use penumbra_asset::{asset, Balance, Value};
+    use penumbra_crypto::{Nullifier, Rseed};
+    use penumbra_keys::keys::{SeedPhrase, SpendKey};
+    use proptest::prelude::*;
+
+    use penumbra_proto::core::crypto::v1alpha1 as pb;
+    use penumbra_tct as tct;
+    use rand_core::OsRng;
+
+    use penumbra_crypto::{note, Note};
+
+    use ark_ff::PrimeField;
+
+    fn fq_strategy() -> BoxedStrategy<Fq> {
+        any::<[u8; 32]>()
+            .prop_map(|bytes| Fq::from_le_bytes_mod_order(&bytes[..]))
+            .boxed()
+    }
+
+    fn fr_strategy() -> BoxedStrategy<Fr> {
+        any::<[u8; 32]>()
+            .prop_map(|bytes| Fr::from_le_bytes_mod_order(&bytes[..]))
+            .boxed()
+    }
+
+    proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2))]
+    #[test]
+    fn nullifier_derivation_proof_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), value_amount in 2..200u64) {
+            let (pk, vk) = NullifierDerivationCircuit::generate_prepared_test_parameters();
+
+            let mut rng = OsRng;
+
+            let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+            let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+            let fvk_sender = sk_sender.full_viewing_key();
+            let ivk_sender = fvk_sender.incoming();
+            let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
+
+            let value_to_send = Value {
+                amount: value_amount.into(),
+                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
+            };
+
+            let note = Note::generate(&mut rng, &sender, value_to_send);
+            let note_commitment = note.commit();
+            let nk = *sk_sender.nullifier_key();
+            let mut sct = tct::Tree::new();
+
+            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let position = state_commitment_proof.position();
+            let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
+
+                let proof = NullifierDerivationProof::prove(
+                    &mut rng,
+                    &pk,
+                    position,
+                    note.clone(),
+                    nk,
+                    nullifier,
+                )
+                .expect("can create proof");
+
+                let proof_result = proof.verify(&vk, position, note, nullifier);
+
+                assert!(proof_result.is_ok());
+        }
     }
 }

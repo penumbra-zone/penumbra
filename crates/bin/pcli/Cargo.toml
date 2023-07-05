@@ -101,6 +101,7 @@ assert_cmd = "2.0"
 predicates = "2.1"
 tempfile = "3.3.0"
 regex = "1.6.0"
+penumbra-governance            = { path = "../../core/component/governance", default-features = false }
 penumbra-proof-params = { path = "../../crypto/proof-params", features = [
     "proving-keys",
     "download-proving-keys",

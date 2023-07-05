@@ -6,13 +6,10 @@ use ark_relations::r1cs::{
 };
 use decaf377::Fr;
 use penumbra_asset::{balance, Balance, Value};
-use penumbra_crypto::{
-    fmd, ka, note,
-    proofs::groth16::{OutputCircuit, OutputProof},
-    Fq, Note, Rseed,
-};
+use penumbra_crypto::{fmd, ka, note, Fq, Note, Rseed};
 use penumbra_keys::{keys::Diversifier, Address};
 use penumbra_proof_params::OUTPUT_PROOF_PROVING_KEY;
+use penumbra_shielded_pool::{OutputCircuit, OutputProof};
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;

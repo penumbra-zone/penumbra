@@ -3,6 +3,7 @@ use std::str::FromStr;
 use ark_groth16::r1cs_to_qap::LibsnarkReduction;
 use ark_r1cs_std::uint8::UInt8;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use decaf377::r1cs::ElementVar;
 use decaf377::FieldExt;
 use decaf377::{Bls12_377, Fq, Fr};
 use decaf377_fmd as fmd;
@@ -17,15 +18,15 @@ use penumbra_keys::{keys::Diversifier, Address};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use rand_core::OsRng;
 
-use crate::proofs::groth16::{
-    gadgets, ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES,
-};
-use crate::{note, Note, Rseed};
 use penumbra_asset::{
     balance,
     balance::{commitment::BalanceCommitmentVar, BalanceVar},
     Value,
 };
+use penumbra_crypto::proofs::groth16::{
+    ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES,
+};
+use penumbra_crypto::{note, Note, Rseed};
 
 // Public:
 // * vcm (value commitment)
@@ -76,7 +77,11 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
         let claimed_balance_commitment =
             BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
 
-        gadgets::element_not_identity(cs, &Boolean::TRUE, note_var.diversified_generator())?;
+        // Check the diversified base is not identity.
+        let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
+        identity
+            .conditional_enforce_not_equal(&note_var.diversified_generator(), &Boolean::TRUE)?;
+
         // Check integrity of balance commitment.
         let balance_commitment =
             BalanceVar::from_negative_value_var(note_var.value()).commit(v_blinding_vars)?;
@@ -211,4 +216,169 @@ impl TryFrom<pb::ZkOutputProof> for OutputProof {
     fn try_from(proto: pb::ZkOutputProof) -> Result<Self, Self::Error> {
         Ok(OutputProof(proto.inner[..].try_into()?))
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ark_ff::UniformRand;
+    use decaf377::{Fq, Fr};
+    use penumbra_asset::{asset, Balance, Value};
+    use penumbra_keys::keys::{SeedPhrase, SpendKey};
+    use proptest::prelude::*;
+
+    use penumbra_proto::core::crypto::v1alpha1 as pb;
+    use rand_core::OsRng;
+
+    use penumbra_crypto::{note, Note};
+
+    use ark_ff::PrimeField;
+
+    fn fq_strategy() -> BoxedStrategy<Fq> {
+        any::<[u8; 32]>()
+            .prop_map(|bytes| Fq::from_le_bytes_mod_order(&bytes[..]))
+            .boxed()
+    }
+
+    fn fr_strategy() -> BoxedStrategy<Fr> {
+        any::<[u8; 32]>()
+            .prop_map(|bytes| Fr::from_le_bytes_mod_order(&bytes[..]))
+            .boxed()
+    }
+
+    proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2))]
+    #[test]
+    fn output_proof_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), v_blinding in fr_strategy(), value_amount in 2..200u64) {
+            let (pk, vk) = OutputCircuit::generate_prepared_test_parameters();
+
+            let mut rng = OsRng;
+
+            let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+            let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+            let fvk_recipient = sk_recipient.full_viewing_key();
+            let ivk_recipient = fvk_recipient.incoming();
+            let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+
+            let value_to_send = Value {
+                amount: value_amount.into(),
+                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
+            };
+
+            let note = Note::generate(&mut rng, &dest, value_to_send);
+            let note_commitment = note.commit();
+            let balance_commitment = (-Balance::from(value_to_send)).commit(v_blinding);
+
+            let blinding_r = Fq::rand(&mut OsRng);
+            let blinding_s = Fq::rand(&mut OsRng);
+            let proof = OutputProof::prove(
+                blinding_r,
+                blinding_s,
+                &pk,
+                note,
+                v_blinding,
+                balance_commitment,
+                note_commitment,
+            )
+            .expect("can create proof");
+            let serialized_proof: pb::ZkOutputProof = proof.into();
+
+            let deserialized_proof = OutputProof::try_from(serialized_proof).expect("can deserialize proof");
+            let proof_result = deserialized_proof.verify(&vk, balance_commitment, note_commitment);
+
+            assert!(proof_result.is_ok());
+        }
+    }
+
+    proptest! {
+    #![proptest_config(ProptestConfig::with_cases(2))]
+    #[test]
+    fn output_proof_verification_note_commitment_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), v_blinding in fr_strategy(), value_amount in 2..200u64, note_blinding in fq_strategy()) {
+        let (pk, vk) = OutputCircuit::generate_prepared_test_parameters();
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+
+        let value_to_send = Value {
+            amount: value_amount.into(),
+            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
+        };
+
+        let note = Note::generate(&mut rng, &dest, value_to_send);
+        let note_commitment = note.commit();
+        let balance_commitment = (-Balance::from(value_to_send)).commit(v_blinding);
+
+        let blinding_r = Fq::rand(&mut OsRng);
+        let blinding_s = Fq::rand(&mut OsRng);
+        let proof = OutputProof::prove(
+            blinding_r,
+            blinding_s,
+            &pk,
+            note.clone(),
+            v_blinding,
+            balance_commitment,
+            note_commitment,
+        )
+        .expect("can create proof");
+
+        let incorrect_note_commitment = note::commitment(
+            note_blinding,
+            value_to_send,
+            note.diversified_generator(),
+            note.transmission_key_s(),
+            note.clue_key(),
+        );
+
+        let proof_result = proof.verify(&vk, balance_commitment, incorrect_note_commitment);
+
+        assert!(proof_result.is_err());
+    }
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(2))]
+        #[test]
+    fn output_proof_verification_balance_commitment_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), v_blinding in fr_strategy(), value_amount in 2..200u64, incorrect_v_blinding in fr_strategy()) {
+        let (pk, vk) = OutputCircuit::generate_prepared_test_parameters();
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+
+        let value_to_send = Value {
+            amount: value_amount.into(),
+            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
+        };
+
+        let note = Note::generate(&mut rng, &dest, value_to_send);
+        let note_commitment = note.commit();
+        let balance_commitment = (-Balance::from(value_to_send)).commit(v_blinding);
+
+        let blinding_r = Fq::rand(&mut OsRng);
+        let blinding_s = Fq::rand(&mut OsRng);
+        let proof = OutputProof::prove(
+            blinding_r,
+            blinding_s,
+            &pk,
+            note,
+            v_blinding,
+            balance_commitment,
+            note_commitment,
+        )
+        .expect("can create proof");
+
+        let incorrect_balance_commitment = (-Balance::from(value_to_send)).commit(incorrect_v_blinding);
+
+        let proof_result = proof.verify(&vk, incorrect_balance_commitment, note_commitment);
+
+        assert!(proof_result.is_err());
+    }
+        }
 }
