@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-wasm"
-version = "0.55.0"
+version = "0.55.6-indexeddb"
 authors = ["Valentine <valentine@zpoken.io>"]
 edition = "2021"
 
@@ -37,6 +37,9 @@ rand_core = { version = "0.6.3", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
 console_error_panic_hook = { version = "0.1.6", optional = true }
 wee_alloc = { version = "0.4.5", optional = true }
+indexed_db_futures = {version = "0.3.0"}
+wasm-bindgen-futures = "0.4"
+
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"

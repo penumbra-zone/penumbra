@@ -3251,6 +3251,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
 
 [[package]]
+name = "indexed_db_futures"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfbcff6ae46750b15cc594bfd277b188cbddcfdc1817848f97f03f26f8625b9e"
+dependencies = [
+ "cfg-if 1.0.0",
+ "js-sys",
+ "uuid 1.4.0",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "indexmap"
 version = "1.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5483,13 +5497,14 @@ dependencies = [
 
 [[package]]
 name = "penumbra-wasm"
-version = "0.55.0"
+version = "0.55.6-indexeddb"
 dependencies = [
  "anyhow",
  "base64 0.20.0",
  "console_error_panic_hook",
  "getrandom 0.2.10",
  "hex",
+ "indexed_db_futures",
  "indexmap 1.9.2",
  "js-sys",
  "penumbra-asset",
@@ -5508,6 +5523,7 @@ dependencies = [
  "serde",
  "serde-wasm-bindgen",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "wasm-bindgen-test",
  "web-sys",
  "wee_alloc",
@@ -7346,7 +7362,7 @@ dependencies = [
  "tokio",
  "tracing",
  "url",
- "uuid",
+ "uuid 0.8.2",
  "walkdir",
 ]
 
@@ -8067,6 +8083,16 @@ name = "uuid"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
+
+[[package]]
+name = "uuid"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d023da39d1fde5a8a3fe1f3e01ca9632ada0a63e9797de55a879d6e2236277be"
+dependencies = [
+ "getrandom 0.2.10",
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "valuable"
