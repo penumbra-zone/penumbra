@@ -25,7 +25,7 @@ use crate::{
     TradingPair,
 };
 
-use penumbra_crypto::proofs::groth16::{ParameterSetup, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_proof_params::{ParameterSetup, GROTH16_PROOF_LENGTH_BYTES};
 
 pub struct SwapCircuit {
     /// The swap plaintext.

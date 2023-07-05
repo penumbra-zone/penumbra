@@ -5067,6 +5067,7 @@ dependencies = [
  "ark-serialize",
  "ark-snark",
  "ark-std",
+ "bech32",
  "criterion 0.4.0",
  "decaf377",
  "hex",

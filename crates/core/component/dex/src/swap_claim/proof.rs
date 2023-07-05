@@ -29,7 +29,7 @@ use crate::{
     BatchSwapOutputData, TradingPair,
 };
 
-use penumbra_crypto::proofs::groth16::{ParameterSetup, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_proof_params::{ParameterSetup, GROTH16_PROOF_LENGTH_BYTES};
 
 /// SwapClaim consumes an existing Swap NFT so they are most similar to Spend operations,
 /// however the note commitment proof needs to be for a specific block due to clearing prices

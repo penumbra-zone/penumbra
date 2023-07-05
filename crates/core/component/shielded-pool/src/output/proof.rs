@@ -23,10 +23,8 @@ use penumbra_asset::{
     balance::{commitment::BalanceCommitmentVar, BalanceVar},
     Value,
 };
-use penumbra_crypto::proofs::groth16::{
-    ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES,
-};
 use penumbra_crypto::{note, Note, Rseed};
+use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 
 // Public:
 // * vcm (value commitment)

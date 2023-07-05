@@ -3,6 +3,13 @@ use ark_serialize::CanonicalDeserialize;
 use decaf377::Bls12_377;
 use once_cell::sync::Lazy;
 
+/// The length of our Groth16 proofs in bytes.
+pub const GROTH16_PROOF_LENGTH_BYTES: usize = 192;
+
+mod traits;
+
+pub use traits::{ParameterSetup, ProvingKeyExt, VerifyingKeyExt};
+
 #[cfg(feature = "proving-keys")]
 mod proving_keys;
 

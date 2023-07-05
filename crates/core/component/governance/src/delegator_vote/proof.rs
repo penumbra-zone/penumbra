@@ -19,14 +19,12 @@ use rand_core::OsRng;
 use tct::r1cs::PositionVar;
 
 use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
-use penumbra_crypto::proofs::groth16::{ParameterSetup, VerifyingKeyExt};
 use penumbra_crypto::{note, Note, Nullifier, NullifierVar, Rseed};
 use penumbra_keys::keys::{
     AuthorizationKeyVar, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
 };
-
-use penumbra_crypto::proofs::groth16::GROTH16_PROOF_LENGTH_BYTES;
+use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 
 /// Groth16 proof for delegator voting.
 #[derive(Clone, Debug)]
