@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-wasm"
-version = "0.55.6-indexeddb"
+version = "0.55.0"
 authors = ["Valentine <valentine@zpoken.io>"]
 edition = "2021"
 

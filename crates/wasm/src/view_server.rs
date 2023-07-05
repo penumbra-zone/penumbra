@@ -19,7 +19,7 @@ use tct::storage::{StoreCommitment, StoreHash, StoredPosition, Updates};
 use tct::{Forgotten, Tree};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
-use web_sys::{console as web_console};
+use web_sys::console as web_console;
 
 use crate::note_record::SpendableNoteRecord;
 use crate::swap_record::SwapRecord;
