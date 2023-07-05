@@ -8,12 +8,11 @@ use rand_core::OsRng;
 
 use penumbra_asset::balance;
 use penumbra_crypto::{
-    ka,
-    keys::OutgoingViewingKey,
-    note,
+    ka, note,
     symmetric::{OvkWrappedKey, PayloadKey, PayloadKind, WrappedMemoKey},
-    Address, Note,
+    Note,
 };
+use penumbra_keys::{keys::OutgoingViewingKey, Address};
 use penumbra_proto::core::transaction::v1alpha1 as pbt;
 
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
@@ -235,7 +234,7 @@ mod tests {
     use super::*;
     use decaf377::Fr;
     use penumbra_asset::{asset, Value};
-    use penumbra_crypto::keys::{SeedPhrase, SpendKey};
+    use penumbra_keys::keys::{SeedPhrase, SpendKey};
 
     use proptest::prelude::*;
 

@@ -4,6 +4,10 @@ use ark_ff::PrimeField;
 use blake2b_simd;
 use decaf377::FieldExt;
 use once_cell::sync::Lazy;
+use penumbra_keys::{
+    keys::{Diversifier, FullViewingKey, IncomingViewingKey, OutgoingViewingKey},
+    Address, AddressView,
+};
 use penumbra_proto::core::crypto::v1alpha1 as pb;
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
@@ -19,9 +23,8 @@ use penumbra_num::Amount;
 
 use crate::{
     fmd, ka,
-    keys::{Diversifier, IncomingViewingKey, OutgoingViewingKey},
     symmetric::{OutgoingCipherKey, OvkWrappedKey, PayloadKey, PayloadKind},
-    Address, AddressView, Fq, NotePayload, Rseed,
+    Fq, NotePayload, Rseed,
 };
 
 pub const NOTE_LEN_BYTES: usize = 160;
@@ -104,6 +107,13 @@ pub enum Error {
 }
 
 impl Note {
+    pub fn controlled_by(&self, fvk: &FullViewingKey) -> bool {
+        *self.transmission_key()
+            == fvk
+                .incoming()
+                .diversified_public(&self.diversified_generator())
+    }
+
     pub fn from_parts(address: Address, value: Value, rseed: Rseed) -> Result<Self, Error> {
         Ok(Note {
             value,
@@ -530,7 +540,7 @@ mod tests {
     use rand_core::OsRng;
 
     use super::*;
-    use crate::keys::{SeedPhrase, SpendKey};
+    use penumbra_keys::keys::{SeedPhrase, SpendKey};
 
     #[test]
     fn note_encryption_and_decryption() {

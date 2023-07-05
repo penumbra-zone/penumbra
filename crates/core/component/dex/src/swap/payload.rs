@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use penumbra_crypto::FullViewingKey;
+use penumbra_keys::FullViewingKey;
 use penumbra_proto::core::dex::v1alpha1 as pb;
 use serde::{Deserialize, Serialize};
 

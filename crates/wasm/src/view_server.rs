@@ -3,9 +3,10 @@ use indexed_db_futures::prelude::OpenDbRequest;
 use indexed_db_futures::{IdbDatabase, IdbQuerySource};
 use penumbra_asset::asset::{DenomMetadata, Id};
 use penumbra_compact_block::{CompactBlock, StatePayload};
-use penumbra_crypto::{note, FullViewingKey, Nullifier};
+use penumbra_crypto::{note, Nullifier};
 use penumbra_dex::lp::position::Position;
 use penumbra_dex::lp::LpNft;
+use penumbra_keys::FullViewingKey;
 use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
 use penumbra_proto::DomainType;
 use penumbra_tct as tct;
@@ -139,9 +140,11 @@ impl ViewServer {
                                 self.nct.insert(Keep, payload.note_commitment).unwrap();
 
                             let source = clone_payload.source().cloned().unwrap_or_default();
-                            let nullifier = self
-                                .fvk
-                                .derive_nullifier(note_position, clone_payload.commitment());
+                            let nullifier = Nullifier::derive(
+                                self.fvk.nullifier_key(),
+                                note_position,
+                                clone_payload.commitment(),
+                            );
                             let address_index = self
                                 .fvk
                                 .incoming()
@@ -182,9 +185,11 @@ impl ViewServer {
                                 .unwrap();
 
                             let source = clone_payload.source().cloned().unwrap_or_default();
-                            let nullifier = self
-                                .fvk
-                                .derive_nullifier(swap_position, clone_payload.commitment());
+                            let nullifier = Nullifier::derive(
+                                self.fvk.nullifier_key(),
+                                swap_position,
+                                clone_payload.commitment(),
+                            );
 
                             let swap_record = SwapRecord {
                                 swap_commitment: clone_payload.commitment().clone(),
@@ -265,9 +270,11 @@ impl ViewServer {
                                 self.nct.insert(Keep, payload.note_commitment).unwrap();
 
                             let source = clone_payload.source().cloned().unwrap_or_default();
-                            let nullifier = self
-                                .fvk
-                                .derive_nullifier(note_position, clone_payload.commitment());
+                            let nullifier = Nullifier::derive(
+                                self.fvk.nullifier_key(),
+                                note_position,
+                                clone_payload.commitment(),
+                            );
                             let address_index = self
                                 .fvk
                                 .incoming()
@@ -307,9 +314,11 @@ impl ViewServer {
                                 .unwrap();
 
                             let source = clone_payload.source().cloned().unwrap_or_default();
-                            let nullifier = self
-                                .fvk
-                                .derive_nullifier(swap_position, clone_payload.commitment());
+                            let nullifier = Nullifier::derive(
+                                self.fvk.nullifier_key(),
+                                swap_position,
+                                clone_payload.commitment(),
+                            );
 
                             let swap_record = SwapRecord {
                                 swap_commitment: clone_payload.commitment().clone(),

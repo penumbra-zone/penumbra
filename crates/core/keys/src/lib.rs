@@ -4,7 +4,7 @@ use decaf377_rdsa as rdsa;
 
 pub mod address;
 pub mod keys;
-mod prf;
+pub mod prf;
 
 pub use address::{Address, AddressVar, AddressView};
 pub use keys::FullViewingKey;

@@ -19,10 +19,7 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
-    use crate::{
-        keys::{SeedPhrase, SpendKey},
-        Address, Rseed,
-    };
+    use crate::{Nullifier, Rseed};
     use ark_ff::UniformRand;
     use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, ProvingKey, VerifyingKey};
     use ark_r1cs_std::prelude::*;
@@ -30,6 +27,10 @@ mod tests {
     use ark_snark::SNARK;
     use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
     use penumbra_asset::{asset, Balance, Value};
+    use penumbra_keys::{
+        keys::{SeedPhrase, SpendKey},
+        Address,
+    };
     use proptest::prelude::*;
 
     use decaf377_rdsa::{SpendAuth, VerificationKey};
@@ -81,7 +82,7 @@ mod tests {
             sct.insert(tct::Witness::Keep, note_commitment).unwrap();
             let state_commitment_proof = sct.witness(note_commitment).unwrap();
             let position = state_commitment_proof.position();
-            let nullifier = nk.derive_nullifier(state_commitment_proof.position(), &note_commitment);
+            let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
                 let proof = NullifierDerivationProof::prove(
                     &mut rng,
@@ -142,7 +143,7 @@ mod tests {
 
         let balance_commitment = value_to_send.commit(Fr::from(0u64));
         let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nf = nk.derive_nullifier(state_commitment_proof.position(), &note_commitment);
+        let nf = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
         let blinding_r = Fq::rand(&mut OsRng);
         let blinding_s = Fq::rand(&mut OsRng);
@@ -343,7 +344,7 @@ mod tests {
         let state_commitment_proof = sct.witness(note_commitment).unwrap();
         let balance_commitment = value_to_send.commit(v_blinding);
         let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nf = nk.derive_nullifier(state_commitment_proof.position(), &note_commitment);
+        let nf = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
         let blinding_r = Fq::rand(&mut OsRng);
         let blinding_s = Fq::rand(&mut OsRng);
@@ -401,7 +402,7 @@ mod tests {
         let state_commitment_proof = sct.witness(note_commitment).unwrap();
         let balance_commitment = value_to_send.commit(v_blinding);
         let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nf = nk.derive_nullifier(0.into(), &note_commitment);
+        let nf = Nullifier::derive(&nk, 0.into(), &note_commitment);
 
         let blinding_r = Fq::rand(&mut OsRng);
         let blinding_s = Fq::rand(&mut OsRng);
@@ -462,7 +463,7 @@ mod tests {
             let state_commitment_proof = sct.witness(note_commitment).unwrap();
             let balance_commitment = value_to_send.commit(v_blinding);
             let rk: VerificationKey<SpendAuth> = rsk.into();
-            let nf = nk.derive_nullifier(0.into(), &note_commitment);
+            let nf = Nullifier::derive(&nk, 0.into(), &note_commitment);
 
             // Note that this will blow up in debug mode as the constraint
             // system is unsatisified (ark-groth16 has a debug check for this).
@@ -520,9 +521,9 @@ mod tests {
             let state_commitment_proof = sct.witness(note_commitment).unwrap();
             let balance_commitment = value_to_send.commit(v_blinding);
             let rk: VerificationKey<SpendAuth> = rsk.into();
-            let nf = nk.derive_nullifier(0.into(), &note_commitment);
+            let nf = Nullifier::derive(&nk, 0.into(), &note_commitment);
 
-            let incorrect_nf = nk.derive_nullifier(5.into(), &note_commitment);
+            let incorrect_nf = Nullifier::derive(&nk, 5.into(), &note_commitment);
 
             let blinding_r = Fq::rand(&mut OsRng);
             let blinding_s = Fq::rand(&mut OsRng);
@@ -579,7 +580,7 @@ mod tests {
         let state_commitment_proof = sct.witness(note_commitment).unwrap();
         let balance_commitment = value_to_send.commit(v_blinding);
         let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nf = nk.derive_nullifier(0.into(), &note_commitment);
+        let nf = Nullifier::derive(&nk, 0.into(), &note_commitment);
 
         let blinding_r = Fq::rand(&mut OsRng);
         let blinding_s = Fq::rand(&mut OsRng);
@@ -637,7 +638,7 @@ mod tests {
             let state_commitment_proof = sct.witness(note_commitment).unwrap();
             let balance_commitment = value_to_send.commit(v_blinding);
             let rk: VerificationKey<SpendAuth> = rsk.into();
-            let nf = nk.derive_nullifier(0.into(), &note_commitment);
+            let nf = Nullifier::derive(&nk, 0.into(), &note_commitment);
 
             let incorrect_rsk = sk_sender
                 .spend_auth_key()
@@ -700,7 +701,7 @@ mod tests {
             // not to enforce the other equality constraint.
             let balance_commitment = value_to_send.commit(v_blinding);
             let rk: VerificationKey<SpendAuth> = rsk.into();
-            let nf = nk.derive_nullifier(0.into(), &note_commitment);
+            let nf = Nullifier::derive(&nk, 0.into(), &note_commitment);
 
             let blinding_r = Fq::rand(&mut OsRng);
             let blinding_s = Fq::rand(&mut OsRng);

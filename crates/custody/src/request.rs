@@ -1,4 +1,4 @@
-use penumbra_crypto::keys::AccountGroupId;
+use penumbra_keys::keys::AccountGroupId;
 use penumbra_proto::{custody::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_transaction::plan::TransactionPlan;
 

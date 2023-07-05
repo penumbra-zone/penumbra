@@ -17,10 +17,10 @@ use penumbra_asset::{
     Value, ValueVar,
 };
 use penumbra_crypto::{
-    keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey},
     note::{self, NoteVar, StateCommitmentVar},
     Fq, Nullifier, NullifierVar, Rseed,
 };
+use penumbra_keys::keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
 use penumbra_num::{Amount, AmountVar};
 
 use crate::{
@@ -149,7 +149,7 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         )?;
 
         // Nullifier integrity.
-        let nullifier_var = nk_var.derive_nullifier(&position_var, &claimed_swap_commitment)?;
+        let nullifier_var = NullifierVar::derive(&nk_var, &position_var, &claimed_swap_commitment)?;
         nullifier_var.enforce_equal(&claimed_nullifier_var)?;
 
         // Fee consistency check.
@@ -404,7 +404,7 @@ impl TryFrom<pb::ZkSwapClaimProof> for SwapClaimProof {
 mod tests {
     use super::*;
     use ark_ff::UniformRand;
-    use penumbra_crypto::keys::{SeedPhrase, SpendKey};
+    use penumbra_keys::keys::{SeedPhrase, SpendKey};
     use penumbra_num::Amount;
     use proptest::prelude::*;
 
@@ -440,7 +440,7 @@ mod tests {
         let anchor = sct.root();
         let state_commitment_proof = sct.witness(swap_commitment).unwrap();
         let position = state_commitment_proof.position();
-        let nullifier = nk.derive_nullifier(position, &swap_commitment);
+        let nullifier = Nullifier::derive(&nk, position, &swap_commitment);
         let epoch_duration = 20;
         let height = epoch_duration * position.epoch() + position.block();
 
@@ -534,7 +534,7 @@ mod tests {
         let anchor = sct.root();
         let state_commitment_proof = sct.witness(swap_commitment).unwrap();
         let position = state_commitment_proof.position();
-        let nullifier = nk.derive_nullifier(position, &swap_commitment);
+        let nullifier = Nullifier::derive(&nk, position, &swap_commitment);
         let epoch_duration = 20;
         let height = epoch_duration * position.epoch() + position.block();
 

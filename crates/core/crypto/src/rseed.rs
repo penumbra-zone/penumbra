@@ -1,7 +1,8 @@
 use ark_ff::PrimeField;
+use penumbra_keys::prf;
 use rand::{CryptoRng, RngCore};
 
-use crate::{ka, prf, Fq, Fr};
+use crate::{ka, Fq, Fr};
 
 /// The rseed is a uniformly random 32-byte sequence included in the note plaintext.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

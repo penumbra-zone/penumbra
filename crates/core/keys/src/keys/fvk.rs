@@ -13,11 +13,9 @@ pub mod r1cs;
 
 use super::{AddressIndex, DiversifierKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey};
 use crate::{
-    fmd, ka,
-    note::StateCommitment,
-    prf,
+    fmd, ka, prf,
     rdsa::{SpendAuth, VerificationKey},
-    Address, AddressView, Note, Nullifier,
+    Address, AddressView,
 };
 
 pub(crate) static IVK_DOMAIN_SEP: Lazy<Fq> =
@@ -42,13 +40,6 @@ pub struct FullViewingKey {
 pub struct AccountGroupId(pub [u8; 32]);
 
 impl FullViewingKey {
-    pub fn controls(&self, note: &Note) -> bool {
-        *note.transmission_key()
-            == self
-                .incoming()
-                .diversified_public(&note.diversified_generator())
-    }
-
     /// Derive a shielded payment address with the given [`AddressIndex`].
     pub fn payment_address(&self, index: AddressIndex) -> (Address, fmd::DetectionKey) {
         self.incoming().payment_address(index)
@@ -126,16 +117,6 @@ impl FullViewingKey {
 
     pub fn nullifier_key(&self) -> &NullifierKey {
         &self.nk
-    }
-
-    /// Derive the [`Nullifier`] for a positioned note or swap given its [`merkle::Position`]
-    /// and [`Commitment`].
-    pub fn derive_nullifier(
-        &self,
-        pos: penumbra_tct::Position,
-        state_commitment: &StateCommitment,
-    ) -> Nullifier {
-        self.nk.derive_nullifier(pos, state_commitment)
     }
 
     /// Returns the spend verification key contained in this full viewing key.

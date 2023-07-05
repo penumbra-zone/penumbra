@@ -1,7 +1,8 @@
 use penumbra_asset::{Balance, Value};
-use penumbra_crypto::{
+use penumbra_crypto::{FieldExt, Fq, Nullifier};
+use penumbra_keys::{
     keys::{IncomingViewingKey, NullifierKey},
-    FieldExt, Fq, FullViewingKey,
+    FullViewingKey,
 };
 use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
@@ -61,7 +62,8 @@ impl SwapClaimPlan {
         let note_commitment_1 = output_1_note.commit();
         let note_commitment_2 = output_2_note.commit();
 
-        let nullifier = nk.derive_nullifier(self.position, &self.swap_plaintext.swap_commitment());
+        let nullifier =
+            Nullifier::derive(&nk, self.position, &self.swap_plaintext.swap_commitment());
         SwapClaimProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
@@ -91,7 +93,11 @@ impl SwapClaimPlan {
         let output_1_commitment = output_1_note.commit();
         let output_2_commitment = output_2_note.commit();
 
-        let nullifier = fvk.derive_nullifier(self.position, &self.swap_plaintext.swap_commitment());
+        let nullifier = Nullifier::derive(
+            fvk.nullifier_key(),
+            self.position,
+            &self.swap_plaintext.swap_commitment(),
+        );
 
         swap_claim::Body {
             nullifier,

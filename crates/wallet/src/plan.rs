@@ -3,11 +3,11 @@ use tonic::transport::Channel;
 
 use anyhow::{Context, Result};
 use penumbra_asset::Value;
-use penumbra_crypto::{
+use penumbra_fee::Fee;
+use penumbra_keys::{
     keys::{AccountGroupId, AddressIndex},
     Address, FullViewingKey,
 };
-use penumbra_fee::Fee;
 use penumbra_num::Amount;
 use penumbra_proto::{
     client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient,

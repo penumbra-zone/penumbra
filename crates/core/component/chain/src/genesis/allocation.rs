@@ -1,5 +1,6 @@
 use penumbra_asset::{asset, Value};
-use penumbra_crypto::{Address, Note, Rseed};
+use penumbra_crypto::{Note, Rseed};
+use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{core::chain::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};

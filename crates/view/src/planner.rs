@@ -8,10 +8,7 @@ use anyhow::{anyhow, Result};
 
 use penumbra_asset::{asset::DenomMetadata, Balance, Value};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::{
-    keys::{AccountGroupId, AddressIndex},
-    Address, Note,
-};
+use penumbra_crypto::Note;
 use penumbra_dao::DaoDeposit;
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
@@ -25,6 +22,10 @@ use penumbra_dex::{
 };
 use penumbra_fee::Fee;
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
+use penumbra_keys::{
+    keys::{AccountGroupId, AddressIndex},
+    Address,
+};
 use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};

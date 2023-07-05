@@ -5,10 +5,10 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use camino::Utf8PathBuf;
 use clap::Parser;
-use penumbra_crypto::keys::{SeedPhrase, SpendKey};
-use penumbra_crypto::FullViewingKey;
 use penumbra_custody::policy::{AuthPolicy, PreAuthorizationPolicy};
 use penumbra_custody::soft_kms::{self, SoftKms};
+use penumbra_keys::keys::{SeedPhrase, SpendKey};
+use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     client::v1alpha1::oblivious_query_service_client::ObliviousQueryServiceClient,
     client::v1alpha1::ChainParametersRequest,

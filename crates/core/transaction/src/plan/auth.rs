@@ -1,4 +1,4 @@
-use penumbra_crypto::keys::SpendKey;
+use penumbra_keys::keys::SpendKey;
 use rand::{CryptoRng, RngCore};
 
 use crate::{plan::TransactionPlan, AuthorizationData};

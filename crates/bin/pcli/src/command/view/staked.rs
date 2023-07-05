@@ -4,7 +4,7 @@ use anyhow::Result;
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_crypto::FullViewingKey;
+use penumbra_keys::FullViewingKey;
 use penumbra_proto::client::v1alpha1::{
     oblivious_query_service_client::ObliviousQueryServiceClient, ValidatorInfoRequest,
 };

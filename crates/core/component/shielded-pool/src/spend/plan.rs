@@ -1,9 +1,8 @@
 use ark_ff::UniformRand;
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_crypto::{
-    proofs::groth16::SpendProof, Address, FieldExt, Fq, Fr, FullViewingKey, Note, Nullifier, Rseed,
-};
+use penumbra_crypto::{proofs::groth16::SpendProof, FieldExt, Fq, Fr, Note, Nullifier, Rseed};
+use penumbra_keys::{Address, FullViewingKey};
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
@@ -90,7 +89,8 @@ impl SpendPlan {
 
     /// Construct the [`Nullifier`] associated with this [`SpendPlan`].
     pub fn nullifier(&self, fvk: &FullViewingKey) -> Nullifier {
-        fvk.derive_nullifier(self.position, &self.note.commit())
+        let nk = fvk.nullifier_key();
+        Nullifier::derive(nk, self.position, &self.note.commit())
     }
 
     /// Construct the [`SpendProof`] required by the [`spend::Body`] described by this [`SpendPlan`].

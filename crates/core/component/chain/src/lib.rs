@@ -19,7 +19,7 @@ pub use note_source::{NoteSource, SpendInfo};
 /// Hardcoded test data used by the `Default` genesis state.
 pub mod test_keys {
     use once_cell::sync::Lazy;
-    use penumbra_crypto::{
+    use penumbra_keys::{
         keys::{AccountGroupId, SpendKey},
         Address, FullViewingKey,
     };

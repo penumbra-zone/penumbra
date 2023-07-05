@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use penumbra_asset::{asset::Cache, Value};
-use penumbra_crypto::{keys::IncomingViewingKey, Address, Note, NoteView};
+use penumbra_crypto::{Note, NoteView};
 use penumbra_dex::{
     lp::position::Position,
     swap::SwapPlaintext,
@@ -9,6 +9,7 @@ use penumbra_dex::{
     swap_claim::{SwapClaim, SwapClaimView},
     DirectedUnitPair,
 };
+use penumbra_keys::{keys::IncomingViewingKey, Address};
 use penumbra_proto::{client::v1alpha1::GetTxRequest, DomainType};
 use penumbra_transaction::{
     view::action_view::{OutputView, SpendView},

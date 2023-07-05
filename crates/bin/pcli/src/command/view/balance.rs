@@ -1,7 +1,7 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
 use penumbra_asset::{asset::Cache, Value};
-use penumbra_crypto::{keys::AddressIndex, FullViewingKey};
+use penumbra_keys::{keys::AddressIndex, FullViewingKey};
 use penumbra_view::ViewClient;
 #[derive(Debug, clap::Args)]
 pub struct BalanceCmd {

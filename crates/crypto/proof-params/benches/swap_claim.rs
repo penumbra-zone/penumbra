@@ -4,16 +4,14 @@ use ark_relations::r1cs::{
 };
 use decaf377::Fq;
 use penumbra_asset::asset;
-use penumbra_crypto::{
-    keys::{NullifierKey, SeedPhrase, SpendKey},
-    Nullifier,
-};
+use penumbra_crypto::Nullifier;
 use penumbra_dex::{
     swap::SwapPlaintext,
     swap_claim::{SwapClaimCircuit, SwapClaimProof},
     BatchSwapOutputData, TradingPair,
 };
 use penumbra_fee::Fee;
+use penumbra_keys::keys::{NullifierKey, SeedPhrase, SpendKey};
 use penumbra_num::Amount;
 use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
 use penumbra_tct as tct;
@@ -89,7 +87,7 @@ fn swap_claim_proving_time(c: &mut Criterion) {
     let anchor = sct.root();
     let state_commitment_proof = sct.witness(swap_commitment).unwrap();
     let position = state_commitment_proof.position();
-    let nullifier = nk.derive_nullifier(position, &swap_commitment);
+    let nullifier = Nullifier::derive(&nk, position, &swap_commitment);
     let epoch_duration = 20;
     let height = epoch_duration * position.epoch() + position.block();
 

@@ -10,6 +10,7 @@ edition = "2021"
 penumbra-crypto = { path = "../../core/crypto/" }
 penumbra-num = { path = "../../core/num/" }
 penumbra-asset = { path = "../../core/asset/" }
+penumbra-keys = { path = "../../core/keys/" }
 
 # Git deps
 decaf377 = { version = "0.4", features = ["r1cs"] }

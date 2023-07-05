@@ -3,7 +3,8 @@ use penumbra_asset::{
     asset::{self, DenomMetadata},
     Balance, Value,
 };
-use penumbra_crypto::{Address, EffectHash, EffectingData};
+use penumbra_crypto::{EffectHash, EffectingData};
+use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
     core::ibc::v1alpha1::{self as pb, FungibleTokenPacketData},

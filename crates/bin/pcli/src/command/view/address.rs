@@ -2,7 +2,7 @@ use anyhow::Result;
 use base64::Engine;
 use rand_core::OsRng;
 
-use penumbra_crypto::{Address, FullViewingKey};
+use penumbra_keys::{Address, FullViewingKey};
 
 #[derive(Debug, clap::Parser)]
 pub struct AddressCmd {

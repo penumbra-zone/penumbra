@@ -13,13 +13,14 @@ use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
+use penumbra_keys::{keys::Diversifier, Address};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use rand_core::OsRng;
 
 use crate::proofs::groth16::{
     gadgets, ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES,
 };
-use crate::{keys::Diversifier, note, Address, Note, Rseed};
+use crate::{note, Note, Rseed};
 use penumbra_asset::{
     balance,
     balance::{commitment::BalanceCommitmentVar, BalanceVar},

@@ -16,13 +16,9 @@ use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
 use crate::proofs::groth16::{ParameterSetup, VerifyingKeyExt};
-use crate::{
-    keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey},
-    note,
-    nullifier::NullifierVar,
-    Note, Nullifier, Rseed,
-};
+use crate::{note, nullifier::NullifierVar, Note, Nullifier, Rseed};
 use penumbra_asset::Value;
+use penumbra_keys::keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
 
 use super::GROTH16_PROOF_LENGTH_BYTES;
 
@@ -70,7 +66,7 @@ impl ConstraintSynthesizer<Fq> for NullifierDerivationCircuit {
 
         // Nullifier integrity.
         let note_commitment = note_var.commit()?;
-        let nullifier_var = nk_var.derive_nullifier(&position_var, &note_commitment)?;
+        let nullifier_var = NullifierVar::derive(&nk_var, &position_var, &note_commitment)?;
         nullifier_var.conditional_enforce_equal(&claimed_nullifier_var, &Boolean::TRUE)?;
 
         Ok(())

@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use penumbra_crypto::keys::SpendKey;
+use penumbra_keys::keys::SpendKey;
 use serde::{Deserialize, Serialize};
 
 /// The path to the legacy wallet file (which actually stored a client state, not a wallet...)
@@ -51,7 +51,7 @@ pub struct LegacyWallet {
 }
 
 mod serde_helpers {
-    use penumbra_crypto::keys::SpendKeyBytes;
+    use penumbra_keys::keys::SpendKeyBytes;
     use serde_with::serde_as;
 
     use super::*;

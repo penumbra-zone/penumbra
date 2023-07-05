@@ -7,11 +7,9 @@ use decaf377::Fq;
 use once_cell::sync::Lazy;
 use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_crypto::{
-    keys::{FullViewingKey, NullifierKey},
-    rdsa::{VerificationKey, VerificationKeyBytes},
-};
+use penumbra_crypto::rdsa::{VerificationKey, VerificationKeyBytes};
 use penumbra_governance::{ProposalNft, VotingReceiptToken};
+use penumbra_keys::keys::{FullViewingKey, NullifierKey};
 use penumbra_sct::component::StateReadExt as _;
 use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateDelta, StateRead, StateWrite};

@@ -4,7 +4,7 @@ use std::fs;
 use anyhow::{Context, Result};
 use clap::Parser;
 use futures::StreamExt;
-use penumbra_crypto::FullViewingKey;
+use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     custody::v1alpha1::custody_protocol_service_client::CustodyProtocolServiceClient,
     view::v1alpha1::view_protocol_service_client::ViewProtocolServiceClient,

@@ -1,34 +1,14 @@
 use decaf377::Fq;
-use poseidon377::hash_3;
 
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::r1cs::FqVar;
-use penumbra_tct as tct;
-
-use crate::{
-    note::{StateCommitment, StateCommitmentVar},
-    nullifier::{Nullifier, NullifierVar, NULLIFIER_DOMAIN_SEP},
-};
 
 pub const NK_LEN_BYTES: usize = 32;
 
 /// Allows deriving the nullifier associated with a positioned piece of state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct NullifierKey(pub Fq);
-
-impl NullifierKey {
-    pub fn derive_nullifier(
-        &self,
-        pos: penumbra_tct::Position,
-        state_commitment: &StateCommitment,
-    ) -> Nullifier {
-        Nullifier(hash_3(
-            &NULLIFIER_DOMAIN_SEP,
-            (self.0, state_commitment.0, (u64::from(pos)).into()),
-        ))
-    }
-}
 
 /// Represents the `NullifierKey` as a variable in an R1CS constraint system.
 pub struct NullifierKeyVar {
@@ -64,27 +44,5 @@ impl R1CSVar<Fq> for NullifierKeyVar {
     fn value(&self) -> Result<Self::Value, SynthesisError> {
         let inner_fq = self.inner.value()?;
         Ok(NullifierKey(inner_fq))
-    }
-}
-
-impl NullifierKeyVar {
-    pub fn derive_nullifier(
-        &self,
-        position: &tct::r1cs::PositionVar,
-        note_commitment: &StateCommitmentVar,
-    ) -> Result<NullifierVar, SynthesisError> {
-        let cs = note_commitment.inner.cs();
-        let domain_sep = FqVar::new_constant(cs.clone(), *NULLIFIER_DOMAIN_SEP)?;
-        let nullifier = poseidon377::r1cs::hash_3(
-            cs,
-            &domain_sep,
-            (
-                self.inner.clone(),
-                note_commitment.inner.clone(),
-                position.inner.clone(),
-            ),
-        )?;
-
-        Ok(NullifierVar { inner: nullifier })
     }
 }

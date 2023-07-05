@@ -9,12 +9,12 @@ mod utils;
 mod view_server;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType};
 
-use penumbra_crypto::{Address, FullViewingKey};
+use penumbra_keys::{Address, FullViewingKey};
 use std::convert::TryFrom;
 use std::str::FromStr;
 
 use anyhow::Context;
-use penumbra_crypto::keys::{SeedPhrase, SpendKey};
+use penumbra_keys::keys::{SeedPhrase, SpendKey};
 use wasm_bindgen::prelude::*;
 
 use penumbra_transaction::Transaction;

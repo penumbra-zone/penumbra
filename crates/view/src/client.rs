@@ -4,9 +4,11 @@ use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
 use penumbra_asset::asset::{self, DenomMetadata, Id};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::keys::AccountGroupId;
-use penumbra_crypto::Address;
-use penumbra_crypto::{keys::AddressIndex, note, Nullifier};
+use penumbra_crypto::{note, Nullifier};
+use penumbra_keys::{
+    keys::{AccountGroupId, AddressIndex},
+    Address,
+};
 use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{
     self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,

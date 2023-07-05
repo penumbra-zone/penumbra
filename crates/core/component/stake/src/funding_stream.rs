@@ -1,4 +1,4 @@
-use penumbra_crypto::Address;
+use penumbra_keys::Address;
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 

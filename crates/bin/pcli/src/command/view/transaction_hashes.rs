@@ -1,6 +1,6 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
-use penumbra_crypto::FullViewingKey;
+use penumbra_keys::FullViewingKey;
 use penumbra_view::ViewClient;
 
 #[derive(Debug, clap::Args)]

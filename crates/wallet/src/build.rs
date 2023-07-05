@@ -1,6 +1,6 @@
 use anyhow::Result;
-use penumbra_crypto::FullViewingKey;
 use penumbra_custody::{AuthorizeRequest, CustodyClient};
+use penumbra_keys::FullViewingKey;
 use penumbra_transaction::{plan::TransactionPlan, AuthorizationData, Transaction};
 use penumbra_view::ViewClient;
 use rand_core::{CryptoRng, RngCore};

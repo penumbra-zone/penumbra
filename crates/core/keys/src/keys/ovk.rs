@@ -4,3 +4,9 @@ pub const OVK_LEN_BYTES: usize = 32;
 /// key is derived from.
 #[derive(Clone, Debug)]
 pub struct OutgoingViewingKey(pub(crate) [u8; OVK_LEN_BYTES]);
+
+impl OutgoingViewingKey {
+    pub fn to_bytes(&self) -> [u8; OVK_LEN_BYTES] {
+        self.0
+    }
+}

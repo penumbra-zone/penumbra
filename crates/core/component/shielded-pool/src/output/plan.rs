@@ -1,11 +1,12 @@
 use ark_ff::UniformRand;
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_crypto::{
-    ka,
+    ka, proofs::groth16::OutputProof, symmetric::WrappedMemoKey, FieldExt, Fq, Fr, Note,
+    PayloadKey, Rseed,
+};
+use penumbra_keys::{
     keys::{IncomingViewingKey, OutgoingViewingKey},
-    proofs::groth16::OutputProof,
-    symmetric::WrappedMemoKey,
-    Address, FieldExt, Fq, Fr, Note, PayloadKey, Rseed,
+    Address,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use rand_core::{CryptoRng, RngCore};
@@ -174,8 +175,8 @@ impl TryFrom<pb::OutputPlan> for OutputPlan {
 mod test {
     use super::OutputPlan;
     use penumbra_asset::Value;
-    use penumbra_crypto::keys::{SeedPhrase, SpendKey};
     use penumbra_crypto::PayloadKey;
+    use penumbra_keys::keys::{SeedPhrase, SpendKey};
     use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
     use rand_core::OsRng;
 

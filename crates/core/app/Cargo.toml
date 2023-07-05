@@ -13,6 +13,7 @@ penumbra-tct = { path = "../../crypto/tct" }
 penumbra-proof-params = { path = "../../crypto/proof-params" }
 penumbra-crypto = { path = "../crypto" }
 penumbra-asset = { path = "../asset" }
+penumbra-keys = { path = "../keys" }
 penumbra-num = { path = "../num" }
 penumbra-component = { path = "../component/component" }
 penumbra-chain = { path = "../component/chain", features = ["component"] }

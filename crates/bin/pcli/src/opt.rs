@@ -6,8 +6,8 @@ use anyhow::Result;
 use camino::Utf8PathBuf;
 use clap::Parser;
 use directories::ProjectDirs;
-use penumbra_crypto::FullViewingKey;
 use penumbra_custody::soft_kms::SoftKms;
+use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     custody::v1alpha1::{
         custody_protocol_service_client::CustodyProtocolServiceClient,

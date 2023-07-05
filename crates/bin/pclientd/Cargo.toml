@@ -18,6 +18,7 @@ penumbra-proto            = { path = "../../proto", features = ["rpc"] }
 penumbra-tct              = { path = "../../crypto/tct" }
 penumbra-crypto           = { path = "../../core/crypto", features = ["parallel"] }
 penumbra-asset           = { path = "../../core/asset" }
+penumbra-keys           = { path = "../../core/keys" }
 penumbra-chain            = { path = "../../core/component/chain" }
 penumbra-transaction      = { path = "../../core/transaction" }
 penumbra-app              = { path = "../../core/app" }

@@ -7,11 +7,11 @@ use ark_relations::r1cs::{
 use decaf377::Fr;
 use penumbra_asset::{balance, Value};
 use penumbra_crypto::{
-    keys::{NullifierKey, SeedPhrase, SpendKey},
     proofs::groth16::{SpendCircuit, SpendProof},
     rdsa::{SpendAuth, VerificationKey},
     Fq, Note, Nullifier,
 };
+use penumbra_keys::keys::{NullifierKey, SeedPhrase, SpendKey};
 use penumbra_proof_params::SPEND_PROOF_PROVING_KEY;
 use penumbra_tct as tct;
 
@@ -73,7 +73,7 @@ fn spend_proving_time(c: &mut Criterion) {
     let v_blinding = Fr::from(0i32);
     let balance_commitment = value_to_send.commit(v_blinding);
     let rk: VerificationKey<SpendAuth> = rsk.into();
-    let nf = nk.derive_nullifier(state_commitment_proof.position(), &note_commitment);
+    let nf = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
     let r = Fq::rand(&mut OsRng);
     let s = Fq::rand(&mut OsRng);
