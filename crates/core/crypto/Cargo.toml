@@ -17,7 +17,7 @@ penumbra-num = { path = "../num" }
 # Git deps
 decaf377 = {version = "0.4", features = ["r1cs"] }
 decaf377-rdsa = { version = "0.6" }
-poseidon377 = { version = "0.4", features = ["r1cs"] }
+poseidon377 = { version = "0.5", features = ["r1cs"] }
 f4jumble = { git = "https://github.com/zcash/librustzcash", rev = "2425a0869098e3b0588ccd73c42716bcf418612c" }
 
 # Crates.io deps

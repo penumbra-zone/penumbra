@@ -5497,7 +5497,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-wasm"
-version = "0.55.6-indexeddb"
+version = "0.55.0"
 dependencies = [
  "anyhow",
  "base64 0.20.0",
@@ -5661,9 +5661,9 @@ dependencies = [
 
 [[package]]
 name = "poseidon-parameters"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70a3517328333267b89d5142f1c128909c992d891af70a38e46743592dce8734"
+checksum = "58236ff8bf455c13046c92f041e887c4fd0e64819387a81177d6c70ebeb41711"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5672,9 +5672,9 @@ dependencies = [
 
 [[package]]
 name = "poseidon-paramgen"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41f257826633aaa781bfae23a68936b56fd1bfd778409a8c1cdf8cdb05685aeb"
+checksum = "a69506f91189a68bff6c0e4f8c2beaf6b053430be7743059a0110477e9c28fda"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5689,20 +5689,22 @@ dependencies = [
 
 [[package]]
 name = "poseidon-permutation"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84469694c933debead297d95d8132dcd91de300d160eda7ade6047002cc6aa2a"
+checksum = "5f130750ddbff77f3977d3e20fe43ad11e8a13c3e2f2f1c002c6246d294dd392"
 dependencies = [
  "ark-ff",
+ "ark-r1cs-std",
+ "ark-relations",
  "ark-std",
  "poseidon-parameters",
 ]
 
 [[package]]
 name = "poseidon377"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbbb3ad52bc19785e6b38fc9cebbdf54755c7b586bbe6ba781d7fea16fb803b1"
+checksum = "3d181575f19bf89d995662200dc515897c0f42a97bc551f8686005367e5594ae"
 dependencies = [
  "ark-ec",
  "ark-ed-on-bls12-377",
