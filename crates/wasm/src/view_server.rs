@@ -1,10 +1,15 @@
 use anyhow::Context;
+use anyhow::Result;
+use indexed_db_futures::prelude::OpenDbRequest;
+use indexed_db_futures::{IdbDatabase, IdbQuerySource};
 use penumbra_asset::asset::{DenomMetadata, Id};
 use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_crypto::{note, FullViewingKey, Nullifier};
 use penumbra_dex::lp::position::Position;
 use penumbra_dex::lp::LpNft;
+use penumbra_proto::core::crypto::v1alpha1::AssetId;
 use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
+use penumbra_proto::DomainType;
 use penumbra_tct as tct;
 use penumbra_tct::Witness::*;
 use penumbra_transaction::Transaction;
@@ -12,16 +17,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::convert::TryInto;
 use std::{collections::BTreeMap, str::FromStr};
-use indexed_db_futures::{IdbDatabase, IdbQuerySource};
-use indexed_db_futures::prelude::OpenDbRequest;
 use tct::storage::{StoreCommitment, StoreHash, StoredPosition, Updates};
 use tct::{Forgotten, Tree};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 use web_sys::{console as web_console, DomException};
-use penumbra_proto::core::crypto::v1alpha1::AssetId;
-use penumbra_proto::DomainType;
-use anyhow::Result;
 
 use crate::note_record::SpendableNoteRecord;
 use crate::swap_record::SwapRecord;
@@ -107,7 +107,6 @@ impl ViewServer {
             swaps: Default::default(),
         }
     }
-
 
     #[wasm_bindgen]
     pub fn scan_block(
@@ -388,7 +387,6 @@ impl ViewServer {
         return serde_wasm_bindgen::to_value(&root).unwrap();
     }
 
-
     pub fn get_lpnft_asset(
         &mut self,
         position_value: JsValue,
@@ -404,7 +402,6 @@ impl ViewServer {
         serde_wasm_bindgen::to_value(&denom).unwrap()
     }
 }
-
 
 #[wasm_bindgen]
 pub async fn transaction_info(full_viewing_key: &str, tx: JsValue) -> JsValue {
@@ -461,7 +458,8 @@ pub async fn transaction_info_inner(
                     .await
                     .expect("Error generating TxP: SwapClaim output 1 commitment not found");
 
-                let output_2_record = get_note(&claim.body.output_2_commitment).await
+                let output_2_record = get_note(&claim.body.output_2_commitment)
+                    .await
                     .expect("Error generating TxP: SwapClaim output 2 commitment not found");
 
                 txp.advice_notes
@@ -502,8 +500,8 @@ pub async fn transaction_info_inner(
                 asset_ids.insert(swap_plaintext.trading_pair.asset_2());
             }
             ActionView::SwapClaim(SwapClaimView::Visible {
-                                      output_1, output_2, ..
-                                  }) => {
+                output_1, output_2, ..
+            }) => {
                 // Both will be sent to the same address so this only needs to be added once
                 let address = output_1.address();
                 address_views.insert(address, fvk.view_address(address));
@@ -539,17 +537,19 @@ pub async fn transaction_info_inner(
     (txp, txv)
 }
 
-
 pub async fn get_asset(id: &Id) -> Option<DenomMetadata> {
     let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 11).ok()?;
-
 
     let db: IdbDatabase = db_req.into_future().await.ok()?;
 
     let tx = db.transaction_on_one("assets").ok()?;
     let store = tx.object_store("assets").ok()?;
 
-    let value: Option<JsValue> = store.get_owned(base64::encode(id.to_proto().inner)).ok()?.await.ok()?;
+    let value: Option<JsValue> = store
+        .get_owned(base64::encode(id.to_proto().inner))
+        .ok()?
+        .await
+        .ok()?;
 
     serde_wasm_bindgen::from_value(value?).ok()?
 }
@@ -557,14 +557,16 @@ pub async fn get_asset(id: &Id) -> Option<DenomMetadata> {
 pub async fn get_note(commitment: &note::StateCommitment) -> Option<SpendableNoteRecord> {
     let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 11).ok()?;
 
-
     let db: IdbDatabase = db_req.into_future().await.ok()?;
 
     let tx = db.transaction_on_one("spendable_notes").ok()?;
     let store = tx.object_store("spendable_notes").ok()?;
 
-    let value: Option<JsValue> = store.get_owned(base64::encode(commitment.to_proto().inner)).ok()?.await.ok()?;
-
+    let value: Option<JsValue> = store
+        .get_owned(base64::encode(commitment.to_proto().inner))
+        .ok()?
+        .await
+        .ok()?;
 
     serde_wasm_bindgen::from_value(value?).ok()?
 }
@@ -572,13 +574,18 @@ pub async fn get_note(commitment: &note::StateCommitment) -> Option<SpendableNot
 pub async fn get_note_by_nullifier(nullifier: &Nullifier) -> Option<SpendableNoteRecord> {
     let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 11).ok()?;
 
-
     let db: IdbDatabase = db_req.into_future().await.ok()?;
 
     let tx = db.transaction_on_one("spendable_notes").ok()?;
     let store = tx.object_store("spendable_notes").ok()?;
 
-    let value: Option<JsValue> = store.index("nullifier").ok()?.get_owned(&base64::encode(nullifier.to_proto().inner)).ok()?.await.ok()?;
+    let value: Option<JsValue> = store
+        .index("nullifier")
+        .ok()?
+        .get_owned(&base64::encode(nullifier.to_proto().inner))
+        .ok()?
+        .await
+        .ok()?;
 
     serde_wasm_bindgen::from_value(value?).ok()?
 }
