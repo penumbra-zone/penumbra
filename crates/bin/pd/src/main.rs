@@ -357,6 +357,12 @@ async fn main() -> anyhow::Result<()> {
             // Configure a Prometheus recorder and exporter.
             let (recorder, exporter) = PrometheusBuilder::new()
                 .with_http_listener(metrics_bind)
+                // Set explicit buckets so that Prometheus endpoint emits true histograms, rather
+                // than the default distribution type summaries, for time-series data.
+                .set_buckets_for_metric(
+                    metrics_exporter_prometheus::Matcher::Prefix("penumbra_dex_".to_string()),
+                    penumbra_dex::component::metrics::DEX_BUCKETS,
+                )?
                 .build()
                 .expect("failed to build prometheus recorder");
 

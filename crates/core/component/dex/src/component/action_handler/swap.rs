@@ -7,7 +7,7 @@ use penumbra_proof_params::SWAP_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
-    component::{StateReadExt, StateWriteExt, SwapManager},
+    component::{metrics, StateReadExt, StateWriteExt, SwapManager},
     event,
     swap::Swap,
 };
@@ -36,6 +36,7 @@ impl ActionHandler for Swap {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        let swap_start = std::time::Instant::now();
         let swap = self;
 
         // All swaps will be tallied for the block so the
@@ -56,6 +57,10 @@ impl ActionHandler for Swap {
             .add_swap_payload(self.body.payload.clone(), source)
             .await;
 
+        metrics::histogram!(
+            crate::component::metrics::DEX_SWAP_DURATION,
+            swap_start.elapsed()
+        );
         state.record(event::swap(&self));
 
         Ok(())

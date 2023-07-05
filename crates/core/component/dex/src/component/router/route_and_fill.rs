@@ -149,6 +149,7 @@ pub trait RouteAndFill: StateWrite + Sized {
         // 1. We have no more delta_1 remaining
         // 2. A path can no longer be found
         // 3. We have reached the `RoutingParams` specified price limit
+
         loop {
             // Find the best route between the two assets in the trading pair.
             let (path, spill_price) = self

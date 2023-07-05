@@ -15,7 +15,7 @@ use penumbra_storage::{StateDelta, StateRead, StateWrite};
 use tracing::instrument;
 
 use crate::{
-    component::{PositionManager, PositionRead},
+    component::{metrics, PositionManager, PositionRead},
     lp::{
         position::{self, Position},
         Reserves,
@@ -88,6 +88,8 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     spill_price: Option<U128x128>,
     ensure_progress: bool,
 ) -> Result<SwapExecution, FillError> {
+    let fill_start = std::time::Instant::now();
+
     // Build a transaction for this execution, so if we error out at any
     // point we don't leave the state in an inconsistent state.  This is
     // particularly important for this method, because we lift position data
@@ -256,6 +258,8 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     // Apply the state transaction now that we've reached the end without errors.
     this.apply();
 
+    let fill_elapsed = fill_start.elapsed();
+    metrics::histogram!(metrics::DEX_ROUTE_FILL_DURATION, fill_elapsed);
     // cleanup / finalization
     Ok(swap_execution)
 }
