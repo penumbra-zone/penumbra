@@ -12,11 +12,16 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::convert::TryInto;
 use std::{collections::BTreeMap, str::FromStr};
+use indexed_db_futures::{IdbDatabase, IdbQuerySource};
+use indexed_db_futures::prelude::OpenDbRequest;
 use tct::storage::{StoreCommitment, StoreHash, StoredPosition, Updates};
 use tct::{Forgotten, Tree};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
-use web_sys::console as web_console;
+use web_sys::{console as web_console, DomException};
+use penumbra_proto::core::crypto::v1alpha1::AssetId;
+use penumbra_proto::DomainType;
+use anyhow::Result;
 
 use crate::note_record::SpendableNoteRecord;
 use crate::swap_record::SwapRecord;
@@ -102,6 +107,7 @@ impl ViewServer {
             swaps: Default::default(),
         }
     }
+
 
     #[wasm_bindgen]
     pub fn scan_block(
@@ -382,19 +388,6 @@ impl ViewServer {
         return serde_wasm_bindgen::to_value(&root).unwrap();
     }
 
-    pub fn transaction_info(&mut self, tx: JsValue) -> JsValue {
-        let transaction = serde_wasm_bindgen::from_value(tx).unwrap();
-        let (txp, txv) = self.transaction_info_inner(transaction);
-
-        let txp_proto = TransactionPerspective::try_from(txp).unwrap();
-        let txv_proto = TransactionView::try_from(txv).unwrap();
-
-        let response = TxInfoResponse {
-            txp: txp_proto,
-            txv: txv_proto,
-        };
-        serde_wasm_bindgen::to_value(&response).unwrap()
-    }
 
     pub fn get_lpnft_asset(
         &mut self,
@@ -412,121 +405,182 @@ impl ViewServer {
     }
 }
 
-impl ViewServer {
-    pub fn transaction_info_inner(
-        &self,
-        tx: Transaction,
-    ) -> (
-        penumbra_transaction::TransactionPerspective,
-        penumbra_transaction::TransactionView,
-    ) {
-        // First, create a TxP with the payload keys visible to our FVK and no other data.
 
-        let mut txp = penumbra_transaction::TransactionPerspective {
-            payload_keys: tx
-                .payload_keys(&self.fvk)
-                .expect("Error generating payload keys"),
-            ..Default::default()
-        };
+#[wasm_bindgen]
+pub async fn transaction_info(full_viewing_key: &str, tx: JsValue) -> JsValue {
+    let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())
+        .context("The provided string is not a valid FullViewingKey")
+        .unwrap();
 
-        // Next, extend the TxP with the openings of commitments known to our view server
-        // but not included in the transaction body, for instance spent notes or swap claim outputs.
-        for action in tx.actions() {
-            use penumbra_transaction::Action;
-            match action {
-                Action::Spend(spend) => {
-                    let nullifier = spend.body.nullifier;
-                    // An error here indicates we don't know the nullifier, so we omit it from the Perspective.
-                    if let Some(spendable_note_record) = self.notes_by_nullifier.get(&nullifier) {
-                        txp.spend_nullifiers
-                            .insert(nullifier, spendable_note_record.note.clone());
-                    }
+    let transaction = serde_wasm_bindgen::from_value(tx).unwrap();
+    let (txp, txv) = transaction_info_inner(fvk, transaction).await;
+
+    let txp_proto = TransactionPerspective::try_from(txp).unwrap();
+    let txv_proto = TransactionView::try_from(txv).unwrap();
+
+    let response = TxInfoResponse {
+        txp: txp_proto,
+        txv: txv_proto,
+    };
+    serde_wasm_bindgen::to_value(&response).unwrap()
+}
+
+pub async fn transaction_info_inner(
+    fvk: FullViewingKey,
+    tx: Transaction,
+) -> (
+    penumbra_transaction::TransactionPerspective,
+    penumbra_transaction::TransactionView,
+) {
+    utils::set_panic_hook();
+
+    // First, create a TxP with the payload keys visible to our FVK and no other data.
+
+    let mut txp = penumbra_transaction::TransactionPerspective {
+        payload_keys: tx
+            .payload_keys(&fvk)
+            .expect("Error generating payload keys"),
+        ..Default::default()
+    };
+
+    // Next, extend the TxP with the openings of commitments known to our view server
+    // but not included in the transaction body, for instance spent notes or swap claim outputs.
+    for action in tx.actions() {
+        use penumbra_transaction::Action;
+        match action {
+            Action::Spend(spend) => {
+                let nullifier = spend.body.nullifier;
+                // An error here indicates we don't know the nullifier, so we omit it from the Perspective.
+                if let Some(spendable_note_record) = get_note_by_nullifier(&nullifier).await {
+                    txp.spend_nullifiers
+                        .insert(nullifier, spendable_note_record.note.clone());
                 }
-                Action::SwapClaim(claim) => {
-                    let output_1_record = self
-                        .notes
-                        .get(&claim.body.output_1_commitment)
-                        .expect("Error generating TxP: SwapClaim output 1 commitment not found");
-
-                    let output_2_record = self
-                        .notes
-                        .get(&claim.body.output_2_commitment)
-                        .expect("Error generating TxP: SwapClaim output 2 commitment not found");
-
-                    txp.advice_notes
-                        .insert(claim.body.output_1_commitment, output_1_record.note.clone());
-                    txp.advice_notes
-                        .insert(claim.body.output_2_commitment, output_2_record.note.clone());
-                }
-                _ => {}
             }
-        }
+            Action::SwapClaim(claim) => {
+                let output_1_record = get_note(&claim.body.output_1_commitment)
+                    .await
+                    .expect("Error generating TxP: SwapClaim output 1 commitment not found");
 
-        // Now, generate a stub TxV from our minimal TxP, and inspect it to see what data we should
-        // augment the minimal TxP with to provide additional context (e.g., filling in denoms for
-        // visible asset IDs).
-        let min_view = tx.view_from_perspective(&txp);
-        let mut address_views = BTreeMap::new();
-        let mut asset_ids = BTreeSet::new();
-        for action_view in min_view.action_views() {
-            use penumbra_dex::{swap::SwapView, swap_claim::SwapClaimView};
-            use penumbra_transaction::view::action_view::{
-                ActionView, DelegatorVoteView, OutputView, SpendView,
-            };
-            match action_view {
-                ActionView::Spend(SpendView::Visible { note, .. }) => {
-                    let address = note.address();
-                    address_views.insert(address, self.fvk.view_address(address));
-                    asset_ids.insert(note.asset_id());
-                }
-                ActionView::Output(OutputView::Visible { note, .. }) => {
-                    let address = note.address();
-                    address_views.insert(address, self.fvk.view_address(address));
-                    asset_ids.insert(note.asset_id());
-                }
-                ActionView::Swap(SwapView::Visible { swap_plaintext, .. }) => {
-                    let address = swap_plaintext.claim_address;
-                    address_views.insert(address, self.fvk.view_address(address));
-                    asset_ids.insert(swap_plaintext.trading_pair.asset_1());
-                    asset_ids.insert(swap_plaintext.trading_pair.asset_2());
-                }
-                ActionView::SwapClaim(SwapClaimView::Visible {
-                    output_1, output_2, ..
-                }) => {
-                    // Both will be sent to the same address so this only needs to be added once
-                    let address = output_1.address();
-                    address_views.insert(address, self.fvk.view_address(address));
-                    asset_ids.insert(output_1.asset_id());
-                    asset_ids.insert(output_2.asset_id());
-                }
-                ActionView::DelegatorVote(DelegatorVoteView::Visible { note, .. }) => {
-                    let address = note.address();
-                    address_views.insert(address, self.fvk.view_address(address));
-                    asset_ids.insert(note.asset_id());
-                }
-                _ => {}
+                let output_2_record = get_note(&claim.body.output_2_commitment).await
+                    .expect("Error generating TxP: SwapClaim output 2 commitment not found");
+
+                txp.advice_notes
+                    .insert(claim.body.output_1_commitment, output_1_record.note.clone());
+                txp.advice_notes
+                    .insert(claim.body.output_2_commitment, output_2_record.note.clone());
             }
+            _ => {}
         }
-
-        // Now, extend the TxP with information helpful to understand the data it can view:
-
-        let mut denoms = Vec::new();
-
-        for id in asset_ids {
-            if let Some(denom) = self.denoms.get(&id) {
-                denoms.push(denom.clone());
-            }
-        }
-
-        txp.denoms.extend(denoms.into_iter());
-
-        txp.address_views = address_views.into_values().collect();
-
-        // Finally, compute the full TxV from the full TxP:
-        let txv = tx.view_from_perspective(&txp);
-
-        (txp, txv)
     }
+
+    // Now, generate a stub TxV from our minimal TxP, and inspect it to see what data we should
+    // augment the minimal TxP with to provide additional context (e.g., filling in denoms for
+    // visible asset IDs).
+    let min_view = tx.view_from_perspective(&txp);
+    let mut address_views = BTreeMap::new();
+    let mut asset_ids = BTreeSet::new();
+    for action_view in min_view.action_views() {
+        use penumbra_dex::{swap::SwapView, swap_claim::SwapClaimView};
+        use penumbra_transaction::view::action_view::{
+            ActionView, DelegatorVoteView, OutputView, SpendView,
+        };
+        match action_view {
+            ActionView::Spend(SpendView::Visible { note, .. }) => {
+                let address = note.address();
+                address_views.insert(address, fvk.view_address(address));
+                asset_ids.insert(note.asset_id());
+            }
+            ActionView::Output(OutputView::Visible { note, .. }) => {
+                let address = note.address();
+                address_views.insert(address, fvk.view_address(address));
+                asset_ids.insert(note.asset_id());
+            }
+            ActionView::Swap(SwapView::Visible { swap_plaintext, .. }) => {
+                let address = swap_plaintext.claim_address;
+                address_views.insert(address, fvk.view_address(address));
+                asset_ids.insert(swap_plaintext.trading_pair.asset_1());
+                asset_ids.insert(swap_plaintext.trading_pair.asset_2());
+            }
+            ActionView::SwapClaim(SwapClaimView::Visible {
+                                      output_1, output_2, ..
+                                  }) => {
+                // Both will be sent to the same address so this only needs to be added once
+                let address = output_1.address();
+                address_views.insert(address, fvk.view_address(address));
+                asset_ids.insert(output_1.asset_id());
+                asset_ids.insert(output_2.asset_id());
+            }
+            ActionView::DelegatorVote(DelegatorVoteView::Visible { note, .. }) => {
+                let address = note.address();
+                address_views.insert(address, fvk.view_address(address));
+                asset_ids.insert(note.asset_id());
+            }
+            _ => {}
+        }
+    }
+
+    // Now, extend the TxP with information helpful to understand the data it can view:
+
+    let mut denoms = Vec::new();
+
+    for id in asset_ids {
+        if let Some(denom) = get_asset(&id).await {
+            denoms.push(denom.clone());
+        }
+    }
+
+    txp.denoms.extend(denoms.into_iter());
+
+    txp.address_views = address_views.into_values().collect();
+
+    // Finally, compute the full TxV from the full TxP:
+    let txv = tx.view_from_perspective(&txp);
+
+    (txp, txv)
+}
+
+
+pub async fn get_asset(id: &Id) -> Option<DenomMetadata> {
+    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 11).ok()?;
+
+
+    let db: IdbDatabase = db_req.into_future().await.ok()?;
+
+    let tx = db.transaction_on_one("assets").ok()?;
+    let store = tx.object_store("assets").ok()?;
+
+    let value: Option<JsValue> = store.get_owned(base64::encode(id.to_proto().inner)).ok()?.await.ok()?;
+
+    serde_wasm_bindgen::from_value(value?).ok()?
+}
+
+pub async fn get_note(commitment: &note::StateCommitment) -> Option<SpendableNoteRecord> {
+    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 11).ok()?;
+
+
+    let db: IdbDatabase = db_req.into_future().await.ok()?;
+
+    let tx = db.transaction_on_one("spendable_notes").ok()?;
+    let store = tx.object_store("spendable_notes").ok()?;
+
+    let value: Option<JsValue> = store.get_owned(base64::encode(commitment.to_proto().inner)).ok()?.await.ok()?;
+
+
+    serde_wasm_bindgen::from_value(value?).ok()?
+}
+
+pub async fn get_note_by_nullifier(nullifier: &Nullifier) -> Option<SpendableNoteRecord> {
+    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 11).ok()?;
+
+
+    let db: IdbDatabase = db_req.into_future().await.ok()?;
+
+    let tx = db.transaction_on_one("spendable_notes").ok()?;
+    let store = tx.object_store("spendable_notes").ok()?;
+
+    let value: Option<JsValue> = store.index("nullifier").ok()?.get_owned(&base64::encode(nullifier.to_proto().inner)).ok()?.await.ok()?;
+
+    serde_wasm_bindgen::from_value(value?).ok()?
 }
 
 pub fn load_tree(stored_tree: StoredTree) -> Tree {
