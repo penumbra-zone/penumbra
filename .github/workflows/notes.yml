@@ -14,30 +14,23 @@ jobs:
     runs-on: buildjet-16vcpu-ubuntu-2004
     steps:
       - name: Checkout the source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           lfs: true
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly-2023-05-15
-          override: true
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
       - name: Load Rust caching
         uses: Swatinem/rust-cache@v2
       - name: Load get-version action to grab version component of deployment path
         uses: battila7/get-version-action@v2
         id: get_version
       - name: Print version component of deployment path
-        run: |
-          echo ${{ steps.get_version.outputs.version }}
+        run: echo ${{ steps.get_version.outputs.version }}
       - name: Install mdbook
-        run: |
-          cargo install mdbook mdbook-katex mdbook-mermaid
+        run: cargo install mdbook mdbook-katex mdbook-mermaid
 
       - name: Build software guide
-        run: |
-          cd docs/guide && mdbook build
+        run: cd docs/guide && mdbook build
       - name: Move software guide to subdirectory
         run: |
           cd docs/guide
@@ -55,8 +48,7 @@ jobs:
           PROJECT_PATH: docs/guide
 
       - name: Build protocol spec
-        run: |
-          cd docs/protocol && mdbook build
+        run: cd docs/protocol && mdbook build
       - name: Move protocol spec to subdirectory
         run: |
           cd docs/protocol
