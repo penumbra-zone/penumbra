@@ -13,12 +13,12 @@ penumbra-proto = { path = "../../proto/" }
 penumbra-tct = { path = "../../crypto/tct/", features = ["r1cs"] }
 penumbra-asset = { path = "../asset" }
 penumbra-num = { path = "../num" }
+penumbra-keys = { path = "../keys" }
 
-# Git deps
+# Penumbra deps
 decaf377 = {version = "0.4", features = ["r1cs"] }
 decaf377-rdsa = { version = "0.6" }
 poseidon377 = { version = "0.5", features = ["r1cs"] }
-f4jumble = { git = "https://github.com/zcash/librustzcash", rev = "2425a0869098e3b0588ccd73c42716bcf418612c" }
 
 # Crates.io deps
 base64 = "0.20"

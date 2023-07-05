@@ -2,6 +2,7 @@ use std::io::{Cursor, Read, Write};
 
 use anyhow::Context;
 use ark_serialize::CanonicalDeserialize;
+use decaf377::Fq;
 use f4jumble::{f4jumble, f4jumble_inv};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType, TypeUrl};
 use rand::{CryptoRng, Rng};
@@ -13,7 +14,7 @@ pub use r1cs::AddressVar;
 mod view;
 pub use view::AddressView;
 
-use crate::{fmd, ka, keys::Diversifier, Fq};
+use crate::{fmd, ka, keys::Diversifier};
 
 pub const ADDRESS_LEN_BYTES: usize = 80;
 /// Number of bits in the address short form divided by the number of bits per Bech32m character

@@ -2,6 +2,7 @@ use anyhow::Context;
 use ark_ff::PrimeField;
 use ark_serialize::CanonicalDeserialize;
 use decaf377::FieldExt;
+use decaf377::{Fq, Fr};
 use once_cell::sync::Lazy;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType, TypeUrl};
 use poseidon377::hash_2;
@@ -16,7 +17,7 @@ use crate::{
     note::StateCommitment,
     prf,
     rdsa::{SpendAuth, VerificationKey},
-    Address, AddressView, Fq, Fr, Note, Nullifier,
+    Address, AddressView, Note, Nullifier,
 };
 
 pub(crate) static IVK_DOMAIN_SEP: Lazy<Fq> =

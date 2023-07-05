@@ -6,14 +6,14 @@ use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{
     r1cs::{ElementVar, FqVar},
-    FieldExt, Fq,
+    FieldExt, Fq, Fr,
 };
 
 use super::{AddressIndex, Diversifier, DiversifierKey};
 use crate::{
     fmd, ka,
     keys::{AuthorizationKeyVar, NullifierKeyVar, IVK_DOMAIN_SEP},
-    prf, Address, Fr,
+    prf, Address,
 };
 
 pub const IVK_LEN_BYTES: usize = 64;

@@ -12,7 +12,7 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use crate::Fq;
+use decaf377::Fq;
 
 pub const DIVERSIFIER_LEN_BYTES: usize = 16;
 
