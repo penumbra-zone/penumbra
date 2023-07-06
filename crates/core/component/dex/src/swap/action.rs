@@ -1,6 +1,7 @@
 use anyhow::Context;
+use ark_ff::Zero;
+use decaf377::Fr;
 use penumbra_asset::{balance, Balance, Value};
-use penumbra_crypto::{Fr, Zero};
 use penumbra_num::Amount;
 use penumbra_proto::{
     core::crypto::v1alpha1 as pbc, core::dex::v1alpha1 as pb, DomainType, TypeUrl,

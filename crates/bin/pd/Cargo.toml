@@ -36,6 +36,7 @@ penumbra-tendermint-proxy = { path = "../../util/tendermint-proxy" }
 
 # Penumbra dependencies
 decaf377 = { version = "0.4", features = ["parallel"] }
+decaf377-rdsa = { version = "0.6" }
 tower-abci = "0.8.0"
 jmt = "0.6"
 tower-actor = "0.1.0"

@@ -1,4 +1,4 @@
-use penumbra_crypto::rdsa::{Signature, SpendAuth};
+use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
