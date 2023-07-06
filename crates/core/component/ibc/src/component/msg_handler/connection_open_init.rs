@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types2::core::connection::{
+use ibc_types::core::connection::{
     msgs::MsgConnectionOpenInit, ConnectionEnd, ConnectionId, Version,
 };
 
@@ -14,7 +14,7 @@ use crate::{
     event,
 };
 
-use ibc_types2::core::connection::State as ConnectionState;
+use ibc_types::core::connection::State as ConnectionState;
 use penumbra_storage::StateWrite;
 
 #[async_trait]

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types2::{
+use ibc_types::{
     core::client::Height, lightclients::tendermint::ConsensusState as TendermintConsensusState,
 };
 use penumbra_component::Component;
@@ -36,7 +36,7 @@ impl Component for IBCComponent {
         // consensus states for us to their state tree.
         let commitment_root: Vec<u8> = begin_block.header.app_hash.clone().into();
         let cs = TendermintConsensusState::new(
-            ibc_types2::core::commitment::MerkleRoot {
+            ibc_types::core::commitment::MerkleRoot {
                 hash: commitment_root,
             },
             begin_block.header.time,

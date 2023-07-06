@@ -8,7 +8,7 @@ edition = "2021"
 [features]
 component = ["penumbra-component", "penumbra-storage", "penumbra-proto/penumbra-storage", "penumbra-chain/component", "penumbra-shielded-pool/component"]
 default = ["component", "std"]
-std = ["ibc-types2/std"]
+std = ["ibc-types/std"]
 docsrs = []
 
 [dependencies]
@@ -24,7 +24,7 @@ penumbra-num = { path = "../../../core/num", default-features = false  }
 penumbra-keys = { path = "../../../core/keys", default-features = false  } 
 
 # Penumbra dependencies
-ibc-types2 = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main", default-features = false }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.3.0", default-features = false }
 ibc-proto = { version = "0.31.0", default-features = false }
 
 # Crates.io deps

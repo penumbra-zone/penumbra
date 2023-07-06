@@ -1,12 +1,12 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use ibc_types2::core::{
+use ibc_types::core::{
     client::Height,
     commitment::MerkleProof,
     connection::{msgs::MsgConnectionOpenAck, ConnectionEnd, Counterparty, State},
 };
-use ibc_types2::lightclients::tendermint::client_state::ClientState as TendermintClientState;
-use ibc_types2::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
+use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
+use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
 use penumbra_chain::component::{StateReadExt as _, PENUMBRA_COMMITMENT_PREFIX};
 use penumbra_storage::{StateRead, StateWrite};
 

@@ -688,7 +688,7 @@ checksum = "16e62a023e7c117e27523144c5d2459f4397fcc3cab0085af8e2224f643a0193"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]
@@ -699,13 +699,13 @@ checksum = "ecc7ab41815b3c653ccd2978ec3255c81349336702dfdf62ee6f7069b12a3aae"
 
 [[package]]
 name = "async-trait"
-version = "0.1.68"
+version = "0.1.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9ccdd8f2a161be9bd5c023df56f1b2a0bd1d83872ae53b71a84a12c9bf6e842"
+checksum = "a564d521dd56509c4c47480d00b80ee55f7e385ae48db5744c67ad50c92d2ebf"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]
@@ -1092,13 +1092,12 @@ dependencies = [
 
 [[package]]
 name = "bstr"
-version = "1.5.0"
+version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a246e68bb43f6cd9db24bea052a53e40405417c5fb372e3d1a8a7f770a564ef5"
+checksum = "6798148dccfbff0fae41c7574d2fa8f1ef3492fba0face179de5d8d447d67b05"
 dependencies = [
  "memchr",
- "once_cell",
- "regex-automata",
+ "regex-automata 0.3.0",
  "serde",
 ]
 
@@ -1406,9 +1405,9 @@ dependencies = [
 
 [[package]]
 name = "console-subscriber"
-version = "0.1.9"
+version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57ab2224a0311582eb03adba4caaf18644f7b1f10a760803a803b9b605187fc7"
+checksum = "d4cf42660ac07fcebed809cfe561dd8730bcd35b075215e6479c516bcd0d11cb"
 dependencies = [
  "console-api",
  "crossbeam-channel",
@@ -1497,9 +1496,9 @@ checksum = "e496a50fda8aacccc86d7529e2c1e0892dbd0f898a6b5645b5561b89c3210efa"
 
 [[package]]
 name = "cpufeatures"
-version = "0.2.8"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03e69e28e9f7f77debdedbaafa2866e1de9ba56df55a8bd7cfc724c25a09987c"
+checksum = "a17b76ff3a4162b0b27f354a0c87015ddad39d35f9c0c36607a3bdd175dde1f1"
 dependencies = [
  "libc",
 ]
@@ -1782,7 +1781,7 @@ dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
  "strsim",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]
@@ -1804,7 +1803,7 @@ checksum = "29a358ff9f12ec09c3e61fef9b5a9902623a695a46a917b07f269bff1445611a"
 dependencies = [
  "darling_core 0.20.1",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]
@@ -2004,7 +2003,7 @@ checksum = "487585f4d0c6655fe74905e2504d8ad6908e4db67f744eb140876906c2f3175d"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]
@@ -2099,9 +2098,9 @@ checksum = "88bffebc5d80432c9b140ee17875ff173a8ab62faad5b257da912bd2f6c1c0a1"
 
 [[package]]
 name = "erased-serde"
-version = "0.3.25"
+version = "0.3.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f2b0c2380453a92ea8b6c8e5f64ecaafccddde8ceab55ff7a8ac1029f894569"
+checksum = "f94c0e13118e7d7533271f754a168ae8400e6a1cc043f2bfd53cc7290f1a1de3"
 dependencies = [
  "serde",
 ]
@@ -2346,7 +2345,7 @@ checksum = "89ca545a94061b6365f2c7355b4b32bd20df3ff95f02da9329b34ccc3bd6ee72"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]
@@ -2654,9 +2653,9 @@ dependencies = [
 
 [[package]]
 name = "hermit-abi"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fed44880c466736ef9a5c5b5facefb5ed0785676d0c02d612db14e54f0d84286"
+checksum = "443144c8cdadd93ebf52ddb4056d257f5b52c04d3c804e657d19eb73fc33668b"
 
 [[package]]
 name = "hex"
@@ -2888,9 +2887,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-types"
+version = "0.3.0"
+source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
+dependencies = [
+ "ibc-types-core-channel",
+ "ibc-types-core-client",
+ "ibc-types-core-commitment",
+ "ibc-types-core-connection",
+ "ibc-types-domain-type",
+ "ibc-types-identifier",
+ "ibc-types-lightclients-tendermint",
+ "ibc-types-path",
+ "ibc-types-timestamp",
+ "ibc-types-transfer",
+]
+
+[[package]]
 name = "ibc-types-core-channel"
-version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#178d09eb57f09e1f20f56030f70d470ce24ff05e"
+version = "0.3.0"
+source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2919,8 +2935,8 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-core-client"
-version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#178d09eb57f09e1f20f56030f70d470ce24ff05e"
+version = "0.3.0"
+source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2944,8 +2960,8 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-core-commitment"
-version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#178d09eb57f09e1f20f56030f70d470ce24ff05e"
+version = "0.3.0"
+source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2977,8 +2993,8 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-core-connection"
-version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#178d09eb57f09e1f20f56030f70d470ce24ff05e"
+version = "0.3.0"
+source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3005,8 +3021,8 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-domain-type"
-version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#178d09eb57f09e1f20f56030f70d470ce24ff05e"
+version = "0.3.0"
+source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3015,8 +3031,8 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-identifier"
-version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#178d09eb57f09e1f20f56030f70d470ce24ff05e"
+version = "0.3.0"
+source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
 dependencies = [
  "displaydoc",
  "serde",
@@ -3024,8 +3040,8 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-lightclients-tendermint"
-version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#178d09eb57f09e1f20f56030f70d470ce24ff05e"
+version = "0.3.0"
+source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3059,8 +3075,8 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-path"
-version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#178d09eb57f09e1f20f56030f70d470ce24ff05e"
+version = "0.3.0"
+source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3080,8 +3096,8 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-timestamp"
-version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#178d09eb57f09e1f20f56030f70d470ce24ff05e"
+version = "0.3.0"
+source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
 dependencies = [
  "bytes",
  "displaydoc",
@@ -3097,28 +3113,11 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-transfer"
-version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#178d09eb57f09e1f20f56030f70d470ce24ff05e"
+version = "0.3.0"
+source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
 dependencies = [
  "displaydoc",
  "serde",
-]
-
-[[package]]
-name = "ibc-types2"
-version = "0.2.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?branch=main#178d09eb57f09e1f20f56030f70d470ce24ff05e"
-dependencies = [
- "ibc-types-core-channel",
- "ibc-types-core-client",
- "ibc-types-core-commitment",
- "ibc-types-core-connection",
- "ibc-types-domain-type",
- "ibc-types-identifier",
- "ibc-types-lightclients-tendermint",
- "ibc-types-path",
- "ibc-types-timestamp",
- "ibc-types-transfer",
 ]
 
 [[package]]
@@ -3327,7 +3326,7 @@ version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eae7b9aee968036d54dce06cebaefd919e4472e753296daccd6d344e3e2df0c2"
 dependencies = [
- "hermit-abi 0.3.1",
+ "hermit-abi 0.3.2",
  "libc",
  "windows-sys 0.48.0",
 ]
@@ -3358,9 +3357,9 @@ dependencies = [
 
 [[package]]
 name = "itoa"
-version = "1.0.6"
+version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "453ad9f582a441959e5f0d088b02ce04cfe8d51a8eaf077f12ac6d3e94164ca6"
+checksum = "62b02a5381cc465bd3041d84623d0fa3b66738b52b8e2fc3bab8ad63ab032f4a"
 
 [[package]]
 name = "jmt"
@@ -3569,7 +3568,7 @@ version = "0.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f099785f7595cc4b4553a174ce30dd7589ef93391ff414dbb67f62392b9e0ce1"
 dependencies = [
- "regex-automata",
+ "regex-automata 0.1.10",
 ]
 
 [[package]]
@@ -3578,7 +3577,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
 dependencies = [
- "regex-automata",
+ "regex-automata 0.1.10",
 ]
 
 [[package]]
@@ -3968,7 +3967,7 @@ version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4161fcb6d602d4d2081af7c3a45852d875a03dd337a6bfdd6e06407b61342a43"
 dependencies = [
- "hermit-abi 0.3.1",
+ "hermit-abi 0.3.2",
  "libc",
 ]
 
@@ -4037,7 +4036,7 @@ checksum = "a948666b637a0f465e8564c73e89d4dde00d72d4d473cc972f390fc3dcee7d9c"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]
@@ -4081,9 +4080,9 @@ checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 
 [[package]]
 name = "parity-scale-codec"
-version = "3.6.2"
+version = "3.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7467bc45fea3d77e829a4df331b9e969e2ec6a4dcd4e126e660f8509b40a475"
+checksum = "756d439303e94fae44f288ba881ad29670c65b0c4b0e05674ca81061bb65f2c5"
 dependencies = [
  "arrayvec 0.7.4",
  "bitvec",
@@ -4095,9 +4094,9 @@ dependencies = [
 
 [[package]]
 name = "parity-scale-codec-derive"
-version = "3.6.2"
+version = "3.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c9de611934c78014c455793552d0bf7d65a58211179c49996fde925aa667c38"
+checksum = "9d884d78fcf214d70b1e239fcd1c6e5e95aa3be1881918da2e488cc946c7a476"
 dependencies = [
  "proc-macro-crate 1.3.1",
  "proc-macro2 1.0.63",
@@ -4161,9 +4160,9 @@ dependencies = [
 
 [[package]]
 name = "paste"
-version = "1.0.12"
+version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f746c4065a8fa3fe23974dd82f15431cc8d40779821001404d10d2e79ca7d79"
+checksum = "b4b27ab7be369122c218afc2079489cdcb4b517c0a3fc386ff11e1fedfcc2b35"
 
 [[package]]
 name = "pbjson"
@@ -4238,7 +4237,7 @@ dependencies = [
  "hex",
  "http-body",
  "ibc-proto",
- "ibc-types2",
+ "ibc-types",
  "indicatif",
  "jmt",
  "ndarray",
@@ -4281,7 +4280,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.8",
- "toml 0.7.5",
+ "toml 0.7.6",
  "tonic 0.8.3",
  "tower",
  "tracing",
@@ -4310,7 +4309,7 @@ dependencies = [
  "http",
  "http-body",
  "ibc-proto",
- "ibc-types2",
+ "ibc-types",
  "metrics",
  "parking_lot 0.12.1",
  "penumbra-app",
@@ -4370,7 +4369,7 @@ dependencies = [
  "hex",
  "http",
  "ibc-proto",
- "ibc-types2",
+ "ibc-types",
  "ics23",
  "jmt",
  "metrics",
@@ -4495,7 +4494,7 @@ dependencies = [
  "futures",
  "hex",
  "ibc-proto",
- "ibc-types2",
+ "ibc-types",
  "im",
  "jmt",
  "metrics",
@@ -4600,7 +4599,7 @@ dependencies = [
  "bytes",
  "decaf377",
  "hex",
- "ibc-types2",
+ "ibc-types",
  "ics23",
  "once_cell",
  "penumbra-asset",
@@ -4928,7 +4927,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "hex",
  "ibc-proto",
- "ibc-types2",
+ "ibc-types",
  "ics23",
  "metrics",
  "num-traits",
@@ -5122,7 +5121,7 @@ dependencies = [
  "futures",
  "hex",
  "ibc-proto",
- "ibc-types2",
+ "ibc-types",
  "ics23",
  "pbjson",
  "pbjson-types",
@@ -5438,7 +5437,7 @@ dependencies = [
  "derivative",
  "hex",
  "ibc-proto",
- "ibc-types2",
+ "ibc-types",
  "num-bigint",
  "once_cell",
  "pbjson-types",
@@ -5488,7 +5487,7 @@ dependencies = [
  "futures",
  "genawaiter",
  "hex",
- "ibc-types2",
+ "ibc-types",
  "metrics",
  "once_cell",
  "parking_lot 0.12.1",
@@ -5617,29 +5616,29 @@ dependencies = [
 
 [[package]]
 name = "pin-project"
-version = "1.1.1"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e138fdd8263907a2b0e1b4e80b7e58c721126479b6e6eedfb1b402acea7b9bd"
+checksum = "030ad2bc4db10a8944cb0d837f158bdfec4d4a4873ab701a95046770d11f8842"
 dependencies = [
  "pin-project-internal",
 ]
 
 [[package]]
 name = "pin-project-internal"
-version = "1.1.1"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1fef411b303e3e12d534fb6e7852de82da56edd937d895125821fb7c09436c7"
+checksum = "ec2e072ecce94ec471b13398d5402c188e76ac03cf74dd1a975161b23a3f6d9c"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]
 name = "pin-project-lite"
-version = "0.2.9"
+version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0a7ae3ac2f1173085d398531c705756c94a4c56843785df85a60c1a0afac116"
+checksum = "4c40d25201921e5ff0c862a505c6557ea88568a4e3ace775ab55e93f2f4f9d57"
 
 [[package]]
 name = "pin-utils"
@@ -6297,13 +6296,14 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.8.4"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0ab3ca65655bb1e41f2a8c8cd662eb4fb035e67c3f78da1d61dffe89d07300f"
+checksum = "89089e897c013b3deb627116ae56a6955a72b8bed395c9526af31c9fe528b484"
 dependencies = [
  "aho-corasick 1.0.2",
  "memchr",
- "regex-syntax 0.7.2",
+ "regex-automata 0.3.0",
+ "regex-syntax 0.7.3",
 ]
 
 [[package]]
@@ -6316,6 +6316,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "regex-automata"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa250384981ea14565685dea16a9ccc4d1c541a13f82b9c168572264d1df8c56"
+dependencies = [
+ "aho-corasick 1.0.2",
+ "memchr",
+ "regex-syntax 0.7.3",
+]
+
+[[package]]
 name = "regex-syntax"
 version = "0.6.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6323,9 +6334,9 @@ checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
 
 [[package]]
 name = "regex-syntax"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "436b050e76ed2903236f032a59761c1eb99e1b0aead2c257922771dab1fc8c78"
+checksum = "2ab07dc67230e4a4718e70fd5c20055a4334b121f1f9db8fe63ef39ce9b8c846"
 
 [[package]]
 name = "reqwest"
@@ -6486,9 +6497,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.37.21"
+version = "0.37.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62f25693a73057a1b4cb56179dd3c7ea21a7c6c5ee7d85781f5749b46f34b79c"
+checksum = "4d69718bf81c6127a49dc64e44a742e8bb9213c0ff8869a22c308f84c1d4ab06"
 dependencies = [
  "bitflags 1.3.2",
  "errno",
@@ -6575,9 +6586,9 @@ dependencies = [
 
 [[package]]
 name = "rustversion"
-version = "1.0.12"
+version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f3208ce4d8448b3f3e7d168a73f5e0c43a61e32930de3bceeccedb388b6bf06"
+checksum = "dc31bd9b61a32c31f9650d18add92aa83a49ba979c143eefd27fe7177b05bd5f"
 
 [[package]]
 name = "rusty-fork"
@@ -6593,9 +6604,9 @@ dependencies = [
 
 [[package]]
 name = "ryu"
-version = "1.0.13"
+version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f91339c0467de62360649f8d3e185ca8de4224ff281f66000de5eb2a77a79041"
+checksum = "fe232bdf6be8c8de797b22184ee71118d63780ea42ac85b61d1baa6d3b782ae9"
 
 [[package]]
 name = "safe-proc-macro2"
@@ -6655,11 +6666,11 @@ dependencies = [
 
 [[package]]
 name = "schannel"
-version = "0.1.21"
+version = "0.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "713cfb06c7059f3588fb8044c0fad1d09e3c01d225e25b9220dbfdcf16dbb1b3"
+checksum = "0c3733bf4cf7ea0880754e19cb5a462007c4a8c1914bff372ccc95b464f1df88"
 dependencies = [
- "windows-sys 0.42.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -6749,9 +6760,9 @@ checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
 name = "serde"
-version = "1.0.164"
+version = "1.0.166"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e8c8cf938e98f769bc164923b06dce91cea1751522f46f8466461af04c9027d"
+checksum = "d01b7404f9d441d3ad40e6a636a7782c377d2abdbe4fa2440e2edcc2f4f10db8"
 dependencies = [
  "serde_derive",
 ]
@@ -6769,9 +6780,9 @@ dependencies = [
 
 [[package]]
 name = "serde_bytes"
-version = "0.11.9"
+version = "0.11.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "416bda436f9aab92e02c8e10d49a15ddd339cea90b6e340fe51ed97abb548294"
+checksum = "5a16be4fe5320ade08736447e3198294a5ea9a6d44dde6f35f0a5e06859c427a"
 dependencies = [
  "serde",
 ]
@@ -6788,20 +6799,20 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.164"
+version = "1.0.166"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9735b638ccc51c28bf6914d90a2e9725b377144fc612c49a611fddd1b631d68"
+checksum = "5dd83d6dde2b6b2d466e14d9d1acce8816dedee94f735eac6395808b3483c6d6"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]
 name = "serde_json"
-version = "1.0.99"
+version = "1.0.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46266871c240a00b8f503b877622fe33430b3c7d963bdc0f2adc511e54a1eae3"
+checksum = "0f1e14e89be7aa4c4b78bdbdc9eb5bf8517829a600ae8eaa39a6e1d960b5185c"
 dependencies = [
  "indexmap 2.0.0",
  "itoa",
@@ -6822,13 +6833,13 @@ dependencies = [
 
 [[package]]
 name = "serde_repr"
-version = "0.1.12"
+version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcec881020c684085e55a25f7fd888954d56609ef363479dc5a1305eb0d40cab"
+checksum = "1d89a8107374290037607734c0b73a85db7ed80cae314b3c5791f192a496e731"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]
@@ -6919,7 +6930,7 @@ dependencies = [
  "darling 0.20.1",
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]
@@ -7075,9 +7086,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.10.0"
+version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
+checksum = "62bb4feee49fdd9f707ef802e22365a35de4b7b299de4763d44bfea899442ff9"
 
 [[package]]
 name = "smol"
@@ -7256,9 +7267,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.22"
+version = "2.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2efbeae7acf4eabd6bcdcbd11c92f45231ddda7539edc7806bd1a04a03b24616"
+checksum = "59fb7d6d8281a51045d62b8eb3a7d1ce347b76f312af50cd3dc0af39c87c1737"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
@@ -7470,22 +7481,22 @@ checksum = "222a222a5bfe1bba4a77b45ec488a741b3cb8872e5e499451fd7d0129c9c7c3d"
 
 [[package]]
 name = "thiserror"
-version = "1.0.40"
+version = "1.0.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "978c9a314bd8dc99be594bc3c175faaa9794be04a5a5e153caba6915336cebac"
+checksum = "c16a64ba9387ef3fdae4f9c1a7f07a0997fce91985c0336f1ddc1822b3b37802"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.40"
+version = "1.0.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9456a42c5b0d803c8cd86e73dd7cc9edd429499f37a3550d286d5e86720569f"
+checksum = "d14928354b01c4d6a4f0e549069adef399a284e7995c7ccca94e8a07a5346c59"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]
@@ -7637,7 +7648,7 @@ checksum = "630bdcf245f78637c13ec01ffae6187cca34625e8c63150d424b59e55af2675e"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]
@@ -7727,9 +7738,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.7.5"
+version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ebafdf5ad1220cb59e7d17cf4d2c72015297b75b19a10472f99b89225089240"
+checksum = "c17e963a819c331dcacd7ab957d80bc2b9a9c1e71c804826d2f283dd65306542"
 dependencies = [
  "indexmap 2.0.0",
  "serde",
@@ -7749,9 +7760,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.19.11"
+version = "0.19.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "266f016b7f039eec8a1a80dfe6156b633d208b9fccca5e4db1d6775b0c4e34a7"
+checksum = "c500344a19072298cd05a7224b3c0c629348b78692bf48466c5238656e315a78"
 dependencies = [
  "indexmap 2.0.0",
  "serde",
@@ -7963,7 +7974,7 @@ checksum = "5f4f31f56159e98206da9efd823404b79b6ef3143b4a7ab76e67b1751b25a4ab"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]
@@ -8085,9 +8096,9 @@ checksum = "92888ba5573ff080736b3648696b70cafad7d250551175acbaa4e0385b3e1460"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.9"
+version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b15811caf2415fb889178633e7724bad2509101cde276048e013b9def5e51fa0"
+checksum = "22049a19f4a68748a168c0fc439f9516686aa045927ff767eca0a85101fb6e73"
 
 [[package]]
 name = "unicode-normalization"
@@ -8281,7 +8292,7 @@ dependencies = [
  "once_cell",
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
  "wasm-bindgen-shared",
 ]
 
@@ -8315,7 +8326,7 @@ checksum = "54681b18a46765f095758388f2d0cf16eb8d4169b639ab575a8f5693af210c7b"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -8459,21 +8470,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e686886bc078bc1b0b600cac0147aadb815089b6e4da64016cbd754b6342700f"
 dependencies = [
  "windows-targets 0.48.1",
-]
-
-[[package]]
-name = "windows-sys"
-version = "0.42.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a3e1820f08b8513f676f7ab6c1f99ff312fb97b553d30ff4dd86f9f15728aa7"
-dependencies = [
- "windows_aarch64_gnullvm 0.42.2",
- "windows_aarch64_msvc 0.42.2",
- "windows_i686_gnu 0.42.2",
- "windows_i686_msvc 0.42.2",
- "windows_x86_64_gnu 0.42.2",
- "windows_x86_64_gnullvm 0.42.2",
- "windows_x86_64_msvc 0.42.2",
 ]
 
 [[package]]
@@ -8679,7 +8675,7 @@ checksum = "ce36e65b0d2999d2aafac989fb249189a141aee1f53c612c1f37d72631959f69"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
- "syn 2.0.22",
+ "syn 2.0.23",
 ]
 
 [[package]]

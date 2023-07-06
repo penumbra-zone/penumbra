@@ -1,12 +1,12 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 
-use ibc_types2::core::client::msgs::MsgUpdateClient;
-use ibc_types2::core::client::ClientId;
-use ibc_types2::core::client::ClientType;
-use ibc_types2::core::client::Height;
+use ibc_types::core::client::msgs::MsgUpdateClient;
+use ibc_types::core::client::ClientId;
+use ibc_types::core::client::ClientType;
+use ibc_types::core::client::Height;
 
-use ibc_types2::lightclients::tendermint::{
+use ibc_types::lightclients::tendermint::{
     client_state::ClientState as TendermintClientState,
     consensus_state::ConsensusState as TendermintConsensusState,
     header::Header as TendermintHeader,
@@ -159,7 +159,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     fn put_client(&mut self, client_id: &ClientId, client_state: TendermintClientState) {
         self.put_proto(
             state_key::client_type(client_id),
-            ibc_types2::lightclients::tendermint::client_type().to_string(),
+            ibc_types::lightclients::tendermint::client_type().to_string(),
         );
 
         self.put(state_key::client_state(client_id), client_state);
@@ -202,7 +202,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         );
 
         let current_height = self.get_block_height().await?;
-        let current_time: ibc_types2::timestamp::Timestamp =
+        let current_time: ibc_types::timestamp::Timestamp =
             self.get_block_timestamp().await?.into();
 
         self.put_proto::<u64>(
@@ -212,7 +212,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 
         self.put(
             state_key::client_processed_heights(&client_id, &height),
-            ibc_types2::core::client::Height::new(0, current_height)?,
+            ibc_types::core::client::Height::new(0, current_height)?,
         );
 
         // update verified heights
@@ -297,7 +297,7 @@ pub trait StateReadExt: StateRead {
         &self,
         client_id: &ClientId,
         height: &Height,
-    ) -> Result<ibc_types2::core::client::Height> {
+    ) -> Result<ibc_types::core::client::Height> {
         self.get(&state_key::client_processed_heights(client_id, height))
             .await?
             .ok_or_else(|| {
@@ -311,7 +311,7 @@ pub trait StateReadExt: StateRead {
         &self,
         client_id: &ClientId,
         height: &Height,
-    ) -> Result<ibc_types2::timestamp::Timestamp> {
+    ) -> Result<ibc_types::timestamp::Timestamp> {
         let timestamp_nanos = self
             .get_proto::<u64>(&state_key::client_processed_times(client_id, height))
             .await?
@@ -321,7 +321,7 @@ pub trait StateReadExt: StateRead {
                 )
             })?;
 
-        ibc_types2::timestamp::Timestamp::from_nanoseconds(timestamp_nanos)
+        ibc_types::timestamp::Timestamp::from_nanoseconds(timestamp_nanos)
             .context("invalid client update time")
     }
 
@@ -395,7 +395,7 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
-    use ibc_types2::{core::client::msgs::MsgCreateClient, DomainType};
+    use ibc_types::{core::client::msgs::MsgCreateClient, DomainType};
     use penumbra_chain::component::StateWriteExt;
     use penumbra_component::ActionHandler;
     use penumbra_storage::{ArcStateDeltaExt, StateDelta};

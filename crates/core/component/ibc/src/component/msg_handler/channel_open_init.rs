@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types2::core::channel::msgs::MsgChannelOpenInit;
-use ibc_types2::core::channel::{channel::State, ChannelEnd, ChannelId, Counterparty, PortId};
+use ibc_types::core::channel::msgs::MsgChannelOpenInit;
+use ibc_types::core::channel::{channel::State, ChannelEnd, ChannelId, Counterparty, PortId};
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{

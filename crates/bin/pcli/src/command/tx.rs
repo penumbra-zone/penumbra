@@ -9,7 +9,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::{Fq, Fr};
-use ibc_types2::core::channel::{ChannelId, PortId};
+use ibc_types::core::channel::{ChannelId, PortId};
 use penumbra_asset::{asset, asset::DenomMetadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_fee::Fee;

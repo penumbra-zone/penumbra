@@ -175,17 +175,17 @@ impl TryFrom<crate::core::crypto::v1alpha1::ConsensusKey> for tendermint::Public
 }
 
 // IBC-rs impls
-extern crate ibc_types2;
+extern crate ibc_types;
 
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use ibc_proto::ibc::core::connection::v1::ConnectionEnd as RawConnectionEnd;
 
-use ibc_types2::core::channel::ChannelEnd;
-use ibc_types2::core::client::Height;
-use ibc_types2::core::connection::ConnectionEnd;
-use ibc_types2::lightclients::tendermint::client_state::ClientState;
+use ibc_types::core::channel::ChannelEnd;
+use ibc_types::core::client::Height;
+use ibc_types::core::connection::ConnectionEnd;
+use ibc_types::lightclients::tendermint::client_state::ClientState;
 
 impl TypeUrl for ConnectionEnd {
     const TYPE_URL: &'static str = "/ibc.core.connection.v1.ConnectionEnd";
@@ -196,10 +196,10 @@ impl TypeUrl for ChannelEnd {
 impl TypeUrl for Height {
     const TYPE_URL: &'static str = "/ibc.core.client.v1.Height";
 }
-impl TypeUrl for ibc_types2::lightclients::tendermint::client_state::ClientState {
+impl TypeUrl for ibc_types::lightclients::tendermint::client_state::ClientState {
     const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.ClientState";
 }
-impl TypeUrl for ibc_types2::lightclients::tendermint::consensus_state::ConsensusState {
+impl TypeUrl for ibc_types::lightclients::tendermint::consensus_state::ConsensusState {
     const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.ConsensusState";
 }
 
@@ -216,14 +216,14 @@ impl DomainType for Height {
 impl DomainType for ClientState {
     type Proto = Any;
 }
-impl DomainType for ibc_types2::lightclients::tendermint::consensus_state::ConsensusState {
+impl DomainType for ibc_types::lightclients::tendermint::consensus_state::ConsensusState {
     type Proto = Any;
 }
 
 impl<T> From<T> for IbcAction
 where
-    T: ibc_types2::DomainType + ibc_types2::TypeUrl + Send + Sync + 'static,
-    <T as TryFrom<<T as ibc_types2::DomainType>::Proto>>::Error: Send + Sync + std::error::Error,
+    T: ibc_types::DomainType + ibc_types::TypeUrl + Send + Sync + 'static,
+    <T as TryFrom<<T as ibc_types::DomainType>::Proto>>::Error: Send + Sync + std::error::Error,
 {
     fn from(v: T) -> Self {
         let value_bytes = v.encode_to_vec();

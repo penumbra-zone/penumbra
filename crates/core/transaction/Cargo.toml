@@ -26,7 +26,7 @@ penumbra-asset = { path = "../asset", default-features = false }
 penumbra-keys = { path = "../keys", default-features = false }
 
 # Git deps
-ibc-types2 = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main", default-features = false }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.3.0", default-features = false }
 
 # Crates.io deps
 ibc-proto = { version = "0.31.0", default-features = false }

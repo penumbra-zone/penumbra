@@ -7,7 +7,7 @@ edition = "2021"
 
 [features]
 default = ["std"]
-std = ["ibc-types2/std"]
+std = ["ibc-types/std"]
 sct-divergence-check = ["penumbra-view/sct-divergence-check"]
 # Enable to use rayon parallelism for crypto operations
 parallel = ["penumbra-crypto/parallel", "penumbra-transaction/parallel"]
@@ -62,7 +62,7 @@ atty = "0.2"
 tempfile = "3.3.0"
 assert_cmd = "2.0"
 base64 = "0.20"
-ibc-types2 = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main" }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.3.0" }
 
 ibc-proto = "0.31.0"
 

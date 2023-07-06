@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use ibc_types2::{
+use ibc_types::{
     core::channel::{
         channel::Order as ChannelOrder,
         msgs::{

@@ -1,7 +1,7 @@
 use ibc_proto::protobuf::Protobuf;
-use ibc_types2::lightclients::tendermint::client_state::ClientState as TendermintClientState;
-use ibc_types2::lightclients::tendermint::header::Header as TendermintHeader;
-use ibc_types2::{
+use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
+use ibc_types::lightclients::tendermint::header::Header as TendermintHeader;
+use ibc_types::{
     core::{
         channel::{ChannelEnd, ChannelId, Packet, PortId},
         client::ClientId,

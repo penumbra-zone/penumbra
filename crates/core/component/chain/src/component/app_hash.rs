@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types2::core::commitment::{MerklePrefix, MerkleProof};
+use ibc_types::core::commitment::{MerklePrefix, MerkleProof};
 use once_cell::sync::Lazy;
 use penumbra_proto::Message;
 use penumbra_storage::{RootHash, Snapshot};
