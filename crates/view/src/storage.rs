@@ -1,10 +1,10 @@
 use anyhow::{anyhow, Context};
 use camino::Utf8Path;
+use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use penumbra_asset::{asset, asset::DenomMetadata, asset::Id, Value};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::{note, FieldExt, Fq, Note, Nullifier, Rseed};
 use penumbra_dex::{
     lp::position::{self, Position, State},
     TradingPair,
@@ -17,6 +17,8 @@ use penumbra_proto::{
     },
     DomainType,
 };
+use penumbra_sct::Nullifier;
+use penumbra_shielded_pool::{note, Note, Rseed};
 use penumbra_stake::{DelegationToken, IdentityKey};
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;

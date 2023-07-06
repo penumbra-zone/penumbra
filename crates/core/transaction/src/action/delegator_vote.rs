@@ -3,10 +3,10 @@ use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use penumbra_asset::{balance, Value};
-use penumbra_crypto::Nullifier;
 use penumbra_governance::{DelegatorVoteProof, VotingReceiptToken};
 use penumbra_num::Amount;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 
 use crate::{

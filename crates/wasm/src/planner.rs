@@ -9,12 +9,11 @@ use anyhow::{anyhow, Result};
 use crate::note_record::SpendableNoteRecord;
 use penumbra_asset::{asset::DenomMetadata, Balance, Value};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::Note;
 use penumbra_dex::{swap::SwapPlaintext, swap::SwapPlan, swap_claim::SwapClaimPlan, TradingPair};
 use penumbra_fee::Fee;
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_num::Amount;
-use penumbra_shielded_pool::{OutputPlan, SpendPlan};
+use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
 use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{

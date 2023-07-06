@@ -7,9 +7,13 @@ use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use decaf377::{Bls12_377, FieldExt};
+use decaf377::{Fq, Fr};
+use decaf377_fmd as fmd;
+use decaf377_ka as ka;
 use penumbra_fee::Fee;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
+use penumbra_tct::r1cs::StateCommitmentVar;
 use rand_core::OsRng;
 
 use penumbra_asset::{
@@ -17,8 +21,8 @@ use penumbra_asset::{
     balance::{self, commitment::BalanceCommitmentVar, BalanceVar},
     Value,
 };
-use penumbra_crypto::{fmd, ka, note::StateCommitmentVar, Fq, Fr, Rseed};
 use penumbra_keys::{keys::Diversifier, Address};
+use penumbra_shielded_pool::Rseed;
 
 use crate::{
     swap::{SwapPlaintext, SwapPlaintextVar},

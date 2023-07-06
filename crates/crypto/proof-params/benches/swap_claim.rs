@@ -4,7 +4,6 @@ use ark_relations::r1cs::{
 };
 use decaf377::Fq;
 use penumbra_asset::asset;
-use penumbra_crypto::Nullifier;
 use penumbra_dex::{
     swap::SwapPlaintext,
     swap_claim::{SwapClaimCircuit, SwapClaimProof},
@@ -14,6 +13,7 @@ use penumbra_fee::Fee;
 use penumbra_keys::keys::{NullifierKey, SeedPhrase, SpendKey};
 use penumbra_num::Amount;
 use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
+use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 
 use criterion::{criterion_group, criterion_main, Criterion};

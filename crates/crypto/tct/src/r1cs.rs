@@ -5,7 +5,7 @@ use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
 use decaf377::{r1cs::FqVar, FieldExt, Fq};
 
-use crate::{internal::hash::DOMAIN_SEPARATOR, Position, Proof};
+use crate::{internal::hash::DOMAIN_SEPARATOR, Position, Proof, StateCommitment};
 
 #[derive(Clone, Debug)]
 /// Represents the position of a leaf in the TCT represented in R1CS.
@@ -283,5 +283,65 @@ impl WhichWayVar {
         let rightmost = FqVar::conditionally_select(&self.is_rightmost, &node, &siblings[2])?;
 
         Ok([leftmost, left, right, rightmost])
+    }
+}
+
+/// Represents a state commitment in R1CS.
+pub struct StateCommitmentVar {
+    /// The `FqVar` representing the state commitment.
+    pub inner: FqVar,
+}
+
+impl StateCommitmentVar {
+    /// Access the inner `FqVar`.
+    pub fn inner(&self) -> FqVar {
+        self.inner.clone()
+    }
+}
+
+impl AllocVar<StateCommitment, Fq> for StateCommitmentVar {
+    fn new_variable<T: std::borrow::Borrow<StateCommitment>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        match mode {
+            AllocationMode::Constant => unimplemented!(),
+            AllocationMode::Input => {
+                let note_commitment1 = f()?;
+                let note_commitment: StateCommitment = *note_commitment1.borrow();
+                let inner = FqVar::new_input(cs, || Ok(note_commitment.0))?;
+
+                Ok(Self { inner })
+            }
+            AllocationMode::Witness => {
+                let note_commitment1 = f()?;
+                let note_commitment: StateCommitment = *note_commitment1.borrow();
+                let inner = FqVar::new_witness(cs, || Ok(note_commitment.0))?;
+
+                Ok(Self { inner })
+            }
+        }
+    }
+}
+
+impl R1CSVar<Fq> for StateCommitmentVar {
+    type Value = StateCommitment;
+
+    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
+        self.inner.cs()
+    }
+
+    fn value(&self) -> Result<Self::Value, SynthesisError> {
+        let inner = self.inner.value()?;
+        Ok(StateCommitment(inner))
+    }
+}
+
+impl EqGadget<Fq> for StateCommitmentVar {
+    fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
+        self.inner.is_eq(&other.inner)
     }
 }

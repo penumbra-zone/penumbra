@@ -16,14 +16,15 @@ use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
 use penumbra_keys::{keys::Diversifier, Address};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_tct::r1cs::StateCommitmentVar;
 use rand_core::OsRng;
 
+use crate::{note, Note, Rseed};
 use penumbra_asset::{
     balance,
     balance::{commitment::BalanceCommitmentVar, BalanceVar},
     Value,
 };
-use penumbra_crypto::{note, Note, Rseed};
 use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 
 // Public:
@@ -71,7 +72,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
 
         // Public inputs
         let claimed_note_commitment =
-            note::StateCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment))?;
+            StateCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment))?;
         let claimed_balance_commitment =
             BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
 
@@ -228,7 +229,7 @@ mod tests {
     use penumbra_proto::core::crypto::v1alpha1 as pb;
     use rand_core::OsRng;
 
-    use penumbra_crypto::{note, Note};
+    use crate::{note, Note};
 
     use ark_ff::PrimeField;
 

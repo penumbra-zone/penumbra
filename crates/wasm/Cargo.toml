@@ -22,6 +22,7 @@ penumbra-stake         = { path = "../core/component/stake", default-features = 
 penumbra-dex           = { path = "../core/component/dex", default-features = false, features = ["proving-keys"] }
 penumbra-chain         = { path = "../core/component/chain", default-features = false }
 penumbra-fee           = { path = "../core/component/fee", default-features = false }
+penumbra-sct           = { path = "../core/component/sct", default-features = false }
 penumbra-shielded-pool = { path = "../core/component/shielded-pool", default-features = false, features = ["proving-keys"] }
 penumbra-compact-block = { path = "../core/component/compact-block", default-features = false }
 

@@ -1,5 +1,6 @@
+use ark_ff::Zero;
+use decaf377::Fr;
 use penumbra_asset::{balance, Value};
-use penumbra_crypto::{Fr, Note, Zero};
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_dex::{
     lp::{
@@ -10,7 +11,7 @@ use penumbra_dex::{
     swap_claim::{SwapClaim, SwapClaimView},
 };
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
-use penumbra_shielded_pool::{Output, OutputView, Spend, SpendView};
+use penumbra_shielded_pool::{Note, Output, OutputView, Spend, SpendView};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 
 use crate::{ActionView, TransactionPerspective};

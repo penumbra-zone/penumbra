@@ -1,7 +1,7 @@
 use penumbra_chain::NoteSource;
-use penumbra_crypto::Nullifier;
 use penumbra_dex::{swap::SwapPlaintext, BatchSwapOutputData};
 use penumbra_proto::{view::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 use std::convert::{TryFrom, TryInto};
 

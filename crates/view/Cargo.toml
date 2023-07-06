@@ -39,6 +39,7 @@ penumbra-transaction   = { path = "../core/transaction" }
 
 ibc-types2 = { git = "https://github.com/penumbra-zone/ibc-types", branch = "main", default-features = false }
 
+decaf377 = {version = "0.4", features = ["r1cs"] }
 tokio = { version = "1.22", features = ["full"] }
 tokio-stream = { version = "0.1.8", features = ["sync"] }
 anyhow = "1"

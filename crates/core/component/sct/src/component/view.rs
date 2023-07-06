@@ -1,7 +1,6 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use penumbra_chain::{component::StateReadExt as _, NoteSource};
-use penumbra_crypto::note;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
@@ -19,7 +18,7 @@ use crate::state_key;
 //#[async_trait(?Send)]
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    async fn note_source(&self, commitment: note::StateCommitment) -> Result<Option<NoteSource>> {
+    async fn note_source(&self, commitment: tct::StateCommitment) -> Result<Option<NoteSource>> {
         self.get(&state_key::note_source(&commitment)).await
     }
 

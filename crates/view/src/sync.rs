@@ -5,9 +5,10 @@ use penumbra_chain::{
     NoteSource,
 };
 use penumbra_compact_block::{CompactBlock, StatePayload};
-use penumbra_crypto::{Note, NotePayload, Nullifier};
 use penumbra_dex::swap::{SwapPayload, SwapPlaintext};
 use penumbra_keys::FullViewingKey;
+use penumbra_sct::Nullifier;
+use penumbra_shielded_pool::{Note, NotePayload};
 use penumbra_tct as tct;
 use tracing::Instrument;
 

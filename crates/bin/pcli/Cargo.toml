@@ -43,6 +43,7 @@ penumbra-view             = { path = "../../view" }
 
 # Penumbra dependencies
 decaf377 = { version = "0.4" }
+decaf377-rdsa = { version = "0.6" }
 tendermint = { version = "0.32.0", features = ["rust-crypto"] }
 jmt = "0.6"
 

@@ -1,5 +1,7 @@
-use penumbra_crypto::{NotePayload, Nullifier};
+use penumbra_sct::Nullifier;
 use tendermint::abci::{Event, EventAttributeIndexExt};
+
+use crate::NotePayload;
 
 pub fn spend(nullifier: &Nullifier) -> Event {
     Event::new(

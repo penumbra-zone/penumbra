@@ -3,15 +3,13 @@ use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{r1cs::FqVar, FieldExt, Fq};
 use penumbra_tct as tct;
-use penumbra_tct::StateCommitment;
+use penumbra_tct::{r1cs::StateCommitmentVar, StateCommitment};
 use poseidon377::hash_3;
 
 use once_cell::sync::Lazy;
 use penumbra_keys::keys::{NullifierKey, NullifierKeyVar};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
-
-use crate::note::StateCommitmentVar;
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "pb::Nullifier", into = "pb::Nullifier")]

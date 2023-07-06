@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use penumbra_asset::{asset::Cache, Value};
-use penumbra_crypto::{Note, NoteView};
 use penumbra_dex::{
     lp::position::Position,
     swap::SwapPlaintext,
@@ -11,6 +10,7 @@ use penumbra_dex::{
 };
 use penumbra_keys::{keys::IncomingViewingKey, Address};
 use penumbra_proto::{client::v1alpha1::GetTxRequest, DomainType};
+use penumbra_shielded_pool::{Note, NoteView};
 use penumbra_transaction::{
     view::action_view::{OutputView, SpendView},
     Transaction,

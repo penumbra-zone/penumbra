@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
-use penumbra_crypto::note;
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_shielded_pool::note;
 use penumbra_tct as tct;
 
 #[derive(Clone, Debug)]

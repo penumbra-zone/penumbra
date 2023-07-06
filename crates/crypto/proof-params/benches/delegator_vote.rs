@@ -4,15 +4,14 @@ use ark_ff::UniformRand;
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
-use decaf377::Fr;
+use decaf377::{Fq, Fr};
+use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_asset::{balance, Value};
-use penumbra_crypto::{
-    rdsa::{SpendAuth, VerificationKey},
-    Fq, Note, Nullifier,
-};
 use penumbra_governance::{DelegatorVoteCircuit, DelegatorVoteProof};
 use penumbra_keys::keys::{NullifierKey, SeedPhrase, SpendKey};
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
+use penumbra_sct::Nullifier;
+use penumbra_shielded_pool::Note;
 use penumbra_tct as tct;
 
 use criterion::{criterion_group, criterion_main, Criterion};

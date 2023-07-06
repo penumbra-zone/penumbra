@@ -15,6 +15,7 @@ penumbra-crypto = { path = "../crypto/" }
 penumbra-chain = { path = "../component/chain/", default-features = false }
 penumbra-governance = { path = "../component/governance/", default-features = false }
 penumbra-shielded-pool = { path = "../component/shielded-pool/", default-features = false }
+penumbra-sct = { path = "../component/sct/", default-features = false }
 penumbra-stake = { path = "../component/stake", default-features = false }
 penumbra-ibc = { path = "../component/ibc/", default-features = false }
 penumbra-dao = { path = "../component/dao/", default-features = false }

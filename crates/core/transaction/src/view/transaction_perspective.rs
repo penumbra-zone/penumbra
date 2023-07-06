@@ -1,9 +1,10 @@
 use penumbra_asset::asset;
-use penumbra_crypto::{note, Note, NoteView, Nullifier, PayloadKey};
 use penumbra_keys::AddressView;
 use penumbra_proto::core::transaction::v1alpha1::{
     self as pb, NullifierWithNote, PayloadKeyWithCommitment,
 };
+use penumbra_sct::Nullifier;
+use penumbra_shielded_pool::{note, Note, NoteView, PayloadKey};
 
 use std::collections::BTreeMap;
 

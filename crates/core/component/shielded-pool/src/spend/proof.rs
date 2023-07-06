@@ -19,15 +19,17 @@ use ark_snark::SNARK;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
+use penumbra_tct::r1cs::StateCommitmentVar;
 use rand_core::OsRng;
 
+use crate::{note, Note, Rseed};
 use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
-use penumbra_crypto::{note, Note, Nullifier, NullifierVar, Rseed};
 use penumbra_keys::keys::{
     AuthorizationKeyVar, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
 };
 use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_sct::{Nullifier, NullifierVar};
 
 /// Groth16 proof for spending existing notes.
 #[derive(Clone, Debug)]
@@ -90,7 +92,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
         let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
-        let claimed_note_commitment = note::StateCommitmentVar::new_witness(cs.clone(), || {
+        let claimed_note_commitment = StateCommitmentVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof.commitment())
         })?;
 
@@ -329,19 +331,19 @@ mod tests {
     use ark_r1cs_std::prelude::Boolean;
     use decaf377::{Fq, Fr};
     use penumbra_asset::{asset, Value};
-    use penumbra_crypto::note::StateCommitment;
-    use penumbra_crypto::Nullifier;
     use penumbra_keys::{
         keys::{SeedPhrase, SpendKey},
         Address,
     };
+    use penumbra_sct::Nullifier;
+    use penumbra_tct::StateCommitment;
     use proptest::prelude::*;
 
     use decaf377_rdsa::{SpendAuth, VerificationKey};
     use penumbra_tct as tct;
     use rand_core::OsRng;
 
-    use penumbra_crypto::Note;
+    use crate::Note;
 
     use ark_ff::PrimeField;
 
@@ -788,10 +790,9 @@ mod tests {
                 Ok(self.state_commitment_proof.clone())
             })?;
             let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
-            let claimed_note_commitment =
-                note::StateCommitmentVar::new_witness(cs.clone(), || {
-                    Ok(self.state_commitment_proof.commitment())
-                })?;
+            let claimed_note_commitment = StateCommitmentVar::new_witness(cs.clone(), || {
+                Ok(self.state_commitment_proof.commitment())
+            })?;
             let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
                 Ok(self.state_commitment_proof.position())
             })?;

@@ -7,7 +7,8 @@ use penumbra_num::Amount;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
-use crate::{ka, note, Note, NoteCiphertext};
+use crate::{note, Note, NoteCiphertext};
+use decaf377_ka as ka;
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::NotePayload", into = "pb::NotePayload")]
