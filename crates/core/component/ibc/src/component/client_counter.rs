@@ -234,6 +234,9 @@ pub fn validate_penumbra_client_state(
 
     // check client proof specs match penumbra proof specs
     if PENUMBRA_PROOF_SPECS.clone() != tm_client_state.proof_specs {
+        let p1 = PENUMBRA_PROOF_SPECS.clone();
+        let p2 = tm_client_state.proof_specs;
+        tracing::debug!(?p1, ?p2);
         return Err(anyhow::anyhow!(
             "invalid client state: proof specs do not match"
         ));

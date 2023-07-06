@@ -21,7 +21,7 @@ echo "Starting Tendermint..."
 tendermint start --log_level=error --home "${HOME}/.penumbra/testnet_data/node0/tendermint" &
 tendermint_pid="$!"
 
-export RUST_LOG="info,[CheckTx]=debug"
+export RUST_LOG="debug"
 echo "Starting pd..."
 cargo run --release --bin pd -- start --home "${HOME}/.penumbra/testnet_data/node0/pd" &
 pd_pid="$!"
