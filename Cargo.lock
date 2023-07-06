@@ -5729,9 +5729,9 @@ dependencies = [
 
 [[package]]
 name = "poseidon-permutation"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f130750ddbff77f3977d3e20fe43ad11e8a13c3e2f2f1c002c6246d294dd392"
+checksum = "a022268b53cec1e99c4bd8c81be249709e971b78a433d9f5556e31f3cd7730b0"
 dependencies = [
  "ark-ff",
  "ark-r1cs-std",
@@ -5742,9 +5742,9 @@ dependencies = [
 
 [[package]]
 name = "poseidon377"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d181575f19bf89d995662200dc515897c0f42a97bc551f8686005367e5594ae"
+checksum = "11dbcae1c9e4624576dd7631a1f2419a18afeaeef104263d70b6f20256ea5b72"
 dependencies = [
  "ark-ec",
  "ark-ed-on-bls12-377",

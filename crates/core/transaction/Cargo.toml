@@ -31,7 +31,7 @@ ibc-types2 = { git = "https://github.com/penumbra-zone/ibc-types", branch = "mai
 ibc-proto = { version = "0.31.0", default-features = false }
 decaf377 = "0.4"
 decaf377-rdsa = { version = "0.6" }
-poseidon377 = { version = "0.5", features = ["r1cs"] }
+poseidon377 = { version = "0.6", features = ["r1cs"] }
 base64 = "0.21"
 ark-ff = { version = "0.4", default_features = false }
 ark-serialize = "0.4"
