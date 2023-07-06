@@ -17,10 +17,10 @@ use penumbra_dex::{
 };
 use penumbra_fee::Fee;
 use penumbra_ibc::IbcAction;
-use penumbra_keys::FullViewingKey;
+use penumbra_keys::{FullViewingKey, PayloadKey};
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, Message, TypeUrl};
 use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{Note, Output, PayloadKey, Spend};
+use penumbra_shielded_pool::{Note, Output, Spend};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 use penumbra_tct as tct;
 use penumbra_tct::StateCommitment;

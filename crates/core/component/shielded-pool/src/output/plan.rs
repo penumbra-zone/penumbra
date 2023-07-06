@@ -3,14 +3,15 @@ use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_crypto::{ka, FieldExt, Fq, Fr};
 use penumbra_keys::{
     keys::{IncomingViewingKey, OutgoingViewingKey},
-    Address,
+    symmetric::WrappedMemoKey,
+    Address, PayloadKey,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use super::{Body, Output, OutputProof};
-use crate::{symmetric::WrappedMemoKey, Note, PayloadKey, Rseed};
+use crate::{Note, Rseed};
 
 /// A planned [`Output`](Output).
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -173,11 +174,12 @@ impl TryFrom<pb::OutputPlan> for OutputPlan {
 mod test {
     use super::OutputPlan;
     use penumbra_asset::Value;
-    use penumbra_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_keys::{
+        keys::{SeedPhrase, SpendKey},
+        PayloadKey,
+    };
     use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
     use rand_core::OsRng;
-
-    use crate::PayloadKey;
 
     #[test]
     /// Check that a valid output proof passes the `penumbra_crypto` integrity checks successfully.

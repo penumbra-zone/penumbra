@@ -9,6 +9,7 @@ use once_cell::sync::Lazy;
 use penumbra_chain::genesis::Allocation;
 use penumbra_keys::{
     keys::{Diversifier, FullViewingKey, IncomingViewingKey, OutgoingViewingKey},
+    symmetric::{OutgoingCipherKey, OvkWrappedKey, PayloadKey, PayloadKind},
     Address, AddressView,
 };
 use penumbra_proto::core::crypto::v1alpha1 as pb;
@@ -24,10 +25,7 @@ pub use penumbra_tct::StateCommitment;
 use penumbra_asset::{asset, balance, Value, ValueView};
 use penumbra_num::Amount;
 
-use crate::{
-    symmetric::{OutgoingCipherKey, OvkWrappedKey, PayloadKey, PayloadKind},
-    NotePayload, Rseed,
-};
+use crate::{NotePayload, Rseed};
 
 pub const NOTE_LEN_BYTES: usize = 160;
 pub const NOTE_CIPHERTEXT_BYTES: usize = 176;

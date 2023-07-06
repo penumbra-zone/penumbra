@@ -1,7 +1,7 @@
 use anyhow::Result;
 
-use penumbra_keys::keys::OutgoingViewingKey;
-use penumbra_shielded_pool::{note, PayloadKey};
+use penumbra_keys::{keys::OutgoingViewingKey, PayloadKey};
+use penumbra_shielded_pool::note;
 
 use super::{SwapPlaintext, SWAP_CIPHERTEXT_BYTES, SWAP_LEN_BYTES};
 

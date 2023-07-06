@@ -8,13 +8,13 @@ use rand_core::OsRng;
 
 use decaf377_ka as ka;
 use penumbra_asset::balance;
-use penumbra_keys::{keys::OutgoingViewingKey, Address};
-use penumbra_proto::core::transaction::v1alpha1 as pbt;
-use penumbra_shielded_pool::{
-    note,
+use penumbra_keys::{
+    keys::OutgoingViewingKey,
     symmetric::{OvkWrappedKey, PayloadKey, PayloadKind, WrappedMemoKey},
-    Note,
+    Address,
 };
+use penumbra_proto::core::transaction::v1alpha1 as pbt;
+use penumbra_shielded_pool::{note, Note};
 
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 

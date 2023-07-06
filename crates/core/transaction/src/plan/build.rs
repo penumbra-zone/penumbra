@@ -2,8 +2,7 @@ use anyhow::{Context, Result};
 use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa as rdsa;
-use penumbra_keys::FullViewingKey;
-use penumbra_shielded_pool::symmetric::PayloadKey;
+use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 use rand_core::{CryptoRng, RngCore};
 
 use super::TransactionPlan;

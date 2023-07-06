@@ -1,8 +1,9 @@
+use penumbra_keys::PayloadKey;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
+use crate::NoteView;
 use crate::Output;
-use crate::{NoteView, PayloadKey};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pbt::OutputView", into = "pbt::OutputView")]
