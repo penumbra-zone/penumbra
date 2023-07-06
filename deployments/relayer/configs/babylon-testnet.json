@@ -3,7 +3,7 @@
   "value": {
     "key": "default",
     "chain-id": "bbn-test1",
-    "rpc-addr": "http://rpc.testnet.babylonchain.io:26657",
+    "rpc-addr": "https://rpc.testnet.babylonchain.io:443",
     "account-prefix": "bbn",
     "keyring-backend": "test",
     "gas-adjustment": 1.0,
