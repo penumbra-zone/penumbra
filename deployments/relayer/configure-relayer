@@ -21,7 +21,8 @@ rm -rf ~/.relayer
 rly config init --memo "Automatic IBC for Penumbra, via relayer"
 
 >&2 echo "Adding chain specs to relayer config..."
-rly chains add-dir configs/
+find ./configs/ -type f -iname 'penumbra*.json' -exec \
+    rly chains add -f {} \;
 
 # Ideally we wouldn't need to bother with generating keys for the relayer paths,
 # because Penumbra hasn't implemented fees yet, so there's no need for a wallet to pay out of.

@@ -34,6 +34,21 @@ Given the rapid pace of development, it's possible that proto definitions
 are out of sync between testnet & preview, in which case there may be errors.
 To debug, consider running a local devnet and linking it with preview.
 
+## Verifying IBC functionality between chains
+
+There are three key stages to working IBC: clients, channels, and connections.
+Use the commands below to evaluate whether each step is correctly configured:
+
+```
+pcli -n http://localhost:8080 q ibc client 07-tendermint-0
+pcli -n http://localhost:8080 q ibc channel transfer channel-0
+pcli -n http://localhost:8080 q ibc connection connection-0
+```
+
+Remember to check the same on the corresponding counterparty chain, e.g. testnet-preview.
+The `client` values may not be the same between chains, so try incrementing the values
+until no results are found as a surrogate for querying via pcli.
+
 ## Updating proto definitions in relayer
 Sometimes the protos between preview & testnet get out of sync. When this happens,
 we must submit a PR upstream to the relayer repo. See [example here](https://github.com/cosmos/relayer/pull/1170),
