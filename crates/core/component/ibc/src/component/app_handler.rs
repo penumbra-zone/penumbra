@@ -8,7 +8,7 @@
 /// token transfers.
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types2::core::channel::msgs::{
+use ibc_types::core::channel::msgs::{
     MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
     MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket, MsgTimeout,
 };

@@ -1,4 +1,4 @@
-use ibc_types2::core::channel::{ChannelId, PortId};
+use ibc_types::core::channel::{ChannelId, PortId};
 use penumbra_asset::{
     asset::{self, DenomMetadata},
     Balance, Value,

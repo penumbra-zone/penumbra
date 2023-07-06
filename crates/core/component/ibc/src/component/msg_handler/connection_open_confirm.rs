@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types2::{
+use ibc_types::{
     core::{
         commitment::MerkleProof,
         connection::{msgs::MsgConnectionOpenConfirm, ConnectionEnd, Counterparty, State},

@@ -1,4 +1,4 @@
-use ibc_types2::core::{
+use ibc_types::core::{
     channel::msgs::{
         MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
         MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket, MsgTimeout,
@@ -9,8 +9,8 @@ use ibc_types2::core::{
     },
 };
 
-use ibc_types2::DomainType as IbcTypesDomainType;
-use ibc_types2::TypeUrl as IbcTypesTypeUrl;
+use ibc_types::DomainType as IbcTypesDomainType;
+use ibc_types::TypeUrl as IbcTypesTypeUrl;
 
 use penumbra_proto::core::ibc::v1alpha1::{self as pb};
 use penumbra_proto::{DomainType, TypeUrl};
@@ -46,7 +46,7 @@ impl IbcAction {
         match self {
             IbcAction::CreateClient(msg) => {
                 // HACK: not a better way to get tm light client data
-                match ibc_types2::lightclients::tendermint::client_state::ClientState::try_from(
+                match ibc_types::lightclients::tendermint::client_state::ClientState::try_from(
                     msg.client_state.clone(),
                 ) {
                     Ok(tm_client) => {

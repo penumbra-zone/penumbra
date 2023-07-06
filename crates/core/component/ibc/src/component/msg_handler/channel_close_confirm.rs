@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types2::core::{
+use ibc_types::core::{
     channel::{
         channel::State as ChannelState, msgs::MsgChannelCloseConfirm, ChannelEnd, Counterparty,
         PortId,

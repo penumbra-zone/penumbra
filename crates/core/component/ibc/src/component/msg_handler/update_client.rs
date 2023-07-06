@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use ibc_types2::{
+use ibc_types::{
     core::{client::msgs::MsgUpdateClient, client::ClientId},
     lightclients::tendermint::client_state::ClientState as TendermintClientState,
     lightclients::tendermint::consensus_state::ConsensusState as TendermintConsensusState,

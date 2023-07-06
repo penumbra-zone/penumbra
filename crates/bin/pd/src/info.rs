@@ -21,11 +21,11 @@ use ibc_proto::ibc::core::{
     channel::v1::{QueryConnectionChannelsRequest, QueryConnectionChannelsResponse},
     connection::v1::{QueryConnectionsRequest, QueryConnectionsResponse},
 };
-use ibc_types2::core::channel::IdentifiedChannelEnd;
-use ibc_types2::core::channel::{ChannelId, PortId};
-use ibc_types2::core::client::ClientId;
-use ibc_types2::core::connection::ConnectionId;
-use ibc_types2::core::connection::IdentifiedConnectionEnd;
+use ibc_types::core::channel::IdentifiedChannelEnd;
+use ibc_types::core::channel::{ChannelId, PortId};
+use ibc_types::core::client::ClientId;
+use ibc_types::core::connection::ConnectionId;
+use ibc_types::core::connection::IdentifiedConnectionEnd;
 use penumbra_chain::component::AppHashRead;
 use penumbra_ibc::component::ChannelStateReadExt as _;
 use penumbra_ibc::component::ClientStateReadExt as _;

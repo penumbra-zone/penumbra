@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use ibc_types2::core::{
+use ibc_types::core::{
     channel::{channel::State as ChannelState, ChannelId, Packet, PortId},
     client::Height,
 };
@@ -162,7 +162,7 @@ pub trait SendPacketWrite: StateWrite {
             port_on_b: PortId::default(),
 
             timeout_height_on_b: packet.timeout_height.into(),
-            timeout_timestamp_on_b: ibc_types2::timestamp::Timestamp::from_nanoseconds(
+            timeout_timestamp_on_b: ibc_types::timestamp::Timestamp::from_nanoseconds(
                 packet.timeout_timestamp,
             )
             .unwrap(),

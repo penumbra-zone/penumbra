@@ -2,9 +2,9 @@ use crate::component::client::StateReadExt;
 
 use core::time::Duration;
 use ibc_proto::protobuf::Protobuf;
-use ibc_types2::path::ClientConsensusStatePath;
-use ibc_types2::DomainType;
-use ibc_types2::{
+use ibc_types::path::ClientConsensusStatePath;
+use ibc_types::DomainType;
+use ibc_types::{
     core::{
         channel::{
             msgs::MsgAcknowledgement, msgs::MsgRecvPacket, msgs::MsgTimeout, ChannelEnd, ChannelId,

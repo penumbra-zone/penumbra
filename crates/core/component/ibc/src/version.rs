@@ -1,4 +1,4 @@
-use ibc_types2::core::connection::Version;
+use ibc_types::core::connection::Version;
 
 /// Selects a version from the intersection of locally supported and counterparty versions.
 pub fn pick_connection_version(

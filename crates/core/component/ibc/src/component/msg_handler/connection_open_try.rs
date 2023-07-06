@@ -2,10 +2,10 @@ use crate::component::proof_verification;
 use crate::version::pick_connection_version;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use ibc_types2::core::commitment::MerkleProof;
-use ibc_types2::lightclients::tendermint::client_state::ClientState as TendermintClientState;
-use ibc_types2::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
-use ibc_types2::{
+use ibc_types::core::commitment::MerkleProof;
+use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
+use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
+use ibc_types::{
     core::client::Height as IBCHeight,
     core::connection::{
         msgs::MsgConnectionOpenTry, ConnectionEnd, ConnectionId, Counterparty,
