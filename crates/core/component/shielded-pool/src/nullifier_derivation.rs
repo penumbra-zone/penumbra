@@ -192,33 +192,18 @@ impl TryFrom<pb::ZkNullifierDerivationProof> for NullifierDerivationProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_ff::UniformRand;
-    use ark_snark::SNARK;
     use decaf377::{Fq, Fr};
-    use penumbra_asset::{asset, Balance, Value};
+    use penumbra_asset::{asset, Value};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
     use penumbra_sct::Nullifier;
     use proptest::prelude::*;
 
-    use penumbra_proto::core::crypto::v1alpha1 as pb;
     use penumbra_tct as tct;
     use rand_core::OsRng;
 
-    use crate::{note, Note, Rseed};
+    use crate::Note;
 
     use ark_ff::PrimeField;
-
-    fn fq_strategy() -> BoxedStrategy<Fq> {
-        any::<[u8; 32]>()
-            .prop_map(|bytes| Fq::from_le_bytes_mod_order(&bytes[..]))
-            .boxed()
-    }
-
-    fn fr_strategy() -> BoxedStrategy<Fr> {
-        any::<[u8; 32]>()
-            .prop_map(|bytes| Fr::from_le_bytes_mod_order(&bytes[..]))
-            .boxed()
-    }
 
     proptest! {
     #![proptest_config(ProptestConfig::with_cases(2))]

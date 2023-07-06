@@ -12,7 +12,7 @@ use penumbra_asset::{
     balance::BalanceVar,
     Balance, Value, ValueVar, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_num::{Amount, AmountVar};
+use penumbra_num::{fixpoint::bit_constrain, Amount, AmountVar};
 
 /// Tracks slashing penalties applied to a validator in some epoch.
 ///
@@ -86,9 +86,10 @@ impl AllocVar<Penalty, Fq> for PenaltyVar {
         let ns = cs.into();
         let cs = ns.cs();
         let inner: Penalty = *f()?.borrow();
-        Ok(Self {
-            inner: FqVar::new_variable(cs, || Ok(Fq::from(inner.0)), mode)?,
-        })
+        let penalty = FqVar::new_variable(cs, || Ok(Fq::from(inner.0)), mode)?;
+        // Check the Penalty is 64 bits
+        let _ = bit_constrain(penalty.clone(), 64);
+        Ok(Self { inner: penalty })
     }
 }
 

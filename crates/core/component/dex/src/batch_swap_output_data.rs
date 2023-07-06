@@ -12,7 +12,7 @@ use penumbra_proto::{
 };
 use serde::{Deserialize, Serialize};
 
-use penumbra_num::fixpoint::{U128x128, U128x128Var};
+use penumbra_num::fixpoint::{bit_constrain, U128x128, U128x128Var};
 use penumbra_num::{Amount, AmountVar};
 
 use crate::TradingPairVar;
@@ -139,6 +139,8 @@ impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
         let unfilled_2_fixpoint: U128x128 = output_data.unfilled_2.into();
         let unfilled_2 = U128x128Var::new_variable(cs.clone(), || Ok(unfilled_2_fixpoint), mode)?;
         let height = FqVar::new_variable(cs.clone(), || Ok(Fq::from(output_data.height)), mode)?;
+        // Check the height is 64 bits
+        let _ = bit_constrain(height.clone(), 64);
         let trading_pair = TradingPairVar::new_variable_unchecked(
             cs.clone(),
             || Ok(output_data.trading_pair),
@@ -146,6 +148,8 @@ impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
         )?;
         let epoch_starting_height =
             FqVar::new_variable(cs, || Ok(Fq::from(output_data.epoch_starting_height)), mode)?;
+        // Check the epoch starting height is 64 bits
+        let _ = bit_constrain(epoch_starting_height.clone(), 64);
 
         Ok(Self {
             delta_1,
