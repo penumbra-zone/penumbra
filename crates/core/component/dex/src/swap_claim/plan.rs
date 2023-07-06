@@ -1,11 +1,12 @@
 use penumbra_asset::{Balance, Value};
-use penumbra_crypto::{FieldExt, Fq, Nullifier};
+use penumbra_crypto::{FieldExt, Fq};
 use penumbra_keys::{
     keys::{IncomingViewingKey, NullifierKey},
     FullViewingKey,
 };
 use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 
 use serde::{Deserialize, Serialize};

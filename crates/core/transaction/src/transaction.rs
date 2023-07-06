@@ -6,12 +6,10 @@ use std::{
 use anyhow::{Context, Error};
 use ark_ff::Zero;
 use bytes::Bytes;
+use decaf377::Fr;
 use decaf377_fmd::Clue;
-use penumbra_crypto::{
-    note::StateCommitment,
-    rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes},
-    Fr, Note, Nullifier, PayloadKey, TransactionContext,
-};
+use decaf377_rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes};
+use penumbra_crypto::TransactionContext;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
@@ -21,9 +19,11 @@ use penumbra_fee::Fee;
 use penumbra_ibc::IbcAction;
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, Message, TypeUrl};
-use penumbra_shielded_pool::{Output, Spend};
+use penumbra_sct::Nullifier;
+use penumbra_shielded_pool::{Note, Output, PayloadKey, Spend};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 use penumbra_tct as tct;
+use penumbra_tct::StateCommitment;
 use serde::{Deserialize, Serialize};
 
 use crate::{

@@ -1,7 +1,8 @@
 use penumbra_chain::NoteSource;
-use penumbra_crypto::{note, Note, Nullifier};
 use penumbra_keys::keys::AddressIndex;
 use penumbra_proto::{view::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_sct::Nullifier;
+use penumbra_shielded_pool::{note, Note};
 use penumbra_tct as tct;
 use std::convert::{TryFrom, TryInto};
 

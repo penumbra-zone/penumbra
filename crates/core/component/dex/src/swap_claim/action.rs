@@ -1,9 +1,9 @@
 use anyhow::Context;
 use penumbra_asset::Balance;
-use penumbra_crypto::Nullifier;
 use penumbra_fee::Fee;
 use penumbra_proof_params::GROTH16_PROOF_LENGTH_BYTES;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 
 use crate::BatchSwapOutputData;

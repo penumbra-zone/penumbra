@@ -2,8 +2,8 @@ use anyhow::Result;
 use colored_json::prelude::*;
 use penumbra_chain::{NoteSource, SpendInfo};
 use penumbra_compact_block::CompactBlock;
-use penumbra_crypto::Nullifier;
 use penumbra_proto::DomainType;
+use penumbra_sct::Nullifier;
 use penumbra_tct::StateCommitment;
 
 #[derive(Debug, clap::Subcommand)]

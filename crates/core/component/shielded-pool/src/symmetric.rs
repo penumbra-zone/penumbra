@@ -4,12 +4,14 @@ use chacha20poly1305::{
     ChaCha20Poly1305, Key, Nonce,
 };
 use decaf377::FieldExt;
+use decaf377_ka as ka;
 use penumbra_asset::balance;
 use penumbra_keys::keys::{IncomingViewingKey, OutgoingViewingKey};
+use penumbra_proto::core::transaction::v1alpha1::{self as pb};
 use rand::{CryptoRng, RngCore};
 
-use crate::{ka, note};
-use penumbra_proto::core::transaction::v1alpha1::{self as pb};
+use crate::note;
+
 pub const PAYLOAD_KEY_LEN_BYTES: usize = 32;
 pub const OVK_WRAPPED_LEN_BYTES: usize = 48;
 pub const MEMOKEY_WRAPPED_LEN_BYTES: usize = 48;

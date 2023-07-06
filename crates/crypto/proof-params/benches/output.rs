@@ -4,12 +4,13 @@ use ark_ff::UniformRand;
 use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
-use decaf377::Fr;
+use decaf377::{Fq, Fr};
+use decaf377_fmd as fmd;
+use decaf377_ka as ka;
 use penumbra_asset::{balance, Balance, Value};
-use penumbra_crypto::{fmd, ka, note, Fq, Note, Rseed};
 use penumbra_keys::{keys::Diversifier, Address};
 use penumbra_proof_params::OUTPUT_PROOF_PROVING_KEY;
-use penumbra_shielded_pool::{OutputCircuit, OutputProof};
+use penumbra_shielded_pool::{note, Note, OutputCircuit, OutputProof, Rseed};
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;

@@ -15,16 +15,18 @@ use ark_snark::SNARK;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
+use penumbra_tct::r1cs::StateCommitmentVar;
 use rand_core::OsRng;
 use tct::r1cs::PositionVar;
 
 use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
-use penumbra_crypto::{note, Note, Nullifier, NullifierVar, Rseed};
 use penumbra_keys::keys::{
     AuthorizationKeyVar, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
 };
 use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_sct::{Nullifier, NullifierVar};
+use penumbra_shielded_pool::{note, Note, Rseed};
 
 /// Groth16 proof for delegator voting.
 #[derive(Clone, Debug)]
@@ -91,7 +93,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
         let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
-        let claimed_note_commitment = note::StateCommitmentVar::new_witness(cs.clone(), || {
+        let claimed_note_commitment = StateCommitmentVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof.commitment())
         })?;
 
@@ -351,8 +353,8 @@ mod tests {
 
     use decaf377::{Fq, Fr};
     use penumbra_asset::{asset, Value};
-    use penumbra_crypto::Nullifier;
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_sct::Nullifier;
     use proptest::prelude::*;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {

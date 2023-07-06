@@ -11,9 +11,9 @@ use penumbra_chain::{
     component::{StateReadExt as _, StateWriteExt as _},
     params::ChainParameters,
 };
-use penumbra_crypto::Nullifier;
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::component::{StateReadExt as _, SupplyRead};
 use penumbra_stake::{DelegationToken, GovernanceKey, IdentityKey};
 use penumbra_storage::{StateRead, StateWrite};

@@ -105,9 +105,8 @@ mod tests {
     use anyhow::Result;
     use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
     use penumbra_chain::test_keys;
-    use penumbra_crypto::Note;
     use penumbra_fee::Fee;
-    use penumbra_shielded_pool::{OutputPlan, SpendPlan};
+    use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
     use penumbra_tct as tct;
     use penumbra_transaction::{plan::TransactionPlan, WitnessData};
     use rand_core::OsRng;

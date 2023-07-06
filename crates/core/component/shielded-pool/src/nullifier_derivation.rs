@@ -15,10 +15,11 @@ use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
 
+use crate::{note, Note, Rseed};
 use penumbra_asset::Value;
-use penumbra_crypto::{note, Note, Nullifier, NullifierVar, Rseed};
 use penumbra_keys::keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
 use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_sct::{Nullifier, NullifierVar};
 
 /// Groth16 proof for correct nullifier derivation.
 #[derive(Clone, Debug)]
@@ -195,15 +196,15 @@ mod tests {
     use ark_snark::SNARK;
     use decaf377::{Fq, Fr};
     use penumbra_asset::{asset, Balance, Value};
-    use penumbra_crypto::{Nullifier, Rseed};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_sct::Nullifier;
     use proptest::prelude::*;
 
     use penumbra_proto::core::crypto::v1alpha1 as pb;
     use penumbra_tct as tct;
     use rand_core::OsRng;
 
-    use penumbra_crypto::{note, Note};
+    use crate::{note, Note, Rseed};
 
     use ark_ff::PrimeField;
 

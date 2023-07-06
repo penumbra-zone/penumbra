@@ -23,6 +23,7 @@ penumbra-component = { path = "../component", optional = true }
 penumbra-chain = { path = "../chain", default-features = false }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 penumbra-dex = { path = "../dex", default-features = false }
+penumbra-sct = { path = "../sct", default-features = false }
 
 # Penumbra dependencies
 decaf377-rdsa = { version = "0.6" }

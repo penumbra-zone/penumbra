@@ -8,7 +8,6 @@ use anyhow::{anyhow, Result};
 
 use penumbra_asset::{asset::DenomMetadata, Balance, Value};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_crypto::Note;
 use penumbra_dao::DaoDeposit;
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
@@ -28,7 +27,7 @@ use penumbra_keys::{
 };
 use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
-use penumbra_shielded_pool::{OutputPlan, SpendPlan};
+use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
 use penumbra_stake::{rate::RateData, validator};
 use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;

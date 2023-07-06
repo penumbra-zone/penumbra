@@ -1,14 +1,16 @@
 use ark_ff::UniformRand;
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_crypto::{FieldExt, Fq, Fr, Note, Nullifier, Rseed};
+use penumbra_crypto::{FieldExt, Fq, Fr};
 use penumbra_keys::{Address, FullViewingKey};
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use super::{Body, Spend, SpendProof};
+use crate::{Note, Rseed};
 
 /// A planned [`Spend`](Spend).
 #[derive(Clone, Debug, Deserialize, Serialize)]

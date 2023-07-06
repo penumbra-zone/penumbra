@@ -1,8 +1,9 @@
 use penumbra_asset::Value;
 use penumbra_chain::NoteSource;
-use penumbra_crypto::{note, Note, Nullifier, Rseed};
 use penumbra_keys::keys::AddressIndex;
 use penumbra_proto::{view::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_sct::Nullifier;
+use penumbra_shielded_pool::{note, Note, Rseed};
 use penumbra_tct as tct;
 
 use r2d2_sqlite::rusqlite::Row;

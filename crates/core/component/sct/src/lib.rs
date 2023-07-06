@@ -5,4 +5,7 @@
 pub mod component;
 
 pub mod event;
+mod nullifier;
 pub mod state_key;
+
+pub use nullifier::{Nullifier, NullifierVar};

@@ -1,5 +1,3 @@
-use penumbra_asset::{asset, Value};
-use penumbra_crypto::{Note, Rseed};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{core::chain::v1alpha1 as pb, DomainType, TypeUrl};
@@ -54,27 +52,6 @@ impl std::fmt::Debug for Allocation {
             .field("denom", &self.denom)
             .field("address", &self.address.to_string())
             .finish()
-    }
-}
-
-impl Allocation {
-    /// Obtain a note corresponding to this allocation.
-    ///
-    /// Note: to ensure determinism, this uses a zero rseed when
-    /// creating the note.
-    pub fn note(&self) -> Result<Note, anyhow::Error> {
-        Note::from_parts(
-            self.address,
-            Value {
-                amount: self.amount,
-                asset_id: asset::REGISTRY
-                    .parse_denom(&self.denom)
-                    .ok_or_else(|| anyhow::anyhow!("invalid denomination"))?
-                    .id(),
-            },
-            Rseed([0u8; 32]),
-        )
-        .map_err(Into::into)
     }
 }
 

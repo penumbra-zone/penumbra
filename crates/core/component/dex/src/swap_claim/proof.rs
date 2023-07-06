@@ -6,22 +6,24 @@ use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
-use decaf377::{r1cs::FqVar, Bls12_377};
+use decaf377::{r1cs::FqVar, Bls12_377, Fq};
 use penumbra_fee::Fee;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
+use penumbra_tct::r1cs::StateCommitmentVar;
 use rand_core::OsRng;
 
 use penumbra_asset::{
     asset::{self},
     Value, ValueVar,
 };
-use penumbra_crypto::{
-    note::{self, NoteVar, StateCommitmentVar},
-    Fq, Nullifier, NullifierVar, Rseed,
-};
 use penumbra_keys::keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
 use penumbra_num::{Amount, AmountVar};
+use penumbra_sct::{Nullifier, NullifierVar};
+use penumbra_shielded_pool::{
+    note::{self, NoteVar},
+    Rseed,
+};
 
 use crate::{
     batch_swap_output_data::BatchSwapOutputDataVar,
@@ -105,7 +107,7 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         let swap_plaintext_var =
             SwapPlaintextVar::new_witness(cs.clone(), || Ok(self.swap_plaintext.clone()))?;
 
-        let claimed_swap_commitment = note::StateCommitmentVar::new_witness(cs.clone(), || {
+        let claimed_swap_commitment = StateCommitmentVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof.commitment())
         })?;
 

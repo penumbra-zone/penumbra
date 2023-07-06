@@ -14,10 +14,12 @@ use penumbra_tct::StateCommitment;
 use poseidon377::{hash_1, hash_4, hash_7};
 use rand_core::{CryptoRng, RngCore};
 
+use decaf377_ka as ka;
 use penumbra_asset::{asset, Value, ValueVar};
-use penumbra_crypto::{ka, note::StateCommitmentVar, Note, PayloadKey, Rseed};
 use penumbra_keys::{keys::OutgoingViewingKey, Address, AddressVar};
 use penumbra_num::{Amount, AmountVar};
+use penumbra_shielded_pool::{Note, PayloadKey, Rseed};
+use penumbra_tct::r1cs::StateCommitmentVar;
 
 use crate::{BatchSwapOutputData, TradingPair, TradingPairVar};
 

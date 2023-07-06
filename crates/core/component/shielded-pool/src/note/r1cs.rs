@@ -1,4 +1,3 @@
-use crate::{note, Note};
 use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
@@ -8,6 +7,9 @@ use decaf377::{
 };
 use penumbra_asset::ValueVar;
 use penumbra_keys::address::AddressVar;
+use penumbra_tct::r1cs::StateCommitmentVar;
+
+use crate::Note;
 
 use super::NOTECOMMIT_DOMAIN_SEP;
 
@@ -89,57 +91,6 @@ impl ToConstraintField<Fq> for Note {
 // should be `Note` which we cannot construct from the R1CS variable
 // since we do not have the rseed in-circuit.
 
-pub struct StateCommitmentVar {
-    pub inner: FqVar,
-}
-
-impl StateCommitmentVar {
-    pub fn inner(&self) -> FqVar {
-        self.inner.clone()
-    }
-}
-
-impl AllocVar<note::StateCommitment, Fq> for StateCommitmentVar {
-    fn new_variable<T: std::borrow::Borrow<note::StateCommitment>>(
-        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
-        f: impl FnOnce() -> Result<T, SynthesisError>,
-        mode: ark_r1cs_std::prelude::AllocationMode,
-    ) -> Result<Self, SynthesisError> {
-        let ns = cs.into();
-        let cs = ns.cs();
-        match mode {
-            AllocationMode::Constant => unimplemented!(),
-            AllocationMode::Input => {
-                let note_commitment1 = f()?;
-                let note_commitment: note::StateCommitment = *note_commitment1.borrow();
-                let inner = FqVar::new_input(cs, || Ok(note_commitment.0))?;
-
-                Ok(Self { inner })
-            }
-            AllocationMode::Witness => {
-                let note_commitment1 = f()?;
-                let note_commitment: note::StateCommitment = *note_commitment1.borrow();
-                let inner = FqVar::new_witness(cs, || Ok(note_commitment.0))?;
-
-                Ok(Self { inner })
-            }
-        }
-    }
-}
-
-impl R1CSVar<Fq> for StateCommitmentVar {
-    type Value = note::StateCommitment;
-
-    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
-        self.inner.cs()
-    }
-
-    fn value(&self) -> Result<Self::Value, SynthesisError> {
-        let inner = self.inner.value()?;
-        Ok(note::StateCommitment(inner))
-    }
-}
-
 impl NoteVar {
     pub fn commit(&self) -> Result<StateCommitmentVar, SynthesisError> {
         let cs = self.amount().cs();
@@ -160,11 +111,5 @@ impl NoteVar {
         )?;
 
         Ok(StateCommitmentVar { inner: commitment })
-    }
-}
-
-impl EqGadget<Fq> for StateCommitmentVar {
-    fn is_eq(&self, other: &Self) -> Result<Boolean<Fq>, SynthesisError> {
-        self.inner.is_eq(&other.inner)
     }
 }

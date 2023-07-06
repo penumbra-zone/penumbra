@@ -1,9 +1,9 @@
 use std::convert::TryFrom;
 
 use anyhow::Result;
-use penumbra_crypto::{note, NotePayload};
 use penumbra_dex::swap::SwapPayload;
 use penumbra_proto::core::chain::v1alpha1::{self as pb};
+use penumbra_shielded_pool::{note, NotePayload};
 
 use serde::{Deserialize, Serialize};
 

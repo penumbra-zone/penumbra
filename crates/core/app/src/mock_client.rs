@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 
 use penumbra_compact_block::{component::StateReadExt as _, CompactBlock, StatePayload};
-use penumbra_crypto::{note, Note};
 use penumbra_dex::swap::SwapPlaintext;
 use penumbra_keys::FullViewingKey;
 use penumbra_sct::component::StateReadExt as _;
+use penumbra_shielded_pool::{note, Note};
 use penumbra_storage::StateRead;
 use penumbra_tct as tct;
 

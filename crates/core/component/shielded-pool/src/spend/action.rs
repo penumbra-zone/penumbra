@@ -5,9 +5,10 @@ use bytes::Bytes;
 use penumbra_asset::balance;
 use penumbra_crypto::{
     rdsa::{Signature, SpendAuth, VerificationKey},
-    EffectHash, EffectingData, FieldExt, Nullifier,
+    EffectHash, EffectingData, FieldExt,
 };
 use penumbra_proto::{core::transaction::v1alpha1 as transaction, DomainType, TypeUrl};
+use penumbra_sct::Nullifier;
 
 use crate::SpendProof;
 

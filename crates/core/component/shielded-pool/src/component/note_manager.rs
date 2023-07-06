@@ -2,16 +2,17 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_asset::Value;
 use penumbra_chain::{component::StateReadExt as _, NoteSource, SpendInfo};
-use penumbra_crypto::{Note, NotePayload, Nullifier, Rseed};
 use penumbra_keys::Address;
 use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::{SctManager as _, StateReadExt as _};
+use penumbra_sct::Nullifier;
 use penumbra_storage::StateWrite;
 use penumbra_tct as tct;
 use tct::StateCommitment;
 use tracing::instrument;
 
 use crate::state_key;
+use crate::{Note, NotePayload, Rseed};
 
 use super::SupplyWrite;
 

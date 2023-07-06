@@ -2,8 +2,11 @@ use std::convert::{TryFrom, TryInto};
 
 use ark_ff::PrimeField;
 use blake2b_simd;
-use decaf377::FieldExt;
+use decaf377::{FieldExt, Fq};
+use decaf377_fmd as fmd;
+use decaf377_ka as ka;
 use once_cell::sync::Lazy;
+use penumbra_chain::genesis::Allocation;
 use penumbra_keys::{
     keys::{Diversifier, FullViewingKey, IncomingViewingKey, OutgoingViewingKey},
     Address, AddressView,
@@ -14,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use thiserror;
 
 mod r1cs;
-pub use r1cs::{NoteVar, StateCommitmentVar};
+pub use r1cs::NoteVar;
 
 pub use penumbra_tct::StateCommitment;
 
@@ -22,9 +25,8 @@ use penumbra_asset::{asset, balance, Value, ValueView};
 use penumbra_num::Amount;
 
 use crate::{
-    fmd, ka,
     symmetric::{OutgoingCipherKey, OvkWrappedKey, PayloadKey, PayloadKind},
-    Fq, NotePayload, Rseed,
+    NotePayload, Rseed,
 };
 
 pub const NOTE_LEN_BYTES: usize = 160;
@@ -112,6 +114,25 @@ impl Note {
             == fvk
                 .incoming()
                 .diversified_public(&self.diversified_generator())
+    }
+
+    /// Obtain a note corresponding to this allocation.
+    ///
+    /// Note: to ensure determinism, this uses a zero rseed when
+    /// creating the note.
+    pub fn from_allocation(allocation: Allocation) -> Result<Note, anyhow::Error> {
+        Note::from_parts(
+            allocation.address,
+            Value {
+                amount: allocation.amount,
+                asset_id: asset::REGISTRY
+                    .parse_denom(&allocation.denom)
+                    .ok_or_else(|| anyhow::anyhow!("invalid denomination"))?
+                    .id(),
+            },
+            Rseed([0u8; 32]),
+        )
+        .map_err(Into::into)
     }
 
     pub fn from_parts(address: Address, value: Value, rseed: Rseed) -> Result<Self, Error> {

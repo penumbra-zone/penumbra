@@ -41,6 +41,10 @@ penumbra-stake = { path = "../../core/component/stake/" }
 penumbra-shielded-pool = { path = "../../core/component/shielded-pool/" }
 penumbra-governance = { path = "../../core/component/governance/" }
 penumbra-fee = { path = "../../core/component/fee/" }
+penumbra-sct = { path = "../../core/component/sct/" }
+decaf377-fmd = { path = "../decaf377-fmd/" }
+decaf377-ka = { path = "../decaf377-ka/" }
+decaf377-rdsa = "0.6"
 
 [build-dependencies]
 regex = {version = "1", optional=true }

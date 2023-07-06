@@ -2,12 +2,9 @@
 //! proving/verification key.
 
 use ark_ff::UniformRand;
-use decaf377::Fr;
+use decaf377::{Fq, Fr};
+use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
 use penumbra_asset::{asset, Balance, Value};
-use penumbra_crypto::{
-    rdsa::{self, SpendAuth, VerificationKey},
-    Fq, Note, Nullifier,
-};
 use penumbra_dex::{
     swap::proof::SwapProof, swap::SwapPlaintext, swap_claim::proof::SwapClaimProof,
     BatchSwapOutputData, TradingPair,
@@ -24,6 +21,8 @@ use penumbra_proof_params::{
     SWAP_PROOF_PROVING_KEY, SWAP_PROOF_VERIFICATION_KEY, UNDELEGATECLAIM_PROOF_PROVING_KEY,
     UNDELEGATECLAIM_PROOF_VERIFICATION_KEY,
 };
+use penumbra_sct::Nullifier;
+use penumbra_shielded_pool::Note;
 use penumbra_shielded_pool::{NullifierDerivationProof, OutputProof, SpendProof};
 use penumbra_stake::{IdentityKey, Penalty, UnbondingToken, UndelegateClaimProof};
 use penumbra_tct as tct;
@@ -254,7 +253,7 @@ fn swap_claim_parameters_vs_current_swap_claim_circuit() {
     let anchor = sct.root();
     let state_commitment_proof = sct.witness(swap_commitment).unwrap();
     let position = state_commitment_proof.position();
-    let nullifier: penumbra_crypto::Nullifier = Nullifier::derive(&nk, position, &swap_commitment);
+    let nullifier = Nullifier::derive(&nk, position, &swap_commitment);
     let epoch_duration = 20;
     let height = epoch_duration * position.epoch() + position.block();
 
@@ -405,7 +404,7 @@ fn undelegate_claim_parameters_vs_current_undelegate_claim_circuit() {
 
     let mut rng = OsRng;
 
-    let sk = rdsa::SigningKey::new_from_field(Fr::from(1u8));
+    let sk = SigningKey::new_from_field(Fr::from(1u8));
     let balance_blinding = Fr::from(1u8);
     let value1_amount = 1u64;
     let penalty_amount = 1u64;
