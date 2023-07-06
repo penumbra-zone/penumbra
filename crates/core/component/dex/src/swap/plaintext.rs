@@ -16,9 +16,9 @@ use rand_core::{CryptoRng, RngCore};
 
 use decaf377_ka as ka;
 use penumbra_asset::{asset, Value, ValueVar};
-use penumbra_keys::{keys::OutgoingViewingKey, Address, AddressVar};
+use penumbra_keys::{keys::OutgoingViewingKey, Address, AddressVar, PayloadKey};
 use penumbra_num::{Amount, AmountVar};
-use penumbra_shielded_pool::{Note, PayloadKey, Rseed};
+use penumbra_shielded_pool::{Note, Rseed};
 use penumbra_tct::r1cs::StateCommitmentVar;
 
 use crate::{BatchSwapOutputData, TradingPair, TradingPairVar};

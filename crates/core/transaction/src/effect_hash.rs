@@ -7,9 +7,9 @@ use penumbra_dex::{
     swap, swap_claim, TradingPair,
 };
 use penumbra_fee::Fee;
-use penumbra_keys::FullViewingKey;
+use penumbra_keys::{FullViewingKey, PayloadKey};
 use penumbra_proto::DomainType;
-use penumbra_shielded_pool::{NotePayload, PayloadKey};
+use penumbra_shielded_pool::NotePayload;
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimBody};
 
 use crate::{

@@ -4979,6 +4979,7 @@ dependencies = [
  "num-bigint",
  "once_cell",
  "pbkdf2",
+ "penumbra-asset",
  "penumbra-proto",
  "penumbra-tct",
  "poseidon377",

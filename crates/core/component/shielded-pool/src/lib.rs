@@ -10,12 +10,10 @@ pub mod state_key;
 pub mod note;
 mod note_payload;
 pub mod rseed;
-pub mod symmetric;
 
 pub use note::{Note, NoteCiphertext, NoteView};
 pub use note_payload::NotePayload;
 pub use rseed::Rseed;
-pub use symmetric::PayloadKey;
 
 pub mod nullifier_derivation;
 pub mod output;

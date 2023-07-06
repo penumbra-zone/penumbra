@@ -1,3 +1,4 @@
+use crate::keys::{IncomingViewingKey, OutgoingViewingKey};
 use anyhow::{anyhow, Result};
 use chacha20poly1305::{
     aead::{Aead, NewAead},
@@ -6,11 +7,9 @@ use chacha20poly1305::{
 use decaf377::FieldExt;
 use decaf377_ka as ka;
 use penumbra_asset::balance;
-use penumbra_keys::keys::{IncomingViewingKey, OutgoingViewingKey};
 use penumbra_proto::core::transaction::v1alpha1::{self as pb};
+use penumbra_tct::StateCommitment;
 use rand::{CryptoRng, RngCore};
-
-use crate::note;
 
 pub const PAYLOAD_KEY_LEN_BYTES: usize = 32;
 pub const OVK_WRAPPED_LEN_BYTES: usize = 48;
@@ -29,7 +28,7 @@ pub enum PayloadKind {
 }
 
 impl PayloadKind {
-    pub(crate) fn nonce(&self, commitment: Option<note::StateCommitment>) -> [u8; 12] {
+    pub(crate) fn nonce(&self, commitment: Option<StateCommitment>) -> [u8; 12] {
         match self {
             Self::Note => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             Self::MemoKey => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -103,7 +102,7 @@ impl PayloadKey {
     }
 
     /// Use Blake2b-256 to derive an encryption key from the OVK and public fields for swaps.
-    pub fn derive_swap(ovk: &OutgoingViewingKey, cm: note::StateCommitment) -> Self {
+    pub fn derive_swap(ovk: &OutgoingViewingKey, cm: StateCommitment) -> Self {
         let cm_bytes: [u8; 32] = cm.into();
 
         let mut kdf_params = blake2b_simd::Params::new();
@@ -118,7 +117,7 @@ impl PayloadKey {
     }
 
     /// Encrypt a swap using the `PayloadKey`.
-    pub fn encrypt_swap(&self, plaintext: Vec<u8>, commitment: note::StateCommitment) -> Vec<u8> {
+    pub fn encrypt_swap(&self, plaintext: Vec<u8>, commitment: StateCommitment) -> Vec<u8> {
         let cipher = ChaCha20Poly1305::new(&self.0);
         let nonce_bytes = PayloadKind::Swap.nonce(Some(commitment));
         let nonce = Nonce::from_slice(&nonce_bytes);
@@ -132,7 +131,7 @@ impl PayloadKey {
     pub fn decrypt_swap(
         &self,
         ciphertext: Vec<u8>,
-        commitment: note::StateCommitment,
+        commitment: StateCommitment,
     ) -> Result<Vec<u8>> {
         let cipher = ChaCha20Poly1305::new(&self.0);
 
@@ -194,10 +193,10 @@ pub struct OutgoingCipherKey(Key);
 
 impl OutgoingCipherKey {
     /// Use Blake2b-256 to derive an encryption key `ock` from the OVK and public fields.
-    pub(crate) fn derive(
+    pub fn derive(
         ovk: &OutgoingViewingKey,
         cv: balance::Commitment,
-        cm: note::StateCommitment,
+        cm: StateCommitment,
         epk: &ka::Public,
     ) -> Self {
         let cv_bytes: [u8; 32] = cv.into();
