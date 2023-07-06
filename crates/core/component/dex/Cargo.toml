@@ -28,7 +28,7 @@ penumbra-num = { path = "../../../core/num", default-features = false  }
 penumbra-keys = { path = "../../../core/keys", default-features = false  } 
 
 # Penumbra dependencies
-poseidon377 = { version = "0.5", features = ["r1cs"] }
+poseidon377 = { version = "0.6", features = ["r1cs"] }
 decaf377 = {version = "0.4", features = ["r1cs"] }
 
 # Crates.io deps
