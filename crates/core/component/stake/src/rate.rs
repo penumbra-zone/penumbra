@@ -296,11 +296,12 @@ impl TryFrom<CurrentValidatorRateResponse> for RateData {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use decaf377_rdsa as rdsa;
     use rand_core::OsRng;
 
     #[test]
     fn slash_rate_by_penalty() {
-        let sk = penumbra_crypto::rdsa::SigningKey::new(OsRng);
+        let sk = rdsa::SigningKey::new(OsRng);
         let ik = IdentityKey((&sk).into());
 
         let rate_data = RateData {

@@ -1,9 +1,9 @@
 //! Methods and types used for generating testnet configurations.
 //! Mostly relevant until Penumbra reaches mainnet.
 use anyhow::Context;
+use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
 use directories::UserDirs;
 use penumbra_chain::genesis::AppState;
-use penumbra_crypto::rdsa::{SigningKey, SpendAuth, VerificationKey};
 use penumbra_keys::keys::{SpendKey, SpendKeyBytes};
 use penumbra_wallet::KeyStore;
 use rand::Rng;

@@ -32,6 +32,7 @@ decaf377-fmd = { path = "../../../crypto/decaf377-fmd/" }
 # Penumbra dependencies
 poseidon377 = { version = "0.6", features = ["r1cs"] }
 decaf377 = {version = "0.4", features = ["r1cs"] }
+decaf377-rdsa = {version = "0.6" }
 
 # Crates.io deps
 ark-r1cs-std = {version = "0.4", default-features = false }

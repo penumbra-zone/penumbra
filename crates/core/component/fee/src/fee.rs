@@ -1,7 +1,7 @@
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 
+use decaf377::Fr;
 use penumbra_asset::{asset, balance, Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_crypto::Fr;
 use penumbra_num::Amount;
 
 #[derive(Clone, Debug, PartialEq, Eq)]

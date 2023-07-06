@@ -93,6 +93,7 @@ pub(super) mod internal {
 
 #[cfg(test)]
 mod tests {
+    use decaf377_rdsa as rdsa;
     use std::collections::BTreeSet;
 
     use super::*;
@@ -100,7 +101,7 @@ mod tests {
 
     #[test]
     fn penalty_in_epoch_padding() {
-        let sk = penumbra_crypto::rdsa::SigningKey::new(OsRng);
+        let sk = rdsa::SigningKey::new(OsRng);
         let ik = IdentityKey((&sk).into());
 
         assert_eq!(
@@ -112,7 +113,7 @@ mod tests {
 
     #[test]
     fn penalty_in_epoch_sorting() {
-        let sk = penumbra_crypto::rdsa::SigningKey::new(OsRng);
+        let sk = rdsa::SigningKey::new(OsRng);
         let ik = IdentityKey((&sk).into());
 
         let k791 = penalty_in_epoch(&ik, 791);

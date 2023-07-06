@@ -1,5 +1,5 @@
+use decaf377::{FieldExt, Fq};
 use penumbra_asset::{Balance, Value};
-use penumbra_crypto::{FieldExt, Fq};
 use penumbra_keys::{
     keys::{IncomingViewingKey, NullifierKey},
     FullViewingKey,

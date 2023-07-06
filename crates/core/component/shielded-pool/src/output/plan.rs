@@ -1,6 +1,7 @@
 use ark_ff::UniformRand;
+use decaf377::{FieldExt, Fq, Fr};
+use decaf377_ka as ka;
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_crypto::{ka, FieldExt, Fq, Fr};
 use penumbra_keys::{
     keys::{IncomingViewingKey, OutgoingViewingKey},
     symmetric::WrappedMemoKey,

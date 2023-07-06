@@ -31,6 +31,7 @@ penumbra-transaction = { path = "../transaction", features = ["parallel"] }
 
 # Penumbra dependencies
 decaf377 = { version = "0.4" }
+decaf377-rdsa = { version = "0.6" }
 jmt = "0.6"
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 async-trait = "0.1.52"
