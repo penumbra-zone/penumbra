@@ -168,7 +168,7 @@ impl MerkleAuthPathVar {
         let domain_separator = FqVar::new_constant(cs.clone(), *DOMAIN_SEPARATOR)?;
         let leaf_var = poseidon377::r1cs::hash_1(cs.clone(), &domain_separator, commitment_var)?;
 
-        // Height 0 is the commitment.
+        // Height 0 is the leaf.
         let mut previous_level = leaf_var;
 
         // Start hashing from height 1, first hashing the leaf and its three siblings together,

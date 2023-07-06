@@ -97,7 +97,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
             Ok(self.state_commitment_proof.commitment())
         })?;
 
-        let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
+        let delegator_position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof.position())
         })?;
         let position_bits = tct::r1cs::PositionBitsVar::new_witness(cs.clone(), || {
@@ -131,7 +131,8 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         note_commitment_var.enforce_equal(&claimed_note_commitment)?;
 
         // Nullifier integrity.
-        let nullifier_var = NullifierVar::derive(&nk_var, &position_var, &claimed_note_commitment)?;
+        let nullifier_var =
+            NullifierVar::derive(&nk_var, &delegator_position_var, &claimed_note_commitment)?;
         nullifier_var.enforce_equal(&claimed_nullifier_var)?;
 
         // Merkle auth path verification against the provided anchor.
@@ -159,9 +160,8 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
 
         // Check elements were not identity.
         let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-        identity
-            .conditional_enforce_not_equal(&note_var.diversified_generator(), &Boolean::TRUE)?;
-        identity.conditional_enforce_not_equal(&ak_element_var.inner, &Boolean::TRUE)?;
+        identity.enforce_not_equal(&note_var.diversified_generator())?;
+        identity.enforce_not_equal(&ak_element_var.inner)?;
 
         // Additionally, check that the start position has a zero commitment index, since this is
         // the only sensible start time for a vote.
@@ -175,9 +175,14 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         //
         // Also note that `FpVar::enforce_cmp` requires that the field elements have size
         // (p-1)/2, which is true for positions as they are 64 bits at most.
-        position_var
-            .inner
-            .enforce_cmp(&start_position.inner, core::cmp::Ordering::Less, false)?;
+        //
+        // This MUST be strict inequality (hence passing false to `should_also_check_equality`)
+        // because you could delegate and vote on the proposal in the same block.
+        delegator_position_var.inner.enforce_cmp(
+            &start_position.inner,
+            core::cmp::Ordering::Less,
+            false,
+        )?;
 
         Ok(())
     }

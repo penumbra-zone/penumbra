@@ -37,8 +37,6 @@ impl Penalty {
 
     /// Apply this `Penalty` to an `Amount` of unbonding tokens.
     pub fn apply_to(&self, amount: Amount) -> Amount {
-        // TODO: need widening Amount mul to handle 128-bit values, but we don't do that for staking anyways
-        // TODO: this should all be infallible
         let penalized_amount =
             (u128::try_from(amount).unwrap()) * (1_0000_0000 - self.0 as u128) / 1_0000_0000;
         Amount::try_from(u64::try_from(penalized_amount).unwrap()).unwrap()

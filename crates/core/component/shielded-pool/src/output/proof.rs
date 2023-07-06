@@ -27,16 +27,16 @@ use penumbra_asset::{
 };
 use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 
-// Public:
-// * vcm (value commitment)
-// * ncm (note commitment)
-//
-// Witnesses:
-// * g_d (point)
-// * pk_d (point)
-// * v (u64 value plus asset ID (scalar))
-// * vblind (Fr)
-// * nblind (Fq)
+/// Public:
+/// * vcm (value commitment)
+/// * ncm (note commitment)
+///
+/// Witnesses:
+/// * g_d (point)
+/// * pk_d (point)
+/// * v (u64 value plus asset ID (scalar))
+/// * vblind (Fr)
+/// * nblind (Fq)
 #[derive(Clone, Debug)]
 pub struct OutputCircuit {
     // Witnesses
