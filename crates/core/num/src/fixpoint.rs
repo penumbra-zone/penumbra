@@ -447,6 +447,7 @@ impl U128x128Var {
                     //   1    |   0     | 0
                     //   0    |   0     | 1
                     //   0    |   1     | 1
+                    //
                     // !(p /\ !q) by De Morgan is equivalent to !p \/ q:
                     let this_bit_eq = (self_bit.not()).or(&other_bit)?;
                     acc = acc.and(&this_bit_eq)?;

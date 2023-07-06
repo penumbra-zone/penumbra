@@ -6,7 +6,7 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
-use crate::fixpoint::{convert_le_bits_to_fqvar, U128x128, U128x128Var};
+use crate::fixpoint::{bit_constrain, convert_le_bits_to_fqvar, U128x128, U128x128Var};
 use decaf377::{r1cs::FqVar, FieldExt};
 
 #[derive(Serialize, Default, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
@@ -99,7 +99,7 @@ impl AmountVar {
         let numerator_var = quo_var.clone() * divisor_var.clone() + rem_var.clone();
         self.enforce_equal(&numerator_var)?;
 
-        // In this stanza we constrain: 0 <= rem <= divisor
+        // In this stanza we constrain: 0 <= rem < divisor
         let zero_var = AmountVar {
             amount: FqVar::new_constant(self.cs(), Fq::from(0))?,
         };
@@ -132,6 +132,8 @@ impl AllocVar<Amount, Fq> for AmountVar {
         let cs = ns.cs();
         let amount: Amount = *f()?.borrow();
         let inner_amount_var = FqVar::new_variable(cs, || Ok(Fq::from(amount)), mode)?;
+        // Check the amounts are 128 bits maximum
+        let _ = bit_constrain(inner_amount_var.clone(), 128);
         Ok(Self {
             amount: inner_amount_var,
         })

@@ -8,9 +8,10 @@ publish = false
 penumbra-crypto = { path = "../../crates/core/crypto/" }
 penumbra-proof-params = { path = "../../crates/crypto/proof-params" }
 penumbra-dex = { path = "../../crates/core/component/dex/" }
+penumbra-dao = { path = "../../crates/core/component/dao/", features = ["component"] }
 penumbra-governance = { path = "../../crates/core/component/governance/" }
 penumbra-shielded-pool = { path = "../../crates/core/component/shielded-pool/" }
-penumbra-stake = { path = "../../crates/core/component/stake/" }
+penumbra-stake = { path = "../../crates/core/component/stake/", features = ["component"] }
 ark-groth16 = "0.4"
 ark-serialize = "0.4"
 decaf377 = { version = "0.4", features = ["r1cs"] }

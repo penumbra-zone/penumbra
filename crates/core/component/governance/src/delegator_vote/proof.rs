@@ -174,7 +174,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         // started.
         //
         // Also note that `FpVar::enforce_cmp` requires that the field elements have size
-        // (p-1)/2, which is true for positions as they are 48 bits at most.
+        // (p-1)/2, which is true for positions as they are 64 bits at most.
         position_var
             .inner
             .enforce_cmp(&start_position.inner, core::cmp::Ordering::Less, false)?;
