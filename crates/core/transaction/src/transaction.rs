@@ -9,7 +9,7 @@ use bytes::Bytes;
 use decaf377::Fr;
 use decaf377_fmd::Clue;
 use decaf377_rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes};
-use penumbra_crypto::TransactionContext;
+use penumbra_component::TransactionContext;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},

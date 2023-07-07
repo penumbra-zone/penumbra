@@ -4650,7 +4650,10 @@ version = "0.55.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "hex",
+ "penumbra-proto",
  "penumbra-storage",
+ "penumbra-tct",
  "tendermint",
 ]
 
@@ -5444,6 +5447,7 @@ dependencies = [
  "pbjson-types",
  "penumbra-asset",
  "penumbra-chain",
+ "penumbra-component",
  "penumbra-crypto",
  "penumbra-dao",
  "penumbra-dex",

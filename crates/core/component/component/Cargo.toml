@@ -7,6 +7,9 @@ edition = "2021"
 
 [dependencies]
 penumbra-storage = { path = "../../../storage" }
+penumbra-proto = { path = "../../../proto", default-features = false }
+penumbra-tct = {  path = "../../../crypto/tct", default-features = false }
 async-trait = "0.1.52"
 anyhow = "1"
 tendermint = "0.32.0"
+hex = "0.4"

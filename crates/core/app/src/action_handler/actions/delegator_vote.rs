@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use ark_ff::Zero;
 use async_trait::async_trait;
 use decaf377::Fr;
-use penumbra_crypto::TransactionContext;
+use penumbra_component::TransactionContext;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::action::{DelegatorVote, DelegatorVoteBody};
