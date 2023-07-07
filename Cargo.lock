@@ -1097,7 +1097,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6798148dccfbff0fae41c7574d2fa8f1ef3492fba0face179de5d8d447d67b05"
 dependencies = [
  "memchr",
- "regex-automata 0.3.0",
+ "regex-automata 0.3.1",
  "serde",
 ]
 
@@ -2889,7 +2889,7 @@ dependencies = [
 [[package]]
 name = "ibc-types"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
+source = "git+https://github.com/penumbra-zone/ibc-types#f714fb01ceb9d29945bf3a592cc33fd3eb45b32b"
 dependencies = [
  "ibc-types-core-channel",
  "ibc-types-core-client",
@@ -2906,7 +2906,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-channel"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
+source = "git+https://github.com/penumbra-zone/ibc-types#f714fb01ceb9d29945bf3a592cc33fd3eb45b32b"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2936,7 +2936,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-client"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
+source = "git+https://github.com/penumbra-zone/ibc-types#f714fb01ceb9d29945bf3a592cc33fd3eb45b32b"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2961,7 +2961,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-commitment"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
+source = "git+https://github.com/penumbra-zone/ibc-types#f714fb01ceb9d29945bf3a592cc33fd3eb45b32b"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2994,7 +2994,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-connection"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
+source = "git+https://github.com/penumbra-zone/ibc-types#f714fb01ceb9d29945bf3a592cc33fd3eb45b32b"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3022,7 +3022,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-domain-type"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
+source = "git+https://github.com/penumbra-zone/ibc-types#f714fb01ceb9d29945bf3a592cc33fd3eb45b32b"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3032,7 +3032,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-identifier"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
+source = "git+https://github.com/penumbra-zone/ibc-types#f714fb01ceb9d29945bf3a592cc33fd3eb45b32b"
 dependencies = [
  "displaydoc",
  "serde",
@@ -3041,7 +3041,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-lightclients-tendermint"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
+source = "git+https://github.com/penumbra-zone/ibc-types#f714fb01ceb9d29945bf3a592cc33fd3eb45b32b"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3076,7 +3076,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-path"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
+source = "git+https://github.com/penumbra-zone/ibc-types#f714fb01ceb9d29945bf3a592cc33fd3eb45b32b"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3097,7 +3097,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-timestamp"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
+source = "git+https://github.com/penumbra-zone/ibc-types#f714fb01ceb9d29945bf3a592cc33fd3eb45b32b"
 dependencies = [
  "bytes",
  "displaydoc",
@@ -3114,7 +3114,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-transfer"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#91776248d062930e0ef218e6083ebb1b8e84dcc9"
+source = "git+https://github.com/penumbra-zone/ibc-types#f714fb01ceb9d29945bf3a592cc33fd3eb45b32b"
 dependencies = [
  "displaydoc",
  "serde",
@@ -6296,13 +6296,13 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.9.0"
+version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89089e897c013b3deb627116ae56a6955a72b8bed395c9526af31c9fe528b484"
+checksum = "b2eae68fc220f7cf2532e4494aded17545fce192d59cd996e0fe7887f4ceb575"
 dependencies = [
  "aho-corasick 1.0.2",
  "memchr",
- "regex-automata 0.3.0",
+ "regex-automata 0.3.1",
  "regex-syntax 0.7.3",
 ]
 
@@ -6317,9 +6317,9 @@ dependencies = [
 
 [[package]]
 name = "regex-automata"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa250384981ea14565685dea16a9ccc4d1c541a13f82b9c168572264d1df8c56"
+checksum = "e9aaecc05d5c4b5f7da074b9a0d1a0867e71fd36e7fc0482d8bcfe8e8fc56290"
 dependencies = [
  "aho-corasick 1.0.2",
  "memchr",
@@ -6760,9 +6760,9 @@ checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
 name = "serde"
-version = "1.0.166"
+version = "1.0.167"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d01b7404f9d441d3ad40e6a636a7782c377d2abdbe4fa2440e2edcc2f4f10db8"
+checksum = "7daf513456463b42aa1d94cff7e0c24d682b429f020b9afa4f5ba5c40a22b237"
 dependencies = [
  "serde_derive",
 ]
@@ -6799,9 +6799,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.166"
+version = "1.0.167"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dd83d6dde2b6b2d466e14d9d1acce8816dedee94f735eac6395808b3483c6d6"
+checksum = "b69b106b68bc8054f0e974e70d19984040f8a5cf9215ca82626ea4853f82c4b9"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
@@ -7481,18 +7481,18 @@ checksum = "222a222a5bfe1bba4a77b45ec488a741b3cb8872e5e499451fd7d0129c9c7c3d"
 
 [[package]]
 name = "thiserror"
-version = "1.0.41"
+version = "1.0.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c16a64ba9387ef3fdae4f9c1a7f07a0997fce91985c0336f1ddc1822b3b37802"
+checksum = "a35fc5b8971143ca348fa6df4f024d4d55264f3468c71ad1c2f365b0a4d58c42"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.41"
+version = "1.0.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d14928354b01c4d6a4f0e549069adef399a284e7995c7ccca94e8a07a5346c59"
+checksum = "463fe12d7993d3b327787537ce8dd4dfa058de32fc2b195ef3cde03dc4771e8f"
 dependencies = [
  "proc-macro2 1.0.63",
  "quote 1.0.29",
@@ -8606,9 +8606,9 @@ checksum = "1a515f5799fe4961cb532f983ce2b23082366b898e52ffbce459c86f67c8378a"
 
 [[package]]
 name = "winnow"
-version = "0.4.7"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca0ace3845f0d96209f0375e6d367e3eb87eb65d27d445bdc9f1843a26f39448"
+checksum = "a9482fe6ceabdf32f3966bfdd350ba69256a97c30253dc616fe0005af24f164e"
 dependencies = [
  "memchr",
 ]
