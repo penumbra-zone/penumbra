@@ -84,9 +84,10 @@ pub trait ViewClient {
     >;
 
     /// Queries for account balance by address
-    fn balance_by_address(
+    fn balances(
         &mut self,
-        address: Address,
+        address_index: AddressIndex,
+        asset_id: Option<asset::Id>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<(Id, Amount)>>> + Send + 'static>>;
 
     /// Queries for a specific note by commitment, returning immediately if it is not found.
@@ -433,16 +434,18 @@ where
         .boxed()
     }
 
-    fn balance_by_address(
+    fn balances(
         &mut self,
-        address: Address,
+        address_index: AddressIndex,
+        asset_id: Option<asset::Id>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<(Id, Amount)>>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let req = ViewProtocolServiceClient::balance_by_address(
+            let req = ViewProtocolServiceClient::balances(
                 &mut self2,
-                tonic::Request::new(pb::BalanceByAddressRequest {
-                    address: Some(address.into()),
+                tonic::Request::new(pb::BalancesRequest {
+                    account_filter: Some(address_index.into()),
+                    asset_id_filter: asset_id.map(Into::into),
                 }),
             );
 
@@ -451,14 +454,20 @@ where
             balances
                 .into_iter()
                 .map(|rsp| {
-                    let asset = rsp
-                        .asset
+                    let balance = rsp
+                        .balance
+                        .ok_or_else(|| anyhow::anyhow!("empty balance type"))?;
+
+                    let asset = balance
+                        .asset_id
                         .ok_or_else(|| anyhow::anyhow!("empty asset type"))?
                         .try_into()?;
-                    let amount = rsp
+
+                    let amount = balance
                         .amount
                         .ok_or_else(|| anyhow::anyhow!("empty amount type"))?
                         .try_into()?;
+
                     Ok((asset, amount))
                 })
                 .collect()

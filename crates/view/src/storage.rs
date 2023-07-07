@@ -9,7 +9,7 @@ use penumbra_dex::{
     lp::position::{self, Position, State},
     TradingPair,
 };
-use penumbra_keys::{Address, FullViewingKey};
+use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::{
     client::v1alpha1::{
@@ -228,13 +228,25 @@ impl Storage {
     }
 
     /// Query for account balance by address
-    pub async fn balance_by_address(&self, address: Address) -> anyhow::Result<BTreeMap<Id, u128>> {
+    pub async fn balances(
+        &self,
+        address_index: Option<AddressIndex>,
+        asset_id: Option<asset::Id>,
+    ) -> anyhow::Result<BTreeMap<Id, u128>> {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            let address = address.to_vec();
+            // If set, only return notes with the specified address index.
+            let address_clause = address_index
+            .map(|d| format!("x'{}'", hex::encode(d.to_bytes())))
+            .unwrap_or_else(|| "address_index".to_string());
 
-            let mut balance_by_address = BTreeMap::new();
+            // If set, only return notes with the specified asset id.
+            let asset_clause = asset_id
+            .map(|id| format!("x'{}'", hex::encode(id.to_bytes())))
+            .unwrap_or_else(|| "asset_id".to_string());
+
+            let mut balances = BTreeMap::new();
 
             for result in pool.get()?
                 .prepare_cached(
@@ -242,9 +254,10 @@ impl Storage {
                     FROM    notes
                     JOIN    spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
                     WHERE   spendable_notes.height_spent IS NULL
-                    AND     notes.address IS ?1",
+                    AND     spendable_notes.address_index IS ?1
+                    AND     notes.asset_id IS ?2",
                 )?
-                .query_map([address], |row| {
+                .query_map([address_clause, asset_clause], |row| {
                     let asset_id: Vec<u8> = row.get("asset_id")?;
                     let amount: [u8; 16] = row.get("amount")?;
                     Ok((asset_id, amount))
@@ -254,13 +267,13 @@ impl Storage {
 
                 let amount_u128: u128 = u128::from_be_bytes(amount);
 
-                balance_by_address
+                balances
                     .entry(Id::try_from(asset_id.as_slice())?)
                     .and_modify(|x| *x += amount_u128)
                     .or_insert(amount_u128);
             }
 
-            Ok(balance_by_address)
+            Ok(balances)
         })
         .await?
     }

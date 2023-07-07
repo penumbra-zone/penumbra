@@ -61,8 +61,8 @@ service ViewProtocolService {
   rpc EphemeralAddress(EphemeralAddressRequest) returns (EphemeralAddressResponse);
 
   // Query for balance of a given address.
-  // Returns a stream of `BalanceByAddressResponses`.
-  rpc BalanceByAddress(BalanceByAddressRequest) returns (stream BalanceByAddressResponse);
+  // Returns a stream of `BalancesResponses`.
+  rpc Balances(BalancesRequest) returns (stream BalancesResponse);
 
   // Query for a note by its note commitment, optionally waiting until the note is detected.
   rpc NoteByCommitment(NoteByCommitmentRequest) returns (NoteByCommitmentResponse);
@@ -188,13 +188,16 @@ message EphemeralAddressResponse {
   core.crypto.v1alpha1.Address address = 1;
 }
 
-message BalanceByAddressRequest {
-  core.crypto.v1alpha1.Address address = 1;
+message BalancesRequest {
+  // If present, filter balances to only include the account specified by the `AddressIndex`.
+  core.crypto.v1alpha1.AddressIndex account_filter = 1;
+  // If present, filter balances to only include the specified asset ID.
+  core.crypto.v1alpha1.AssetId asset_id_filter = 2;
 }
 
-message BalanceByAddressResponse {
-    core.crypto.v1alpha1.AssetId asset = 1;
-    core.crypto.v1alpha1.Amount amount = 2;
+message BalancesResponse {
+  core.crypto.v1alpha1.AddressIndex account = 1; 
+  core.crypto.v1alpha1.Value balance = 2;
 }
 
 // Scaffolding for bearer-token authentication for the ViewService.

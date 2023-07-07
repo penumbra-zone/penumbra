@@ -188,17 +188,27 @@ pub struct EphemeralAddressResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct BalanceByAddressRequest {
+pub struct BalancesRequest {
+    /// If present, filter balances to only include the account specified by the `AddressIndex`.
     #[prost(message, optional, tag = "1")]
-    pub address: ::core::option::Option<super::super::core::crypto::v1alpha1::Address>,
+    pub account_filter: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AddressIndex,
+    >,
+    /// If present, filter balances to only include the specified asset ID.
+    #[prost(message, optional, tag = "2")]
+    pub asset_id_filter: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AssetId,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct BalanceByAddressResponse {
+pub struct BalancesResponse {
     #[prost(message, optional, tag = "1")]
-    pub asset: ::core::option::Option<super::super::core::crypto::v1alpha1::AssetId>,
+    pub account: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AddressIndex,
+    >,
     #[prost(message, optional, tag = "2")]
-    pub amount: ::core::option::Option<super::super::core::crypto::v1alpha1::Amount>,
+    pub balance: ::core::option::Option<super::super::core::crypto::v1alpha1::Value>,
 }
 /// Scaffolding for bearer-token authentication for the ViewService.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -972,12 +982,12 @@ pub mod view_protocol_service_client {
             self.inner.unary(request.into_request(), path, codec).await
         }
         /// Query for balance of a given address.
-        /// Returns a stream of `BalanceByAddressResponses`.
-        pub async fn balance_by_address(
+        /// Returns a stream of `BalancesResponses`.
+        pub async fn balances(
             &mut self,
-            request: impl tonic::IntoRequest<super::BalanceByAddressRequest>,
+            request: impl tonic::IntoRequest<super::BalancesRequest>,
         ) -> Result<
-            tonic::Response<tonic::codec::Streaming<super::BalanceByAddressResponse>>,
+            tonic::Response<tonic::codec::Streaming<super::BalancesResponse>>,
             tonic::Status,
         > {
             self.inner
@@ -991,7 +1001,7 @@ pub mod view_protocol_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocolService/BalanceByAddress",
+                "/penumbra.view.v1alpha1.ViewProtocolService/Balances",
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
@@ -1377,18 +1387,18 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::EphemeralAddressRequest>,
         ) -> Result<tonic::Response<super::EphemeralAddressResponse>, tonic::Status>;
-        /// Server streaming response type for the BalanceByAddress method.
-        type BalanceByAddressStream: futures_core::Stream<
-                Item = Result<super::BalanceByAddressResponse, tonic::Status>,
+        /// Server streaming response type for the Balances method.
+        type BalancesStream: futures_core::Stream<
+                Item = Result<super::BalancesResponse, tonic::Status>,
             >
             + Send
             + 'static;
         /// Query for balance of a given address.
-        /// Returns a stream of `BalanceByAddressResponses`.
-        async fn balance_by_address(
+        /// Returns a stream of `BalancesResponses`.
+        async fn balances(
             &self,
-            request: tonic::Request<super::BalanceByAddressRequest>,
-        ) -> Result<tonic::Response<Self::BalanceByAddressStream>, tonic::Status>;
+            request: tonic::Request<super::BalancesRequest>,
+        ) -> Result<tonic::Response<Self::BalancesStream>, tonic::Status>;
         /// Query for a note by its note commitment, optionally waiting until the note is detected.
         async fn note_by_commitment(
             &self,
@@ -1987,28 +1997,25 @@ pub mod view_protocol_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocolService/BalanceByAddress" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/Balances" => {
                     #[allow(non_camel_case_types)]
-                    struct BalanceByAddressSvc<T: ViewProtocolService>(pub Arc<T>);
+                    struct BalancesSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
                         T: ViewProtocolService,
-                    > tonic::server::ServerStreamingService<
-                        super::BalanceByAddressRequest,
-                    > for BalanceByAddressSvc<T> {
-                        type Response = super::BalanceByAddressResponse;
-                        type ResponseStream = T::BalanceByAddressStream;
+                    > tonic::server::ServerStreamingService<super::BalancesRequest>
+                    for BalancesSvc<T> {
+                        type Response = super::BalancesResponse;
+                        type ResponseStream = T::BalancesStream;
                         type Future = BoxFuture<
                             tonic::Response<Self::ResponseStream>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::BalanceByAddressRequest>,
+                            request: tonic::Request<super::BalancesRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).balance_by_address(request).await
-                            };
+                            let fut = async move { (*inner).balances(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -2017,7 +2024,7 @@ pub mod view_protocol_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = BalanceByAddressSvc(inner);
+                        let method = BalancesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

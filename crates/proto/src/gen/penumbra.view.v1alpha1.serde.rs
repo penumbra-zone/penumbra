@@ -691,7 +691,7 @@ impl<'de> serde::Deserialize<'de> for AuthorizeAndBuildResponse {
         deserializer.deserialize_struct("penumbra.view.v1alpha1.AuthorizeAndBuildResponse", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for BalanceByAddressRequest {
+impl serde::Serialize for BalancesRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -699,29 +699,39 @@ impl serde::Serialize for BalanceByAddressRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.address.is_some() {
+        if self.account_filter.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.BalanceByAddressRequest", len)?;
-        if let Some(v) = self.address.as_ref() {
-            struct_ser.serialize_field("address", v)?;
+        if self.asset_id_filter.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.BalancesRequest", len)?;
+        if let Some(v) = self.account_filter.as_ref() {
+            struct_ser.serialize_field("accountFilter", v)?;
+        }
+        if let Some(v) = self.asset_id_filter.as_ref() {
+            struct_ser.serialize_field("assetIdFilter", v)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for BalanceByAddressRequest {
+impl<'de> serde::Deserialize<'de> for BalancesRequest {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "address",
+            "account_filter",
+            "accountFilter",
+            "asset_id_filter",
+            "assetIdFilter",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            Address,
+            AccountFilter,
+            AssetIdFilter,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -743,7 +753,8 @@ impl<'de> serde::Deserialize<'de> for BalanceByAddressRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "address" => Ok(GeneratedField::Address),
+                            "accountFilter" | "account_filter" => Ok(GeneratedField::AccountFilter),
+                            "assetIdFilter" | "asset_id_filter" => Ok(GeneratedField::AssetIdFilter),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -753,36 +764,44 @@ impl<'de> serde::Deserialize<'de> for BalanceByAddressRequest {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = BalanceByAddressRequest;
+            type Value = BalancesRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.view.v1alpha1.BalanceByAddressRequest")
+                formatter.write_str("struct penumbra.view.v1alpha1.BalancesRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<BalanceByAddressRequest, V::Error>
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<BalancesRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut address__ = None;
+                let mut account_filter__ = None;
+                let mut asset_id_filter__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::Address => {
-                            if address__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("address"));
+                        GeneratedField::AccountFilter => {
+                            if account_filter__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("accountFilter"));
                             }
-                            address__ = map.next_value()?;
+                            account_filter__ = map.next_value()?;
+                        }
+                        GeneratedField::AssetIdFilter => {
+                            if asset_id_filter__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetIdFilter"));
+                            }
+                            asset_id_filter__ = map.next_value()?;
                         }
                     }
                 }
-                Ok(BalanceByAddressRequest {
-                    address: address__,
+                Ok(BalancesRequest {
+                    account_filter: account_filter__,
+                    asset_id_filter: asset_id_filter__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.view.v1alpha1.BalanceByAddressRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.view.v1alpha1.BalancesRequest", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for BalanceByAddressResponse {
+impl serde::Serialize for BalancesResponse {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -790,37 +809,37 @@ impl serde::Serialize for BalanceByAddressResponse {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.asset.is_some() {
+        if self.account.is_some() {
             len += 1;
         }
-        if self.amount.is_some() {
+        if self.balance.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.BalanceByAddressResponse", len)?;
-        if let Some(v) = self.asset.as_ref() {
-            struct_ser.serialize_field("asset", v)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.BalancesResponse", len)?;
+        if let Some(v) = self.account.as_ref() {
+            struct_ser.serialize_field("account", v)?;
         }
-        if let Some(v) = self.amount.as_ref() {
-            struct_ser.serialize_field("amount", v)?;
+        if let Some(v) = self.balance.as_ref() {
+            struct_ser.serialize_field("balance", v)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for BalanceByAddressResponse {
+impl<'de> serde::Deserialize<'de> for BalancesResponse {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "asset",
-            "amount",
+            "account",
+            "balance",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            Asset,
-            Amount,
+            Account,
+            Balance,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -842,8 +861,8 @@ impl<'de> serde::Deserialize<'de> for BalanceByAddressResponse {
                         E: serde::de::Error,
                     {
                         match value {
-                            "asset" => Ok(GeneratedField::Asset),
-                            "amount" => Ok(GeneratedField::Amount),
+                            "account" => Ok(GeneratedField::Account),
+                            "balance" => Ok(GeneratedField::Balance),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -853,41 +872,41 @@ impl<'de> serde::Deserialize<'de> for BalanceByAddressResponse {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = BalanceByAddressResponse;
+            type Value = BalancesResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.view.v1alpha1.BalanceByAddressResponse")
+                formatter.write_str("struct penumbra.view.v1alpha1.BalancesResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<BalanceByAddressResponse, V::Error>
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<BalancesResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut asset__ = None;
-                let mut amount__ = None;
+                let mut account__ = None;
+                let mut balance__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::Asset => {
-                            if asset__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("asset"));
+                        GeneratedField::Account => {
+                            if account__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("account"));
                             }
-                            asset__ = map.next_value()?;
+                            account__ = map.next_value()?;
                         }
-                        GeneratedField::Amount => {
-                            if amount__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("amount"));
+                        GeneratedField::Balance => {
+                            if balance__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("balance"));
                             }
-                            amount__ = map.next_value()?;
+                            balance__ = map.next_value()?;
                         }
                     }
                 }
-                Ok(BalanceByAddressResponse {
-                    asset: asset__,
-                    amount: amount__,
+                Ok(BalancesResponse {
+                    account: account__,
+                    balance: balance__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.view.v1alpha1.BalanceByAddressResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.view.v1alpha1.BalancesResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for BroadcastTransactionRequest {
