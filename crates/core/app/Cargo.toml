@@ -11,7 +11,6 @@ penumbra-proto = { path = "../../proto", features = ["penumbra-storage"] }
 penumbra-storage = { path = "../../storage" }
 penumbra-tct = { path = "../../crypto/tct" }
 penumbra-proof-params = { path = "../../crypto/proof-params" }
-penumbra-crypto = { path = "../crypto" }
 penumbra-asset = { path = "../asset" }
 penumbra-keys = { path = "../keys" }
 penumbra-num = { path = "../num" }

@@ -27,7 +27,6 @@ penumbra-proto = { path = "../../../proto" }
 penumbra-storage = { path = "../../../storage", default-features = false, optional = true }
 penumbra-tct = { path = "../../../crypto/tct" }
 penumbra-proof-params = { path = "../../../crypto/proof-params" }
-penumbra-crypto = { path = "../../crypto" }
 penumbra-component = { path = "../component", default-features = false, optional = true }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 penumbra-sct = { path = "../sct", default-features = false }

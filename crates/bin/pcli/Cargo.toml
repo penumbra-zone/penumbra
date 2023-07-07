@@ -16,13 +16,12 @@ default = ["std", "parallel", "download-proving-keys"]
 download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
 sct-divergence-check = ["penumbra-view/sct-divergence-check"]
 std = ["ark-ff/std", "ibc-types/std"]
-parallel = ["penumbra-proof-params/parallel", "decaf377/parallel", "penumbra-shielded-pool/parallel", "penumbra-dex/parallel", "penumbra-governance/parallel", "penumbra-stake/parallel", "penumbra-crypto/parallel", "penumbra-transaction/parallel", "penumbra-wallet/parallel"]
+parallel = ["penumbra-proof-params/parallel", "decaf377/parallel", "penumbra-shielded-pool/parallel", "penumbra-dex/parallel", "penumbra-governance/parallel", "penumbra-stake/parallel", "penumbra-transaction/parallel", "penumbra-wallet/parallel"]
 
 [dependencies]
 # Workspace dependencies
 penumbra-proto            = { path = "../../proto", features = ["rpc"] }
 penumbra-tct              = { path = "../../crypto/tct" }
-penumbra-crypto           = { path = "../../core/crypto", features = ["parallel"] }
 penumbra-num           = { path = "../../core/num", default-features=false }
 penumbra-asset           = { path = "../../core/asset", default-features=false }
 penumbra-keys           = { path = "../../core/keys", default-features=false }

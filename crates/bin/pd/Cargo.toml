@@ -23,7 +23,6 @@ penumbra-proto            = { path = "../../proto" }
 penumbra-storage          = { path = "../../storage" }
 penumbra-asset           = { path = "../../core/asset" }
 penumbra-keys           = { path = "../../core/keys" }
-penumbra-crypto           = { path = "../../core/crypto", features = ["parallel"] }
 penumbra-shielded-pool    = { path = "../../core/component/shielded-pool", features = ["parallel"] }
 penumbra-stake            = { path = "../../core/component/stake", features = ["parallel"] }
 penumbra-sct              = { path = "../../core/component/sct" }

@@ -10,13 +10,12 @@ default = ["std"]
 std = ["ibc-types/std"]
 sct-divergence-check = ["penumbra-view/sct-divergence-check"]
 # Enable to use rayon parallelism for crypto operations
-parallel = ["penumbra-crypto/parallel", "penumbra-transaction/parallel"]
+parallel = ["penumbra-transaction/parallel"]
 
 [dependencies]
 # Workspace dependencies
 penumbra-proto            = { path = "../../proto", features = ["rpc"] }
 penumbra-tct              = { path = "../../crypto/tct" }
-penumbra-crypto           = { path = "../../core/crypto", features = ["parallel"] }
 penumbra-asset           = { path = "../../core/asset" }
 penumbra-keys           = { path = "../../core/keys" }
 penumbra-chain            = { path = "../../core/component/chain" }

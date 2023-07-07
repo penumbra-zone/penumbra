@@ -21,7 +21,6 @@ sct-divergence-check = []
 # Workspace dependencies
 penumbra-proto         = { path = "../proto", features = ["rpc"] }
 penumbra-tct           = { path = "../crypto/tct" }
-penumbra-crypto        = { path = "../core/crypto" }
 penumbra-num        = { path = "../core/num" }
 penumbra-keys        = { path = "../core/keys" }
 penumbra-asset        = { path = "../core/asset" }
