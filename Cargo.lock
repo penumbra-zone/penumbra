@@ -4385,6 +4385,7 @@ dependencies = [
  "penumbra-compact-block",
  "penumbra-crypto",
  "penumbra-dex",
+ "penumbra-governance",
  "penumbra-ibc",
  "penumbra-keys",
  "penumbra-proto",
