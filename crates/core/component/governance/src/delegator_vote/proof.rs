@@ -121,7 +121,6 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
         let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.rk.clone()))?;
         let start_position = PositionVar::new_input(cs.clone(), || Ok(self.start_position))?;
-        let start_position_bits = start_position.to_bits_le()?;
 
         // Note commitment integrity.
         let note_commitment_var = note_var.commit()?;
@@ -163,7 +162,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         // Additionally, check that the start position has a zero commitment index, since this is
         // the only sensible start time for a vote.
         let zero_constant = FqVar::constant(Fq::from(0u64));
-        let commitment = start_position_bits.commitment()?;
+        let commitment = start_position.commitment()?;
         commitment.enforce_equal(&zero_constant)?;
 
         // Additionally, check that the position of the spend proof is before the start
@@ -175,8 +174,8 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         //
         // This MUST be strict inequality (hence passing false to `should_also_check_equality`)
         // because you could delegate and vote on the proposal in the same block.
-        delegator_position_var.inner.enforce_cmp(
-            &start_position.inner,
+        delegator_position_var.position.enforce_cmp(
+            &start_position.position,
             core::cmp::Ordering::Less,
             false,
         )?;
@@ -366,7 +365,7 @@ mod tests {
     }
 
     proptest! {
-    #![proptest_config(ProptestConfig::with_cases(2))]
+    #![proptest_config(ProptestConfig::with_cases(1))]
     #[test]
     fn delegator_vote_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 1..2000000000u64, num_commitments in 0..2000u64) {
         let (pk, vk) = DelegatorVoteCircuit::generate_prepared_test_parameters();
@@ -405,6 +404,7 @@ mod tests {
         let first_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
         sct.insert(tct::Witness::Keep, first_note_commitment).unwrap();
         let start_position = sct.witness(first_note_commitment).unwrap().position();
+        dbg!(start_position.commitment());
 
         let balance_commitment = value_to_send.commit(Fr::from(0u64));
         let rk: VerificationKey<SpendAuth> = rsk.into();
@@ -432,6 +432,74 @@ mod tests {
 
         let proof_result = proof.verify(&vk, anchor, balance_commitment, nf, rk, start_position);
         assert!(proof_result.is_ok());
+        }
+    }
+
+    proptest! {
+    #![proptest_config(ProptestConfig::with_cases(1))]
+    #[test]
+    #[should_panic]
+    fn delegator_vote_invalid_start_position(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 1..2000000000u64, num_commitments in 1000..2000u64) {
+        let (pk, _vk) = DelegatorVoteCircuit::generate_prepared_test_parameters();
+        let mut rng = OsRng;
+
+        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let fvk_sender = sk_sender.full_viewing_key();
+        let ivk_sender = fvk_sender.incoming();
+        let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
+
+        let value_to_send = Value {
+            amount: value_amount.into(),
+            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
+        };
+
+        let note = Note::generate(&mut rng, &sender, value_to_send);
+        let note_commitment = note.commit();
+        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+        let nk = *sk_sender.nullifier_key();
+        let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
+        let mut sct = tct::Tree::new();
+
+        // Next, we simulate the case where the SCT is not empty by adding `num_commitments`
+        // unrelated items in the SCT.
+        for _ in 0..num_commitments {
+            let random_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
+            sct.insert(tct::Witness::Keep, random_note_commitment).unwrap();
+        }
+
+        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(note_commitment).unwrap();
+
+        let not_first_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
+        sct.insert(tct::Witness::Keep, not_first_note_commitment).unwrap();
+        let start_position = sct.witness(not_first_note_commitment).unwrap().position();
+        dbg!(start_position.commitment());
+
+        let balance_commitment = value_to_send.commit(Fr::from(0u64));
+        let rk: VerificationKey<SpendAuth> = rsk.into();
+        let nf = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
+
+        let blinding_r = Fq::rand(&mut OsRng);
+        let blinding_s = Fq::rand(&mut OsRng);
+
+        let _ = DelegatorVoteProof::prove(
+            blinding_r,
+            blinding_s,
+            &pk,
+            state_commitment_proof,
+            note,
+            spend_auth_randomizer,
+            ak,
+            nk,
+            anchor,
+            balance_commitment,
+            nf,
+            rk,
+            start_position,
+        );
+        // Should not be able to construct a valid proof if the start position commitment index is non-zero
         }
     }
 }

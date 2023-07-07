@@ -6,7 +6,7 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
-use crate::fixpoint::{bit_constrain, convert_le_bits_to_fqvar, U128x128, U128x128Var};
+use crate::fixpoint::{bit_constrain, U128x128, U128x128Var};
 use decaf377::{r1cs::FqVar, FieldExt};
 
 #[derive(Serialize, Default, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
@@ -427,7 +427,7 @@ impl From<U128x128Var> for AmountVar {
         le_bits.extend_from_slice(&value.limbs[2].to_bits_le()[..]);
         le_bits.extend_from_slice(&value.limbs[3].to_bits_le()[..]);
         Self {
-            amount: convert_le_bits_to_fqvar(&le_bits[..]),
+            amount: Boolean::<Fq>::le_bits_to_fp_var(&le_bits[..]).expect("can convert to bits"),
         }
     }
 }

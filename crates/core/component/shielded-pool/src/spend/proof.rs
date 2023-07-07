@@ -793,7 +793,7 @@ mod tests {
             let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
                 Ok(self.state_commitment_proof.position())
             })?;
-            let position_bits = position_var.inner.to_bits_le()?;
+            let position_bits = position_var.to_bits_le()?;
             merkle_path_var.verify(
                 cs,
                 &Boolean::TRUE,
