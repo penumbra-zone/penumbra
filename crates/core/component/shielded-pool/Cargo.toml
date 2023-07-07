@@ -18,7 +18,6 @@ default = ["std", "component", "proving-keys"]
 std = ["ark-ff/std"]
 parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "ark-groth16/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
 docsrs = []
-parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "ark-groth16/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
 
 [dependencies]
 # Workspace dependencies
