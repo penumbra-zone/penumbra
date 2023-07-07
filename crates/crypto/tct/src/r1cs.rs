@@ -202,59 +202,54 @@ impl MerkleAuthPathVar {
 ///
 /// A bundle of boolean R1CS constraints representing the path.
 pub struct WhichWayVar {
-    /// The node is the leftmost (0th) child.
-    pub is_leftmost: Boolean<Fq>,
-    /// The node is the left (1st) child.
-    pub is_left: Boolean<Fq>,
-    /// The node is the right (2nd) child.
-    pub is_right: Boolean<Fq>,
-    /// The node is the rightmost (3rd) child.
-    pub is_rightmost: Boolean<Fq>,
+    /// This FqVar has been constructed from two bits of the position.
+    inner: FqVar,
 }
 
 impl WhichWayVar {
     /// Given a height and an index of a leaf, determine which direction the path down to that leaf
     /// should branch at the node at that height. Allocates a `WhichWayVar`.
-    pub fn at(height: u8, position_bits: &Vec<Boolean<Fq>>) -> Result<WhichWayVar, SynthesisError> {
+    pub fn at(height: u8, position_bits: &[Boolean<Fq>]) -> Result<WhichWayVar, SynthesisError> {
         let shift = 2 * (height - 1);
-        let index_1 = shift;
-        let index_2 = shift + 1;
-        let bit_1 = position_bits[index_1 as usize].clone();
-        let bit_2 = position_bits[index_2 as usize].clone();
+        let bit_1 = position_bits[shift as usize].clone();
+        let bit_2 = position_bits[(shift + 1) as usize].clone();
 
         // Convert last two bits back to a field element.
-        let num_last_two_bits =
-            FqVar::from(bit_1) + FqVar::constant(Fq::from(2)) * FqVar::from(bit_2);
+        //
+        // The below is effectively ensuring that the inner FqVar is constrained to be within
+        // the range [0, 3] via the equation `inner = bit_1 + 2 * bit_2`
+        // For example, for the maximum values: bit_1 = 1, bit_2 = 1
+        // inner = 1 + 2 * 1 = 3
+        let inner = FqVar::from(bit_1) + FqVar::constant(Fq::from(2)) * FqVar::from(bit_2);
 
-        let is_leftmost = num_last_two_bits.is_eq(&FqVar::zero())?;
-        let is_left = num_last_two_bits.is_eq(&FqVar::one())?;
-        let is_right = num_last_two_bits.is_eq(&FqVar::constant(Fq::from(2u128)))?;
-        let is_rightmost = num_last_two_bits.is_eq(&FqVar::constant(Fq::from(3u128)))?;
-
-        Ok(WhichWayVar {
-            is_leftmost,
-            is_left,
-            is_right,
-            is_rightmost,
-        })
+        Ok(WhichWayVar { inner })
     }
 
     /// Insert the provided node into the quadtree at the provided height.
     pub fn insert(&self, node: FqVar, siblings: [FqVar; 3]) -> Result<[FqVar; 4], SynthesisError> {
+        // The node is the leftmost (0th) child.
+        let is_leftmost = self.inner.is_eq(&FqVar::zero())?;
+        // The node is the left (1st) child.
+        let is_left = self.inner.is_eq(&FqVar::one())?;
+        // The node is the right (2nd) child.
+        let is_right = self.inner.is_eq(&FqVar::constant(Fq::from(2u128)))?;
+        // The node is the rightmost (3rd) child.
+        let is_rightmost = self.inner.is_eq(&FqVar::constant(Fq::from(3u128)))?;
+
         // Cases:
         // * `is_leftmost`: the leftmost should be the node
         // * `is_left`: the leftmost should be the first sibling (`siblings[0]`)
         // * `is_right`: the leftmost should be the first sibling (`siblings[0]`)
         // * `is_rightmost`: the leftmost should be the first sibling (`siblings[0]`)
-        let leftmost = FqVar::conditionally_select(&self.is_leftmost, &node, &siblings[0])?;
+        let leftmost = FqVar::conditionally_select(&is_leftmost, &node, &siblings[0])?;
 
         // Cases:
         // * `is_leftmost`: the left should be the first sibling (`siblings[0]`)
         // * `is_left`: the left should be the node
         // * `is_right`: the left should be the second sibling (`siblings[1]`)
         // * `is_rightmost`: the left should be the second sibling (`siblings[1]`)
-        let is_left_or_leftmost_case = self.is_leftmost.or(&self.is_left)?;
-        let left_first_two_cases = FqVar::conditionally_select(&self.is_left, &node, &siblings[0])?;
+        let is_left_or_leftmost_case = is_leftmost.or(&is_left)?;
+        let left_first_two_cases = FqVar::conditionally_select(&is_left, &node, &siblings[0])?;
         let left = FqVar::conditionally_select(
             &is_left_or_leftmost_case,
             &left_first_two_cases,
@@ -266,9 +261,8 @@ impl WhichWayVar {
         // * `is_left`: the right should be the second sibling (`siblings[1]`)
         // * `is_right`: the right should be the node
         // * `is_rightmost`: the right should be the last sibling (`siblings[2]`)
-        let is_right_or_rightmost_case = self.is_right.or(&self.is_rightmost)?;
-        let right_last_two_cases =
-            FqVar::conditionally_select(&self.is_right, &node, &siblings[2])?;
+        let is_right_or_rightmost_case = is_right.or(&is_rightmost)?;
+        let right_last_two_cases = FqVar::conditionally_select(&is_right, &node, &siblings[2])?;
         let right = FqVar::conditionally_select(
             &is_right_or_rightmost_case,
             &right_last_two_cases,
@@ -280,7 +274,7 @@ impl WhichWayVar {
         // * `is_left`: the rightmost should be the last sibling (`siblings[2]`)
         // * `is_right`: the rightmost should be the last sibling (`siblings[2]`)
         // * `is_rightmost`: the rightmost should be the node
-        let rightmost = FqVar::conditionally_select(&self.is_rightmost, &node, &siblings[2])?;
+        let rightmost = FqVar::conditionally_select(&is_rightmost, &node, &siblings[2])?;
 
         Ok([leftmost, left, right, rightmost])
     }
