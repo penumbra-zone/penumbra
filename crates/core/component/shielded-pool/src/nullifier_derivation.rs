@@ -192,18 +192,14 @@ impl TryFrom<pb::ZkNullifierDerivationProof> for NullifierDerivationProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use decaf377::{Fq, Fr};
     use penumbra_asset::{asset, Value};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
     use penumbra_sct::Nullifier;
-    use proptest::prelude::*;
-
     use penumbra_tct as tct;
+    use proptest::prelude::*;
     use rand_core::OsRng;
 
     use crate::Note;
-
-    use ark_ff::PrimeField;
 
     proptest! {
     #![proptest_config(ProptestConfig::with_cases(2))]
