@@ -181,6 +181,9 @@ impl MsgHandler for MsgConnectionOpenAck {
         Ok(())
     }
 }
+
+/// Ensure that the counterparty's record of the primary chain height
+/// makes sense, i.e. is not greater chain.
 async fn consensus_height_is_correct<S: StateRead>(
     state: S,
     msg: &MsgConnectionOpenAck,

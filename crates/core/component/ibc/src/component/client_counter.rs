@@ -171,11 +171,11 @@ pub(crate) mod ics02_validation {
     }
 }
 
-// Check that the trust threshold is:
-//
-// a) non-zero
-// b) greater or equal to 1/3
-// c) strictly less than 1
+/// Check that the trust threshold is:
+///
+///    a) non-zero
+///    b) greater or equal to 1/3
+///    c) strictly less than 1
 fn validate_trust_threshold(trust_threshold: TrustThreshold) -> Result<(), anyhow::Error> {
     if trust_threshold.denominator() == 0 {
         return Err(anyhow::anyhow!(
@@ -196,8 +196,14 @@ fn validate_trust_threshold(trust_threshold: TrustThreshold) -> Result<(), anyho
     Ok(())
 }
 
-// validate the parameters of an AnyClientState, verifying that it is a valid Penumbra client
-// state.
+/// Validate the parameters of an `AnyClientState`, verifying that it is a valid Penumbra client
+/// state. Among other checks, ensures that:
+///
+///    * the associated client is not frozen
+///    * chain ids match
+///    * proof specs match (required for ICS23 compatibility)
+///
+/// Returns an error describing the type of verification failure, otherwise OK.
 pub fn validate_penumbra_client_state(
     client_state: Any,
     chain_id: &str,
