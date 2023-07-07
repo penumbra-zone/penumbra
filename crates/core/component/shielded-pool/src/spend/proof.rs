@@ -776,6 +776,9 @@ mod tests {
         state_commitment_proof: tct::Proof,
         /// Public input: The merkle root of the state commitment tree
         pub anchor: tct::Root,
+        pub epoch: Fq,
+        pub block: Fq,
+        pub commitment_index: Fq,
     }
 
     impl ConstraintSynthesizer<Fq> for MerkleProofCircuit {
@@ -786,10 +789,18 @@ mod tests {
             let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
                 Ok(self.state_commitment_proof.clone())
             })?;
+            // public inputs
+            use ark_r1cs_std::R1CSVar;
             let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
+            let epoch_var = FqVar::new_input(cs.clone(), || Ok(self.epoch))?;
+            let block_var = FqVar::new_input(cs.clone(), || Ok(self.block))?;
+            let commitment_index_var = FqVar::new_input(cs.clone(), || Ok(self.commitment_index))?;
+
+            // witnesses
             let claimed_note_commitment = StateCommitmentVar::new_witness(cs.clone(), || {
                 Ok(self.state_commitment_proof.commitment())
             })?;
+
             let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
                 Ok(self.state_commitment_proof.position())
             })?;
@@ -801,6 +812,15 @@ mod tests {
                 anchor_var,
                 claimed_note_commitment.inner(),
             )?;
+
+            // Now also verify the commitment index, block, and epoch numbers are all valid. This is not necessary
+            // for Merkle proofs in general, but is here to ensure this code is exercised in tests.
+            let computed_epoch = position_var.epoch()?;
+            let computed_block = position_var.block()?;
+            let computed_commitment_index = position_var.commitment()?;
+            computed_epoch.enforce_equal(&epoch_var)?;
+            computed_block.enforce_equal(&block_var)?;
+            computed_commitment_index.enforce_equal(&commitment_index_var)?;
             Ok(())
         }
     }
@@ -824,9 +844,16 @@ mod tests {
             sct.insert(tct::Witness::Keep, note_commitment).unwrap();
             let anchor = sct.root();
             let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let position = state_commitment_proof.position();
+            let epoch = Fq::from(position.epoch());
+            let block = Fq::from(position.block());
+            let commitment_index = Fq::from(position.commitment());
             let circuit = MerkleProofCircuit {
                 state_commitment_proof,
                 anchor,
+                epoch,
+                block,
+                commitment_index,
             };
             let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
                 circuit, &mut OsRng,
@@ -865,16 +892,23 @@ mod tests {
             sct.insert(tct::Witness::Keep, note_commitment).unwrap();
             let anchor = sct.root();
             let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let position = state_commitment_proof.position();
+            let epoch = Fq::from(position.epoch());
+            let block = Fq::from(position.block());
+            let commitment_index = Fq::from(position.commitment());
             let circuit = MerkleProofCircuit {
                 state_commitment_proof,
                 anchor,
+                epoch,
+                block,
+                commitment_index,
             };
             let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
                 .expect("should be able to form proof");
 
             let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
                 &vk,
-                &[Fq::from(anchor)],
+                &[Fq::from(anchor), epoch, block, commitment_index],
                 &proof,
             );
             assert!(proof_result.is_ok());
@@ -891,16 +925,23 @@ mod tests {
             sct.insert(tct::Witness::Keep, note_commitment).unwrap();
             let anchor = sct.root();
             let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let position = state_commitment_proof.position();
+            let epoch = Fq::from(position.epoch());
+            let block = Fq::from(position.block());
+            let commitment_index = Fq::from(position.commitment());
             let circuit = MerkleProofCircuit {
                 state_commitment_proof,
                 anchor,
+                epoch,
+                block,
+                commitment_index,
             };
             let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
                 .expect("should be able to form proof");
 
             let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
                 &vk,
-                &[Fq::from(anchor)],
+                &[Fq::from(anchor), epoch, block, commitment_index],
                 &proof,
             );
             assert!(proof_result.is_ok());
@@ -917,16 +958,23 @@ mod tests {
             sct.insert(tct::Witness::Keep, note_commitment).unwrap();
             let anchor = sct.root();
             let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let position = state_commitment_proof.position();
+            let epoch = Fq::from(position.epoch());
+            let block = Fq::from(position.block());
+            let commitment_index = Fq::from(position.commitment());
             let circuit = MerkleProofCircuit {
                 state_commitment_proof,
                 anchor,
+                epoch,
+                block,
+                commitment_index,
             };
             let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
                 .expect("should be able to form proof");
 
             let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
                 &vk,
-                &[Fq::from(anchor)],
+                &[Fq::from(anchor), epoch, block, commitment_index],
                 &proof,
             );
             assert!(proof_result.is_ok());
