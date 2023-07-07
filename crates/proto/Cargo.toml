@@ -17,7 +17,7 @@ anyhow = "1.0"
 subtle-encoding = "0.5"
 bech32 = "0.8"
 penumbra-storage = { path = "../storage", optional = true }
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.3.0", default-features = false }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.3.0", features = ["std"]}
 pin-project = "1"
 async-trait = "0.1.52"
 async-stream = "0.2.0"
