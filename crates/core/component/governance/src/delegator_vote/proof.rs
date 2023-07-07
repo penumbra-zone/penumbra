@@ -100,10 +100,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         let delegator_position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof.position())
         })?;
-        let position_bits = tct::r1cs::PositionBitsVar::new_witness(cs.clone(), || {
-            Ok(self.state_commitment_proof.position())
-        })?
-        .to_bits_le()?;
+        let delegator_position_bits = delegator_position_var.to_bits_le()?;
         let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof)
         })?;
@@ -124,7 +121,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
         let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.rk.clone()))?;
         let start_position = PositionVar::new_input(cs.clone(), || Ok(self.start_position))?;
-        let start_position_bits = start_position.to_position_bits_var()?;
+        let start_position_bits = start_position.to_bits_le()?;
 
         // Note commitment integrity.
         let note_commitment_var = note_var.commit()?;
@@ -139,7 +136,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         merkle_path_var.verify(
             cs.clone(),
             &Boolean::TRUE,
-            &position_bits,
+            &delegator_position_bits,
             anchor_var,
             claimed_note_commitment.inner(),
         )?;

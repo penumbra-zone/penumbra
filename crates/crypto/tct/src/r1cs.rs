@@ -11,7 +11,9 @@ use crate::{internal::hash::DOMAIN_SEPARATOR, Position, Proof, StateCommitment};
 /// Represents the position of a leaf in the TCT represented in R1CS.
 pub struct PositionVar {
     /// The FqVar representing the leaf.
-    pub inner: FqVar,
+    pub position: FqVar,
+    /// Bits
+    pub bits: [Boolean<Fq>; 48],
 }
 
 impl AllocVar<Position, Fq> for PositionVar {
@@ -23,70 +25,45 @@ impl AllocVar<Position, Fq> for PositionVar {
         let ns = cs.into();
         let cs = ns.cs();
         let inner: Position = *f()?.borrow();
+        let position = UInt64::new_variable(cs, || Ok(u64::from(inner)), mode)?;
+        let bits = position.to_bits_le();
+        for bit in &bits[48..] {
+            bit.enforce_equal(&Boolean::Constant(false))?;
+        }
+        let inner = Boolean::<Fq>::le_bits_to_fp_var(&bits[0..48])?;
+
         Ok(Self {
-            inner: FqVar::new_variable(cs, || Ok(Fq::from(u64::from(inner))), mode)?,
-        })
-    }
-}
-
-#[derive(Clone, Debug)]
-/// Represents the position of a leaf in the TCT represented in R1CS.
-pub struct PositionBitsVar {
-    /// Inner variable consisting of boolean constraints.
-    pub inner: Vec<Boolean<Fq>>,
-}
-
-impl AllocVar<Position, Fq> for PositionBitsVar {
-    fn new_variable<T: std::borrow::Borrow<Position>>(
-        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
-        f: impl FnOnce() -> Result<T, SynthesisError>,
-        mode: ark_r1cs_std::prelude::AllocationMode,
-    ) -> Result<Self, SynthesisError> {
-        let ns = cs.into();
-        let cs = ns.cs();
-        let inner: Position = *f()?.borrow();
-        let var = UInt64::new_variable(cs, || Ok(u64::from(inner)), mode)?;
-        Ok(Self {
-            inner: var.to_bits_le(),
-        })
-    }
-}
-
-impl ToBitsGadget<Fq> for PositionBitsVar {
-    fn to_bits_le(&self) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
-        Ok(self.inner.clone())
-    }
-}
-
-impl PositionVar {
-    /// Get bits of the position.
-    pub fn to_position_bits_var(&self) -> Result<PositionBitsVar, SynthesisError> {
-        Ok(PositionBitsVar {
-            inner: self.inner.to_bits_le()?,
+            bits: bits[0..48]
+                .to_vec()
+                .try_into()
+                .expect("should be able to fit in 48 bits"),
+            position: inner,
         })
     }
 }
 
 impl ToBitsGadget<Fq> for PositionVar {
     fn to_bits_le(&self) -> Result<Vec<Boolean<Fq>>, SynthesisError> {
-        self.inner.to_bits_le()
+        Ok(self.bits.to_vec())
     }
 }
 
-impl PositionBitsVar {
+// TODO: I'll add a test to check different start positions.
+
+impl PositionVar {
     /// Witness the commitment index by taking the last 16 bits of the position.
     pub fn commitment(&self) -> Result<FqVar, SynthesisError> {
-        Ok(Boolean::<Fq>::le_bits_to_fp_var(&self.inner[48..64])?)
+        Boolean::<Fq>::le_bits_to_fp_var(&self.bits[0..16])
     }
 
     /// Witness the block.
     pub fn block(&self) -> Result<FqVar, SynthesisError> {
-        Ok(Boolean::<Fq>::le_bits_to_fp_var(&self.inner[16..32])?)
+        Boolean::<Fq>::le_bits_to_fp_var(&self.bits[16..32])
     }
 
     /// Witness the epoch by taking the first 16 bits of the position.
     pub fn epoch(&self) -> Result<FqVar, SynthesisError> {
-        Ok(Boolean::<Fq>::le_bits_to_fp_var(&self.inner[0..16])?)
+        Boolean::<Fq>::le_bits_to_fp_var(&self.bits[32..48])
     }
 }
 
@@ -94,11 +71,11 @@ impl R1CSVar<Fq> for PositionVar {
     type Value = Position;
 
     fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
-        self.inner.cs()
+        self.position.cs()
     }
 
     fn value(&self) -> Result<Self::Value, SynthesisError> {
-        let inner_fq = self.inner.value()?;
+        let inner_fq = self.position.value()?;
         let inner_bytes = &inner_fq.to_bytes()[0..8];
         let position_bytes: [u8; 8] = inner_bytes
             .try_into()

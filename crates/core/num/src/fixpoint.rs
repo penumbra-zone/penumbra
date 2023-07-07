@@ -225,8 +225,12 @@ impl AllocVar<U128x128, Fq> for U128x128Var {
             .chain(limb_3_var.to_bits_le())
             .collect::<Vec<_>>();
 
-        hi_128_var.enforce_equal(&convert_le_bits_to_fqvar(&hi_128_bits[..]))?;
-        lo_128_var.enforce_equal(&convert_le_bits_to_fqvar(&lo_128_bits[..]))?;
+        hi_128_var.enforce_equal(&Boolean::<Fq>::le_bits_to_fp_var(
+            &(&hi_128_bits[..]).to_bits_le()?,
+        )?)?;
+        lo_128_var.enforce_equal(&Boolean::<Fq>::le_bits_to_fp_var(
+            &(&lo_128_bits[..]).to_bits_le()?,
+        )?)?;
 
         Ok(Self {
             limbs: [limb_0_var, limb_1_var, limb_2_var, limb_3_var],
@@ -263,15 +267,15 @@ impl U128x128Var {
         // x = x0 + x1 * 2^64 + x2 * 2^128 + x3 * 2^192
         // y = [y0, y1, y2, y3]
         // y = y0 + y1 * 2^64 + y2 * 2^128 + y3 * 2^192
-        let x0 = convert_uint64_to_fqvar(&self.limbs[0]);
-        let x1 = convert_uint64_to_fqvar(&self.limbs[1]);
-        let x2 = convert_uint64_to_fqvar(&self.limbs[2]);
-        let x3 = convert_uint64_to_fqvar(&self.limbs[3]);
+        let x0 = Boolean::<Fq>::le_bits_to_fp_var(&self.limbs[0].to_bits_le())?;
+        let x1 = Boolean::<Fq>::le_bits_to_fp_var(&self.limbs[1].to_bits_le())?;
+        let x2 = Boolean::<Fq>::le_bits_to_fp_var(&self.limbs[2].to_bits_le())?;
+        let x3 = Boolean::<Fq>::le_bits_to_fp_var(&self.limbs[3].to_bits_le())?;
 
-        let y0 = convert_uint64_to_fqvar(&rhs.limbs[0]);
-        let y1 = convert_uint64_to_fqvar(&rhs.limbs[1]);
-        let y2 = convert_uint64_to_fqvar(&rhs.limbs[2]);
-        let y3 = convert_uint64_to_fqvar(&rhs.limbs[3]);
+        let y0 = Boolean::<Fq>::le_bits_to_fp_var(&rhs.limbs[0].to_bits_le())?;
+        let y1 = Boolean::<Fq>::le_bits_to_fp_var(&rhs.limbs[1].to_bits_le())?;
+        let y2 = Boolean::<Fq>::le_bits_to_fp_var(&rhs.limbs[2].to_bits_le())?;
+        let y3 = Boolean::<Fq>::le_bits_to_fp_var(&rhs.limbs[3].to_bits_le())?;
 
         // z = x + y
         // z = [z0, z1, z2, z3]
@@ -283,22 +287,22 @@ impl U128x128Var {
         // z0 < 2^64 + 2^64 < 2^(65) => 65 bits
         let z0_bits = bit_constrain(z0_raw, 64)?; // no carry-in
         let z0 = UInt64::from_bits_le(&z0_bits[0..64]);
-        let c1 = convert_le_bits_to_fqvar(&z0_bits[64..]);
+        let c1 = Boolean::<Fq>::le_bits_to_fp_var(&z0_bits[64..].to_bits_le()?)?;
 
         // z1 < 2^64 + 2^64 + 2^64 < 2^(66) => 66 bits
         let z1_bits = bit_constrain(z1_raw + c1, 66)?; // carry-in c1
         let z1 = UInt64::from_bits_le(&z1_bits[0..64]);
-        let c2 = convert_le_bits_to_fqvar(&z1_bits[64..]);
+        let c2 = Boolean::<Fq>::le_bits_to_fp_var(&z1_bits[64..].to_bits_le()?)?;
 
         // z2 < 2^64 + 2^64 + 2^64 < 2^(66) => 66 bits
         let z2_bits = bit_constrain(z2_raw + c2, 66)?; // carry-in c2
         let z2 = UInt64::from_bits_le(&z2_bits[0..64]);
-        let c3 = convert_le_bits_to_fqvar(&z2_bits[64..]);
+        let c3 = Boolean::<Fq>::le_bits_to_fp_var(&z2_bits[64..].to_bits_le()?)?;
 
         // z3 < 2^64 + 2^64 + 2^64 < 2^(66) => 66 bits
         let z3_bits = bit_constrain(z3_raw + c3, 66)?; // carry-in c3
         let z3 = UInt64::from_bits_le(&z3_bits[0..64]);
-        let c4 = convert_le_bits_to_fqvar(&z3_bits[64..]);
+        let c4 = Boolean::<Fq>::le_bits_to_fp_var(&z3_bits[64..].to_bits_le()?)?;
 
         // Constrain c4: No overflow.
         c4.enforce_equal(&FqVar::zero())?;
@@ -321,15 +325,15 @@ impl U128x128Var {
         // x = x0 + x1 * 2^64 + x2 * 2^128 + x3 * 2^192
         // y = [y0, y1, y2, y3]
         // y = y0 + y1 * 2^64 + y2 * 2^128 + y3 * 2^192
-        let x0 = convert_uint64_to_fqvar(&self.limbs[0]);
-        let x1 = convert_uint64_to_fqvar(&self.limbs[1]);
-        let x2 = convert_uint64_to_fqvar(&self.limbs[2]);
-        let x3 = convert_uint64_to_fqvar(&self.limbs[3]);
+        let x0 = Boolean::<Fq>::le_bits_to_fp_var(&self.limbs[0].to_bits_le())?;
+        let x1 = Boolean::<Fq>::le_bits_to_fp_var(&self.limbs[1].to_bits_le())?;
+        let x2 = Boolean::<Fq>::le_bits_to_fp_var(&self.limbs[2].to_bits_le())?;
+        let x3 = Boolean::<Fq>::le_bits_to_fp_var(&self.limbs[3].to_bits_le())?;
 
-        let y0 = convert_uint64_to_fqvar(&rhs.limbs[0]);
-        let y1 = convert_uint64_to_fqvar(&rhs.limbs[1]);
-        let y2 = convert_uint64_to_fqvar(&rhs.limbs[2]);
-        let y3 = convert_uint64_to_fqvar(&rhs.limbs[3]);
+        let y0 = Boolean::<Fq>::le_bits_to_fp_var(&rhs.limbs[0].to_bits_le())?;
+        let y1 = Boolean::<Fq>::le_bits_to_fp_var(&rhs.limbs[1].to_bits_le())?;
+        let y2 = Boolean::<Fq>::le_bits_to_fp_var(&rhs.limbs[2].to_bits_le())?;
+        let y3 = Boolean::<Fq>::le_bits_to_fp_var(&rhs.limbs[3].to_bits_le())?;
 
         // z = x * y
         // z = [z0, z1, z2, z3, z4, z5, z6, z7]
@@ -357,7 +361,7 @@ impl U128x128Var {
         // Constrain: t0 fits in 193 bits
 
         // t1 = (t0 >> 128) + z2
-        let t1 = z2 + convert_le_bits_to_fqvar(&t0_bits[128..193]);
+        let t1 = z2 + Boolean::<Fq>::le_bits_to_fp_var(&t0_bits[128..193].to_bits_le()?)?;
         // Constrain: t1 fits in 129 bits
         let t1_bits = bit_constrain(t1, 129)?;
 
@@ -365,7 +369,7 @@ impl U128x128Var {
         let w0 = UInt64::from_bits_le(&t0_bits[0..64]);
 
         // t2 = (t1 >> 64) + z3
-        let t2 = z3 + convert_le_bits_to_fqvar(&t1_bits[64..129]);
+        let t2 = z3 + Boolean::<Fq>::le_bits_to_fp_var(&t1_bits[64..129].to_bits_le()?)?;
         // Constrain: t2 fits in 129 bits
         let t2_bits = bit_constrain(t2, 129)?;
 
@@ -373,7 +377,7 @@ impl U128x128Var {
         let w1 = UInt64::from_bits_le(&t2_bits[0..64]);
 
         // t3 = (t2 >> 64) + z4
-        let t3 = z4 + convert_le_bits_to_fqvar(&t2_bits[64..129]);
+        let t3 = z4 + Boolean::<Fq>::le_bits_to_fp_var(&t2_bits[64..129].to_bits_le()?)?;
         // Constrain: t3 fits in 129 bits
         let t3_bits = bit_constrain(t3, 129)?;
 
@@ -381,7 +385,7 @@ impl U128x128Var {
         let w2 = UInt64::from_bits_le(&t3_bits[0..64]);
 
         // t4 = (t3 >> 64) + z5
-        let t4 = z5 + convert_le_bits_to_fqvar(&t3_bits[64..129]);
+        let t4 = z5 + Boolean::<Fq>::le_bits_to_fp_var(&t3_bits[64..129].to_bits_le()?)?;
         // Constrain: t4 fits in 64 bits
         let t4_bits = bit_constrain(t4, 64)?;
         // If we didn't overflow, it will fit in 64 bits.
@@ -515,25 +519,25 @@ impl U128x128Var {
         // ybar = ybar0 + ybar1 * 2^64 + ybar2 * 2^128 + ybar3 * 2^192
         //    r =    r0 +    r1 * 2^64 +    r2 * 2^128 +    r3 * 2^192
 
-        let xbar0 = convert_uint64_to_fqvar(&xbar[0]);
-        let xbar1 = convert_uint64_to_fqvar(&xbar[1]);
-        let xbar2 = convert_uint64_to_fqvar(&xbar[2]);
-        let xbar3 = convert_uint64_to_fqvar(&xbar[3]);
+        let xbar0 = Boolean::<Fq>::le_bits_to_fp_var(&xbar[0].to_bits_le())?;
+        let xbar1 = Boolean::<Fq>::le_bits_to_fp_var(&xbar[1].to_bits_le())?;
+        let xbar2 = Boolean::<Fq>::le_bits_to_fp_var(&xbar[2].to_bits_le())?;
+        let xbar3 = Boolean::<Fq>::le_bits_to_fp_var(&xbar[3].to_bits_le())?;
 
-        let ybar0 = convert_uint64_to_fqvar(&ybar[0]);
-        let ybar1 = convert_uint64_to_fqvar(&ybar[1]);
-        let ybar2 = convert_uint64_to_fqvar(&ybar[2]);
-        let ybar3 = convert_uint64_to_fqvar(&ybar[3]);
+        let ybar0 = Boolean::<Fq>::le_bits_to_fp_var(&ybar[0].to_bits_le())?;
+        let ybar1 = Boolean::<Fq>::le_bits_to_fp_var(&ybar[1].to_bits_le())?;
+        let ybar2 = Boolean::<Fq>::le_bits_to_fp_var(&ybar[2].to_bits_le())?;
+        let ybar3 = Boolean::<Fq>::le_bits_to_fp_var(&ybar[3].to_bits_le())?;
 
-        let qbar0 = convert_uint64_to_fqvar(&qbar[0]);
-        let qbar1 = convert_uint64_to_fqvar(&qbar[1]);
-        let qbar2 = convert_uint64_to_fqvar(&qbar[2]);
-        let qbar3 = convert_uint64_to_fqvar(&qbar[3]);
+        let qbar0 = Boolean::<Fq>::le_bits_to_fp_var(&qbar[0].to_bits_le())?;
+        let qbar1 = Boolean::<Fq>::le_bits_to_fp_var(&qbar[1].to_bits_le())?;
+        let qbar2 = Boolean::<Fq>::le_bits_to_fp_var(&qbar[2].to_bits_le())?;
+        let qbar3 = Boolean::<Fq>::le_bits_to_fp_var(&qbar[3].to_bits_le())?;
 
-        let r0 = convert_uint64_to_fqvar(&r[0]);
-        let r1 = convert_uint64_to_fqvar(&r[1]);
-        let r2 = convert_uint64_to_fqvar(&r[2]);
-        let r3 = convert_uint64_to_fqvar(&r[3]);
+        let r0 = Boolean::<Fq>::le_bits_to_fp_var(&r[0].to_bits_le())?;
+        let r1 = Boolean::<Fq>::le_bits_to_fp_var(&r[1].to_bits_le())?;
+        let r2 = Boolean::<Fq>::le_bits_to_fp_var(&r[2].to_bits_le())?;
+        let r3 = Boolean::<Fq>::le_bits_to_fp_var(&r[3].to_bits_le())?;
 
         // Let z = qbar * ybar + r.  Then z will be 513 bits in general; we want
         // to constrain it to be equal to xbar * 2^128 so we need the low 384
@@ -574,33 +578,33 @@ impl U128x128Var {
 
         // z0 < 2^128 + 2^64 < 2^(128 + 1) => 129 bits
         let z0_bits = bit_constrain(z0_raw, 129)?; // no carry-in
-        let z0 = convert_le_bits_to_fqvar(&z0_bits[0..64]);
-        let c1 = convert_le_bits_to_fqvar(&z0_bits[64..]); // 65 bits
+        let z0 = Boolean::<Fq>::le_bits_to_fp_var(&z0_bits[0..64].to_bits_le()?)?;
+        let c1 = Boolean::<Fq>::le_bits_to_fp_var(&z0_bits[64..].to_bits_le()?)?; // 65 bits
 
         // z1 < 2^64 + 2 * 2^128 + 2^65 < 3*2^128 < 2^(128 + 2) => 130 bits
         let z1_bits = bit_constrain(z1_raw + c1, 130)?; // carry-in c1
-        let z1 = convert_le_bits_to_fqvar(&z1_bits[0..64]);
-        let c2 = convert_le_bits_to_fqvar(&z1_bits[64..]); // 66 bits
+        let z1 = Boolean::<Fq>::le_bits_to_fp_var(&z1_bits[0..64].to_bits_le()?)?;
+        let c2 = Boolean::<Fq>::le_bits_to_fp_var(&z1_bits[64..].to_bits_le()?)?; // 66 bits
 
         // z2 < 2^64 + 3 * 2^128 + 2^66 < 4*2^128 = 2^(128 + 2) => 130 bits
         let z2_bits = bit_constrain(z2_raw + c2, 130)?; // carry-in c2
-        let z2 = convert_le_bits_to_fqvar(&z2_bits[0..64]);
-        let c3 = convert_le_bits_to_fqvar(&z2_bits[64..]); // 66 bits
+        let z2 = Boolean::<Fq>::le_bits_to_fp_var(&z2_bits[0..64].to_bits_le()?)?;
+        let c3 = Boolean::<Fq>::le_bits_to_fp_var(&z2_bits[64..].to_bits_le()?)?; // 66 bits
 
         // z3 < 2^64 + 4 * 2^128 + 2^66 < 5*2^128 = 2^(128 + 3) => 131 bits
         let z3_bits = bit_constrain(z3_raw + c3, 131)?; // carry-in c3
-        let z3 = convert_le_bits_to_fqvar(&z3_bits[0..64]);
-        let c4 = convert_le_bits_to_fqvar(&z3_bits[64..]); // 67 bits
+        let z3 = Boolean::<Fq>::le_bits_to_fp_var(&z3_bits[0..64].to_bits_le()?)?;
+        let c4 = Boolean::<Fq>::le_bits_to_fp_var(&z3_bits[64..].to_bits_le()?)?; // 67 bits
 
         // z4 < 3 * 2^128 + 2^67 < 4*2^128 = 2^(128 + 2) => 130 bits
         let z4_bits = bit_constrain(z4_raw + c4, 130)?; // carry-in c4
-        let z4 = convert_le_bits_to_fqvar(&z4_bits[0..64]);
-        let c5 = convert_le_bits_to_fqvar(&z4_bits[64..]); // 66 bits
+        let z4 = Boolean::<Fq>::le_bits_to_fp_var(&z4_bits[0..64].to_bits_le()?)?;
+        let c5 = Boolean::<Fq>::le_bits_to_fp_var(&z4_bits[64..].to_bits_le()?)?; // 66 bits
 
         // z5 < 2 * 2^128 + 2^66 < 3*2^128 = 2^(128 + 2) => 130 bits
         let z5_bits = bit_constrain(z5_raw + c5, 130)?; // carry-in c5
-        let z5 = convert_le_bits_to_fqvar(&z5_bits[0..64]);
-        let c6 = convert_le_bits_to_fqvar(&z5_bits[64..]); // 66 bits
+        let z5 = Boolean::<Fq>::le_bits_to_fp_var(&z5_bits[0..64].to_bits_le()?)?;
+        let c6 = Boolean::<Fq>::le_bits_to_fp_var(&z5_bits[64..].to_bits_le()?)?; // 66 bits
 
         // z6_plus < 2^128 + 2^66 < 2*2^128 = 2^(128 + 1) => 129 bits
         // Since 129 bits < field modulus, we can enforce z6_plus = 0
@@ -685,25 +689,7 @@ impl CondSelectGadget<Fq> for U128x128Var {
 
 /// Convert Uint64 into an FqVar
 pub fn convert_uint64_to_fqvar<F: PrimeField>(value: &UInt64<F>) -> FpVar<F> {
-    convert_le_bits_to_fqvar(&value.to_bits_le())
-}
-
-/// Modular exponentiation
-pub fn mod_exp<F: PrimeField>(f: F, exp: usize) -> F {
-    let mut acc = F::from(1u32);
-    for _ in 0..exp {
-        acc *= f;
-    }
-    acc
-}
-
-/// Convert little-endian boolean constraints into a field element
-pub fn convert_le_bits_to_fqvar<F: PrimeField>(value: &[Boolean<F>]) -> FpVar<F> {
-    let mut acc = FpVar::<F>::zero();
-    for (i, bit) in value.iter().enumerate() {
-        acc += FpVar::<F>::from(bit.clone()) * FpVar::<F>::constant(mod_exp(F::from(2_u32), i));
-    }
-    acc
+    Boolean::<F>::le_bits_to_fp_var(&value.to_bits_le()).expect("can convert to bits")
 }
 
 /// Bit constrain for FqVar and return number of bits
@@ -722,7 +708,8 @@ pub fn bit_constrain(value: FqVar, n: usize) -> Result<Vec<Boolean<Fq>>, Synthes
     }
 
     // Construct an FqVar from those n Boolean constraints, and constrain it to be equal to the original value
-    let constructed_fqvar = convert_le_bits_to_fqvar(&boolean_constraints);
+    let constructed_fqvar = Boolean::<Fq>::le_bits_to_fp_var(&boolean_constraints.to_bits_le()?)
+        .expect("can convert to bits");
     constructed_fqvar.enforce_equal(&value)?;
 
     Ok(boolean_constraints)
@@ -738,18 +725,6 @@ mod test {
     use rand_core::OsRng;
 
     use super::*;
-
-    proptest! {
-        #[test]
-        fn test_convert_uint64_to_fqvar(
-            num in any::<u64>(),
-        ) {
-            let num_var: UInt64<Fq> = UInt64::constant(num);
-            let expected_field_element = FqVar::constant(Fq::from(num));
-            let field_element = convert_uint64_to_fqvar(&num_var);
-            assert_eq!(field_element.value().unwrap(), expected_field_element.value().unwrap());
-        }
-    }
 
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(1))]
