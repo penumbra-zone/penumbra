@@ -295,9 +295,8 @@ impl ViewProtocolService for ViewService {
     type TransactionInfoStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::TransactionInfoResponse, tonic::Status>> + Send>,
     >;
-    type BalanceByAddressStream = Pin<
-        Box<dyn futures::Stream<Item = Result<pb::BalanceByAddressResponse, tonic::Status>> + Send>,
-    >;
+    type BalancesStream =
+        Pin<Box<dyn futures::Stream<Item = Result<pb::BalancesResponse, tonic::Status>> + Send>>;
 
     async fn broadcast_transaction(
         &self,
@@ -717,30 +716,44 @@ impl ViewProtocolService for ViewService {
     }
 
     #[instrument(skip(self, request))]
-    async fn balance_by_address(
+    async fn balances(
         &self,
-        request: tonic::Request<pb::BalanceByAddressRequest>,
-    ) -> Result<tonic::Response<Self::BalanceByAddressStream>, tonic::Status> {
-        let address = request
-            .into_inner()
-            .address
-            .ok_or_else(|| tonic::Status::failed_precondition("Missing address in request"))?
-            .try_into()
-            .map_err(|_| tonic::Status::failed_precondition("Invalid address in request"))?;
+        request: tonic::Request<pb::BalancesRequest>,
+    ) -> Result<tonic::Response<Self::BalancesStream>, tonic::Status> {
+        let request = request.into_inner();
+
+        let account_filter = request.account_filter.map_or(None, |x| {
+            AddressIndex::try_from(x)
+                .map_err(|_| {
+                    tonic::Status::failed_precondition("Invalid swap commitment in request")
+                })
+                .map_or(None, |x| x.into())
+        });
+
+        let asset_id_filter = request.asset_id_filter.map_or(None, |x| {
+            asset::Id::try_from(x)
+                .map_err(|_| {
+                    tonic::Status::failed_precondition("Invalid swap commitment in request")
+                })
+                .map_or(None, |x| x.into())
+        });
 
         let result = self
             .storage
-            .balance_by_address(address)
+            .balances(account_filter, asset_id_filter)
             .await
             .map_err(|e| tonic::Status::internal(format!("error: {e}")))?;
 
-        tracing::debug!(?address, ?result);
+        tracing::debug!(?account_filter, ?asset_id_filter, ?result);
 
         let stream = try_stream! {
             for element in result {
-                yield pb::BalanceByAddressResponse {
-                    asset: Some(element.0.into()),
-                    amount: Some(Amount::from(element.1).into())
+                yield pb::BalancesResponse {
+                    account: account_filter.clone().map(Into::into),
+                    balance: Some(Value {
+                        asset_id: element.0.into(),
+                        amount: element.1.into(),
+                    }.into()),
 
                 }
             }
