@@ -99,10 +99,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof.position())
         })?;
-        let position_bits = tct::r1cs::PositionBitsVar::new_witness(cs.clone(), || {
-            Ok(self.state_commitment_proof.position())
-        })?
-        .to_bits_le()?;
+        let position_bits = position_var.to_bits_le()?;
         let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
             Ok(self.state_commitment_proof)
         })?;
