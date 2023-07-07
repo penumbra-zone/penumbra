@@ -24,14 +24,20 @@ impl TradingFunction {
         }
     }
 
+    /// Checks that the specified input's asset type matches either end of this
+    /// the trading function's pair. Returns `true` if so, `false` otherwise.
+    pub fn matches_input(&self, input_id: asset::Id) -> bool {
+        input_id == self.pair.asset_1() || input_id == self.pair.asset_2()
+    }
+
     /// Fills a trade of an input value against this position, returning the
     /// unfilled amount of the input asset, the updated reserves, and the output
     /// amount.
     ///
     /// # Errors
     /// This method errors if:
-    /// - the asset type of the input does not match either end of this
-    /// `TradingFunction`'s `TradingPair`.
+    /// - the asset type of the input does not match either end of the
+    /// `TradingPair`.
     /// - an overflow occurs during execution.
     pub fn fill(
         &self,
@@ -287,7 +293,7 @@ impl BareTradingFunction {
         &self,
         delta_1: Amount,
         reserves: &Reserves,
-    ) -> anyhow::Result<(Amount, Reserves, Amount)> {
+    ) -> Result<(Amount, Reserves, Amount), ExecutionError> {
         // We distinguish two cases, which only differ in their rounding
         // behavior.
         //
