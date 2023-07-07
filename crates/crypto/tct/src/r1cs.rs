@@ -1,6 +1,5 @@
 //! This module defines how to verify TCT auth paths in a rank-1 constraint system.
 use ark_r1cs_std::prelude::*;
-use ark_r1cs_std::uint64::UInt64;
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
 use decaf377::{r1cs::FqVar, FieldExt, Fq};
@@ -25,12 +24,18 @@ impl AllocVar<Position, Fq> for PositionVar {
         let ns = cs.into();
         let cs = ns.cs();
         let inner: Position = *f()?.borrow();
-        let position = UInt64::new_variable(cs, || Ok(u64::from(inner)), mode)?;
-        let bits = position.to_bits_le();
+
+        let position_fq = FqVar::new_variable(cs.clone(), || Ok(Fq::from(u64::from(inner))), mode)?;
+
+        // Now construct a vector of the bits of the position.
+        // TODO: Could define a UInt64 to save constraints... but this means
+        // reworking the public representation of the position.
+        let bits = position_fq.to_bits_le()?;
         for bit in &bits[48..] {
             bit.enforce_equal(&Boolean::Constant(false))?;
         }
         let inner = Boolean::<Fq>::le_bits_to_fp_var(&bits[0..48])?;
+        position_fq.enforce_equal(&inner)?;
 
         Ok(Self {
             bits: bits[0..48]
@@ -47,8 +52,6 @@ impl ToBitsGadget<Fq> for PositionVar {
         Ok(self.bits.to_vec())
     }
 }
-
-// TODO: I'll add a test to check different start positions.
 
 impl PositionVar {
     /// Witness the commitment index by taking the last 16 bits of the position.

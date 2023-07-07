@@ -143,7 +143,7 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         merkle_path_var.verify(
             cs.clone(),
             &Boolean::TRUE,
-            &position_bits.to_bits_le()?,
+            &position_bits,
             anchor_var,
             claimed_swap_commitment.inner(),
         )?;
@@ -156,7 +156,7 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         claimed_fee_var.enforce_equal(&swap_plaintext_var.claim_fee)?;
 
         // Validate the swap commitment's height matches the output data's height (i.e. the clearing price height).
-        let block = position_bits.block()?;
+        let block = position_var.block()?;
         let note_commitment_block_height_var =
             output_data_var.epoch_starting_height.clone() + block;
         output_data_var

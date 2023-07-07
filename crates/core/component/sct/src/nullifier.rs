@@ -162,7 +162,7 @@ impl NullifierVar {
             (
                 nk.inner.clone(),
                 state_commitment.inner.clone(),
-                position.inner.clone(),
+                position.position.clone(),
             ),
         )?;
 
