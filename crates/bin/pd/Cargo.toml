@@ -21,10 +21,11 @@ penumbra-storage          = { path = "../../storage" }
 penumbra-asset           = { path = "../../core/asset" }
 penumbra-keys           = { path = "../../core/keys" }
 penumbra-crypto           = { path = "../../core/crypto", features = ["parallel"] }
-penumbra-shielded-pool    = { path = "../../core/component/shielded-pool" }
-penumbra-stake            = { path = "../../core/component/stake" }
+penumbra-shielded-pool    = { path = "../../core/component/shielded-pool", features = ["parallel"] }
+penumbra-stake            = { path = "../../core/component/stake", features = ["parallel"] }
 penumbra-sct              = { path = "../../core/component/sct" }
-penumbra-dex              = { path = "../../core/component/dex" }
+penumbra-dex              = { path = "../../core/component/dex", features = ["parallel"] }
+penumbra-governance       = { path = "../../core/component/governance", features = ["parallel"]}
 penumbra-ibc              = { path = "../../core/component/ibc" }
 penumbra-compact-block    = { path = "../../core/component/compact-block" }
 penumbra-chain            = { path = "../../core/component/chain" }

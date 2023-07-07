@@ -10,6 +10,7 @@ component = ["penumbra-component", "penumbra-storage", "penumbra-proto/penumbra-
 default = ["component", "proving-keys"]
 docsrs = []
 proving-keys = ["penumbra-proof-params/proving-keys"]
+parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "ark-groth16/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
 
 [dependencies]
 # Workspace dependencies

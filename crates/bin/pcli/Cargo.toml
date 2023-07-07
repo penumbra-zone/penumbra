@@ -16,7 +16,7 @@ default = ["std", "parallel", "download-proving-keys"]
 download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
 sct-divergence-check = ["penumbra-view/sct-divergence-check"]
 std = ["ark-ff/std"]
-parallel = ["penumbra-proof-params/parallel", "decaf377/parallel", "penumbra-crypto/parallel", "penumbra-transaction/parallel", "penumbra-wallet/parallel"]
+parallel = ["penumbra-proof-params/parallel", "decaf377/parallel", "penumbra-shielded-pool/parallel", "penumbra-dex/parallel", "penumbra-governance/parallel", "penumbra-stake/parallel", "penumbra-crypto/parallel", "penumbra-transaction/parallel", "penumbra-wallet/parallel"]
 
 [dependencies]
 # Workspace dependencies
