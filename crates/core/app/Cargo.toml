@@ -77,4 +77,4 @@ vergen = "5"
 
 [features]
 default = ["std"]
-std = ["ark-ff/std"]
+std = ["ark-ff/std", "ibc-types/std"]
