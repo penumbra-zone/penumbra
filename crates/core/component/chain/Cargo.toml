@@ -36,5 +36,5 @@ tracing = "0.1"
 [features]
 component = ["penumbra-component", "penumbra-storage", "penumbra-proto/penumbra-storage"]
 default = ["std", "component"]
-std = ["ark-ff/std"]
+std = ["ark-ff/std", "ibc-types/std"]
 docsrs = []

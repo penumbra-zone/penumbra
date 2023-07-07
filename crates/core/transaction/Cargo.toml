@@ -66,6 +66,6 @@ serde_json = "1"
 
 [features]
 default = ["std", "parallel"]
-std = ["ark-ff/std"]
+std = ["ark-ff/std", "ibc-types/std"]
 parallel = ["tokio", "penumbra-crypto/parallel", "penumbra-shielded-pool/parallel", "penumbra-dex/parallel", "penumbra-governance/parallel", "penumbra-stake/parallel"]
 download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
