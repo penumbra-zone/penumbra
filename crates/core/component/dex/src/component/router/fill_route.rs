@@ -20,8 +20,14 @@ use crate::{
         position::{self, Position},
         Reserves,
     },
-    DirectedTradingPair, SwapExecution,
+    DirectedTradingPair, SwapExecution, TradingPair,
 };
+
+#[derive(Debug)]
+pub enum SensingError {
+    AssetIdMismatch(Value, TradingPair),
+    ExecutionOverflow(position::Id),
+}
 
 #[async_trait]
 pub trait FillRoute: StateWrite + Sized {
@@ -110,7 +116,7 @@ async fn fill_route_inner<S: StateWrite + Sized>(
         // Phase 1 (Sensing): determine the index of the constraining position by
         // executing along the frontier, tracking which hops are
         // constraining.
-        let constraining_index = frontier.sense_capacity_constraint(input);
+        let constraining_index = frontier.sense_capacity_constraint(input)?;
 
         // Phase 2 (Filling): transactionally execute along the path, using
         // the constraint information we sensed above.
@@ -477,19 +483,35 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         }
     }
 
-    /// Senses which, if any, position along the frontier is a capacity
-    /// constraint for the given input amount.
+    /// Senses which position along the frontier is a capacity constraint for
+    /// the given input amount. If an overflow occurs during fill, report the
+    /// position in an error.
     #[instrument(skip(self, input), fields(input = ?input.amount))]
-    fn sense_capacity_constraint(&self, input: Value) -> Option<usize> {
-        tracing::debug!("sensing frontier capacity with test amount");
+    fn sense_capacity_constraint(&self, input: Value) -> Result<Option<usize>, SensingError> {
+        tracing::debug!(
+            ?input,
+            "sensing frontier capacity with trial swap input amount"
+        );
         let mut constraining_index = None;
         let mut current_input = input;
 
         for (i, position) in self.positions.iter().enumerate() {
+            if position.phi.matches_input(current_input.asset_id) {
+                tracing::error!(
+                    ?current_input,
+                    ?position,
+                    "asset ids of input and position do not match, interrupt capacity sensing."
+                );
+                return Err(SensingError::AssetIdMismatch(
+                    current_input,
+                    position.phi.pair,
+                ));
+            }
+
             let (unfilled, new_reserves, output) = position
                 .phi
                 .fill(current_input, &position.reserves)
-                .expect("asset ids should match");
+                .expect("overflow cannot occur during fill");
 
             if unfilled.amount > Amount::zero() {
                 tracing::debug!(
@@ -518,7 +540,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             current_input = output;
         }
 
-        constraining_index
+        Ok(constraining_index)
     }
 
     #[instrument(skip(self, input), fields(input = ?input.amount))]
