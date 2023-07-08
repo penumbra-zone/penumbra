@@ -786,21 +786,19 @@ mod tests {
             self,
             cs: ConstraintSystemRef<Fq>,
         ) -> ark_relations::r1cs::Result<()> {
-            let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
-                Ok(self.state_commitment_proof.clone())
-            })?;
             // public inputs
-            use ark_r1cs_std::R1CSVar;
             let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
             let epoch_var = FqVar::new_input(cs.clone(), || Ok(self.epoch))?;
             let block_var = FqVar::new_input(cs.clone(), || Ok(self.block))?;
             let commitment_index_var = FqVar::new_input(cs.clone(), || Ok(self.commitment_index))?;
 
             // witnesses
+            let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
+                Ok(self.state_commitment_proof.clone())
+            })?;
             let claimed_note_commitment = StateCommitmentVar::new_witness(cs.clone(), || {
                 Ok(self.state_commitment_proof.commitment())
             })?;
-
             let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
                 Ok(self.state_commitment_proof.position())
             })?;
