@@ -440,7 +440,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn delegator_vote_invalid_start_position(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 1..2000000000u64, num_commitments in 1000..2000u64) {
-        let (pk, _vk) = DelegatorVoteCircuit::generate_prepared_test_parameters();
+        let (pk, vk) = DelegatorVoteCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
@@ -484,7 +484,7 @@ mod tests {
         let blinding_r = Fq::rand(&mut OsRng);
         let blinding_s = Fq::rand(&mut OsRng);
 
-        let _ = DelegatorVoteProof::prove(
+        let proof = DelegatorVoteProof::prove(
             blinding_r,
             blinding_s,
             &pk,
@@ -498,8 +498,16 @@ mod tests {
             nf,
             rk,
             start_position,
-        );
-        // Should not be able to construct a valid proof if the start position commitment index is non-zero
-        }
+        ).expect("can form proof in release mode, but it should not verify");
+
+        // In debug mode, we won't be able to construct a valid proof if the start position
+        // commitment index is non-zero. However, in release mode, the proof will be constructed
+        // but not verify. This is due to the fact there is an assertion during constraint
+        // generation (upstream) where we panic in debug mode if the circuit is not satisifiable,
+        // but not in release mode. To ensure the same behavior in this test for both modes,
+        // we panic if we get here and the proof does not verify (expected).
+        let proof_result = proof.verify(&vk, anchor, balance_commitment, nf, rk, start_position);
+        proof_result.expect("we expect this proof _not_ to verify, so this will cause a panic");
+    }
     }
 }
