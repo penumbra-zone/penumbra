@@ -301,16 +301,12 @@ impl DelegatorVoteProof {
             .vartime_decompress()
             .expect("expect only valid element points");
         public_inputs.extend(element_rk.to_field_elements().unwrap());
-        public_inputs.extend(
-            Fq::from(u64::from(start_position))
-                .to_field_elements()
-                .unwrap(),
-        );
+        public_inputs.extend(start_position.to_field_elements().unwrap());
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
         let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
-            &vk,
+            vk,
             public_inputs.as_slice(),
             &proof,
         )
@@ -404,7 +400,6 @@ mod tests {
         let first_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
         sct.insert(tct::Witness::Keep, first_note_commitment).unwrap();
         let start_position = sct.witness(first_note_commitment).unwrap().position();
-        dbg!(start_position.commitment());
 
         let balance_commitment = value_to_send.commit(Fr::from(0u64));
         let rk: VerificationKey<SpendAuth> = rsk.into();
@@ -475,7 +470,6 @@ mod tests {
         let not_first_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
         sct.insert(tct::Witness::Keep, not_first_note_commitment).unwrap();
         let start_position = sct.witness(not_first_note_commitment).unwrap().position();
-        dbg!(start_position.commitment());
 
         let balance_commitment = value_to_send.commit(Fr::from(0u64));
         let rk: VerificationKey<SpendAuth> = rsk.into();

@@ -5088,6 +5088,7 @@ dependencies = [
  "once_cell",
  "penumbra-asset",
  "penumbra-crypto",
+ "penumbra-dao",
  "penumbra-dex",
  "penumbra-fee",
  "penumbra-governance",
