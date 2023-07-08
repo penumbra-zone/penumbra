@@ -148,7 +148,7 @@ impl NullifierDerivationProof {
         let mut public_inputs = Vec::new();
         public_inputs.extend(nullifier.0.to_field_elements().unwrap());
         public_inputs.extend(note.to_field_elements().unwrap());
-        public_inputs.extend(Fq::from(u64::from(position)).to_field_elements().unwrap());
+        public_inputs.extend(position.to_field_elements().unwrap());
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();

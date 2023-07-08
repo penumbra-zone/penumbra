@@ -1,10 +1,28 @@
 //! This module defines how to verify TCT auth paths in a rank-1 constraint system.
-use ark_r1cs_std::prelude::*;
+use ark_ff::ToConstraintField;
+use ark_r1cs_std::{prelude::*, uint64::UInt64};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 
 use decaf377::{r1cs::FqVar, FieldExt, Fq};
 
 use crate::{internal::hash::DOMAIN_SEPARATOR, Position, Proof, StateCommitment};
+
+impl ToConstraintField<Fq> for Position {
+    fn to_field_elements(&self) -> Option<Vec<Fq>> {
+        // The variable created in AllocVar<Position, Fq> is a UInt64, which is a
+        // Vec of 64 Boolean<Fq> constraints. To construct the corresponding
+        // public input, we need to convert the u64 into 64 bits, and then
+        // convert each bit into a individual Fq element.
+        let mut field_elements = Vec::<Fq>::new();
+        let value: u64 = u64::from(*self);
+        for i in 0..64 {
+            let bit = ((value >> i) & 1) != 0;
+            field_elements
+                .push(bool::to_field_elements(&bit).expect("can convert bit to field element")[0]);
+        }
+        Some(field_elements)
+    }
+}
 
 #[derive(Clone, Debug)]
 /// Represents the position of a leaf in the TCT represented in R1CS.
@@ -25,17 +43,12 @@ impl AllocVar<Position, Fq> for PositionVar {
         let cs = ns.cs();
         let inner: Position = *f()?.borrow();
 
-        let position_fq = FqVar::new_variable(cs.clone(), || Ok(Fq::from(u64::from(inner))), mode)?;
-
-        // Now construct a vector of the bits of the position.
-        // TODO: Could define a UInt64 to save constraints... but this means
-        // reworking the public representation of the position.
-        let bits = position_fq.to_bits_le()?;
+        let position = UInt64::new_variable(cs, || Ok(u64::from(inner)), mode)?;
+        let bits = position.to_bits_le();
         for bit in &bits[48..] {
             bit.enforce_equal(&Boolean::Constant(false))?;
         }
         let inner = Boolean::<Fq>::le_bits_to_fp_var(&bits[0..48])?;
-        position_fq.enforce_equal(&inner)?;
 
         Ok(Self {
             bits: bits[0..48]

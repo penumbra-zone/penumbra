@@ -37,6 +37,7 @@ bech32 = "0.8.1"
 penumbra-tct = { path = "../tct/", features = ["r1cs"] }
 criterion = { version = "0.4", features = ["html_reports"] }
 penumbra-dex = { path = "../../core/component/dex/" }
+penumbra-dao = { path = "../../core/component/dao/" }
 penumbra-stake = { path = "../../core/component/stake/" }
 penumbra-shielded-pool = { path = "../../core/component/shielded-pool/" }
 penumbra-governance = { path = "../../core/component/governance/" }
