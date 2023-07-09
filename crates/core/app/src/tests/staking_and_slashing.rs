@@ -42,6 +42,8 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
 
     let mut height = 1;
 
+    // TODO: make a MockTendermint that keeps internal state and a reference to the app
+
     // 0. Simulate BeginBlock
     // TODO: Would be nice to call `App::begin_block` but creating the `abci::request::BeginBlock` is tricky
     // App::begin_block(&mut state_tx).await;
@@ -117,11 +119,12 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
     // Simulate BeginBlock
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_block_height(height);
+    let mut epoch_start_height = height;
     state_tx.put_epoch_by_height(
         height,
         penumbra_chain::Epoch {
-            index: 0,
-            start_height: 0,
+            index: 1,
+            start_height: epoch_start_height,
         },
     );
     state_tx.apply();
@@ -150,6 +153,8 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
     delegate.execute(&mut state_tx).await?;
     state_tx.apply();
 
+    // TODO: use the planner instead so we get outputs & spends
+
     // End the block prior to undelegating...
     let end_block = abci::request::EndBlock {
         height: height.try_into().unwrap(),
@@ -174,8 +179,8 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
     state_tx.put_epoch_by_height(
         height,
         penumbra_chain::Epoch {
-            index: 0,
-            start_height: 0,
+            index: 1,
+            start_height: epoch_start_height,
         },
     );
     state_tx.apply();
@@ -204,6 +209,9 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
     Staking::end_block(&mut state, &end_block).await;
     ShieldedPool::end_block(&mut state, &end_block).await;
 
+    // To process the validator undelegation fully, the epoch needs to end:
+    Staking::end_epoch(&mut state).await?;
+
     let mut state_tx = state.try_begin_transaction().unwrap();
     // Call finish_block...
     App::finish_block(&mut state_tx).await;
@@ -216,28 +224,30 @@ async fn unbonding_slashing_penalties() -> anyhow::Result<()> {
     // means we have to synchronize a client's view of the test chain's SCT
     // state.
 
-    let epoch_duration = state.get_epoch_duration().await?;
     let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
     // TODO: generalize StateRead/StateWrite impls from impl for &S to impl for Deref<Target=S>
     client.sync_to(height, state.deref()).await?;
 
+    let epoch_duration = state.get_epoch_duration().await?;
     // Increment the block height
     height = height + 1;
 
     // Simulate BeginBlock
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_block_height(height);
+    epoch_start_height = height;
     state_tx.put_epoch_by_height(
         height,
         penumbra_chain::Epoch {
-            index: 0,
-            start_height: 0,
+            index: 2,
+            start_height: epoch_start_height,
         },
     );
     state_tx.apply();
 
     tracing::info!("notes: {:?}", client.notes());
-    let commitment = undelegate.commitment();
+    let undelegation_asset_id = undelegate.unbonding_token().id();
+    tracing::info!("undelegation_asset_id: {:?}", undelegation_asset_id);
 
     // let output_data = state.output_data(height, trading_pair).await?.unwrap();
 
