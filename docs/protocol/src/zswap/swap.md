@@ -67,28 +67,20 @@ Validators sum the encrypted amounts $\operatorname{Enc}_D(\Delta^{(i)})$ of all
 swaps in the batch to obtain an encryption of the combined inputs
 $\operatorname{Enc}_D(\sum_i \Delta^{(i)})$, then decrypt to obtain the batch
 input $\Delta = \sum_i \Delta^{(i)}$ without revealing any individual
-transaction's input $\Delta^{(i)}$.  Then they execute $\Delta$ against the
-trading pool, updating the pool state and obtaining the effective (inclusive of
+transaction's input $\Delta^{(i)}$.  Then they execute $\Delta$ [against the open liquidity positions](../dex/routing.md), updating the positions' state and obtaining the effective (inclusive of
 fees) clearing prices $p_{t_1,t_2}$ ($t_1$ in terms of $t_2$) and $p_{t_2, t_1}$
-($t_2$ in terms of $t_1$).  Alternatively, the swap could fail, for instance,
-because there is insufficient liquidity, so the public state recording the swap results also includes a success bit $b_{t_1,t_2}$ that is $1$ on success and $0$ on failure.
+($t_2$ in terms of $t_1$).
+
+Since there may not be enough liquidity to perform the entirety of the swap, unfilled portions of the input assets are also returned as ${(u_1, u_2)}$.  The batch swap is always considered successful regardless of available liquidity; for a batch swap where no liquidity positions exist to execute against, $u_1 = \Delta_1$ and $u_2 = \Delta_2$.
+
+Each user's inputs to the swap are indicated as $(\Delta_{1 i}, \Delta_{2 i})$ and their
+share of the output indicated as ${\Lambda_{1 i}, \Lambda_{2 i}}$.  Their pro rata fractions of the total input are therefore ${(\Delta_{1 i} / \Delta_1, \Delta_{2 i} / \Delta_2)}$.
 
 Each user's output amounts can be computed as
 $$
-\Lambda_1 = b_{t_1, t_2} (p_{t_1, t_2} \Delta_2) + (1 - b_{t_1,t_2}) \Delta_1 \\
-\Lambda_2 = b_{t_1, t_2} (p_{t_2, t_1} \Delta_1) + (1 - b_{t_1,t_2}) \Delta_2
+\Lambda_{1 i} = (\Delta_{1 i} / \Delta_1) * u_1 + (\Delta_{2 i} / \Delta_2) * \Lambda_1 \\
+\Lambda_{2 i} = (\Delta_{1 i} / \Delta_1) * \Lambda_2 + (\Delta_{2 i} / \Delta_2) * u_2
 $$
-which simplifies to
-$$
-\Lambda_1 = p_{t_1, t_2} \Delta_2 \\
-\Lambda_2 = p_{t_2, t_1} \Delta_1
-$$
-when the batch succeeds and $b_{t_1, t_2} = 1$, or to
-$$
-\Lambda_1 = \Delta_1 \\
-\Lambda_2 = \Delta_2 
-$$
-when the batch fails and $b_{t_1, t_2} = 0$.
 
 ### Claiming Swap Outputs
 
@@ -113,8 +105,8 @@ clearing prices $p_{t_1, t_2}$ and $p_{t_2, t_1}$;
 
 - Rather than contributing to the transaction's value balance, it constructs two output notes itself, one for each of
     $$
-    \Lambda_1 = b_{t_1, t_2} (p_{t_1, t_2} \Delta_2) + (1 - b_{t_1,t_2}) \Delta_1 \\
-    \Lambda_2 = b_{t_1, t_2} (p_{t_2, t_1} \Delta_1) + (1 - b_{t_1,t_2}) \Delta_2
+    \Lambda_{1 i} = (\Delta_{1 i} / \Delta_1) * u_1 + (\Delta_{2 i} / \Delta_2) * \Lambda_1 \\
+    \Lambda_{2 i} = (\Delta_{1 i} / \Delta_1) * \Lambda_2 + (\Delta_{2 i} / \Delta_2) * u_2
     $$
     and proves that the notes are sent to the address committed to by the
     $B_d$ and $\mathsf{pk}_d$ in the swap NFT;
