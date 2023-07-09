@@ -30,9 +30,9 @@ pub struct BatchSwapOutputData {
     pub lambda_1: Amount,
     /// The total amount of asset 2 that was output from the batch swap for 1=>2 trades.
     pub lambda_2: Amount,
-    /// The total amount of asset 1 that was returned unfilled from the batch swap for 1=>2 trades.
+    /// The amount of asset 1 that was returned unfilled from the batch swap for 1=>2 trades.
     pub unfilled_1: Amount,
-    /// The total amount of asset 2 that was returned unfilled from the batch swap for 2=>1 trades.
+    /// The amount of asset 2 that was returned unfilled from the batch swap for 2=>1 trades.
     pub unfilled_2: Amount,
     /// The height for which the batch swap data is valid.
     pub height: u64,
