@@ -89,8 +89,7 @@ impl TradingFunction {
     ///
     /// # Errors
     /// This method errors if:
-    /// - The asset type of the output does not match either end of this
-    ///  `TradingFunction`'s `TradingPair`.
+    /// - The asset type of the output does not match either end of the reserves.
     /// - An overflow occurs during the computation.
     pub fn fill_output(
         &self,
@@ -289,11 +288,7 @@ impl BareTradingFunction {
     /// # Errors
     /// This method errors if an overflow occurs when computing the trade output amount,
     /// or the fillable amount of asset 1.
-    pub fn fill(
-        &self,
-        delta_1: Amount,
-        reserves: &Reserves,
-    ) -> Result<(Amount, Reserves, Amount), ExecutionError> {
+    pub fn fill(&self, delta_1: Amount, reserves: &Reserves) -> Result<(Amount, Reserves, Amount)> {
         // We distinguish two cases, which only differ in their rounding
         // behavior.
         //
