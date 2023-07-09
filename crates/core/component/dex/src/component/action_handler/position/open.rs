@@ -18,9 +18,9 @@ impl ActionHandler for PositionOpen {
     async fn check_stateless(&self, _context: ()) -> Result<()> {
         // TODO(chris, erwan, henry): brainstorm safety on `TradingFunction`.
         // Check:
-        //  + reserves are at most 112 bits wide,
+        //  + reserves are at most 80 bits wide,
+        //  + the trading function coefficients are at most 80 bits wide.
         //  + at least some assets are provisioned.
-        //  + the trading function coefficients are at most 112 bits wide.
         //  + the trading function coefficients are non-zero,
         //  + the trading function doesn't specify a cyclic pair,
         //  + the fee is <=50%.
