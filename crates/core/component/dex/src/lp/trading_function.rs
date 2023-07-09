@@ -390,30 +390,26 @@ impl BareTradingFunction {
         self.effective_price().to_bytes()
     }
 
-    /// Returns the conversion rate from `1` to `2`, that is
-    /// used to compute the trade output `lambda_2` from the
-    /// input `delta_1`:
+    /// Returns the inverse of the `effective_price`, in other words,
+    /// the exchange rate from `asset_1` to `asset_2`:
     /// `delta_1 * effective_price_inv = lambda_2`
     pub fn effective_price_inv(&self) -> U128x128 {
         let p = U128x128::from(self.p);
         let q = U128x128::from(self.q);
 
-        let numerator = (p * self.gamma()).expect("0 < gamma <= 1");
-
-        numerator.checked_div(&q).expect("q != 0")
+        let price_ratio = (p / q).expect("q != 0 and p,q <= 2^60");
+        (price_ratio * self.gamma()).expect("2^-1 <= gamma <= 1")
     }
 
-    /// Returns the conversion rate from `2` to `1`, that is
-    /// used to compute the trade input `delta_1` from the
-    /// output `lambda_2`:
+    /// Returns the exchange rate from `asset_2` to `asset_1, inclusive
+    /// of fees:
     /// `lambda_2 * effective_price = delta_1`
     pub fn effective_price(&self) -> U128x128 {
         let p = U128x128::from(self.p);
         let q = U128x128::from(self.q);
 
-        let denominator = (p * self.gamma()).expect("1/2 <= gamma <= 1");
-
-        q.checked_div(&denominator).expect("q, gamma != 0")
+        let price_ratio = (q / p).expect("p != 0 and p,q <= 2^60");
+        price_ratio.checked_div(&self.gamma()).expect("gamma != 0")
     }
 
     /// Converts an amount `delta_1` into `lambda_2`, using the id effective price inverse.
