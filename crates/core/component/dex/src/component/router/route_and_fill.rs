@@ -180,14 +180,15 @@ pub trait RouteAndFill: StateWrite + Sized {
                     // We have encountered an overflow during the execution of the route.
                     // To route around this, we will close the position and try to route and fill again.
                     tracing::debug!(culprit = ?position_id, "overflow detected during routing execution");
-                    self.close_position_by_id(&position_id)
+                    Arc::get_mut(self)
+                        .expect("expected state to have no other refs")
+                        .close_position_by_id(&position_id)
                         .await
                         .expect("the position still exists");
                     continue;
                 }
                 Err(e) => {
                     tracing::error!(?e, "error filling route");
-                    // TODO(erwan): handle stream errors
                     continue;
                 }
             };
