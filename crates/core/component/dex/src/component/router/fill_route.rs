@@ -532,7 +532,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         let mut current_input = input;
 
         for (i, position) in self.positions.iter().enumerate() {
-            if position.phi.matches_input(current_input.asset_id) {
+            if !position.phi.matches_input(current_input.asset_id) {
                 tracing::error!(
                     ?current_input,
                     ?position,
