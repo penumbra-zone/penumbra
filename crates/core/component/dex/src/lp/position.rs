@@ -9,8 +9,8 @@ use crate::{DirectedTradingPair, TradingPair};
 
 use super::{trading_function::TradingFunction, Reserves};
 
-/// Reserve amounts for positions must be at most 112 bits wide.
-pub const MAX_RESERVE_AMOUNT: u128 = (1 << 112) - 1;
+/// Reserve amounts for positions must be at most 80 bits wide.
+pub const MAX_RESERVE_AMOUNT: u128 = (1 << 80) - 1;
 
 /// A trading function's fee (spread) must be at most 50% (5000 bps)
 pub const MAX_FEE_BPS: u32 = 5000;
@@ -131,8 +131,8 @@ impl Position {
             Err(anyhow::anyhow!(
                 "trading function coefficients must be nonzero"
             ))
-        } else if self.phi.component.p.value() as u128 > MAX_RESERVE_AMOUNT
-            || self.phi.component.q.value() as u128 > MAX_RESERVE_AMOUNT
+        } else if self.phi.component.p.value() > MAX_RESERVE_AMOUNT
+            || self.phi.component.q.value() > MAX_RESERVE_AMOUNT
         {
             Err(anyhow!("trading function coefficients are too large"))
         } else if self.phi.pair.asset_1() == self.phi.pair.asset_2() {
