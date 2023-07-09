@@ -44,6 +44,7 @@ ark-snark = "0.4"
 async-trait = "0.1.52"
 tokio = {version = "1.3", features = ["full"], optional = true} 
 hex = "0.4"
+thiserror = "1"
 anyhow = "1"
 tracing = "0.1"
 prost = "0.11"
