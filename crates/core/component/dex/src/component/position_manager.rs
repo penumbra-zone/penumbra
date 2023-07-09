@@ -90,8 +90,9 @@ pub trait PositionManager: StateWrite + PositionRead {
         tracing::debug!(?id, "closing position, first fetch it");
         let mut position = self
             .position_by_id(id)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("caller should ensure position exists"))?;
+            .await
+            .expect("fetching position should not fail")
+            .ok_or_else(|| anyhow::anyhow!("position not found"))?;
 
         tracing::debug!(?id, "position found, close it");
         position.state = position::State::Closed;
@@ -107,33 +108,35 @@ pub trait PositionManager: StateWrite + PositionRead {
     }
 
     /// Close all positions that have been queued for closure.
-    async fn close_queued_positions(&mut self) -> Result<()> {
+    async fn close_queued_positions(&mut self) -> () {
         let to_close = self.pending_position_closures();
         for id in to_close {
-            // TODO(erwan): this is not right, we should not fail if the position
-            // does not exist, but we should log a warning. if the position is a
-            // limit order that has been filled, or caused an overflow, then it will
-            // not exist anymore.
-            self.close_position_by_id(&id)
-                .await
-                .expect("value balance mechanism should ensure position exists")
+            match self.close_position_by_id(&id).await {
+                Ok(()) => tracing::debug!(?id, "position closed"),
+                // The position was already closed, which in and of itself is not an error.
+                // It's possible that the position was closed by the engine, for example
+                // because it was a limit-order.
+                Err(e) => tracing::debug!(?id, "failed to close position: {}", e),
+            }
         }
         self.object_delete(state_key::pending_position_closures());
-        Ok(())
     }
 
     /// Writes a position to the state, updating all necessary indexes.
     #[tracing::instrument(level = "debug", skip(self, position), fields(id = ?position.id()))]
     async fn put_position(&mut self, position: position::Position) -> Result<()> {
         let id = position.id();
-        tracing::debug!(?position, "processing position");
+        tracing::debug!(?position, "fetch position's previous state from storage");
+        // We pull the position from the state inconditionally, since we will
+        // always need to update the position's liquidity index.
+        let prev = self
+            .position_by_id(&id)
+            .await
+            .expect("fetching position should not fail");
+
         // Clear any existing indexes of the position, since changes to the
         // reserves or the position state might have invalidated them.
         self.deindex_position_by_price(&position);
-
-        // We pull the position from the state inconditionally, since we will
-        // always need to update the position's liquidity index.
-        let prev = self.position_by_id(&id).await?;
 
         let position = self.handle_limit_order(prev, position);
 
@@ -142,7 +145,6 @@ pub trait PositionManager: StateWrite + PositionRead {
             self.index_position_by_price(&position);
         }
         self.put(state_key::position_by_id(&id), position);
-
         Ok(())
     }
 
@@ -154,6 +156,7 @@ pub trait PositionManager: StateWrite + PositionRead {
         prev_position: Option<position::Position>,
         position: Position,
     ) -> Position {
+        let id = position.id();
         match prev_position {
             Some(_) if position.close_on_fill => {
                 // It's technically possible for a limit order to be partially filled,
@@ -162,13 +165,19 @@ pub trait PositionManager: StateWrite + PositionRead {
                 // gets completely filled or not at all.
                 if position.reserves.r1 == Amount::zero() || position.reserves.r2 == Amount::zero()
                 {
+                    tracing::debug!(?id, "limit order filled, setting state to closed");
                     Position {
                         state: position::State::Closed,
                         ..position
                     }
                 } else {
+                    tracing::debug!(?id, "limit order partially filled, keeping open");
                     position
                 }
+            }
+            None if position.close_on_fill => {
+                tracing::debug!(?id, "detected a newly opened limit order");
+                position
             }
             _ => position,
         }

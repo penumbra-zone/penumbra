@@ -62,6 +62,12 @@ pub trait FillRoute: StateWrite + Sized {
     /// # Invariants
     ///
     /// It is an error to call `fill_route` on a route that does not have at least one position for each hop.
+    ///
+    /// # Errors
+    /// `fill_route` can fail for a number of reasons captured by the `FillError` enum.
+    ///
+    /// # Panics
+    /// At the moment, `fill_route` will panic on I/O failures (e.g., if the state is corrupted, or storage fails).
     #[instrument(skip(self, input, hops, spill_price))]
     async fn fill_route(
         &mut self,
@@ -211,7 +217,10 @@ async fn fill_route_inner<S: StateWrite + Sized>(
 
     // We need to save these positions, because we mutated their state, even
     // if we didn't fully consume their reserves.
-    frontier.save().await?;
+    frontier
+        .save()
+        .await
+        .expect("writing frontier should not fail");
 
     // Input consists of the sum of the first value of each trace.
     let input = frontier
@@ -460,7 +469,8 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         // they're fully consumed, or when we finish filling.
         self.state
             .put_position(self.positions[index].clone())
-            .await?;
+            .await
+            .expect("writing to storage should not fail");
 
         loop {
             let pair = &self.pairs[index];
