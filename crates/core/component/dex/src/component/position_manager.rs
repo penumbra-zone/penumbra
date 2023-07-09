@@ -83,6 +83,22 @@ impl<T: StateRead + ?Sized> PositionRead for T {}
 /// Manages liquidity positions within the chain state.
 #[async_trait]
 pub trait PositionManager: StateWrite + PositionRead {
+    /// Close a position by id, removing it from the state.
+    /// # Errors
+    /// Returns an error if the position does not exist.
+    async fn close_position_by_id(&mut self, id: &position::Id) -> Result<()> {
+        tracing::debug!(?id, "closing position, first fetch it");
+        let mut position = self
+            .position_by_id(id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("caller should ensure position exists"))?;
+
+        tracing::debug!(?id, "position found, close it");
+        position.state = position::State::Closed;
+        self.put_position(position).await?;
+        Ok(())
+    }
+
     /// Queues a position to be closed at the end of the block, after batch execution.
     fn queue_close_position(&mut self, id: position::Id) {
         let mut to_close = self.pending_position_closures();
@@ -90,16 +106,17 @@ pub trait PositionManager: StateWrite + PositionRead {
         self.object_put(state_key::pending_position_closures(), to_close);
     }
 
+    /// Close all positions that have been queued for closure.
     async fn close_queued_positions(&mut self) -> Result<()> {
         let to_close = self.pending_position_closures();
         for id in to_close {
-            let mut position = self
-                .position_by_id(&id)
-                .await?
-                .expect("value balance mechanism should have ensured position exists");
-
-            position.state = position::State::Closed;
-            self.put_position(position).await?;
+            // TODO(erwan): this is not right, we should not fail if the position
+            // does not exist, but we should log a warning. if the position is a
+            // limit order that has been filled, or caused an overflow, then it will
+            // not exist anymore.
+            self.close_position_by_id(&id)
+                .await
+                .expect("value balance mechanism should ensure position exists")
         }
         self.object_delete(state_key::pending_position_closures());
         Ok(())
