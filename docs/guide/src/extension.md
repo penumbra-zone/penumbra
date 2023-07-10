@@ -68,3 +68,18 @@ As of Testnet 53, only the **Send** action is supported. Check back on
 subsequent versions to follow progress as we implement more advanced
 functionality in the web wallet.
 
+## Upgrading to a new testnet
+
+When a new testnet is released, you'll need to clear the existing state
+from the extension, much like running `pcli view reset` is required
+on the command-line. To synchronize with a new testnet:
+
+1. Click the *Penumbra Wallet* option in the extensions drop-down menu,
+   next to the URL bar.
+2. Unlock the wallet by providing your passphrase, if prompted.
+3. Click the gear icon in the top right corner of the overlay.
+4. Choose **Advanced -> Clear Cache -> Confirm**.
+
+Then navigate to [https://app.testnet.penumbra.zone/](https://app.testnet.penumbra.zone/)
+again and reauthorize the connection. The extension will automatically sync
+with the new chain.
