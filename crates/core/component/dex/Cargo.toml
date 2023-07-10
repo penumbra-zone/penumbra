@@ -16,7 +16,6 @@ parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", 
 # Workspace dependencies
 penumbra-proto = { path = "../../../proto", default-features = false }
 penumbra-storage = { path = "../../../storage", optional = true }
-penumbra-crypto = { path = "../../crypto", default-features = false }
 penumbra-chain = { path = "../chain", default-features = false }
 penumbra-component = { path = "../component", optional = true }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }

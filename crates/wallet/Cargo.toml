@@ -15,7 +15,6 @@ publish = false
 # Workspace dependencies
 penumbra-proto = { path = "../proto" }
 penumbra-tct = { path = "../crypto/tct" }
-penumbra-crypto = { path = "../core/crypto" }
 penumbra-num = { path = "../core/num" }
 penumbra-asset = { path = "../core/asset" }
 penumbra-keys = { path = "../core/keys" }

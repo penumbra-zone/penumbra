@@ -16,8 +16,8 @@ component = [
 proving-keys = ["penumbra-proof-params/proving-keys"]
 default = ["std", "component", "proving-keys"]
 std = ["ark-ff/std"]
-docsrs = []
 parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "ark-groth16/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
+docsrs = []
 
 [dependencies]
 # Workspace dependencies
@@ -25,7 +25,6 @@ penumbra-proto = { path = "../../../proto", default-features = false }
 penumbra-storage = { path = "../../../storage", optional = true }
 penumbra-tct = { path = "../../../crypto/tct" }
 penumbra-proof-params = { path = "../../../crypto/proof-params", default-features = false }
-penumbra-crypto = { path = "../../crypto", default-features = false }
 penumbra-sct = { path = "../sct", default-features = false }
 penumbra-component = { path = "../component", optional = true }
 penumbra-chain = { path = "../chain", default-features = false }
