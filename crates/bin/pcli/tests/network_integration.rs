@@ -568,23 +568,19 @@ fn lp_management() {
 
 #[ignore]
 #[test]
+/// Test that we can swap.
+/// Setup:
+/// There are two wallets, address 0 and address 1.
+/// Address 0 has 100gm and some penumbra.
+/// Address 1 has no gm.
+/// Test:
+/// Address 1 posts an order to sell 1penumbra for 1gm.
+/// Address 0 swaps 1gm for 1penumbra.
+/// Validate:
+/// Address 0 has 99gm and some penumbra.
+/// Address 1 has 1gm and 1000penumbra.
 fn swap() {
     let tmpdir = load_wallet_into_tmpdir();
-
-    // Create a liquidity position selling 1cube for 1penumbra each.
-    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
-    sell_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "tx",
-            "position",
-            "order",
-            "sell",
-            "1cube@1penumbra",
-        ])
-        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-    sell_cmd.assert().success();
 
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
@@ -598,24 +594,44 @@ fn swap() {
 
     balance_cmd
         .assert()
-        // Address 0 has no `cube`.
-        .stdout(
-            predicate::str::is_match(format!(r"0\s*[0-9]+.*cube"))
-                .unwrap()
-                .not(),
-        )
-        // Address 1 should also have no cube.
-        .stdout(
-            predicate::str::is_match(format!(r"1\s*[0-9]+.*cube"))
-                .unwrap()
-                .not(),
-        )
+        // Address 0 has 100gm.
+        .stdout(predicate::str::is_match(format!(r"0\s*100gm")).unwrap())
+        // Address 1 has no gm.
+        .stdout(predicate::str::is_match(format!(r"1\s.*gm")).unwrap().not())
+        // Address 0 has some penumbra.
+        .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
         // Address 1 has 1001penumbra.
-        .stdout(predicate::str::is_match(format!(r"1\s*1001penumbra")).unwrap())
-        // Address 0 should have some penumbra
-        .stdout(predicate::str::is_match(format!(r"0\s*[0-9]+.*penumbra")).unwrap());
+        .stdout(predicate::str::is_match(format!(r"1\s*1001penumbra")).unwrap());
 
-    // Swap 1penumbra for some cube from address 1.
+    // Address 1: post an order to sell 1penumbra for 1gm.
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1penumbra@1gm",
+            "--source",
+            "1",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+
+    balance_cmd
+        .assert()
+        // Address 0 has 100gm.
+        .stdout(predicate::str::is_match(format!(r"0\s*100gm")).unwrap())
+        // Address 1 has no gm.
+        .stdout(predicate::str::is_match(format!(r"1\s.*gm")).unwrap().not())
+        // Address 0 has some penumbra.
+        .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
+        // Address 1 has 1000penumbra.
+        .stdout(predicate::str::is_match(format!(r"1\s*1000penumbra")).unwrap());
+
+    // Address 1: swaps 1gm for 1penumbra.
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
     swap_cmd
         .args([
@@ -623,11 +639,11 @@ fn swap() {
             tmpdir.path().to_str().unwrap(),
             "tx",
             "swap",
-            "1penumbra",
+            "1gm",
             "--into",
-            "cube",
+            "penumbra",
             "--source",
-            "1",
+            "0",
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     swap_cmd.assert().success();
@@ -646,15 +662,62 @@ fn swap() {
 
     balance_cmd
         .assert()
-        // Address 1 has 1cube now
-        .stdout(predicate::str::is_match(format!(r"1\s*1cube")).unwrap())
-        // and address 0 has no cube.
-        .stdout(
-            predicate::str::is_match(format!(r"0\s*[0-9]+.*cube"))
-                .unwrap()
-                .not(),
-        )
-        // Address 1 spent 1penumbra.
+        // Address 0 has 100gm.
+        .stdout(predicate::str::is_match(format!(r"0\s*99gm")).unwrap())
+        // Address 1 has no gm.
+        .stdout(predicate::str::is_match(format!(r"1\s.*gm")).unwrap().not())
+        // Address 0 has some penumbra.
+        .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
+        // Address 1 has 1000penumbra.
+        .stdout(predicate::str::is_match(format!(r"1\s*1000penumbra")).unwrap());
+
+    // Close and withdraw any existing liquidity positions.
+    let mut close_cmd = Command::cargo_bin("pcli").unwrap();
+    close_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "close-all",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    close_cmd.assert().success();
+
+    // Wait for processing.
+    thread::sleep(*UNBONDING_DURATION);
+    let mut withdraw_cmd = Command::cargo_bin("pcli").unwrap();
+    withdraw_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "withdraw-all",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    withdraw_cmd.assert().success();
+
+    thread::sleep(*UNBONDING_DURATION);
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    balance_cmd
+        .assert()
+        // Address 0 has 99gm.
+        .stdout(predicate::str::is_match(format!(r"0\s*99gm")).unwrap())
+        // Address 1 has 1gm.
+        .stdout(predicate::str::is_match(format!(r"1\s*1gm")).unwrap())
+        // Address 0 has some penumbra.
+        .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
+        // Address 1 has 1000penumbra.
         .stdout(predicate::str::is_match(format!(r"1\s*1000penumbra")).unwrap());
 }
 
@@ -1010,7 +1073,7 @@ fn test_orders() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     sell_cmd.assert().success();
 
-    // Swap 225test_usd for some penumbra. In theory, we should receive 1 penumbra for 225test_usd
+    // Swap 225test_usd for some penumbra. In theory, we should receive ~1 penumbra for 225test_usd
     // based on the position above. In practice, we'll receive slightly less due to rounding: 0.99999penumbra.
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
     swap_cmd
@@ -1124,7 +1187,6 @@ fn test_orders() {
         .success();
 
     // The position should now have some penumbra reserves, so we can swap against it again...
-
     // Swap 225test_usd for some penumbra. We expect to receive 1penumbra for 225test_usd
     // based on the position above.
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
@@ -1143,7 +1205,7 @@ fn test_orders() {
         .assert()
         .stdout(
             predicate::str::is_match(
-                "You will receive outputs of 0test_usd and 1penumbra. Claiming now...",
+                "You will receive outputs of 0test_usd and 999.999mpenumbra. Claiming now...",
             )
             .unwrap(),
         )
