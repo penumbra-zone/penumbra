@@ -680,6 +680,8 @@ fn swap() {
             "tx",
             "position",
             "close-all",
+            "--source",
+            "1",
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     close_cmd.assert().success();
@@ -694,6 +696,8 @@ fn swap() {
             "tx",
             "position",
             "withdraw-all",
+            "--source",
+            "1",
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     withdraw_cmd.assert().success();
