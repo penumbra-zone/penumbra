@@ -3,7 +3,9 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_component::{ActionHandler, TransactionContext};
+use penumbra_chain::TransactionContext;
+use penumbra_component::ActionHandler;
+
 use penumbra_proof_params::SWAPCLAIM_PROOF_VERIFICATION_KEY;
 use penumbra_shielded_pool::component::{NoteManager, StateReadExt as _};
 use penumbra_storage::{StateRead, StateWrite};

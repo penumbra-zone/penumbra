@@ -3,7 +3,7 @@ use penumbra_asset::{
     asset::{self, DenomMetadata},
     Balance, Value,
 };
-use penumbra_component::{EffectHash, EffectingData};
+use penumbra_chain::{EffectHash, EffectingData};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{

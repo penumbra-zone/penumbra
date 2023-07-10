@@ -4645,9 +4645,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "hex",
- "penumbra-proto",
  "penumbra-storage",
- "penumbra-tct",
  "tendermint",
 ]
 
@@ -5382,7 +5380,6 @@ dependencies = [
  "pbjson-types",
  "penumbra-asset",
  "penumbra-chain",
- "penumbra-component",
  "penumbra-dao",
  "penumbra-dex",
  "penumbra-fee",
