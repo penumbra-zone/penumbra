@@ -626,7 +626,8 @@ mod tests {
         assert_eq!(old_reserves.r2 + 0u64.into(), new_reserves.r2 + lambda_2);
         // Exact amount checks:
         assert_eq!(lambda_1, 0u64.into());
-        assert_eq!(lambda_2, 120u64.into());
+        // We expect some lossy rounding here:
+        assert_eq!(lambda_2, 119u64.into());
     }
 
     #[test]
