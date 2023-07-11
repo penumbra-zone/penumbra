@@ -188,8 +188,9 @@ pub trait RouteAndFill: StateWrite + Sized {
                     continue;
                 }
                 Err(e) => {
-                    tracing::error!(?e, "error filling route");
-                    continue;
+                    // We have encountered an error during the execution of the route,
+                    // there are no clear ways to route around this, so we propagate the error.
+                    anyhow::bail!("error filling route: {:?}", e);
                 }
             };
 
