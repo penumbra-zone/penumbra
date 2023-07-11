@@ -50,12 +50,7 @@ the section above on resetting node state.
 ### Running `pd` and `tendermint`
 
 Next, run `pd` with the `--home` parameter pointed at the correct part of the
-testnet data directory.  It's useful to set the `RUST_LOG` environment variable
-to get information about what it's doing:
-
-```shell
-export RUST_LOG="info,pd=debug,penumbra=debug,jmt=debug" # or some other logging level
-```
+testnet data directory.
 
 ```shell
 cargo run --bin pd --release -- start --home ~/.penumbra/testnet_data/node0/pd
