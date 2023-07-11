@@ -7,6 +7,8 @@ mod swap_record;
 mod tx;
 mod utils;
 mod view_server;
+mod wasm_planner;
+
 use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType};
 
 use penumbra_keys::{Address, FullViewingKey};
