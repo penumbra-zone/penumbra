@@ -11,8 +11,8 @@ use crate::StateWrite;
 pub struct Cache {
     /// Unwritten changes to the consensus-critical state (stored in the JMT).
     pub(crate) unwritten_changes: BTreeMap<String, Option<Vec<u8>>>,
-    /// Unwritten changes to non-consensus-critical state (stored in the nonconsensus storage).
-    pub(crate) nonconsensus_changes: BTreeMap<Vec<u8>, Option<Vec<u8>>>,
+    /// Unwritten changes to non-consensus-critical state (stored in the nonverifiable storage).
+    pub(crate) nonverifiable_changes: BTreeMap<Vec<u8>, Option<Vec<u8>>>,
     /// Unwritten changes to the object store.  A `None` value means a deletion.
     pub(crate) ephemeral_objects: BTreeMap<&'static str, Option<Box<dyn Any + Send + Sync>>>,
     /// A list of ABCI events that occurred while building this set of state changes.
@@ -28,7 +28,7 @@ impl Cache {
         // `StateRead` trait assumes asynchronous access, and in any case, we
         // probably don't want to be reading directly from a `Cache` (?)
         self.unwritten_changes.extend(other.unwritten_changes);
-        self.nonconsensus_changes.extend(other.nonconsensus_changes);
+        self.nonverifiable_changes.extend(other.nonverifiable_changes);
         self.ephemeral_objects.extend(other.ephemeral_objects);
         self.events.extend(other.events);
     }
@@ -43,11 +43,11 @@ impl Cache {
             }
         }
 
-        for (key, value) in self.nonconsensus_changes {
+        for (key, value) in self.nonverifiable_changes {
             if let Some(value) = value {
-                state.nonconsensus_put_raw(key, value);
+                state.nonverifiable_put_raw(key, value);
             } else {
-                state.nonconsensus_delete(key);
+                state.nonverifiable_delete(key);
             }
         }
 
@@ -63,7 +63,7 @@ impl Cache {
     /// Returns `true` if there are cached writes on top of the snapshot, and `false` otherwise.
     pub fn is_dirty(&self) -> bool {
         !(self.unwritten_changes.is_empty()
-            && self.nonconsensus_changes.is_empty()
+            && self.nonverifiable_changes.is_empty()
             && self.ephemeral_objects.is_empty())
     }
 

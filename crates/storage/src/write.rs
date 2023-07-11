@@ -11,10 +11,10 @@ pub trait StateWrite: StateRead + Send + Sync {
     fn delete(&mut self, key: String);
 
     /// Puts raw bytes into the non-verifiable key-value store with the given key.
-    fn nonconsensus_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>);
+    fn nonverifiable_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>);
 
     /// Delete a key from non-verifiable key-value storage.
-    fn nonconsensus_delete(&mut self, key: Vec<u8>);
+    fn nonverifiable_delete(&mut self, key: Vec<u8>);
 
     /// Puts an object into the ephemeral object store with the given key.
     ///
@@ -45,12 +45,12 @@ impl<'a, S: StateWrite + Send + Sync> StateWrite for &'a mut S {
         (**self).delete(key)
     }
 
-    fn nonconsensus_delete(&mut self, key: Vec<u8>) {
-        (**self).nonconsensus_delete(key)
+    fn nonverifiable_delete(&mut self, key: Vec<u8>) {
+        (**self).nonverifiable_delete(key)
     }
 
-    fn nonconsensus_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>) {
-        (**self).nonconsensus_put_raw(key, value)
+    fn nonverifiable_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>) {
+        (**self).nonverifiable_put_raw(key, value)
     }
 
     fn object_put<T: Clone + Any + Send + Sync>(&mut self, key: &'static str, value: T) {

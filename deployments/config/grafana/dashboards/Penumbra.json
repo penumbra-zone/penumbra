@@ -204,7 +204,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "rate(penumbra_storage_nonconsensus_get_raw_duration_seconds_sum[5m]) / rate(penumbra_storage_nonconsensus_get_raw_duration_seconds_count[5m])",
+          "expr": "rate(penumbra_storage_nonverifiable_get_raw_duration_seconds_sum[5m]) / rate(penumbra_storage_nonverifiable_get_raw_duration_seconds_count[5m])",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"

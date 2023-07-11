@@ -30,10 +30,10 @@ async fn simple_flow() -> anyhow::Result<()> {
     // tx00: c/ab => 1 [object store]
     // tx00: c/ac => 2 [object store]
     // tx00: c/ad => 3 [object store]
-    // tx00: iA => A [nonconsensus store]
-    // tx00: iC => C [nonconsensus store]
-    // tx00: iF => F [nonconsensus store]
-    // tx00: iD => D [nonconsensus store]
+    // tx00: iA => A [nonverifiable store]
+    // tx00: iC => C [nonverifiable store]
+    // tx00: iF => F [nonverifiable store]
+    // tx00: iD => D [nonverifiable store]
     // tx01: a/aa => aa
     // tx01: a/aaa => aaa
     // tx01: a/ab => ab
@@ -45,9 +45,9 @@ async fn simple_flow() -> anyhow::Result<()> {
     // tx10: test => [deleted]
     // tx10: a/aaa => [deleted]
     // tx10: a/c => c
-    // tx10: iB => B [nonconsensus store]
+    // tx10: iB => B [nonverifiable store]
     // tx11: a/ab => ab2
-    // tx11: iD => [deleted] nonconsensus store]
+    // tx11: iD => [deleted] nonverifiable store]
 
     let mut state_init = StateDelta::new(storage.latest_snapshot());
     // Check that reads on an empty state return Ok(None)
@@ -61,10 +61,10 @@ async fn simple_flow() -> anyhow::Result<()> {
     tx00.object_put("c/ab", 1u64);
     tx00.object_put("c/ac", 2u64);
     tx00.object_put("c/ad", 3u64);
-    tx00.nonconsensus_put_raw(b"iA".to_vec(), b"A".to_vec());
-    tx00.nonconsensus_put_raw(b"iC".to_vec(), b"C".to_vec());
-    tx00.nonconsensus_put_raw(b"iF".to_vec(), b"F".to_vec());
-    tx00.nonconsensus_put_raw(b"iD".to_vec(), b"D".to_vec());
+    tx00.nonverifiable_put_raw(b"iA".to_vec(), b"A".to_vec());
+    tx00.nonverifiable_put_raw(b"iC".to_vec(), b"C".to_vec());
+    tx00.nonverifiable_put_raw(b"iF".to_vec(), b"F".to_vec());
+    tx00.nonverifiable_put_raw(b"iD".to_vec(), b"D".to_vec());
 
     // Check reads against tx00:
     //     This is present in tx00
@@ -79,7 +79,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     //     Missing in tx00 object store
     assert_eq!(tx00.object_get::<bool>("nonexist"), None);
     //     Nonconsensus range checks
-    let mut range = tx00.nonconsensus_prefix_raw(b"i");
+    let mut range = tx00.nonverifiable_prefix_raw(b"i");
     assert_eq!(
         range.next().await.transpose()?,
         Some((b"iA".to_vec(), b"A".to_vec()))
@@ -111,7 +111,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     //     Missing in state_init object store
     assert_eq!(state_init.object_get::<bool>("nonexist"), None);
     //     Nonconsensus range checks
-    let mut range = state_init.nonconsensus_prefix_raw(b"i");
+    let mut range = state_init.nonverifiable_prefix_raw(b"i");
     assert_eq!(
         range.next().await.transpose()?,
         Some((b"iA".to_vec(), b"A".to_vec()))
@@ -271,7 +271,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     assert_eq!(range.next().await.transpose()?, None);
     std::mem::drop(range);
     //     Nonconsensus range checks
-    let mut range = state0.nonconsensus_prefix_raw(b"i");
+    let mut range = state0.nonverifiable_prefix_raw(b"i");
     assert_eq!(
         range.next().await.transpose()?,
         Some((b"iA".to_vec(), b"A".to_vec()))
@@ -296,7 +296,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     tx10.delete("test".to_owned());
     tx10.delete("a/aaa".to_owned());
     tx10.put_raw("a/c".to_owned(), b"c".to_vec());
-    tx10.nonconsensus_put_raw(b"iB".to_vec(), b"B".to_vec());
+    tx10.nonverifiable_put_raw(b"iB".to_vec(), b"B".to_vec());
 
     // Check reads against tx10:
     //    This is deleted in tx10, missing in state0, present in JMT
@@ -328,7 +328,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     assert_eq!(range.next().await.transpose()?, None);
     std::mem::drop(range);
     //     Nonconsensus range checks
-    let mut range = tx10.nonconsensus_prefix_raw(b"i");
+    let mut range = tx10.nonverifiable_prefix_raw(b"i");
     assert_eq!(
         range.next().await.transpose()?,
         Some((b"iA".to_vec(), b"A".to_vec()))
@@ -388,7 +388,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     // Start building another transaction
     let mut tx11 = StateDelta::new(&mut state0);
     tx11.put_raw("a/ab".to_owned(), b"ab2".to_vec());
-    tx11.nonconsensus_delete(b"iD".to_vec());
+    tx11.nonverifiable_delete(b"iD".to_vec());
 
     // Check reads against tx11:
     //    This is present in tx11, missing in state0, present in JMT
@@ -421,7 +421,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     assert_eq!(range.next().await.transpose()?, None);
     std::mem::drop(range);
     //     Nonconsensus range checks
-    let mut range = tx11.nonconsensus_prefix_raw(b"i");
+    let mut range = tx11.nonverifiable_prefix_raw(b"i");
     assert_eq!(
         range.next().await.transpose()?,
         Some((b"iA".to_vec(), b"A".to_vec()))
@@ -474,7 +474,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     );
     assert_eq!(range.next().await.transpose()?, None);
     std::mem::drop(range);
-    let mut range = state0.nonconsensus_prefix_raw(b"i");
+    let mut range = state0.nonverifiable_prefix_raw(b"i");
     assert_eq!(
         range.next().await.transpose()?,
         Some((b"iA".to_vec(), b"A".to_vec()))
@@ -530,7 +530,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     );
     assert_eq!(range.next().await.transpose()?, None);
     std::mem::drop(range);
-    let mut range = state1.nonconsensus_prefix_raw(b"i");
+    let mut range = state1.nonverifiable_prefix_raw(b"i");
     assert_eq!(
         range.next().await.transpose()?,
         Some((b"iA".to_vec(), b"A".to_vec()))
@@ -577,7 +577,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     assert_eq!(range.next().await.transpose()?, None);
     std::mem::drop(range);
     //     Nonconsensus range checks
-    let mut range = state0a.nonconsensus_prefix_raw(b"i");
+    let mut range = state0a.nonverifiable_prefix_raw(b"i");
     assert_eq!(
         range.next().await.transpose()?,
         Some((b"iA".to_vec(), b"A".to_vec()))
@@ -640,7 +640,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     assert_eq!(range.next().await.transpose()?, None);
     std::mem::drop(range);
     //     Nonconsensus range checks
-    let mut range = state1a.nonconsensus_prefix_raw(b"i");
+    let mut range = state1a.nonverifiable_prefix_raw(b"i");
     assert_eq!(
         range.next().await.transpose()?,
         Some((b"iA".to_vec(), b"A".to_vec()))

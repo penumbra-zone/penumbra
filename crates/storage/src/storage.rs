@@ -56,8 +56,8 @@ impl Storage {
                          Note: we need to use a newtype wrapper around `NodeKey` here, because
                          we want a lexicographical ordering that maps to ascending jmt::Version.
 
-                       --> nonconsensus: maps arbitrary keys to arbitrary values, persists
-                                       the nonconsensus state.
+                       --> nonverifiable: maps arbitrary keys to arbitrary values, persists
+                                       the nonverifiable state.
 
                        --> jmt_keys: index JMT keys (i.e. keyhash preimages).
 
@@ -71,7 +71,7 @@ impl Storage {
                         path,
                         [
                             "jmt",
-                            "nonconsensus",
+                            "nonverifiable",
                             "jmt_keys",
                             "jmt_keys_by_keyhash",
                             "jmt_values",
@@ -189,20 +189,20 @@ impl Storage {
                     inner.write_node_batch(&batch.node_batch)?;
                     tracing::trace!(?root_hash, "wrote node batch to backing store");
 
-                    // Write the unwritten changes from the nonconsensus to RocksDB.
-                    for (k, v) in cache.nonconsensus_changes.into_iter() {
-                        let nonconsensus_cf = inner
+                    // Write the unwritten changes from the nonverifiable to RocksDB.
+                    for (k, v) in cache.nonverifiable_changes.into_iter() {
+                        let nonverifiable_cf = inner
                             .db
-                            .cf_handle("nonconsensus")
-                            .expect("nonconsensus column family not found");
+                            .cf_handle("nonverifiable")
+                            .expect("nonverifiable column family not found");
 
                         match v {
                             Some(v) => {
-                                tracing::trace!(key = ?EscapedByteSlice(&k), value = ?EscapedByteSlice(&v), "put nonconsensus key");
-                                inner.db.put_cf(nonconsensus_cf, k, &v)?;
+                                tracing::trace!(key = ?EscapedByteSlice(&k), value = ?EscapedByteSlice(&v), "put nonverifiable key");
+                                inner.db.put_cf(nonverifiable_cf, k, &v)?;
                             }
                             None => {
-                                inner.db.delete_cf(nonconsensus_cf, k)?;
+                                inner.db.delete_cf(nonverifiable_cf, k)?;
                             }
                         };
                     }

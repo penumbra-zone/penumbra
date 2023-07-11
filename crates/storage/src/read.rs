@@ -19,7 +19,7 @@ pub trait StateRead: Send + Sync {
     ///
     /// This is intended for application-specific indexes of the verifiable
     /// consensus state, rather than for use as a primary data storage method.
-    fn nonconsensus_get_raw(&self, key: &[u8]) -> Self::GetRawFut;
+    fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut;
 
     /// Gets an object from the ephemeral key-object store.
     ///
@@ -54,7 +54,7 @@ pub trait StateRead: Send + Sync {
     /// Retrieve all values for keys matching a prefix from the non-verifiable key-value store, as raw bytes.
     ///
     /// Users should generally prefer to use wrapper methods in an extension trait.
-    fn nonconsensus_prefix_raw(&self, prefix: &[u8]) -> Self::NonconsensusPrefixRawStream;
+    fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> Self::NonconsensusPrefixRawStream;
 }
 
 impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
@@ -75,12 +75,12 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
         (**self).prefix_keys(prefix)
     }
 
-    fn nonconsensus_prefix_raw(&self, prefix: &[u8]) -> S::NonconsensusPrefixRawStream {
-        (**self).nonconsensus_prefix_raw(prefix)
+    fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> S::NonconsensusPrefixRawStream {
+        (**self).nonverifiable_prefix_raw(prefix)
     }
 
-    fn nonconsensus_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
-        (**self).nonconsensus_get_raw(key)
+    fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
+        (**self).nonverifiable_get_raw(key)
     }
 
     fn object_get<T: Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T> {
@@ -110,12 +110,12 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
         (**self).prefix_keys(prefix)
     }
 
-    fn nonconsensus_prefix_raw(&self, prefix: &[u8]) -> S::NonconsensusPrefixRawStream {
-        (**self).nonconsensus_prefix_raw(prefix)
+    fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> S::NonconsensusPrefixRawStream {
+        (**self).nonverifiable_prefix_raw(prefix)
     }
 
-    fn nonconsensus_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
-        (**self).nonconsensus_get_raw(key)
+    fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
+        (**self).nonverifiable_get_raw(key)
     }
 
     fn object_get<T: Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T> {
@@ -145,12 +145,12 @@ impl<S: StateRead + Send + Sync> StateRead for Arc<S> {
         (**self).prefix_keys(prefix)
     }
 
-    fn nonconsensus_prefix_raw(&self, prefix: &[u8]) -> S::NonconsensusPrefixRawStream {
-        (**self).nonconsensus_prefix_raw(prefix)
+    fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> S::NonconsensusPrefixRawStream {
+        (**self).nonverifiable_prefix_raw(prefix)
     }
 
-    fn nonconsensus_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
-        (**self).nonconsensus_get_raw(key)
+    fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
+        (**self).nonverifiable_get_raw(key)
     }
 
     fn object_get<T: Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T> {
@@ -176,7 +176,7 @@ impl StateRead for () {
         futures::future::ready(Ok(None))
     }
 
-    fn nonconsensus_get_raw(&self, _key: &[u8]) -> Self::GetRawFut {
+    fn nonverifiable_get_raw(&self, _key: &[u8]) -> Self::GetRawFut {
         futures::future::ready(Ok(None))
     }
 
@@ -196,7 +196,7 @@ impl StateRead for () {
         futures::stream::iter(std::iter::empty())
     }
 
-    fn nonconsensus_prefix_raw(&self, _prefix: &[u8]) -> Self::NonconsensusPrefixRawStream {
+    fn nonverifiable_prefix_raw(&self, _prefix: &[u8]) -> Self::NonconsensusPrefixRawStream {
         futures::stream::iter(std::iter::empty())
     }
 }

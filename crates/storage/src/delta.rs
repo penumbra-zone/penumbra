@@ -204,14 +204,14 @@ impl<S: StateRead> StateRead for StateDelta<S> {
         )
     }
 
-    fn nonconsensus_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
+    fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
         // Check if we have a cache hit in the leaf cache.
         if let Some(entry) = self
             .leaf_cache
             .read()
             .as_ref()
             .unwrap()
-            .nonconsensus_changes
+            .nonverifiable_changes
             .get(key)
         {
             return CacheFuture::hit(entry.clone());
@@ -223,7 +223,7 @@ impl<S: StateRead> StateRead for StateDelta<S> {
                 .read()
                 .as_ref()
                 .expect("delta must not have been applied")
-                .nonconsensus_changes
+                .nonverifiable_changes
                 .get(key)
             {
                 return CacheFuture::hit(entry.clone());
@@ -236,7 +236,7 @@ impl<S: StateRead> StateRead for StateDelta<S> {
                 .read()
                 .as_ref()
                 .expect("delta must not have been applied")
-                .nonconsensus_get_raw(key),
+                .nonverifiable_get_raw(key),
         )
     }
 
@@ -357,13 +357,13 @@ impl<S: StateRead> StateRead for StateDelta<S> {
         }
     }
 
-    fn nonconsensus_prefix_raw(&self, prefix: &[u8]) -> Self::NonconsensusPrefixRawStream {
+    fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> Self::NonconsensusPrefixRawStream {
         let underlying = self
             .state
             .read()
             .as_ref()
             .expect("delta must not have been applied")
-            .nonconsensus_prefix_raw(prefix)
+            .nonverifiable_prefix_raw(prefix)
             .peekable();
         StateDeltaNonconsensusPrefixRawStream {
             underlying,
@@ -394,23 +394,23 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
             .insert(key, None);
     }
 
-    fn nonconsensus_delete(&mut self, key: Vec<u8>) {
+    fn nonverifiable_delete(&mut self, key: Vec<u8>) {
         tracing::trace!(key = ?EscapedByteSlice(&key), "deleting key");
         self.leaf_cache
             .write()
             .as_mut()
             .unwrap()
-            .nonconsensus_changes
+            .nonverifiable_changes
             .insert(key, None);
     }
 
-    fn nonconsensus_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>) {
-        tracing::trace!(key = ?EscapedByteSlice(&key), value = ?EscapedByteSlice(&value), "insert nonconsensus change");
+    fn nonverifiable_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>) {
+        tracing::trace!(key = ?EscapedByteSlice(&key), value = ?EscapedByteSlice(&value), "insert nonverifiable change");
         self.leaf_cache
             .write()
             .as_mut()
             .unwrap()
-            .nonconsensus_changes
+            .nonverifiable_changes
             .insert(key, Some(value));
     }
 

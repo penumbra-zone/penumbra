@@ -29,7 +29,7 @@ pub trait StateReadExt: StateRead {
         }
 
         match self
-            .nonconsensus_get_raw(state_key::state_commitment_tree().as_bytes())
+            .nonverifiable_get_raw(state_key::state_commitment_tree().as_bytes())
             .await
             .unwrap()
         {
@@ -123,7 +123,7 @@ impl<T: StateWrite + ?Sized> SctManager for T {}
 //#[async_trait(?Send)]
 #[async_trait]
 trait StateWriteExt: StateWrite {
-    // Set the state commitment tree in memory, but without committing to it in the nonconsensus
+    // Set the state commitment tree in memory, but without committing to it in the nonverifiable
     // storage (very cheap).
     fn put_state_commitment_tree(&mut self, tree: tct::Tree) {
         self.object_put(state_key::cached_state_commitment_tree(), tree);
@@ -136,7 +136,7 @@ trait StateWriteExt: StateWrite {
         if let Some(tree) = self.object_get::<tct::Tree>(state_key::cached_state_commitment_tree())
         {
             let bytes = bincode::serialize(&tree).unwrap();
-            self.nonconsensus_put_raw(
+            self.nonverifiable_put_raw(
                 state_key::state_commitment_tree().as_bytes().to_vec(),
                 bytes,
             );
