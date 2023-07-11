@@ -190,6 +190,7 @@ pub trait RouteAndFill: StateWrite + Sized {
                 Err(e) => {
                     // We have encountered an error during the execution of the route,
                     // there are no clear ways to route around this, so we propagate the error.
+                    // `fill_route` is transactional and will have rolled back the state.
                     anyhow::bail!("error filling route: {:?}", e);
                 }
             };

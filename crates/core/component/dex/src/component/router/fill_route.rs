@@ -643,7 +643,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             let (unfilled, new_reserves, output) = self.positions[i]
                 .phi
                 .fill(current_value, &self.positions[i].reserves)
-                .expect("during forward fill, execution should be infaillible");
+                .expect("forward fill should not fail");
 
             assert_eq!(
                 unfilled.amount,
@@ -668,7 +668,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             let (new_reserves, prev_input) = self.positions[i]
                 .phi
                 .fill_output(&self.positions[i].reserves, current_value)
-                .expect("asset ids should match")
+                .expect("backward fill should not fail")
                 .expect(
                     "working backwards from most-constraining position should not exceed reserves",
                 );
