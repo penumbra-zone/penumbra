@@ -342,7 +342,8 @@ impl Info {
                 let mut commitment_states = vec![];
                 let commitment_counter = snapshot.get_send_sequence(&chan_id, &port_id).await?;
 
-                for commitment_idx in 0..commitment_counter {
+                // this starts at 1; the first commitment index is 1 (from ibc spec)
+                for commitment_idx in 1..commitment_counter {
                     let commitment = snapshot
                         .get_packet_commitment_by_id(&chan_id, &port_id, commitment_idx)
                         .await?
