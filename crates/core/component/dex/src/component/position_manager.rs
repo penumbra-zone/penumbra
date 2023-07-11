@@ -39,7 +39,7 @@ pub trait PositionRead: StateRead {
     ) -> Pin<Box<dyn Stream<Item = Result<position::Id>> + Send + 'static>> {
         let prefix = state_key::internal::price_index::prefix(pair);
         tracing::trace!(prefix = ?EscapedByteSlice(&prefix), "searching for positions by price");
-        self.nonconsensus_prefix_raw(&prefix)
+        self.nonverifiable_prefix_raw(&prefix)
             .map(|entry| match entry {
                 Ok((k, _)) => {
                     let raw_id = <&[u8; 32]>::try_from(&k[103..135])?.to_owned();
@@ -214,7 +214,7 @@ pub(super) trait Inner: StateWrite {
                 end: pair.asset_2(),
             };
             let phi12 = phi.component.clone();
-            self.nonconsensus_put_raw(
+            self.nonverifiable_put_raw(
                 state_key::internal::price_index::key(&pair12, &phi12, &id),
                 vec![],
             );
@@ -228,7 +228,7 @@ pub(super) trait Inner: StateWrite {
                 end: pair.asset_1(),
             };
             let phi21 = phi.component.flip();
-            self.nonconsensus_put_raw(
+            self.nonverifiable_put_raw(
                 state_key::internal::price_index::key(&pair21, &phi21, &id),
                 vec![],
             );
@@ -249,8 +249,8 @@ pub(super) trait Inner: StateWrite {
             end: position.phi.pair.asset_1(),
         };
         let phi21 = position.phi.component.flip();
-        self.nonconsensus_delete(state_key::internal::price_index::key(&pair12, &phi12, &id));
-        self.nonconsensus_delete(state_key::internal::price_index::key(&pair21, &phi21, &id));
+        self.nonverifiable_delete(state_key::internal::price_index::key(&pair12, &phi12, &id));
+        self.nonverifiable_delete(state_key::internal::price_index::key(&pair21, &phi21, &id));
     }
 }
 impl<T: StateWrite + ?Sized> Inner for T {}

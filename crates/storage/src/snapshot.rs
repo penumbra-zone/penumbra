@@ -167,23 +167,23 @@ impl StateRead for Snapshot {
         )
     }
 
-    fn nonconsensus_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
+    fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
         let span = Span::current();
         let inner = self.0.clone();
         let key: Vec<u8> = key.to_vec();
         crate::future::SnapshotFuture(
             tokio::task::Builder::new()
-                .name("Snapshot::nonconsensus_get_raw")
+                .name("Snapshot::nonverifiable_get_raw")
                 .spawn_blocking(move || {
                     span.in_scope(|| {
                         let start = std::time::Instant::now();
-                        let nonconsensus_cf = inner
+                        let nonverifiable_cf = inner
                             .db
-                            .cf_handle("nonconsensus")
-                            .expect("nonconsensus column family not found");
+                            .cf_handle("nonverifiable")
+                            .expect("nonverifiable column family not found");
                         let rsp = inner
                             .snapshot
-                            .get_cf(nonconsensus_cf, key)
+                            .get_cf(nonverifiable_cf, key)
                             .map_err(Into::into);
                         metrics::histogram!(
                             metrics::STORAGE_NONCONSENSUS_GET_RAW_DURATION,
@@ -285,7 +285,7 @@ impl StateRead for Snapshot {
         tokio_stream::wrappers::ReceiverStream::new(rx)
     }
 
-    fn nonconsensus_prefix_raw(&self, prefix: &[u8]) -> Self::NonconsensusPrefixRawStream {
+    fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> Self::NonconsensusPrefixRawStream {
         let span = Span::current();
         let self2 = self.clone();
 
@@ -295,17 +295,17 @@ impl StateRead for Snapshot {
 
         let (tx, rx) = mpsc::channel(10);
 
-        // Here we're operating on the nonconsensus data, which is a raw k/v store,
+        // Here we're operating on the nonverifiable data, which is a raw k/v store,
         // so we just iterate over the keys.
         tokio::task::Builder::new()
-            .name("Snapshot::nonconsensus_prefix_raw")
+            .name("Snapshot::nonverifiable_prefix_raw")
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     let keys_cf = self2
                         .0
                         .db
-                        .cf_handle("nonconsensus")
-                        .expect("nonconsensus column family not found");
+                        .cf_handle("nonverifiable")
+                        .expect("nonverifiable column family not found");
                     let iter = self2.0.snapshot.iterator_cf_opt(keys_cf, options, mode);
                     for i in iter {
                         let (key, value) = i?;

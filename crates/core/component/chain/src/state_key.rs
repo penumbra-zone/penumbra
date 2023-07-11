@@ -24,7 +24,7 @@ pub fn chain_halt_count() -> &'static str {
     "chain/halt_count"
 }
 
-// These are used in the nonconsensus store:
+// These are used in the nonverifiable store:
 pub fn halted(total_halt_count: u64) -> Vec<u8> {
     let mut key = b"chain/halt/".to_vec();
     key.extend(total_halt_count.to_be_bytes());

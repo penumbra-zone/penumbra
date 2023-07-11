@@ -121,7 +121,7 @@ pub trait StateReadExt: StateRead {
     /// Returns true if the chain is halted (or will be halted momentarily).
     async fn is_chain_halted(&self, total_halt_count: u64) -> Result<bool> {
         Ok(self
-            .nonconsensus_get_raw(&state_key::halted(total_halt_count))
+            .nonverifiable_get_raw(&state_key::halted(total_halt_count))
             .await?
             .is_some())
     }
@@ -206,7 +206,7 @@ pub trait StateWriteExt: StateWrite {
         // ...and signal that a halt should occur if the halt count is fresh (`is_chain_halted` will
         // check against the total number of expected chain halts to determine whether a halt should
         // actually occur).
-        self.nonconsensus_put_raw(state_key::halted(halt_count).to_vec(), vec![]);
+        self.nonverifiable_put_raw(state_key::halted(halt_count).to_vec(), vec![]);
 
         Ok(())
     }
