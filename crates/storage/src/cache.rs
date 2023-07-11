@@ -28,7 +28,8 @@ impl Cache {
         // `StateRead` trait assumes asynchronous access, and in any case, we
         // probably don't want to be reading directly from a `Cache` (?)
         self.unwritten_changes.extend(other.unwritten_changes);
-        self.nonverifiable_changes.extend(other.nonverifiable_changes);
+        self.nonverifiable_changes
+            .extend(other.nonverifiable_changes);
         self.ephemeral_objects.extend(other.ephemeral_objects);
         self.events.extend(other.events);
     }
