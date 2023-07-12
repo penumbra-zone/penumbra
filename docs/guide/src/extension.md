@@ -16,6 +16,7 @@ You must run Chrome in order to follow the instructions below.
 3. Click **Get started** to proceed with wallet configuration.
 
 ## Generating a wallet
+
 You'll be offered to import a pre-existing wallet. If you don't already have one, choose **Create a new wallet**.
 During the guided tutorial, you'll need to set a passphrase to protect your wallet. The passphrase
 is *not* the same as the recovery phrase. The passphrase is used to restrict access to the web wallet
@@ -90,10 +91,18 @@ The extension should be automatically updated every time a new version is releas
 You can view the latest version of the extension at the [Chrome Web Store].
 To force a check for updates:
 
+On Linux:
+
 1. Click the three-dot icon in the top right corner of the browser.
 2. From the drop-down menu, choose **More tools -> Extensions**.
 3. Find the **Penumbra wallet** extension, then enable the toggle switch for **Developer mode**.
 4. Click the **Update** button that appears beside the extension.
+
+On MacOS:
+
+1. Click the three-dot icon in the top right corner of the browser.
+2. From the drop-down menu, choose **Extensions -> Manage Extensions**.
+3. Select **Update** on the top panel.
 
 After updating the extension manually, it may be helpful to clear the local cache,
 as described above.
