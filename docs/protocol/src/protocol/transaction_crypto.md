@@ -29,7 +29,7 @@ It is derived from the shared secret. It is used for a single action.
 * A *per-action swap payload key* used to encrypt a single swap. It is derived from the outgoing viewing key. It is used for a single action.
 * A *random payload key* used to encrypt a memo. It is generated randomly and is shared between all
 actions in a given transaction.
-* An *outgoing cipher key* used to encrypt key material (the shared secret) to enable the sender to 
+* An *outgoing cipher key* used to encrypt key material (the shared secret) to enable the sender to
 later decrypt an outgoing swap, note, or memo.
 * An *OVK wrapped key* - this is the shared secret encrypted using the sender's outgoing
 cipher key. A sender can later use this field to recover the shared secret
@@ -44,7 +44,7 @@ In the rest of this section, we describe how each key is derived.
 
 A shared secret `shared_secret` is derived between sender and recipient by performing Diffie-Hellman
 key exchange between:
-* an ephemeral secret ($esk \in \mathbb F_r$) and the diversified transmission key $pk_d$ of the recipient (described in more detail in the [Addressses](../addresses_keys/addresses.md) section), 
+* an ephemeral secret ($esk \in \mathbb F_r$) and the diversified transmission key $pk_d$ of the recipient (described in more detail in the [Addresses](../protocol/addresses_keys/addresses.md) section),
 * the ephemeral public key $epk$ (where $epk = [esk] B_d$), provided as a public field in the action, and the recipient's incoming viewing key $ivk$.
 
 This allows both sender and recipient to generate the shared secret based on the keys they posess.
@@ -84,7 +84,7 @@ should be able to decrypt the per-transaction memo.
 ### Outgoing Cipher Key
 
 The symmetric outgoing cipher key is a 32-byte key derived from the sender's outgoing viewing key
-$ovk$, the value commitment $cv$, the note commitment $cm$, the ephemeral 
+$ovk$, the value commitment $cv$, the note commitment $cm$, the ephemeral
 public key $epk$, and personalization string "Penumbra_OutCiph":
 
 ```
