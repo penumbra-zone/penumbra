@@ -162,7 +162,6 @@ impl TransactionPlan {
                 position_withdraw.position_withdraw(),
             ))
         }
-
         // build the transaction's ICS20 withdrawals
         for ics20_withdrawal in self.ics20_withdrawals() {
             actions.push(Action::Ics20Withdrawal(ics20_withdrawal.clone()))
@@ -378,6 +377,9 @@ impl TransactionPlan {
             actions.push(Action::PositionWithdraw(
                 position_withdraw.position_withdraw(),
             ))
+        }
+        for ics20_withdrawal in self.ics20_withdrawals().cloned() {
+            actions.push(Action::Ics20Withdrawal(ics20_withdrawal))
         }
 
         let transaction_body = TransactionBody {

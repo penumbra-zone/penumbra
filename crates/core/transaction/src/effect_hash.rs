@@ -198,6 +198,9 @@ impl TransactionPlan {
                     .as_bytes(),
             );
         }
+        for ics20_withdrawal in self.ics20_withdrawals() {
+            state.update(ics20_withdrawal.effect_hash().as_bytes());
+        }
         let num_clues = self.clue_plans.len() as u32;
         state.update(&num_clues.to_le_bytes());
         for clue_plan in self.clue_plans() {
