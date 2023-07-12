@@ -187,7 +187,7 @@ impl TendermintProxyService for TendermintProxy {
                 latest_block_height: res.sync_info.latest_block_height.value(),
                 latest_block_time: Some(pbjson_types::Timestamp {
                     seconds: latest_block_time.timestamp(),
-                    nanos: latest_block_time.timestamp_nanos() as i32,
+                    nanos: latest_block_time.timestamp_subsec_nanos() as i32,
                 }),
                 // These don't exist in tendermint-rpc right now.
                 // earliest_app_hash: res.sync_info.earliest_app_hash.to_string().as_bytes().to_vec(),
