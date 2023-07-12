@@ -91,15 +91,6 @@ The extension should be automatically updated every time a new version is releas
 You can view the latest version of the extension at the [Chrome Web Store].
 To force a check for updates:
 
-On Linux:
-
-1. Click the three-dot icon in the top right corner of the browser.
-2. From the drop-down menu, choose **More tools -> Extensions**.
-3. Find the **Penumbra wallet** extension, then enable the toggle switch for **Developer mode**.
-4. Click the **Update** button that appears beside the extension.
-
-On MacOS:
-
 1. Click the three-dot icon in the top right corner of the browser.
 2. From the drop-down menu, choose **Extensions -> Manage Extensions**.
 3. Select **Update** on the top panel.
