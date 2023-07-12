@@ -2,7 +2,7 @@
 
 The core of the flow encryption system requires a partially homomorphic
 encryption scheme, which allows for users to publish transactions that contain
-*encrypted* [values](../../concepts/asset_amounts.md). These encrypted values
+*encrypted* [values](../../concepts/assets_amounts.md). These encrypted values
 are then *aggregated*, using the homomorphism, by validators. The aggregate
 value (the "batched flow") is then decrypted using the threshold decryption
 scheme described here.

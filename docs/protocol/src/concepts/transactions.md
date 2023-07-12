@@ -57,12 +57,12 @@ description leaves the value balance unchanged.
 #### Trading
 
 - **Swap** descriptions perform the first phase of
-[ZSwap](../zswap/auction.md), consuming tokens of one type from a
+[ZSwap](../zswap.md), consuming tokens of one type from a
 transaction's value balance, burning them, and producing a swap commitment for
 use in the second stage;
 
 - **Sweep** descriptions perform the second phase of
-[ZSwap](../zswap/auction.md), allowing a user who burned tokens of one
+[ZSwap](../zswap.md), allowing a user who burned tokens of one
 type to mint tokens of the other type at the chain-specified clearing price, and
 adding the new tokens to a transaction's value balance;
 
