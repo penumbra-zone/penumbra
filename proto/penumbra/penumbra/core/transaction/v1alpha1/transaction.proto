@@ -31,20 +31,26 @@ message EffectHash {
 message TransactionBody {
   // A list of actions (state changes) performed by this transaction.
   repeated Action actions = 1;
+  // Parameters determining if a transaction should be accepted by this chain.
+  TransactionParameters transaction_parameters = 2;
+  // The transaction fee.
+  crypto.v1alpha1.Fee fee = 3;
+  // A list of clues for use with Fuzzy Message Detection.
+  repeated crypto.v1alpha1.Clue fmd_clues = 4;
+  // An optional encrypted memo. It will only be populated if there are
+  // outputs in the actions of this transaction. 528 bytes.
+  optional bytes encrypted_memo = 5;
+}
+
+// The parameters determining if a transaction should be accepted by the chain.
+message TransactionParameters {
   // The maximum height that this transaction can be included in the chain.
   //
   // If zero, there is no maximum.
-  uint64 expiry_height = 2;
+  uint64 expiry_height = 1;
   // The chain this transaction is intended for.  Including this prevents
   // replaying a transaction on one chain onto a different chain.
-  string chain_id = 3;
-  // The transaction fee.
-  crypto.v1alpha1.Fee fee = 4;
-  // A list of clues for use with Fuzzy Message Detection.
-  repeated crypto.v1alpha1.Clue fmd_clues = 5;
-  // An optional encrypted memo. It will only be populated if there are
-  // outputs in the actions of this transaction. 528 bytes.
-  optional bytes encrypted_memo = 6;
+  string chain_id = 2;
 }
 
 // A state change performed by a transaction.

@@ -41,14 +41,22 @@ impl Transaction {
 }
 
 impl TransactionBody {
+    pub fn expiry_height(&self) -> u64 {
+        self.transaction_parameters.expiry_height
+    }
+
+    pub fn chain_id(&self) -> &str {
+        &self.transaction_parameters.chain_id
+    }
+
     pub fn effect_hash(&self) -> EffectHash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:tx_body")
             .to_state();
 
         // Hash the fixed data of the transaction body.
-        state.update(chain_id_effect_hash(&self.chain_id).as_bytes());
-        state.update(&self.expiry_height.to_le_bytes());
+        state.update(chain_id_effect_hash(&self.chain_id()).as_bytes());
+        state.update(&self.expiry_height().to_le_bytes());
         state.update(self.fee.effect_hash().as_bytes());
         if self.memo.is_some() {
             let memo = self.memo.clone();

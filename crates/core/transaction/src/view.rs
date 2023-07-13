@@ -16,6 +16,7 @@ pub use transaction_perspective::TransactionPerspective;
 
 use crate::{
     memo::{MemoCiphertext, MemoPlaintext},
+    transaction::TransactionParameters,
     Action, Transaction, TransactionBody,
 };
 
@@ -74,8 +75,10 @@ impl TransactionView {
         Transaction {
             transaction_body: TransactionBody {
                 actions,
-                expiry_height: self.body_view.expiry_height,
-                chain_id: self.body_view.chain_id.clone(),
+                transaction_parameters: TransactionParameters {
+                    expiry_height: self.body_view.expiry_height,
+                    chain_id: self.body_view.chain_id.clone(),
+                },
                 fee: self.body_view.fee.clone(),
                 fmd_clues: self.body_view.fmd_clues.clone(),
                 memo: memo_ciphertext.cloned(),

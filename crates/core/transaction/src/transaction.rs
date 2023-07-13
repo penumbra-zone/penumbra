@@ -36,11 +36,17 @@ use crate::{
 #[derive(Clone, Debug, Default)]
 pub struct TransactionBody {
     pub actions: Vec<Action>,
-    pub expiry_height: u64,
-    pub chain_id: String,
+    pub transaction_parameters: TransactionParameters,
     pub fee: Fee,
     pub fmd_clues: Vec<Clue>,
     pub memo: Option<MemoCiphertext>,
+}
+
+#[derive(Clone, Debug, Default)]
+/// Parameters determining when the transaction should be accepted to the chain.
+pub struct TransactionParameters {
+    pub expiry_height: u64,
+    pub chain_id: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -200,8 +206,8 @@ impl Transaction {
         TransactionView {
             body_view: TransactionBodyView {
                 action_views,
-                expiry_height: self.transaction_body().expiry_height,
-                chain_id: self.transaction_body().chain_id,
+                expiry_height: self.transaction_body().expiry_height(),
+                chain_id: self.transaction_body().chain_id().to_string(),
                 fee: self.transaction_body().fee,
                 fmd_clues: self.transaction_body().fmd_clues,
                 memo_view,
@@ -445,6 +451,34 @@ impl From<TransactionBody> for Vec<u8> {
     }
 }
 
+impl TypeUrl for TransactionParameters {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.TransactionParameters";
+}
+
+impl DomainType for TransactionParameters {
+    type Proto = pbt::TransactionParameters;
+}
+
+impl TryFrom<pbt::TransactionParameters> for TransactionParameters {
+    type Error = Error;
+
+    fn try_from(proto: pbt::TransactionParameters) -> anyhow::Result<Self, Self::Error> {
+        Ok(TransactionParameters {
+            expiry_height: proto.expiry_height,
+            chain_id: proto.chain_id,
+        })
+    }
+}
+
+impl From<TransactionParameters> for pbt::TransactionParameters {
+    fn from(msg: TransactionParameters) -> Self {
+        pbt::TransactionParameters {
+            expiry_height: msg.expiry_height,
+            chain_id: msg.chain_id,
+        }
+    }
+}
+
 impl TypeUrl for TransactionBody {
     const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.TransactionBody";
 }
@@ -457,8 +491,7 @@ impl From<TransactionBody> for pbt::TransactionBody {
     fn from(msg: TransactionBody) -> Self {
         pbt::TransactionBody {
             actions: msg.actions.into_iter().map(|x| x.into()).collect(),
-            expiry_height: msg.expiry_height,
-            chain_id: msg.chain_id,
+            transaction_parameters: Some(msg.transaction_parameters.into()),
             fee: Some(msg.fee.into()),
             fmd_clues: msg.fmd_clues.into_iter().map(|x| x.into()).collect(),
             encrypted_memo: msg.memo.map(|x| bytes::Bytes::copy_from_slice(&x.0)),
@@ -478,10 +511,6 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
                     .context("action malformed while parsing transaction body")?,
             );
         }
-
-        let expiry_height = proto.expiry_height;
-
-        let chain_id = proto.chain_id;
 
         let fee: Fee = proto
             .fee
@@ -507,10 +536,15 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             None => None,
         };
 
+        let transaction_parameters = proto
+            .transaction_parameters
+            .ok_or_else(|| anyhow::anyhow!("transaction body missing transaction parameters"))?
+            .try_into()
+            .context("transaction parameters malformed")?;
+
         Ok(TransactionBody {
             actions,
-            expiry_height,
-            chain_id,
+            transaction_parameters,
             fee,
             fmd_clues,
             memo,
