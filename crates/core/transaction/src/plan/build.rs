@@ -7,8 +7,8 @@ use rand_core::{CryptoRng, RngCore};
 
 use super::TransactionPlan;
 use crate::{
-    action::Action, memo::MemoCiphertext, AuthorizationData, AuthorizingData, Transaction,
-    TransactionBody, WitnessData,
+    action::Action, memo::MemoCiphertext, transaction::TransactionParameters, AuthorizationData,
+    AuthorizingData, Transaction, TransactionBody, WitnessData,
 };
 
 impl TransactionPlan {
@@ -169,8 +169,10 @@ impl TransactionPlan {
 
         let transaction_body = TransactionBody {
             actions,
-            expiry_height: self.expiry_height,
-            chain_id: self.chain_id,
+            transaction_parameters: TransactionParameters {
+                expiry_height: self.expiry_height,
+                chain_id: self.chain_id,
+            },
             fee: self.fee,
             fmd_clues,
             memo,
@@ -384,8 +386,10 @@ impl TransactionPlan {
 
         let transaction_body = TransactionBody {
             actions,
-            expiry_height: self.expiry_height,
-            chain_id: self.chain_id,
+            transaction_parameters: TransactionParameters {
+                expiry_height: self.expiry_height,
+                chain_id: self.chain_id,
+            },
             fee: self.fee,
             fmd_clues,
             memo,
