@@ -13,6 +13,7 @@ use anyhow::Context;
 use clap::{Parser, Subcommand};
 use futures::stream::TryStreamExt;
 use metrics_exporter_prometheus::PrometheusBuilder;
+use pd::events::EventIndexLayer;
 use pd::testnet::{
     generate::testnet_generate, get_testnet_dir, join::testnet_join, parse_tm_address,
     url_has_necessary_parts,
@@ -254,6 +255,7 @@ async fn main() -> anyhow::Result<()> {
                 .layer(request_span::layer(|req: &ConsensusRequest| {
                     req.create_span()
                 }))
+                .layer(EventIndexLayer::index_all())
                 .service(tower_actor::Actor::new(10, |queue: _| {
                     let storage = storage.clone();
                     async move {

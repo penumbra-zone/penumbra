@@ -9,6 +9,7 @@ mod metrics;
 mod snapshot;
 
 pub mod auto_https;
+pub mod events;
 pub mod testnet;
 
 pub use crate::metrics::register_metrics;
