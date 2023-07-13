@@ -14,8 +14,9 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use rand_core::OsRng;
+use tct::StateCommitment;
 
-use crate::{note, Note, Rseed};
+use crate::{Note, Rseed};
 use penumbra_asset::Value;
 use penumbra_keys::keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
 use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
@@ -29,8 +30,8 @@ pub struct NullifierDerivationCircuit {
     nk: NullifierKey,
 
     // Public inputs
-    /// The spent note.
-    note: Note,
+    /// A commitment to the spent note.
+    note_commitment: StateCommitment,
     /// nullifier of the spent note.
     pub nullifier: Nullifier,
     /// the position of the spent note.
@@ -40,13 +41,13 @@ pub struct NullifierDerivationCircuit {
 impl NullifierDerivationCircuit {
     pub fn new(
         nk: NullifierKey,
-        note: Note,
+        note_commitment: StateCommitment,
         nullifier: Nullifier,
         position: tct::Position,
     ) -> Self {
         Self {
             nk,
-            note,
+            note_commitment,
             nullifier,
             position,
         }
@@ -60,12 +61,12 @@ impl ConstraintSynthesizer<Fq> for NullifierDerivationCircuit {
 
         // Public inputs
         let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
-        let note_var = note::NoteVar::new_input(cs.clone(), || Ok(self.note.clone()))?;
+        let note_commitment_var =
+            tct::r1cs::StateCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment))?;
         let position_var = tct::r1cs::PositionVar::new_input(cs, || Ok(self.position))?;
 
         // Nullifier integrity.
-        let note_commitment = note_var.commit()?;
-        let nullifier_var = NullifierVar::derive(&nk_var, &position_var, &note_commitment)?;
+        let nullifier_var = NullifierVar::derive(&nk_var, &position_var, &note_commitment_var)?;
         nullifier_var.conditional_enforce_equal(&claimed_nullifier_var, &Boolean::TRUE)?;
 
         Ok(())
@@ -95,7 +96,7 @@ impl ParameterSetup for NullifierDerivationCircuit {
         let position = state_commitment_proof.position();
 
         let circuit = NullifierDerivationCircuit {
-            note,
+            note_commitment,
             nk,
             nullifier,
             position,
@@ -120,8 +121,9 @@ impl NullifierDerivationProof {
         nk: NullifierKey,
         nullifier: Nullifier,
     ) -> anyhow::Result<Self> {
+        let note_commitment = note.commit();
         let circuit = NullifierDerivationCircuit {
-            note,
+            note_commitment,
             position,
             nk,
             nullifier,
