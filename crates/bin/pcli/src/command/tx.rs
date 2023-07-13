@@ -160,13 +160,32 @@ pub enum TxCmd {
     #[clap(display_order = 990)]
     Sweep,
 
-    /// Perform an ICS-20 withdrawal.
+    /// Perform an ICS-20 withdrawal, moving funds from the Penumbra chain
+    /// to a counterparty chain. Destination addresses must be specified as
+    /// 'address@chain-id`, where the `address` is of the appropriate format
+    /// the counterparty chain, and `chain-id` is the current identifier
+    /// for the counterparty chain.
+    ///
+    /// For a withdrawal to succeed, relayer software must be configured to recognize
+    /// build paths between the two chains. Running a relayer is out of scope
+    /// for the pcli tool.
     #[clap(display_order = 250)]
     Withdraw {
-        // fully qualified address, eg; cosmos1grgelyng2v6v3t8z87wu3sxgt9m5s03xvslewd@cosmoshub-4
+        /// Fully qualified address, including both the wallet address on the counterparty chain,
+        /// and the chain id for that chain, as `address@chain-id`, e.g.
+        /// cosmos1grgelyng2v6v3t8z87wu3sxgt9m5s03xvslewd@cosmoshub-4
+        #[clap(long)]
         to: String,
-        denom: String, //TODO: should we pull this out of amount
+
+        /// The human-readable denomination for the withdrawal, e.g. 'upenumbra'.
+        // TODO: we should parse the denom and amount, same was we do with `pcli tx send`.
+        denom: String,
+        /// The quantity of funds of `denomination` to withdraw.
         amount: String,
+        /// The IBC channel on the primary Penumbra chain to use for performing the withdrawal.
+        /// This channel must already exist, as configured by a relayer client.
+        /// You can search for channels via e.g. `pcli query ibc transfer channel-0`.
+        #[clap(long)]
         source_channel: String,
 
         #[clap(long, default_value = "0", display_order = 100)]
@@ -174,6 +193,7 @@ pub enum TxCmd {
         #[clap(long, default_value = "0", display_order = 150)]
         timeout_timestamp: u64,
 
+        /// Only withdraw funds from the specified account group within Penumbra.
         #[clap(long, default_value = "0", display_order = 200)]
         source: u32,
     },
@@ -828,8 +848,10 @@ impl TxCmd {
                     timeout_timestamp = current_time_u64 + 172800u64;
                 }
 
-                let denom = asset::REGISTRY.parse_denom(denom).unwrap();
-                let amount = Amount::try_from(amount.clone()).unwrap();
+                let denom = asset::REGISTRY.parse_denom(denom).ok_or_else(|| {
+                    anyhow::anyhow!(format!("unable to parse denomination '{}'", denom))
+                })?;
+                let amount = Amount::try_from(amount.clone())?;
 
                 let withdrawal = Ics20Withdrawal {
                     destination_chain_id: destination_chain_id.to_string(),
