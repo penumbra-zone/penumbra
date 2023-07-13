@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::core::{
-    channel::{channel::State as ChannelState, ChannelId, Packet, PortId},
+    channel::{channel::State as ChannelState, events, ChannelId, Packet, PortId},
     client::Height,
 };
 use penumbra_storage::{StateRead, StateWrite};
@@ -12,7 +12,7 @@ use crate::{
         client::StateReadExt as _,
         connection::StateReadExt as _,
     },
-    event, Ics20Withdrawal,
+    Ics20Withdrawal,
 };
 
 pub trait CheckStatus: private::Sealed {}
@@ -150,16 +150,31 @@ pub trait SendPacketWrite: StateWrite {
             .unwrap();
         self.put_send_sequence(&packet.source_channel, &packet.source_port, sequence + 1);
 
+        let channel = self
+            .get_channel(&packet.source_channel, &packet.source_port)
+            .await
+            .expect("should be able to get channel")
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "channel {} on port {} does not exist",
+                    packet.source_channel,
+                    packet.source_port
+                )
+            })
+            .expect("should be able to get channel");
+
         // store commitment to the packet data & packet timeout
         let packet = Packet {
             chan_on_a: packet.source_channel,
             port_on_a: packet.source_port.clone(),
             sequence: sequence.into(),
 
-            // NOTE: the packet commitment is solely a function of the source port and channel, so
-            // these fields do not affect the commitment. Thus, we can set them to empty values.
-            chan_on_b: ChannelId::default(),
-            port_on_b: PortId::default(),
+            chan_on_b: channel
+                .counterparty()
+                .channel_id
+                .clone()
+                .expect("should have counterparty channel"),
+            port_on_b: channel.counterparty().port_id.clone(),
 
             timeout_height_on_b: packet.timeout_height.into(),
             timeout_timestamp_on_b: ibc_types::timestamp::Timestamp::from_nanoseconds(
@@ -171,6 +186,22 @@ pub trait SendPacketWrite: StateWrite {
         };
 
         self.put_packet_commitment(&packet);
+
+        self.record(
+            events::packet::SendPacket {
+                packet_data: packet.data.clone(),
+                timeout_height: packet.timeout_height_on_b,
+                timeout_timestamp: packet.timeout_timestamp_on_b,
+                sequence: packet.sequence,
+                src_port_id: packet.port_on_a.clone(),
+                src_channel_id: packet.chan_on_a.clone(),
+                dst_port_id: packet.port_on_b.clone(),
+                dst_channel_id: packet.chan_on_b,
+                channel_ordering: channel.ordering,
+                src_connection_id: channel.connection_hops[0].clone(),
+            }
+            .into(),
+        );
     }
 }
 
@@ -196,6 +227,17 @@ pub trait WriteAcknowledgement: StateWrite {
             return Err(anyhow::anyhow!("acknowledgement already exists"));
         }
 
+        let channel = self
+            .get_channel(&packet.chan_on_b, &packet.port_on_b)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "channel {} on port {} does not exist",
+                    packet.chan_on_b,
+                    packet.port_on_b
+                )
+            })?;
+
         self.put_packet_acknowledgement(
             &packet.port_on_b,
             &packet.chan_on_b,
@@ -203,7 +245,21 @@ pub trait WriteAcknowledgement: StateWrite {
             ack_bytes,
         );
 
-        self.record(event::write_acknowledgement(packet, ack_bytes));
+        self.record(
+            events::packet::WriteAcknowledgement {
+                packet_data: packet.data.clone(),
+                timeout_height: packet.timeout_height_on_b,
+                timeout_timestamp: packet.timeout_timestamp_on_b,
+                sequence: packet.sequence,
+                src_port_id: packet.port_on_a.clone(),
+                src_channel_id: packet.chan_on_a.clone(),
+                dst_port_id: packet.port_on_b.clone(),
+                dst_channel_id: packet.chan_on_b.clone(),
+                acknowledgement: ack_bytes.to_vec(),
+                dst_connection_id: channel.connection_hops[0].clone(),
+            }
+            .into(),
+        );
 
         Ok(())
     }

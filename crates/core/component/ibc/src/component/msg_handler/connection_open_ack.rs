@@ -3,21 +3,18 @@ use async_trait::async_trait;
 use ibc_types::core::{
     client::Height,
     commitment::MerkleProof,
-    connection::{msgs::MsgConnectionOpenAck, ConnectionEnd, Counterparty, State},
+    connection::{events, msgs::MsgConnectionOpenAck, ConnectionEnd, Counterparty, State},
 };
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
 use penumbra_chain::component::{StateReadExt as _, PENUMBRA_COMMITMENT_PREFIX};
 use penumbra_storage::{StateRead, StateWrite};
 
-use crate::{
-    component::{
-        client::StateReadExt as _,
-        client_counter::validate_penumbra_client_state,
-        connection::{StateReadExt as _, StateWriteExt as _},
-        proof_verification, MsgHandler,
-    },
-    event,
+use crate::component::{
+    client::StateReadExt as _,
+    client_counter::validate_penumbra_client_state,
+    connection::{StateReadExt as _, StateWriteExt as _},
+    proof_verification, MsgHandler,
 };
 
 #[async_trait]
@@ -168,7 +165,7 @@ impl MsgHandler for MsgConnectionOpenAck {
         let counterparty = Counterparty {
             client_id: prev_counterparty.client_id.clone(),
             connection_id: Some(self.conn_id_on_b.clone()),
-            prefix: prev_counterparty.prefix.clone(),
+            prefix: prev_counterparty.prefix,
         };
         connection.state = State::Open;
         connection.versions = vec![self.version.clone()];
@@ -176,7 +173,19 @@ impl MsgHandler for MsgConnectionOpenAck {
 
         state.update_connection(&self.conn_id_on_a, connection.clone());
 
-        state.record(event::connection_open_ack(&self.conn_id_on_a, &connection));
+        state.record(
+            events::ConnectionOpenAck {
+                conn_id_on_a: self.conn_id_on_a.clone(),
+                client_id_on_a: connection.client_id.clone(),
+                conn_id_on_b: connection
+                    .counterparty
+                    .connection_id
+                    .clone()
+                    .unwrap_or_default(),
+                client_id_on_b: connection.counterparty.client_id,
+            }
+            .into(),
+        );
 
         Ok(())
     }

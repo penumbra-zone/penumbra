@@ -2,22 +2,20 @@ use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::core::{
     channel::{
-        channel::State as ChannelState, msgs::MsgChannelOpenTry, ChannelEnd, Counterparty, PortId,
+        channel::State as ChannelState, events, msgs::MsgChannelOpenTry, ChannelEnd, Counterparty,
+        PortId,
     },
     connection::{ConnectionEnd, State as ConnectionState},
 };
 use penumbra_storage::{StateRead, StateWrite};
 
-use crate::{
-    component::{
-        app_handler::{AppHandlerCheck, AppHandlerExecute},
-        channel::StateWriteExt,
-        connection::StateReadExt,
-        proof_verification::ChannelProofVerifier,
-        transfer::Ics20Transfer,
-        MsgHandler,
-    },
-    event,
+use crate::component::{
+    app_handler::{AppHandlerCheck, AppHandlerExecute},
+    channel::StateWriteExt,
+    connection::StateReadExt,
+    proof_verification::ChannelProofVerifier,
+    transfer::Ics20Transfer,
+    MsgHandler,
 };
 
 #[async_trait]
@@ -81,11 +79,21 @@ impl MsgHandler for MsgChannelOpenTry {
         state.put_recv_sequence(&channel_id, &self.port_id_on_b, 1);
         state.put_ack_sequence(&channel_id, &self.port_id_on_b, 1);
 
-        state.record(event::channel_open_try(
-            &self.port_id_on_b,
-            &channel_id,
-            &new_channel,
-        ));
+        state.record(
+            events::channel::OpenTry {
+                port_id: self.port_id_on_b.clone(),
+                channel_id: channel_id.clone(),
+                counterparty_port_id: new_channel.counterparty().port_id().clone(),
+                counterparty_channel_id: new_channel
+                    .counterparty()
+                    .channel_id
+                    .clone()
+                    .unwrap_or_default(),
+                connection_id: new_channel.connection_hops[0].clone(),
+                version: new_channel.version.clone(),
+            }
+            .into(),
+        );
 
         let transfer = PortId::transfer();
         if self.port_id_on_b == transfer {
