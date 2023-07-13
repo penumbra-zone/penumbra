@@ -3,20 +3,17 @@ use async_trait::async_trait;
 use ibc_types::{
     core::{
         commitment::MerkleProof,
-        connection::{msgs::MsgConnectionOpenConfirm, ConnectionEnd, Counterparty, State},
+        connection::{events, msgs::MsgConnectionOpenConfirm, ConnectionEnd, Counterparty, State},
     },
     path::ConnectionPath,
 };
 use penumbra_chain::component::PENUMBRA_COMMITMENT_PREFIX;
 use penumbra_storage::{StateRead, StateWrite};
 
-use crate::{
-    component::{
-        client::StateReadExt as _,
-        connection::{StateReadExt as _, StateWriteExt as _},
-        proof_verification, MsgHandler,
-    },
-    event,
+use crate::component::{
+    client::StateReadExt as _,
+    connection::{StateReadExt as _, StateWriteExt as _},
+    proof_verification, MsgHandler,
 };
 
 #[async_trait]
@@ -99,10 +96,19 @@ impl MsgHandler for MsgConnectionOpenConfirm {
 
         state.update_connection(&self.conn_id_on_b, connection.clone());
 
-        state.record(event::connection_open_confirm(
-            &self.conn_id_on_b,
-            &connection,
-        ));
+        state.record(
+            events::ConnectionOpenConfirm {
+                conn_id_on_b: self.conn_id_on_b.clone(),
+                client_id_on_b: connection.client_id.clone(),
+                conn_id_on_a: connection
+                    .counterparty
+                    .connection_id
+                    .clone()
+                    .unwrap_or_default(),
+                client_id_on_a: connection.counterparty.client_id,
+            }
+            .into(),
+        );
 
         Ok(())
     }
@@ -118,7 +124,7 @@ async fn verify_previous_connection<S: StateRead>(
         .ok_or_else(|| anyhow::anyhow!("connection not found"))?;
 
     if !connection.state_matches(&State::TryOpen) {
-        return Err(anyhow::anyhow!("connection not in correct state"));
+        Err(anyhow::anyhow!("connection not in correct state"))
     } else {
         Ok(connection)
     }

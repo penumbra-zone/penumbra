@@ -8,8 +8,6 @@
 #[cfg(feature = "component")]
 pub mod component;
 
-pub mod event;
-
 mod ibc_action;
 mod ibc_token;
 mod ics20_withdrawal;

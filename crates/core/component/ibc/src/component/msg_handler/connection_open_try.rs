@@ -8,22 +8,19 @@ use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath}
 use ibc_types::{
     core::client::Height as IBCHeight,
     core::connection::{
-        msgs::MsgConnectionOpenTry, ConnectionEnd, ConnectionId, Counterparty,
+        events, msgs::MsgConnectionOpenTry, ConnectionEnd, ConnectionId, Counterparty,
         State as ConnectionState,
     },
 };
 use penumbra_chain::component::{StateReadExt as _, PENUMBRA_COMMITMENT_PREFIX};
 use penumbra_storage::{StateRead, StateWrite};
 
-use crate::{
-    component::{
-        client::StateReadExt as _,
-        client_counter::validate_penumbra_client_state,
-        connection::{StateReadExt as _, StateWriteExt as _},
-        connection_counter::SUPPORTED_VERSIONS,
-        MsgHandler,
-    },
-    event,
+use crate::component::{
+    client::StateReadExt as _,
+    client_counter::validate_penumbra_client_state,
+    connection::{StateReadExt as _, StateWriteExt as _},
+    connection_counter::SUPPORTED_VERSIONS,
+    MsgHandler,
 };
 
 #[async_trait]
@@ -183,11 +180,15 @@ impl MsgHandler for MsgConnectionOpenTry {
             .await
             .unwrap();
 
-        state.record(event::connection_open_try(
-            &new_connection_id,
-            &self.client_id_on_b,
-            &self.counterparty,
-        ));
+        state.record(
+            events::ConnectionOpenTry {
+                conn_id_on_b: new_connection_id.clone(),
+                client_id_on_b: self.client_id_on_b.clone(),
+                conn_id_on_a: self.counterparty.connection_id.clone().unwrap_or_default(),
+                client_id_on_a: self.counterparty.client_id.clone(),
+            }
+            .into(),
+        );
 
         Ok(())
     }

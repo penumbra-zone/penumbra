@@ -1,17 +1,14 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::core::connection::{
-    msgs::MsgConnectionOpenInit, ConnectionEnd, ConnectionId, Version,
+    events, msgs::MsgConnectionOpenInit, ConnectionEnd, ConnectionId, Version,
 };
 
-use crate::{
-    component::{
-        client::StateReadExt as _,
-        connection::{StateReadExt as _, StateWriteExt as _},
-        connection_counter::SUPPORTED_VERSIONS,
-        MsgHandler,
-    },
-    event,
+use crate::component::{
+    client::StateReadExt as _,
+    connection::{StateReadExt as _, StateWriteExt as _},
+    connection_counter::SUPPORTED_VERSIONS,
+    MsgHandler,
 };
 
 use ibc_types::core::connection::State as ConnectionState;
@@ -50,11 +47,14 @@ impl MsgHandler for MsgConnectionOpenInit {
             .await
             .unwrap();
 
-        state.record(event::connection_open_init(
-            &connection_id,
-            &self.client_id_on_a,
-            &self.counterparty,
-        ));
+        state.record(
+            events::ConnectionOpenInit {
+                connection_id: connection_id.clone(),
+                client_id_on_a: self.client_id_on_a.clone(),
+                client_id_on_b: self.counterparty.client_id.clone(),
+            }
+            .into(),
+        );
 
         Ok(())
     }

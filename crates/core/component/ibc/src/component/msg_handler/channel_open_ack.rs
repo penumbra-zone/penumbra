@@ -1,22 +1,19 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::core::{
-    channel::channel::State as ChannelState, channel::msgs::MsgChannelOpenAck, channel::ChannelEnd,
-    channel::Counterparty, channel::PortId, connection::ConnectionEnd,
+    channel::channel::State as ChannelState, channel::events, channel::msgs::MsgChannelOpenAck,
+    channel::ChannelEnd, channel::Counterparty, channel::PortId, connection::ConnectionEnd,
     connection::State as ConnectionState,
 };
 use penumbra_storage::{StateRead, StateWrite};
 
-use crate::{
-    component::{
-        app_handler::{AppHandlerCheck, AppHandlerExecute},
-        channel::{StateReadExt as _, StateWriteExt as _},
-        connection::StateReadExt as _,
-        proof_verification::ChannelProofVerifier,
-        transfer::Ics20Transfer,
-        MsgHandler,
-    },
-    event,
+use crate::component::{
+    app_handler::{AppHandlerCheck, AppHandlerExecute},
+    channel::{StateReadExt as _, StateWriteExt as _},
+    connection::StateReadExt as _,
+    proof_verification::ChannelProofVerifier,
+    transfer::Ics20Transfer,
+    MsgHandler,
 };
 
 #[async_trait]
@@ -80,11 +77,20 @@ impl MsgHandler for MsgChannelOpenAck {
         channel.set_counterparty_channel_id(self.chan_id_on_b.clone());
         state.put_channel(&self.chan_id_on_a, &self.port_id_on_a, channel.clone());
 
-        state.record(event::channel_open_ack(
-            &self.port_id_on_a,
-            &self.chan_id_on_a,
-            &channel,
-        ));
+        state.record(
+            events::channel::OpenAck {
+                port_id: self.port_id_on_a.clone(),
+                channel_id: self.chan_id_on_a.clone(),
+                counterparty_channel_id: channel
+                    .counterparty()
+                    .channel_id
+                    .clone()
+                    .unwrap_or_default(),
+                counterparty_port_id: channel.counterparty().port_id.clone(),
+                connection_id: channel.connection_hops[0].clone(),
+            }
+            .into(),
+        );
 
         let transfer = PortId::transfer();
         if self.port_id_on_a == transfer {
