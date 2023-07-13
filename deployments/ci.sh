@@ -254,9 +254,10 @@ function full_ci_rebuild() {
 # e.g. 0.1.2 -> 0.1.3.
 function is_patch_release() {
     # Ensure version format is semver, otherwise fail.
-    if ! grep -qP '^v[\d\.]+' <<< "$PENUMBRA_VERSION" ; then
+    if ! echo "$PENUMBRA_VERSION" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+' ; then
         return 1
     fi
+
     # Split on '.', inspect final field.
     z="$(perl -F'\.' -lanE 'print $F[-1]' <<< "$PENUMBRA_VERSION")"
     # If "z" in x.y.z is 0, then it's a minor release. (Or a major release,
