@@ -30,20 +30,20 @@ pub struct NullifierDerivationCircuit {
     nk: NullifierKey,
 
     // Public inputs
-    /// A commitment to the spent note.
-    note_commitment: StateCommitment,
-    /// nullifier of the spent note.
-    pub nullifier: Nullifier,
     /// the position of the spent note.
     pub position: tct::Position,
+    /// A commitment to the spent note.
+    pub note_commitment: StateCommitment,
+    /// nullifier of the spent note.
+    pub nullifier: Nullifier,
 }
 
 impl NullifierDerivationCircuit {
     pub fn new(
-        nk: NullifierKey,
-        note_commitment: StateCommitment,
-        nullifier: Nullifier,
         position: tct::Position,
+        note_commitment: StateCommitment,
+        nk: NullifierKey,
+        nullifier: Nullifier,
     ) -> Self {
         Self {
             nk,

@@ -53,7 +53,7 @@ fn nullifier_derivation_proving_time(c: &mut Criterion) {
     });
 
     // Also print out the number of constraints.
-    let circuit = NullifierDerivationCircuit::new(nk, note.commit(), nullifier, position);
+    let circuit = NullifierDerivationCircuit::new(position, note.commit(), nk, nullifier);
 
     let cs = ConstraintSystem::new_ref();
     cs.set_optimization_goal(OptimizationGoal::Constraints);
