@@ -448,7 +448,7 @@ impl UnauthTransaction {
             spend.auth_sig = auth_sig;
         }
 
-        for (mut delegator_vote, auth_sig) in self
+        for (delegator_vote, auth_sig) in self
             .inner
             .transaction_body
             .actions
