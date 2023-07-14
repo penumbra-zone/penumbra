@@ -392,7 +392,7 @@ fn nullifier_derivation_parameters_vs_current_nullifier_derivation_circuit() {
         NullifierDerivationProof::prove(&mut rng, pk, position, note.clone(), nk, nullifier)
             .expect("can create proof");
 
-    let proof_result = proof.verify(vk, position, note, nullifier);
+    let proof_result = proof.verify(vk, position, note.commit(), nullifier);
 
     assert!(proof_result.is_ok());
 }

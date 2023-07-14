@@ -141,7 +141,7 @@ impl NullifierDerivationProof {
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
         position: tct::Position,
-        note: Note,
+        note_commitment: StateCommitment,
         nullifier: Nullifier,
     ) -> anyhow::Result<()> {
         let proof =
@@ -149,7 +149,7 @@ impl NullifierDerivationProof {
 
         let mut public_inputs = Vec::new();
         public_inputs.extend(nullifier.0.to_field_elements().unwrap());
-        public_inputs.extend(note.to_field_elements().unwrap());
+        public_inputs.extend(note_commitment.0.to_field_elements().unwrap());
         public_inputs.extend(position.to_field_elements().unwrap());
 
         tracing::trace!(?public_inputs);
@@ -236,13 +236,13 @@ mod tests {
                     &mut rng,
                     &pk,
                     position,
-                    note.clone(),
+                    note,
                     nk,
                     nullifier,
                 )
                 .expect("can create proof");
 
-                let proof_result = proof.verify(&vk, position, note, nullifier);
+                let proof_result = proof.verify(&vk, position, note_commitment, nullifier);
 
                 assert!(proof_result.is_ok());
         }
