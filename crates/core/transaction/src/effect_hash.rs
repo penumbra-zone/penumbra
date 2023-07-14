@@ -71,10 +71,15 @@ impl TransactionBody {
         }
 
         // Hash the clues.
-        let num_clues = self.fmd_clues.len() as u32;
-        state.update(&num_clues.to_le_bytes());
-        for fmd_clue in &self.fmd_clues {
-            state.update(fmd_clue.effect_hash().as_bytes());
+        match self.detection_data {
+            None => {}
+            Some(ref detection_data) => {
+                let num_clues = detection_data.fmd_clues.len() as u32;
+                state.update(&num_clues.to_le_bytes());
+                for fmd_clue in &detection_data.fmd_clues {
+                    state.update(fmd_clue.effect_hash().as_bytes());
+                }
+            }
         }
 
         EffectHash(state.finalize().as_array().clone())

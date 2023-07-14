@@ -422,7 +422,10 @@ impl TxCmd {
 
             metadata_table.add_row(vec![
                 "Transaction Expiration Height",
-                &format!("{}", tx_info.view.body_view.expiry_height),
+                &format!(
+                    "{}",
+                    tx_info.view.body_view.transaction_parameters.expiry_height
+                ),
             ]);
 
             // Print table of actions and their descriptions
