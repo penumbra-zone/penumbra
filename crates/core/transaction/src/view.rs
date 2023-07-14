@@ -1,6 +1,5 @@
 use anyhow::Context;
 use bytes::Bytes;
-use decaf377_fmd::Clue;
 use decaf377_rdsa::{Binding, Signature};
 use penumbra_fee::Fee;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
@@ -16,7 +15,7 @@ pub use transaction_perspective::TransactionPerspective;
 
 use crate::{
     memo::{MemoCiphertext, MemoPlaintext},
-    transaction::TransactionParameters,
+    transaction::{DetectionData, TransactionParameters},
     Action, Transaction, TransactionBody,
 };
 
@@ -27,6 +26,7 @@ pub struct TransactionView {
     pub binding_sig: Signature<Binding>,
     pub anchor: tct::Root,
 }
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(
     try_from = "pbt::TransactionBodyView",
@@ -34,10 +34,9 @@ pub struct TransactionView {
 )]
 pub struct TransactionBodyView {
     pub action_views: Vec<ActionView>,
-    pub expiry_height: u64,
-    pub chain_id: String,
+    pub transaction_parameters: TransactionParameters,
     pub fee: Fee,
-    pub fmd_clues: Vec<Clue>,
+    pub detection_data: Option<DetectionData>,
     pub memo_view: Option<MemoView>,
 }
 
@@ -72,15 +71,15 @@ impl TransactionView {
             None => None,
         };
 
+        let transaction_parameters = self.body_view.transaction_parameters.clone();
+        let detection_data = self.body_view.detection_data.clone();
+
         Transaction {
             transaction_body: TransactionBody {
                 actions,
-                transaction_parameters: TransactionParameters {
-                    expiry_height: self.body_view.expiry_height,
-                    chain_id: self.body_view.chain_id.clone(),
-                },
+                transaction_parameters,
                 fee: self.body_view.fee.clone(),
-                fmd_clues: self.body_view.fmd_clues.clone(),
+                detection_data,
                 memo: memo_ciphertext.cloned(),
             },
             binding_sig: self.binding_sig,
@@ -140,21 +139,11 @@ impl TryFrom<pbt::TransactionBodyView> for TransactionBodyView {
             action_views.push(av.try_into()?);
         }
 
-        let expiry_height = body_view.expiry_height;
-
-        let chain_id = body_view.chain_id;
-
         let fee = body_view
             .fee
             .ok_or_else(|| anyhow::anyhow!("transaction view missing fee"))?
             .try_into()
             .context("transaction fee malformed")?;
-
-        let mut fmd_clues = Vec::<Clue>::new();
-
-        for clue in body_view.fmd_clues.clone() {
-            fmd_clues.push(clue.try_into()?);
-        }
 
         let memo_view: Option<MemoView> = match body_view.memo_view {
             Some(mv) => match mv.memo_view {
@@ -187,12 +176,31 @@ impl TryFrom<pbt::TransactionBodyView> for TransactionBodyView {
             None => None,
         };
 
+        let transaction_parameters = body_view
+            .transaction_parameters
+            .ok_or_else(|| anyhow::anyhow!("transaction view missing transaction parameters view"))?
+            .try_into()?;
+
+        // Iterate through the detection_data vec, and convert each FMD clue.
+        let fmd_clues = body_view
+            .detection_data
+            .map(|dd| {
+                dd.fmd_clues
+                    .into_iter()
+                    .map(|fmd| fmd.try_into())
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .transpose()?;
+        let detection_data = match fmd_clues {
+            Some(fmd_clues) => Some(DetectionData { fmd_clues }),
+            None => None,
+        };
+
         Ok(TransactionBodyView {
             action_views,
-            expiry_height,
-            chain_id,
+            transaction_parameters,
             fee,
-            fmd_clues,
+            detection_data,
             memo_view,
         })
     }
@@ -212,10 +220,9 @@ impl From<TransactionBodyView> for pbt::TransactionBodyView {
     fn from(v: TransactionBodyView) -> Self {
         Self {
             action_views: v.action_views.into_iter().map(Into::into).collect(),
-            expiry_height: v.expiry_height,
-            chain_id: v.chain_id,
+            transaction_parameters: Some(v.transaction_parameters.into()),
             fee: Some(v.fee.into()),
-            fmd_clues: v.fmd_clues.into_iter().map(Into::into).collect(),
+            detection_data: v.detection_data.map(Into::into),
             memo_view: v.memo_view.map(|m| m.into()),
         }
     }

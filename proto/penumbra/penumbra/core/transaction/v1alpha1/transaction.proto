@@ -35,8 +35,8 @@ message TransactionBody {
   TransactionParameters transaction_parameters = 2;
   // The transaction fee.
   crypto.v1alpha1.Fee fee = 3;
-  // A list of clues for use with Fuzzy Message Detection.
-  repeated crypto.v1alpha1.Clue fmd_clues = 4;
+  // Detection data for use with Fuzzy Message Detection
+  DetectionData detection_data = 4;
   // An optional encrypted memo. It will only be populated if there are
   // outputs in the actions of this transaction. 528 bytes.
   optional bytes encrypted_memo = 5;
@@ -51,6 +51,12 @@ message TransactionParameters {
   // The chain this transaction is intended for.  Including this prevents
   // replaying a transaction on one chain onto a different chain.
   string chain_id = 2;
+}
+
+// Detection data used by a detection server performing Fuzzy Message Detection.
+message DetectionData {
+  // A list of clues for use with Fuzzy Message Detection.
+  repeated crypto.v1alpha1.Clue fmd_clues = 4;
 }
 
 // A state change performed by a transaction.
@@ -138,20 +144,16 @@ message TransactionView {
 message TransactionBodyView {
   // A list views into of actions (state changes) performed by this transaction.
   repeated ActionView action_views = 1;
-  // The maximum height that this transaction can be included in the chain.
-  //
-  // If zero, there is no maximum.
-  uint64 expiry_height = 2;
-  // The chain this transaction is intended for.  Including this prevents
-  // replaying a transaction on one chain onto a different chain.
-  string chain_id = 3;
+  // Transaction parameters.
+  TransactionParameters transaction_parameters = 2;
   // The transaction fee.
-  crypto.v1alpha1.Fee fee = 4;
-  // A list of clues for use with Fuzzy Message Detection.
-  repeated crypto.v1alpha1.Clue fmd_clues = 5;
+  crypto.v1alpha1.Fee fee = 3;
+  // The detection data in this transaction, only populated if
+  // there are outputs in the actions of this transaction.
+  optional DetectionData detection_data = 4;
   // An optional view of a transaction memo. It will only be populated if there are
   // outputs in the actions of this transaction.
-  optional MemoView memo_view = 6;
+  optional MemoView memo_view = 5;
 }
 
 // A view of a specific state change action performed by a transaction.

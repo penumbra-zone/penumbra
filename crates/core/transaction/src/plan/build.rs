@@ -7,8 +7,10 @@ use rand_core::{CryptoRng, RngCore};
 
 use super::TransactionPlan;
 use crate::{
-    action::Action, memo::MemoCiphertext, transaction::TransactionParameters, AuthorizationData,
-    AuthorizingData, Transaction, TransactionBody, WitnessData,
+    action::Action,
+    memo::MemoCiphertext,
+    transaction::{DetectionData, TransactionParameters},
+    AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
 };
 
 impl TransactionPlan {
@@ -25,7 +27,6 @@ impl TransactionPlan {
         witness_data: WitnessData,
     ) -> Result<UnauthTransaction> {
         let mut actions = Vec::new();
-        let mut fmd_clues = Vec::new();
         let mut synthetic_blinding_factor = Fr::zero();
 
         // Add the memo.
@@ -91,9 +92,16 @@ impl TransactionPlan {
             ));
         }
 
-        // Build the clue plans.
-        for clue_plan in self.clue_plans() {
-            fmd_clues.push(clue_plan.clue());
+        // Add detection data when there are outputs.
+        let detection_data: Option<DetectionData>;
+        if self.num_outputs() == 0 {
+            detection_data = None;
+        } else {
+            let mut fmd_clues = Vec::new();
+            for clue_plan in self.clue_plans() {
+                fmd_clues.push(clue_plan.clue());
+            }
+            detection_data = Some(DetectionData { fmd_clues });
         }
 
         // All of these actions have "transparent" value balance with no
@@ -174,7 +182,7 @@ impl TransactionPlan {
                 chain_id: self.chain_id,
             },
             fee: self.fee,
-            fmd_clues,
+            detection_data,
             memo,
         };
 
@@ -199,7 +207,6 @@ impl TransactionPlan {
         fvk: &FullViewingKey,
         witness_data: WitnessData,
     ) -> Result<UnauthTransaction> {
-        let mut fmd_clues = Vec::new();
         let mut synthetic_blinding_factor = Fr::zero();
 
         // Add the memo.
@@ -292,9 +299,16 @@ impl TransactionPlan {
             }));
         }
 
-        // Build the clue plans.
-        for clue_plan in self.clue_plans() {
-            fmd_clues.push(clue_plan.clue());
+        // Add detection data when there are outputs.
+        let detection_data: Option<DetectionData>;
+        if self.num_outputs() == 0 {
+            detection_data = None;
+        } else {
+            let mut fmd_clues = Vec::new();
+            for clue_plan in self.clue_plans() {
+                fmd_clues.push(clue_plan.clue());
+            }
+            detection_data = Some(DetectionData { fmd_clues });
         }
 
         // Actions with ZK proofs are slow to build and were done concurrently,
@@ -391,7 +405,7 @@ impl TransactionPlan {
                 chain_id: self.chain_id,
             },
             fee: self.fee,
-            fmd_clues,
+            detection_data,
             memo,
         };
 
