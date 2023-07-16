@@ -42,6 +42,10 @@ You'll also need to install Git LFS, which you can do [via Homebrew](https://doc
 brew install git-lfs
 ```
 
+### Making sure that `git-lfs` is installed
+
+Running `git lfs install` will make sure that git-lfs is correctly installed on your machine.
+
 ### Cloning the repository
 
 Once you have installed the above tools, you can clone the repository:
