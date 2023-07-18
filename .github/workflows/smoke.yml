@@ -35,6 +35,22 @@ jobs:
           which cometbft
           cometbft version
 
+      # Build CometMock from source
+      - name: Install golang
+        uses: actions/setup-go@v4
+        with:
+          go-version: 'stable'
+
+      - name: Build cometmock
+        run: |
+          cometmock_gitref="v0.37.x"
+          git clone --depth 1 --branch "$cometmock_gitref"  https://github.com/informalsystems/CometMock ../cometmock
+          cd ../cometmock || exit 1
+          mkdir -p $HOME/bin
+          go build -o $HOME/bin/cometmock ./cometmock
+          export PATH=$HOME/bin:$PATH
+          which cometmock
+
       - name: Run the smoke test suite
         run: |
           export PATH="$HOME/bin:$PATH"

@@ -21,56 +21,65 @@ if [[ -d ~/.penumbra/testnet_data ]] ; then
     exit 1
 fi
 
-if ! hash cometbft > /dev/null 2>&1 ; then
-    >&2 echo "ERROR: cometbft not found in PATH"
-    >&2 echo "See install guide: https://guide.penumbra.zone/main/pd/build.html"
+# Ensure we have cometmock available locally.
+if ! hash cometmock > /dev/null 2>&1 ; then
+    >&2 echo "ERROR: cometmock not found, please install from https://github.com/informalsystems/CometMock"
+    >&2 echo "Make sure to use the 'v0.34.x' branch for now."
     exit 1
 fi
 
 export RUST_LOG="pclientd=info,pcli=info,pd=info,penumbra=info"
 
-# Duration that the network will be left running before script exits.
-TESTNET_RUNTIME="${TESTNET_RUNTIME:-120}"
 # Duration that the network will run before integration tests are run.
 TESTNET_BOOTTIME="${TESTNET_BOOTTIME:-20}"
+# Duration that the network will be left running before script exits.
+TESTNET_RUNTIME="${TESTNET_RUNTIME:-10}"
 
-echo "Building latest version of pd from source..."
-cargo build --quiet --release --bin pd
+echo "Building pd from latest source..."
+cargo build --release --bin pd
 
 echo "Generating testnet config..."
-EPOCH_DURATION="${EPOCH_DURATION:-100}"
+# Export the epoch duration, so it's accessible as env var in test suite.
+export EPOCH_DURATION="${EPOCH_DURATION:-100}"
 cargo run --quiet --release --bin pd -- testnet generate --epoch-duration "$EPOCH_DURATION" --timeout-commit 500ms
-
-echo "Starting CometBFT..."
-cometbft start --log_level=error --home "${HOME}/.penumbra/testnet_data/node0/cometbft" &
-cometbft_pid="$!"
 
 echo "Starting pd..."
 cargo run --quiet --release --bin pd -- start --home "${HOME}/.penumbra/testnet_data/node0/pd" &
 pd_pid="$!"
 
+sleep 2
+echo "Starting CometMock (stand-in for Tendermint/CometBFT)..."
+# ❯ cometmock -h
+# Usage: <app-addresses> <genesis-file> <cometmock-listen-address> <node-homes> <abci-connection-mode>
+cometmock \
+    --block-time 50 \
+    127.0.0.1:26658 \
+    "${HOME}/.penumbra/testnet_data/node0/cometbft/config/genesis.json" \
+    tcp://127.0.0.1:26657 \
+    "${HOME}/.penumbra/testnet_data/node0/cometbft" \
+    socket &
+cometmock_pid="$!"
+
 # Ensure processes are cleaned up after script exits, regardless of status.
-trap 'kill -9 "$cometbft_pid" "$pd_pid"' EXIT
+trap 'kill -9 "$cometmock_pid" "$pd_pid"' EXIT
 
 echo "Waiting $TESTNET_BOOTTIME seconds for network to boot..."
 sleep "$TESTNET_BOOTTIME"
 
+export PENUMBRA_NODE_PD_URL="http://127.0.0.1:8080"
+export PCLI_UNLEASH_DANGER="yes"
 echo "Running pclientd integration tests against network"
-PENUMBRA_NODE_PD_URL="http://127.0.0.1:8080" \
-    PCLI_UNLEASH_DANGER="yes" \
-    cargo test --quiet --release --features sct-divergence-check --package pclientd -- --ignored --test-threads 1 --nocapture
+cargo test --quiet --release --features sct-divergence-check --package pclientd -- --ignored --test-threads 1 --nocapture
 
 echo "Running pcli integration tests against network"
-PENUMBRA_NODE_PD_URL="http://127.0.0.1:8080" \
-    PCLI_UNLEASH_DANGER="yes" \
-    cargo test --quiet --release --features sct-divergence-check,download-proving-keys --package pcli -- --ignored --test-threads 1 --nocapture
+cargo test --quiet --release --features sct-divergence-check,download-proving-keys --package pcli -- --ignored --test-threads 1 --nocapture
 
 echo "Waiting another $TESTNET_RUNTIME seconds while network runs..."
 sleep "$TESTNET_RUNTIME"
 # `kill -0` checks existence of pid, i.e. whether the process is still running.
 # It doesn't inspect errors, but the only reason the process would be stopped
 # is if it failed, so it's good enough for our needs.
-if ! kill -0 "$cometbft_pid" || ! kill -0 "$pd_pid" ; then
+if ! kill -0 "$cometmock_pid" || ! kill -0 "$pd_pid" ; then
     >&2 echo "ERROR: smoke test process exited early"
     exit 1
 else
