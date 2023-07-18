@@ -93,8 +93,8 @@ pub(crate) mod internal {
 
         /// `(A, B) => A_from_B` this will encode the current amount of `A` tradable into `B` for every directly routable trading pair.
         /// This index can be used to determine the key values for the [`super::key`] ordered index to perform updates efficiently.
-        pub fn a_from_b(pair: &DirectedTradingPair) -> [u8; 61] {
-            let mut key = [0u8; 61];
+        pub fn a_from_b(pair: &DirectedTradingPair) -> [u8; 71] {
+            let mut key = [0u8; 71];
             key[0..7].copy_from_slice(b"dex/ab/");
             key[7..7 + 32].copy_from_slice(&pair.start.to_bytes());
             key[7 + 32..7 + 32 + 32].copy_from_slice(&pair.end.to_bytes());
