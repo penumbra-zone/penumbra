@@ -34,8 +34,9 @@ use penumbra_proto::{
 use penumbra_stake::rate::RateData;
 use penumbra_tct::{Proof, StateCommitment};
 use penumbra_transaction::{
-    plan::TransactionPlan, AuthorizationData, Transaction, TransactionPerspective, WitnessData,
+    plan::TransactionPlan, AuthorizationData, Id, Transaction, TransactionPerspective, WitnessData,
 };
+
 use rand::Rng;
 use rand_core::OsRng;
 use tokio::sync::{watch, RwLock};
@@ -528,18 +529,40 @@ impl ViewProtocolService for ViewService {
         &self,
         request: tonic::Request<pb::TransactionInfoByHashRequest>,
     ) -> Result<tonic::Response<pb::TransactionInfoByHashResponse>, tonic::Status> {
-        self.check_worker().await?;
-
         let request = request.into_inner();
+        println!(
+            "Hash string: {:?}",
+            &request
+                .id
+                .clone()
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing transaction hash"))?
+                .hash
+        );
+
+        self.check_worker().await?;
 
         let fvk =
             self.storage.full_viewing_key().await.map_err(|_| {
                 tonic::Status::failed_precondition("Error retrieving full viewing key")
             })?;
 
+        let hash: Id = request
+            .id
+            .clone()
+            .ok_or_else(|| tonic::Status::invalid_argument("Missing transaction hash"))?
+            .hash
+            .to_uppercase()
+            .parse()
+            .map_err(|_| tonic::Status::invalid_argument("Invalid transaction hash"))?;
+
+        println!(
+            "transaction_info_by_hash.hash: {:?}",
+            hex::encode(&hash.clone())
+        );
+
         let maybe_tx = self
             .storage
-            .transaction_by_hash(&request.id.clone().unwrap().hash)
+            .transaction_by_hash(&hash.0)
             .await
             .map_err(|_| {
                 tonic::Status::failed_precondition(format!(

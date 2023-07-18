@@ -592,6 +592,11 @@ impl Storage {
         let pool = self.pool.clone();
         let tx_hash = tx_hash.to_vec();
 
+        println!(
+            "storage.transaction_by_hash.tx_hash: {:?}",
+            hex::encode(tx_hash.clone())
+        );
+
         spawn_blocking(move || {
             if let Some((block_height, tx_bytes)) = pool
                 .get()?

@@ -232,6 +232,8 @@ impl TxCmd {
             .parse()
             .context("invalid transaction hash")?;
 
+        println!("Parsed hash: {:?}", hash);
+
         // Retrieve Transaction from the view service first, or else the fullnode
         let tx_info = if let Ok(tx_info) = app.view().transaction_info_by_hash(hash).await {
             tx_info

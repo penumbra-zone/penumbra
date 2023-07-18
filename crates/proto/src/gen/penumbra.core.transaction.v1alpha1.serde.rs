@@ -1829,7 +1829,7 @@ impl serde::Serialize for Id {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.Id", len)?;
         if !self.hash.is_empty() {
-            struct_ser.serialize_field("hash", pbjson::private::base64::encode(&self.hash).as_str())?;
+            struct_ser.serialize_field("hash", &self.hash)?;
         }
         struct_ser.end()
     }
@@ -1895,9 +1895,7 @@ impl<'de> serde::Deserialize<'de> for Id {
                             if hash__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("hash"));
                             }
-                            hash__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            hash__ = Some(map.next_value()?);
                         }
                     }
                 }

@@ -16,8 +16,9 @@ pub struct Transaction {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Id {
-    #[prost(bytes = "bytes", tag = "1")]
-    pub hash: ::prost::bytes::Bytes,
+    /// Hex-encoded string of the transaction hash.
+    #[prost(string, tag = "1")]
+    pub hash: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
