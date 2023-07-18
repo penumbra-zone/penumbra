@@ -1,11 +1,14 @@
-use std::{collections::BTreeSet, iter::FromIterator, pin::Pin, sync::Arc};
+use std::{pin::Pin, sync::Arc};
 
 use anyhow::Result;
+use async_stream::try_stream;
 use async_trait::async_trait;
 use futures::Stream;
 use futures::StreamExt;
 use penumbra_asset::asset;
+use penumbra_asset::Value;
 use penumbra_num::Amount;
+use penumbra_proto::DomainType;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{EscapedByteSlice, StateRead, StateWrite};
 
@@ -14,6 +17,8 @@ use crate::{
     lp::position::{self, Position},
     state_key, DirectedTradingPair,
 };
+
+const DYNAMIC_ASSET_LIMIT: usize = 10;
 
 #[async_trait]
 pub trait PositionRead: StateRead {
@@ -192,16 +197,42 @@ pub trait PositionManager: StateWrite + PositionRead {
     /// Combines a list of fixed candidates with a list of liquidity-based candidates.
     /// This ensures that the fixed candidates are always considered, minimizing
     /// the risk of attacks on routing.
-    async fn candidate_set(
+    fn candidate_set(
         &self,
-        _from: asset::Id,
+        from: asset::Id,
         fixed_candidates: Arc<Vec<asset::Id>>,
-    ) -> Result<Vec<asset::Id>> {
-        let candidates = BTreeSet::from_iter(fixed_candidates.iter().cloned());
-        // TODO: do dynamic candidate selection based on liquidity (tracked by #2750)
-        // Idea: each block, compute the per-asset candidate set and store it
-        // in the object store as a BTreeMap.
-        Ok(candidates.into_iter().collect())
+    ) -> Pin<Box<dyn Stream<Item = Result<asset::Id>> + Send>> {
+        let mut dynamic_candidates = self
+            .ordered_routable_assets(&from)
+            .take(DYNAMIC_ASSET_LIMIT);
+        try_stream! {
+            // First stream the fixed candidates, so those can be processed while the dynamic candidates are fetched.
+            for candidate in fixed_candidates.iter() {
+                yield candidate.clone();
+            }
+
+            // Yield the liquidity-based candidates. Note that this _may_ include some assets already included in the fixed set.
+            while let Some(candidate) = dynamic_candidates
+                .next().await {
+                    yield candidate.expect("failed to fetch candidate");
+            }
+        }
+        .boxed()
+    }
+
+    /// Returns a stream of [`asset::Id`] routable from a given asset, ordered by liquidity.
+    fn ordered_routable_assets(
+        &self,
+        from: &asset::Id,
+    ) -> Pin<Box<dyn Stream<Item = Result<asset::Id>> + Send + 'static>> {
+        let prefix = state_key::internal::routable_assets::prefix(from);
+        tracing::trace!(prefix = ?EscapedByteSlice(&prefix), "searching for routable assets by liquidity");
+        self.nonconsensus_prefix_raw(&prefix)
+            .map(|entry| match entry {
+                Ok((_, v)) => Ok(asset::Id::decode(&*v)?),
+                Err(e) => Err(e),
+            })
+            .boxed()
     }
 }
 
@@ -258,8 +289,9 @@ pub(super) trait Inner: StateWrite {
         self.nonverifiable_delete(state_key::internal::price_index::key(&pair21, &phi21, &id));
     }
 
-    async fn update_available_liquidity(
+    async fn _update_available_liquidity(
         &mut self,
+        trading_pair: DirectedTradingPair,
         position: &Position,
         prev_position: &Option<Position>,
     ) -> Result<()> {
@@ -267,7 +299,7 @@ pub(super) trait Inner: StateWrite {
         // has no current liquidity.
         let current_a_from_b = self
             .nonconsensus_get_raw(&state_key::internal::routable_assets::a_from_b(
-                &position.phi.pair,
+                &trading_pair,
             ))
             .await?
             .map(|bytes| {
@@ -294,10 +326,17 @@ pub(super) trait Inner: StateWrite {
                 // Return the amount of asset A purchasable with all reserves of asset B.
                 prev_position
                     .phi
-                    .component
-                    .flip()
-                    .convert_to_lambda_2(current_reserves.r2.into())?
-                    .try_into()?
+                    .fill(
+                        Value {
+                            asset_id: trading_pair.end,
+                            amount: prev_position
+                                .reserves_for(trading_pair.end)
+                                .unwrap_or_default(),
+                        },
+                        &current_reserves,
+                    )?
+                    .2
+                    .amount
             }
             None => Amount::zero(),
         };
@@ -309,10 +348,15 @@ pub(super) trait Inner: StateWrite {
                 // Return the amount of asset A purchasable with all reserves of asset B.
                 position
                     .phi
-                    .component
-                    .flip()
-                    .convert_to_lambda_2(position.reserves.r2.into())?
-                    .try_into()?
+                    .fill(
+                        Value {
+                            asset_id: trading_pair.end,
+                            amount: position.reserves_for(trading_pair.end).unwrap_or_default(),
+                        },
+                        &position.reserves,
+                    )?
+                    .2
+                    .amount
             }
             _ => Amount::zero(),
         };
@@ -326,26 +370,40 @@ pub(super) trait Inner: StateWrite {
         // Delete the existing key for this position if the reserve amount has changed.
         if new_a_from_b != current_a_from_b {
             self.nonconsensus_delete(
-                state_key::internal::routable_assets::key(
-                    &position.phi.pair.asset_1,
-                    current_a_from_b,
-                )
-                .to_vec(),
+                state_key::internal::routable_assets::key(&trading_pair.start, current_a_from_b)
+                    .to_vec(),
             );
         }
 
         // Write the new key indicating that asset B is routable from asset A with `new_a_from_b` liquidity.
         self.nonconsensus_put_raw(
-            state_key::internal::routable_assets::key(&position.phi.pair.asset_1, new_a_from_b)
-                .to_vec(),
-            position.phi.pair.asset_2.to_bytes().to_vec(),
+            state_key::internal::routable_assets::key(&trading_pair.start, new_a_from_b).to_vec(),
+            trading_pair.end.encode_to_vec(),
         );
 
         // Write the new lookup index storing `new_a_from_b` for this trading pair.
         self.nonconsensus_put_raw(
-            state_key::internal::routable_assets::a_from_b(&position.phi.pair).to_vec(),
+            state_key::internal::routable_assets::a_from_b(&trading_pair).to_vec(),
             new_a_from_b.to_be_bytes().to_vec(),
         );
+        Ok(())
+    }
+
+    async fn update_available_liquidity(
+        &mut self,
+        position: &Position,
+        prev_position: &Option<Position>,
+    ) -> Result<()> {
+        // Since swaps may be performed in either direction, the available liquidity indices
+        // need to be calculated and stored for both the A -> B and B -> A directions.
+        let (a, b) = (position.phi.pair.asset_1(), position.phi.pair.asset_2());
+
+        // A -> B
+        self._update_available_liquidity(DirectedTradingPair::new(a, b), position, prev_position)
+            .await?;
+        // B -> A
+        self._update_available_liquidity(DirectedTradingPair::new(b, a), position, prev_position)
+            .await?;
 
         Ok(())
     }
