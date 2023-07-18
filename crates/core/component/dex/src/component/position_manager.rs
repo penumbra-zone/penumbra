@@ -227,7 +227,7 @@ pub trait PositionManager: StateWrite + PositionRead {
     ) -> Pin<Box<dyn Stream<Item = Result<asset::Id>> + Send + 'static>> {
         let prefix = state_key::internal::routable_assets::prefix(from);
         tracing::trace!(prefix = ?EscapedByteSlice(&prefix), "searching for routable assets by liquidity");
-        self.nonconsensus_prefix_raw(&prefix)
+        self.nonverifiable_prefix_raw(&prefix)
             .map(|entry| match entry {
                 Ok((_, v)) => Ok(asset::Id::decode(&*v)?),
                 Err(e) => Err(e),
@@ -298,7 +298,7 @@ pub(super) trait Inner: StateWrite {
         // Query the current available liquidity for this trading pair, or zero if the trading pair
         // has no current liquidity.
         let current_a_from_b = self
-            .nonconsensus_get_raw(&state_key::internal::routable_assets::a_from_b(
+            .nonverifiable_get_raw(&state_key::internal::routable_assets::a_from_b(
                 &trading_pair,
             ))
             .await?
@@ -306,7 +306,7 @@ pub(super) trait Inner: StateWrite {
                 Amount::from_be_bytes(
                     bytes
                         .try_into()
-                        .expect("invalid a_from_b stored in nonconsensus"),
+                        .expect("invalid a_from_b stored in nonverifiable"),
                 )
             })
             .unwrap_or_default();
@@ -369,20 +369,20 @@ pub(super) trait Inner: StateWrite {
 
         // Delete the existing key for this position if the reserve amount has changed.
         if new_a_from_b != current_a_from_b {
-            self.nonconsensus_delete(
+            self.nonverifiable_delete(
                 state_key::internal::routable_assets::key(&trading_pair.start, current_a_from_b)
                     .to_vec(),
             );
         }
 
         // Write the new key indicating that asset B is routable from asset A with `new_a_from_b` liquidity.
-        self.nonconsensus_put_raw(
+        self.nonverifiable_put_raw(
             state_key::internal::routable_assets::key(&trading_pair.start, new_a_from_b).to_vec(),
             trading_pair.end.encode_to_vec(),
         );
 
         // Write the new lookup index storing `new_a_from_b` for this trading pair.
-        self.nonconsensus_put_raw(
+        self.nonverifiable_put_raw(
             state_key::internal::routable_assets::a_from_b(&trading_pair).to_vec(),
             new_a_from_b.to_be_bytes().to_vec(),
         );
