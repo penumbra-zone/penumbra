@@ -9,6 +9,7 @@ use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{EscapedByteSlice, StateRead, StateWrite};
 
+use crate::lp::Reserves;
 use crate::{
     lp::position::{self, Position},
     state_key, DirectedTradingPair,
@@ -138,12 +139,16 @@ pub trait PositionManager: StateWrite + PositionRead {
         // reserves or the position state might have invalidated them.
         self.deindex_position_by_price(&position);
 
-        let position = self.handle_limit_order(prev, position);
+        let position = self.handle_limit_order(&prev, position);
 
         // Only index the position's liquidity if it is active.
         if position.state == position::State::Opened {
             self.index_position_by_price(&position);
         }
+
+        // Update the available liquidity for this position's trading pair.
+        self.update_available_liquidity(&position, &prev).await?;
+
         self.put(state_key::position_by_id(&id), position);
         Ok(())
     }
@@ -153,7 +158,7 @@ pub trait PositionManager: StateWrite + PositionRead {
     /// not a limit order, or has not been filled, it is returned unchanged.
     fn handle_limit_order(
         &self,
-        prev_position: Option<position::Position>,
+        prev_position: &Option<position::Position>,
         position: Position,
     ) -> Position {
         let id = position.id();
@@ -251,6 +256,98 @@ pub(super) trait Inner: StateWrite {
         let phi21 = position.phi.component.flip();
         self.nonverifiable_delete(state_key::internal::price_index::key(&pair12, &phi12, &id));
         self.nonverifiable_delete(state_key::internal::price_index::key(&pair21, &phi21, &id));
+    }
+
+    async fn update_available_liquidity(
+        &mut self,
+        position: &Position,
+        prev_position: &Option<Position>,
+    ) -> Result<()> {
+        // Query the current available liquidity for this trading pair, or zero if the trading pair
+        // has no current liquidity.
+        let current_a_from_b = self
+            .nonconsensus_get_raw(&state_key::internal::routable_assets::a_from_b(
+                &position.phi.pair,
+            ))
+            .await?
+            .map(|bytes| {
+                Amount::from_be_bytes(
+                    bytes
+                        .try_into()
+                        .expect("invalid a_from_b stored in nonconsensus"),
+                )
+            })
+            .unwrap_or_default();
+
+        // Get the current reserves of this position, or zero if the position is newly added.
+        let current_reserves = prev_position
+            .as_ref()
+            .map(|prev| prev.reserves.clone())
+            .unwrap_or(Reserves {
+                r1: Amount::zero(),
+                r2: Amount::zero(),
+            });
+
+        // Use the current reserves to compute `current_position_contribution` (denominated in asset_1).
+        let current_position_contribution = match prev_position {
+            Some(prev_position) => {
+                // Return the amount of asset A purchasable with all reserves of asset B.
+                prev_position
+                    .phi
+                    .component
+                    .flip()
+                    .convert_to_lambda_2(current_reserves.r2.into())?
+                    .try_into()?
+            }
+            None => Amount::zero(),
+        };
+
+        // Use the new reserves to compute `new_position_contribution`,
+        // the amount of asset A purchasable with all reserves of asset B.
+        let new_position_contribution = match position.state {
+            position::State::Opened => {
+                // Return the amount of asset A purchasable with all reserves of asset B.
+                position
+                    .phi
+                    .component
+                    .flip()
+                    .convert_to_lambda_2(position.reserves.r2.into())?
+                    .try_into()?
+            }
+            _ => Amount::zero(),
+        };
+
+        // Compute `new_A_from_B`.
+        let new_a_from_b =
+            // Subtract the current version of the position's contribution to represent that position no longer
+            // being correct, and add the contribution from the updated version.
+            (current_a_from_b - current_position_contribution) + new_position_contribution;
+
+        // Delete the existing key for this position if the reserve amount has changed.
+        if new_a_from_b != current_a_from_b {
+            self.nonconsensus_delete(
+                state_key::internal::routable_assets::key(
+                    &position.phi.pair.asset_1,
+                    current_a_from_b,
+                )
+                .to_vec(),
+            );
+        }
+
+        // Write the new key indicating that asset B is routable from asset A with `new_a_from_b` liquidity.
+        self.nonconsensus_put_raw(
+            state_key::internal::routable_assets::key(&position.phi.pair.asset_1, new_a_from_b)
+                .to_vec(),
+            position.phi.pair.asset_2.to_bytes().to_vec(),
+        );
+
+        // Write the new lookup index storing `new_a_from_b` for this trading pair.
+        self.nonconsensus_put_raw(
+            state_key::internal::routable_assets::a_from_b(&position.phi.pair).to_vec(),
+            new_a_from_b.to_be_bytes().to_vec(),
+        );
+
+        Ok(())
     }
 }
 impl<T: StateWrite + ?Sized> Inner for T {}
