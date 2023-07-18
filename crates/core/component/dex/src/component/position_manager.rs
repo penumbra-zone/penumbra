@@ -295,6 +295,8 @@ pub(super) trait Inner: StateWrite {
         position: &Position,
         prev_position: &Option<Position>,
     ) -> Result<()> {
+        tracing::debug!(?trading_pair, "updating available liquidity indices");
+
         // Query the current available liquidity for this trading pair, or zero if the trading pair
         // has no current liquidity.
         let current_a_from_b = self
@@ -380,12 +382,14 @@ pub(super) trait Inner: StateWrite {
             state_key::internal::routable_assets::key(&trading_pair.start, new_a_from_b).to_vec(),
             trading_pair.end.encode_to_vec(),
         );
+        tracing::debug!(start = ?trading_pair.start, end = ?trading_pair.end, "marking routable from start -> end");
 
         // Write the new lookup index storing `new_a_from_b` for this trading pair.
         self.nonverifiable_put_raw(
             state_key::internal::routable_assets::a_from_b(&trading_pair).to_vec(),
             new_a_from_b.to_be_bytes().to_vec(),
         );
+        tracing::debug!(available_liquidity = ?new_a_from_b, ?trading_pair, "marking available liquidity for trading pair");
         Ok(())
     }
 
