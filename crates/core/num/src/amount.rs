@@ -110,21 +110,15 @@ impl AmountVar {
         let rem = current_amount.checked_rem(divisor).unwrap_or(0);
 
         // Add corresponding in-circuit variables
-        let quo_var = AmountVar {
-            amount: FqVar::new_witness(self.cs(), || Ok(Fq::from(quo)))?,
-        };
-        let rem_var = AmountVar {
-            amount: FqVar::new_witness(self.cs(), || Ok(Fq::from(rem)))?,
-        };
+        let quo_var = AmountVar::new_witness(self.cs(), || Ok(Fq::from(quo)))?;
+        let rem_var = AmountVar::new_witness(self.cs(), || Ok(Fq::from(rem)))?;
 
         // Constrain: numerator = quo * divisor + rem
         let numerator_var = quo_var.clone() * divisor_var.clone() + rem_var.clone();
         self.enforce_equal(&numerator_var)?;
 
         // In this stanza we constrain: 0 <= rem < divisor
-        let zero_var = AmountVar {
-            amount: FqVar::new_constant(self.cs(), Fq::from(0))?,
-        };
+        let zero_var = AmountVar::new_constant(self.cs(), Fq::from(0))?;
         // Constrain: 0 <= rem
         zero_var
             .amount
@@ -154,6 +148,24 @@ impl AllocVar<Amount, Fq> for AmountVar {
         let cs = ns.cs();
         let amount: Amount = *f()?.borrow();
         let inner_amount_var = FqVar::new_variable(cs, || Ok(Fq::from(amount)), mode)?;
+        // Check the amounts are 128 bits maximum
+        let _ = bit_constrain(inner_amount_var.clone(), 128);
+        Ok(Self {
+            amount: inner_amount_var,
+        })
+    }
+}
+
+impl AllocVar<Fq, Fq> for AmountVar {
+    fn new_variable<T: std::borrow::Borrow<Fq>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let amount: Fq = *f()?.borrow();
+        let inner_amount_var = FqVar::new_variable(cs, || Ok(amount), mode)?;
         // Check the amounts are 128 bits maximum
         let _ = bit_constrain(inner_amount_var.clone(), 128);
         Ok(Self {
