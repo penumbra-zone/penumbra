@@ -69,3 +69,24 @@ impl TryFrom<pb::Id> for Id {
         Ok(Id(id))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    /// Ensure that a transaction identifier, as emitted by `pcli`,
+    /// can be transmuted into a proto type, then converted back
+    /// into a Rust DomainType and be identical.
+    fn tx_hash_proto_roundtrip() -> anyhow::Result<()> {
+        // Hex-encoded string of tx id taken from `pcli tx send ...` invocation.
+        let s1 = "f065a14cb75a29806969755916bc338549c4841a66060b404f557c5c6ea03aa0";
+        let tx1: Id = s1.parse()?;
+        let txp: pb::Id = tx1.try_into()?;
+        let tx2: Id = txp.try_into()?;
+        let s2: String = format!("{}", tx2);
+        // We expect the equality assertion to fail, to confirm the Lovecraftian hex-encoding bug.
+        // But fail it does NOT. Which, in this case, makes me sad.
+        assert_eq!(s1, s2);
+        Ok(())
+    }
+}
