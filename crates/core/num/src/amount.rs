@@ -117,22 +117,21 @@ impl AmountVar {
         let numerator_var = quo_var.clone() * divisor_var.clone() + rem_var.clone();
         self.enforce_equal(&numerator_var)?;
 
-        // In this stanza we constrain: 0 <= rem < divisor
-        let zero_var = AmountVar::new_constant(self.cs(), Fq::from(0))?;
-        // Constrain: 0 <= rem
-        zero_var
-            .amount
-            .enforce_cmp(&rem_var.amount, core::cmp::Ordering::Less, true)?;
-        // Constrain: rem < divisor
+        // In this stanza we constrain: 0 <= rem < divisor.
+        //
+        // We do not need to explicitly constrain 0 <= rem, as that is done
+        // inside the `FqVar::enforce_cmp` function, which verifies the inputs are
+        // of size <(p-1)/2.
+        //
+        // Constrain: 0 <= rem < divisor
         rem_var
             .amount
             .enforce_cmp(&divisor_var.amount, core::cmp::Ordering::Less, false)?;
-        // Note: `FpVar::enforce_cmp` requires that the amounts have size (p-1)/2, which is
+        // `FpVar::enforce_cmp` requires that the amounts have size <(p-1)/2 which is
         // true for amounts as they are 128 bits at most.
 
-        // Finally, division is undefined if the divisor is 0.
-        // Constrain: divisor != 0
-        divisor_var.enforce_not_equal(&zero_var)?;
+        // We do not need to check the divisor is non-zero, as that is already
+        // enforced by 0 <= r < d above.
 
         Ok((quo_var, rem_var))
     }
