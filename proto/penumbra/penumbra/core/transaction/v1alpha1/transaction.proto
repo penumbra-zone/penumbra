@@ -37,9 +37,15 @@ message TransactionBody {
   crypto.v1alpha1.Fee fee = 3;
   // Detection data for use with Fuzzy Message Detection
   DetectionData detection_data = 4;
-  // An optional encrypted memo. It will only be populated if there are
-  // outputs in the actions of this transaction. 528 bytes.
-  optional bytes encrypted_memo = 5;
+  // Sub-message containing memo ciphertext if a memo was added to the transaction. 
+  MemoData memo_data = 5;
+}
+
+// Represents the encrypted memo data.
+message MemoData {
+  // The encrypted data. It will only be populated if there are
+  // outputs in the actions of the transaction. 528 bytes.
+  optional bytes encrypted_memo = 1;
 }
 
 // The parameters determining if a transaction should be accepted by the chain.

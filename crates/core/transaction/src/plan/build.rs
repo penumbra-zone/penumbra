@@ -93,16 +93,15 @@ impl TransactionPlan {
         }
 
         // Add detection data when there are outputs.
-        let detection_data: Option<DetectionData>;
-        if self.num_outputs() == 0 {
-            detection_data = None;
+        let detection_data: Option<DetectionData> = if self.num_outputs() == 0 {
+            None
         } else {
             let mut fmd_clues = Vec::new();
             for clue_plan in self.clue_plans() {
                 fmd_clues.push(clue_plan.clue());
             }
-            detection_data = Some(DetectionData { fmd_clues });
-        }
+            Some(DetectionData { fmd_clues })
+        };
 
         // All of these actions have "transparent" value balance with no
         // blinding factor, so they don't contribute to the
@@ -300,16 +299,15 @@ impl TransactionPlan {
         }
 
         // Add detection data when there are outputs.
-        let detection_data: Option<DetectionData>;
-        if self.num_outputs() == 0 {
-            detection_data = None;
+        let detection_data: Option<DetectionData> = if self.num_outputs() == 0 {
+            None
         } else {
             let mut fmd_clues = Vec::new();
             for clue_plan in self.clue_plans() {
                 fmd_clues.push(clue_plan.clue());
             }
-            detection_data = Some(DetectionData { fmd_clues });
-        }
+            Some(DetectionData { fmd_clues })
+        };
 
         // Actions with ZK proofs are slow to build and were done concurrently,
         // so we resolve the corresponding `JoinHandle`s in the order the tasks were started.

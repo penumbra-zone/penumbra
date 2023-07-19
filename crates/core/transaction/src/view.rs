@@ -191,10 +191,8 @@ impl TryFrom<pbt::TransactionBodyView> for TransactionBodyView {
                     .collect::<Result<Vec<_>, _>>()
             })
             .transpose()?;
-        let detection_data = match fmd_clues {
-            Some(fmd_clues) => Some(DetectionData { fmd_clues }),
-            None => None,
-        };
+
+        let detection_data = fmd_clues.map(|fmd_clues| DetectionData { fmd_clues });
 
         Ok(TransactionBodyView {
             action_views,
