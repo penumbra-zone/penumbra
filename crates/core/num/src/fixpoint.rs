@@ -285,7 +285,7 @@ impl U128x128Var {
         let z3_raw = &x3 + &y3;
 
         // z0 < 2^64 + 2^64 < 2^(65) => 65 bits
-        let z0_bits = bit_constrain(z0_raw, 64)?; // no carry-in
+        let z0_bits = bit_constrain(z0_raw, 65)?; // no carry-in
         let z0 = UInt64::from_bits_le(&z0_bits[0..64]);
         let c1 = Boolean::<Fq>::le_bits_to_fp_var(&z0_bits[64..].to_bits_le()?)?;
 
