@@ -13,6 +13,7 @@ use crate::{
         router::{FillRoute, PathSearch, RoutingParams},
         PositionManager, StateWriteExt,
     },
+    lp::position::MAX_RESERVE_AMOUNT,
     BatchSwapOutputData, SwapExecution, TradingPair,
 };
 
@@ -121,25 +122,28 @@ impl<T: PositionManager> HandleBatchSwaps for T {}
 /// Lower-level trait that ties together the routing and filling logic.
 #[async_trait]
 pub trait RouteAndFill: StateWrite + Sized {
-    #[instrument(skip(self, asset_1, asset_2, delta_1, params))]
+    #[instrument(skip(self, asset_1, asset_2, input, params))]
     async fn route_and_fill(
         self: &mut Arc<Self>,
         asset_1: asset::Id,
         asset_2: asset::Id,
-        delta_1: Amount,
+        input: Amount,
         params: RoutingParams,
     ) -> Result<SwapExecution>
     where
         Self: 'static,
     {
-        tracing::debug!(?delta_1, ?asset_1, ?asset_2, "starting route_and_fill");
+        tracing::debug!(?input, ?asset_1, ?asset_2, "starting route_and_fill");
+
+        // Unfilled output of asset 1
+        let mut total_unfilled_1 = input;
         // Output of asset 2
         let mut total_output_2 = 0u64.into();
-        // Unfilled output of asset 1
-        let mut total_unfilled_1 = delta_1;
 
-        // All traces of trades that were executed.
+        // An ordered list of execution traces that were used to fill the trade.
         let mut traces: Vec<Vec<Value>> = Vec::new();
+
+        let max_delta_1: Amount = MAX_RESERVE_AMOUNT.into();
 
         // Termination conditions:
         // 1. We have no more delta_1 remaining
@@ -163,7 +167,7 @@ pub trait RouteAndFill: StateWrite + Sized {
             }
 
             let delta_1 = Value {
-                amount: total_unfilled_1,
+                amount: total_unfilled_1.min(max_delta_1),
                 asset_id: asset_1,
             };
 
@@ -212,7 +216,10 @@ pub trait RouteAndFill: StateWrite + Sized {
                 // Append the traces from this execution to the outer traces.
                 traces.append(&mut execution.traces.clone());
 
-                (total_output_2 + lambda_2.amount, unfilled_1.amount)
+                (
+                    total_output_2 + lambda_2.amount,
+                    total_unfilled_1 - delta_1.amount + unfilled_1.amount,
+                )
             };
 
             if total_unfilled_1.value() == 0 {
@@ -243,7 +250,7 @@ pub trait RouteAndFill: StateWrite + Sized {
             traces,
             input: Value {
                 asset_id: asset_1,
-                amount: delta_1 - total_unfilled_1,
+                amount: input - total_unfilled_1,
             },
             output: Value {
                 asset_id: asset_2,
