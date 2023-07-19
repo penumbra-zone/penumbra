@@ -853,6 +853,35 @@ mod test {
         }
     }
 
+    #[test]
+    fn max_u64_addition() {
+        let a = U128x128(U256([u64::MAX as u128, 0]));
+        let b = U128x128(U256([u64::MAX as u128, 0]));
+
+        let result = a.checked_add(&b);
+
+        let expected_c = result.expect("result should not overflow");
+
+        let circuit = TestAdditionCircuit {
+            a,
+            b,
+            c: expected_c,
+        };
+
+        let (pk, vk) = TestAdditionCircuit::generate_test_parameters();
+        let mut rng = OsRng;
+
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+            .expect("should be able to form proof");
+
+        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
+            &vk,
+            &expected_c.to_field_elements().unwrap(),
+            &proof,
+        );
+        assert!(proof_result.is_ok());
+    }
+
     struct TestAdditionCircuit {
         a: U128x128,
         b: U128x128,
