@@ -91,6 +91,17 @@ impl AllocVar<Penalty, Fq> for PenaltyVar {
     }
 }
 
+impl From<&PenaltyVar> for AmountVar {
+    fn from(penalty_var: &PenaltyVar) -> Self {
+        // `AmountVar`s must fit in 128 bits, but `PenaltyVar`s have already
+        // been constrained to fit in 64 bits, so we can safely
+        // construct an `AmountVar` from a `PenaltyVar`.
+        AmountVar {
+            amount: penalty_var.inner.clone(),
+        }
+    }
+}
+
 impl PenaltyVar {
     pub fn apply_to(&self, amount: AmountVar) -> Result<AmountVar, SynthesisError> {
         let penalty = self.value().unwrap_or(Penalty(0));
@@ -111,11 +122,7 @@ impl PenaltyVar {
         // Now we certify the witnessed penalized amount was calculated correctly.
         // Constrain: penalized_amount = amount * (1_0000_0000 - penalty (public)) / 1_0000_0000
         let hundred_mil = AmountVar::new_constant(self.cs(), Amount::from(1_0000_0000u128))?; // 1_0000_0000
-        let numerator = amount
-            * (hundred_mil.clone()
-                - AmountVar {
-                    amount: self.inner.clone(),
-                });
+        let numerator = amount * (hundred_mil.clone() - self.into());
         let (penalized_amount_quo, _) = numerator.quo_rem(&hundred_mil)?;
         penalized_amount_quo.enforce_equal(&penalized_amount_var)?;
 
