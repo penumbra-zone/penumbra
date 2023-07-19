@@ -642,6 +642,7 @@ where
         id: penumbra_transaction::Id,
     ) -> Pin<Box<dyn Future<Output = Result<TransactionInfo>> + Send + 'static>> {
         let mut self2 = self.clone();
+
         async move {
             let rsp = ViewProtocolServiceClient::transaction_info_by_hash(
                 &mut self2,

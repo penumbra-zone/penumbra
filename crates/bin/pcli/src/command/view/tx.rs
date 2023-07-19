@@ -225,7 +225,8 @@ impl TxCmd {
     }
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         let fvk = app.fvk.clone();
-        let hash = self
+
+        let hash: penumbra_transaction::Id = self
             .hash
             // We have to convert to uppercase because `tendermint::Hash` only accepts uppercase :(
             .to_uppercase()

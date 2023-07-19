@@ -159,6 +159,8 @@ impl Worker {
             .map(|h| h + 1)
             .unwrap_or(0);
 
+        println!("sync start height: {:?}", start_height);
+
         let mut stream = self
             .client
             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {

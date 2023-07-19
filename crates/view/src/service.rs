@@ -537,23 +537,30 @@ impl ViewProtocolService for ViewService {
                 tonic::Status::failed_precondition("Error retrieving full viewing key")
             })?;
 
-        let maybe_tx = self
-            .storage
-            .transaction_by_hash(&request.id.clone().unwrap().hash)
-            .await
-            .map_err(|_| {
-                tonic::Status::failed_precondition(format!(
-                    "Error retrieving transaction by hash {}",
-                    hex::encode(&request.id.unwrap().hash)
-                ))
-            })?;
+        let id = request
+            .id
+            .ok_or_else(|| tonic::Status::invalid_argument("Missing transaction hash"))?;
 
-        let Some((height, tx)) = maybe_tx else {
-            return Ok(tonic::Response::new(pb::TransactionInfoByHashResponse::default()));
+        let id: penumbra_transaction::Id = id.hash.to_uppercase().parse().map_err(|e| {
+            tonic::Status::invalid_argument(format!("Could not parse address index: {e:#}"))
+        })?;
+
+        let maybe_tx = self.storage.transaction_by_hash(&id.0).await.map_err(|_| {
+            tonic::Status::failed_precondition(format!("Error retrieving transaction by hash",))
+        })?;
+
+        let (height, tx) = match maybe_tx {
+            Some((height, tx)) => (height, tx),
+            None => {
+                return Ok(tonic::Response::new(
+                    pb::TransactionInfoByHashResponse::default(),
+                ))
+            }
         };
 
         // First, create a TxP with the payload keys visible to our FVK and no other data.
         let mut txp = TransactionPerspective {
+            transaction_id: tx.id(),
             payload_keys: tx
                 .payload_keys(&fvk)
                 .map_err(|_| tonic::Status::failed_precondition("Error generating payload keys"))?,

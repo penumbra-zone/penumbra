@@ -36,6 +36,7 @@ impl FromStr for Id {
         }
         let mut id = [0u8; 32];
         id.copy_from_slice(&bytes);
+
         Ok(Id(id))
     }
 }
@@ -50,9 +51,8 @@ impl DomainType for Id {
 
 impl From<Id> for pb::Id {
     fn from(id: Id) -> pb::Id {
-        pb::Id {
-            hash: id.0.to_vec().into(),
-        }
+        let hash = hex::encode(id.0);
+        pb::Id { hash }
     }
 }
 
@@ -61,11 +61,14 @@ impl TryFrom<pb::Id> for Id {
 
     fn try_from(proto: pb::Id) -> Result<Id, anyhow::Error> {
         let hash = proto.hash;
-        if hash.len() != 32 {
-            return Err(anyhow::anyhow!("invalid transaction ID length"));
-        }
-        let mut id = [0u8; 32];
-        id.copy_from_slice(&hash);
+
+        let id = hex::decode(&hash)?.try_into().map_err(|_| {
+            anyhow::anyhow!(
+                "invalid transaction ID, expected 32 bytes, found {}",
+                hash.len()
+            )
+        })?;
+
         Ok(Id(id))
     }
 }

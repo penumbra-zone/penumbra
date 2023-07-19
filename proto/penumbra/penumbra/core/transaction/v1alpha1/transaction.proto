@@ -20,7 +20,7 @@ message Transaction {
 
 // A transaction ID, the Sha256 hash of a transaction.
 message Id {
-  bytes hash = 1;
+  string hash = 1;
 }
 
 message EffectHash {
