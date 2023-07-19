@@ -44,6 +44,7 @@ impl TradingFunction {
         input: Value,
         reserves: &Reserves,
     ) -> anyhow::Result<(Value, Reserves, Value)> {
+        tracing::debug!(?input, ?reserves, "filling trade");
         if input.asset_id == self.pair.asset_1() {
             let (unfilled, new_reserves, output) = self.component.fill(input.amount, reserves)?;
             Ok((
