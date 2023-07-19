@@ -284,23 +284,23 @@ impl U128x128Var {
         let z2_raw = &x2 + &y2;
         let z3_raw = &x3 + &y3;
 
-        // z0 < 2^64 + 2^64 < 2^(65) => 65 bits
+        // z0 < (2^64 - 1) + (2^64 - 1) < 2^(65) => 65 bits
         let z0_bits = bit_constrain(z0_raw, 65)?; // no carry-in
         let z0 = UInt64::from_bits_le(&z0_bits[0..64]);
         let c1 = Boolean::<Fq>::le_bits_to_fp_var(&z0_bits[64..].to_bits_le()?)?;
 
-        // z1 < 2^64 + 2^64 + 2^64 < 2^(66) => 66 bits
-        let z1_bits = bit_constrain(z1_raw + c1, 66)?; // carry-in c1
+        // z1 < (2^64 - 1) + (2^64 - 1) + (2^64 - 1) < 2^(65) => 65 bits
+        let z1_bits = bit_constrain(z1_raw + c1, 65)?; // carry-in c1
         let z1 = UInt64::from_bits_le(&z1_bits[0..64]);
         let c2 = Boolean::<Fq>::le_bits_to_fp_var(&z1_bits[64..].to_bits_le()?)?;
 
-        // z2 < 2^64 + 2^64 + 2^64 < 2^(66) => 66 bits
-        let z2_bits = bit_constrain(z2_raw + c2, 66)?; // carry-in c2
+        // z2 < (2^64 - 1) + (2^64 - 1) + (2^64 - 1) < 2^(65) => 65 bits
+        let z2_bits = bit_constrain(z2_raw + c2, 65)?; // carry-in c2
         let z2 = UInt64::from_bits_le(&z2_bits[0..64]);
         let c3 = Boolean::<Fq>::le_bits_to_fp_var(&z2_bits[64..].to_bits_le()?)?;
 
-        // z3 < 2^64 + 2^64 + 2^64 < 2^(66) => 66 bits
-        let z3_bits = bit_constrain(z3_raw + c3, 66)?; // carry-in c3
+        // z3 < (2^64 - 1) + (2^64 - 1) + (2^64 - 1) < 2^(65) => 65 bits
+        let z3_bits = bit_constrain(z3_raw + c3, 65)?; // carry-in c3
         let z3 = UInt64::from_bits_le(&z3_bits[0..64]);
         let c4 = Boolean::<Fq>::le_bits_to_fp_var(&z3_bits[64..].to_bits_le()?)?;
 
