@@ -61,9 +61,6 @@ impl TryFrom<pb::Id> for Id {
 
     fn try_from(proto: pb::Id) -> Result<Id, anyhow::Error> {
         let hash = proto.hash;
-        if hash.len() != 32 {
-            return Err(anyhow::anyhow!("invalid transaction ID length"));
-        }
         let mut id = [0u8; 32];
         let id = hex::decode(&hash)?.try_into().map_err(|_| {
             anyhow::anyhow!(
