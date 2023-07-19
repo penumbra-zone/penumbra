@@ -345,6 +345,8 @@ pub(super) trait Inner: StateWrite {
                     // Add the contribution from the updated version.
                     current_a_from_b + new_position_contribution;
 
+                tracing::debug!(?pair, current_liquidity = ?current_a_from_b, ?new_position_contribution, "newly opened position, adding contribution to existing available liquidity for trading pair");
+
                 (new_a_from_b, current_a_from_b)
             }
             (State::Opened, Some(prev)) => {
@@ -404,6 +406,8 @@ pub(super) trait Inner: StateWrite {
                 // being correct, and add the contribution from the updated version.
                 (current_a_from_b - prev_position_contribution) + new_position_contribution;
 
+                tracing::debug!(?pair, current_liquidity = ?current_a_from_b, ?new_position_contribution, ?prev_position_contribution, "updated position, adding new contribution and subtracting previous contribution to existing available liquidity for trading pair");
+
                 (new_a_from_b, current_a_from_b)
             }
             (State::Closed, Some(prev)) => {
@@ -445,6 +449,8 @@ pub(super) trait Inner: StateWrite {
                 // Subtract the previous version of the position's contribution to represent that position no longer
                 // being correct, and since the updated version is Closed, it has no contribution.
                 current_a_from_b - prev_position_contribution;
+
+                tracing::debug!(?pair, current_liquidity = ?current_a_from_b, ?prev_position_contribution, "closed position, subtracting previous contribution to existing available liquidity for trading pair");
 
                 (new_a_from_b, current_a_from_b)
             }
