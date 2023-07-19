@@ -225,12 +225,17 @@ impl TxCmd {
     }
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         let fvk = app.fvk.clone();
-        let hash = self
+
+        println!("Pre-parsed hash: {:?}", self.hash);
+
+        let hash: penumbra_transaction::Id = self
             .hash
             // We have to convert to uppercase because `tendermint::Hash` only accepts uppercase :(
             .to_uppercase()
             .parse()
             .context("invalid transaction hash")?;
+
+        println!("Parsed hash: {:?}", hash.0);
 
         // Retrieve Transaction from the view service first, or else the fullnode
         let tx_info = if let Ok(tx_info) = app.view().transaction_info_by_hash(hash).await {

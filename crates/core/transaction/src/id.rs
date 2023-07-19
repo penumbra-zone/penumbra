@@ -62,7 +62,11 @@ impl TryFrom<pb::Id> for Id {
     fn try_from(proto: pb::Id) -> Result<Id, anyhow::Error> {
         let hash = proto.hash;
         if hash.len() != 32 {
-            return Err(anyhow::anyhow!("invalid transaction ID length"));
+            return Err(anyhow::anyhow!(
+                "invalid transaction ID length for hash: {:?} length: {:?}",
+                hash,
+                hash.len()
+            ));
         }
         let mut id = [0u8; 32];
         id.copy_from_slice(&hash);

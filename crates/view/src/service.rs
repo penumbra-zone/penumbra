@@ -537,16 +537,29 @@ impl ViewProtocolService for ViewService {
                 tonic::Status::failed_precondition("Error retrieving full viewing key")
             })?;
 
-        let maybe_tx = self
-            .storage
-            .transaction_by_hash(&request.id.clone().unwrap().hash)
-            .await
-            .map_err(|_| {
-                tonic::Status::failed_precondition(format!(
-                    "Error retrieving transaction by hash {}",
-                    hex::encode(&request.id.unwrap().hash)
-                ))
-            })?;
+        let id = request
+            .id
+            .ok_or_else(|| tonic::Status::invalid_argument("Missing transaction hash"))?;
+
+        let mut slicey = [0u8; 32];
+
+        slicey.copy_from_slice(&id.hash[..32]);
+
+        let id: penumbra_transaction::Id = penumbra_transaction::Id(slicey);
+
+        println!(
+            "ViewProtocolService.transaction_info_by_hash.id: {:?}",
+            &id.clone().0
+        );
+
+        // println!(
+        //     "ViewProtocolService.transaction_info_by_hash.id.0: {:?}",
+        //     &id.0
+        // );
+
+        let maybe_tx = self.storage.transaction_by_hash(&id.0).await.map_err(|_| {
+            tonic::Status::failed_precondition(format!("Error retrieving transaction by hash",))
+        })?;
 
         let Some((height, tx)) = maybe_tx else {
             return Ok(tonic::Response::new(pb::TransactionInfoByHashResponse::default()));

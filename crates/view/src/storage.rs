@@ -592,6 +592,8 @@ impl Storage {
         let pool = self.pool.clone();
         let tx_hash = tx_hash.to_vec();
 
+        println!("Storage.transaction_by_hash.hash: {:?}", &tx_hash);
+
         spawn_blocking(move || {
             if let Some((block_height, tx_bytes)) = pool
                 .get()?
