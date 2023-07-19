@@ -18,7 +18,10 @@ use penumbra_dex::{
 use penumbra_fee::Fee;
 use penumbra_ibc::IbcAction;
 use penumbra_keys::{FullViewingKey, PayloadKey};
-use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, Message, TypeUrl};
+use penumbra_proto::{
+    core::transaction::v1alpha1::{self as pbt},
+    DomainType, Message, TypeUrl,
+};
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{Note, Output, Spend};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
@@ -211,12 +214,13 @@ impl Transaction {
             None => None,
         };
 
-        let detection_data = match &self.transaction_body().detection_data {
-            Some(detection_data) => Some(DetectionData {
-                fmd_clues: detection_data.fmd_clues.clone(),
-            }),
-            None => None,
-        };
+        let detection_data =
+            self.transaction_body()
+                .detection_data
+                .as_ref()
+                .map(|detection_data| DetectionData {
+                    fmd_clues: detection_data.fmd_clues.clone(),
+                });
 
         TransactionView {
             body_view: TransactionBodyView {
@@ -520,10 +524,7 @@ impl TryFrom<pbt::DetectionData> for DetectionData {
 
 impl From<DetectionData> for pbt::DetectionData {
     fn from(msg: DetectionData) -> Self {
-        let mut fmd_clues = Vec::new();
-        for fmd_clue in msg.fmd_clues {
-            fmd_clues.push(fmd_clue.into());
-        }
+        let fmd_clues = msg.fmd_clues.into_iter().map(|x| x.into()).collect();
 
         pbt::DetectionData { fmd_clues }
     }
@@ -539,12 +540,21 @@ impl DomainType for TransactionBody {
 
 impl From<TransactionBody> for pbt::TransactionBody {
     fn from(msg: TransactionBody) -> Self {
+        let encrypted_memo: pbt::MemoData = match msg.memo {
+            Some(memo) => pbt::MemoData {
+                encrypted_memo: Some(bytes::Bytes::copy_from_slice(&memo.0)),
+            },
+            None => pbt::MemoData {
+                encrypted_memo: None,
+            },
+        };
+
         pbt::TransactionBody {
             actions: msg.actions.into_iter().map(|x| x.into()).collect(),
             transaction_parameters: Some(msg.transaction_parameters.into()),
             fee: Some(msg.fee.into()),
             detection_data: msg.detection_data.map(|x| x.into()),
-            encrypted_memo: msg.memo.map(|x| bytes::Bytes::copy_from_slice(&x.0)),
+            memo_data: Some(encrypted_memo),
         }
     }
 }
@@ -568,7 +578,11 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             .try_into()
             .context("fee malformed")?;
 
-        let memo = match proto.encrypted_memo {
+        let memo = match proto
+            .memo_data
+            .ok_or_else(|| anyhow::anyhow!("transaction body missing memo data field"))?
+            .encrypted_memo
+        {
             Some(bytes) => Some(
                 bytes[..]
                     .try_into()

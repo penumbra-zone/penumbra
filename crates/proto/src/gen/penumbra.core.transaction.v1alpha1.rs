@@ -41,9 +41,17 @@ pub struct TransactionBody {
     /// Detection data for use with Fuzzy Message Detection
     #[prost(message, optional, tag = "4")]
     pub detection_data: ::core::option::Option<DetectionData>,
-    /// An optional encrypted memo. It will only be populated if there are
-    /// outputs in the actions of this transaction. 528 bytes.
-    #[prost(bytes = "bytes", optional, tag = "5")]
+    /// Sub-message containing memo ciphertext if a memo was added to the transaction.
+    #[prost(message, optional, tag = "5")]
+    pub memo_data: ::core::option::Option<MemoData>,
+}
+/// Represents the encrypted memo data.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MemoData {
+    /// The encrypted data. It will only be populated if there are
+    /// outputs in the actions of the transaction. 528 bytes.
+    #[prost(bytes = "bytes", optional, tag = "1")]
     pub encrypted_memo: ::core::option::Option<::prost::bytes::Bytes>,
 }
 /// The parameters determining if a transaction should be accepted by the chain.
