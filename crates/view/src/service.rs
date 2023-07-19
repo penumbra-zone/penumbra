@@ -46,6 +46,8 @@ use url::Url;
 
 use crate::{Planner, Storage, Worker};
 
+use base64::decode;
+
 /// A service that synchronizes private chain state and responds to queries
 /// about it.
 ///
@@ -539,9 +541,24 @@ impl ViewProtocolService for ViewService {
                 tonic::Status::failed_precondition("Error retrieving full viewing key")
             })?;
 
+        let hash = request
+            .id
+            .as_ref()
+            .ok_or_else(|| tonic::Status::invalid_argument("Missing transaction hash"))?
+            .hash
+            .clone();
+
+        tracing::debug!(hash = ?hash, length = ?hash.len(), "requesting transaction by hash");
+
+        let hex_decoded_hash = hex::decode(&hash).map_err(|e| {
+            tonic::Status::invalid_argument(format!("Could not parse transaction hash: {e:#}"))
+        })?;
+
+        tracing::debug!(hex_decoded_hash = ?hex_decoded_hash, length = ?hex_decoded_hash.len(), "decoding hash to hex");
+
         let maybe_tx = self
             .storage
-            .transaction_by_hash(&request.id.clone().unwrap().hash)
+            .transaction_by_hash(&hex_decoded_hash)
             .await
             .map_err(|_| {
                 tonic::Status::failed_precondition(format!(

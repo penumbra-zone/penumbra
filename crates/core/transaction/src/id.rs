@@ -1,7 +1,6 @@
-use std::str::FromStr;
-
 use penumbra_proto::{penumbra::core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 /// A transaction ID (hash), the Sha256 hash used by Tendermint to identify transactions.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default)]
@@ -50,9 +49,13 @@ impl DomainType for Id {
 
 impl From<Id> for pb::Id {
     fn from(id: Id) -> pb::Id {
-        pb::Id {
-            hash: id.0.to_vec().into(),
-        }
+        tracing::debug!("From<Id> Id: {:?}", &id);
+
+        let hash = id.0.to_vec().into();
+
+        tracing::debug!("From<Id> pb::Id.hash {:?}", &hash);
+
+        pb::Id { hash }
     }
 }
 
@@ -61,11 +64,15 @@ impl TryFrom<pb::Id> for Id {
 
     fn try_from(proto: pb::Id) -> Result<Id, anyhow::Error> {
         let hash = proto.hash;
+
+        tracing::debug!("TryFrom<pb::Id> pb::Id.hash: {:?}", &hash);
         if hash.len() != 32 {
             return Err(anyhow::anyhow!("invalid transaction ID length"));
         }
         let mut id = [0u8; 32];
         id.copy_from_slice(&hash);
+
+        tracing::debug!("TryFrom<pb::Id> Id: {:?}", &Id(id));
         Ok(Id(id))
     }
 }

@@ -603,6 +603,9 @@ impl Storage {
         tx_hash: &[u8],
     ) -> anyhow::Result<Option<(u64, Transaction)>> {
         let pool = self.pool.clone();
+
+        tracing::debug!(hash = ?tx_hash, length = ?tx_hash.len(), "requesting transaction by hash");
+
         let tx_hash = tx_hash.to_vec();
 
         spawn_blocking(move || {
