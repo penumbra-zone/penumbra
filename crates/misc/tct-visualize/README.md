@@ -13,7 +13,7 @@ To run the interactive visualization in your browser, run:
 cargo run --release --bin tct-live-edit
 ```
 
-Then visit the page `http://0.0.0.0:8080` in your browser (the animations are smoothest and fastest in Chromium
+Then visit the page [`http://0.0.0.0:8080`] in your browser (the animations are smoothest and fastest in Chromium
 based browsers).
 
 Various options can be configured; for details, see:
