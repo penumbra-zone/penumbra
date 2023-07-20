@@ -93,6 +93,7 @@ Let’s say we have two actions in a transaction: one spend (indicated with subs
 The balance commitments for those actions are:
 
 $cv_o = [v_o] G_v + [rcv_o] G_{rcv}$
+
 $cv_s = [v_s] G_v + [rcv_s] G_{rcv}$
 
 where

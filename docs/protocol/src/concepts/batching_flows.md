@@ -8,7 +8,7 @@ public chain state, and the desire to shield value amounts in individual
 transactions.
 
 To address this tension, Penumbra provides a mechanism to aggregate value flows
-across a batch of transactions, revealing the only the total amount and not the
+across a batch of transactions, revealing only the total amount and not the
 value contributed by each individual transaction.  This mechanism is built using
 an integer-valued homomorphic encryption scheme that supports threshold
 decryption, so that the network's validators can jointly control a decryption

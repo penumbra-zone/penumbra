@@ -42,9 +42,9 @@ using the above witnessed values and where `ds` is a constant domain separator:
 
 The zk-SNARK certifies that for non-zero values $v \ne 0$, the public input balance commitment $cv$ was derived from the witnessed values as:
 
-$cv = [v] G_v + [\tilde v] G_{\tilde v}$
+$cv = [v] G_v + [\widetilde{v}] G_{\widetilde{v}}$
 
-where $G_{\tilde v}$ is a constant generator and $G_v$ is an asset-specific generator point derived as described in [Value Commitments](../../protocol/value_commitments.md).
+where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific generator point derived as described in [Value Commitments](../../protocol/value_commitments.md).
 
 ### Nullifier Integrity
 

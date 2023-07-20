@@ -5,7 +5,7 @@ delegators, Alice, Bob, and Charlie, and two validators, Victoria and
 William.  Tendermint consensus requires at least four validators and no one
 party controlling more than $1/3$ of the stake, but this example uses only a few parties just to illustrate the dynamics.
 
-For simplicity, the the base reward rates and commission rates
+For simplicity, the base reward rates and commission rates
 are fixed over all epochs at $r = 0.0006$ and $c_v = 0$, $c_w = 0.1$.
 The `PEN` and `dPEN` holdings of participant $a, b, c, \ldots$ are
 denoted by $x_a$, $y_a$, etc., respectively.
