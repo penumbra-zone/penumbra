@@ -66,6 +66,7 @@ RUN if [ "${TARGETARCH}" = "arm64" ]; then ARCH=aarch64; \
     cp /usr/src/target/${ARCH}-unknown-linux-gnu/release/pcli \
       /usr/src/target/${ARCH}-unknown-linux-gnu/release/pd \
       /usr/src/target/${ARCH}-unknown-linux-gnu/release/pclientd \
+      /usr/src/target/${ARCH}-unknown-linux-gnu/release/tct-live-edit \
       /root/bin
 
 # Use minimal busybox from Strangelove infra-toolkit image for final scratch image
