@@ -20,7 +20,7 @@ use penumbra_num::Amount;
 use penumbra_proto::{
     core::ibc::v1alpha1::FungibleTokenPacketData, StateReadProto, StateWriteProto,
 };
-use penumbra_shielded_pool::component::NoteManager;
+use penumbra_shielded_pool::component::{NoteManager, SupplyWrite};
 use penumbra_storage::{StateRead, StateWrite};
 use prost::Message;
 
@@ -319,6 +319,8 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
         );
 
         let denom: asset::DenomMetadata = prefixed_denomination.as_str().try_into().unwrap();
+        state.register_denom(&denom).await.unwrap();
+
         let value = Value {
             amount: receiver_amount,
             asset_id: denom.id(),
