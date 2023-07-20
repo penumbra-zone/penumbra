@@ -44,6 +44,7 @@ impl TradingFunction {
         input: Value,
         reserves: &Reserves,
     ) -> anyhow::Result<(Value, Reserves, Value)> {
+        tracing::debug!(?input, ?reserves, "filling trade");
         if input.asset_id == self.pair.asset_1() {
             let (unfilled, new_reserves, output) = self.component.fill(input.amount, reserves)?;
             Ok((
@@ -412,7 +413,7 @@ impl BareTradingFunction {
         price_ratio.checked_div(&self.gamma()).expect("gamma != 0")
     }
 
-    /// Converts an amount `delta_1` into `lambda_2`, using the id effective price inverse.
+    /// Converts an amount `delta_1` into `lambda_2`, using the inverse of the effective price.
     pub fn convert_to_lambda_2(&self, delta_1: U128x128) -> anyhow::Result<U128x128> {
         let lambda_2 = self.effective_price_inv() * delta_1;
         Ok(lambda_2?)

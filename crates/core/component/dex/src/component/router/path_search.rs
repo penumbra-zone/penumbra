@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use futures::StreamExt;
 use penumbra_asset::asset;
 use penumbra_num::fixpoint::U128x128;
 use penumbra_storage::{StateDelta, StateRead};
@@ -95,22 +96,23 @@ async fn relax_path<S: StateRead + 'static>(
     mut path: Path<S>,
     fixed_candidates: Arc<Vec<asset::Id>>,
 ) -> Result<()> {
-    let candidates = path
+    let mut candidates = path
         .state
         .candidate_set(*path.end(), fixed_candidates)
-        .instrument(path.span.clone())
-        .await?;
+        .instrument(path.span.clone());
 
     path.span.in_scope(|| {
-        tracing::debug!(degree = ?candidates.len(), ?candidates, "relaxing path");
+        tracing::debug!("relaxing path");
     });
 
     let mut js = JoinSet::new();
-    for new_end in candidates {
+    // while let Some(new_end) = candidates {
+
+    while let Some(new_end) = candidates.inner_mut().next().await {
         let new_path = path.fork();
         let cache2 = cache.clone();
         js.spawn(async move {
-            if let Some(new_path) = new_path.extend_to(new_end).await? {
+            if let Some(new_path) = new_path.extend_to(new_end?).await? {
                 cache2.lock().consider(new_path)
             }
             anyhow::Ok(())
