@@ -56,6 +56,18 @@ impl Amount {
             .checked_sub(rhs.inner)
             .map(|inner| Self { inner })
     }
+
+    pub fn saturating_add(&self, rhs: &Self) -> Self {
+        Self {
+            inner: self.inner.saturating_add(rhs.inner),
+        }
+    }
+
+    pub fn saturating_sub(&self, rhs: &Self) -> Self {
+        Self {
+            inner: self.inner.saturating_sub(rhs.inner),
+        }
+    }
 }
 
 #[derive(Clone)]

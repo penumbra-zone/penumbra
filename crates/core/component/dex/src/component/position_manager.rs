@@ -7,7 +7,6 @@ use async_trait::async_trait;
 use futures::Stream;
 use futures::StreamExt;
 use penumbra_asset::asset;
-use penumbra_asset::Value;
 use penumbra_num::Amount;
 use penumbra_proto::DomainType;
 use penumbra_proto::{StateReadProto, StateWriteProto};
@@ -324,26 +323,15 @@ pub(super) trait Inner: StateWrite {
                     .unwrap_or_default();
 
                 // Use the new reserves to compute `new_position_contribution`,
-                // the amount of asset A purchasable with all reserves of asset B.
+                // the amount of asset A contributed by the position (i.e. the reserves of asset A).
                 let new_position_contribution = position
-                    .phi
-                    // Return the amount of asset A purchasable with all reserves of asset B.
-                    .fill(
-                        Value {
-                            asset_id: pair.end,
-                            amount: position
-                                .reserves_for(pair.end)
-                                .expect("specified position should match provided trading pair"),
-                        },
-                        &position.reserves,
-                    )?
-                    .2
-                    .amount;
+                    .reserves_for(pair.start)
+                    .expect("specified position should match provided trading pair");
 
                 // Compute `new_A_from_B`.
                 let new_a_from_b =
                     // Add the contribution from the updated version.
-                    current_a_from_b + new_position_contribution;
+                    current_a_from_b.saturating_add(&new_position_contribution);
 
                 tracing::debug!(?pair, current_liquidity = ?current_a_from_b, ?new_position_contribution, "newly opened position, adding contribution to existing available liquidity for trading pair");
 
@@ -366,45 +354,22 @@ pub(super) trait Inner: StateWrite {
                     })
                     .unwrap_or_default();
 
-                // Get the previous reserves of this position, or zero if the position is newly added.
-                let prev_reserves = &prev.reserves;
-
                 // Use the previous reserves to compute `prev_position_contribution` (denominated in asset_1).
                 let prev_position_contribution = prev
-                    .phi
-                    // Return the amount of asset A purchasable with all reserves of asset B.
-                    .fill(
-                        Value {
-                            asset_id: pair.end,
-                            amount: prev.reserves_for(pair.end).unwrap_or_default(),
-                        },
-                        &prev_reserves,
-                    )?
-                    .2
-                    .amount;
+                    .reserves_for(pair.start)
+                    .expect("specified position should match provided trading pair");
 
                 // Use the new reserves to compute `new_position_contribution`,
-                // the amount of asset A purchasable with all reserves of asset B.
+                // the amount of asset A contributed by the position (i.e. the reserves of asset A).
                 let new_position_contribution = position
-                    .phi
-                    // Return the amount of asset A purchasable with all reserves of asset B.
-                    .fill(
-                        Value {
-                            asset_id: pair.end,
-                            amount: position
-                                .reserves_for(pair.end)
-                                .expect("specified position should match provided trading pair"),
-                        },
-                        &position.reserves,
-                    )?
-                    .2
-                    .amount;
+                    .reserves_for(pair.start)
+                    .expect("specified position should match provided trading pair");
 
                 // Compute `new_A_from_B`.
                 let new_a_from_b =
                 // Subtract the previous version of the position's contribution to represent that position no longer
                 // being correct, and add the contribution from the updated version.
-                (current_a_from_b - prev_position_contribution) + new_position_contribution;
+                (current_a_from_b.saturating_sub(&prev_position_contribution)).saturating_add(&new_position_contribution);
 
                 tracing::debug!(?pair, current_liquidity = ?current_a_from_b, ?new_position_contribution, ?prev_position_contribution, "updated position, adding new contribution and subtracting previous contribution to existing available liquidity for trading pair");
 
@@ -427,28 +392,16 @@ pub(super) trait Inner: StateWrite {
                     })
                     .unwrap_or_default();
 
-                // Get the previous reserves of this position, or zero if the position is newly added.
-                let prev_reserves = &prev.reserves;
-
                 // Use the previous reserves to compute `prev_position_contribution` (denominated in asset_1).
                 let prev_position_contribution = prev
-                    .phi
-                    // Return the amount of asset A purchasable with all reserves of asset B.
-                    .fill(
-                        Value {
-                            asset_id: pair.end,
-                            amount: prev.reserves_for(pair.end).unwrap_or_default(),
-                        },
-                        &prev_reserves,
-                    )?
-                    .2
-                    .amount;
+                    .reserves_for(pair.start)
+                    .expect("specified position should match provided trading pair");
 
                 // Compute `new_A_from_B`.
                 let new_a_from_b =
                 // Subtract the previous version of the position's contribution to represent that position no longer
                 // being correct, and since the updated version is Closed, it has no contribution.
-                current_a_from_b - prev_position_contribution;
+                current_a_from_b.saturating_sub(&prev_position_contribution);
 
                 tracing::debug!(?pair, current_liquidity = ?current_a_from_b, ?prev_position_contribution, "closed position, subtracting previous contribution to existing available liquidity for trading pair");
 
