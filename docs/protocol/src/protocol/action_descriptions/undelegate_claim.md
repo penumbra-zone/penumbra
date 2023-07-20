@@ -19,9 +19,9 @@ And the corresponding public inputs:
 
 The zk-SNARK certifies that the public input balance commitment $cv$ was derived from the witnessed values as:
 
-$cv = v_e + [\tilde v] G_{\tilde v}$
+$cv = v_e + [\widetilde{v}] G_{\widetilde{v}}$
 
-where $G_{\tilde v}$ is a constant generator.
+where $G_{\widetilde{v}}$ is a constant generator.
 
 $v_e$ is the expected balance computed from the penalty $p$, the unbonding
 amount $v_u$ and the unbonding asset ID $G_u$:

@@ -31,7 +31,7 @@ adjusted by governance.
 
 Each validator declares a set of funding streams, which comprise both the
 destinations of their commission and the total commission rate $c_{v,e} \in
-[0,1]$. $c{v,e}$ is subtracted from the base reward rate to get a
+[0,1]$. $c_{v,e}$ is subtracted from the base reward rate to get a
 validator-specific reward rate $$r_{v,e} = (1 - c_{v,e})r_e.$$.
 
 The base exchange rate between `PEN` and `dPEN` is given by the function
