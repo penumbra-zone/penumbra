@@ -16,7 +16,7 @@ The swap proof demonstrates the properties enumerated below for the private witn
   * Diversified basepoint $B_d \isin \mathbb G$ corresponding to the claim address
   * Transmission key $pk_d \isin \mathbb G$ corresponding to the claim address
   * Clue key $\mathsf{ck_d} \isin \mathbb F_q$ corresponding to the claim address
-* Fee blinding factor $\tilde v_f \isin \mathbb F_r$ used to blind the fee commitment
+* Fee blinding factor $\widetilde{v_f} \isin \mathbb F_r$ used to blind the fee commitment
 
 And the corresponding public inputs:
 

@@ -52,12 +52,11 @@ the specific instantiation.
 ###### `FlowEnc/Encrypt`
 
 This an algorithm run by users. On input an encryption key $D$ and the opening
-$(v, \widetilde v)$
+$(v, \widetilde{v})$
 to a Pedersen commitment $C$, this algorithm outputs a
 ciphertext $E = \operatorname{Enc}(v)$ and a proof $\pi_{\operatorname{Enc}}$ which establishes that
 $E = \operatorname{Enc}(v)$ is well-formed and is consistent, in the sense that it
-encrypts the same value committed to by $C = \operatorname{Commit}(v, \widetilde
-v)$.
+encrypts the same value committed to by $C = \operatorname{Commit}(v, \widetilde{v})$.
 
 We assume that all ciphertexts are submitted to the ledger, which verifies 
 $\pi_{\operatorname{Enc}}$ along with any other application-specific validity

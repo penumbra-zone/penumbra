@@ -7,7 +7,7 @@ Each undelegate claim contains a UndelegateClaimBody and a zk-SNARK undelegate c
 The undelegate claim proof demonstrates the properties enumerated below for the private witnesses known by the prover:
 
 * Unbonding amount $v_u$ interpreted as an $\mathbb F_q$
-* Balance blinding factor $\tilde v \isin \mathbb F_r$ used to blind the balance commitment
+* Balance blinding factor $\widetilde{v} \isin \mathbb F_r$ used to blind the balance commitment
 
 And the corresponding public inputs:
 
