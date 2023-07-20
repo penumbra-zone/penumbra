@@ -75,11 +75,8 @@ pub trait Ics20TransferWriteExt: StateWrite {
         // create packet, assume it's already checked since the component caller contract calls `check` before `execute`
         let checked_packet = IBCPacket::<Unchecked>::from(withdrawal.clone()).assume_checked();
 
-        if is_source(
-            &withdrawal.source_port,
-            &withdrawal.source_channel,
-            &withdrawal.denom,
-        ) {
+        let prefix = format!("{}/{}/", &withdrawal.source_port, &withdrawal.source_channel);
+        if !withdrawal.denom.starts_with(&prefix) {
             // we are the source. add the value balance to the escrow channel.
             let existing_value_balance: Amount = self
                 .get(&state_key::ics20_value_balance(
