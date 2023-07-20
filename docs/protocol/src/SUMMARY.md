@@ -34,6 +34,7 @@
     - [The `eddy` construction](./crypto/flow/eddy.md)
     - [Distributed Key Generation](./crypto/flow-encryption/dkg.md)
     - [Homomorphic Threshold Encryption](./crypto/flow-encryption/threshold-encryption.md)
+- [Groth 16 Setup Ceremony](./setup.md)
 - [Addresses and Keys](./protocol/addresses_keys.md)
   - [Spending Keys](./protocol/addresses_keys/spend_key.md)
   - [Viewing Keys](./protocol/addresses_keys/viewing_keys.md)
