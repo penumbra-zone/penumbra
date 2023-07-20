@@ -275,13 +275,15 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             sequence: msg.packet.sequence,
         };
 
+        let ack_bytes = commit_acknowledgement(&msg.acknowledgement).encode_to_vec();
+
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
             &connection.counterparty.prefix.clone().into(),
             &msg.proof_acked_on_b,
             &trusted_consensus_state.root,
             ack_path,
-            msg.acknowledgement.clone().into(),
+            ack_bytes,
         )?;
 
         Ok(())
