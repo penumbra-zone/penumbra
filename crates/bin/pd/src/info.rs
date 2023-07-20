@@ -468,7 +468,7 @@ impl Info {
                         return Err(anyhow::anyhow!("packet sequence {} cannot be 0", seq));
                     }
 
-                    if snapshot
+                    if !snapshot
                         .seen_packet_by_channel(&chan_id, &port_id, seq)
                         .await?
                     {
@@ -515,7 +515,7 @@ impl Info {
                         return Err(anyhow::anyhow!("packet sequence {} cannot be 0", seq));
                     }
 
-                    if snapshot
+                    if !snapshot
                         .get_packet_commitment_by_id(&chan_id, &port_id, seq)
                         .await?
                         .is_some()

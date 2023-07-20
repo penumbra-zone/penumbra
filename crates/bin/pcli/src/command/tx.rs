@@ -832,10 +832,10 @@ impl TxCmd {
                 let current_height = app.view().status(account_group_id).await?.sync_height;
 
                 // get the current time on the local machine
-                let current_time_u64 = SystemTime::now()
+                let current_time_u64_ms = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards")
-                    .as_secs();
+                    .as_nanos() as u64;
 
                 let mut timeout_height = *timeout_height;
                 if timeout_height == 0u64 {
@@ -845,7 +845,7 @@ impl TxCmd {
                 let mut timeout_timestamp = *timeout_timestamp;
                 if timeout_timestamp == 0u64 {
                     // add 2 days to current time
-                    timeout_timestamp = current_time_u64 + 172800u64;
+                    timeout_timestamp = current_time_u64_ms + 1.728e14 as u64;
                 }
 
                 let denom = asset::REGISTRY.parse_denom(denom).ok_or_else(|| {
