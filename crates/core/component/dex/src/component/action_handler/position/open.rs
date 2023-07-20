@@ -18,17 +18,13 @@ impl ActionHandler for PositionOpen {
     async fn check_stateless(&self, _context: ()) -> Result<()> {
         // TODO(chris, erwan, henry): brainstorm safety on `TradingFunction`.
         // Check:
-        //  + reserves are at most 112 bits wide,
+        //  + reserves are at most 80 bits wide,
+        //  + the trading function coefficients are at most 80 bits wide.
         //  + at least some assets are provisioned.
-        //  + the trading function coefficients are at most 112 bits wide.
         //  + the trading function coefficients are non-zero,
         //  + the trading function doesn't specify a cyclic pair,
         //  + the fee is <=50%.
-        //  + if the position is a limit-order, it only quotes one asset.
         self.position.check_stateless()?;
-        // This is a temporary check that limits DEX values to 60 bits.
-        // To lift this check, delete this line and the method it invokes.
-        self.position.temporary_check()?;
         Ok(())
     }
 
@@ -40,11 +36,8 @@ impl ActionHandler for PositionOpen {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        // Write the newly opened position.
         state.put_position(self.position.clone()).await?;
-
         state.record(event::position_open(&self));
-
         Ok(())
     }
 }

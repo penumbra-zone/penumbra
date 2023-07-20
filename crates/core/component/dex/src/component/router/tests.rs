@@ -1662,14 +1662,13 @@ async fn path_search_testnet_53_1_reproduction() -> anyhow::Result<()> {
     let Some(path_entry) = cache_guard.0.remove(&penumbra.id()) else {
         panic!("Path entry not found");
     };
-
-    let path_price = path_entry.path.price;
-    let spill_price = path_entry.spill.unwrap().price;
+    // `U128x128` can be approximated to `f64` for comparison purposes.
+    let path_price: f64 = path_entry.path.price.into();
+    let spill_price: f64 = path_entry.spill.unwrap().price.into();
     tracing::debug!("path start: {}", path_entry.path.start);
     tracing::debug!("hops: {:?}", path_entry.path.nodes);
-
-    let correct_path_price = U128x128::ratio(1u64, 10u64).unwrap();
-    let correct_spill_price = U128x128::ratio(2u64, 10u64).unwrap();
+    let correct_path_price = 0.1f64;
+    let correct_spill_price = 0.2f64;
 
     assert_eq!(
         path_price, correct_path_price,
@@ -1677,11 +1676,9 @@ async fn path_search_testnet_53_1_reproduction() -> anyhow::Result<()> {
         path_price, correct_path_price
     );
     assert_eq!(
-        spill_price,
-        U128x128::ratio(2u64, 10u64).unwrap(),
+        spill_price, correct_spill_price,
         "check that the spill price is correct (correct={}, actual={})",
-        spill_price,
-        correct_spill_price
+        spill_price, correct_spill_price
     );
 
     Ok(())

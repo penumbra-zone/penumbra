@@ -16,6 +16,7 @@ You must run Chrome in order to follow the instructions below.
 3. Click **Get started** to proceed with wallet configuration.
 
 ## Generating a wallet
+
 You'll be offered to import a pre-existing wallet. If you don't already have one, choose **Create a new wallet**.
 During the guided tutorial, you'll need to set a passphrase to protect your wallet. The passphrase
 is *not* the same as the recovery phrase. The passphrase is used to restrict access to the web wallet
@@ -68,3 +69,33 @@ As of Testnet 53, only the **Send** action is supported. Check back on
 subsequent versions to follow progress as we implement more advanced
 functionality in the web wallet.
 
+## Upgrading to a new testnet
+
+When a new testnet is released, you'll need to clear the existing state
+from the extension, much like running `pcli view reset` is required
+on the command-line. To synchronize with a new testnet:
+
+1. Click the *Penumbra Wallet* option in the extensions drop-down menu,
+   next to the URL bar.
+2. Unlock the wallet by providing your passphrase, if prompted.
+3. Click the gear icon in the top right corner of the overlay.
+4. Choose **Advanced -> Clear Cache -> Confirm**.
+
+Then navigate to [https://app.testnet.penumbra.zone/](https://app.testnet.penumbra.zone/)
+again and reauthorize the connection. The extension will automatically sync
+with the new chain.
+
+## Updating to a new version of the extension
+
+The extension should be automatically updated every time a new version is released.
+You can view the latest version of the extension at the [Chrome Web Store].
+To force a check for updates:
+
+1. Click the three-dot icon in the top right corner of the browser.
+2. From the drop-down menu, choose **Extensions -> Manage Extensions**.
+3. Select **Update** on the top panel.
+
+After updating the extension manually, it may be helpful to clear the local cache,
+as described above.
+
+[Chrome Web Store]: https://chrome.google.com/webstore/detail/penumbra-wallet/lkpmkhpnhknhmibgnmmhdhgdilepfghe/

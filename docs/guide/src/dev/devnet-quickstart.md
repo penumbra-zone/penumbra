@@ -17,9 +17,10 @@ This will write configs to `~/.penumbra/testnet_data/`.
 
 ## Running `pd`
 
-You'll probably want to set `RUST_LOG`.  Here's one suggestion:
+You'll probably want to set `RUST_LOG`.  Here's one suggestion that's quite verbose:
 
 ```shell
+# Optional. Expect about 20GB/week of log data for pd with settings below.
 export RUST_LOG="info,pd=debug,penumbra=debug,jmt=debug"
 ```
 

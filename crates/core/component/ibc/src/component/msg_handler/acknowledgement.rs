@@ -2,7 +2,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::core::{
     channel::channel::Order as ChannelOrder, channel::channel::State as ChannelState,
-    channel::msgs::MsgAcknowledgement, channel::PortId, connection::State as ConnectionState,
+    channel::events, channel::msgs::MsgAcknowledgement, channel::PortId,
+    connection::State as ConnectionState,
 };
 use penumbra_storage::StateWrite;
 
@@ -14,8 +15,6 @@ use crate::component::{
     transfer::Ics20Transfer,
     MsgHandler,
 };
-
-use crate::event;
 
 #[async_trait]
 impl MsgHandler for MsgAcknowledgement {
@@ -96,7 +95,20 @@ impl MsgHandler for MsgAcknowledgement {
             self.packet.sequence.into(),
         );
 
-        state.record(event::acknowledge_packet(&self.packet, &channel));
+        state.record(
+            events::packet::AcknowledgePacket {
+                timeout_height: self.packet.timeout_height_on_b,
+                timeout_timestamp: self.packet.timeout_timestamp_on_b,
+                sequence: self.packet.sequence,
+                src_port_id: self.packet.port_on_a.clone(),
+                src_channel_id: self.packet.chan_on_a.clone(),
+                dst_port_id: self.packet.port_on_b.clone(),
+                dst_channel_id: self.packet.chan_on_b.clone(),
+                channel_ordering: channel.ordering,
+                src_connection_id: channel.connection_hops[0].clone(),
+            }
+            .into(),
+        );
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {

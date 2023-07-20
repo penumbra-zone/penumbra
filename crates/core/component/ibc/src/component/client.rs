@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 
-use ibc_types::core::client::msgs::MsgUpdateClient;
 use ibc_types::core::client::ClientId;
 use ibc_types::core::client::ClientType;
 use ibc_types::core::client::Height;
@@ -15,10 +14,7 @@ use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 
-use crate::{
-    component::client_counter::{ics02_validation, ClientCounter, VerifiedHeights},
-    event,
-};
+use crate::component::client_counter::{ClientCounter, VerifiedHeights};
 
 use super::state_key;
 
@@ -32,44 +28,6 @@ use super::state_key;
 
 #[async_trait]
 pub(crate) trait Ics2ClientExt: StateWrite {
-    // execute a UpdateClient IBC action. this assumes that the UpdateClient has already been
-    // validated, including header verification.
-    async fn execute_update_client(&mut self, msg_update_client: &MsgUpdateClient) -> Result<()> {
-        // TODO(erwan): deferred client state deserialization means `execute_update_client` is faillible
-        // see ibc-rs ADR004: https://github.com/cosmos/ibc-rs/blob/main/docs/architecture/adr-004-light-client-crates-extraction.md#light-client-specific-code
-        let tm_header = ics02_validation::get_tendermint_header(msg_update_client.header.clone())?;
-
-        // get the latest client state
-        let client_state = self
-            .get_client_state(&msg_update_client.client_id)
-            .await
-            .unwrap();
-
-        let (next_tm_client_state, next_tm_consensus_state) = self
-            .next_tendermint_state(
-                msg_update_client.client_id.clone(),
-                client_state.clone(),
-                tm_header.clone(),
-            )
-            .await;
-
-        // store the updated client and consensus states
-        self.put_client(&msg_update_client.client_id, next_tm_client_state);
-        self.put_verified_consensus_state(
-            tm_header.height(),
-            msg_update_client.client_id.clone(),
-            next_tm_consensus_state,
-        )
-        .await
-        .unwrap();
-
-        self.record(event::update_client(
-            msg_update_client.client_id.clone(),
-            tm_header,
-        ));
-        Ok(())
-    }
-
     // given an already verified tendermint header, and a trusted tendermint client state, compute
     // the next client and consensus states.
     async fn next_tendermint_state(
@@ -395,6 +353,7 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
+    use ibc_types::core::client::msgs::MsgUpdateClient;
     use ibc_types::{core::client::msgs::MsgCreateClient, DomainType};
     use penumbra_chain::component::StateWriteExt;
     use penumbra_component::ActionHandler;

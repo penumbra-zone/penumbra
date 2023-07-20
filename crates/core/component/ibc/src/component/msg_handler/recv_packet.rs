@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use ibc_types::core::{
     channel::{
         channel::{Order as ChannelOrder, State as ChannelState},
+        events,
         msgs::MsgRecvPacket,
         PortId,
     },
@@ -12,16 +13,13 @@ use ibc_types::core::{
 use penumbra_chain::component::StateReadExt;
 use penumbra_storage::StateWrite;
 
-use crate::{
-    component::{
-        app_handler::{AppHandlerCheck, AppHandlerExecute},
-        channel::{StateReadExt as _, StateWriteExt},
-        connection::StateReadExt as _,
-        proof_verification::PacketProofVerifier,
-        transfer::Ics20Transfer,
-        MsgHandler,
-    },
-    event,
+use crate::component::{
+    app_handler::{AppHandlerCheck, AppHandlerExecute},
+    channel::{StateReadExt as _, StateWriteExt},
+    connection::StateReadExt as _,
+    proof_verification::PacketProofVerifier,
+    transfer::Ics20Transfer,
+    MsgHandler,
 };
 
 #[async_trait]
@@ -123,7 +121,21 @@ impl MsgHandler for MsgRecvPacket {
             state.put_packet_receipt(&self.packet);
         }
 
-        state.record(event::receive_packet(&self.packet, &channel));
+        state.record(
+            events::packet::ReceivePacket {
+                packet_data: self.packet.data.clone(),
+                timeout_height: self.packet.timeout_height_on_b.clone(),
+                timeout_timestamp: self.packet.timeout_timestamp_on_b.clone(),
+                sequence: self.packet.sequence.clone(),
+                src_port_id: self.packet.port_on_a.clone(),
+                src_channel_id: self.packet.chan_on_a.clone(),
+                dst_port_id: self.packet.port_on_b.clone(),
+                dst_channel_id: self.packet.chan_on_b.clone(),
+                channel_ordering: channel.ordering.clone(),
+                dst_connection_id: channel.connection_hops[0].clone(),
+            }
+            .into(),
+        );
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {

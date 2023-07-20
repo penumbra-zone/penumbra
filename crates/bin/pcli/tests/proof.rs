@@ -268,8 +268,7 @@ fn swap_claim_parameters_vs_current_swap_claim_circuit() {
         trading_pair: swap_plaintext.trading_pair,
         epoch_starting_height: (epoch_duration * position.epoch()).into(),
     };
-    let (lambda_1, lambda_2) = output_data
-        .pro_rata_outputs((delta_1_i.try_into().unwrap(), delta_2_i.try_into().unwrap()));
+    let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
     let (output_rseed_1, output_rseed_2) = swap_plaintext.output_rseeds();
     let note_blinding_1 = output_rseed_1.derive_note_blinding();
@@ -301,7 +300,7 @@ fn swap_claim_parameters_vs_current_swap_claim_circuit() {
     .expect("can create proof");
 
     let proof_result = proof.verify(
-        &vk,
+        vk,
         anchor,
         nullifier,
         fee,
@@ -392,7 +391,7 @@ fn nullifier_derivation_parameters_vs_current_nullifier_derivation_circuit() {
         NullifierDerivationProof::prove(&mut rng, pk, position, note.clone(), nk, nullifier)
             .expect("can create proof");
 
-    let proof_result = proof.verify(vk, position, note, nullifier);
+    let proof_result = proof.verify(vk, position, note.commit(), nullifier);
 
     assert!(proof_result.is_ok());
 }

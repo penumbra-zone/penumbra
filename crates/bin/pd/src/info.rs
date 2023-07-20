@@ -342,11 +342,15 @@ impl Info {
                 let mut commitment_states = vec![];
                 let commitment_counter = snapshot.get_send_sequence(&chan_id, &port_id).await?;
 
-                for commitment_idx in 0..commitment_counter {
+                // this starts at 1; the first commitment index is 1 (from ibc spec)
+                for commitment_idx in 1..commitment_counter {
                     let commitment = snapshot
                         .get_packet_commitment_by_id(&chan_id, &port_id, commitment_idx)
-                        .await?
-                        .ok_or(anyhow::anyhow!("couldnt find commitment"))?;
+                        .await?;
+                    if commitment.is_none() {
+                        continue;
+                    }
+                    let commitment = commitment.unwrap();
 
                     let commitment_state = PacketState {
                         port_id: request.port_id.clone(),
@@ -467,7 +471,7 @@ impl Info {
                         return Err(anyhow::anyhow!("packet sequence {} cannot be 0", seq));
                     }
 
-                    if snapshot
+                    if !snapshot
                         .seen_packet_by_channel(&chan_id, &port_id, seq)
                         .await?
                     {

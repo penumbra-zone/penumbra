@@ -42,7 +42,7 @@ The zk-SNARK certifies that the public input fee commitment $cv_f$ was derived f
 
 $cv_f = [v_f] G_{v_f} + [\tilde v_f] G_{\tilde v}$
 
-where $G_{\tilde v}$ is a constant generator and $G_{v_f}$ is an asset-specific generator point derived as described in [Value Commitments](../../value_commitments.md).  
+where $G_{\tilde v}$ is a constant generator and $G_{v_f}$ is an asset-specific generator point derived as described in [Value Commitments](../../protocol/value_commitments.md).
 
 ### Balance Commitment Integrity
 

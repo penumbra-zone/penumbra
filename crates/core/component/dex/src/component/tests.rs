@@ -107,18 +107,23 @@ async fn single_limit_order() -> anyhow::Result<()> {
     //          * swap_3: fills what is left
     //          -> reserves are updated correctly
 
-    // Test 1: We're trying to fill the entire order.
+    // Test 1: we exhaust the entire position.
+    // In theory, we would only need to swap 100_000gm, to get back
+    // 120_000gn, with no unfilled amount and resulting reserves of 100_000gm and 0gn.
+    // However, since we have to account for rounding, we need to swap 100_001gm which
+    // gets us back 120_000gn. The unfilled amount is 1gm, and the resulting reserves are
+    // 100_000gm and 0gn.
     let delta_gm = Value {
-        amount: 100_000u64.into(),
+        amount: 100_001u64.into(),
         asset_id: gm.id(),
     };
 
-    let lambda_gm = Value {
-        amount: 0u64.into(),
+    let expected_lambda_gm = Value {
+        amount: 1u64.into(),
         asset_id: gm.id(),
     };
 
-    let lambda_gn = Value {
+    let expected_lambda_gn = Value {
         amount: 120_000u64.into(),
         asset_id: gn.id(),
     };
@@ -132,8 +137,8 @@ async fn single_limit_order() -> anyhow::Result<()> {
         .unwrap();
     let output = execution.output;
 
-    assert_eq!(unfilled, lambda_gm.amount);
-    assert_eq!(output, lambda_gn);
+    assert_eq!(unfilled, expected_lambda_gm.amount);
+    assert_eq!(output, expected_lambda_gn);
 
     let position = state_test_1
         .position_by_id(&position_1_id)
@@ -142,8 +147,10 @@ async fn single_limit_order() -> anyhow::Result<()> {
         .unwrap();
 
     // Check that the position is filled
-    assert_eq!(position.reserves.r1, delta_gm.amount);
     assert_eq!(position.reserves.r2, Amount::zero());
+    // We got back 1gm of unfilled amount
+    let expected_r1 = delta_gm.amount.checked_sub(&unfilled).unwrap();
+    assert_eq!(position.reserves.r1, expected_r1);
 
     let route_to_gm = vec![gm.id()];
     // Now we try to fill the order a second time, this should leave the position untouched.
@@ -158,12 +165,12 @@ async fn single_limit_order() -> anyhow::Result<()> {
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(position.reserves.r1, delta_gm.amount);
+    assert_eq!(position.reserves.r1, expected_r1);
     assert_eq!(position.reserves.r2, Amount::zero());
 
     // Now let's try to do a "round-trip" i.e. fill the order in the other direction:
     let delta_gn = Value {
-        amount: 120_000u64.into(),
+        amount: 120_001u64.into(),
         asset_id: gn.id(),
     };
 
@@ -177,7 +184,7 @@ async fn single_limit_order() -> anyhow::Result<()> {
         .unwrap();
     let output = execution.output;
 
-    assert_eq!(unfilled, Amount::zero(),);
+    assert_eq!(unfilled, Amount::from(1u64));
     assert_eq!(
         output,
         Value {
@@ -212,26 +219,48 @@ async fn single_limit_order() -> anyhow::Result<()> {
         let output = execution.output;
 
         // We check that there are no unfilled `gm`s resulting from executing the order
-        assert_eq!(unfilled, Amount::zero());
-        // And that for every `1000gm`, we get `1200gn` as desired.
+        assert_eq!(unfilled, Amount::from(0u64));
+        // And that for every `1000gm`, we get `1199gn`.
         assert_eq!(
             output,
             Value {
-                amount: 1200u64.into(),
+                amount: 1199u64.into(),
                 asset_id: gn.id(),
             }
         );
     }
 
+    // After executing 100 swaps of `1000gm` into `gn`. We should have acquried `1199gn*100` or `119900gn`.
+    // We consume the last `100gn` in the next swap.
+    let delta_gm = Value {
+        amount: 84u64.into(),
+        asset_id: gm.id(),
+    };
+    let execution = state_tx.fill_route(delta_gm, &route_to_gn, None).await?;
+    let unfilled = delta_gm
+        .amount
+        .checked_sub(&execution.input.amount)
+        .unwrap();
+    let output = execution.output;
+    assert_eq!(unfilled, Amount::from(0u64));
+    assert_eq!(
+        output,
+        Value {
+            amount: 100u64.into(),
+            asset_id: gn.id(),
+        }
+    );
+
     // Now, we want to verify that the position is updated with the correct reserves.
-    // We should have depleted the order of all its `gn`s, and replaced it with `100_000gm`.
+    // We should have depleted the order of all its `gn`s, and replaced it with `100_084gm`
+    // This accounts for the rounding behavior that arises when swapping smaller quantities.
     let position = state_tx
         .position_by_id(&position_1_id)
         .await
         .unwrap()
         .unwrap();
 
-    assert_eq!(position.reserves.r1, 100_000u64.into());
+    assert_eq!(position.reserves.r1, 100_084u64.into());
     assert_eq!(position.reserves.r2, Amount::zero());
 
     Ok(())
@@ -815,7 +844,7 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
      *
      * The arbitrage logic should detect that it can sell 1 penumbra for 110 test_usd,
      * (Position A), and buy it back for 100 test_usd (Position B), and thus make a profit
-     * of 0.1 penumbra. The execution price on the cycle is 0.909 penumbra/test_usd/penumbra, and the
+     * of ~0.1 penumbra. The execution price on the cycle is 0.909 penumbra/test_usd/penumbra, and the
      * spill price is 1 penumbra/test_usd/penumbra.
      *
      * So the arbitrage logic found a profitable cycle, and executed it. In this setup,
@@ -863,7 +892,8 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
     .await??;
 
     tracing::info!(profit = ?arb_profit, "the arbitrage logic has concluded!");
-    let profit: Value = "0.1penumbra".parse().unwrap();
+    // we should have made a profit of 0.01penumbra, with accuracy loss of 0.000002penumbra.
+    let profit: Value = "0.099998penumbra".parse().unwrap();
     assert_eq!(arb_profit, profit);
 
     tracing::info!("fetching the `ArbExecution`");

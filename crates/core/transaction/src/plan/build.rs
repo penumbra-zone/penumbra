@@ -162,7 +162,6 @@ impl TransactionPlan {
                 position_withdraw.position_withdraw(),
             ))
         }
-
         // build the transaction's ICS20 withdrawals
         for ics20_withdrawal in self.ics20_withdrawals() {
             actions.push(Action::Ics20Withdrawal(ics20_withdrawal.clone()))
@@ -379,6 +378,9 @@ impl TransactionPlan {
                 position_withdraw.position_withdraw(),
             ))
         }
+        for ics20_withdrawal in self.ics20_withdrawals().cloned() {
+            actions.push(Action::Ics20Withdrawal(ics20_withdrawal))
+        }
 
         let transaction_body = TransactionBody {
             actions,
@@ -446,7 +448,7 @@ impl UnauthTransaction {
             spend.auth_sig = auth_sig;
         }
 
-        for (mut delegator_vote, auth_sig) in self
+        for (delegator_vote, auth_sig) in self
             .inner
             .transaction_body
             .actions

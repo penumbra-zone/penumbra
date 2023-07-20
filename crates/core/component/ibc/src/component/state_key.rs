@@ -75,14 +75,14 @@ pub fn seq_send(channel_id: &ChannelId, port_id: &PortId) -> String {
 
 pub fn packet_receipt(packet: &Packet) -> String {
     format!(
-        "receipts/ports/{}/channels/{}/receipts/{}",
+        "receipts/ports/{}/channels/{}/sequences/{}",
         packet.port_on_b, packet.chan_on_b, packet.sequence
     )
 }
 
 pub fn receipt_by_channel(port_id: &PortId, channel_id: &ChannelId, sequence: u64) -> String {
     format!(
-        "receipts/ports/{port_id}/channels/{channel_id}/receipts/{sequence}",
+        "receipts/ports/{port_id}/channels/{channel_id}/sequences/{sequence}",
         port_id = port_id,
         channel_id = channel_id,
         sequence = sequence
@@ -91,7 +91,7 @@ pub fn receipt_by_channel(port_id: &PortId, channel_id: &ChannelId, sequence: u6
 
 pub fn packet_commitment(packet: &Packet) -> String {
     format!(
-        "commitments/ports/{}/channels/{}/packets/{}",
+        "commitments/ports/{}/channels/{}/sequences/{}",
         packet.port_on_a, packet.chan_on_a, packet.sequence
     )
 }
@@ -108,7 +108,7 @@ pub fn packet_commitment_by_port(
     channel_id: &ChannelId,
     sequence: u64,
 ) -> String {
-    format!("commitments/ports/{port_id}/channels/{channel_id}/packets/{sequence}")
+    format!("commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")
 }
 
 pub fn ics20_value_balance(channel_id: &ChannelId, asset_id: &asset::Id) -> String {

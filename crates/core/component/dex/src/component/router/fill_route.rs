@@ -1,9 +1,9 @@
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet},
     pin::Pin,
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use penumbra_asset::{asset, Value};
@@ -20,8 +20,30 @@ use crate::{
         position::{self, Position},
         Reserves,
     },
-    DirectedTradingPair, SwapExecution,
+    DirectedTradingPair, SwapExecution, TradingPair,
 };
+
+/// An error that occurs during routing execution.
+#[derive(Debug, thiserror::Error)]
+pub enum FillError {
+    /// Mismatch between the input asset id and the assets on either leg
+    /// of the trading pair.
+    #[error("input id {0:?} does not belong on pair: {1:?}")]
+    AssetIdMismatch(asset::Id, TradingPair),
+    /// Overflow occured when executing against the position corresponding
+    /// to the wrapped asset id.
+    #[error("overflow when executing against position {0:?}")]
+    ExecutionOverflow(position::Id),
+    /// Route is empty or has only one hop.
+    #[error("invalid route length {0} (must be at least 2)")]
+    InvalidRoute(usize),
+    /// Frontier position not found.
+    #[error("frontier position with id {0:?}, not found")]
+    MissingFrontierPosition(position::Id),
+    /// Insufficient liquidity in a pair.
+    #[error("insufficient liquidity in pair {0:?}")]
+    InsufficientLiquidity(DirectedTradingPair),
+}
 
 #[async_trait]
 pub trait FillRoute: StateWrite + Sized {
@@ -40,13 +62,19 @@ pub trait FillRoute: StateWrite + Sized {
     /// # Invariants
     ///
     /// It is an error to call `fill_route` on a route that does not have at least one position for each hop.
+    ///
+    /// # Errors
+    /// `fill_route` can fail for a number of reasons captured by the `FillError` enum.
+    ///
+    /// # Panics
+    /// At the moment, `fill_route` will panic on I/O failures (e.g., if the state is corrupted, or storage fails).
     #[instrument(skip(self, input, hops, spill_price))]
     async fn fill_route(
         &mut self,
         input: Value,
         hops: &[asset::Id],
         spill_price: Option<U128x128>,
-    ) -> Result<SwapExecution> {
+    ) -> Result<SwapExecution, FillError> {
         fill_route_inner(self, input, hops, spill_price, true).await
     }
 }
@@ -59,7 +87,7 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     hops: &[asset::Id],
     spill_price: Option<U128x128>,
     ensure_progress: bool,
-) -> Result<SwapExecution> {
+) -> Result<SwapExecution, FillError> {
     // Build a transaction for this execution, so if we error out at any
     // point we don't leave the state in an inconsistent state.  This is
     // particularly important for this method, because we lift position data
@@ -72,6 +100,7 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     let route = std::iter::once(input.asset_id)
         .chain(hops.iter().cloned())
         .collect::<Vec<_>>();
+
     // Break down the route into a sequence of pairs to visit.
     let pairs = breakdown_route(&route)?;
 
@@ -86,7 +115,7 @@ async fn fill_route_inner<S: StateWrite + Sized>(
         asset_id: route
             .last()
             .cloned()
-            .ok_or_else(|| anyhow::anyhow!("called fill_route with empty route"))?,
+            .ok_or_else(|| FillError::InvalidRoute(route.len()))?,
     };
 
     let mut frontier = Frontier::load(&mut this, pairs).await?;
@@ -110,7 +139,12 @@ async fn fill_route_inner<S: StateWrite + Sized>(
         // Phase 1 (Sensing): determine the index of the constraining position by
         // executing along the frontier, tracking which hops are
         // constraining.
-        let constraining_index = frontier.sense_capacity_constraint(input);
+        let constraining_index = frontier.sense_capacity_constraint(input)?;
+
+        tracing::debug!(
+            ?constraining_index,
+            "sensed capacity constraint, begin filling"
+        );
 
         // Phase 2 (Filling): transactionally execute along the path, using
         // the constraint information we sensed above.
@@ -183,7 +217,10 @@ async fn fill_route_inner<S: StateWrite + Sized>(
 
     // We need to save these positions, because we mutated their state, even
     // if we didn't fully consume their reserves.
-    frontier.save().await?;
+    frontier
+        .save()
+        .await
+        .expect("writing frontier should not fail");
 
     // Input consists of the sum of the first value of each trace.
     let input = frontier
@@ -225,9 +262,9 @@ async fn fill_route_inner<S: StateWrite + Sized>(
 
 /// Breaksdown a route into a collection of `DirectedTradingPair`, this is mostly useful
 /// for debugging right now.
-fn breakdown_route(route: &[asset::Id]) -> Result<Vec<DirectedTradingPair>> {
+fn breakdown_route(route: &[asset::Id]) -> Result<Vec<DirectedTradingPair>, FillError> {
     if route.len() < 2 {
-        Err(anyhow!("route length must be >= 2"))
+        Err(FillError::InvalidRoute(route.len()))
     } else {
         let mut pairs = vec![];
         for pair in route.windows(2) {
@@ -240,7 +277,7 @@ fn breakdown_route(route: &[asset::Id]) -> Result<Vec<DirectedTradingPair>> {
 }
 
 type PositionsByPrice =
-    HashMap<DirectedTradingPair, Pin<Box<dyn Stream<Item = Result<position::Id>> + Send>>>;
+    BTreeMap<DirectedTradingPair, Pin<Box<dyn Stream<Item = Result<position::Id>> + Send>>>;
 
 /// A frontier of least-priced positions along a route.
 struct Frontier<S> {
@@ -305,14 +342,14 @@ impl<S> std::fmt::Debug for Frontier<S> {
 }
 
 impl<S: StateRead + StateWrite> Frontier<S> {
-    async fn load(state: S, pairs: Vec<DirectedTradingPair>) -> Result<Frontier<S>> {
+    async fn load(state: S, pairs: Vec<DirectedTradingPair>) -> Result<Frontier<S>, FillError> {
         let mut positions = Vec::new();
         let mut position_ids = BTreeSet::new();
 
         // We want to ensure that any particular position is used at most once over the route,
         // even if the route has cycles at the macro-scale. To do this, we store the streams
         // of positions for each pair, taking care to only construct one stream per distinct pair.
-        let mut positions_by_price = HashMap::new();
+        let mut positions_by_price = BTreeMap::new();
         for pair in &pairs {
             positions_by_price
                 .entry(pair.clone())
@@ -327,9 +364,8 @@ impl<S: StateRead + StateWrite> Frontier<S> {
                     .as_mut()
                     .next()
                     .await
-                    .ok_or_else(|| {
-                        anyhow!("no positions available for pair on path {:?}", pair)
-                    })??;
+                    .ok_or_else(|| FillError::InsufficientLiquidity(pair.clone()))?
+                    .expect("stream should not error");
 
                 // Check that the position is not already part of the frontier.
                 if !position_ids.contains(&id) {
@@ -337,8 +373,9 @@ impl<S: StateRead + StateWrite> Frontier<S> {
                     // so separate state lookup not necessary
                     let position = state
                         .position_by_id(&id)
-                        .await?
-                        .ok_or_else(|| anyhow!("position with indexed id {:?} not found", id))?;
+                        .await
+                        .expect("stream doesn't error")
+                        .ok_or_else(|| FillError::MissingFrontierPosition(id.clone()))?;
 
                     position_ids.insert(id);
                     positions.push(position);
@@ -399,16 +436,18 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         )
     }
 
-    async fn replace_empty_positions(&mut self) -> Result<bool> {
+    async fn replace_empty_positions(&mut self) -> Result<bool, FillError> {
         for i in 0..self.pairs.len() {
             let desired_reserves = self.positions[i]
                 .reserves_for(self.pairs[i].end)
-                .expect("asset ids should match");
+                .ok_or_else(|| {
+                    FillError::AssetIdMismatch(self.pairs[i].end, self.positions[i].phi.pair)
+                })?;
 
             // Replace any position that has been fully consumed.
             if desired_reserves == 0u64.into() {
                 // If we can't find a replacement, report that failure upwards.
-                if !self.replace_position(i).await? {
+                if !self.replace_position(i).await {
                     return Ok(false);
                 }
             }
@@ -417,10 +456,10 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         Ok(true)
     }
 
-    // Returns Ok(true) if a new position was found to replace the given one,
-    // or Ok(false) if there are no more positions available for the given pair.
+    /// Returns `true` if a new position was found to replace the given one,
+    /// or `false`, if there are no more positions available for the given pair.
     #[instrument(skip(self))]
-    async fn replace_position(&mut self, index: usize) -> Result<bool> {
+    async fn replace_position(&mut self, index: usize) -> bool {
         let replaced_position_id = self.positions[index].id();
         tracing::debug!(?replaced_position_id, "replacing position");
 
@@ -430,7 +469,8 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         // they're fully consumed, or when we finish filling.
         self.state
             .put_position(self.positions[index].clone())
-            .await?;
+            .await
+            .expect("writing to storage should not fail");
 
         loop {
             let pair = &self.pairs[index];
@@ -441,12 +481,13 @@ impl<S: StateRead + StateWrite> Frontier<S> {
                 .as_mut()
                 .next()
                 .await
-                .transpose()?
+                .transpose()
+                .expect("stream doesn't error")
             {
                 // If none is available, we can't keep filling, and need to signal as such.
                 None => {
                     tracing::debug!(?pair, "no more positions available for pair");
-                    return Ok(false);
+                    return false;
                 }
                 // Otherwise, we need to check that the position is not already
                 // part of the current frontier.
@@ -461,7 +502,8 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             let next_position = self
                 .state
                 .position_by_id(&next_position_id)
-                .await?
+                .await
+                .expect("stream doesn't error")
                 .expect("indexed position should exist");
 
             tracing::debug!(
@@ -473,23 +515,39 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             self.position_ids.insert(next_position_id);
             self.positions[index] = next_position;
 
-            return Ok(true);
+            return true;
         }
     }
 
-    /// Senses which, if any, position along the frontier is a capacity
-    /// constraint for the given input amount.
+    /// Senses which position along the frontier is a capacity constraint for
+    /// the given input amount. If an overflow occurs during fill, report the
+    /// position in an error.
     #[instrument(skip(self, input), fields(input = ?input.amount))]
-    fn sense_capacity_constraint(&self, input: Value) -> Option<usize> {
-        tracing::debug!("sensing frontier capacity with test amount");
+    fn sense_capacity_constraint(&self, input: Value) -> Result<Option<usize>, FillError> {
+        tracing::debug!(
+            ?input,
+            "sensing frontier capacity with trial swap input amount"
+        );
         let mut constraining_index = None;
         let mut current_input = input;
 
         for (i, position) in self.positions.iter().enumerate() {
+            if !position.phi.matches_input(current_input.asset_id) {
+                tracing::error!(
+                    ?current_input,
+                    ?position,
+                    "asset ids of input and position do not match, interrupt capacity sensing."
+                );
+                return Err(FillError::AssetIdMismatch(
+                    current_input.asset_id,
+                    position.phi.pair,
+                ));
+            }
+
             let (unfilled, new_reserves, output) = position
                 .phi
                 .fill(current_input, &position.reserves)
-                .expect("asset ids should match");
+                .map_err(|_| FillError::ExecutionOverflow(position.id()))?;
 
             if unfilled.amount > Amount::zero() {
                 tracing::debug!(
@@ -518,7 +576,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             current_input = output;
         }
 
-        constraining_index
+        Ok(constraining_index)
     }
 
     #[instrument(skip(self, input), fields(input = ?input.amount))]
@@ -585,7 +643,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             let (unfilled, new_reserves, output) = self.positions[i]
                 .phi
                 .fill(current_value, &self.positions[i].reserves)
-                .expect("asset ids should match");
+                .expect("forward fill should not fail");
 
             assert_eq!(
                 unfilled.amount,
@@ -610,7 +668,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             let (new_reserves, prev_input) = self.positions[i]
                 .phi
                 .fill_output(&self.positions[i].reserves, current_value)
-                .expect("asset ids should match")
+                .expect("backward fill should not fail")
                 .expect(
                     "working backwards from most-constraining position should not exceed reserves",
                 );

@@ -23,8 +23,9 @@ TENDERMINT_VERSION="${TENDERMINT_VERSION:-v0.34.23}"
 NVALS="${NVALS:-2}"
 NFULLNODES="${NFULLNODES:-2}"
 CONTAINERHOME="${CONTAINERHOME:-/root}"
-# Default to preview for deployments; less likely to break public testnet.
-HELM_RELEASE="${HELM_RELEASE:-penumbra-testnet-preview}"
+# Default to bespoke devnet for deployments; less likely to break public testnets.
+# Useful for running ad-hoc via CLI. The workflows override this for testnet/preview.
+HELM_RELEASE="${HELM_RELEASE:-penumbra-devnet}"
 
 # Check that the network we're trying to configure has a valid config.
 if [[ "$HELM_RELEASE" =~ ^penumbra-testnet$ ]] ; then
@@ -253,9 +254,10 @@ function full_ci_rebuild() {
 # e.g. 0.1.2 -> 0.1.3.
 function is_patch_release() {
     # Ensure version format is semver, otherwise fail.
-    if ! grep -qP '^v[\d\.]+' <<< "$PENUMBRA_VERSION" ; then
+    if ! echo "$PENUMBRA_VERSION" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+' ; then
         return 1
     fi
+
     # Split on '.', inspect final field.
     z="$(perl -F'\.' -lanE 'print $F[-1]' <<< "$PENUMBRA_VERSION")"
     # If "z" in x.y.z is 0, then it's a minor release. (Or a major release,
@@ -281,6 +283,7 @@ function update_image_for_running_deployment() {
 }
 
 function main() {
+    echo "Deploying network '${HELM_RELEASE}'..."
     # TODO: to deploy older versions, e.g. v0.53.1, an override is necessary here
     if is_patch_release ; then
         echo "Release target '$PENUMBRA_VERSION' is a patch release; will preserve testnet while bumping version."

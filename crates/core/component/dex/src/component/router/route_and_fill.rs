@@ -16,6 +16,8 @@ use crate::{
     BatchSwapOutputData, SwapExecution, TradingPair,
 };
 
+use super::fill_route::FillError;
+
 /// Ties together the routing and filling logic, to process
 /// a block's batch swap flows.
 #[async_trait]
@@ -170,8 +172,28 @@ pub trait RouteAndFill: StateWrite + Sized {
             let execution = Arc::get_mut(self)
                 .expect("expected state to have no other refs")
                 .fill_route(delta_1, &path, spill_price)
-                .await
-                .context("error filling along best path")?;
+                .await;
+
+            let execution = match execution {
+                Ok(execution) => execution,
+                Err(FillError::ExecutionOverflow(position_id)) => {
+                    // We have encountered an overflow during the execution of the route.
+                    // To route around this, we will close the position and try to route and fill again.
+                    tracing::debug!(culprit = ?position_id, "overflow detected during routing execution");
+                    Arc::get_mut(self)
+                        .expect("expected state to have no other refs")
+                        .close_position_by_id(&position_id)
+                        .await
+                        .expect("the position still exists");
+                    continue;
+                }
+                Err(e) => {
+                    // We have encountered an error during the execution of the route,
+                    // there are no clear ways to route around this, so we propagate the error.
+                    // `fill_route` is transactional and will have rolled back the state.
+                    anyhow::bail!("error filling route: {:?}", e);
+                }
+            };
 
             // Immediately track the execution in the state.
             (total_output_2, total_unfilled_1) = {

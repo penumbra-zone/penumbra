@@ -1,18 +1,15 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::{
-    core::client::{msgs::MsgCreateClient, ClientId},
+    core::client::{events::CreateClient, msgs::MsgCreateClient, ClientId},
     lightclients::tendermint::client_type,
 };
 use penumbra_storage::StateWrite;
 
-use crate::{
-    component::{
-        client::{StateReadExt as _, StateWriteExt as _},
-        client_counter::{ics02_validation, ClientCounter},
-        MsgHandler,
-    },
-    event,
+use crate::component::{
+    client::{StateReadExt as _, StateWriteExt as _},
+    client_counter::{ics02_validation, ClientCounter},
+    MsgHandler,
 };
 
 #[async_trait]
@@ -62,7 +59,14 @@ impl MsgHandler for MsgCreateClient {
         let counter = state.client_counter().await.unwrap_or(ClientCounter(0));
         state.put_client_counter(ClientCounter(counter.0 + 1));
 
-        state.record(event::create_client(client_id, client_state));
+        state.record(
+            CreateClient {
+                client_id: client_id.clone(),
+                client_type: client_type(),
+                consensus_height: client_state.latest_height(),
+            }
+            .into(),
+        );
         Ok(())
     }
 }

@@ -1,10 +1,12 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types::{
-    core::{client::msgs::MsgUpdateClient, client::ClientId},
+    core::{client::events::UpdateClient, client::msgs::MsgUpdateClient, client::ClientId},
     lightclients::tendermint::client_state::ClientState as TendermintClientState,
-    lightclients::tendermint::consensus_state::ConsensusState as TendermintConsensusState,
     lightclients::tendermint::header::Header as TendermintHeader,
+    lightclients::tendermint::{
+        consensus_state::ConsensusState as TendermintConsensusState, TENDERMINT_CLIENT_TYPE,
+    },
 };
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_storage::{StateRead, StateWrite};
@@ -14,13 +16,10 @@ use tendermint_light_client_verifier::{
     ProdVerifier, Verdict, Verifier,
 };
 
-use crate::{
-    component::{
-        client::{Ics2ClientExt as _, StateReadExt as _, StateWriteExt as _},
-        client_counter::ics02_validation,
-        MsgHandler,
-    },
-    event,
+use crate::component::{
+    client::{Ics2ClientExt as _, StateReadExt as _, StateWriteExt as _},
+    client_counter::ics02_validation,
+    MsgHandler,
 };
 
 #[async_trait]
@@ -135,8 +134,17 @@ impl MsgHandler for MsgUpdateClient {
                 )
                 .await?;
 
-            state.record(event::update_client(self.client_id.clone(), trusted_header));
-
+            state.record(
+                UpdateClient {
+                    client_id: self.client_id.clone(),
+                    client_type: ibc_types::core::client::ClientType(
+                        TENDERMINT_CLIENT_TYPE.to_string(),
+                    ), // TODO: hardcoded
+                    consensus_height: trusted_header.height(),
+                    header: <ibc_types::lightclients::tendermint::header::Header as ibc_proto::protobuf::Protobuf<ibc_proto::ibc::lightclients::tendermint::v1::Header>>::encode_vec(&trusted_header),
+                }
+                .into(),
+            );
             return Ok(());
         } else {
             tracing::debug!("skipping duplicate update");

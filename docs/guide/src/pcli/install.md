@@ -42,6 +42,10 @@ You'll also need to install Git LFS, which you can do [via Homebrew](https://doc
 brew install git-lfs
 ```
 
+### Making sure that `git-lfs` is installed
+
+Running `git lfs install` will make sure that git-lfs is correctly installed on your machine.
+
 ### Cloning the repository
 
 Once you have installed the above tools, you can clone the repository:
@@ -56,7 +60,7 @@ latest tag for the current
 [testnet](https://github.com/penumbra-zone/penumbra/releases):
 
 ```bash
-cd penumbra && git fetch && git checkout v0.55.0
+cd penumbra && git fetch && git checkout v0.56.0
 ```
 
 ### Building the `pcli` client software

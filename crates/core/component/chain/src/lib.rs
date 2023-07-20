@@ -44,3 +44,9 @@ pub mod test_keys {
 
     pub static ACCOUNT_ID: Lazy<AccountGroupId> = Lazy::new(|| FULL_VIEWING_KEY.account_group_id());
 }
+
+// Located here at the bottom of the dep tree for convenience
+mod effect_hash;
+mod transaction;
+pub use effect_hash::{EffectHash, EffectingData};
+pub use transaction::TransactionContext;

@@ -162,7 +162,7 @@ where
                 let found_pair = layer
                     .as_ref()
                     .unwrap()
-                    .nonconsensus_changes
+                    .nonverifiable_changes
                     .range::<Vec<u8>, _>(search_range)
                     .take_while(|(k, _v)| k.starts_with(this.prefix))
                     .next();

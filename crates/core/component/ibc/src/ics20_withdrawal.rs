@@ -3,7 +3,7 @@ use penumbra_asset::{
     asset::{self, DenomMetadata},
     Balance, Value,
 };
-use penumbra_crypto::{EffectHash, EffectingData};
+use penumbra_chain::{EffectHash, EffectingData};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
@@ -157,7 +157,7 @@ impl From<Ics20Withdrawal> for pb::FungibleTokenPacketData {
     fn from(w: Ics20Withdrawal) -> Self {
         pb::FungibleTokenPacketData {
             amount: w.value().amount.to_string(),
-            denom: w.value().asset_id.to_string(), // NOTE: should this be a `Denom` instead?
+            denom: w.denom.to_string(),
             receiver: w.destination_chain_address,
             sender: w.return_address.to_string(),
         }

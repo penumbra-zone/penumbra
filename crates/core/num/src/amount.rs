@@ -35,9 +35,19 @@ impl Amount {
         self.inner.to_le_bytes()
     }
 
+    pub fn to_be_bytes(&self) -> [u8; 16] {
+        self.inner.to_be_bytes()
+    }
+
     pub fn from_le_bytes(bytes: [u8; 16]) -> Amount {
         Amount {
             inner: u128::from_le_bytes(bytes),
+        }
+    }
+
+    pub fn from_be_bytes(bytes: [u8; 16]) -> Amount {
+        Amount {
+            inner: u128::from_be_bytes(bytes),
         }
     }
 
@@ -45,6 +55,18 @@ impl Amount {
         self.inner
             .checked_sub(rhs.inner)
             .map(|inner| Self { inner })
+    }
+
+    pub fn saturating_add(&self, rhs: &Self) -> Self {
+        Self {
+            inner: self.inner.saturating_add(rhs.inner),
+        }
+    }
+
+    pub fn saturating_sub(&self, rhs: &Self) -> Self {
+        Self {
+            inner: self.inner.saturating_sub(rhs.inner),
+        }
     }
 }
 

@@ -1,7 +1,7 @@
 use blake2b_simd::{Hash, Params};
 use decaf377::FieldExt;
 use decaf377_fmd::Clue;
-use penumbra_crypto::EffectHash;
+use penumbra_chain::EffectHash;
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},
     swap, swap_claim, TradingPair,
@@ -21,14 +21,14 @@ use crate::{
     proposal, Action, Transaction, TransactionBody,
 };
 
-use penumbra_crypto::EffectingData as _;
+use penumbra_chain::EffectingData as _;
 
-// Note: temporarily duplicate of crypto/EffectingData
+// Note: temporarily duplicate of chain/EffectingData
 pub trait EffectingData {
     fn effect_hash(&self) -> EffectHash;
 }
 
-impl<'a, T: penumbra_crypto::EffectingData> EffectingData for crate::Compat<'a, T> {
+impl<'a, T: penumbra_chain::EffectingData> EffectingData for crate::Compat<'a, T> {
     fn effect_hash(&self) -> EffectHash {
         self.0.effect_hash()
     }
@@ -197,6 +197,9 @@ impl TransactionPlan {
                     .effect_hash()
                     .as_bytes(),
             );
+        }
+        for ics20_withdrawal in self.ics20_withdrawals() {
+            state.update(ics20_withdrawal.effect_hash().as_bytes());
         }
         let num_clues = self.clue_plans.len() as u32;
         state.update(&num_clues.to_le_bytes());

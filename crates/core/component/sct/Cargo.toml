@@ -1,7 +1,7 @@
 [package]
 # TODO: merge with tct crate under a `component` feature flag?
 name = "penumbra-sct"
-version = "0.55.0"
+version = "0.56.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -17,7 +17,6 @@ docsrs = []
 penumbra-proto = { path = "../../../proto", default-features = false }
 penumbra-storage = { path = "../../../storage", optional = true }
 penumbra-tct = { path = "../../../crypto/tct" }
-penumbra-crypto = { path = "../../crypto", default-features = false }
 penumbra-chain = { path = "../chain", default-features = false }
 penumbra-keys = { path = "../../../core/keys", default-features = false  } 
 penumbra-component = { path = "../component", optional = true }

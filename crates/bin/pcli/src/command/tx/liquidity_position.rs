@@ -92,6 +92,9 @@ pub enum OrderCmd {
         /// Only spend funds originally received by the given address index.
         #[clap(long, default_value = "0")]
         source: u32,
+        /// When set, tags the position as being a limit-sell order.
+        #[clap(long)]
+        limit_order: bool,
     },
     Sell {
         /// The desired sale, formatted as a string, e.g. `100penumbra@1.2gm` would attempt
@@ -106,6 +109,9 @@ pub enum OrderCmd {
         /// Only spend funds originally received by the given address index.
         #[clap(long, default_value = "0")]
         source: u32,
+        /// When set, tags the position as being a limit-sell order.
+        #[clap(long)]
+        limit_order: bool,
     },
 }
 
@@ -124,13 +130,20 @@ impl OrderCmd {
         }
     }
 
+    pub fn limit_order(&self) -> bool {
+        match self {
+            OrderCmd::Buy { limit_order, .. } => *limit_order,
+            OrderCmd::Sell { limit_order, .. } => *limit_order,
+        }
+    }
+
     pub fn into_position<R: CryptoRngCore>(
         &self,
         // Preserved since we'll need it after denom metadata refactor
         _asset_cache: &asset::Cache,
         rng: R,
     ) -> Result<Position> {
-        let position = match self {
+        let mut position = match self {
             OrderCmd::Buy { buy_order, .. } => {
                 tracing::info!(?buy_order, "parsing buy order");
                 let order = BuyOrder::parse_str(&buy_order)?;
@@ -143,6 +156,10 @@ impl OrderCmd {
             }
         };
         tracing::info!(?position);
+
+        if self.limit_order() {
+            position.close_on_fill = true;
+        }
 
         Ok(position)
     }

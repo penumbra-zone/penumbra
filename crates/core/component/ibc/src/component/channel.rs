@@ -126,6 +126,7 @@ pub trait StateReadExt: StateRead {
             port_id, channel_id, sequence,
         ))
         .await
+        .map(|res| res.filter(|s| !s.is_empty()))
         .map(|res| res.is_some())
     }
 

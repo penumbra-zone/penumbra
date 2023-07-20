@@ -20,7 +20,7 @@ use penumbra_num::Amount;
 use penumbra_proto::{
     core::ibc::v1alpha1::FungibleTokenPacketData, StateReadProto, StateWriteProto,
 };
-use penumbra_shielded_pool::component::NoteManager;
+use penumbra_shielded_pool::component::{NoteManager, SupplyWrite};
 use penumbra_storage::{StateRead, StateWrite};
 use prost::Message;
 
@@ -48,7 +48,7 @@ use crate::{
 fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &DenomMetadata) -> bool {
     let prefix = format!("{source_port}/{source_channel}/");
 
-    !denom.starts_with(&prefix)
+    denom.starts_with(&prefix)
 }
 
 #[derive(Clone)]
@@ -75,11 +75,11 @@ pub trait Ics20TransferWriteExt: StateWrite {
         // create packet, assume it's already checked since the component caller contract calls `check` before `execute`
         let checked_packet = IBCPacket::<Unchecked>::from(withdrawal.clone()).assume_checked();
 
-        if is_source(
-            &withdrawal.source_port,
-            &withdrawal.source_channel,
-            &withdrawal.denom,
-        ) {
+        let prefix = format!(
+            "{}/{}/",
+            &withdrawal.source_port, &withdrawal.source_channel
+        );
+        if !withdrawal.denom.starts_with(&prefix) {
             // we are the source. add the value balance to the escrow channel.
             let existing_value_balance: Amount = self
                 .get(&state_key::ics20_value_balance(
@@ -319,6 +319,8 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
         );
 
         let denom: asset::DenomMetadata = prefixed_denomination.as_str().try_into().unwrap();
+        state.register_denom(&denom).await.unwrap();
+
         let value = Value {
             amount: receiver_amount,
             asset_id: denom.id(),
@@ -422,6 +424,7 @@ impl AppHandlerExecute for Ics20Transfer {
                 TokenTransferAcknowledgement::success().into()
             }
             Err(e) => {
+                tracing::debug!("couldnt execute transfer: {}", e);
                 // record packet acknowledgement with error
                 TokenTransferAcknowledgement::Error(e.to_string()).into()
             }

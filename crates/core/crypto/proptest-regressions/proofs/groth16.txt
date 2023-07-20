@@ -1,7 +1,0 @@
-# Seeds for failure cases proptest has generated in the past. It is
-# automatically read and these particular cases re-run before any
-# novel cases are generated.
-#
-# It is recommended to check this file in to source control so that
-# everyone who runs the test benefits from these saved cases.
-cc ca5586517e6efc3f7b2851727f5d6456ef09b82628ba30db0102d6c9836b74ff # shrinks to spend_auth_randomizer = Fp256(BigInteger256([11321969178554232389, 14030150383627375337, 7952743609690003664, 311869795688926693])), value_amount = 155, v_blinding = Fp256(BigInteger256([17897126079258077016, 8145672758894949315, 10912539774281799024, 121741048067957135]))

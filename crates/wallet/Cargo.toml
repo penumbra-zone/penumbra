@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-wallet"
-version = "0.55.0"
+version = "0.56.0"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"
 description = "The wallet software for the Penumbra Zone"
@@ -15,7 +15,6 @@ publish = false
 # Workspace dependencies
 penumbra-proto = { path = "../proto" }
 penumbra-tct = { path = "../crypto/tct" }
-penumbra-crypto = { path = "../core/crypto" }
 penumbra-num = { path = "../core/num" }
 penumbra-asset = { path = "../core/asset" }
 penumbra-keys = { path = "../core/keys" }

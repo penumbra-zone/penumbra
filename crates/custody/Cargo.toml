@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-custody"
-version = "0.55.0"
+version = "0.56.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 # Workspace dependencies
 penumbra-proto = { path = "../proto" , features = ["rpc"] }
-penumbra-crypto = { path = "../core/crypto" }
 penumbra-keys = { path = "../core/keys" }
 penumbra-transaction = { path = "../core/transaction" }
 

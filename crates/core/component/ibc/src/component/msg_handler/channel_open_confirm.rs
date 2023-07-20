@@ -1,22 +1,19 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use ibc_types::core::{
-    channel::channel::State as ChannelState, channel::msgs::MsgChannelOpenConfirm,
+    channel::channel::State as ChannelState, channel::events, channel::msgs::MsgChannelOpenConfirm,
     channel::ChannelEnd, channel::Counterparty, channel::PortId,
     connection::State as ConnectionState,
 };
 use penumbra_storage::StateWrite;
 
-use crate::{
-    component::{
-        app_handler::{AppHandlerCheck, AppHandlerExecute},
-        channel::{StateReadExt as _, StateWriteExt as _},
-        connection::StateReadExt as _,
-        proof_verification::ChannelProofVerifier,
-        transfer::Ics20Transfer,
-        MsgHandler,
-    },
-    event,
+use crate::component::{
+    app_handler::{AppHandlerCheck, AppHandlerExecute},
+    channel::{StateReadExt as _, StateWriteExt as _},
+    connection::StateReadExt as _,
+    proof_verification::ChannelProofVerifier,
+    transfer::Ics20Transfer,
+    MsgHandler,
 };
 
 #[async_trait]
@@ -89,11 +86,20 @@ impl MsgHandler for MsgChannelOpenConfirm {
         channel.set_state(ChannelState::Open);
         state.put_channel(&self.chan_id_on_b, &self.port_id_on_b, channel.clone());
 
-        state.record(event::channel_open_confirm(
-            &self.port_id_on_b,
-            &self.chan_id_on_b,
-            &channel,
-        ));
+        state.record(
+            events::channel::OpenConfirm {
+                port_id: self.port_id_on_b.clone(),
+                channel_id: self.chan_id_on_b.clone(),
+                counterparty_port_id: channel.counterparty().port_id.clone(),
+                counterparty_channel_id: channel
+                    .counterparty()
+                    .channel_id
+                    .clone()
+                    .unwrap_or_default(),
+                connection_id: channel.connection_hops[0].clone(),
+            }
+            .into(),
+        );
 
         let transfer = PortId::transfer();
         if self.port_id_on_b == transfer {
