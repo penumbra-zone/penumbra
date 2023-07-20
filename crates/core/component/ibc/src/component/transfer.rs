@@ -48,7 +48,7 @@ use crate::{
 fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &DenomMetadata) -> bool {
     let prefix = format!("{source_port}/{source_channel}/");
 
-    !denom.starts_with(&prefix)
+    denom.starts_with(&prefix)
 }
 
 #[derive(Clone)]
@@ -422,6 +422,7 @@ impl AppHandlerExecute for Ics20Transfer {
                 TokenTransferAcknowledgement::success().into()
             }
             Err(e) => {
+                tracing::debug!("couldnt execute transfer: {}", e);
                 // record packet acknowledgement with error
                 TokenTransferAcknowledgement::Error(e.to_string()).into()
             }

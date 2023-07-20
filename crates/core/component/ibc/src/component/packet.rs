@@ -222,7 +222,7 @@ pub trait WriteAcknowledgement: StateWrite {
                 packet.sequence.into(),
             )
             .await?
-            .is_none();
+            .is_some();
         if exists_prev_ack {
             return Err(anyhow::anyhow!("acknowledgement already exists"));
         }

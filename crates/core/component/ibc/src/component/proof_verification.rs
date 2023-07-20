@@ -237,12 +237,12 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             .await?;
 
         let commitment_path = CommitmentPath {
-            port_id: msg.packet.port_on_b.clone(),
-            channel_id: msg.packet.chan_on_b.clone(),
+            port_id: msg.packet.port_on_a.clone(),
+            channel_id: msg.packet.chan_on_a.clone(),
             sequence: msg.packet.sequence,
         };
 
-        let commitment_bytes = commit_packet(&msg.packet);
+        let commitment_bytes = commit_packet(&msg.packet).encode_to_vec();
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
