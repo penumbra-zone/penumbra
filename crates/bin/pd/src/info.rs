@@ -346,8 +346,11 @@ impl Info {
                 for commitment_idx in 1..commitment_counter {
                     let commitment = snapshot
                         .get_packet_commitment_by_id(&chan_id, &port_id, commitment_idx)
-                        .await?
-                        .ok_or(anyhow::anyhow!("couldnt find commitment"))?;
+                        .await?;
+                    if commitment.is_none() {
+                        continue;
+                    }
+                    let commitment = commitment.unwrap();
 
                     let commitment_state = PacketState {
                         port_id: request.port_id.clone(),
