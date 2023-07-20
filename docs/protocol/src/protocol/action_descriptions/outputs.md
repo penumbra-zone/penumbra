@@ -15,7 +15,7 @@ The output proof demonstrates the properties enumerated below for the private wi
 * Diversified basepoint $B_d \isin \mathbb G$ corresponding to the address
 * Transmission key $pk_d \isin \mathbb G$ corresponding to the address
 * Clue key $\mathsf{ck_d} \isin \mathbb F_q$ corresponding to the address
-* Blinding factor $\tilde v \isin \mathbb F_r$ used to blind the balance commitment
+* Blinding factor $\widetilde{v} \isin \mathbb F_r$ used to blind the balance commitment
 
 And the corresponding public inputs:
 

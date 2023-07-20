@@ -52,23 +52,23 @@ map-to-group method.
 
 We use the value generator associated to an asset ID to construct homomorphic
 commitments to (typed) value.  To do this, we first define the *blinding
-generator* $\tilde V$ as
+generator* $\widetilde{V}$ as
 ```
 V_tilde = decaf377_encode_to_curve(from_le_bytes(blake2b(b"decaf377-rdsa-binding")))
 ```
 
 The commitment to value $(v, \mathsf a)$, i.e., amount $v$ of asset $\mathsf a$,
-with blinding factor $\tilde v$, is the Pedersen commitment
+with blinding factor $\widetilde{v}$, is the Pedersen commitment
 $$
-\operatorname {Commit}_{\mathsf a}(v, \tilde v) = [v]V_{\mathsf a} + [\tilde v]\tilde V.
+\operatorname {Commit}_{\mathsf a}(v, \widetilde{v}) = [v]V_{\mathsf a} + [\widetilde{v}]\widetilde{V}.
 $$
 
 These commitments are homomorphic, even for different asset types, say values
 $(x, \mathsf a)$ and $(y, \mathsf b)$:
 $$
-([x]V_{\mathsf a} + [\tilde x]\tilde V) + ([y] V_{\mathsf b} + [\tilde y]\tilde V)
+([x]V_{\mathsf a} + [\widetilde{x}]\widetilde{V}) + ([y] V_{\mathsf b} + [\widetilde{y}]\widetilde{V})
 = 
-[x]V_{\mathsf a} + [y] V_{\mathsf b} + [\tilde x + \tilde y]\tilde V.
+[x]V_{\mathsf a} + [y] V_{\mathsf b} + [\widetilde{x} + \widetilde{y}]\widetilde{V}.
 $$
 Alternatively, this can be thought of as a commitment to a (sparse) vector
 recording the amount of every possible asset type, almost all of whose
@@ -78,8 +78,7 @@ coefficients are zero.
 
 Finally, we'd like to be able to prove that a certain value commitment $C$ is a
 commitment to $0$.  One way to do this would be to prove knowledge of an opening
-to the commitment, i.e., producing $\tilde v$ such that $$C = [\tilde v] \tilde
-V = \operatorname{Commit}(0, \tilde v).$$  But this is exactly what it means to
+to the commitment, i.e., producing $\widetilde{v}$ such that $$C = [\widetilde{v}] \widetilde{V} = \operatorname{Commit}(0, \widetilde{v}).$$  But this is exactly what it means to
 create a Schnorr signature for the verification key $C$, because a Schnorr
 signature is a proof of knowledge of the signing key in the context of the
 message. 
