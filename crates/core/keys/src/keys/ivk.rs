@@ -1,4 +1,4 @@
-use ark_ff::PrimeField;
+use ark_ff::{Field, One, PrimeField};
 use rand_core::{CryptoRng, RngCore};
 
 use ark_r1cs_std::fields::nonnative::NonNativeFieldVar;
@@ -96,22 +96,17 @@ pub struct IncomingViewingKeyVar {
     inner: NonNativeFieldVar<Fr, Fq>,
 }
 
-/// Modular exponentiation
-pub fn mod_exp<F: PrimeField>(f: F, exp: usize) -> F {
-    let mut acc = F::from(1u32);
-    for _ in 0..exp {
-        acc *= f;
-    }
-    acc
-}
-
 /// Convert little-endian boolean constraints into a field element
-pub fn convert_le_bits_to_non_native_var(value: &[Boolean<Fq>]) -> NonNativeFieldVar<Fr, Fq> {
+pub fn convert_le_bits_to_non_native_var(bits: &[Boolean<Fq>]) -> NonNativeFieldVar<Fr, Fq> {
     let mut acc = NonNativeFieldVar::<Fr, Fq>::zero();
-    for (i, bit) in value.iter().enumerate() {
-        acc += NonNativeFieldVar::<Fr, Fq>::from(bit.clone())
-            * NonNativeFieldVar::<Fr, Fq>::constant(mod_exp(Fr::from(2_u32), i));
-    }
+    let mut power = Fr::one();
+
+    bits.iter().for_each(|b| {
+        acc += NonNativeFieldVar::<Fr, Fq>::from(b.clone())
+            * NonNativeFieldVar::<Fr, Fq>::constant(power);
+        power.double_in_place();
+    });
+
     acc
 }
 
