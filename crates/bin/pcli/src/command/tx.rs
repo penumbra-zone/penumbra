@@ -29,6 +29,7 @@ use penumbra_transaction::{memo::MemoPlaintext, proposal::ProposalToml, vote::Vo
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};
 use rand_core::OsRng;
+use regex::Regex;
 
 use crate::App;
 
@@ -171,17 +172,13 @@ pub enum TxCmd {
     /// for the pcli tool.
     #[clap(display_order = 250)]
     Withdraw {
-        /// Fully qualified address, including both the wallet address on the counterparty chain,
-        /// and the chain id for that chain, as `address@chain-id`, e.g.
-        /// cosmos1grgelyng2v6v3t8z87wu3sxgt9m5s03xvslewd@cosmoshub-4
+        /// Address on the receiving chain,
+        /// e.g. cosmos1grgelyng2v6v3t8z87wu3sxgt9m5s03xvslewd@cosmoshub-4
         #[clap(long)]
         to: String,
 
-        /// The human-readable denomination for the withdrawal, e.g. 'upenumbra'.
-        // TODO: we should parse the denom and amount, same was we do with `pcli tx send`.
-        denom: String,
-        /// The quantity of funds of `denomination` to withdraw.
-        amount: String,
+        /// The value to withdraw, eg "1000upenumbra"
+        value: String,
         /// The IBC channel on the primary Penumbra chain to use for performing the withdrawal.
         /// This channel must already exist, as configured by a relayer client.
         /// You can search for channels via e.g. `pcli query ibc transfer channel-0`.
@@ -812,17 +809,13 @@ impl TxCmd {
             }
             TxCmd::Withdraw {
                 to,
-                amount,
-                denom,
+                value,
                 timeout_height,
                 timeout_timestamp,
                 source_channel,
                 source,
             } => {
-                // TODO: should we be using a standard address parser here?
-                let to_components = to.split('@').collect::<Vec<_>>();
-                let destination_chain_address = to_components[0];
-                let destination_chain_id = to_components[1];
+                let destination_chain_address = to;
 
                 let fee = Fee::from_staking_token_amount(Amount::zero());
                 let (ephemeral_return_address, _) = app
@@ -848,13 +841,27 @@ impl TxCmd {
                     timeout_timestamp = current_time_u64_ms + 1.728e14 as u64;
                 }
 
-                let denom = asset::REGISTRY.parse_denom(denom).ok_or_else(|| {
-                    anyhow::anyhow!(format!("unable to parse denomination '{}'", denom))
-                })?;
-                let amount = Amount::try_from(amount.clone())?;
+                fn parse_denom_and_amount(
+                    value_str: &str,
+                ) -> anyhow::Result<(Amount, DenomMetadata)> {
+                    let denom_re = Regex::new(r"^([0-9.]+)(.+)$").unwrap();
+                    if let Some(captures) = denom_re.captures(value_str) {
+                        let numeric_str = captures.get(1).expect("matched regex").as_str();
+                        let denom_str = captures.get(2).expect("matched regex").as_str();
+
+                        let display_denom = asset::REGISTRY.parse_unit(denom_str);
+                        let amount = display_denom.parse_value(numeric_str)?;
+                        let denom = display_denom.base();
+
+                        Ok((amount, denom))
+                    } else {
+                        Err(anyhow::anyhow!("could not parse value"))
+                    }
+                }
+
+                let (amount, denom) = parse_denom_and_amount(&value)?;
 
                 let withdrawal = Ics20Withdrawal {
-                    destination_chain_id: destination_chain_id.to_string(),
                     destination_chain_address: destination_chain_address.to_string(),
                     denom,
                     amount,
