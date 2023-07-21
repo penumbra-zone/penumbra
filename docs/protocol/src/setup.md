@@ -53,3 +53,6 @@ $$
 ([a]_1 + [b]_1) \odot [c]_2 = [ac + bc]_T
 $$
 
+As a somewhat unfortunate conflict of notation, we use $[n]$ to denote
+the set $\{1, \ldots, n\}$, and ${[s_i \mid i \in S]}$ to denote
+a list of elements, with $i$ ranging over a set $S$.
