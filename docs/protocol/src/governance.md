@@ -103,6 +103,26 @@ actions, which are shielded). DAO spend transactions are unable to use regular s
 spend funds from any source other than the DAO itself, perform swaps, or submit, withdraw, or claim
 governance proposals.
 
+## Validator Voting
+
+A validator vote is a transparent action, signed by and attributable to the specific validator who
+cast that vote on the proposal.
+
+## Delegator Voting
+
+A delegator vote consists of a spend proof for a given delegation note to some validator, coupled
+with an inclusion proof showing that the creation block height of that delegation note was strictly
+before voting started on the proposal. Additionally, the delegator vote reveals the nullifier for
+the note which was used to justify the vote, to prevent double-votes on the same proposal (the node
+keeps track of per-proposal nullifier sets for voting, entirely distinct from the main nullifier
+set). This means that you can spend a delegation note, and then still subsequently use it to justify
+a vote, so long as the time it was created was before when the proposal started voting.
+
+This scheme means that clients _should_ "roll over" delegation notes upon voting to prevent their
+votes on different proposals from being linkable by correlating nullifiers. If two proposals are
+submitted concurrently, it is not possible for the delegator to prevent their votes on the two
+proposals from being linked; this is considered an acceptable sacrifice.
+
 ## Contributing To The DAO
 
 Anyone can contribute any amount of any denomination to the Penumbra DAO. Funds contributed to the
