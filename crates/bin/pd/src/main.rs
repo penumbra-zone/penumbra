@@ -196,11 +196,9 @@ async fn main() -> anyhow::Result<()> {
     // The `FmtLayer` is used to print to the console.
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_ansi(atty::is(atty::Stream::Stdout))
-        .with_target(false);
+        .with_target(true);
     // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
-    let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info"))
-        .unwrap();
+    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
 
     let opt = Opt::parse();
 
