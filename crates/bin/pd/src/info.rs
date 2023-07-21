@@ -99,7 +99,8 @@ impl Info {
             //
             // Try to do this behavior by querying at height = latest-1.
             0 => {
-                let height = self.storage.latest_snapshot().version() - 1;
+                let version = self.storage.latest_snapshot().version();
+                let height = if version == 0 { version } else { version - 1 }
                 let snapshot = self
                     .storage
                     .snapshot(height)
