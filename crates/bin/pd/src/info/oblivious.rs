@@ -68,7 +68,11 @@ impl ObliviousQueryService for Info {
         state
             .check_chain_id(&request.get_ref().chain_id)
             .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+            .map_err(|e| {
+                tonic::Status::unknown(format!(
+                    "failed to validate chain id during chain parameters lookup: {e}"
+                ))
+            })?;
 
         let chain_params = state.get_chain_params().await.map_err(|e| {
             tonic::Status::unavailable(format!("error getting chain parameters: {e}"))
@@ -131,7 +135,11 @@ impl ObliviousQueryService for Info {
         state
             .check_chain_id(&request.get_ref().chain_id)
             .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+            .map_err(|e| {
+                tonic::Status::unknown(format!(
+                    "failed to validate chain id during validator info request: {e}"
+                ))
+            })?;
 
         let validators = state
             .validator_list()
@@ -181,7 +189,11 @@ impl ObliviousQueryService for Info {
         snapshot
             .check_chain_id(&request.get_ref().chain_id)
             .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+            .map_err(|e| {
+                tonic::Status::unknown(format!(
+                    "failed to validate chain id during compact_block_range request: {e}"
+                ))
+            })?;
 
         let CompactBlockRangeRequest {
             start_height,
