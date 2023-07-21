@@ -757,9 +757,6 @@ impl serde::Serialize for Ics20Withdrawal {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.destination_chain_id.is_empty() {
-            len += 1;
-        }
         if self.amount.is_some() {
             len += 1;
         }
@@ -785,9 +782,6 @@ impl serde::Serialize for Ics20Withdrawal {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.ibc.v1alpha1.Ics20Withdrawal", len)?;
-        if !self.destination_chain_id.is_empty() {
-            struct_ser.serialize_field("destinationChainId", &self.destination_chain_id)?;
-        }
         if let Some(v) = self.amount.as_ref() {
             struct_ser.serialize_field("amount", v)?;
         }
@@ -822,8 +816,6 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "destination_chain_id",
-            "destinationChainId",
             "amount",
             "denom",
             "destination_chain_address",
@@ -842,7 +834,6 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            DestinationChainId,
             Amount,
             Denom,
             DestinationChainAddress,
@@ -872,7 +863,6 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                         E: serde::de::Error,
                     {
                         match value {
-                            "destinationChainId" | "destination_chain_id" => Ok(GeneratedField::DestinationChainId),
                             "amount" => Ok(GeneratedField::Amount),
                             "denom" => Ok(GeneratedField::Denom),
                             "destinationChainAddress" | "destination_chain_address" => Ok(GeneratedField::DestinationChainAddress),
@@ -900,7 +890,6 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut destination_chain_id__ = None;
                 let mut amount__ = None;
                 let mut denom__ = None;
                 let mut destination_chain_address__ = None;
@@ -911,12 +900,6 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                 let mut source_channel__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::DestinationChainId => {
-                            if destination_chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("destinationChainId"));
-                            }
-                            destination_chain_id__ = Some(map.next_value()?);
-                        }
                         GeneratedField::Amount => {
                             if amount__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("amount"));
@@ -972,7 +955,6 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                     }
                 }
                 Ok(Ics20Withdrawal {
-                    destination_chain_id: destination_chain_id__.unwrap_or_default(),
                     amount: amount__,
                     denom: denom__,
                     destination_chain_address: destination_chain_address__.unwrap_or_default(),

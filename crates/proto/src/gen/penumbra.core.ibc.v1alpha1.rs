@@ -49,9 +49,6 @@ pub struct FungibleTokenPacketData {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Ics20Withdrawal {
-    /// the chain ID of the destination chain for this ICS20 transfer
-    #[prost(string, tag = "1")]
-    pub destination_chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
     #[prost(message, optional, tag = "3")]

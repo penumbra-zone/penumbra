@@ -16,9 +16,7 @@ use std::str::FromStr;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Ics20Withdrawal", into = "pb::Ics20Withdrawal")]
 pub struct Ics20Withdrawal {
-    // the chain ID of the destination chain for this Ics20 transfer
-    pub destination_chain_id: String,
-    // a transparent value consisting of an amount and an asset ID.
+    // a transparent value consisting of an amount and a denom.
     pub amount: Amount,
     pub denom: asset::DenomMetadata,
     // the address on the destination chain to send the transfer to
@@ -69,8 +67,6 @@ impl Ics20Withdrawal {
             anyhow::bail!("source port for a withdrawal must be 'transfer'");
         }
 
-        // NOTE: all strings are valid chain IDs, so we don't validate destination_chain_id here.
-
         // NOTE: we could validate the destination chain address as bech32 to prevent mistyped
         // addresses, but this would preclude sending to chains that don't use bech32 addresses.
 
@@ -84,12 +80,9 @@ impl EffectingData for Ics20Withdrawal {
             .personal(b"PAH:ics20wthdrwl")
             .to_state();
 
-        let destination_chain_id_hash =
-            blake2b_simd::Params::default().hash(self.destination_chain_id.as_bytes());
         let destination_chain_address_hash =
             blake2b_simd::Params::default().hash(self.destination_chain_address.as_bytes());
 
-        state.update(destination_chain_id_hash.as_bytes());
         state.update(&self.value().amount.to_le_bytes());
         state.update(&self.value().asset_id.to_bytes());
         state.update(destination_chain_address_hash.as_bytes());
@@ -112,7 +105,6 @@ impl DomainType for Ics20Withdrawal {
 impl From<Ics20Withdrawal> for pb::Ics20Withdrawal {
     fn from(w: Ics20Withdrawal) -> Self {
         pb::Ics20Withdrawal {
-            destination_chain_id: w.destination_chain_id,
             amount: Some(w.amount.into()),
             denom: Some(w.denom.base_denom().into()),
             destination_chain_address: w.destination_chain_address,
@@ -129,7 +121,6 @@ impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
     type Error = anyhow::Error;
     fn try_from(s: pb::Ics20Withdrawal) -> Result<Self, Self::Error> {
         Ok(Self {
-            destination_chain_id: s.destination_chain_id,
             amount: s
                 .amount
                 .ok_or_else(|| anyhow::anyhow!("missing amount"))?

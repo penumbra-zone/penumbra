@@ -49,9 +49,6 @@ message FungibleTokenPacketData {
 }
 
 message Ics20Withdrawal {
-  // the chain ID of the destination chain for this ICS20 transfer
-  string destination_chain_id = 1;
-
   crypto.v1alpha1.Amount amount = 2;
   crypto.v1alpha1.Denom denom = 3;
 
