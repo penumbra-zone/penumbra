@@ -352,10 +352,9 @@ impl BalanceVar {
             let value_amount = amount.amount.clone();
 
             // We scalar mul first with value (small), _then_ negate [v]G_v if needed
-            let commitment_plus_contribution =
-                commitment.clone() + G_v.scalar_mul_le(value_amount.to_bits_le()?.iter())?;
-            let commitment_minus_contribution =
-                commitment - G_v.scalar_mul_le(value_amount.to_bits_le()?.iter())?;
+            let vG = G_v.scalar_mul_le(value_amount.to_bits_le()?.iter())?;
+            let commitment_plus_contribution = commitment.clone() + &vG;
+            let commitment_minus_contribution = commitment - vG;
             commitment = ElementVar::conditionally_select(
                 sign,
                 &commitment_plus_contribution,
