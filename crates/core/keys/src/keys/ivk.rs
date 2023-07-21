@@ -6,7 +6,7 @@ use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{
     r1cs::{ElementVar, FqVar},
-    FieldExt, Fq, Fr,
+    Fq, Fr,
 };
 
 use super::{AddressIndex, Diversifier, DiversifierKey};
@@ -96,25 +96,39 @@ pub struct IncomingViewingKeyVar {
     inner: NonNativeFieldVar<Fr, Fq>,
 }
 
+/// Modular exponentiation
+pub fn mod_exp<F: PrimeField>(f: F, exp: usize) -> F {
+    let mut acc = F::from(1u32);
+    for _ in 0..exp {
+        acc *= f;
+    }
+    acc
+}
+
+/// Convert little-endian boolean constraints into a field element
+pub fn convert_le_bits_to_non_native_var(value: &[Boolean<Fq>]) -> NonNativeFieldVar<Fr, Fq> {
+    let mut acc = NonNativeFieldVar::<Fr, Fq>::zero();
+    for (i, bit) in value.iter().enumerate() {
+        acc += NonNativeFieldVar::<Fr, Fq>::from(bit.clone())
+            * NonNativeFieldVar::<Fr, Fq>::constant(mod_exp(Fr::from(2_u32), i));
+    }
+    acc
+}
+
 impl IncomingViewingKeyVar {
     /// Derive the incoming viewing key from the nk and the ak.
     pub fn derive(nk: &NullifierKeyVar, ak: &AuthorizationKeyVar) -> Result<Self, SynthesisError> {
         let cs = nk.inner.cs();
         let ivk_domain_sep = FqVar::new_constant(cs.clone(), *IVK_DOMAIN_SEP)?;
         let ivk_mod_q = poseidon377::r1cs::hash_2(
-            cs.clone(),
+            cs,
             &ivk_domain_sep,
             (nk.inner.clone(), ak.inner.compress_to_field()?),
         )?;
 
         // Reduce `ivk_mod_q` modulo r
-        let inner_ivk_mod_q: Fq = ivk_mod_q.value().unwrap_or_default();
-        let ivk_mod_r = Fr::from_le_bytes_mod_order(&inner_ivk_mod_q.to_bytes());
-        let ivk = NonNativeFieldVar::<Fr, Fq>::new_variable(
-            cs,
-            || Ok(ivk_mod_r),
-            AllocationMode::Witness,
-        )?;
+        let ivk_bits = ivk_mod_q.to_bits_le()?;
+        let ivk = convert_le_bits_to_non_native_var(&ivk_bits);
         Ok(IncomingViewingKeyVar { inner: ivk })
     }
 
