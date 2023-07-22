@@ -162,14 +162,10 @@ pub enum TxCmd {
     Sweep,
 
     /// Perform an ICS-20 withdrawal, moving funds from the Penumbra chain
-    /// to a counterparty chain. Destination addresses must be specified as
-    /// 'address@chain-id`, where the `address` is of the appropriate format
-    /// the counterparty chain, and `chain-id` is the current identifier
-    /// for the counterparty chain.
+    /// to a counterparty chain.
     ///
-    /// For a withdrawal to succeed, relayer software must be configured to recognize
-    /// build paths between the two chains. Running a relayer is out of scope
-    /// for the pcli tool.
+    /// For a withdrawal to be processed on the counterparty, IBC packets must be relayed between
+    /// the two chains. Relaying is out of scope for the `pcli` tool.
     #[clap(display_order = 250)]
     Withdraw {
         /// Address on the receiving chain,
