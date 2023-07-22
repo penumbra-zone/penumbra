@@ -85,6 +85,9 @@ impl EffectingData for Ics20Withdrawal {
 
         state.update(&self.value().amount.to_le_bytes());
         state.update(&self.value().asset_id.to_bytes());
+        state.update(&self.source_channel.as_bytes());
+        state.update(&self.source_port.as_bytes());
+
         state.update(destination_chain_address_hash.as_bytes());
         //This is safe because the return address has a constant length of 80 bytes.
         state.update(&self.return_address.to_vec());
