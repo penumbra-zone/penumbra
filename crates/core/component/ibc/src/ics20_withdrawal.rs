@@ -84,9 +84,8 @@ impl EffectingData for Ics20Withdrawal {
             blake2b_simd::Params::default().hash(self.destination_chain_address.as_bytes());
         let return_address = blake2b_simd::Params::default().hash(&self.return_address.to_vec());
 
-        state.update(&self.value().amount.to_le_bytes());
-        state.update(&self.value().asset_id.to_bytes());
-        state.update(&self.denom.encode_to_vec());
+        state.update(&self.amount.to_le_bytes());
+        state.update(&self.denom.id().to_bytes());
         state.update(&self.source_channel.as_bytes());
         state.update(&self.source_port.as_bytes());
 
