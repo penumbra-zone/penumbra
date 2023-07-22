@@ -173,7 +173,7 @@ pub enum TxCmd {
     #[clap(display_order = 250)]
     Withdraw {
         /// Address on the receiving chain,
-        /// e.g. cosmos1grgelyng2v6v3t8z87wu3sxgt9m5s03xvslewd@cosmoshub-4
+        /// e.g. cosmos1grgelyng2v6v3t8z87wu3sxgt9m5s03xvslewd
         #[clap(long)]
         to: String,
 
@@ -183,7 +183,7 @@ pub enum TxCmd {
         /// This channel must already exist, as configured by a relayer client.
         /// You can search for channels via e.g. `pcli query ibc transfer channel-0`.
         #[clap(long)]
-        source_channel: String,
+        channel: String,
 
         #[clap(long, default_value = "0", display_order = 100)]
         timeout_height: u64,
@@ -812,7 +812,7 @@ impl TxCmd {
                 value,
                 timeout_height,
                 timeout_timestamp,
-                source_channel,
+                channel,
                 source,
             } => {
                 let destination_chain_address = to;
@@ -868,7 +868,7 @@ impl TxCmd {
                     timeout_height,
                     timeout_time: timeout_timestamp,
                     return_address: ephemeral_return_address,
-                    source_channel: ChannelId::from_str(source_channel)?,
+                    source_channel: ChannelId::from_str(channel)?,
                     source_port: PortId::from_str("transfer")?,
                 };
 
