@@ -82,6 +82,7 @@ impl EffectingData for Ics20Withdrawal {
 
         let destination_chain_address_hash =
             blake2b_simd::Params::default().hash(self.destination_chain_address.as_bytes());
+        let return_address = blake2b_simd::Params::default().hash(self.return_address.as_bytes());
 
         state.update(&self.value().amount.to_le_bytes());
         state.update(&self.value().asset_id.to_bytes());
@@ -89,8 +90,7 @@ impl EffectingData for Ics20Withdrawal {
         state.update(&self.source_port.as_bytes());
 
         state.update(destination_chain_address_hash.as_bytes());
-        //This is safe because the return address has a constant length of 80 bytes.
-        state.update(&self.return_address.to_vec());
+        state.update(return_address.as_bytes());
         state.update(&self.timeout_height.to_le_bytes());
         state.update(&self.timeout_time.to_le_bytes());
         EffectHash(*state.finalize().as_array())
