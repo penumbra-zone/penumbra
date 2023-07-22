@@ -49,30 +49,30 @@ message FungibleTokenPacketData {
 }
 
 message Ics20Withdrawal {
-  crypto.v1alpha1.Amount amount = 2;
-  crypto.v1alpha1.Denom denom = 3;
+  crypto.v1alpha1.Amount amount = 1;
+  crypto.v1alpha1.Denom denom = 2;
 
   // the address on the destination chain to send the transfer to 
-  string destination_chain_address = 4;
+  string destination_chain_address = 3;
 
   // a "sender" penumbra address to use to return funds from this withdrawal.
   // this should be an ephemeral address
-  crypto.v1alpha1.Address return_address = 5;
+  crypto.v1alpha1.Address return_address = 4;
 
   // the height (on Penumbra) at which this transfer expires (and funds are sent
   // back to the sender address?). NOTE: if funds are sent back to the sender,
   // we MUST verify a nonexistence proof before accepting the timeout, to
   // prevent relayer censorship attacks. The core IBC implementation does this
   // in its handling of validation of timeouts.
-  uint64 timeout_height = 6;
+  uint64 timeout_height = 5;
 
   // the timestamp at which this transfer expires.
-  uint64 timeout_time = 7;
+  uint64 timeout_time = 6;
 
   // the source port that identifies the channel used for the withdrawal
-  string source_port = 8;
+  string source_port = 7;
   // the source channel used for the withdrawal
-  string source_channel = 9;
+  string source_channel = 8;
 }
 
 
