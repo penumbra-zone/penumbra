@@ -1100,4 +1100,136 @@ mod test {
             (pk, vk)
         }
     }
+
+    struct TestGreaterInvalidComparisonCircuit {
+        a: U128x128,
+        b: U128x128,
+    }
+
+    impl ConstraintSynthesizer<Fq> for TestGreaterInvalidComparisonCircuit {
+        fn generate_constraints(
+            self,
+            cs: ConstraintSystemRef<Fq>,
+        ) -> ark_relations::r1cs::Result<()> {
+            // In reality a < b, but we're asserting that a > b here (should panic)
+            let a_var = U128x128Var::new_witness(cs.clone(), || Ok(self.a))?;
+            let b_var = U128x128Var::new_witness(cs, || Ok(self.b))?;
+            a_var.enforce_cmp(&b_var, std::cmp::Ordering::Greater)?;
+
+            Ok(())
+        }
+    }
+
+    impl TestGreaterInvalidComparisonCircuit {
+        fn generate_test_parameters(
+        ) -> Result<(ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>), SynthesisError> {
+            let num: [u8; 32] = [0u8; 32];
+            let a = U128x128::from_bytes(num);
+            let b = U128x128::from_bytes(num);
+            let circuit = TestGreaterInvalidComparisonCircuit { a, b };
+            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
+        }
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(5))]
+        #[should_panic]
+        #[test]
+        fn invalid_greater_compare(
+            a_int in any::<u128>(),
+        ) {
+            // a < b
+            let a =
+                if a_int == u128::MAX {
+                    U128x128::from(a_int - 1)
+                } else {
+                    U128x128::from(a_int)
+                };
+            let b = (a + U128x128::from(1u64)).expect("should not overflow");
+
+            let circuit = TestGreaterInvalidComparisonCircuit {
+                a,
+                b,
+            };
+
+            let (pk, vk) = TestGreaterInvalidComparisonCircuit::generate_test_parameters().expect("can perform setup");
+            let mut rng = OsRng;
+
+            let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+            .expect("should be able to form proof");
+
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
+                &vk,
+                &[],
+                &proof,
+            );
+            assert!(proof_result.is_ok());
+        }
+    }
+
+    struct TestLessInvalidComparisonCircuit {
+        c: U128x128,
+        d: U128x128,
+    }
+
+    impl ConstraintSynthesizer<Fq> for TestLessInvalidComparisonCircuit {
+        fn generate_constraints(
+            self,
+            cs: ConstraintSystemRef<Fq>,
+        ) -> ark_relations::r1cs::Result<()> {
+            // In reality c > d, but we're asserting that c < d here (should panic)
+            let c_var = U128x128Var::new_witness(cs.clone(), || Ok(self.c))?;
+            let d_var = U128x128Var::new_witness(cs, || Ok(self.d))?;
+            c_var.enforce_cmp(&d_var, std::cmp::Ordering::Less)?;
+
+            Ok(())
+        }
+    }
+
+    impl TestLessInvalidComparisonCircuit {
+        fn generate_test_parameters(
+        ) -> Result<(ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>), SynthesisError> {
+            let num: [u8; 32] = [0u8; 32];
+            let c = U128x128::from_bytes(num);
+            let d = U128x128::from_bytes(num);
+            let circuit = TestLessInvalidComparisonCircuit { c, d };
+            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
+        }
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(5))]
+        #[should_panic]
+        #[test]
+        fn invalid_less_compare(
+            c_int in any::<u128>(),
+        ) {
+            // c > d
+            let c =
+                if c_int == 0 {
+                    U128x128::from(c_int + 1)
+                } else {
+                    U128x128::from(c_int)
+                };
+            let d = (c - U128x128::from(1u64)).expect("should not underflow");
+
+            let circuit = TestLessInvalidComparisonCircuit {
+                c,
+                d,
+            };
+
+            let (pk, vk) = TestLessInvalidComparisonCircuit::generate_test_parameters().expect("can perform setup");
+            let mut rng = OsRng;
+
+            let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+            .expect("should be able to form proof");
+
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
+                &vk,
+                &[],
+                &proof,
+            );
+            assert!(proof_result.is_ok());
+        }
+    }
 }
