@@ -30,7 +30,7 @@ The zk-SNARK certifies that the public input swap commitment $scm$ was derived a
 
 $scm_{inner} = hash_4(ds, (ID_1, ID_2, v_1, v_2))$
 
-$scm = hash_7(ds, (rseed, v_f, ID_{v_f}, B_d, pk_d, \mathsf{ck_d}, scm_{inner})$.
+$scm = hash_7(ds, (rseed, v_f, ID_{v_f}, B_d, pk_d, \mathsf{ck_d}, scm_{inner}))$.
 
 using the above witnessed values and where `ds` is a constant domain separator:
 

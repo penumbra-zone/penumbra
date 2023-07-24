@@ -26,7 +26,7 @@ And the corresponding public inputs:
 
 The zk-SNARK certifies that the public input note commitment $cm$ was derived as:
 
-$cm = hash_5(ds, (rcm, v, ID, B_d, pk_d)$.
+$cm = hash_6(ds, (rcm, v, ID, B_d, pk_d, ck_d))$.
 
 using the above witnessed values and where `ds` is a constant domain separator:
 
