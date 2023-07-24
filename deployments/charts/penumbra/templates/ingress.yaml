@@ -1,5 +1,6 @@
 {{- if .Values.ingress.enabled }}
 {{ $count := (.Values.numFullNodes | int) }}
+{{ $svc_name := printf "%s-rpc-backends" (include "penumbra.fullname" $) }}
 {{/*
 Each fullnode instance will have its pd and tendermint rpc ports
 backing the exposed LoadBalancer service.
@@ -16,20 +17,14 @@ spec:
   - kind: Rule
     match: Host(`{{ .Values.ingress.hosts.grpc }}`)
     services:
-{{ range $i,$e := until $count }}
-{{ $svc_name := printf "%s-p2p-fn-%d" (include "penumbra.fullname" $) $i }}
-    - name: {{ include "penumbra.fullname" . }}-p2p-fn-0
+    - name: {{ $svc_name }}
       port: 8080
       scheme: h2c
-{{ end }}
   - kind: Rule
     match: Host(`{{ .Values.ingress.hosts.rpc }}`)
     services:
-{{ range $i,$e := until $count }}
-{{ $svc_name := printf "%s-p2p-fn-%d" (include "penumbra.fullname" $) $i }}
     - name: {{ $svc_name }}
       port: 26657
-{{ end }}
   - kind: Rule
     match: Host(`{{ .Values.ingress.hosts.grafana }}`)
     services:
