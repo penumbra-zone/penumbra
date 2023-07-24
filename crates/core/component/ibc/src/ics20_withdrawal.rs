@@ -1,4 +1,4 @@
-use ibc_types::core::channel::{ChannelId, PortId};
+use ibc_types::core::channel::ChannelId;
 use penumbra_asset::{
     asset::{self, DenomMetadata},
     Balance, Value,
@@ -32,8 +32,6 @@ pub struct Ics20Withdrawal {
     pub timeout_height: u64,
     // the timestamp at which this transfer expires.
     pub timeout_time: u64,
-    // the source port that identifies the channel used for the withdrawal
-    pub source_port: PortId,
     // the source channel used for the withdrawal
     pub source_channel: ChannelId,
 }
@@ -63,9 +61,6 @@ impl Ics20Withdrawal {
         if self.timeout_time == 0 {
             anyhow::bail!("timeout time must be non-zero");
         }
-        if self.source_port.as_str() != "transfer" {
-            anyhow::bail!("source port for a withdrawal must be 'transfer'");
-        }
 
         // NOTE: we could validate the destination chain address as bech32 to prevent mistyped
         // addresses, but this would preclude sending to chains that don't use bech32 addresses.
@@ -87,7 +82,6 @@ impl EffectingData for Ics20Withdrawal {
         state.update(&self.amount.to_le_bytes());
         state.update(&self.denom.id().to_bytes());
         state.update(&self.source_channel.as_bytes());
-        state.update(&self.source_port.as_bytes());
 
         state.update(destination_chain_address_hash.as_bytes());
         state.update(return_address.as_bytes());
@@ -115,7 +109,6 @@ impl From<Ics20Withdrawal> for pb::Ics20Withdrawal {
             timeout_height: w.timeout_height,
             timeout_time: w.timeout_time,
             source_channel: w.source_channel.to_string(),
-            source_port: w.source_port.to_string(),
         }
     }
 }
@@ -142,7 +135,6 @@ impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
             timeout_height: s.timeout_height,
             timeout_time: s.timeout_time,
             source_channel: ChannelId::from_str(&s.source_channel)?,
-            source_port: PortId::from_str(&s.source_port)?,
         })
     }
 }

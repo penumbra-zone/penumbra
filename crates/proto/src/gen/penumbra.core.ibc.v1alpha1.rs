@@ -70,11 +70,8 @@ pub struct Ics20Withdrawal {
     /// the timestamp at which this transfer expires.
     #[prost(uint64, tag = "6")]
     pub timeout_time: u64,
-    /// the source port that identifies the channel used for the withdrawal
-    #[prost(string, tag = "7")]
-    pub source_port: ::prost::alloc::string::String,
     /// the source channel used for the withdrawal
-    #[prost(string, tag = "8")]
+    #[prost(string, tag = "7")]
     pub source_channel: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]

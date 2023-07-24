@@ -69,10 +69,8 @@ message Ics20Withdrawal {
   // the timestamp at which this transfer expires.
   uint64 timeout_time = 6;
 
-  // the source port that identifies the channel used for the withdrawal
-  string source_port = 7;
   // the source channel used for the withdrawal
-  string source_channel = 8;
+  string source_channel = 7;
 }
 
 

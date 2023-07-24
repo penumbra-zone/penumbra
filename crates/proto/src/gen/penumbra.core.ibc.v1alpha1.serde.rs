@@ -775,9 +775,6 @@ impl serde::Serialize for Ics20Withdrawal {
         if self.timeout_time != 0 {
             len += 1;
         }
-        if !self.source_port.is_empty() {
-            len += 1;
-        }
         if !self.source_channel.is_empty() {
             len += 1;
         }
@@ -799,9 +796,6 @@ impl serde::Serialize for Ics20Withdrawal {
         }
         if self.timeout_time != 0 {
             struct_ser.serialize_field("timeoutTime", ToString::to_string(&self.timeout_time).as_str())?;
-        }
-        if !self.source_port.is_empty() {
-            struct_ser.serialize_field("sourcePort", &self.source_port)?;
         }
         if !self.source_channel.is_empty() {
             struct_ser.serialize_field("sourceChannel", &self.source_channel)?;
@@ -826,8 +820,6 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
             "timeoutHeight",
             "timeout_time",
             "timeoutTime",
-            "source_port",
-            "sourcePort",
             "source_channel",
             "sourceChannel",
         ];
@@ -840,7 +832,6 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
             ReturnAddress,
             TimeoutHeight,
             TimeoutTime,
-            SourcePort,
             SourceChannel,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -869,7 +860,6 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                             "returnAddress" | "return_address" => Ok(GeneratedField::ReturnAddress),
                             "timeoutHeight" | "timeout_height" => Ok(GeneratedField::TimeoutHeight),
                             "timeoutTime" | "timeout_time" => Ok(GeneratedField::TimeoutTime),
-                            "sourcePort" | "source_port" => Ok(GeneratedField::SourcePort),
                             "sourceChannel" | "source_channel" => Ok(GeneratedField::SourceChannel),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -896,7 +886,6 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                 let mut return_address__ = None;
                 let mut timeout_height__ = None;
                 let mut timeout_time__ = None;
-                let mut source_port__ = None;
                 let mut source_channel__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
@@ -940,12 +929,6 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::SourcePort => {
-                            if source_port__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("sourcePort"));
-                            }
-                            source_port__ = Some(map.next_value()?);
-                        }
                         GeneratedField::SourceChannel => {
                             if source_channel__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("sourceChannel"));
@@ -961,7 +944,6 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                     return_address: return_address__,
                     timeout_height: timeout_height__.unwrap_or_default(),
                     timeout_time: timeout_time__.unwrap_or_default(),
-                    source_port: source_port__.unwrap_or_default(),
                     source_channel: source_channel__.unwrap_or_default(),
                 })
             }

@@ -9,7 +9,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::{Fq, Fr};
-use ibc_types::core::channel::{ChannelId, PortId};
+use ibc_types::core::channel::ChannelId;
 use penumbra_asset::{asset, asset::DenomMetadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_fee::Fee;
@@ -865,7 +865,6 @@ impl TxCmd {
                     timeout_time: timeout_timestamp,
                     return_address: ephemeral_return_address,
                     source_channel: ChannelId::from_str(channel)?,
-                    source_port: PortId::from_str("transfer")?,
                 };
 
                 let plan = Planner::new(OsRng)
