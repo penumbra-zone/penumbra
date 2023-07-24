@@ -426,40 +426,27 @@ impl U128x128Var {
         let other_bits: Vec<Boolean<Fq>> = other.to_bits_le().into_iter().rev().collect();
 
         // Now starting at the most significant side, compare bits.
-        let mut acc: Boolean<Fq> = Boolean::constant(true);
-        for (self_bit, other_bit) in zip(self_bits, other_bits) {
-            match ordering {
-                std::cmp::Ordering::Equal => unimplemented!("use `EqGadget` instead"),
-                std::cmp::Ordering::Less => {
-                    // Self must be less than other, so we want to "stop" (hit 0)
-                    // when we hit the most significant bit where other=1, self=0
-                    // self p | other q | desired output = !(!p /\ q)
-                    //   1    |   1     | 1
-                    //   1    |   0     | 1
-                    //   0    |   0     | 1
-                    //   0    |   1     | 0
-                    //
-                    // !(!p /\ q) by De Morgan is equivalent to p \/ !q:
-                    let this_bit_eq = self_bit.or(&other_bit.not())?;
-                    acc = acc.and(&this_bit_eq)?;
-                }
-                std::cmp::Ordering::Greater => {
-                    // Self must be greater than other, so we want to "stop" (hit 0)
-                    // when we hit the most significant bit where self=1, other=0
-                    // self p | other q | desired output = !(p /\ !q)
-                    //   1    |   1     | 1
-                    //   1    |   0     | 0
-                    //   0    |   0     | 1
-                    //   0    |   1     | 1
-                    //
-                    // !(p /\ !q) by De Morgan is equivalent to !p \/ q:
-                    let this_bit_eq = (self_bit.not()).or(&other_bit)?;
-                    acc = acc.and(&this_bit_eq)?;
-                }
+        let mut gt: Boolean<Fq> = Boolean::constant(false);
+        let mut lt: Boolean<Fq> = Boolean::constant(false);
+        for (p, q) in zip(self_bits, other_bits) {
+            gt = gt.or(&(gt.or(&lt)?).not().and(&p)?.and(&q.not())?)?;
+            lt = lt.or(&(gt.or(&lt)?).not().and(&p.not())?.and(&q)?)?;
+        }
+
+        match ordering {
+            std::cmp::Ordering::Greater => {
+                gt.enforce_equal(&Boolean::constant(true))?;
+                lt.enforce_equal(&Boolean::constant(false))?;
+            }
+            std::cmp::Ordering::Less => {
+                gt.enforce_equal(&Boolean::constant(false))?;
+                lt.enforce_equal(&Boolean::constant(true))?;
+            }
+            std::cmp::Ordering::Equal => {
+                unimplemented!("use EqGadget for efficiency");
             }
         }
 
-        acc.enforce_equal(&Boolean::constant(false))?;
         Ok(())
     }
 
