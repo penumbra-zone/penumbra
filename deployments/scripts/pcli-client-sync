@@ -1,0 +1,89 @@
+#!/bin/bash
+# Simulate a pcli client synchronizing with the network for the first time.
+# Invoke like so:
+#
+#     ./deployments/scripts/pcli-client-sync -n 1000 -p 50
+#
+# which will generate 1000 client identities, performing operations in batches of 50.
+set -euo pipefail
+
+# Use a temporary directory, so we don't clutter up the host with testing data.
+# There's a minor cost to regenerating the key material dynamically every time,
+# but the real blocker if the sync time, which is what we're testing.
+pcli_testdata_pardir="$(mktemp -d)"
+trap 'rm -r "$pcli_testdata_pardir"' EXIT
+
+# user-friendly help
+function usage() {
+    >&2 echo "Usage: $0 [opts]"
+    >&2 printf 'Options:\n'
+    >&2 printf '\t-n : number of pcli client accounts to generate\n'
+    >&2 printf '\t-p : maximum number of requests to run in parallel\n'
+}
+
+# parse opts
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -n)
+            NUM_CLIENTS="$2"
+            shift 2
+            ;;
+        -p)
+            MAX_CONCURRENCY="$2"
+            shift 2
+            ;;
+        help)
+            usage
+            exit 0
+            ;;
+        -h)
+            usage
+            exit 0
+            ;;
+        *)
+            echo >&2 "ERROR: Unsupported opt '$1'"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+cat <<EOF
+Running Penumbra pd load test,
+    simulating $NUM_CLIENTS pcli clients,
+    performing at most $MAX_CONCURRENCY sync operations concurrently.
+EOF
+
+
+# export RUST_LOG=pcli=debug
+
+# Generate penumbra keys. We do this in a separate loop so we can rerun
+# subsequent loadtests without regenerating.
+printf "Generating keys... "
+for n in $(seq "$NUM_CLIENTS"); do
+    printf '\rGenerating keys... %d/%d' "$n" "$NUM_CLIENTS"
+    client_dir="${pcli_testdata_pardir}/client${n}"
+    # block on max concurrency
+    # slick trick via https://stackoverflow.com/a/880864
+    while [ "$(jobs -p -r | wc -l)" -ge "$MAX_CONCURRENCY" ]; do
+        sleep 1
+    done
+    pcli -n http://localhost:8080 -d "$client_dir" keys generate > /dev/null &
+done
+wait
+
+printf '\rGenerating keys... %d/%d done!\n' "$n" "$NUM_CLIENTS"
+
+printf "Synchronizing clients..."
+for n in $(seq "$NUM_CLIENTS"); do
+    printf '\rSynchronizing clients... %d/%d' "$n" "$NUM_CLIENTS"
+    client_dir="${pcli_testdata_pardir}/client${n}"
+    pcli -n http://localhost:8080 -d "$client_dir" view sync > /dev/null 2>&1 &
+    # block on max concurrency
+    while [ "$(jobs -p -r | wc -l)" -ge "$MAX_CONCURRENCY" ]; do
+        sleep 1
+    done
+done
+wait
+
+printf '\rSynchronizing clients... %d/%d done!\n' "$n" "$NUM_CLIENTS"
