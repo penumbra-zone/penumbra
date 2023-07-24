@@ -817,17 +817,26 @@ mod test {
     }
 
     proptest! {
-        #![proptest_config(ProptestConfig::with_cases(1))]
+        #![proptest_config(ProptestConfig::with_cases(5))]
         #[test]
         fn add(
             a_int in any::<u64>(),
+            a_frac in any::<u64>(),
             b_int in any::<u64>(),
+            b_frac in any::<u64>(),
         ) {
-            let a = U128x128::from(a_int);
-            let b = U128x128::from(b_int);
-
+            let a = U128x128(
+                U256([a_frac.into(), a_int.into()])
+            );
+            let b = U128x128(
+                U256([b_frac.into(), b_int.into()])
+            );
             let result = a.checked_add(&b);
 
+            if result.is_err() {
+                // If the result overflowed, then we can't construct a valid proof.
+                return Ok(())
+            }
             let expected_c = result.expect("result should not overflow");
 
             let circuit = TestAdditionCircuit {
