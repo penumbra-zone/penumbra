@@ -2,23 +2,21 @@
 
 One gadget we'll need is a way to have ZK proofs for the following relation:
 $$
-\{(X, Y; w) \mid X = w \cdot G_1 \land Y = w \cdot G_2\}
+\{(W, X; w) \mid W = w \cdot X\}
 $$
 (with $w$ kept secret).
 
-In other words, one needs to prove that $X$ and $Y$
-have the same discrete logarithm,
-relative to the generators of $\mathbb{G}_1$ and $\mathbb{G}_2$,
-respectively.
+In other words, one needs to prove knowledge of the discrete logarithm
+of $W$ with regards to $X$.
 
 The notation we'll use here is
 $$
-\pi \gets P_{\text{DL}}(\text{ctx}, X, Y; w)
+\pi \gets P_{\text{DL}}(\text{ctx}, W, X; w)
 $$
-for generating a proof (with some arbitrary context string $\text{ctx}$), using the public statement $(X, Y)$ and the witness $w$,
+for generating a proof (with some arbitrary context string $\text{ctx}$), using the public statement $(W, X)$ and the witness $w$,
 as well as:
 $$
-V_{\text{DL}}(\text{ctx}, X, Y, \pi)
+V_{\text{DL}}(\text{ctx}, W, X, \pi)
 $$
 for verifying that proof, using the same context and statement.
 
@@ -30,28 +28,27 @@ don't match, or if the proof wasn't produced correctly, of course.
 (You can safely skip this part, if you don't actually
 need to know how they work).
 
-These proofs make use of the pairing operation,
-as well as a hash function
+These are standard Maurer / Schnorr-esque proofs, making use of
+a hash function
 $$
-H : \{0, 1\}^* \times \mathbb{G}_1 \times \mathbb{G}_2 \to \mathbb{G}_1
+H : \{0, 1\}^* \times \mathbb{G}^3 \to \mathbb{F}
 $$
-modelled as a random oracle,
-for which one does *not* learn the discrete logarithm
-of the output.
+modelled as a random oracle.
 
 **Proving**
 
 $$
-P_{\text{DL}}(\text{ctx}, X, Y; w) := w \cdot H(\text{ctx}, X, Y)
+\begin{aligned}
+&P_{\text{DL}}(\text{ctx}, X, Y; w) :=\cr
+&\quad k \xleftarrow{\$} \mathbb{F}\cr
+&\quad K \gets k \cdot Y\cr
+&\quad e \gets H(\text{ctx}, (X, Y, K))\cr
+&\quad (K, k + e \cdot x)\cr
+\end{aligned}
 $$
 
 **Verification**
 
 $$
-V_{\text{DL}}(\text{ctx}, X, Y, \pi) :=
-\begin{aligned}
-X \odot G_2 &\overset{?}{=} G_1 \odot Y \quad \land\cr
-\pi \odot G_2 &\overset{?}{=} 
-H(\text{ctx}, X, Y) \odot Y 
-\end{aligned}
+V_{\text{DL}}(\text{ctx}, X, Y, \pi = (K, s)) := s \cdot G \overset{?}{=} K + H(\text{ctx}, (X, Y, K)) \cdot X
 $$
