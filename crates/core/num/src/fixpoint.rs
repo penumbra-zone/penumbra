@@ -1232,4 +1232,24 @@ mod test {
             assert!(proof_result.is_ok());
         }
     }
+
+    #[should_panic]
+    #[test]
+    fn regression_invalid_less_compare() {
+        // c > d in reality, the circuit will attempt to prove c < d (should panic)
+        let c = U128x128::from(354389783742u64);
+        let d = U128x128::from(17u64);
+
+        let circuit = TestLessInvalidComparisonCircuit { c, d };
+
+        let (pk, vk) = TestLessInvalidComparisonCircuit::generate_test_parameters()
+            .expect("can perform setup");
+        let mut rng = OsRng;
+
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+            .expect("should be able to form proof");
+
+        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(&vk, &[], &proof);
+        assert!(proof_result.is_ok());
+    }
 }
