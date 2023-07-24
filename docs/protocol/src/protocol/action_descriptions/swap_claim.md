@@ -44,7 +44,7 @@ The zk-SNARK certifies that the witnessed swap commitment $scm$ was derived as:
 
 $scm_{inner} = hash_4(ds, (ID_1, ID_2, \Delta_1, \Delta_2))$
 
-$scm = hash_7(ds, (rseed, v_f, G_{v_f}, B_d, pk_d, \mathsf{ck_d}, scm_{inner})$.
+$scm = hash_7(ds, (rseed, v_f, G_{v_f}, B_d, pk_d, \mathsf{ck_d}, scm_{inner}))$.
 
 using the above witnessed values and where `ds` is a constant domain separator:
 
@@ -102,9 +102,9 @@ using the correct batch swap output data.
 
 The zk-SNARK certifies that the note commitments $cm_1$ and $cm_2$ were derived as:
 
-$cm_1 = hash_5(ds, (rcm_1, \Lambda_{1i}, ID_1, B_d, pk_d)$
+$cm_1 = hash_6(ds, (rcm_1, \Lambda_{1i}, ID_1, B_d, pk_d, ck_d))$
 
-$cm_2 = hash_5(ds, (rcm_2, \Lambda_{2i}, ID_2, B_d, pk_d)$
+$cm_2 = hash_6(ds, (rcm_2, \Lambda_{2i}, ID_2, B_d, pk_d, ck_d))$
 
 using the above witnessed values and where `ds` is a constant domain separator:
 

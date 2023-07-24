@@ -32,7 +32,7 @@ We require each one of the following integrity properties to hold only for notes
 
 The zk-SNARK certifies that for non-zero values $v \ne 0$, the note commitment $cm$ was derived as:
 
-$cm = hash_5(ds, (rcm, v, ID, B_d, pk_d)$.
+$cm = hash_6(ds, (rcm, v, ID, B_d, pk_d, ck_d))$.
 
 using the above witnessed values and where `ds` is a constant domain separator:
 
