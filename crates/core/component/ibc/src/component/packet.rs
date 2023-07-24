@@ -59,7 +59,7 @@ impl IBCPacket<Unchecked> {
 impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
     fn from(withdrawal: Ics20Withdrawal) -> Self {
         Self {
-            source_port: withdrawal.source_port.clone(),
+            source_port: PortId::transfer(),
             source_channel: withdrawal.source_channel.clone(),
             timeout_height: Height::new(0, withdrawal.timeout_height).unwrap(),
             timeout_timestamp: withdrawal.timeout_time,
