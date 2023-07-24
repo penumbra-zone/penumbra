@@ -300,12 +300,10 @@ impl U128x128Var {
         let c3 = Boolean::<Fq>::le_bits_to_fp_var(&z2_bits[64..].to_bits_le()?)?;
 
         // z3 < (2^64 - 1) + (2^64 - 1) + (2^64 - 1) < 2^(65) => 65 bits
-        let z3_bits = bit_constrain(z3_raw + c3, 65)?; // carry-in c3
+        // However, the last bit (65th) which would be used as a final carry flag, should be 0 if there is no overflow.
+        // As such, we can constrain the length for this call to 64 bits.
+        let z3_bits = bit_constrain(z3_raw + c3, 64)?; // carry-in c3
         let z3 = UInt64::from_bits_le(&z3_bits[0..64]);
-        let c4 = Boolean::<Fq>::le_bits_to_fp_var(&z3_bits[64..].to_bits_le()?)?;
-
-        // Constrain c4: No overflow.
-        c4.enforce_equal(&FqVar::zero())?;
 
         Ok(Self {
             limbs: [z0, z1, z2, z3],
