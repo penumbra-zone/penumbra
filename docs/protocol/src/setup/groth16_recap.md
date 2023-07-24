@@ -105,11 +105,11 @@ The CRS becomes:
 
 - $[\alpha]_1, [\beta]_1, [\delta]_1$
 
-- $\displaystyle \left[x^i\right]_1\quad \textcolor{blue}{(i \in [0, \ldots, 2d - 2])}$
+- $\displaystyle \left[x^i\right]_1\quad \textcolor{DodgerBlue}{(i \in [0, \ldots, 2d - 2])}$
 
-- $\textcolor{blue}{\displaystyle \left[\alpha x^i\right]_1\quad (i \in [0, \ldots, d - 1])}$
+- $\textcolor{DodgerBlue}{\displaystyle \left[\alpha x^i\right]_1\quad (i \in [0, \ldots, d - 1])}$
 
-- $\textcolor{blue}{\displaystyle \left[\beta x^i\right]_1\quad (i \in [0, \ldots, d - 1])}$
+- $\textcolor{DodgerBlue}{\displaystyle \left[\beta x^i\right]_1\quad (i \in [0, \ldots, d - 1])}$
 
 - $\displaystyle \left[\frac{1}{\delta} p^{\alpha, \beta}_i(x)\right]_1\quad (i \geq s)$
 
