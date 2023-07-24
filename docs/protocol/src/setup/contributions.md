@@ -159,8 +159,33 @@ We can check their validity by ensuring the following checks hold:
 ### Checking Linkedness
 
 To check that CRS elements $G'_{\ldots}$ build off a prior CRS $G_{\ldots}$,
-one checks the included discrete logarithm proofs $\pi$, via:
+one checks the included discrete logarithm proof $\pi$, via:
 
 $$
 V_{\text{DL}}(\text{ctx}, G'_\delta, G_\delta, \pi)
 $$
+
+## Batched Pairing Checks
+
+Very often, we need to check equations of the form:
+$$
+\forall i.\ A_i \odot B = C \odot D_i
+$$
+(this would also work if the right hand side is of the form $D_i \odot C$, and vice versa).
+
+This equation is equivalent to checking:
+$$
+\forall i.\ A_i \odot B - C \odot D_i = 0
+$$
+If you pick random scalars $r_i$ from a set $S$, then except with probability
+$|S|^{-1}$, this is equivalent to checking:
+$$
+\sum_i r_i \cdot (A_i \odot B - C \odot D_i) = 0
+$$
+By the homomorphic properties of a pairing, this is the same as:
+$$
+\left(\sum_i r_i \cdot A_i\right) \odot B - C \odot \left(\sum_i r_i \cdot D_i\right)
+$$
+
+Instead of checking $2N$ pairings, we can instead perform $2$ MSMs
+of size $N$, and then $2$ pairings, which is more performant.
