@@ -195,6 +195,9 @@ impl ObliviousQueryService for Info {
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error getting block height: {e}")))?;
 
+        // Perform housekeeping, so long-lived connections don't cause pd to leak memory.
+        std::mem::drop(snapshot);
+
         // Treat end_height = 0 as end_height = current_height so that if the
         // end_height is unspecified in the proto, it will be treated as a
         // request to sync up to the current height.
@@ -250,7 +253,7 @@ impl ObliviousQueryService for Info {
                     let block = block_fetch
                         .await??
                         .expect("compact block for in-range height must be present");
-                    tx.send(Ok(block.to_proto())).await?;
+                    tx.send(Ok(block.into())).await?;
                     metrics::increment_counter!(
                         metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
                     );
@@ -280,11 +283,15 @@ impl ObliviousQueryService for Info {
                         .compact_block(height)
                         .await?
                         .expect("compact block for in-range height must be present");
-                    tx.send(Ok(block.to_proto())).await?;
+                    tx.send(Ok(block.into())).await?;
                     metrics::increment_counter!(
                         metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
                     );
                 }
+
+                // Ensure that we don't hold a reference to the snapshot indefinitely
+                // while we hold open the connection to notify the client of new blocks.
+                std::mem::drop(snapshot);
 
                 // Phase 2: wait on the height notifier and stream blocks as
                 // they're created.
@@ -300,7 +307,7 @@ impl ObliviousQueryService for Info {
                         .compact_block(height)
                         .await?
                         .expect("compact block for in-range height must be present");
-                    tx.send(Ok(block.to_proto())).await?;
+                    tx.send(Ok(block.into())).await?;
                     metrics::increment_counter!(
                         metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
                     );
