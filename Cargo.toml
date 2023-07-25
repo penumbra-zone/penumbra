@@ -14,6 +14,7 @@ members = [
   "crates/crypto/eddy",
   "crates/crypto/tct",
   "crates/crypto/proof-params",
+  "crates/crypto/proof-setup",
   "crates/core/num",
   "crates/core/keys",
   "crates/core/asset",

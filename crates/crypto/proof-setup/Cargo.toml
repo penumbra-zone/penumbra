@@ -1,0 +1,9 @@
+[package]
+name = "penumbra-proof-setup"
+version = "0.56.0"
+edition = "2021"
+
+[dependencies]
+
+[dev-dependencies]
+

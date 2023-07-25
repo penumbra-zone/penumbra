@@ -34,6 +34,7 @@ cargo +nightly doc --no-deps \
   -p decaf377-ka \
   -p penumbra-proto \
   -p penumbra-proof-params \
+  -p penumbra-proof-setup \
   -p penumbra-chain \
   -p penumbra-governance \
   -p penumbra-component \
