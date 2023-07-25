@@ -5064,6 +5064,14 @@ dependencies = [
 [[package]]
 name = "penumbra-proof-setup"
 version = "0.56.0"
+dependencies = [
+ "ark-ec",
+ "ark-ff",
+ "ark-serialize",
+ "blake2b_simd 0.5.11",
+ "decaf377",
+ "rand_core 0.6.4",
+]
 
 [[package]]
 name = "penumbra-proto"
