@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-asset"
-version = "0.56.0"
+version = "0.56.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
