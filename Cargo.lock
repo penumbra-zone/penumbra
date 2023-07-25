@@ -5062,6 +5062,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-proof-setup"
+version = "0.56.0"
+
+[[package]]
 name = "penumbra-proto"
 version = "0.56.0"
 dependencies = [
