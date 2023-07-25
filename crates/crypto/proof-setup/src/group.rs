@@ -51,15 +51,28 @@ impl GroupHasher {
         Self { state }
     }
 
+    fn write_len(&mut self, len: usize) {
+        // On basically any platform this should fit in a u64
+        self.state.update(&(len as u64).to_le_bytes());
+    }
+
+    /// Consume some bytes, adding it to the state of the hash.
+    ///
+    /// These bytes will be length prefixed, and so calling this function
+    /// multiple times is not the same as calling it with the concatenation
+    /// of those bytes.
+    pub fn eat_bytes(&mut self, x: &[u8]) {
+        self.write_len(x.len());
+        self.state.update(x);
+    }
+
     /// Consume a G1 group element, adding it into the state of this hash.
     ///
     /// This will automatically handle padding between elements, so hashing
     /// a constant number of group elements one after the other is safe,
     /// even if they happened to not have a constant-size serialization; they should though.
     pub fn eat_g1(&mut self, x: &G1) {
-        // On basically any platform this should fit
-        let len = x.compressed_size() as u64;
-        self.state.update(&len.to_le_bytes());
+        self.write_len(x.compressed_size());
         x.serialize_compressed(&mut self.state)
             .expect("failed to serialize G1 element");
     }
