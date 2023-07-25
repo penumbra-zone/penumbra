@@ -69,7 +69,63 @@ pub fn prove<R: CryptoRngCore>(
 /// We also take in a context string; the proof will only verify with a string matching
 /// the one used to create the proof.
 #[must_use]
-pub fn verify<'a>(ctx: &[u8], statement: Statement, proof: &Proof) -> bool {
+pub fn verify(ctx: &[u8], statement: Statement, proof: &Proof) -> bool {
     let e = challenge(ctx, &statement, &proof.big_k);
     statement.base * proof.s == proof.big_k + statement.result * e
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use ark_ec::Group;
+    use rand_core::OsRng;
+
+    const TEST_CTX: &[u8] = b"Test Context";
+    const NOT_TEST_CTX: &[u8] = b"Not Test Context";
+
+    fn make_proof() -> (Statement, Witness, Proof) {
+        let dlog = F::rand(&mut OsRng);
+        let base = G1::generator();
+        let result = base * dlog;
+
+        let statement = Statement { result, base };
+        let witness = Witness { dlog };
+        let proof = prove(&mut OsRng, TEST_CTX, statement, witness);
+
+        (statement, witness, proof)
+    }
+
+    #[test]
+    fn test_proof_happy_path() {
+        let (statement, _, proof) = make_proof();
+        assert!(verify(TEST_CTX, statement, &proof));
+    }
+
+    #[test]
+    fn test_different_big_k_makes_proof_fail() {
+        let (statement, _, mut proof) = make_proof();
+        proof.big_k = G1::generator();
+        assert!(!verify(TEST_CTX, statement, &proof));
+    }
+
+    #[test]
+    fn test_different_s_makes_proof_fail() {
+        let (statement, _, mut proof) = make_proof();
+        proof.s = F::rand(&mut OsRng);
+        assert!(!verify(TEST_CTX, statement, &proof));
+    }
+
+    #[test]
+    fn test_different_ctx_makes_proof_fail() {
+        let (statement, _, proof) = make_proof();
+        assert!(!verify(NOT_TEST_CTX, statement, &proof));
+    }
+
+    #[test]
+    fn test_bad_statement_makes_proof_fail() {
+        let (mut statement, _, proof) = make_proof();
+        statement.result = statement.base;
+        assert!(!verify(NOT_TEST_CTX, statement, &proof));
+    }
 }
