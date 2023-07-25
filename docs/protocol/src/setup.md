@@ -35,7 +35,7 @@ In the case of Penumbra, the concrete groups used are from [BLS12-377](https://n
 We take the convention that lowercase letters (e.g. $x, a$)
 are taken to be scalars in $\mathbb{F}$,
 and uppercase letters (e.g. $X, A$) are taken to be elements
-of $\mathbb{G}_1$, $\mathbb{G}_2$, or $\mathbb{G}_2$.
+of $\mathbb{G}_1$, $\mathbb{G}_2$, or $\mathbb{G}_T$.
 
 For $i \in \{1, 2, T\}$, we use the shorthand:
 $$

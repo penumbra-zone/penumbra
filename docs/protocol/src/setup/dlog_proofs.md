@@ -50,5 +50,5 @@ $$
 **Verification**
 
 $$
-V_{\text{DL}}(\text{ctx}, X, Y, \pi = (K, s)) := s \cdot G \overset{?}{=} K + H(\text{ctx}, (X, Y, K)) \cdot X
+V_{\text{DL}}(\text{ctx}, X, Y, \pi = (K, s)) := s \cdot Y \overset{?}{=} K + H(\text{ctx}, (X, Y, K)) \cdot X
 $$
