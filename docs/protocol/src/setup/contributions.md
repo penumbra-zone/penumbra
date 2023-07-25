@@ -79,7 +79,7 @@ the following elements:
 - $\hat{\alpha} \cdot [\alpha]_1, \hat{\beta} \cdot [\beta]_1, \hat{\beta} \cdot [\beta]_2$
 
 - $\hat{x}^i \cdot [x^i]_1\quad (i \in [0, \ldots, 2d - 2])$
-- $\hat{x}^i \cdot [x^i]_2\quad (i \in [0, \ldots, 2d - 2])$
+- $\hat{x}^i \cdot [x^i]_2\quad (i \in [0, \ldots, d - 1])$
 - $\hat{\alpha}\hat{x}^i \cdot [\alpha x^i]_1\quad (i \in [0, \ldots, d - 1])$
 - $\hat{\beta}\hat{x}^i \cdot [\beta x^i]_1\quad (i \in [0, \ldots, d - 1])$
 
@@ -97,7 +97,7 @@ Given purported CRS elements:
 
 - $G_{x^i}\quad (i \in [0, \ldots, 2d - 2])$
 
-- $H_{x^i}\quad (i \in [0, \ldots, 2d - 2])$
+- $H_{x^i}\quad (i \in [0, \ldots, d - 1])$
 
 - $\displaystyle G_{\alpha x^i}\quad (i \in [0, \ldots, d - 1])$
 
@@ -107,7 +107,7 @@ We can check their validity by ensuring the following checks hold:
 
 1. Check that each element is $G_\alpha, G_\beta, H_{\beta}, G_x, H_x \neq 0$ (the identity element in the respective groups).
 2. Check that $G_\beta \odot [1]_2 = [1]_1 \odot H_\beta$.
-3. Check that $G_{x^i} \odot [1]_2 = [1]_1 \odot H_{x^i} \quad (\forall i \in [0, \ldots, 2d - 2])$.
+3. Check that $G_{x^i} \odot [1]_2 = [1]_1 \odot H_{x^i} \quad (\forall i \in [0, \ldots, d - 1])$.
 4. Check that $G_{\alpha} \odot G_{x^i} = G_{\alpha x^i} \odot [1]_2 \quad (\forall i \in [0, \ldots, d- 1])$.
 4. Check that $G_{\beta} \odot G_{x^i} = G_{\beta x^i} \odot [1]_2 \quad (\forall i \in [0, \ldots, d- 1])$.
 4. Check that $G_{x} \odot G_{x^i} = G_{x^{i + 1}} \odot [1]_2 \quad (\forall i \in [0, \ldots, 2d - 3])$.
