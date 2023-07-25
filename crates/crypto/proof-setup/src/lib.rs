@@ -1,6 +1,3 @@
+mod dlog;
 mod group;
-
-fn stub() {
-    // your toe
-}
 

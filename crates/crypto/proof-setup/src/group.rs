@@ -34,7 +34,7 @@ const SAFE_F_HASH_SIZE: usize =
 ///
 /// This avoids having to deal with some serialization and reduction code from arkworks.
 #[derive(Clone)]
-struct GroupHasher {
+pub struct GroupHasher {
     state: blake2b_simd::State,
 }
 
