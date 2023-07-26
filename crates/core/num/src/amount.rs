@@ -123,11 +123,13 @@ impl AmountVar {
         // inside the `FqVar::enforce_cmp` function, which verifies the inputs are
         // of size <(p-1)/2.
         //
+        // See: https://docs.rs/ark-r1cs-std/latest/ark_r1cs_std/fields/fp/enum.FpVar.html#method.enforce_cmp
+        //
         // Constrain: 0 <= rem < divisor
         rem_var
             .amount
             .enforce_cmp(&divisor_var.amount, core::cmp::Ordering::Less, false)?;
-        // `FpVar::enforce_cmp` requires that the amounts have size <(p-1)/2 which is
+        // As above, `FpVar::enforce_cmp` requires that the amounts have size <(p-1)/2 which is
         // true for amounts as they are 128 bits at most.
 
         // We do not need to check the divisor is non-zero, as that is already
