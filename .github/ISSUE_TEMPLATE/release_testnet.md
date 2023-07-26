@@ -40,7 +40,6 @@ Following Monday (release day):
 - [ ] Edit the newly created (and published) release object, then click "Generate release notes." Cut and paste the generated text from the bottom to the top of the post, then save it.
 - [ ] You must [manually review](https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments) the `Waiting` deployment in the GitHub Action UI before the deployment will begin. Monitor the GitHub action to ensure it completes after it is approved.
 - [ ] Delegate to the Penumbra Labs CI validators; use amounts of ~200k `penumbra` per validator.
-- [ ] Update the User Guide to mention the newly created git tag.
 - [ ] Update Galileo deployment, [following docs](https://github.com/penumbra-zone/galileo).
 - [ ] Make GitHub release object and include the announcement
 - [ ] Make the announcement to Discord! 🎉🎉🎉
