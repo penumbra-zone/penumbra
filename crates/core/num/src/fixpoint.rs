@@ -426,11 +426,19 @@ impl U128x128Var {
         let other_bits: Vec<Boolean<Fq>> = other.to_bits_le().into_iter().rev().collect();
 
         // Now starting at the most significant side, compare bits.
+        // `gt` is true if we have conclusively determined that self > other.
+        // `lt` is true if we have conclusively determined that self < other.
         let mut gt: Boolean<Fq> = Boolean::constant(false);
         let mut lt: Boolean<Fq> = Boolean::constant(false);
         for (p, q) in zip(self_bits, other_bits) {
-            gt = gt.or(&(gt.or(&lt)?).not().and(&p)?.and(&q.not())?)?;
-            lt = lt.or(&(gt.or(&lt)?).not().and(&p.not())?.and(&q)?)?;
+            // If we've determined that self > other, that will remain
+            // true as we continue to look at other bits. Otherwise,
+            // we need to make sure that we don't have self < other.
+            // At this point, if we see a 1 bit for self and a 0 bit for other,
+            // we know that self > other.
+            gt = gt.or(&lt.not().and(&p)?.and(&q.not())?)?;
+            // The exact same logic, but swapping gt <-> lt, p <-> q
+            lt = lt.or(&gt.not().and(&q)?.and(&p.not())?)?;
         }
 
         match ordering {
