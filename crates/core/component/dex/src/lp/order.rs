@@ -78,7 +78,7 @@ impl BuyOrder {
         let desired_unit_amount = U128x128::from(desired_unit.unit_amount()); // e.g., 1_000
 
         let offered_amount = ((price_amount * desired_amount) / desired_unit_amount)?
-            .round_up()
+            .round_up()?
             .try_into()
             .expect("rounded to integer");
 
@@ -117,7 +117,7 @@ impl BuyOrder {
 
         let price_amount: Amount = ((offered_amount * desired_unit_amount) / desired_amount)?
             // TODO: Is this the correct rounding behavior? Should we expect this to round-trip exactly?
-            .round_up()
+            .round_up()?
             .try_into()
             .expect("rounded to integer");
 
@@ -163,7 +163,7 @@ impl SellOrder {
         let offered_unit_amount = U128x128::from(offered_unit.unit_amount()); // e.g., 1_000
 
         let desired_amount = ((price_amount * offered_amount) / offered_unit_amount)?
-            .round_up()
+            .round_up()?
             .try_into()
             .expect("rounded to integer");
 
@@ -202,7 +202,7 @@ impl SellOrder {
 
         let price_amount: Amount = ((desired_amount * offered_unit_amount) / offered_amount)?
             // TODO: Is this the correct rounding behavior? Should we expect this to round-trip exactly?
-            .round_up()
+            .round_up()?
             .try_into()
             .expect("rounded to integer");
 

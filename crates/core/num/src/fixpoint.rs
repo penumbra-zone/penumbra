@@ -103,12 +103,13 @@ impl U128x128 {
     }
 
     /// Rounds the number up to the nearest integer.
-    pub fn round_up(&self) -> Self {
+    pub fn round_up(&self) -> Result<Self, Error> {
         let (integral, fractional) = self.0.into_words();
         if fractional == 0 {
-            *self
+            Ok(*self)
         } else {
-            Self(U256::from_words(integral + 1, 0u128))
+            let integral = integral.checked_add(1).ok_or(Error::Overflow)?;
+            Ok(Self(U256::from_words(integral, 0u128)))
         }
     }
 

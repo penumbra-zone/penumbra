@@ -261,8 +261,10 @@ impl BareTradingFunction {
         // We burn the rouding error by apply `ceil` to delta_1:
         //
         // delta_1_star = Ceil(delta_1)
+        // TODO: round_up is now fallible
         let fillable_delta_1_exact: Amount = fillable_delta_1
             .round_up()
+            .expect("no overflow")
             .try_into()
             .expect("rounded up to integral value");
 
@@ -355,7 +357,12 @@ impl BareTradingFunction {
             // We burn the rouding error by apply `ceil` to delta_1:
             //
             // delta_1_star = Ceil(delta_1)
-            let fillable_delta_1_exact: Amount = fillable_delta_1.round_up().try_into().unwrap();
+            // TODO: round_up is now fallible
+            let fillable_delta_1_exact: Amount = fillable_delta_1
+                .round_up()
+                .expect("no overflow")
+                .try_into()
+                .unwrap();
 
             // How to show that: `unfilled_amount >= 0`:
             // In this branch, we have:
