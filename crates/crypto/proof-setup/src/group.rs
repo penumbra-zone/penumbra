@@ -11,14 +11,25 @@ use decaf377::Bls12_377;
 /// The group used for the left side of pairings.
 pub type G1 = <Bls12_377 as Pairing>::G1;
 
+/// A prepared version of G1 for more efficient pairings.
+pub type G1Prepared = <Bls12_377 as Pairing>::G1Prepared;
+
 /// The group used for the right side of pairings.
 pub type G2 = <Bls12_377 as Pairing>::G2;
+
+/// A prepared version of G2 for more efficient pairings.
+pub type G2Prepared = <Bls12_377 as Pairing>::G2Prepared;
 
 /// The group used for the output of pairings.
 pub type GT = PairingOutput<Bls12_377>;
 
 /// The field of scalars over which these groups form modules.
 pub type F = <Bls12_377 as Pairing>::ScalarField;
+
+/// The pairing operation between the two groups.
+pub fn pairing(a: impl Into<G1Prepared>, b: impl Into<G2Prepared>) -> GT {
+    <Bls12_377 as Pairing>::pairing(a, b)
+}
 
 /// Desired security in bits.
 const SECURITY_PARAMETER: usize = 128;
