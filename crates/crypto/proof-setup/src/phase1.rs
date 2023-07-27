@@ -4,19 +4,31 @@ use ark_ff::Zero;
 use crate::dlog;
 use crate::group::{pairing, GroupHasher, Hash, G1, G2};
 
-/// Assert that a given degree is high enough.
+/// Check that a given degree is high enough.
 ///
 /// (We use this enough times to warrant separating it out).
-const fn assert_degree_large_enough(d: usize) {
+const fn is_degree_large_enough(d: usize) -> bool {
     // We need to have at least the index 1 for our x_i values, so we need d >= 2.
-    assert!(d >= 2)
+    d >= 2
 }
 
-/// The CRS elements we produce in phase 1.
-///
-/// Not all elements of the final CRS are present here.
+// Some utility functions for encoding the relation between CRS length and degree
+
+const fn short_len(d: usize) -> usize {
+    (d - 1) + 1
+}
+
+const fn short_len_to_degree(l: usize) -> usize {
+    l
+}
+
+const fn long_len(d: usize) -> usize {
+    (2 * d - 2) + 1
+}
+
+/// Raw CRS elements, not yet validated for consistency.
 #[derive(Clone, Debug)]
-pub struct CRSElements {
+pub struct RawCRSElements {
     pub alpha_1: G1,
     pub beta_1: G1,
     pub beta_2: G2,
@@ -26,34 +38,37 @@ pub struct CRSElements {
     pub beta_x_1: Vec<G1>,
 }
 
-impl CRSElements {
-    /// Generate a "root" CRS, containing the value 1 for each secret element.
+impl RawCRSElements {
+    /// Extract a degree, if possible, from these elements.
     ///
-    /// This takes in the degree "d" associated with the circuit we need
-    /// to do a setup for, as per the docs.
-    ///
-    /// Naturally, these elements shouldn't actually be used as-is, but this
-    /// serves as a logical basis for the start of the phase.
-    pub fn root(d: usize) -> Self {
-        assert_degree_large_enough(d);
-
-        Self {
-            alpha_1: G1::generator(),
-            beta_1: G1::generator(),
-            beta_2: G2::generator(),
-            x_1: vec![G1::generator(); (2 * d - 2) + 1],
-            x_2: vec![G2::generator(); (d - 1) + 1],
-            alpha_x_1: vec![G1::generator(); (d - 1) + 1],
-            beta_x_1: vec![G1::generator(); (d - 1) + 1],
+    /// This can fail if the elements aren't using a consistent degree size,
+    /// or this degree isn't large enough.
+    fn get_degree(&self) -> Option<usize> {
+        let l = self.x_2.len();
+        let d = short_len_to_degree(l);
+        if !is_degree_large_enough(d) {
+            return None;
         }
+        if self.alpha_x_1.len() != short_len(d) {
+            return None;
+        }
+        if self.beta_x_1.len() != short_len(d) {
+            return None;
+        }
+        if self.x_1.len() != long_len(d) {
+            return None;
+        }
+        return Some(d);
     }
 
-    /// Check whether or not these elements are internally consistent.
+    /// Validate the internal consistency of these elements, producing a validated struct.
     ///
     /// This checks if the structure of the elements uses the secret scalars
     /// hidden behind the group elements correctly.
     #[must_use]
-    pub fn is_valid(&self) -> bool {
+    pub fn validate(self) -> Option<CRSElements> {
+        // 0. Check that we can extract a valid degree out of these elements.
+        let d = self.get_degree()?;
         // 1. Check that the elements committing to the secret values are not 0.
         if self.alpha_1.is_zero()
             || self.beta_1.is_zero()
@@ -61,11 +76,11 @@ impl CRSElements {
             || self.x_1[1].is_zero()
             || self.x_2[1].is_zero()
         {
-            return false;
+            return None;
         }
         // 2. Check that the two beta commitments match.
         if pairing(self.beta_1, G2::generator()) != pairing(G1::generator(), self.beta_2) {
-            return false;
+            return None;
         }
         // 3. Check that the x values match on both groups.
         // Todo: use a batched pairing check for this
@@ -75,7 +90,7 @@ impl CRSElements {
             .zip(self.x_2.iter())
             .all(|(l, r)| pairing(l, G2::generator()) == pairing(G1::generator(), r))
         {
-            return false;
+            return None;
         }
         // 4. Check that alpha and x are connected in alpha_x.
         if !self
@@ -86,7 +101,7 @@ impl CRSElements {
                 pairing(self.alpha_1, x_i) == pairing(alpha_x_i, G2::generator())
             })
         {
-            return false;
+            return None;
         }
         // 5. Check that beta and x are connected in beta_x.
         if !self
@@ -95,9 +110,8 @@ impl CRSElements {
             .zip(self.beta_x_1.iter())
             .all(|(x_i, beta_x_i)| pairing(self.beta_1, x_i) == pairing(beta_x_i, G2::generator()))
         {
-            return false;
+            return None;
         }
-        let mut i = 0;
         // 6. Check that the x_i are the correct powers of x.
         if !self
             .x_1
@@ -107,10 +121,13 @@ impl CRSElements {
                 pairing(x_i, self.x_2[1]) == pairing(x_i_plus_1, G2::generator())
             })
         {
-            return false;
+            return None;
         }
 
-        true
+        Some(CRSElements {
+            degree: d,
+            raw: self,
+        })
     }
 
     /// Hash these elements, producing a succinct digest.
@@ -141,6 +158,45 @@ impl CRSElements {
         }
 
         hasher.finalize_bytes()
+    }
+}
+
+/// The CRS elements we produce in phase 1.
+///
+/// Not all elements of the final CRS are present here.
+#[derive(Clone, Debug)]
+pub struct CRSElements {
+    degree: usize,
+    raw: RawCRSElements,
+}
+
+impl CRSElements {
+    /// Generate a "root" CRS, containing the value 1 for each secret element.
+    ///
+    /// This takes in the degree "d" associated with the circuit we need
+    /// to do a setup for, as per the docs.
+    ///
+    /// Naturally, these elements shouldn't actually be used as-is, but this
+    /// serves as a logical basis for the start of the phase.
+    pub fn root(d: usize) -> Self {
+        assert!(is_degree_large_enough(d));
+
+        let raw = RawCRSElements {
+            alpha_1: G1::generator(),
+            beta_1: G1::generator(),
+            beta_2: G2::generator(),
+            x_1: vec![G1::generator(); (2 * d - 2) + 1],
+            x_2: vec![G2::generator(); (d - 1) + 1],
+            alpha_x_1: vec![G1::generator(); (d - 1) + 1],
+            beta_x_1: vec![G1::generator(); (d - 1) + 1],
+        };
+        Self { degree: d, raw }
+    }
+
+    /// Hash these elements, producing a succinct digest.
+    pub fn hash(&self) -> Hash {
+        // No need to hash the degree, already implied by the lengths of the elements.
+        self.raw.hash()
     }
 }
 
@@ -213,8 +269,8 @@ mod test {
     /// Keeping this small makes tests go faster.
     const D: usize = 2;
 
-    fn make_crs(alpha: F, beta: F, x: F) -> CRSElements {
-        CRSElements {
+    fn make_crs(alpha: F, beta: F, x: F) -> RawCRSElements {
+        RawCRSElements {
             alpha_1: G1::generator() * alpha,
             beta_1: G1::generator() * beta,
             beta_2: G2::generator() * beta,
@@ -222,7 +278,6 @@ mod test {
                 G1::generator(),
                 G1::generator() * x,
                 G1::generator() * (x * x),
-                G1::generator() * (x * x * x),
             ],
             x_2: vec![G2::generator(), G2::generator() * x],
             alpha_x_1: vec![G1::generator() * alpha, G1::generator() * (alpha * x)],
@@ -230,7 +285,7 @@ mod test {
         }
     }
 
-    fn non_trivial_crs() -> CRSElements {
+    fn non_trivial_crs() -> RawCRSElements {
         let alpha = F::rand(&mut OsRng);
         let beta = F::rand(&mut OsRng);
         let x = F::rand(&mut OsRng);
@@ -241,27 +296,27 @@ mod test {
     #[test]
     fn test_root_crs_is_valid() {
         let root = CRSElements::root(D);
-        assert!(root.is_valid());
+        assert!(root.raw.validate().is_some());
     }
 
     #[test]
     fn test_nontrivial_crs_is_valid() {
         let crs = non_trivial_crs();
-        assert!(crs.is_valid());
+        assert!(crs.validate().is_some());
     }
 
     #[test]
     fn test_changing_alpha_makes_crs_invalid() {
         let mut crs = non_trivial_crs();
         crs.alpha_1 = G1::generator();
-        assert!(!crs.is_valid());
+        assert!(crs.validate().is_none());
     }
 
     #[test]
     fn test_changing_beta_makes_crs_invalid() {
         let mut crs = non_trivial_crs();
         crs.beta_1 = G1::generator();
-        assert!(!crs.is_valid());
+        assert!(crs.validate().is_none());
     }
 
     #[test]
@@ -271,11 +326,11 @@ mod test {
         let x = F::rand(&mut OsRng);
 
         let crs0 = make_crs(F::zero(), beta, x);
-        assert!(!crs0.is_valid());
+        assert!(crs0.validate().is_none());
         let crs1 = make_crs(alpha, F::zero(), x);
-        assert!(!crs1.is_valid());
+        assert!(crs1.validate().is_none());
         let crs2 = make_crs(alpha, beta, F::zero());
-        assert!(!crs2.is_valid());
+        assert!(crs2.validate().is_none());
     }
 
     #[test]
@@ -283,7 +338,7 @@ mod test {
         let alpha = F::rand(&mut OsRng);
         let beta = F::rand(&mut OsRng);
         let x = F::rand(&mut OsRng);
-        let crs = CRSElements {
+        let crs = RawCRSElements {
             alpha_1: G1::generator() * alpha,
             beta_1: G1::generator() * beta,
             beta_2: G2::generator() * beta,
@@ -298,6 +353,6 @@ mod test {
             alpha_x_1: vec![G1::generator() * alpha, G1::generator() * (alpha * x)],
             beta_x_1: vec![G1::generator() * beta, G1::generator() * (beta * x)],
         };
-        assert!(!crs.is_valid());
+        assert!(crs.validate().is_none());
     }
 }
