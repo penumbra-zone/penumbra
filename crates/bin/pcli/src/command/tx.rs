@@ -897,59 +897,28 @@ impl TxCmd {
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Position(PositionCmd::CloseAll { fee, source }) => {
+            TxCmd::Position(PositionCmd::CloseAll {
+                fee,
+                source,
+                trading_pair,
+            }) => {
                 let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
 
-                // Query all unspent notes to find the open position NFTs associated with the account:
-                let notes = view
-                    .unspent_notes_by_address_and_asset(app.fvk.account_group_id())
+                let owned_position_ids = view
+                    .owned_position_ids(Some(position::State::Opened), *trading_pair)
                     .await?;
 
-                fn _is_opened_position_nft(denom: &DenomMetadata) -> bool {
-                    let prefix = format!("lpnft_opened_");
-
-                    denom.starts_with(&prefix)
+                if owned_position_ids.is_empty() {
+                    println!("No open positions are available to close.");
+                    return Ok(());
                 }
-
-                let asset_cache = app.view().assets().await?;
-                let opened_notes: Vec<String> = notes
-                    .iter()
-                    .flat_map(|(index, notes_by_asset)| {
-                        // Include each note individually:
-                        notes_by_asset.iter().flat_map(|(_asset, notes)| {
-                            notes
-                                .iter()
-                                .filter(|record| {
-                                    let base_denom = asset_cache.get(&record.note.asset_id());
-                                    if base_denom.is_none() {
-                                        return false;
-                                    }
-                                    (*index == AddressIndex::from(*source))
-                                        && base_denom.unwrap().is_opened_position_nft()
-                                })
-                                .map(|record| {
-                                    asset_cache
-                                        .get(&record.note.asset_id())
-                                        .unwrap()
-                                        .to_string()
-                                })
-                        })
-                    })
-                    .collect();
 
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
                 let mut plan = &mut Planner::new(OsRng);
 
-                if opened_notes.is_empty() {
-                    println!("No open positions are available to close.");
-                    return Ok(());
-                }
-
-                for denom_string in opened_notes {
-                    // Close the position associated with the opened NFT note
-                    let position_id = position::Id::from_str(&denom_string[13..])
-                        .expect("improperly formatted LPNFT position id");
+                for position_id in owned_position_ids {
+                    // Close the position
                     plan = plan.position_close(position_id);
                 }
 
@@ -963,63 +932,32 @@ impl TxCmd {
                     .await?;
                 app.build_and_submit_transaction(final_plan).await?;
             }
-            TxCmd::Position(PositionCmd::WithdrawAll { fee, source }) => {
+            TxCmd::Position(PositionCmd::WithdrawAll {
+                fee,
+                source,
+                trading_pair,
+            }) => {
                 let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
 
-                // Query all unspent notes to find the closed position NFTs associated with the account:
-                let notes = view
-                    .unspent_notes_by_address_and_asset(app.fvk.account_group_id())
+                let owned_position_ids = view
+                    .owned_position_ids(Some(position::State::Closed), *trading_pair)
                     .await?;
 
-                fn is_closed_position_nft(denom: &DenomMetadata) -> bool {
-                    let prefix = format!("lpnft_closed_");
-
-                    denom.starts_with(&prefix)
+                if owned_position_ids.is_empty() {
+                    println!("No closed positions are available to withdraw.");
+                    return Ok(());
                 }
-
-                let asset_cache = app.view().assets().await?;
-                let closed_notes: Vec<String> = notes
-                    .iter()
-                    .flat_map(|(index, notes_by_asset)| {
-                        // Include each note individually:
-                        notes_by_asset.iter().flat_map(|(_asset, notes)| {
-                            notes
-                                .iter()
-                                .filter(|record| {
-                                    let base_denom = asset_cache.get(&record.note.asset_id());
-                                    if base_denom.is_none() {
-                                        return false;
-                                    }
-                                    (*index == AddressIndex::from(*source))
-                                        && is_closed_position_nft(base_denom.unwrap())
-                                })
-                                .map(|record| {
-                                    asset_cache
-                                        .get(&record.note.asset_id())
-                                        .unwrap()
-                                        .to_string()
-                                })
-                        })
-                    })
-                    .collect();
 
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
                 let mut plan = &mut Planner::new(OsRng);
 
-                if closed_notes.is_empty() {
-                    println!("No closed positions are available to withdraw.");
-                    return Ok(());
-                }
-
                 let mut specific_client = app.specific_client().await?;
 
                 let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
                 let params = view.chain_params().await?;
-                for denom_string in closed_notes {
-                    // Withdraw the position associated with the closed NFT note
-                    let position_id = position::Id::from_str(&denom_string[13..])
-                        .expect("improperly formatted LPNFT position id");
+                for position_id in owned_position_ids {
+                    // Withdraw the position
 
                     // Fetch the information regarding the position from the view service.
                     let position = specific_client

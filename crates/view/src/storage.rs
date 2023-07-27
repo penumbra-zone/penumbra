@@ -982,6 +982,7 @@ impl Storage {
 
     pub async fn record_position(&self, position: Position) -> anyhow::Result<()> {
         let position_id = position.id().0.to_vec();
+
         let position_state = position.state.to_string();
         let trading_pair = position.phi.pair.to_string();
 
@@ -990,8 +991,31 @@ impl Storage {
         spawn_blocking(move || {
             pool.get()?
                 .execute(
-                    "INSERT OR IGNORE INTO positions (position_id, position_state, trading_pair) VALUES (?1, ?2, ?3)",
+                    "INSERT OR REPLACE INTO positions (position_id, position_state, trading_pair) VALUES (?1, ?2, ?3)",
                     (position_id, position_state, trading_pair),
+                )
+                .map_err(anyhow::Error::from)
+        })
+        .await??;
+
+        Ok(())
+    }
+
+    pub async fn update_position(
+        &self,
+        position_id: position::Id,
+        position_state: position::State,
+    ) -> anyhow::Result<()> {
+        let position_id = position_id.0.to_vec();
+        let position_state = position_state.to_string();
+
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            pool.get()?
+                .execute(
+                    "UPDATE positions SET (position_state) = ?1 WHERE position_id = ?2",
+                    (position_state, position_id),
                 )
                 .map_err(anyhow::Error::from)
         })
@@ -1404,26 +1428,35 @@ impl Storage {
         let pool = self.pool.clone();
 
         let state_clause = match position_state {
-            Some(state) => state.to_string(),
-            None => "position_state".to_string(),
+            Some(state) => format!("position_state = \"{}\"", state.to_string()),
+            None => "".to_string(),
         };
 
         let pair_clause = match trading_pair {
-            Some(pair) => pair.to_string(),
-            None => "trading_pair".to_string(),
+            Some(pair) => format!("trading_pair = \"{}\"", pair.to_string()),
+            None => "".to_string(),
         };
 
         spawn_blocking(move || {
-            pool.get()?
-                .prepare_cached(
-                    "SELECT position_id FROM positions 
-                     WHERE position_state = ?1 
-                     AND trading_pair = ?2",
-                )?
-                .query_and_then([state_clause, pair_clause], |row| {
-                    let position_id: Vec<u8> = row.get("position_id")?;
+            let mut q = "SELECT position_id FROM positions".to_string();
+            match (position_state.is_some(), trading_pair.is_some()) {
+                (true, true) => {
+                    q = q + " WHERE " + &state_clause + " AND " + &pair_clause;
+                }
+                (true, false) => {
+                    q = q + " WHERE " + &state_clause;
+                }
+                (false, true) => {
+                    q = q + " WHERE " + &pair_clause;
+                }
+                (false, false) => (),
+            };
 
-                    position::Id::decode(position_id.as_slice())
+            pool.get()?
+                .prepare_cached(&q)?
+                .query_and_then([], |row| {
+                    let position_id: Vec<u8> = row.get("position_id")?;
+                    Ok(position::Id(position_id.as_slice().try_into()?))
                 })?
                 .collect()
         })

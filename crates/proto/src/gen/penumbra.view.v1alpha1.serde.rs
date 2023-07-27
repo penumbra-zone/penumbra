@@ -2889,12 +2889,12 @@ impl serde::Serialize for OwnedPositionIdsResponse {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.position_ids.is_empty() {
+        if self.position_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.OwnedPositionIdsResponse", len)?;
-        if !self.position_ids.is_empty() {
-            struct_ser.serialize_field("positionIds", &self.position_ids)?;
+        if let Some(v) = self.position_id.as_ref() {
+            struct_ser.serialize_field("positionId", v)?;
         }
         struct_ser.end()
     }
@@ -2906,13 +2906,13 @@ impl<'de> serde::Deserialize<'de> for OwnedPositionIdsResponse {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "position_ids",
-            "positionIds",
+            "position_id",
+            "positionId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            PositionIds,
+            PositionId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2934,7 +2934,7 @@ impl<'de> serde::Deserialize<'de> for OwnedPositionIdsResponse {
                         E: serde::de::Error,
                     {
                         match value {
-                            "positionIds" | "position_ids" => Ok(GeneratedField::PositionIds),
+                            "positionId" | "position_id" => Ok(GeneratedField::PositionId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2954,19 +2954,19 @@ impl<'de> serde::Deserialize<'de> for OwnedPositionIdsResponse {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut position_ids__ = None;
+                let mut position_id__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::PositionIds => {
-                            if position_ids__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("positionIds"));
+                        GeneratedField::PositionId => {
+                            if position_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionId"));
                             }
-                            position_ids__ = Some(map.next_value()?);
+                            position_id__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(OwnedPositionIdsResponse {
-                    position_ids: position_ids__.unwrap_or_default(),
+                    position_id: position_id__,
                 })
             }
         }

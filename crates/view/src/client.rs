@@ -4,6 +4,10 @@ use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
 use penumbra_asset::asset::{self, DenomMetadata, Id};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
+use penumbra_dex::{
+    lp::position::{self},
+    TradingPair,
+};
 use penumbra_keys::{
     keys::{AccountGroupId, AddressIndex},
     Address,
@@ -149,6 +153,13 @@ pub trait ViewClient {
 
     /// Queries for all known assets.
     fn assets(&mut self) -> Pin<Box<dyn Future<Output = Result<asset::Cache>> + Send + 'static>>;
+
+    /// Queries for liquidity positions owned by the full viewing key.
+    fn owned_position_ids(
+        &mut self,
+        position_state: Option<position::State>,
+        trading_pair: Option<TradingPair>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<position::Id>>> + Send + 'static>>;
 
     /// Generates a full perspective for a selected transaction using a full viewing key
     fn transaction_info_by_hash(
@@ -642,6 +653,42 @@ where
                 .collect::<Result<Vec<DenomMetadata>, anyhow::Error>>()?;
 
             Ok(assets.into_iter().collect())
+        }
+        .boxed()
+    }
+
+    fn owned_position_ids(
+        &mut self,
+        position_state: Option<position::State>,
+        trading_pair: Option<TradingPair>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<position::Id>>> + Send + 'static>> {
+        // should the return be streamed here? none of the other viewclient responses are, probably fine for now
+        // but might be an issue eventually
+        let mut self2 = self.clone();
+        async move {
+            // We have to manually invoke the method on the type, because it has the
+            // same name as the one we're implementing.
+            let rsp = ViewProtocolServiceClient::owned_position_ids(
+                &mut self2,
+                tonic::Request::new(pb::OwnedPositionIdsRequest {
+                    trading_pair: trading_pair.map(TryInto::try_into).transpose()?,
+                    position_state: position_state.map(TryInto::try_into).transpose()?,
+                    ..Default::default()
+                }),
+            );
+
+            let pb_position_ids: Vec<_> = rsp.await?.into_inner().try_collect().await?;
+
+            let position_ids = pb_position_ids
+                .into_iter()
+                .map(|p| {
+                    position::Id::try_from(p.position_id.ok_or_else(|| {
+                        anyhow::anyhow!("empty OwnedPositionsIdsResponse message")
+                    })?)
+                })
+                .collect::<Result<Vec<position::Id>, anyhow::Error>>()?;
+
+            Ok(position_ids)
         }
         .boxed()
     }
