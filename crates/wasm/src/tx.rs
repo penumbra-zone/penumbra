@@ -58,10 +58,9 @@ pub fn send_plan(
         .plan_with_spendable_and_votable_notes(
             &chain_params,
             &fmd_params,
-            &fvk,
-            AddressIndex::from(0u32),
             send_tx.notes.try_into().unwrap(),
             Default::default(),
+            fvk.incoming().payment_address(AddressIndex::new(0)).0
         )
         .unwrap();
 
