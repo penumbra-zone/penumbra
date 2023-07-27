@@ -8,19 +8,19 @@ use crate::group::{GroupHasher, F, G1};
 // scalar multiplication take a move instead of a reference, at least in arkworks,
 // so you don't avoid a move by doing that.
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Statement {
     result: G1,
     base: G1,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Witness {
     dlog: F,
 }
 
 ///A Proof of knowledge
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Proof {
     big_k: G1,
     s: F,

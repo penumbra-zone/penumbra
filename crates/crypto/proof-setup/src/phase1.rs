@@ -1,6 +1,7 @@
 use ark_ec::Group;
 use ark_ff::Zero;
 
+use crate::dlog;
 use crate::group::{pairing, G1, G2};
 
 /// Assert that a given degree is high enough.
@@ -14,7 +15,7 @@ const fn assert_degree_large_enough(d: usize) {
 /// The CRS elements we produce in phase 1.
 ///
 /// Not all elements of the final CRS are present here.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CRSElements {
     pub alpha_1: G1,
     pub beta_1: G1,
@@ -111,6 +112,40 @@ impl CRSElements {
 
         true
     }
+}
+
+/// A linking proof shows knowledge of the new secret elements linking two sets of CRS elements.
+///
+/// This pets two cats with one hand:
+/// 1. We show that we're actually building off of the previous elements.
+/// 2. We show that we know the secret elements we're using, avoiding rogue key chicanery.
+#[derive(Clone, Copy, Debug)]
+struct LinkingProof {
+    alpha_proof: dlog::Proof,
+    beta_proof: dlog::Proof,
+    x_proof: dlog::Proof,
+}
+
+/// The max
+pub const CONTRIBUTION_HASH_SIZE: usize = 32;
+
+// Note: Don't need constant time equality because we're hashing public data: contributions.
+
+/// The hash of a contribution, providing a unique string for each contribution.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ContributionHash([u8; CONTRIBUTION_HASH_SIZE]);
+
+/// Represents a contribution to phase1 of the ceremony.
+///
+/// This contribution is linked to a previous contribution, which it builds upon.
+///
+/// The contribution includes new elements for the CRS, along with a proof that these elements
+/// build upon the claimed parent contribution.
+#[derive(Clone, Debug)]
+pub struct Contribution {
+    pub parent: ContributionHash,
+    pub new_elements: CRSElements,
+    linking_proof: LinkingProof,
 }
 
 #[cfg(test)]
