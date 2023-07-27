@@ -378,14 +378,14 @@ impl U128x128Var {
 
         // t3 = (t2 >> 64) + z4
         let t3 = z4 + Boolean::<Fq>::le_bits_to_fp_var(&t2_bits[64..129].to_bits_le()?)?;
-        // Constrain: t3 fits in 129 bits
-        let t3_bits = bit_constrain(t3, 129)?;
+        // Constrain: t3 fits in 128 bits
+        let t3_bits = bit_constrain(t3, 128)?;
 
         // w2 = t3 & 2^64 - 1
         let w2 = UInt64::from_bits_le(&t3_bits[0..64]);
 
         // t4 = (t3 >> 64) + z5
-        let t4 = z5 + Boolean::<Fq>::le_bits_to_fp_var(&t3_bits[64..129].to_bits_le()?)?;
+        let t4 = z5 + Boolean::<Fq>::le_bits_to_fp_var(&t3_bits[64..128].to_bits_le()?)?;
         // Constrain: t4 fits in 64 bits
         let t4_bits = bit_constrain(t4, 64)?;
         // If we didn't overflow, it will fit in 64 bits.
