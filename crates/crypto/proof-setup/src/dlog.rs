@@ -1,7 +1,7 @@
 use ark_ff::UniformRand;
 use rand_core::CryptoRngCore;
 
-use crate::group::{GroupHasher, F, G1};
+use crate::group::{GroupHasher, Hash, F, G1};
 
 // Note: one choice you could make for these structs is to have them take
 // references to their data, instead of copying them. However, operations like
@@ -19,18 +19,28 @@ pub struct Witness {
     dlog: F,
 }
 
-///A Proof of knowledge
+/// A Proof of knowledge of the discrete logarithm of some element relative to another.
 #[derive(Clone, Copy, Debug)]
 pub struct Proof {
     big_k: G1,
     s: F,
 }
 
+impl Proof {
+    /// Hash this proof
+    pub fn hash(&self) -> Hash {
+        let mut hasher = GroupHasher::new(b"PC$:proof");
+        hasher.eat_g1(&self.big_k);
+        hasher.eat_f(&self.s);
+        hasher.finalize_bytes()
+    }
+}
+
 // This method is pulled out to be used in both proving and verifying.
 
 /// Generate the challenge, given the context, statement, and nonce commitment.
 fn challenge(ctx: &[u8], statement: &Statement, big_k: &G1) -> F {
-    let mut hasher = GroupHasher::new(b"PAH:crmny_dlog");
+    let mut hasher = GroupHasher::new(b"PC$:proof_chal");
     hasher.eat_bytes(ctx);
     hasher.eat_g1(&statement.result);
     hasher.eat_g1(&statement.base);
