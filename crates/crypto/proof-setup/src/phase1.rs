@@ -2,7 +2,7 @@ use ark_ec::Group;
 use ark_ff::Zero;
 
 use crate::dlog;
-use crate::group::{pairing, G1, G2};
+use crate::group::{pairing, GroupHasher, Hash, G1, G2};
 
 /// Assert that a given degree is high enough.
 ///
@@ -112,6 +112,36 @@ impl CRSElements {
 
         true
     }
+
+    /// Hash these elements, producing a succinct digest.
+    pub fn hash(&self) -> Hash {
+        let mut hasher = GroupHasher::new(b"PC$:crs_elmnts");
+        hasher.eat_g1(&self.alpha_1);
+        hasher.eat_g1(&self.beta_1);
+        hasher.eat_g2(&self.beta_2);
+
+        hasher.eat_usize(self.x_1.len());
+        for v in &self.x_1 {
+            hasher.eat_g1(v);
+        }
+
+        hasher.eat_usize(self.x_2.len());
+        for v in &self.x_2 {
+            hasher.eat_g2(v);
+        }
+
+        hasher.eat_usize(self.alpha_x_1.len());
+        for v in &self.alpha_x_1 {
+            hasher.eat_g1(v);
+        }
+
+        hasher.eat_usize(self.beta_x_1.len());
+        for v in &self.beta_x_1 {
+            hasher.eat_g1(v);
+        }
+
+        hasher.finalize_bytes()
+    }
 }
 
 /// A linking proof shows knowledge of the new secret elements linking two sets of CRS elements.
@@ -133,7 +163,13 @@ pub const CONTRIBUTION_HASH_SIZE: usize = 32;
 
 /// The hash of a contribution, providing a unique string for each contribution.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ContributionHash([u8; CONTRIBUTION_HASH_SIZE]);
+pub struct ContributionHash(pub [u8; CONTRIBUTION_HASH_SIZE]);
+
+impl AsRef<[u8]> for ContributionHash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
 
 /// Represents a contribution to phase1 of the ceremony.
 ///
@@ -146,6 +182,21 @@ pub struct Contribution {
     pub parent: ContributionHash,
     pub new_elements: CRSElements,
     linking_proof: LinkingProof,
+}
+
+impl Contribution {
+    fn hash(&self) -> ContributionHash {
+        let mut hasher = GroupHasher::new(b"PC$:contribution");
+        hasher.eat_bytes(self.parent.as_ref());
+        hasher.eat_bytes(self.new_elements.hash().as_ref());
+        // Note: we could hide this behind another level of indirection, but contribution
+        // already uses the internals of the linking proof anyways, so this doesn't
+        // feel egregious to me.
+        hasher.eat_bytes(self.linking_proof.alpha_proof.hash().as_ref());
+        hasher.eat_bytes(self.linking_proof.beta_proof.hash().as_ref());
+        hasher.eat_bytes(self.linking_proof.x_proof.hash().as_ref());
+        ContributionHash(hasher.finalize_bytes())
+    }
 }
 
 #[cfg(test)]
