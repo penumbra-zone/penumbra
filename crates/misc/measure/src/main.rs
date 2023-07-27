@@ -98,10 +98,18 @@ impl Opt {
                                 .unwrap()
                                 .into_inner();
 
-                            while let Some(block_rsp) = stream.message().await.unwrap() {
-                                let size = block_rsp.encoded_len();
-                                let block: CompactBlock = block_rsp.try_into().unwrap();
-                                tracing::info!(?size, block_height = ?block.height);
+                            let (tx, mut buffered_stream) = tokio::sync::mpsc::channel(1000);
+                            tokio::spawn(async move {
+                                while let Some(block) = stream.message().await.transpose() {
+                                    if tx.send(block).await.is_err() {
+                                        break;
+                                    }
+                                }
+                            });
+
+                            while let Some(block) = buffered_stream.recv().await {
+                                let block: CompactBlock = block.unwrap().try_into().unwrap();
+                                tracing::info!(?block);
                             }
                         }
                         .instrument(info_span!("conn", conn_id = conn_id)),
