@@ -43,7 +43,7 @@ pub struct Opt {
     #[clap(subcommand)]
     pub cmd: Command,
     /// The filter for log messages.
-    #[clap( long, default_value_t = EnvFilter::new("warn"), env = "RUST_LOG")]
+    #[clap( long, default_value_t = EnvFilter::new("warn,measure=info"), env = "RUST_LOG")]
     trace_filter: EnvFilter,
 }
 
@@ -68,14 +68,24 @@ pub enum Command {
         /// The number of connections to open.
         #[clap(short, long, default_value = "100")]
         num_connections: usize,
+
+        /// Whether to sync the entire chain state, then exit.
+        #[clap(long)]
+        full_sync: bool,
     },
 }
 
 impl Opt {
     pub async fn run(&self) -> anyhow::Result<()> {
         match self.cmd {
-            Command::OpenConnections { num_connections } => {
+            Command::OpenConnections {
+                num_connections,
+                full_sync,
+            } => {
                 let current_height = self.latest_known_block_height().await?.0;
+                // Configure start/stop ranges on query, depending on whether we want a full sync.
+                let start_height = if full_sync { 0 } else { current_height };
+                let end_height = if full_sync { current_height } else { 0 };
                 let node = self.node.to_string();
                 let mut js = tokio::task::JoinSet::new();
                 for conn_id in 0..num_connections {
@@ -89,22 +99,25 @@ impl Opt {
                                 .compact_block_range(tonic::Request::new(
                                     CompactBlockRangeRequest {
                                         chain_id: String::new(),
-                                        start_height: current_height,
-                                        end_height: 0,
+                                        start_height: start_height,
+                                        end_height: end_height,
                                         keep_alive: true,
                                     },
                                 ))
                                 .await
                                 .unwrap()
                                 .into_inner();
-
                             while let Some(block_rsp) = stream.message().await.unwrap() {
                                 let size = block_rsp.encoded_len();
                                 let block: CompactBlock = block_rsp.try_into().unwrap();
-                                tracing::info!(?size, block_height = ?block.height);
+                                tracing::debug!(block_size = ?size, block_height = ?block.height, initial_chain_height = ?current_height);
+                                // Exit if we only wanted a single full sync per client.
+                                if full_sync && block.height >=  current_height {
+                                    break;
+                                }
                             }
                         }
-                        .instrument(info_span!("conn", conn_id = conn_id)),
+                        .instrument(debug_span!("open-connection", conn_id = conn_id)),
                     );
                 }
                 while let Some(res) = js.join_next().await {
@@ -206,7 +219,7 @@ impl Opt {
             .json()
             .await?;
 
-        tracing::debug!("{}", rsp);
+        tracing::debug!(?rsp, "retrieved tendermint status");
 
         let sync_info = rsp
             .get("result")
