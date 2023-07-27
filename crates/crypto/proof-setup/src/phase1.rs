@@ -1,8 +1,9 @@
 use ark_ec::Group;
-use ark_ff::Zero;
+use ark_ff::{One, UniformRand, Zero};
+use rand_core::CryptoRngCore;
 
 use crate::dlog;
-use crate::group::{pairing, GroupHasher, Hash, G1, G2};
+use crate::group::{pairing, GroupHasher, Hash, F, G1, G2};
 
 /// Check that a given degree is high enough.
 ///
@@ -253,13 +254,92 @@ impl Contribution {
         hasher.eat_bytes(self.linking_proof.x_proof.hash().as_ref());
         ContributionHash(hasher.finalize_bytes())
     }
+
+    /// Make a new contribution, over the previous CRS elements.
+    ///
+    /// We also need a contribution hash, for the parent we're building on,
+    /// including those elements and other information, which will then appear
+    /// in the resulting contribution we're making.
+    pub fn make<R: CryptoRngCore>(
+        rng: &mut R,
+        parent: ContributionHash,
+        old: &CRSElements,
+    ) -> Self {
+        let alpha = F::rand(rng);
+        let beta = F::rand(rng);
+        let x = F::rand(rng);
+
+        let mut new = old.clone();
+
+        new.raw.alpha_1 *= alpha;
+        new.raw.beta_1 *= beta;
+        new.raw.beta_2 *= beta;
+
+        let mut x_i = F::one();
+        let mut alpha_x_i = alpha;
+        let mut beta_x_i = beta;
+
+        let d = old.degree;
+        for i in 0..short_len(d) {
+            new.raw.x_1[i] *= x_i;
+            new.raw.x_2[i] *= x_i;
+            new.raw.alpha_x_1[i] *= alpha_x_i;
+            new.raw.beta_x_1[i] *= beta_x_i;
+
+            x_i *= x;
+            alpha_x_i *= x;
+            beta_x_i *= x;
+        }
+        for i in short_len(d)..long_len(d) {
+            new.raw.x_1[i] *= x_i;
+
+            x_i *= x;
+        }
+
+        let alpha_proof = dlog::prove(
+            rng,
+            b"phase1 alpha proof",
+            dlog::Statement {
+                result: new.raw.alpha_1,
+                base: old.raw.alpha_1,
+            },
+            dlog::Witness { dlog: alpha },
+        );
+        let beta_proof = dlog::prove(
+            rng,
+            b"phase1 beta proof",
+            dlog::Statement {
+                result: new.raw.beta_1,
+                base: old.raw.beta_1,
+            },
+            dlog::Witness { dlog: beta },
+        );
+        let x_proof = dlog::prove(
+            rng,
+            b"phase1 x proof",
+            dlog::Statement {
+                result: new.raw.x_1[1],
+                base: old.raw.x_1[1],
+            },
+            dlog::Witness { dlog: x },
+        );
+
+        Self {
+            parent,
+            new_elements: new,
+            linking_proof: LinkingProof {
+                alpha_proof,
+                beta_proof,
+                x_proof,
+            },
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
 
-    use ark_ff::UniformRand;
     use rand_core::OsRng;
 
     use crate::group::F;
@@ -354,5 +434,16 @@ mod test {
             beta_x_1: vec![G1::generator() * beta, G1::generator() * (beta * x)],
         };
         assert!(crs.validate().is_none());
+    }
+
+    #[test]
+    fn test_contribution_produces_valid_crs() {
+        let root = CRSElements::root(D);
+        let contribution = Contribution::make(
+            &mut OsRng,
+            ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
+            &root,
+        );
+        assert!(contribution.new_elements.raw.validate().is_some());
     }
 }

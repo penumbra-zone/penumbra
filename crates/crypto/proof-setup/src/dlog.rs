@@ -10,13 +10,13 @@ use crate::group::{GroupHasher, Hash, F, G1};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Statement {
-    result: G1,
-    base: G1,
+    pub result: G1,
+    pub base: G1,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct Witness {
-    dlog: F,
+    pub dlog: F,
 }
 
 /// A Proof of knowledge of the discrete logarithm of some element relative to another.
