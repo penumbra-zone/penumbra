@@ -363,10 +363,10 @@ impl U128x128Var {
         // t1 = (t0 >> 128) + z2
         let t1 = z2 + Boolean::<Fq>::le_bits_to_fp_var(&t0_bits[128..193].to_bits_le()?)?;
         // Constrain: t1 fits in 129 bits
-        let t1_bits = bit_constrain(t1, 129)?;
+        let t1_bits = bit_constrain(t1, 130)?;
 
         // w0 = t0 & 2^64 - 1
-        let w0 = UInt64::from_bits_le(&t0_bits[0..64]);
+        let w0 = UInt64::from_bits_le(&t1_bits[0..64]);
 
         // t2 = (t1 >> 64) + z3
         let t2 = z3 + Boolean::<Fq>::le_bits_to_fp_var(&t1_bits[64..129].to_bits_le()?)?;
@@ -729,10 +729,16 @@ mod test {
         #[test]
         fn multiply_and_round(
             a_int in any::<u64>(),
+            a_frac in any::<u64>(),
             b_int in any::<u64>(),
+            b_frac in any::<u64>(),
         ) {
-            let a = U128x128::from(a_int);
-            let b = U128x128::from(b_int);
+            let a = U128x128(
+                U256([a_frac.into(), a_int.into()])
+            );
+            let b = U128x128(
+                U256([b_frac.into(), b_int.into()])
+            );
 
             let result = a.checked_mul(&b);
 
