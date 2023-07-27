@@ -640,8 +640,8 @@ pub struct OwnedPositionIdsRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OwnedPositionIdsResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub position_ids: ::prost::alloc::vec::Vec<
+    #[prost(message, optional, tag = "1")]
+    pub position_id: ::core::option::Option<
         super::super::core::dex::v1alpha1::PositionId,
     >,
 }
@@ -1159,7 +1159,10 @@ pub mod view_protocol_service_client {
         pub async fn owned_position_ids(
             &mut self,
             request: impl tonic::IntoRequest<super::OwnedPositionIdsRequest>,
-        ) -> Result<tonic::Response<super::OwnedPositionIdsResponse>, tonic::Status> {
+        ) -> Result<
+            tonic::Response<tonic::codec::Streaming<super::OwnedPositionIdsResponse>>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1173,7 +1176,7 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/OwnedPositionIds",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            self.inner.server_streaming(request.into_request(), path, codec).await
         }
         /// Authorize a transaction plan and build the transaction.
         pub async fn authorize_and_build(
@@ -1444,11 +1447,17 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::BroadcastTransactionRequest>,
         ) -> Result<tonic::Response<super::BroadcastTransactionResponse>, tonic::Status>;
+        /// Server streaming response type for the OwnedPositionIds method.
+        type OwnedPositionIdsStream: futures_core::Stream<
+                Item = Result<super::OwnedPositionIdsResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
         /// Query for owned position IDs for the given trading pair and in the given position state.
         async fn owned_position_ids(
             &self,
             request: tonic::Request<super::OwnedPositionIdsRequest>,
-        ) -> Result<tonic::Response<super::OwnedPositionIdsResponse>, tonic::Status>;
+        ) -> Result<tonic::Response<Self::OwnedPositionIdsStream>, tonic::Status>;
         /// Authorize a transaction plan and build the transaction.
         async fn authorize_and_build(
             &self,
@@ -2323,11 +2332,13 @@ pub mod view_protocol_service_server {
                     struct OwnedPositionIdsSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
                         T: ViewProtocolService,
-                    > tonic::server::UnaryService<super::OwnedPositionIdsRequest>
-                    for OwnedPositionIdsSvc<T> {
+                    > tonic::server::ServerStreamingService<
+                        super::OwnedPositionIdsRequest,
+                    > for OwnedPositionIdsSvc<T> {
                         type Response = super::OwnedPositionIdsResponse;
+                        type ResponseStream = T::OwnedPositionIdsStream;
                         type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
+                            tonic::Response<Self::ResponseStream>,
                             tonic::Status,
                         >;
                         fn call(
@@ -2353,7 +2364,7 @@ pub mod view_protocol_service_server {
                                 accept_compression_encodings,
                                 send_compression_encodings,
                             );
-                        let res = grpc.unary(method, req).await;
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

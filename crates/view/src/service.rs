@@ -297,6 +297,9 @@ impl ViewProtocolService for ViewService {
     >;
     type BalancesStream =
         Pin<Box<dyn futures::Stream<Item = Result<pb::BalancesResponse, tonic::Status>> + Send>>;
+    type OwnedPositionIdsStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::OwnedPositionIdsResponse, tonic::Status>> + Send>,
+    >;
 
     async fn broadcast_transaction(
         &self,
@@ -1262,7 +1265,7 @@ impl ViewProtocolService for ViewService {
     async fn owned_position_ids(
         &self,
         request: tonic::Request<pb::OwnedPositionIdsRequest>,
-    ) -> Result<tonic::Response<pb::OwnedPositionIdsResponse>, tonic::Status> {
+    ) -> Result<tonic::Response<Self::OwnedPositionIdsStream>, tonic::Status> {
         self.check_worker().await?;
 
         let pb::OwnedPositionIdsRequest {
@@ -1288,9 +1291,21 @@ impl ViewProtocolService for ViewService {
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error getting position ids: {e}")))?;
 
-        Ok(tonic::Response::new(pb::OwnedPositionIdsResponse {
-            position_ids: ids.into_iter().map(Into::into).collect(),
-        }))
+        let stream = try_stream! {
+            for id in ids {
+                yield pb::OwnedPositionIdsResponse{
+                    position_id: Some(id.into()),
+                }
+            }
+        };
+
+        Ok(tonic::Response::new(
+            stream
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!("error getting position ids: {e}"))
+                })
+                .boxed(),
+        ))
     }
 
     async fn authorize_and_build(
