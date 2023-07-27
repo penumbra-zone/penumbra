@@ -108,9 +108,9 @@ We can check their validity by ensuring the following checks hold:
 1. Check that $G_\alpha, G_\beta, H_{\beta}, G_x, H_x \neq 0$ (the identity element in the respective groups).
 2. Check that $G_\beta \odot [1]_2 = [1]_1 \odot H_\beta$.
 3. Check that $G_{x^i} \odot [1]_2 = [1]_1 \odot H_{x^i} \quad (\forall i \in [0, \ldots, d - 1])$.
-4. Check that $G_{\alpha} \odot G_{x^i} = G_{\alpha x^i} \odot [1]_2 \quad (\forall i \in [0, \ldots, d- 1])$.
-4. Check that $G_{\beta} \odot G_{x^i} = G_{\beta x^i} \odot [1]_2 \quad (\forall i \in [0, \ldots, d- 1])$.
-4. Check that $G_{x} \odot G_{x^i} = G_{x^{i + 1}} \odot [1]_2 \quad (\forall i \in [0, \ldots, 2d - 3])$.
+4. Check that $G_{\alpha} \odot H_{x^i} = G_{\alpha x^i} \odot [1]_2 \quad (\forall i \in [0, \ldots, d- 1])$.
+5. Check that $G_{\beta} \odot H_{x^i} = G_{\beta x^i} \odot [1]_2 \quad (\forall i \in [0, \ldots, d- 1])$.
+6. Check that $G_{x^i} \odot H_x = G_{x^{i + 1}} \odot [1]_2 \quad (\forall i \in [0, \ldots, 2d - 3])$.
 
 ### Checking Linkedness
 
