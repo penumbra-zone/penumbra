@@ -2,6 +2,7 @@
 extern crate tracing;
 
 use clap::Parser;
+use tracing::Instrument;
 use tracing_subscriber::EnvFilter;
 
 use penumbra_chain::params::ChainParameters;
@@ -62,11 +63,54 @@ pub enum Command {
         #[clap(long)]
         skip_genesis: bool,
     },
+    /// Load-test `pd` by holding open many connections subscribing to compact block updates.
+    OpenConnections {
+        /// The number of connections to open.
+        #[clap(short, long, default_value = "100")]
+        num_connections: usize,
+    },
 }
 
 impl Opt {
     pub async fn run(&self) -> anyhow::Result<()> {
         match self.cmd {
+            Command::OpenConnections { num_connections } => {
+                let current_height = self.latest_known_block_height().await?.0;
+                let node = self.node.to_string();
+                let mut js = tokio::task::JoinSet::new();
+                for conn_id in 0..num_connections {
+                    let node2 = node.clone();
+                    js.spawn(
+                        async move {
+                            let mut client =
+                                ObliviousQueryServiceClient::connect(node2).await.unwrap();
+
+                            let mut stream = client
+                                .compact_block_range(tonic::Request::new(
+                                    CompactBlockRangeRequest {
+                                        chain_id: String::new(),
+                                        start_height: current_height,
+                                        end_height: 0,
+                                        keep_alive: true,
+                                    },
+                                ))
+                                .await
+                                .unwrap()
+                                .into_inner();
+
+                            while let Some(block_rsp) = stream.message().await.unwrap() {
+                                let size = block_rsp.encoded_len();
+                                let block: CompactBlock = block_rsp.try_into().unwrap();
+                                tracing::info!(?size, block_height = ?block.height);
+                            }
+                        }
+                        .instrument(info_span!("conn", conn_id = conn_id)),
+                    );
+                }
+                while let Some(res) = js.join_next().await {
+                    res?;
+                }
+            }
             Command::StreamBlocks { skip_genesis } => {
                 let mut client =
                     ObliviousQueryServiceClient::connect(self.node.to_string()).await?;
