@@ -96,6 +96,7 @@ impl CRSElements {
         {
             return false;
         }
+        let mut i = 0;
         // 6. Check that the x_i are the correct powers of x.
         if !self
             .x_1
@@ -116,14 +117,101 @@ impl CRSElements {
 mod test {
     use super::*;
 
+    use ark_ff::UniformRand;
+    use rand_core::OsRng;
+
+    use crate::group::F;
+
     /// The degree we use for tests.
     ///
     /// Keeping this small makes tests go faster.
     const D: usize = 2;
 
+    fn make_crs(alpha: F, beta: F, x: F) -> CRSElements {
+        CRSElements {
+            alpha_1: G1::generator() * alpha,
+            beta_1: G1::generator() * beta,
+            beta_2: G2::generator() * beta,
+            x_1: vec![
+                G1::generator(),
+                G1::generator() * x,
+                G1::generator() * (x * x),
+                G1::generator() * (x * x * x),
+            ],
+            x_2: vec![G2::generator(), G2::generator() * x],
+            alpha_x_1: vec![G1::generator() * alpha, G1::generator() * (alpha * x)],
+            beta_x_1: vec![G1::generator() * beta, G1::generator() * (beta * x)],
+        }
+    }
+
+    fn non_trivial_crs() -> CRSElements {
+        let alpha = F::rand(&mut OsRng);
+        let beta = F::rand(&mut OsRng);
+        let x = F::rand(&mut OsRng);
+
+        make_crs(alpha, beta, x)
+    }
+
     #[test]
-    fn test_phase1_root_crs_is_valid() {
+    fn test_root_crs_is_valid() {
         let root = CRSElements::root(D);
         assert!(root.is_valid());
+    }
+
+    #[test]
+    fn test_nontrivial_crs_is_valid() {
+        let crs = non_trivial_crs();
+        assert!(crs.is_valid());
+    }
+
+    #[test]
+    fn test_changing_alpha_makes_crs_invalid() {
+        let mut crs = non_trivial_crs();
+        crs.alpha_1 = G1::generator();
+        assert!(!crs.is_valid());
+    }
+
+    #[test]
+    fn test_changing_beta_makes_crs_invalid() {
+        let mut crs = non_trivial_crs();
+        crs.beta_1 = G1::generator();
+        assert!(!crs.is_valid());
+    }
+
+    #[test]
+    fn test_setting_zero_elements_makes_crs_invalid() {
+        let alpha = F::rand(&mut OsRng);
+        let beta = F::rand(&mut OsRng);
+        let x = F::rand(&mut OsRng);
+
+        let crs0 = make_crs(F::zero(), beta, x);
+        assert!(!crs0.is_valid());
+        let crs1 = make_crs(alpha, F::zero(), x);
+        assert!(!crs1.is_valid());
+        let crs2 = make_crs(alpha, beta, F::zero());
+        assert!(!crs2.is_valid());
+    }
+
+    #[test]
+    fn test_bad_powers_of_x_makes_crs_invalid() {
+        let alpha = F::rand(&mut OsRng);
+        let beta = F::rand(&mut OsRng);
+        let x = F::rand(&mut OsRng);
+        let crs = CRSElements {
+            alpha_1: G1::generator() * alpha,
+            beta_1: G1::generator() * beta,
+            beta_2: G2::generator() * beta,
+            x_1: vec![
+                G1::generator(),
+                G1::generator() * x,
+                G1::generator() * (x * x),
+                // The important part
+                G1::generator() * (x * x),
+            ],
+            x_2: vec![G2::generator(), G2::generator() * x],
+            alpha_x_1: vec![G1::generator() * alpha, G1::generator() * (alpha * x)],
+            beta_x_1: vec![G1::generator() * beta, G1::generator() * (beta * x)],
+        };
+        assert!(!crs.is_valid());
     }
 }
