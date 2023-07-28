@@ -334,6 +334,50 @@ impl Contribution {
             },
         }
     }
+
+    /// Verify that this contribution is linked to a previous list of elements.
+    #[must_use]
+    pub fn is_linked_to(&self, parent: &CRSElements) -> bool {
+        // 1. Check that the degrees match between the two CRS elements.
+        if self.new_elements.degree != parent.degree {
+            return false;
+        }
+        // 2. Check that the linking proofs verify
+        let ctxs: [&'static [u8]; 3] = [
+            b"phase1 alpha proof",
+            b"phase1 beta proof",
+            b"phase1 x proof",
+        ];
+        let statements = [
+            dlog::Statement {
+                result: self.new_elements.raw.alpha_1,
+                base: parent.raw.alpha_1,
+            },
+            dlog::Statement {
+                result: self.new_elements.raw.beta_1,
+                base: parent.raw.beta_1,
+            },
+            dlog::Statement {
+                result: self.new_elements.raw.x_1[1],
+                base: parent.raw.x_1[1],
+            },
+        ];
+        let proofs = [
+            self.linking_proof.alpha_proof,
+            self.linking_proof.beta_proof,
+            self.linking_proof.x_proof,
+        ];
+        if !ctxs
+            .iter()
+            .zip(statements.iter())
+            .zip(proofs.iter())
+            .all(|((c, &s), p)| dlog::verify(c, s, p))
+        {
+            return false;
+        }
+
+        true
+    }
 }
 
 #[cfg(test)]
@@ -445,5 +489,16 @@ mod test {
             &root,
         );
         assert!(contribution.new_elements.raw.validate().is_some());
+    }
+
+    #[test]
+    fn test_contribution_is_be_linked_to_parent() {
+        let root = CRSElements::root(D);
+        let contribution = Contribution::make(
+            &mut OsRng,
+            ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
+            &root,
+        );
+        assert!(contribution.is_linked_to(&root));
     }
 }
