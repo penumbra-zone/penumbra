@@ -1,4 +1,6 @@
 use crate::{state_key, CompactBlock};
+use anyhow::Context;
+use anyhow::Error;
 use anyhow::Result;
 use async_trait::async_trait;
 use futures::Stream;
@@ -9,17 +11,19 @@ use std::pin::Pin;
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    /// Returns a stream of [`CompactBlock`]s starting from `start_height`
+    /// Returns a stream of [`CompactBlock`]s starting from `start_height`.A
+    /// If `start_height` is not found, the stream will be empty.
     async fn stream_compact_block(
         &self,
         start_height: u64,
     ) -> Pin<Box<dyn Stream<Item = Result<CompactBlock>> + Send + 'static>> {
         self.nonverifiable_prefix_raw(&state_key::compact_block(start_height).as_bytes())
-            .map(|result| match result {
-                Ok((_, v)) => {
-                    Ok(CompactBlock::decode(&mut v.as_slice()).expect("valid compact block"))
-                }
-                Err(e) => Err(e),
+            .map(|result| {
+                result.and_then(|(_, v)| {
+                    CompactBlock::decode(&mut v.as_slice())
+                        .map_err(Error::from)
+                        .context("failed to decode compact block")
+                })
             })
             .boxed()
     }
