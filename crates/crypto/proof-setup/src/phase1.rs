@@ -492,7 +492,7 @@ mod test {
     }
 
     #[test]
-    fn test_contribution_is_be_linked_to_parent() {
+    fn test_contribution_is_linked_to_parent() {
         let root = CRSElements::root(D);
         let contribution = Contribution::make(
             &mut OsRng,
@@ -500,5 +500,40 @@ mod test {
             &root,
         );
         assert!(contribution.is_linked_to(&root));
+    }
+
+    #[test]
+    fn test_can_calculate_contribution_hash() {
+        let root = CRSElements::root(D);
+        let contribution = Contribution::make(
+            &mut OsRng,
+            ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
+            &root,
+        );
+        assert_ne!(contribution.hash(), contribution.parent)
+    }
+
+    #[test]
+    fn test_contribution_is_not_linked_to_itself() {
+        let root = CRSElements::root(D);
+        let contribution = Contribution::make(
+            &mut OsRng,
+            ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
+            &root,
+        );
+        assert!(!contribution.is_linked_to(&contribution.new_elements));
+    }
+
+    #[test]
+    fn test_contribution_is_not_linked_if_degree_changes() {
+        // Same elements, the latter just has more
+        let root0 = CRSElements::root(D);
+        let root1 = CRSElements::root(D + 1);
+        let contribution = Contribution::make(
+            &mut OsRng,
+            ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
+            &root0,
+        );
+        assert!(!contribution.is_linked_to(&root1));
     }
 }
