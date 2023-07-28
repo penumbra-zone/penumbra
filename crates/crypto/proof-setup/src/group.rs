@@ -3,10 +3,12 @@
 //! This simplifies logic in other parts of this crate, since we don't need to rely on
 //! arkworks directly.
 use ark_ec::pairing::{Pairing, PairingOutput};
+use ark_ec::scalar_mul::{variable_base::VariableBaseMSM, ScalarMul};
 use ark_ff::fields::PrimeField;
 use ark_serialize::CanonicalSerialize;
 use blake2b_simd;
 use decaf377::Bls12_377;
+use rand_core::CryptoRngCore;
 
 /// The group used for the left side of pairings.
 pub type G1 = <Bls12_377 as Pairing>::G1;
@@ -30,6 +32,84 @@ pub type F = <Bls12_377 as Pairing>::ScalarField;
 pub fn pairing(a: impl Into<G1Prepared>, b: impl Into<G2Prepared>) -> GT {
     <Bls12_377 as Pairing>::pairing(a, b)
 }
+
+// # Batched Pairing Checks
+
+/// Sample a random field that's "small" but still big enough for pairing checks.
+fn rand_small_f<R: CryptoRngCore>(rng: &mut R) -> F {
+    // 128 bits of security
+    let mut bytes = [0u8; 16];
+    rng.fill_bytes(&mut bytes);
+    F::from_le_bytes_mod_order(&bytes)
+}
+
+// This is just a little trick to avoid code duplication in the variants of this pairing checker
+// for different base groups.
+macro_rules! make_batched_pairing_checker {
+    ($name:ident, $gl:ident, $gr:ident, $glp:ident, $grp:ident, $pairing:ident) => {
+        /// A tool for efficiently making many pairing checks.
+        ///
+        /// This version is for pairing checks where the varying parts
+        /// of each side of the pairing equality are in $gl and $gr, respectively.
+        pub struct $name {
+            // Invariant: both vecs have the same length.
+            vary_l: Vec<$gl>,
+            base_l: $glp,
+            vary_r: Vec<$gr>,
+            base_r: $grp,
+        }
+
+        impl $name {
+            pub fn new(base_l: impl Into<$glp>, base_r: impl Into<$grp>) -> Self {
+                Self {
+                    vary_l: Vec::new(),
+                    base_l: base_l.into(),
+                    vary_r: Vec::new(),
+                    base_r: base_r.into(),
+                }
+            }
+
+            pub fn add(&mut self, l: $gl, r: $gr) {
+                self.vary_l.push(l);
+                self.vary_r.push(r);
+            }
+
+            #[must_use]
+            pub fn check<R: CryptoRngCore>(self, rng: &mut R) -> bool {
+                let n = self.vary_l.len();
+                let scalars = (0..n).map(|_| rand_small_f(rng)).collect::<Vec<_>>();
+
+                let ready_to_msm_l = <$gl as ScalarMul>::batch_convert_to_mul_base(&self.vary_l);
+                let l = <$gl as VariableBaseMSM>::msm_unchecked(&ready_to_msm_l, &scalars);
+                let ready_to_msm_r = <$gr as ScalarMul>::batch_convert_to_mul_base(&self.vary_r);
+                let r = <$gr as VariableBaseMSM>::msm_unchecked(&ready_to_msm_r, &scalars);
+
+                pairing(l, self.base_l) == $pairing(self.base_r, r)
+            }
+        }
+    };
+}
+
+// This is just a gimmick to support our macro shenanigans
+fn swapped_pairing(a: impl Into<G2Prepared>, b: impl Into<G1Prepared>) -> GT {
+    pairing(b, a)
+}
+make_batched_pairing_checker!(
+    BatchedPairingChecker11,
+    G1,
+    G1,
+    G2Prepared,
+    G2Prepared,
+    swapped_pairing
+);
+make_batched_pairing_checker!(
+    BatchedPairingChecker12,
+    G1,
+    G2,
+    G2Prepared,
+    G1Prepared,
+    pairing
+);
 
 /// The size of the hash we use.
 pub const HASH_SIZE: usize = 32;
