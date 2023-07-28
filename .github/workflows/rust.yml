@@ -14,7 +14,7 @@ jobs:
       - name: Install nextest
         uses: taiki-e/install-action@nextest
       - name: Load rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
       - name: Run tests with nextest
         run: cargo nextest run --release
         env:
@@ -30,7 +30,7 @@ jobs:
         with:
           components: rustfmt
       - name: Load rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
       - run: cargo fmt --all -- --check
 
   check:
@@ -43,7 +43,7 @@ jobs:
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Load rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
       - name: Run cargo check, failing on warnings
         run: cargo check --release
         env:
@@ -65,7 +65,7 @@ jobs:
         # The script for rustdoc build requires nightly toolchain.
         uses: dtolnay/rust-toolchain@nightly
       - name: Load rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
       - name: Build rustdocs
         run: ./deployments/scripts/rust-docs
 
@@ -82,7 +82,7 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - name: Load rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
 
       - name: build wasm32 target
         run: cargo build --release --target wasm32-unknown-unknown

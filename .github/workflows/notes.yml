@@ -20,7 +20,7 @@ jobs:
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@nightly
       - name: Load Rust caching
-        uses: Swatinem/rust-cache@v2
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
       - name: Load get-version action to grab version component of deployment path
         uses: battila7/get-version-action@v2
         id: get_version
