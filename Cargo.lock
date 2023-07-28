@@ -4674,6 +4674,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "bytes",
  "decaf377-rdsa",
+ "futures",
  "metrics",
  "penumbra-chain",
  "penumbra-component",
