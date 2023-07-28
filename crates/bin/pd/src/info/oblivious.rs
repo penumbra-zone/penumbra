@@ -247,26 +247,21 @@ impl ObliviousQueryService for Info {
                 // JoinHandles are sent back to this task using a bounded
                 // channel.  The channel bound prevents the queueing task from
                 // running too far ahead.
-                let (tx_block_fetch, mut rx_block_fetch) = mpsc::channel(8);
-
                 let storage2 = storage.clone();
-                tokio::spawn(async move {
-                    for height in start_height..=end_height {
-                        let state3 = storage2.latest_snapshot();
-                        let _ = tx_block_fetch
-                            .send(tokio::spawn(
-                                async move { state3.compact_block(height).await },
-                            ))
-                            .await;
+                let latest_snapshot = storage2.latest_snapshot();
+                while let Some(compact_block) = latest_snapshot
+                    .stream_compact_block(start_height)
+                    .await
+                    .next()
+                    .await
+                {
+                    let compact_block = compact_block.map_err(|_| {
+                        tonic::Status::internal("error deserializing block from storage")
+                    })?;
+                    if compact_block.height > end_height {
+                        break;
                     }
-                });
 
-                while let Some(block_fetch) = rx_block_fetch.recv().await {
-                    let block = block_fetch
-                        .await
-                        .expect("block fetcher does not fail")
-                        .expect("no error fetching block")
-                        .expect("compact block for in-range height must be present");
                     // Tracked in #2908: we previously added a timeout on `send` targeting
                     // buffered streams staying full for too long. However, in at least a few
                     // "regular usage" instances we observed client streams stopping too eagerly.
@@ -279,27 +274,6 @@ impl ObliviousQueryService for Info {
                     // Future iterations of this work should start by moving block serialization
                     // outside of the `send_op` future, and investigate if long blocking sends can
                     // happen for benign reasons (i.e not caused by the client).
-                    //
-                    // let send_op = async { tx_blocks.send(Ok(block.into())).await };
-                    // match tokio::time::timeout(tokio::time::Duration::from_secs(2), send_op).await {
-                    //     Ok(Ok(_)) => {
-                    //         metrics::increment_counter!(
-                    //             metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
-                    //         );
-                    //     }
-                    //     Ok(Err(_)) => {
-                    //         return Err(tonic::Status::internal("error while sending block"));
-                    //     }
-                    //     Err(_) => {
-                    //         tracing::debug!(
-                    //             "client did not poll compact block stream for 1s, timing out"
-                    //         );
-                    //         return Err(tonic::Status::deadline_exceeded(
-                    //             "timeout while sending block",
-                    //         ));
-                    //     }
-                    // }
-
                     tx_blocks.send(Ok(block.into())).await?;
                     metrics::increment_counter!(
                         metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
