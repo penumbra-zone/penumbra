@@ -576,41 +576,38 @@ impl U128x128Var {
         // for the upper terms, we just need to enforce that they're 0, without the
         // possibility of wrapping in the finite field.
 
-        // z0 < 2^128 + 2^64 < 2^(128 + 1) => 129 bits
-        let z0_bits = bit_constrain(z0_raw, 129)?; // no carry-in
+        // z0 <= (2^64 - 1)(2^64 - 1) + (2^64 - 1) => 128 bits
+        let z0_bits = bit_constrain(z0_raw, 128)?; // no carry-in
         let z0 = Boolean::<Fq>::le_bits_to_fp_var(&z0_bits[0..64].to_bits_le()?)?;
-        let c1 = Boolean::<Fq>::le_bits_to_fp_var(&z0_bits[64..].to_bits_le()?)?; // 65 bits
+        let c1 = Boolean::<Fq>::le_bits_to_fp_var(&z0_bits[64..].to_bits_le()?)?; // 64 bits
 
-        // z1 < 2^64 + 2 * 2^128 + 2^65 < 3*2^128 < 2^(128 + 2) => 130 bits
-        let z1_bits = bit_constrain(z1_raw + c1, 130)?; // carry-in c1
+        // z1 <= 2*(2^64 - 1)(2^64 - 1) + (2^64 - 1) + carry (2^64 - 1) => 129 bits
+        let z1_bits = bit_constrain(z1_raw + c1, 129)?; // carry-in c1
         let z1 = Boolean::<Fq>::le_bits_to_fp_var(&z1_bits[0..64].to_bits_le()?)?;
-        let c2 = Boolean::<Fq>::le_bits_to_fp_var(&z1_bits[64..].to_bits_le()?)?; // 66 bits
+        let c2 = Boolean::<Fq>::le_bits_to_fp_var(&z1_bits[64..].to_bits_le()?)?; // 65 bits
 
-        // z2 < 2^64 + 3 * 2^128 + 2^66 < 4*2^128 = 2^(128 + 2) => 130 bits
+        // z2 <= 3*(2^64 - 1)(2^64 - 1) + (2^64 - 1) + carry (2^65 - 2) => 130 bits
         let z2_bits = bit_constrain(z2_raw + c2, 130)?; // carry-in c2
         let z2 = Boolean::<Fq>::le_bits_to_fp_var(&z2_bits[0..64].to_bits_le()?)?;
         let c3 = Boolean::<Fq>::le_bits_to_fp_var(&z2_bits[64..].to_bits_le()?)?; // 66 bits
 
-        // z3 < 2^64 + 4 * 2^128 + 2^66 < 5*2^128 = 2^(128 + 3) => 131 bits
-        let z3_bits = bit_constrain(z3_raw + c3, 131)?; // carry-in c3
+        // z3 <= 4*(2^64 - 1)(2^64 - 1) + (2^64 - 1) + carry (2^66 - 1) => 130 bits
+        let z3_bits = bit_constrain(z3_raw + c3, 130)?; // carry-in c3
         let z3 = Boolean::<Fq>::le_bits_to_fp_var(&z3_bits[0..64].to_bits_le()?)?;
-        let c4 = Boolean::<Fq>::le_bits_to_fp_var(&z3_bits[64..].to_bits_le()?)?; // 67 bits
+        let c4 = Boolean::<Fq>::le_bits_to_fp_var(&z3_bits[64..].to_bits_le()?)?; // 66 bits
 
-        // z4 < 3 * 2^128 + 2^67 < 4*2^128 = 2^(128 + 2) => 130 bits
-        let z4_bits = bit_constrain(z4_raw + c4, 130)?; // carry-in c4
+        // z4 <= 3*(2^64 - 1)(2^64 - 1) + carry (2^66 - 1) => 130 bits
+        // But extra bits beyond 128 spill into z6, which should be zero, so we can constrain to 128 bits.
+        let z4_bits = bit_constrain(z4_raw + c4, 128)?; // carry-in c4
         let z4 = Boolean::<Fq>::le_bits_to_fp_var(&z4_bits[0..64].to_bits_le()?)?;
-        let c5 = Boolean::<Fq>::le_bits_to_fp_var(&z4_bits[64..].to_bits_le()?)?; // 66 bits
+        let c5 = Boolean::<Fq>::le_bits_to_fp_var(&z4_bits[64..].to_bits_le()?)?; // 64 bits
 
-        // z5 < 2 * 2^128 + 2^66 < 3*2^128 = 2^(128 + 2) => 130 bits
-        let z5_bits = bit_constrain(z5_raw + c5, 130)?; // carry-in c5
+        // z5 <= 2*(2^64 - 1)(2^64 - 1) + (2^64 - 1)
+        // But if there is no overflow, the final carry (which would be c6 constructed from z5_bits[64..])
+        // should be zero. So instead of constructing that final carry, we can instead bit constrain z5 to
+        // the first 64 bits to save constraints.
+        let z5_bits = bit_constrain(z5_raw + c5, 64)?; // carry-in c5
         let z5 = Boolean::<Fq>::le_bits_to_fp_var(&z5_bits[0..64].to_bits_le()?)?;
-        let c6 = Boolean::<Fq>::le_bits_to_fp_var(&z5_bits[64..].to_bits_le()?)?; // 66 bits
-
-        // z6_plus < 2^128 + 2^66 < 2*2^128 = 2^(128 + 1) => 129 bits
-        // Since 129 bits < field modulus, we can enforce z6_plus = 0
-        // without bit constraining.
-        let z6_and_up = z6_raw + c6;
-        // Note: 129 + 384 = 513 so this is all of the remaining bits
 
         // Repeat:
         // We want to constrain
@@ -622,7 +619,8 @@ impl U128x128Var {
         z3.enforce_equal(&xbar1)?;
         z4.enforce_equal(&xbar2)?;
         z5.enforce_equal(&xbar3)?;
-        z6_and_up.enforce_equal(&FqVar::zero())?;
+        // z6_raw should be zero if there was no overflow.
+        z6_raw.enforce_equal(&FqVar::zero())?;
 
         Ok(q)
     }
@@ -894,15 +892,51 @@ mod test {
         }
     }
 
+    #[test]
+    fn max_division() {
+        let b = U128x128(U256([0, 1]));
+        let a = U128x128(U256([u128::MAX, u128::MAX]));
+
+        let result = a.checked_div(&b);
+
+        let expected_c = result.expect("result should not overflow");
+        dbg!(expected_c);
+
+        let circuit = TestDivisionCircuit {
+            a,
+            b,
+            c: expected_c,
+        };
+
+        let (pk, vk) = TestDivisionCircuit::generate_test_parameters();
+        let mut rng = OsRng;
+
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+            .expect("should be able to form proof");
+
+        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
+            &vk,
+            &expected_c.to_field_elements().unwrap(),
+            &proof,
+        );
+        assert!(proof_result.is_ok());
+    }
+
     proptest! {
-        #![proptest_config(ProptestConfig::with_cases(1))]
+        #![proptest_config(ProptestConfig::with_cases(10))]
         #[test]
         fn division(
             a_int in any::<u64>(),
-            b_int in any::<u64>(),
+            a_frac in any::<u64>(),
+            b_int in any::<u128>(),
+            b_frac in any::<u128>(),
         ) {
-            let a = U128x128::from(a_int);
-            let b = U128x128::from(b_int);
+            let a = U128x128(
+                U256([a_frac.into(), a_int.into()])
+            );
+            let b = U128x128(
+                U256([b_frac, b_int])
+            );
 
             // We can't divide by zero
             if b_int == 0 {
