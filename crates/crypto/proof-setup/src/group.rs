@@ -94,6 +94,7 @@ macro_rules! make_batched_pairing_checker {
 fn swapped_pairing(a: impl Into<G2Prepared>, b: impl Into<G1Prepared>) -> GT {
     pairing(b, a)
 }
+
 make_batched_pairing_checker!(
     BatchedPairingChecker11,
     G1,
