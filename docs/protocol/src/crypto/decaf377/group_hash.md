@@ -14,7 +14,7 @@ The Elligator map is applied as follows to a field element $r_0$:
 
 4. $m, x =$ `sqrt_ratio_zeta`$(1, u_1 n_1)$ where $m$ is a boolean indicating whether or not a square root exists for the provided input.
 
-5. If a square root for $u_1 n_1$ does not exist, then $q=-1$ and $x = r_0 \zeta x$. Else, $q=1$ and $x$ is unchanged.
+5. If a square root for $u_1 n_1$ does not exist, then $q=-1$ and $x = r_0 x$. Else, $q=1$ and $x$ is unchanged.
 
 6. $s \gets x n_1$.
 
