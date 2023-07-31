@@ -1,8 +1,12 @@
+//! This module is very similar to the one for phase1, so reading that one might be useful.
 use ark_ec::Group;
-use ark_ff::Zero;
+use ark_ff::{fields::Field, UniformRand, Zero};
 use rand_core::CryptoRngCore;
 
-use crate::group::{BatchedPairingChecker11, G1, G2};
+use crate::{
+    dlog,
+    group::{BatchedPairingChecker11, GroupHasher, Hash, F, G1, G2},
+};
 
 /// Raw CRS elements, not yet validated for consistency.
 #[derive(Clone, Debug)]
@@ -48,6 +52,25 @@ impl RawCRSElements {
 
         Some(CRSElements { raw: self })
     }
+
+    /// Hash these elements, producing a succinct digest.
+    fn hash(&self) -> Hash {
+        let mut hasher = GroupHasher::new(b"PC$:crs_elmnts2");
+        hasher.eat_g1(&self.delta_1);
+        hasher.eat_g2(&self.delta_2);
+
+        hasher.eat_usize(self.inv_delta_p_1.len());
+        for v in &self.inv_delta_p_1 {
+            hasher.eat_g1(&v);
+        }
+
+        hasher.eat_usize(self.inv_delta_t_1.len());
+        for v in &self.inv_delta_t_1 {
+            hasher.eat_g1(&v);
+        }
+
+        hasher.finalize_bytes()
+    }
 }
 
 /// The CRS elements we produce in phase 2.
@@ -58,14 +81,95 @@ pub struct CRSElements {
     raw: RawCRSElements,
 }
 
+impl CRSElements {
+    fn hash(&self) -> Hash {
+        self.raw.hash()
+    }
+}
+
+pub const CONTRIBUTION_HASH_SIZE: usize = 32;
+
+// Note: Don't need constant time equality because we're hashing public data: contributions.
+
+/// The hash of a contribution, providing a unique string for each contribution.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ContributionHash(pub [u8; CONTRIBUTION_HASH_SIZE]);
+
+impl AsRef<[u8]> for ContributionHash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+/// Represents a contribution to phase2 of the ceremony.
+///
+/// This contribution is linked to the previous contribution it builds upon.
+///
+/// The contribution contains new CRS elements, and a proof linking these elements
+/// to those of the parent contribution.
+#[derive(Clone, Debug)]
+pub struct Contribution {
+    pub parent: ContributionHash,
+    pub new_elements: CRSElements,
+    linking_proof: dlog::Proof,
+}
+
+impl Contribution {
+    /// Hash this contribution, producing a unique digest.
+    pub fn hash(&self) -> ContributionHash {
+        let mut hasher = GroupHasher::new(b"PC$:contrbution2");
+        hasher.eat_bytes(self.parent.as_ref());
+        hasher.eat_bytes(self.new_elements.hash().as_ref());
+        hasher.eat_bytes(self.linking_proof.hash().as_ref());
+
+        ContributionHash(hasher.finalize_bytes())
+    }
+
+    /// Make a new contribution, over the previous CRS elements.
+    ///
+    /// We also need a hash of the parent contribution we're building on.
+    pub fn make<R: CryptoRngCore>(
+        rng: &mut R,
+        parent: ContributionHash,
+        old: &CRSElements,
+    ) -> Self {
+        let delta = F::rand(rng);
+        // e.w. negligible probability this will not panic
+        let delta_inv = delta.inverse().unwrap();
+
+        let mut new = old.clone();
+        new.raw.delta_1 *= delta;
+        new.raw.delta_2 *= delta;
+        for v in &mut new.raw.inv_delta_p_1 {
+            *v *= delta_inv;
+        }
+        for v in &mut new.raw.inv_delta_t_1 {
+            *v *= delta_inv;
+        }
+
+        let linking_proof = dlog::prove(
+            rng,
+            b"phase2 delta proof",
+            dlog::Statement {
+                result: new.raw.delta_1,
+                base: old.raw.delta_1,
+            },
+            dlog::Witness { dlog: delta },
+        );
+
+        Contribution {
+            parent,
+            new_elements: new,
+            linking_proof,
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
 
-    use ark_ff::{fields::Field, UniformRand};
     use rand_core::OsRng;
-
-    use crate::group::F;
 
     fn make_crs(delta: F, delta_inv: F) -> (CRSElements, RawCRSElements) {
         let x = F::rand(&mut OsRng);
@@ -147,5 +251,33 @@ mod test {
         let delta = F::rand(&mut OsRng);
         let (root, crs) = make_crs(delta, delta);
         assert!(crs.validate(&mut OsRng, &root).is_none());
+    }
+
+    #[test]
+    fn test_contribution_produces_valid_crs() {
+        let (root, start) = non_trivial_crs();
+        let start = start.validate(&mut OsRng, &root).unwrap();
+        let contribution = Contribution::make(
+            &mut OsRng,
+            ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
+            &start,
+        );
+        assert!(contribution
+            .new_elements
+            .raw
+            .validate(&mut OsRng, &root)
+            .is_some());
+    }
+
+    #[test]
+    fn test_can_calculate_contribution_hash() {
+        let (root, start) = non_trivial_crs();
+        let start = start.validate(&mut OsRng, &root).unwrap();
+        let contribution = Contribution::make(
+            &mut OsRng,
+            ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
+            &start,
+        );
+        assert_ne!(contribution.hash(), contribution.parent);
     }
 }
