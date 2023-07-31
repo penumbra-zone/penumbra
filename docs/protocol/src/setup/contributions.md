@@ -153,8 +153,8 @@ We can check their validity by ensuring the following checks hold:
 
 1. Check that $G_\delta, H_\delta \neq 0$ (the identity element in the respective groups).
 2. Check that $G_\delta \odot [1]_2 = [1]_1 \odot H_\delta$.
-3. Check that $G_{\frac{1}{\delta}p_i} \odot H_\delta = [p_i^{\alpha, \beta}]_1 \odot [1]_1\quad (\forall i \geq s)$.
-4. Check that $G_{\frac{1}{\delta}t_i} \odot H_\delta = [t(x) x^i]_1 \odot [1]_1\quad (\forall i \in [0, \ldots, d - 2])$.
+3. Check that $G_{\frac{1}{\delta}p_i} \odot H_\delta = [p_i^{\alpha, \beta}]_1 \odot [1]_2\quad (\forall i \geq s)$.
+4. Check that $G_{\frac{1}{\delta}t_i} \odot H_\delta = [t(x) x^i]_1 \odot [1]_2\quad (\forall i \in [0, \ldots, d - 2])$.
 
 ### Checking Linkedness
 
