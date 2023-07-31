@@ -134,7 +134,7 @@ impl RawCRSElements {
 
     /// Hash these elements, producing a succinct digest.
     pub fn hash(&self) -> Hash {
-        let mut hasher = GroupHasher::new(b"PC$:crs_elmnts");
+        let mut hasher = GroupHasher::new(b"PC$:crs_elmnts1");
         hasher.eat_g1(&self.alpha_1);
         hasher.eat_g1(&self.beta_1);
         hasher.eat_g2(&self.beta_2);
@@ -214,7 +214,6 @@ struct LinkingProof {
     x_proof: dlog::Proof,
 }
 
-/// The max
 pub const CONTRIBUTION_HASH_SIZE: usize = 32;
 
 // Note: Don't need constant time equality because we're hashing public data: contributions.
@@ -244,7 +243,7 @@ pub struct Contribution {
 
 impl Contribution {
     fn hash(&self) -> ContributionHash {
-        let mut hasher = GroupHasher::new(b"PC$:contribution");
+        let mut hasher = GroupHasher::new(b"PC$:contrbution1");
         hasher.eat_bytes(self.parent.as_ref());
         hasher.eat_bytes(self.new_elements.hash().as_ref());
         // Note: we could hide this behind another level of indirection, but contribution
