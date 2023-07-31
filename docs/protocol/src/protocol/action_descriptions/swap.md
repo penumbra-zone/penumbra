@@ -16,7 +16,7 @@ The swap proof demonstrates the properties enumerated below for the private witn
   * Diversified basepoint $B_d \isin \mathbb G$ corresponding to the claim address
   * Transmission key $pk_d \isin \mathbb G$ corresponding to the claim address
   * Clue key $\mathsf{ck_d} \isin \mathbb F_q$ corresponding to the claim address
-* Fee blinding factor $\tilde v_f \isin \mathbb F_r$ used to blind the fee commitment
+* Fee blinding factor $\widetilde{v_f} \isin \mathbb F_r$ used to blind the fee commitment
 
 And the corresponding public inputs:
 
@@ -30,7 +30,7 @@ The zk-SNARK certifies that the public input swap commitment $scm$ was derived a
 
 $scm_{inner} = hash_4(ds, (ID_1, ID_2, v_1, v_2))$
 
-$scm = hash_7(ds, (rseed, v_f, ID_{v_f}, B_d, pk_d, \mathsf{ck_d}, scm_{inner})$.
+$scm = hash_7(ds, (rseed, v_f, ID_{v_f}, B_d, pk_d, \mathsf{ck_d}, scm_{inner}))$.
 
 using the above witnessed values and where `ds` is a constant domain separator:
 
@@ -40,9 +40,9 @@ using the above witnessed values and where `ds` is a constant domain separator:
 
 The zk-SNARK certifies that the public input fee commitment $cv_f$ was derived from the witnessed values as:
 
-$cv_f = [v_f] G_{v_f} + [\tilde v_f] G_{\tilde v}$
+$cv_f = [-v_f] G_{v_f} + [\widetilde{v_f}] G_{\widetilde{v}}$
 
-where $G_{\tilde v}$ is a constant generator and $G_{v_f}$ is an asset-specific generator point derived as described in [Value Commitments](../../protocol/value_commitments.md).
+where $G_{\widetilde{v}}$ is a constant generator and $G_{v_f}$ is an asset-specific generator point derived as described in [Value Commitments](../../protocol/value_commitments.md).
 
 ### Balance Commitment Integrity
 

@@ -1,4 +1,10 @@
 {{- if .Values.ingress.enabled }}
+{{ $count := (.Values.numFullNodes | int) }}
+{{ $svc_name := printf "%s-rpc-backends" (include "penumbra.fullname" $) }}
+{{/*
+Each fullnode instance will have its pd and tendermint rpc ports
+backing the exposed LoadBalancer service.
+*/}}
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
@@ -11,13 +17,13 @@ spec:
   - kind: Rule
     match: Host(`{{ .Values.ingress.hosts.grpc }}`)
     services:
-    - name: {{ include "penumbra.fullname" . }}-p2p-fn-0
+    - name: {{ $svc_name }}
       port: 8080
       scheme: h2c
   - kind: Rule
     match: Host(`{{ .Values.ingress.hosts.rpc }}`)
     services:
-    - name: {{ include "penumbra.fullname" . }}-p2p-fn-0
+    - name: {{ $svc_name }}
       port: 26657
   - kind: Rule
     match: Host(`{{ .Values.ingress.hosts.grafana }}`)

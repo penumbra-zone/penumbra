@@ -49,35 +49,32 @@ pub struct FungibleTokenPacketData {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Ics20Withdrawal {
-    /// the chain ID of the destination chain for this ICS20 transfer
-    #[prost(string, tag = "1")]
-    pub destination_chain_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
+    #[prost(message, optional, tag = "1")]
     pub amount: ::core::option::Option<super::super::crypto::v1alpha1::Amount>,
-    #[prost(message, optional, tag = "3")]
+    #[prost(message, optional, tag = "2")]
     pub denom: ::core::option::Option<super::super::crypto::v1alpha1::Denom>,
     /// the address on the destination chain to send the transfer to
-    #[prost(string, tag = "4")]
+    #[prost(string, tag = "3")]
     pub destination_chain_address: ::prost::alloc::string::String,
     /// a "sender" penumbra address to use to return funds from this withdrawal.
     /// this should be an ephemeral address
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag = "4")]
     pub return_address: ::core::option::Option<super::super::crypto::v1alpha1::Address>,
     /// the height (on Penumbra) at which this transfer expires (and funds are sent
     /// back to the sender address?). NOTE: if funds are sent back to the sender,
     /// we MUST verify a nonexistence proof before accepting the timeout, to
     /// prevent relayer censorship attacks. The core IBC implementation does this
     /// in its handling of validation of timeouts.
-    #[prost(uint64, tag = "6")]
+    #[prost(uint64, tag = "5")]
     pub timeout_height: u64,
     /// the timestamp at which this transfer expires.
-    #[prost(uint64, tag = "7")]
+    #[prost(uint64, tag = "6")]
     pub timeout_time: u64,
     /// the source port that identifies the channel used for the withdrawal
-    #[prost(string, tag = "8")]
+    #[prost(string, tag = "7")]
     pub source_port: ::prost::alloc::string::String,
     /// the source channel used for the withdrawal
-    #[prost(string, tag = "9")]
+    #[prost(string, tag = "8")]
     pub source_channel: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]

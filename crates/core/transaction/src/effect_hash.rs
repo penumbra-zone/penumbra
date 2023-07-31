@@ -41,14 +41,22 @@ impl Transaction {
 }
 
 impl TransactionBody {
+    pub fn expiry_height(&self) -> u64 {
+        self.transaction_parameters.expiry_height
+    }
+
+    pub fn chain_id(&self) -> &str {
+        &self.transaction_parameters.chain_id
+    }
+
     pub fn effect_hash(&self) -> EffectHash {
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:tx_body")
             .to_state();
 
         // Hash the fixed data of the transaction body.
-        state.update(chain_id_effect_hash(&self.chain_id).as_bytes());
-        state.update(&self.expiry_height.to_le_bytes());
+        state.update(chain_id_effect_hash(&self.chain_id()).as_bytes());
+        state.update(&self.expiry_height().to_le_bytes());
         state.update(self.fee.effect_hash().as_bytes());
         if self.memo.is_some() {
             let memo = self.memo.clone();
@@ -63,10 +71,15 @@ impl TransactionBody {
         }
 
         // Hash the clues.
-        let num_clues = self.fmd_clues.len() as u32;
-        state.update(&num_clues.to_le_bytes());
-        for fmd_clue in &self.fmd_clues {
-            state.update(fmd_clue.effect_hash().as_bytes());
+        match self.detection_data {
+            None => {}
+            Some(ref detection_data) => {
+                let num_clues = detection_data.fmd_clues.len() as u32;
+                state.update(&num_clues.to_le_bytes());
+                for fmd_clue in &detection_data.fmd_clues {
+                    state.update(fmd_clue.effect_hash().as_bytes());
+                }
+            }
         }
 
         EffectHash(state.finalize().as_array().clone())

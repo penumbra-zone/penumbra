@@ -1,6 +1,6 @@
 [package]
 name = "pd"
-version = "0.56.0"
+version = "0.57.0"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"
 description = "The node software for the Penumbra Zone"
@@ -120,3 +120,11 @@ anyhow = "1"
 
 [package.metadata.dist]
 dist = true
+
+[package.metadata.release]
+# Update the guide docs to use the most recent version, to reduce tedium.
+# Preview the changes with `cargo release replace`.
+pre-release-replacements = [
+    { file="../../../docs/guide/src/pcli/install.md", search="(cd penumbra && git fetch && git checkout) .*", replace="$1 {{tag_name}}", exactly=1 },
+    { file="../../../docs/guide/src/pcli/update.md", search="(cd penumbra && git fetch && git checkout) .*", replace="$1 {{tag_name}}", exactly=1 },
+]

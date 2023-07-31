@@ -15,7 +15,7 @@ The output proof demonstrates the properties enumerated below for the private wi
 * Diversified basepoint $B_d \isin \mathbb G$ corresponding to the address
 * Transmission key $pk_d \isin \mathbb G$ corresponding to the address
 * Clue key $\mathsf{ck_d} \isin \mathbb F_q$ corresponding to the address
-* Blinding factor $\tilde v \isin \mathbb F_r$ used to blind the balance commitment
+* Blinding factor $\widetilde{v} \isin \mathbb F_r$ used to blind the balance commitment
 
 And the corresponding public inputs:
 
@@ -26,7 +26,7 @@ And the corresponding public inputs:
 
 The zk-SNARK certifies that the public input note commitment $cm$ was derived as:
 
-$cm = hash_5(ds, (rcm, v, ID, B_d, pk_d)$.
+$cm = hash_6(ds, (rcm, v, ID, B_d, pk_d, ck_d))$.
 
 using the above witnessed values and where `ds` is a constant domain separator:
 
@@ -36,9 +36,9 @@ using the above witnessed values and where `ds` is a constant domain separator:
 
 The zk-SNARK certifies that the public input balance commitment $cv$ was derived from the witnessed values as:
 
-$cv = [v] G_v + [\tilde v] G_{\tilde v}$
+$cv = [v] G_v + [\widetilde{v}] G_{\widetilde{v}}$
 
-where $G_{\tilde v}$ is a constant generator and $G_v$ is an asset-specific generator point derived as described in [Value Commitments](../../protocol/value_commitments.md).
+where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific generator point derived as described in [Value Commitments](../../protocol/value_commitments.md).
 
 ### Diversified Base is not Identity
 

@@ -41,7 +41,12 @@ pub fn fmd_precision_within_grace_period(
     current_fmd_parameters: FmdParameters,
     block_height: u64,
 ) -> anyhow::Result<()> {
-    for clue in tx.transaction_body().fmd_clues {
+    for clue in tx
+        .transaction_body()
+        .detection_data
+        .unwrap_or_default()
+        .fmd_clues
+    {
         // Clue must be using the current `FmdParameters`, or be within
         // `FMD_GRACE_PERIOD_BLOCKS` of the previous `FmdParameters`.
         if clue.precision_bits() == current_fmd_parameters.precision_bits

@@ -38,7 +38,7 @@ The zk-SNARK also certifies that the commitment index of the start position is z
 
 The zk-SNARK certifies that the note commitment $cm$ was derived as:
 
-$cm = hash_5(ds, (rcm, v, ID, B_d, pk_d)$.
+$cm = hash_6(ds, (rcm, v, ID, B_d, pk_d, ck_d))$.
 
 using the above witnessed values and where `ds` is a constant domain separator:
 
@@ -48,9 +48,9 @@ using the above witnessed values and where `ds` is a constant domain separator:
 
 The zk-SNARK certifies that the public input balance commitment $cv$ was derived from the witnessed values as:
 
-$cv = [v] G_v + [\tilde v] G_{\tilde v}$
+$cv = [v] G_v + [\widetilde{v}] G_{\widetilde{v}}$
 
-where $G_{\tilde v}$ is a constant generator and $G_v$ is an asset-specific generator point derived as described in [Value Commitments](../../protocol/value_commitments.md). For delegator votes, $[\tilde v] = 0$.
+where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific generator point derived as described in [Value Commitments](../../protocol/value_commitments.md). For delegator votes, $[\widetilde{v}] = 0$.
 
 ### Nullifier Integrity
 

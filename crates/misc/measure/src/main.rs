@@ -2,17 +2,21 @@
 extern crate tracing;
 
 use clap::Parser;
+use tracing::Instrument;
 use tracing_subscriber::EnvFilter;
 
 use penumbra_chain::params::ChainParameters;
 use penumbra_compact_block::CompactBlock;
 use penumbra_proto::{
     client::v1alpha1::{
-        oblivious_query_service_client::ObliviousQueryServiceClient, ChainParametersRequest,
-        CompactBlockRangeRequest,
+        oblivious_query_service_client::ObliviousQueryServiceClient,
+        tendermint_proxy_service_client::TendermintProxyServiceClient, ChainParametersRequest,
+        CompactBlockRangeRequest, GetStatusRequest,
     },
     Message,
 };
+
+use tonic::transport::{Channel, ClientTlsConfig};
 use url::Url;
 
 #[derive(Debug, Parser)]
@@ -31,18 +35,10 @@ pub struct Opt {
         parse(try_from_str = url::Url::parse)
     )]
     node: Url,
-    // TODO: use TendermintProxyService instead
-    /// The URL for the Tendermint RPC endpoint of the remote node.
-    #[clap(
-        long,
-        default_value = "https://rpc.testnet.penumbra.zone",
-        env = "PENUMBRA_NODE_TM_URL"
-    )]
-    tendermint_url: Url,
     #[clap(subcommand)]
     pub cmd: Command,
     /// The filter for log messages.
-    #[clap( long, default_value_t = EnvFilter::new("warn"), env = "RUST_LOG")]
+    #[clap( long, default_value_t = EnvFilter::new("warn,measure=info"), env = "RUST_LOG")]
     trace_filter: EnvFilter,
 }
 
@@ -62,11 +58,67 @@ pub enum Command {
         #[clap(long)]
         skip_genesis: bool,
     },
+    /// Load-test `pd` by holding open many connections subscribing to compact block updates.
+    OpenConnections {
+        /// The number of connections to open.
+        #[clap(short, long, default_value = "100")]
+        num_connections: usize,
+
+        /// Whether to sync the entire chain state, then exit.
+        #[clap(long)]
+        full_sync: bool,
+    },
 }
 
 impl Opt {
     pub async fn run(&self) -> anyhow::Result<()> {
         match self.cmd {
+            Command::OpenConnections {
+                num_connections,
+                full_sync,
+            } => {
+                let current_height = self.latest_known_block_height().await?.0;
+                // Configure start/stop ranges on query, depending on whether we want a full sync.
+                let start_height = if full_sync { 0 } else { current_height };
+                let end_height = if full_sync { current_height } else { 0 };
+                let node = self.node.to_string();
+                let mut js = tokio::task::JoinSet::new();
+                for conn_id in 0..num_connections {
+                    let node2 = node.clone();
+                    js.spawn(
+                        async move {
+                            let mut client =
+                                ObliviousQueryServiceClient::connect(node2).await.unwrap();
+
+                            let mut stream = client
+                                .compact_block_range(tonic::Request::new(
+                                    CompactBlockRangeRequest {
+                                        chain_id: String::new(),
+                                        start_height: start_height,
+                                        end_height: end_height,
+                                        keep_alive: true,
+                                    },
+                                ))
+                                .await
+                                .unwrap()
+                                .into_inner();
+                            while let Some(block_rsp) = stream.message().await.unwrap() {
+                                let size = block_rsp.encoded_len();
+                                let block: CompactBlock = block_rsp.try_into().unwrap();
+                                tracing::debug!(block_size = ?size, block_height = ?block.height, initial_chain_height = ?current_height);
+                                // Exit if we only wanted a single full sync per client.
+                                if full_sync && block.height >=  current_height {
+                                    break;
+                                }
+                            }
+                        }
+                        .instrument(debug_span!("open-connection", conn_id = conn_id)),
+                    );
+                }
+                while let Some(res) = js.join_next().await {
+                    res?;
+                }
+            }
             Command::StreamBlocks { skip_genesis } => {
                 let mut client =
                     ObliviousQueryServiceClient::connect(self.node.to_string()).await?;
@@ -150,50 +202,35 @@ impl Opt {
         Ok(())
     }
 
-    // This code is ripped from the view service code, and could be split out into something common.
     #[instrument(skip(self))]
     pub async fn latest_known_block_height(&self) -> Result<(u64, bool), anyhow::Error> {
-        let client = reqwest::Client::new();
-
-        let rsp: serde_json::Value = client
-            .get(format!("{}/status", self.tendermint_url.clone()))
-            .send()
-            .await?
-            .json()
-            .await?;
-
-        tracing::debug!("{}", rsp);
-
+        let mut client = get_tendermint_proxy_client(self.node.clone()).await?;
+        let rsp = client.get_status(GetStatusRequest {}).await?.into_inner();
         let sync_info = rsp
-            .get("result")
-            .and_then(|r| r.get("sync_info"))
-            .ok_or_else(|| anyhow::anyhow!("could not parse sync_info in JSON response"))?;
+            .sync_info
+            .ok_or_else(|| anyhow::anyhow!("could not parse sync_info in gRPC response"))?;
 
-        let latest_block_height = sync_info
-            .get("latest_block_height")
-            .and_then(|c| c.as_str())
-            .ok_or_else(|| anyhow::anyhow!("could not parse latest_block_height in JSON response"))?
-            .parse()?;
-
-        let node_catching_up = sync_info
-            .get("catching_up")
-            .and_then(|c| c.as_bool())
-            .ok_or_else(|| anyhow::anyhow!("could not parse catching_up in JSON response"))?;
-
-        // There is a `max_peer_block_height` available in TM 0.35, however it should not be used
-        // as it does not seem to reflect the consensus height. Since clients use `latest_known_block_height`
-        // to determine the height to attempt syncing to, a validator reporting a non-consensus height
-        // can cause a DoS to clients attempting to sync if `max_peer_block_height` is used.
-        let latest_known_block_height = latest_block_height;
-
-        tracing::debug!(
-            ?latest_block_height,
-            ?node_catching_up,
-            ?latest_known_block_height
-        );
-
-        Ok((latest_known_block_height, node_catching_up))
+        let latest_block_height = sync_info.latest_block_height;
+        let node_catching_up = sync_info.catching_up;
+        Ok((latest_block_height, node_catching_up))
     }
+}
+
+// This code is ripped from the pcli code, and could be split out into something common.
+async fn get_tendermint_proxy_client(
+    pd_url: Url,
+) -> Result<TendermintProxyServiceClient<Channel>, anyhow::Error> {
+    let pd_channel: Channel = match pd_url.scheme() {
+        "http" => Channel::from_shared(pd_url.to_string())?.connect().await?,
+        "https" => {
+            Channel::from_shared(pd_url.to_string())?
+                .tls_config(ClientTlsConfig::new())?
+                .connect()
+                .await?
+        }
+        other => anyhow::bail!(format!("unknown url scheme {other}")),
+    };
+    Ok(TendermintProxyServiceClient::new(pd_channel))
 }
 
 #[tokio::main]

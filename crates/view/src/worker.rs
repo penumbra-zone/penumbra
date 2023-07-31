@@ -219,36 +219,62 @@ impl Worker {
                 // registry based on transaction contents.
                 for transaction in &transactions {
                     for action in transaction.actions() {
-                        if let penumbra_transaction::Action::PositionOpen(position_open) = action {
-                            let position_id = position_open.position.id();
+                        match action {
+                            penumbra_transaction::Action::PositionOpen(position_open) => {
+                                let position_id = position_open.position.id();
 
-                            // Record every possible permutation.
+                                // Record every possible permutation.
 
-                            let lp_nft = LpNft::new(position_id, position::State::Opened);
-                            let _id = lp_nft.asset_id();
-                            let denom = lp_nft.denom();
-                            self.storage.record_asset(denom).await?;
+                                let lp_nft = LpNft::new(position_id, position::State::Opened);
+                                let _id = lp_nft.asset_id();
+                                let denom = lp_nft.denom();
+                                self.storage.record_asset(denom).await?;
 
-                            let lp_nft = LpNft::new(position_id, position::State::Closed);
-                            let _id = lp_nft.asset_id();
-                            let denom = lp_nft.denom();
-                            self.storage.record_asset(denom).await?;
+                                let lp_nft = LpNft::new(position_id, position::State::Closed);
+                                let _id = lp_nft.asset_id();
+                                let denom = lp_nft.denom();
+                                self.storage.record_asset(denom).await?;
 
-                            let lp_nft = LpNft::new(position_id, position::State::Withdrawn);
-                            let _id = lp_nft.asset_id();
-                            let denom = lp_nft.denom();
-                            self.storage.record_asset(denom).await?;
+                                let lp_nft = LpNft::new(position_id, position::State::Withdrawn);
+                                let _id = lp_nft.asset_id();
+                                let denom = lp_nft.denom();
+                                self.storage.record_asset(denom).await?;
 
-                            let lp_nft = LpNft::new(position_id, position::State::Claimed);
-                            let _id = lp_nft.asset_id();
-                            let denom = lp_nft.denom();
-                            self.storage.record_asset(denom).await?;
+                                let lp_nft = LpNft::new(position_id, position::State::Claimed);
+                                let _id = lp_nft.asset_id();
+                                let denom = lp_nft.denom();
+                                self.storage.record_asset(denom).await?;
 
-                            //Record the position itself
+                                // Record the position itself
+                                self.storage
+                                    .record_position(position_open.position.clone())
+                                    .await?;
+                            }
+                            penumbra_transaction::Action::PositionClose(position_close) => {
+                                let position_id = position_close.position_id;
 
-                            self.storage
-                                .record_position(position_open.position.clone())
-                                .await?;
+                                // Update the position record
+                                self.storage
+                                    .update_position(position_id, position::State::Closed)
+                                    .await?;
+                            }
+                            penumbra_transaction::Action::PositionWithdraw(position_withdraw) => {
+                                let position_id = position_withdraw.position_id;
+
+                                // Update the position record
+                                self.storage
+                                    .update_position(position_id, position::State::Withdrawn)
+                                    .await?;
+                            }
+                            penumbra_transaction::Action::PositionRewardClaim(position_claim) => {
+                                let position_id = position_claim.position_id;
+
+                                // Update the position record
+                                self.storage
+                                    .update_position(position_id, position::State::Claimed)
+                                    .await?;
+                            }
+                            _ => (),
                         };
                     }
                 }

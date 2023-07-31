@@ -18,7 +18,10 @@ use penumbra_dex::{
 use penumbra_fee::Fee;
 use penumbra_ibc::IbcAction;
 use penumbra_keys::{FullViewingKey, PayloadKey};
-use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, Message, TypeUrl};
+use penumbra_proto::{
+    core::transaction::v1alpha1::{self as pbt},
+    DomainType, Message, TypeUrl,
+};
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{Note, Output, Spend};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
@@ -36,11 +39,25 @@ use crate::{
 #[derive(Clone, Debug, Default)]
 pub struct TransactionBody {
     pub actions: Vec<Action>,
+    pub transaction_parameters: TransactionParameters,
+    pub fee: Fee,
+    pub detection_data: Option<DetectionData>,
+    pub memo: Option<MemoCiphertext>,
+}
+
+#[derive(Clone, Debug, Default)]
+/// Parameters determining when the transaction should be accepted to the chain.
+pub struct TransactionParameters {
     pub expiry_height: u64,
     pub chain_id: String,
-    pub fee: Fee,
+}
+
+#[derive(Clone, Debug, Default)]
+/// Detection data used by a detection server using Fuzzy Message Detection.
+///
+/// Only present if outputs are present.
+pub struct DetectionData {
     pub fmd_clues: Vec<Clue>,
-    pub memo: Option<MemoCiphertext>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -197,13 +214,20 @@ impl Transaction {
             None => None,
         };
 
+        let detection_data =
+            self.transaction_body()
+                .detection_data
+                .as_ref()
+                .map(|detection_data| DetectionData {
+                    fmd_clues: detection_data.fmd_clues.clone(),
+                });
+
         TransactionView {
             body_view: TransactionBodyView {
                 action_views,
-                expiry_height: self.transaction_body().expiry_height,
-                chain_id: self.transaction_body().chain_id,
+                transaction_parameters: self.transaction_parameters(),
                 fee: self.transaction_body().fee,
-                fmd_clues: self.transaction_body().fmd_clues,
+                detection_data,
                 memo_view,
             },
             binding_sig: self.binding_sig,
@@ -403,6 +427,10 @@ impl Transaction {
         self.transaction_body.clone()
     }
 
+    pub fn transaction_parameters(&self) -> TransactionParameters {
+        self.transaction_body.transaction_parameters.clone()
+    }
+
     pub fn binding_sig(&self) -> &Signature<Binding> {
         &self.binding_sig
     }
@@ -445,6 +473,63 @@ impl From<TransactionBody> for Vec<u8> {
     }
 }
 
+impl TypeUrl for TransactionParameters {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.TransactionParameters";
+}
+
+impl DomainType for TransactionParameters {
+    type Proto = pbt::TransactionParameters;
+}
+
+impl TryFrom<pbt::TransactionParameters> for TransactionParameters {
+    type Error = Error;
+
+    fn try_from(proto: pbt::TransactionParameters) -> anyhow::Result<Self, Self::Error> {
+        Ok(TransactionParameters {
+            expiry_height: proto.expiry_height,
+            chain_id: proto.chain_id,
+        })
+    }
+}
+
+impl From<TransactionParameters> for pbt::TransactionParameters {
+    fn from(msg: TransactionParameters) -> Self {
+        pbt::TransactionParameters {
+            expiry_height: msg.expiry_height,
+            chain_id: msg.chain_id,
+        }
+    }
+}
+
+impl TypeUrl for DetectionData {
+    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.DetectionData";
+}
+
+impl DomainType for DetectionData {
+    type Proto = pbt::DetectionData;
+}
+
+impl TryFrom<pbt::DetectionData> for DetectionData {
+    type Error = Error;
+
+    fn try_from(proto: pbt::DetectionData) -> anyhow::Result<Self, Self::Error> {
+        let fmd_clues = proto
+            .fmd_clues
+            .into_iter()
+            .map(|x| x.try_into())
+            .collect::<Result<Vec<Clue>, Error>>()?;
+        Ok(DetectionData { fmd_clues })
+    }
+}
+
+impl From<DetectionData> for pbt::DetectionData {
+    fn from(msg: DetectionData) -> Self {
+        let fmd_clues = msg.fmd_clues.into_iter().map(|x| x.into()).collect();
+
+        pbt::DetectionData { fmd_clues }
+    }
+}
+
 impl TypeUrl for TransactionBody {
     const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.TransactionBody";
 }
@@ -455,13 +540,21 @@ impl DomainType for TransactionBody {
 
 impl From<TransactionBody> for pbt::TransactionBody {
     fn from(msg: TransactionBody) -> Self {
+        let encrypted_memo: pbt::MemoData = match msg.memo {
+            Some(memo) => pbt::MemoData {
+                encrypted_memo: Some(bytes::Bytes::copy_from_slice(&memo.0)),
+            },
+            None => pbt::MemoData {
+                encrypted_memo: None,
+            },
+        };
+
         pbt::TransactionBody {
             actions: msg.actions.into_iter().map(|x| x.into()).collect(),
-            expiry_height: msg.expiry_height,
-            chain_id: msg.chain_id,
+            transaction_parameters: Some(msg.transaction_parameters.into()),
             fee: Some(msg.fee.into()),
-            fmd_clues: msg.fmd_clues.into_iter().map(|x| x.into()).collect(),
-            encrypted_memo: msg.memo.map(|x| bytes::Bytes::copy_from_slice(&x.0)),
+            detection_data: msg.detection_data.map(|x| x.into()),
+            memo_data: Some(encrypted_memo),
         }
     }
 }
@@ -479,26 +572,17 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             );
         }
 
-        let expiry_height = proto.expiry_height;
-
-        let chain_id = proto.chain_id;
-
         let fee: Fee = proto
             .fee
             .ok_or_else(|| anyhow::anyhow!("transaction body missing fee"))?
             .try_into()
             .context("fee malformed")?;
 
-        let mut fmd_clues = Vec::<Clue>::new();
-        for fmd_clue in proto.fmd_clues {
-            fmd_clues.push(
-                fmd_clue
-                    .try_into()
-                    .context("fmd clue malformed while parsing transaction body")?,
-            );
-        }
-
-        let memo = match proto.encrypted_memo {
+        let memo = match proto
+            .memo_data
+            .ok_or_else(|| anyhow::anyhow!("transaction body missing memo data field"))?
+            .encrypted_memo
+        {
             Some(bytes) => Some(
                 bytes[..]
                     .try_into()
@@ -507,12 +591,25 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             None => None,
         };
 
+        let detection_data = match proto.detection_data {
+            Some(data) => Some(
+                data.try_into()
+                    .context("detection data malformed while parsing transaction body")?,
+            ),
+            None => None,
+        };
+
+        let transaction_parameters = proto
+            .transaction_parameters
+            .ok_or_else(|| anyhow::anyhow!("transaction body missing transaction parameters"))?
+            .try_into()
+            .context("transaction parameters malformed")?;
+
         Ok(TransactionBody {
             actions,
-            expiry_height,
-            chain_id,
+            transaction_parameters,
             fee,
-            fmd_clues,
+            detection_data,
             memo,
         })
     }

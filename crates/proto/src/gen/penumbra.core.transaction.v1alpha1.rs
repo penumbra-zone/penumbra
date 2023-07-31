@@ -32,25 +32,49 @@ pub struct TransactionBody {
     /// A list of actions (state changes) performed by this transaction.
     #[prost(message, repeated, tag = "1")]
     pub actions: ::prost::alloc::vec::Vec<Action>,
+    /// Parameters determining if a transaction should be accepted by this chain.
+    #[prost(message, optional, tag = "2")]
+    pub transaction_parameters: ::core::option::Option<TransactionParameters>,
+    /// The transaction fee.
+    #[prost(message, optional, tag = "3")]
+    pub fee: ::core::option::Option<super::super::crypto::v1alpha1::Fee>,
+    /// Detection data for use with Fuzzy Message Detection
+    #[prost(message, optional, tag = "4")]
+    pub detection_data: ::core::option::Option<DetectionData>,
+    /// Sub-message containing memo ciphertext if a memo was added to the transaction.
+    #[prost(message, optional, tag = "5")]
+    pub memo_data: ::core::option::Option<MemoData>,
+}
+/// Represents the encrypted memo data.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MemoData {
+    /// The encrypted data. It will only be populated if there are
+    /// outputs in the actions of the transaction. 528 bytes.
+    #[prost(bytes = "bytes", optional, tag = "1")]
+    pub encrypted_memo: ::core::option::Option<::prost::bytes::Bytes>,
+}
+/// The parameters determining if a transaction should be accepted by the chain.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionParameters {
     /// The maximum height that this transaction can be included in the chain.
     ///
     /// If zero, there is no maximum.
-    #[prost(uint64, tag = "2")]
+    #[prost(uint64, tag = "1")]
     pub expiry_height: u64,
     /// The chain this transaction is intended for.  Including this prevents
     /// replaying a transaction on one chain onto a different chain.
-    #[prost(string, tag = "3")]
+    #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
-    /// The transaction fee.
-    #[prost(message, optional, tag = "4")]
-    pub fee: ::core::option::Option<super::super::crypto::v1alpha1::Fee>,
+}
+/// Detection data used by a detection server performing Fuzzy Message Detection.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DetectionData {
     /// A list of clues for use with Fuzzy Message Detection.
-    #[prost(message, repeated, tag = "5")]
+    #[prost(message, repeated, tag = "4")]
     pub fmd_clues: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::Clue>,
-    /// An optional encrypted memo. It will only be populated if there are
-    /// outputs in the actions of this transaction. 528 bytes.
-    #[prost(bytes = "bytes", optional, tag = "6")]
-    pub encrypted_memo: ::core::option::Option<::prost::bytes::Bytes>,
 }
 /// A state change performed by a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -189,24 +213,19 @@ pub struct TransactionBodyView {
     /// A list views into of actions (state changes) performed by this transaction.
     #[prost(message, repeated, tag = "1")]
     pub action_views: ::prost::alloc::vec::Vec<ActionView>,
-    /// The maximum height that this transaction can be included in the chain.
-    ///
-    /// If zero, there is no maximum.
-    #[prost(uint64, tag = "2")]
-    pub expiry_height: u64,
-    /// The chain this transaction is intended for.  Including this prevents
-    /// replaying a transaction on one chain onto a different chain.
-    #[prost(string, tag = "3")]
-    pub chain_id: ::prost::alloc::string::String,
+    /// Transaction parameters.
+    #[prost(message, optional, tag = "2")]
+    pub transaction_parameters: ::core::option::Option<TransactionParameters>,
     /// The transaction fee.
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag = "3")]
     pub fee: ::core::option::Option<super::super::crypto::v1alpha1::Fee>,
-    /// A list of clues for use with Fuzzy Message Detection.
-    #[prost(message, repeated, tag = "5")]
-    pub fmd_clues: ::prost::alloc::vec::Vec<super::super::crypto::v1alpha1::Clue>,
+    /// The detection data in this transaction, only populated if
+    /// there are outputs in the actions of this transaction.
+    #[prost(message, optional, tag = "4")]
+    pub detection_data: ::core::option::Option<DetectionData>,
     /// An optional view of a transaction memo. It will only be populated if there are
     /// outputs in the actions of this transaction.
-    #[prost(message, optional, tag = "6")]
+    #[prost(message, optional, tag = "5")]
     pub memo_view: ::core::option::Option<MemoView>,
 }
 /// A view of a specific state change action performed by a transaction.

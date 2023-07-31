@@ -1,9 +1,9 @@
 # Validator Rewards and Fees
 
 Validators declare a set of funding streams that comprise the destination of
-all of their staking rewards. Each funding stream contains a rate $ri \in
-[0,1]$ and a destination address $ai$.  The validator's total commission rate
-is defined as $c_{v,e} = \sum ri$, the sum of the rate of each funding stream.
+all of their staking rewards. Each funding stream contains a rate $r_i \in
+[0,1]$ and a destination address $a_i$.  The validator's total commission rate
+is defined as $c_{v,e} = \sum r_i$, the sum of the rate of each funding stream.
 $c_{v,e}$ cannot exceed 1.
 
 The spread between the base reward rate $r_e$ and the reward rate for their
