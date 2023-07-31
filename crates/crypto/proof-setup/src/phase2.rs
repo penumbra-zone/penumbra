@@ -163,6 +163,29 @@ impl Contribution {
             linking_proof,
         }
     }
+
+    /// Verify that this contribution is linked to a previous list of elements.
+    #[must_use]
+    pub fn is_linked_to(&self, parent: &CRSElements) -> bool {
+        // 1. Check that the sizes match between the two elements.
+        if self.new_elements.raw.inv_delta_p_1.len() != parent.raw.inv_delta_p_1.len()
+            || self.new_elements.raw.inv_delta_t_1.len() != parent.raw.inv_delta_t_1.len()
+        {
+            return false;
+        }
+        // 2. Check that the linking proof verifies
+        if !dlog::verify(
+            b"phase2 delta proof",
+            dlog::Statement {
+                result: self.new_elements.raw.delta_1,
+                base: parent.raw.delta_1,
+            },
+            &self.linking_proof,
+        ) {
+            return false;
+        }
+        true
+    }
 }
 
 #[cfg(test)]
@@ -279,5 +302,29 @@ mod test {
             &start,
         );
         assert_ne!(contribution.hash(), contribution.parent);
+    }
+
+    #[test]
+    fn test_contribution_is_linked_to_parent() {
+        let (root, start) = non_trivial_crs();
+        let start = start.validate(&mut OsRng, &root).unwrap();
+        let contribution = Contribution::make(
+            &mut OsRng,
+            ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
+            &start,
+        );
+        assert!(contribution.is_linked_to(&start));
+    }
+
+    #[test]
+    fn test_contribution_is_not_linked_to_itself() {
+        let (root, start) = non_trivial_crs();
+        let start = start.validate(&mut OsRng, &root).unwrap();
+        let contribution = Contribution::make(
+            &mut OsRng,
+            ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
+            &start,
+        );
+        assert!(!contribution.is_linked_to(&contribution.new_elements));
     }
 }
