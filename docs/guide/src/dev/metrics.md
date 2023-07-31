@@ -1,13 +1,16 @@
 # Metrics
 
 Metrics are an important part of observability, allowing us to understand what
-the Penumbra software is doing.
+the Penumbra software is doing. Penumbra Labs runs Grafana instances for the public deployments:
+
+  * https://grafana.testnet.penumbra.zone
+  * https://grafana.testnet-preview.penumbra.zone
 
 ## Viewing Metrics
 
 TODO: add details on how to use Grafana:
 
-- [ ] link to <https://grafana.testnet.penumbra.zone> for dashboard on current testnet;
+- [x] link to <https://grafana.testnet.penumbra.zone> for dashboard on current testnet;
 - [ ] instructions on how to run Grafana + Prometheus for local dev setup (ideally this could work without requiring that `pd` itself is Dockerized, since local development is often more convenient outside of docker);
 - [x] instructions on how to commit dashboards back to the repo.
 
@@ -62,4 +65,18 @@ we use for maintaining our dashboards.
 
 1. Export the dashboard as JSON with the default settings
 2. Rename the JSON file and copy into the repo (`config/grafana/dashboards/`)
-3. Use the import function in the UI to update all deployments
+3. PR the changes into main, and confirm on preview post-deploy that it works as expected.
+
+
+## Editing metrics locally
+
+To facilitate working with metrics locally, first run a `pd` node on your machine with the metrics endpoint
+exposed. Then, you can spin up a metrics sidecar deployment:
+
+```bash
+cd deployments/compose
+just metrics
+```
+
+To add new Grafana visualizations, open http://localhost:3000 and edit the existing dashboards.
+When you're happy with what you've got, follow the "Backing up Grafana" instructions above to save your work.
