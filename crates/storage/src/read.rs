@@ -1,4 +1,4 @@
-use std::{any::Any, future::Future, sync::Arc};
+use std::{any::Any, future::Future, ops::RangeBounds, sync::Arc};
 
 use anyhow::Result;
 use futures::Stream;
@@ -9,6 +9,7 @@ pub trait StateRead: Send + Sync {
     type PrefixRawStream: Stream<Item = Result<(String, Vec<u8>)>> + Send + 'static;
     type PrefixKeysStream: Stream<Item = Result<String>> + Send + 'static;
     type NonconsensusPrefixRawStream: Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'static;
+    type NonconsensusRangeRawStream: Stream<Item = Result<(Vec<u8>, Vec<u8>)>> + Send + 'static;
 
     /// Gets a value from the verifiable key-value store as raw bytes.
     ///
@@ -55,6 +56,16 @@ pub trait StateRead: Send + Sync {
     ///
     /// Users should generally prefer to use wrapper methods in an extension trait.
     fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> Self::NonconsensusPrefixRawStream;
+
+    /// Retrieve all values for keys in a range from the non-verifiable key-value store, as raw bytes.
+    /// This method does not support inclusive ranges, and will return an error if passed one.
+    ///
+    /// Users should generally prefer to use wrapper methods in an extension trait.
+    fn nonverifiable_range(
+        &self,
+        prefix: Option<&[u8]>,
+        range: impl RangeBounds<Vec<u8>>,
+    ) -> Result<Self::NonconsensusRangeRawStream>;
 }
 
 impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
@@ -62,6 +73,7 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
     type PrefixRawStream = S::PrefixRawStream;
     type PrefixKeysStream = S::PrefixKeysStream;
     type NonconsensusPrefixRawStream = S::NonconsensusPrefixRawStream;
+    type NonconsensusRangeRawStream = S::NonconsensusRangeRawStream;
 
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         (**self).get_raw(key)
@@ -77,6 +89,14 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
 
     fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> S::NonconsensusPrefixRawStream {
         (**self).nonverifiable_prefix_raw(prefix)
+    }
+
+    fn nonverifiable_range(
+        &self,
+        prefix: Option<&[u8]>,
+        range: impl RangeBounds<Vec<u8>>,
+    ) -> Result<S::NonconsensusRangeRawStream> {
+        (**self).nonverifiable_range(prefix, range)
     }
 
     fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
@@ -97,6 +117,7 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
     type PrefixRawStream = S::PrefixRawStream;
     type PrefixKeysStream = S::PrefixKeysStream;
     type NonconsensusPrefixRawStream = S::NonconsensusPrefixRawStream;
+    type NonconsensusRangeRawStream = S::NonconsensusRangeRawStream;
 
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         (**self).get_raw(key)
@@ -112,6 +133,14 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
 
     fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> S::NonconsensusPrefixRawStream {
         (**self).nonverifiable_prefix_raw(prefix)
+    }
+
+    fn nonverifiable_range(
+        &self,
+        prefix: Option<&[u8]>,
+        range: impl RangeBounds<Vec<u8>>,
+    ) -> Result<S::NonconsensusRangeRawStream> {
+        (**self).nonverifiable_range(prefix, range)
     }
 
     fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
@@ -132,6 +161,7 @@ impl<S: StateRead + Send + Sync> StateRead for Arc<S> {
     type PrefixRawStream = S::PrefixRawStream;
     type PrefixKeysStream = S::PrefixKeysStream;
     type NonconsensusPrefixRawStream = S::NonconsensusPrefixRawStream;
+    type NonconsensusRangeRawStream = S::NonconsensusRangeRawStream;
 
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         (**self).get_raw(key)
@@ -149,6 +179,14 @@ impl<S: StateRead + Send + Sync> StateRead for Arc<S> {
         (**self).nonverifiable_prefix_raw(prefix)
     }
 
+    fn nonverifiable_range(
+        &self,
+        prefix: Option<&[u8]>,
+        range: impl RangeBounds<Vec<u8>>,
+    ) -> Result<Self::NonconsensusRangeRawStream> {
+        (**self).nonverifiable_range(prefix, range)
+    }
+
     fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
         (**self).nonverifiable_get_raw(key)
     }
@@ -164,12 +202,11 @@ impl<S: StateRead + Send + Sync> StateRead for Arc<S> {
 
 impl StateRead for () {
     type GetRawFut = futures::future::Ready<Result<Option<Vec<u8>>>>;
-
     type PrefixRawStream = futures::stream::Iter<std::iter::Empty<Result<(String, Vec<u8>)>>>;
-
     type PrefixKeysStream = futures::stream::Iter<std::iter::Empty<Result<String>>>;
-
     type NonconsensusPrefixRawStream =
+        futures::stream::Iter<std::iter::Empty<Result<(Vec<u8>, Vec<u8>)>>>;
+    type NonconsensusRangeRawStream =
         futures::stream::Iter<std::iter::Empty<Result<(Vec<u8>, Vec<u8>)>>>;
 
     fn get_raw(&self, _key: &str) -> Self::GetRawFut {
@@ -198,5 +235,13 @@ impl StateRead for () {
 
     fn nonverifiable_prefix_raw(&self, _prefix: &[u8]) -> Self::NonconsensusPrefixRawStream {
         futures::stream::iter(std::iter::empty())
+    }
+
+    fn nonverifiable_range(
+        &self,
+        _prefix: Option<&[u8]>,
+        _range: impl RangeBounds<Vec<u8>>,
+    ) -> Result<Self::NonconsensusRangeRawStream> {
+        Ok(futures::stream::iter(std::iter::empty()))
     }
 }
