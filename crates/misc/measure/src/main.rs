@@ -68,6 +68,17 @@ pub enum Command {
         #[clap(long)]
         full_sync: bool,
     },
+    /// Load-test `pd` by holding open many connections subscribing to compact block updates,
+    /// processing the messages asynchronously to create
+    OpenConnectionsActive {
+        /// The number of connections to open.
+        #[clap(short, long, default_value = "100")]
+        num_connections: usize,
+
+        /// Whether to sync the entire chain state, then exit.
+        #[clap(long)]
+        full_sync: bool,
+    },
 }
 
 impl Opt {
@@ -114,6 +125,52 @@ impl Opt {
                         }
                         .instrument(debug_span!("open-connection", conn_id = conn_id)),
                     );
+                }
+                while let Some(res) = js.join_next().await {
+                    res?;
+                }
+            }
+            Command::OpenConnectionsActive {
+                num_connections,
+                full_sync,
+            } => {
+                let current_height = self.latest_known_block_height().await?.0;
+                // Configure start/stop ranges on query, depending on whether we want a full sync.
+                let start_height = if full_sync { 0 } else { current_height };
+                let end_height = if full_sync { current_height } else { 0 };
+                let node = self.node.to_string();
+                let mut js = tokio::task::JoinSet::new();
+                for conn_id in 0..num_connections {
+                    let node2 = node.clone();
+                    js.spawn(async move {
+                        let mut client = ObliviousQueryServiceClient::connect(node2).await.unwrap();
+
+                        let mut stream = client
+                            .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
+                                chain_id: String::new(),
+                                start_height,
+                                end_height,
+                                keep_alive: true,
+                            }))
+                            .await
+                            .unwrap()
+                            .into_inner();
+                        let (tx_blocks, mut rx_blocks) = tokio::sync::mpsc::channel(10_000);
+                        tokio::spawn(async move {
+                            while let Some(block) = stream.message().await.transpose() {
+                                if tx_blocks.send(block).await.is_err() {
+                                    break;
+                                }
+                            }
+                        });
+
+                        while let Some(block) = rx_blocks.recv().await {
+                            let block: CompactBlock =
+                                block.expect("valid block").try_into().expect("valid block");
+                            let height = block.height;
+                            tracing::debug!(block_height = ?height, conn_id, "processing block");
+                        }
+                    });
                 }
                 while let Some(res) = js.join_next().await {
                     res?;
