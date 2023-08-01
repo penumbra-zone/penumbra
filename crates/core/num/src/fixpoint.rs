@@ -362,7 +362,7 @@ impl U128x128Var {
 
         // t1 = (t0 >> 128) + z2
         let t1 = z2 + Boolean::<Fq>::le_bits_to_fp_var(&t0_bits[128..193].to_bits_le()?)?;
-        // Constrain: t1 fits in 129 bits
+        // Constrain: t1 fits in 130 bits
         let t1_bits = bit_constrain(t1, 130)?;
 
         // w0 = t0 & 2^64 - 1
