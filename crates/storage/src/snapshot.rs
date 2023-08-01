@@ -145,6 +145,8 @@ impl StateRead for Snapshot {
     type PrefixKeysStream = tokio_stream::wrappers::ReceiverStream<anyhow::Result<String>>;
     type NonconsensusPrefixRawStream =
         tokio_stream::wrappers::ReceiverStream<anyhow::Result<(Vec<u8>, Vec<u8>)>>;
+    type NonconsensusRangeRawStream =
+        tokio_stream::wrappers::ReceiverStream<anyhow::Result<(Vec<u8>, Vec<u8>)>>;
 
     /// Fetch a key from the JMT column family.
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
@@ -317,6 +319,47 @@ impl StateRead for Snapshot {
             .expect("should be able to spawn_blocking");
 
         tokio_stream::wrappers::ReceiverStream::new(rx)
+    }
+
+    fn nonverifiable_range(
+        &self,
+        _prefix: Option<&[u8]>,
+        _range: impl std::ops::RangeBounds<Vec<u8>>,
+    ) -> anyhow::Result<Self::NonconsensusRangeRawStream> {
+        let _span = Span::current();
+        /*
+        let self2 = self.clone();
+
+        let mut options = rocksdb::ReadOptions::default();
+        options.set_iterate_range(rocksdb::PrefixRange(prefix));
+        let mode = rocksdb::IteratorMode::Start;
+
+        let (tx, rx) = mpsc::channel(10);
+
+        // Here we're operating on the nonverifiable data, which is a raw k/v store,
+        // so we just iterate over the keys.
+        tokio::task::Builder::new()
+            .name("Snapshot::nonverifiable_prefix_raw")
+            .spawn_blocking(move || {
+                span.in_scope(|| {
+                    let keys_cf = self2
+                        .0
+                        .db
+                        .cf_handle("nonverifiable")
+                        .expect("nonverifiable column family not found");
+                    let iter = self2.0.snapshot.iterator_cf_opt(keys_cf, options, mode);
+                    for i in iter {
+                        let (key, value) = i?;
+                        tx.blocking_send(Ok((key.into(), value.into())))?;
+                    }
+                    Ok::<(), anyhow::Error>(())
+                })
+            })
+            .expect("should be able to spawn_blocking");
+
+        tokio_stream::wrappers::ReceiverStream::new(rx)
+        */
+        todo!()
     }
 
     fn object_get<T: Any + Send + Sync + Clone>(&self, _key: &str) -> Option<T> {

@@ -59,3 +59,26 @@ pub use storage::{Storage, TempStorage};
 pub use write::StateWrite;
 
 pub mod future;
+
+// MERGEBLOCK(erwan): move this somewhere more appropriate
+fn convert_bounds(
+    range: impl std::ops::RangeBounds<Vec<u8>>,
+) -> (
+    impl std::ops::RangeBounds<Vec<u8>>,
+    Option<Vec<u8>>,
+    Option<Vec<u8>>,
+) {
+    let start = match range.start_bound() {
+        std::ops::Bound::Included(v) => Some(v.clone()),
+        std::ops::Bound::Excluded(v) => Some(v.clone()),
+        std::ops::Bound::Unbounded => None,
+    };
+
+    let end = match range.end_bound() {
+        std::ops::Bound::Included(v) => Some(v.clone()),
+        std::ops::Bound::Excluded(v) => Some(v.clone()),
+        std::ops::Bound::Unbounded => None,
+    };
+
+    (range, start, end)
+}
