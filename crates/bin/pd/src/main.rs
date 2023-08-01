@@ -298,6 +298,7 @@ async fn main() -> anyhow::Result<()> {
                 })
                 // Allow HTTP/1, which will be used by grpc-web connections.
                 .accept_http1(true)
+                .timeout(std::time::Duration::from_secs(7))
                 // Wrap each of the gRPC services in a tonic-web proxy:
                 .add_service(tonic_web::enable(ObliviousQueryServiceServer::new(
                     info.clone(),
