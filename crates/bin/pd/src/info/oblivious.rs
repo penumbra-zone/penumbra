@@ -263,18 +263,33 @@ impl ObliviousQueryService for Info {
 
                 while let Some(block_fetch) = rx_block_fetch.recv().await {
                     let block = block_fetch
-                        .await??
+                        .await
+                        .expect("block fetcher does not fail")
+                        .expect("no error fetching block")
                         .expect("compact block for in-range height must be present");
-                    tx_blocks.send(Ok(block.into())).await?;
-                    metrics::increment_counter!(
-                        metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
-                    );
+
+                    let send_op = async { tx_blocks.send(Ok(block.into())).await };
+                    match tokio::time::timeout(tokio::time::Duration::from_secs(1), send_op).await {
+                        Ok(Ok(_)) => {
+                            metrics::increment_counter!(
+                                metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
+                            );
+                        }
+                        Ok(Err(_)) => {
+                            return Err(tonic::Status::internal("error while sending block"));
+                        }
+                        Err(_) => {
+                            return Err(tonic::Status::deadline_exceeded(
+                                "timeout while sending block",
+                            ));
+                        }
+                    }
                 }
 
                 // If the client didn't request a keep-alive, we're done.
                 if !keep_alive {
                     // Explicitly annotate the error type, so we can bubble up errors...
-                    return Ok::<(), anyhow::Error>(());
+                    return Ok(());
                 }
 
                 // Before we can stream new compact blocks as they're created,
@@ -293,9 +308,10 @@ impl ObliviousQueryService for Info {
                     tracing::debug!(?height, "sending block in phase 2 catch-up");
                     let block = snapshot
                         .compact_block(height)
-                        .await?
+                        .await
+                        .expect("no error fetching block")
                         .expect("compact block for in-range height must be present");
-                    tx_blocks.send(Ok(block.into())).await?;
+                    tx_blocks.send(Ok(block.into())).await.expect("TODO(erwan)");
                     metrics::increment_counter!(
                         metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
                     );
@@ -311,15 +327,19 @@ impl ObliviousQueryService for Info {
                 // Because we used borrow_and_update above, we know this will
                 // wait for the *next* block to be created before firing.
                 loop {
-                    rx_state_snapshot.changed().await?;
+                    rx_state_snapshot
+                        .changed()
+                        .await
+                        .expect("TODO(erwan): channel should not close");
                     let snapshot = rx_state_snapshot.borrow().clone();
                     let height = snapshot.version();
                     tracing::debug!(?height, "notifying client of new block");
                     let block = snapshot
                         .compact_block(height)
-                        .await?
+                        .await
+                        .map_err(|e| tonic::Status::internal(e.to_string()))?
                         .expect("compact block for in-range height must be present");
-                    tx_blocks.send(Ok(block.into())).await?;
+                    tx_blocks.send(Ok(block.into())).await.expect("TODO(erwan)");
                     metrics::increment_counter!(
                         metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
                     );
