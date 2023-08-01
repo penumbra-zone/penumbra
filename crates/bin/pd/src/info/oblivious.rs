@@ -311,7 +311,10 @@ impl ObliviousQueryService for Info {
                         .await
                         .expect("no error fetching block")
                         .expect("compact block for in-range height must be present");
-                    tx_blocks.send(Ok(block.into())).await.expect("TODO(erwan)");
+                    tx_blocks
+                        .send(Ok(block.into()))
+                        .await
+                        .expect("channel should be open");
                     metrics::increment_counter!(
                         metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
                     );
@@ -330,7 +333,7 @@ impl ObliviousQueryService for Info {
                     rx_state_snapshot
                         .changed()
                         .await
-                        .expect("TODO(erwan): channel should not close");
+                        .expect("channel should be open");
                     let snapshot = rx_state_snapshot.borrow().clone();
                     let height = snapshot.version();
                     tracing::debug!(?height, "notifying client of new block");
@@ -339,7 +342,10 @@ impl ObliviousQueryService for Info {
                         .await
                         .map_err(|e| tonic::Status::internal(e.to_string()))?
                         .expect("compact block for in-range height must be present");
-                    tx_blocks.send(Ok(block.into())).await.expect("TODO(erwan)");
+                    tx_blocks
+                        .send(Ok(block.into()))
+                        .await
+                        .expect("channel should be open");
                     metrics::increment_counter!(
                         metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
                     );
