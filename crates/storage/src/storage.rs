@@ -81,7 +81,13 @@ impl Storage {
                     // A concurrent-safe ring buffer of the latest 10 snapshots.
                     let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot.clone(), 10));
 
-                    // We create two watch channels here:
+                    // Setup a dispatcher task that acts as an intermediary between the storage
+                    // and the rest of the system. The dispatcher task is responsible for
+                    // forwarding new snapshots to the rest of the system.
+                    // We want to protect against slow subscribers that hold a read lock on the
+                    // watch channel for too long, as they could block the consensus-critical
+                    // commit logic, which needs to acquire a write lock on the watch channel in
+                    // order to update the latest snapshot.
                     // dispatcher channel:
                     // - `tx_dispatcher` is used by storage to signal that a new snapshot is available.
                     // - `rx_dispatcher` is used by the dispatcher to receive new snapshots.
