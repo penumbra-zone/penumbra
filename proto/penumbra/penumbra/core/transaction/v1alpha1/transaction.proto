@@ -37,7 +37,7 @@ message TransactionBody {
   crypto.v1alpha1.Fee fee = 3;
   // Detection data for use with Fuzzy Message Detection
   DetectionData detection_data = 4;
-  // Sub-message containing memo ciphertext if a memo was added to the transaction. 
+  // Sub-message containing memo ciphertext if a memo was added to the transaction.
   MemoData memo_data = 5;
 }
 
@@ -308,13 +308,19 @@ message WitnessData {
   repeated crypto.v1alpha1.StateCommitmentProof state_commitment_proofs = 2;
 }
 
-// Describes a planned transaction.
+// Describes a planned transaction. Permits clients to prepare a transaction
+// prior submission, so that a user can review it prior to authorizing its execution.
 message TransactionPlan {
+    // The planner interface(s) for Actions to be performed, such as a Spend, Swap,
+    // or Delegation. See the ActionPlan docs for a full list of options.
     repeated ActionPlan actions = 1;
+    // Time, as block height, after which TransactionPlan should be considered invalid.
     uint64 expiry_height = 2;
+    // The name of the network for which this TransactionPlan was built.
     string chain_id = 3;
     crypto.v1alpha1.Fee fee = 4;
     repeated CluePlan clue_plans = 5;
+    // Planning interface for constructing an optional Memo for the Transaction.
     MemoPlan memo_plan = 6;
 }
 
@@ -339,7 +345,7 @@ message ActionPlan {
         governance.v1alpha1.ValidatorVote validator_vote = 20;
         governance.v1alpha1.DelegatorVotePlan delegator_vote = 21;
         governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
-        
+
         ibc.v1alpha1.Ics20Withdrawal withdrawal = 23;
 
         dex.v1alpha1.PositionOpen position_open = 30;
@@ -382,12 +388,12 @@ message MemoPlan {
   bytes key = 2;
 }
 
-message MemoCiphertext { bytes inner = 1; } 
+message MemoCiphertext { bytes inner = 1; }
 
-message MemoPlaintext { 
+message MemoPlaintext {
   crypto.v1alpha1.Address sender = 1;
-  string text = 2; 
-} 
+  string text = 2;
+}
 
 message MemoView {
   message Visible {
