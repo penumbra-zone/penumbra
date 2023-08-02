@@ -50,7 +50,7 @@ impl TryFrom<pb::PreAuthorization> for PreAuthorization {
                 Self::Ed25519(ed.try_into()?)
             }
             None => {
-                return Err(anyhow::anyhow!("missing pre-authorization"));
+                anyhow::bail!("missing pre-authorization");
             }
         })
     }

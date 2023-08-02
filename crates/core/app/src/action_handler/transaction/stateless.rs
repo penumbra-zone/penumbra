@@ -23,10 +23,7 @@ pub(super) fn no_duplicate_nullifiers(tx: &Transaction) -> Result<()> {
     let mut spent_nullifiers = BTreeSet::new();
     for nf in tx.spent_nullifiers() {
         if let Some(duplicate) = spent_nullifiers.replace(nf) {
-            return Err(anyhow::anyhow!(
-                "Duplicate nullifier in transaction: {}",
-                duplicate
-            ));
+            anyhow::bail!("Duplicate nullifier in transaction: {}", duplicate);
         }
     }
 

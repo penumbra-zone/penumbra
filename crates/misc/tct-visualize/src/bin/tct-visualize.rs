@@ -293,7 +293,7 @@ fn write_svg<W: Write>(dot: &[u8], writer: &mut W) -> Result<()> {
         });
         std::io::copy(&mut stdout, writer)?;
         render_thread.join().unwrap()?;
-        Ok::<_, anyhow::Error>(())
+        anyhow::Ok(())
     })?;
     Ok(())
 }
@@ -308,7 +308,7 @@ fn write_svg_direct<W: Write>(tree: &Tree, writer: &mut W) -> Result<()> {
         });
         std::io::copy(&mut stdout, writer)?;
         render_thread.join().unwrap()?;
-        Ok::<_, anyhow::Error>(())
+        anyhow::Ok(())
     })?;
     Ok(())
 }

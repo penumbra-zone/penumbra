@@ -650,7 +650,7 @@ where
             let assets = pb_assets
                 .into_iter()
                 .map(DenomMetadata::try_from)
-                .collect::<Result<Vec<DenomMetadata>, anyhow::Error>>()?;
+                .collect::<anyhow::Result<Vec<DenomMetadata>>>()?;
 
             Ok(assets.into_iter().collect())
         }
@@ -686,7 +686,7 @@ where
                         anyhow::anyhow!("empty OwnedPositionsIdsResponse message")
                     })?)
                 })
-                .collect::<Result<Vec<position::Id>, anyhow::Error>>()?;
+                .collect::<anyhow::Result<Vec<position::Id>>>()?;
 
             Ok(position_ids)
         }

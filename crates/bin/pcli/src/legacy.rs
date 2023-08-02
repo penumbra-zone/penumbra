@@ -26,7 +26,7 @@ pub fn migrate(
     // Load the new wallet, to check we really did save it:
     let new_wallet_2 = crate::KeyStore::load(custody_path)?;
     if new_wallet_2.spend_key.to_bytes().0 != new_wallet.spend_key.to_bytes().0 {
-        return Err(anyhow::anyhow!("Failed to save wallet"));
+        anyhow::bail!("Failed to save wallet");
     } else {
         tracing::info!("Removing legacy wallet file");
         std::fs::remove_file(legacy_wallet_path)?;

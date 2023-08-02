@@ -38,7 +38,7 @@ impl MsgHandler for MsgChannelCloseConfirm {
             .await?
             .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
         if channel.state_matches(&ChannelState::Closed) {
-            return Err(anyhow::anyhow!("channel is already closed"));
+            anyhow::bail!("channel is already closed");
         }
 
         let connection = state
@@ -46,7 +46,7 @@ impl MsgHandler for MsgChannelCloseConfirm {
             .await?
             .ok_or_else(|| anyhow::anyhow!("connection not found for channel"))?;
         if !connection.state_matches(&ConnectionState::Open) {
-            return Err(anyhow::anyhow!("connection for channel is not open"));
+            anyhow::bail!("connection for channel is not open");
         }
 
         let expected_connection_hops = vec![connection
@@ -85,7 +85,7 @@ impl MsgHandler for MsgChannelCloseConfirm {
         if self.port_id_on_b == transfer {
             Ics20Transfer::chan_close_confirm_check(&mut state, self).await?;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
         channel.set_state(ChannelState::Closed);
         state.put_channel(&self.chan_id_on_b, &self.port_id_on_b, channel.clone());
@@ -109,7 +109,7 @@ impl MsgHandler for MsgChannelCloseConfirm {
         if self.port_id_on_b == transfer {
             Ics20Transfer::chan_close_confirm_execute(state, self).await;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
 
         Ok(())

@@ -34,10 +34,10 @@ impl ActionHandler for validator::Definition {
             .sum::<u64>();
 
         if total_funding_bps > 10000 {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "validator defined {} bps of funding streams, greater than 10000bps = 100%",
                 total_funding_bps
-            ));
+            );
         }
 
         Ok(())
@@ -53,10 +53,10 @@ impl ActionHandler for validator::Definition {
             // the new sequence number.
             let current_seq = existing_v.sequence_number;
             if v.validator.sequence_number <= current_seq {
-                return Err(anyhow::anyhow!(
+                anyhow::bail!(
                     "expected sequence numbers to be increasing: current sequence number is {}",
                     current_seq
-                ));
+                );
             }
         }
 
@@ -78,11 +78,11 @@ impl ActionHandler for validator::Definition {
                 // 2. If we submit a validator update to Tendermint that
                 // includes duplicate consensus keys, Tendermint gets confused
                 // and hangs.
-                return Err(anyhow::anyhow!(
+                anyhow::bail!(
                     "consensus key {:?} is already in use by validator {}",
                     v.validator.consensus_key,
                     existing_v.identity_key,
-                ));
+                );
             }
         }
 

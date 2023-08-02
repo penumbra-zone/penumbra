@@ -28,11 +28,11 @@ impl ActionHandler for Delegate {
         // Check whether the epoch is correct first, to give a more helpful
         // error message if it's wrong.
         if d.epoch_index != next_rate_data.epoch_index {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "delegation was prepared for epoch {} but the next epoch is {}",
                 d.epoch_index,
                 next_rate_data.epoch_index
-            ));
+            );
         }
 
         // Check whether the delegation is allowed
@@ -47,17 +47,17 @@ impl ActionHandler for Delegate {
 
         use validator::State::*;
         if !validator.enabled {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "delegations are only allowed to enabled validators, but {} is disabled",
                 d.validator_identity,
-            ));
+            );
         }
         if !matches!(validator_state, Inactive | Active) {
-            return Err(anyhow::anyhow!(
-                    "delegations are only allowed to active or inactive validators, but {} is in state {:?}",
-                    d.validator_identity,
-                    validator_state,
-                ));
+            anyhow::bail!(
+                "delegations are only allowed to active or inactive validators, but {} is in state {:?}",
+                d.validator_identity,
+                validator_state,
+            );
         }
 
         // For delegations, we enforce correct computation (with rounding)
@@ -78,12 +78,12 @@ impl ActionHandler for Delegate {
             next_rate_data.delegation_amount(d.unbonded_amount.value());
 
         if expected_delegation_amount != d.delegation_amount.value() {
-            return Err(anyhow::anyhow!(
-                    "given {} unbonded stake, expected {} delegation tokens but description produces {}",
-                    d.unbonded_amount,
-                    expected_delegation_amount,
-                    d.delegation_amount
-                ));
+            anyhow::bail!(
+                "given {} unbonded stake, expected {} delegation tokens but description produces {}",
+                d.unbonded_amount,
+                expected_delegation_amount,
+                d.delegation_amount
+            );
         }
 
         Ok(())

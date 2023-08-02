@@ -145,7 +145,7 @@ impl<S: StateRead + StateWrite> StateDelta<S> {
 }
 
 impl<S: StateRead + StateWrite> StateDelta<Arc<S>> {
-    pub fn try_apply(self) -> Result<(S, Vec<abci::Event>), anyhow::Error> {
+    pub fn try_apply(self) -> anyhow::Result<(S, Vec<abci::Event>)> {
         let (arc_state, mut changes) = self.flatten();
         let events = std::mem::take(&mut changes.events);
 

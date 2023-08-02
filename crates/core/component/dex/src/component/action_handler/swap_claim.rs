@@ -39,9 +39,7 @@ impl ActionHandler for SwapClaim {
         let epoch_duration = state.get_epoch_duration().await?;
         let provided_epoch_duration = swap_claim.epoch_duration;
         if epoch_duration != provided_epoch_duration {
-            return Err(anyhow::anyhow!(
-                "provided epoch duration does not match chain epoch duration"
-            ));
+            anyhow::bail!("provided epoch duration does not match chain epoch duration");
         }
 
         // 2. The stateful check *must* validate that the clearing
@@ -56,9 +54,7 @@ impl ActionHandler for SwapClaim {
             .ok_or_else(|| anyhow::anyhow!("output data not found"))?;
 
         if output_data != swap_claim.body.output_data {
-            return Err(anyhow::anyhow!(
-                "provided output data does not match chain output data"
-            ));
+            anyhow::bail!("provided output data does not match chain output data");
         }
 
         // 3. Check that the nullifier hasn't been spent before.

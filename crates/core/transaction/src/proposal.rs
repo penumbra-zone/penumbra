@@ -143,9 +143,7 @@ impl TryFrom<pb::Proposal> for Proposal {
                     },
                 }
             } else {
-                return Err(anyhow::anyhow!(
-                    "missing proposal payload or unknown proposal type"
-                ));
+                anyhow::bail!("missing proposal payload or unknown proposal type");
             },
         })
     }

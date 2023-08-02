@@ -56,9 +56,7 @@ pub fn fmd_precision_within_grace_period(
         {
             continue;
         } else {
-            return Err(anyhow::anyhow!(
-                "consensus rule violated: invalid clue precision",
-            ));
+            anyhow::bail!("consensus rule violated: invalid clue precision");
         }
     }
     Ok(())

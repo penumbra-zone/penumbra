@@ -23,15 +23,13 @@ impl Reserves {
         if self.r1.value() as u128 > MAX_RESERVE_AMOUNT
             || self.r2.value() as u128 > MAX_RESERVE_AMOUNT
         {
-            Err(anyhow::anyhow!(format!(
+            anyhow::bail!(format!(
                 "Reserve amounts are out-of-bounds (limit: {MAX_RESERVE_AMOUNT})"
-            )))
+            ))
         } else {
             // Both reserves cannot be empty.
             if self.r1.value() == 0 && self.r2.value() == 0 {
-                return Err(anyhow::anyhow!(
-                    "initial reserves must provision some amount of either asset",
-                ));
+                anyhow::bail!("initial reserves must provision some amount of either asset",);
             }
 
             Ok(())

@@ -243,7 +243,7 @@ impl TryFrom<pb::Action> for Action {
     type Error = anyhow::Error;
     fn try_from(proto: pb::Action) -> anyhow::Result<Self, Self::Error> {
         if proto.action.is_none() {
-            return Err(anyhow::anyhow!("missing action content"));
+            anyhow::bail!("missing action content");
         }
         match proto.action.unwrap() {
             pb::action::Action::Output(inner) => Ok(Action::Output(inner.try_into()?)),

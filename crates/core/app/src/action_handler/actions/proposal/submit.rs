@@ -51,15 +51,13 @@ impl ActionHandler for ProposalSubmit {
         } = proposal;
 
         if title.len() > PROPOSAL_TITLE_LIMIT {
-            return Err(anyhow::anyhow!(
-                "proposal title must fit within {PROPOSAL_TITLE_LIMIT} characters"
-            ));
+            anyhow::bail!("proposal title must fit within {PROPOSAL_TITLE_LIMIT} characters");
         }
 
         if description.len() > PROPOSAL_DESCRIPTION_LIMIT {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "proposal description must fit within {PROPOSAL_DESCRIPTION_LIMIT} characters"
-            ));
+            );
         }
 
         use penumbra_transaction::action::ProposalPayload::*;

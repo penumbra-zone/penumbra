@@ -239,7 +239,7 @@ impl StateRead for Snapshot {
 
                         tx.blocking_send(Ok((k, v)))?;
                     }
-                    Ok::<(), anyhow::Error>(())
+                    anyhow::Ok(())
                 })
             })
             .expect("should be able to spawn_blocking");
@@ -277,7 +277,7 @@ impl StateRead for Snapshot {
                             .to_string();
                         tx.blocking_send(Ok(k))?;
                     }
-                    Ok::<(), anyhow::Error>(())
+                    anyhow::Ok(())
                 })
             })
             .expect("should be able to spawn_blocking");
@@ -311,7 +311,7 @@ impl StateRead for Snapshot {
                         let (key, value) = i?;
                         tx.blocking_send(Ok((key.into(), value.into())))?;
                     }
-                    Ok::<(), anyhow::Error>(())
+                    anyhow::Ok(())
                 })
             })
             .expect("should be able to spawn_blocking");

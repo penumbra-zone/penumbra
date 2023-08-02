@@ -6,7 +6,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use ark_ff::UniformRand;
 use decaf377::{Fq, Fr};
 use ibc_types::core::channel::ChannelId;
@@ -436,7 +436,7 @@ impl TxCmd {
                 let unbonded_amount = {
                     let Value { amount, asset_id } = amount.parse::<Value>()?;
                     if asset_id != *STAKING_TOKEN_ASSET_ID {
-                        return Err(anyhow!("staking can only be done with the staking token"));
+                        anyhow::bail!("staking can only be done with the staking token");
                     }
                     amount
                 };

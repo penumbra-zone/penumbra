@@ -5,7 +5,7 @@ use std::str::FromStr;
 use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyInit};
 use aes::Aes128;
 
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use ark_ff::PrimeField;
 use derivative::Derivative;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
@@ -45,10 +45,7 @@ impl TryFrom<&[u8]> for Diversifier {
 
     fn try_from(slice: &[u8]) -> Result<Diversifier, Self::Error> {
         if slice.len() != DIVERSIFIER_LEN_BYTES {
-            return Err(anyhow!(
-                "diversifier must be 16 bytes, got {:?}",
-                slice.len()
-            ));
+            anyhow::bail!("diversifier must be 16 bytes, got {:?}", slice.len());
         }
 
         let mut bytes = [0u8; DIVERSIFIER_LEN_BYTES];
@@ -219,10 +216,7 @@ impl TryFrom<&[u8]> for AddressIndex {
 
     fn try_from(slice: &[u8]) -> Result<AddressIndex, Self::Error> {
         if slice.len() != DIVERSIFIER_LEN_BYTES {
-            return Err(anyhow!(
-                "address index must be 16 bytes, got {:?}",
-                slice.len()
-            ));
+            anyhow::bail!("address index must be 16 bytes, got {:?}", slice.len());
         }
 
         Ok(AddressIndex {

@@ -118,7 +118,7 @@ pub async fn send<V, R>(
     dest_address: Address,
     source_address: AddressIndex,
     tx_memo: Option<MemoPlaintext>,
-) -> Result<TransactionPlan, anyhow::Error>
+) -> anyhow::Result<TransactionPlan>
 where
     V: ViewClient,
     R: RngCore + CryptoRng,
@@ -142,7 +142,7 @@ pub async fn sweep<V, R>(
     view: &mut V,
     mut rng: R,
     specific_client: SpecificQueryServiceClient<Channel>,
-) -> Result<Vec<TransactionPlan>, anyhow::Error>
+) -> anyhow::Result<Vec<TransactionPlan>>
 where
     V: ViewClient,
     R: RngCore + CryptoRng,
@@ -166,7 +166,7 @@ pub async fn claim_unclaimed_swaps<V, R>(
     _view: &mut V,
     mut _rng: R,
     mut _specific_client: SpecificQueryServiceClient<Channel>,
-) -> Result<Vec<TransactionPlan>, anyhow::Error>
+) -> anyhow::Result<Vec<TransactionPlan>>
 where
     V: ViewClient,
     R: RngCore + CryptoRng,
@@ -256,7 +256,7 @@ pub async fn sweep_notes<V, R>(
     account_group_id: AccountGroupId,
     view: &mut V,
     mut rng: R,
-) -> Result<Vec<TransactionPlan>, anyhow::Error>
+) -> anyhow::Result<Vec<TransactionPlan>>
 where
     V: ViewClient,
     R: RngCore + CryptoRng,

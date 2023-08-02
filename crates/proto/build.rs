@@ -34,7 +34,7 @@ Check that you have git-lfs installed, then run:
 and retry the build."
         );
 
-        return Err(anyhow::anyhow!(msg));
+        anyhow::bail!(msg);
     }
     return Ok(());
 }

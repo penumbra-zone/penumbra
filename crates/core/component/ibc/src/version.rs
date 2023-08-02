@@ -13,7 +13,7 @@ pub fn pick_connection_version(
             }
             for feature in c.features.iter() {
                 if feature.trim().is_empty() {
-                    return Err(anyhow::anyhow!("freatures cannot be empty"));
+                    anyhow::bail!("freatures cannot be empty");
                 }
             }
             intersection.append(&mut vec![s.clone()]);
@@ -21,7 +21,7 @@ pub fn pick_connection_version(
     }
     intersection.sort_by(|a, b| a.identifier.cmp(&b.identifier));
     if intersection.is_empty() {
-        return Err(anyhow::anyhow!("no common version"));
+        anyhow::bail!("no common version");
     }
     Ok(intersection[0].clone())
 }

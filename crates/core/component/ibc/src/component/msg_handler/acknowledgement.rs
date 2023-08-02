@@ -31,15 +31,13 @@ impl MsgHandler for MsgAcknowledgement {
             .await?
             .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
         if !channel.state_matches(&ChannelState::Open) {
-            return Err(anyhow::anyhow!("channel is not open"));
+            anyhow::bail!("channel is not open");
         }
 
         // TODO: capability authentication?
 
         if channel.counterparty().port_id().ne(&self.packet.port_on_b) {
-            return Err(anyhow::anyhow!(
-                "packet destination port does not match channel"
-            ));
+            anyhow::bail!("packet destination port does not match channel");
         }
 
         let connection = state
@@ -47,7 +45,7 @@ impl MsgHandler for MsgAcknowledgement {
             .await?
             .ok_or_else(|| anyhow::anyhow!("connection not found for channel"))?;
         if !connection.state_matches(&ConnectionState::Open) {
-            return Err(anyhow::anyhow!("connection for channel is not open"));
+            anyhow::bail!("connection for channel is not open");
         }
 
         // verify we sent this packet and haven't cleared it yet
@@ -56,7 +54,7 @@ impl MsgHandler for MsgAcknowledgement {
             .await?
             .ok_or_else(|| anyhow::anyhow!("packet commitment not found"))?;
         if commitment != commit_packet(&self.packet) {
-            return Err(anyhow::anyhow!("packet commitment does not match"));
+            anyhow::bail!("packet commitment does not match");
         }
 
         state.verify_packet_ack_proof(&connection, self).await?;
@@ -66,7 +64,7 @@ impl MsgHandler for MsgAcknowledgement {
                 .get_ack_sequence(&self.packet.chan_on_a, &self.packet.port_on_a)
                 .await?;
             if self.packet.sequence != next_sequence_ack.into() {
-                return Err(anyhow::anyhow!("packet sequence number does not match"));
+                anyhow::bail!("packet sequence number does not match");
             }
         }
 
@@ -74,7 +72,7 @@ impl MsgHandler for MsgAcknowledgement {
         if self.packet.port_on_b == transfer {
             Ics20Transfer::acknowledge_packet_check(&mut state, self).await?;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
         if channel.ordering == ChannelOrder::Ordered {
             let mut next_sequence_ack = state
@@ -114,7 +112,7 @@ impl MsgHandler for MsgAcknowledgement {
         if self.packet.port_on_b == transfer {
             Ics20Transfer::acknowledge_packet_execute(state, self).await;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
 
         Ok(())

@@ -60,7 +60,7 @@ impl MsgHandler for MsgConnectionOpenConfirm {
         // check if the client is frozen
         // TODO: should we also check if the client is expired here?
         if trusted_client_state.is_frozen() {
-            return Err(anyhow::anyhow!("client is frozen"));
+            anyhow::bail!("client is frozen");
         }
 
         // get the stored consensus state for the counterparty

@@ -37,12 +37,12 @@ fn parse_parts(input: &str) -> Result<(&str, &str, u32)> {
     };
 
     let Some((val1, val2)) = trade_part.split_once('@') else {
-        return Err(anyhow!("could not parse trade string {}", input));
+        anyhow::bail!("could not parse trade string {}", input);
     };
 
     let fee = match fee_part.strip_suffix("bps") {
         Some(fee) => fee.parse::<u32>()?,
-        None => return Err(anyhow!("could not parse fee string {}", fee_part)),
+        None => anyhow::bail!("could not parse fee string {}", fee_part),
     };
 
     Ok((val1, val2, fee))

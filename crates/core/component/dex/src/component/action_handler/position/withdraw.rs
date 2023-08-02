@@ -36,11 +36,11 @@ impl ActionHandler for PositionWithdraw {
             .commit(Fr::zero());
 
         if self.reserves_commitment != expected_reserves_commitment {
-            return Err(anyhow!(
+            anyhow::bail!(
                 "reserves commitment {:?} is incorrect, expected {:?}",
                 self.reserves_commitment,
                 expected_reserves_commitment
-            ));
+            );
         }
 
         // We don't check that the position state is Closed here, because all
@@ -60,11 +60,11 @@ impl ActionHandler for PositionWithdraw {
             .ok_or_else(|| anyhow!("withdrew from unknown position {}", self.position_id))?;
 
         if metadata.state != position::State::Closed {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "attempted to withdraw position {} with state {}, expected Closed",
                 self.position_id,
                 metadata.state
-            ));
+            );
         }
 
         state.record(event::position_withdraw(&self, &metadata));

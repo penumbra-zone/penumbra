@@ -146,7 +146,7 @@ impl Worker {
         Ok(transactions)
     }
 
-    pub async fn sync(&mut self) -> Result<(), anyhow::Error> {
+    pub async fn sync(&mut self) -> anyhow::Result<()> {
         // Do a single sync run, up to whatever the latest block height is
         tracing::info!("starting client sync");
 
@@ -342,7 +342,7 @@ impl Worker {
         Ok(())
     }
 
-    pub async fn run(mut self) -> Result<(), anyhow::Error> {
+    pub async fn run(mut self) -> anyhow::Result<()> {
         self.run_inner().await.map_err(|e| {
             tracing::info!(?e, "view worker error");
             self.error_slot.lock().unwrap().replace(e);
@@ -350,7 +350,7 @@ impl Worker {
         })
     }
 
-    async fn run_inner(&mut self) -> Result<(), anyhow::Error> {
+    async fn run_inner(&mut self) -> anyhow::Result<()> {
         // For now, this can be outside of the loop, because assets are only
         // created at genesis. In the future, we'll want to have a way for
         // clients to learn about assets as they're created.
@@ -362,7 +362,7 @@ impl Worker {
 async fn fetch_block(
     client: &mut TendermintProxyServiceClient<Channel>,
     height: i64,
-) -> Result<proto::tendermint::types::Block, anyhow::Error> {
+) -> anyhow::Result<proto::tendermint::types::Block> {
     Ok(client
         .get_block_by_height(GetBlockByHeightRequest { height })
         .await?

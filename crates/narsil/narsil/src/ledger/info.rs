@@ -32,10 +32,7 @@ impl Info {
         Self { storage }
     }
 
-    pub async fn info(
-        &self,
-        info: abci::request::Info,
-    ) -> Result<abci::response::Info, anyhow::Error> {
+    pub async fn info(&self, info: abci::request::Info) -> anyhow::Result<abci::response::Info> {
         let state = self.storage.latest_snapshot();
         tracing::info!(?info, version = ?state.version());
 

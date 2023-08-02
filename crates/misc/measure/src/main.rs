@@ -260,7 +260,7 @@ impl Opt {
     }
 
     #[instrument(skip(self))]
-    pub async fn latest_known_block_height(&self) -> Result<(u64, bool), anyhow::Error> {
+    pub async fn latest_known_block_height(&self) -> anyhow::Result<(u64, bool)> {
         let mut client = get_tendermint_proxy_client(self.node.clone()).await?;
         let rsp = client.get_status(GetStatusRequest {}).await?.into_inner();
         let sync_info = rsp
@@ -276,7 +276,7 @@ impl Opt {
 // This code is ripped from the pcli code, and could be split out into something common.
 async fn get_tendermint_proxy_client(
     pd_url: Url,
-) -> Result<TendermintProxyServiceClient<Channel>, anyhow::Error> {
+) -> anyhow::Result<TendermintProxyServiceClient<Channel>> {
     let pd_channel: Channel = match pd_url.scheme() {
         "http" => Channel::from_shared(pd_url.to_string())?.connect().await?,
         "https" => {

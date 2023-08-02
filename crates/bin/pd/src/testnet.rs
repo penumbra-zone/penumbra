@@ -71,10 +71,7 @@ pub fn parse_tm_address(
     let hostname = match node_address.host() {
         Some(h) => h,
         None => {
-            return Err(anyhow::anyhow!(format!(
-                "Could not find hostname in URL: {}",
-                node_address
-            )))
+            anyhow::bail!(format!("Could not find hostname in URL: {}", node_address))
         }
     };
     // Default to 26656 for Tendermint port, if not specified.

@@ -20,9 +20,9 @@ impl ActionHandler for ProposalWithdraw {
         const PROPOSAL_WITHDRAWAL_REASON_LIMIT: usize = 80;
 
         if self.reason.len() > PROPOSAL_WITHDRAWAL_REASON_LIMIT {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "proposal withdrawal reason must fit within {PROPOSAL_WITHDRAWAL_REASON_LIMIT} characters"
-            ));
+            );
         }
 
         Ok(())

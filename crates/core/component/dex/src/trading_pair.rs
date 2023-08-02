@@ -126,7 +126,7 @@ impl TryFrom<[u8; 64]> for TradingPair {
         let trading_pair = TradingPair::new(asset_1, asset_2);
         let result = Self { asset_1, asset_2 };
         if trading_pair != result {
-            return Err(anyhow::anyhow!("non-canonical trading pair"));
+            anyhow::bail!("non-canonical trading pair");
         }
         Ok(result)
     }

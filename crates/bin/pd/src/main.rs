@@ -417,10 +417,10 @@ async fn main() -> anyhow::Result<()> {
 
             // If the output directory already exists, bail out, rather than overwriting.
             if output_dir.exists() {
-                return Err(anyhow::anyhow!(
+                anyhow::bail!(
                     "output directory {:?} already exists, refusing to overwrite it",
                     output_dir
-                ));
+                );
             }
 
             // Check whether an external address was set, and parse as TendermintAddress.
@@ -485,10 +485,10 @@ async fn main() -> anyhow::Result<()> {
             let output_dir = get_testnet_dir(testnet_dir);
             // If the output directory already exists, bail out, rather than overwriting.
             if output_dir.exists() {
-                return Err(anyhow::anyhow!(
+                anyhow::bail!(
                     "output directory {:?} already exists, refusing to overwrite it",
                     output_dir
-                ));
+                );
             }
 
             // Build and write local configs based on input flags.
