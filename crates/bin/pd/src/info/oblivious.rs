@@ -314,7 +314,7 @@ impl ObliviousQueryService for Info {
                     tx_blocks
                         .send(Ok(block.into()))
                         .await
-                        .expect("channel should be open");
+                        .map_err(|_| tonic::Status::cancelled("client closed connection"))?;
                     metrics::increment_counter!(
                         metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
                     );
@@ -345,7 +345,7 @@ impl ObliviousQueryService for Info {
                     tx_blocks
                         .send(Ok(block.into()))
                         .await
-                        .expect("channel should be open");
+                        .map_err(|_| tonic::Status::cancelled("channel closed"))?;
                     metrics::increment_counter!(
                         metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
                     );
