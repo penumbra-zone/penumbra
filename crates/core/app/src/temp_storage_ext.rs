@@ -17,7 +17,7 @@ impl TempStorageExt for TempStorage {
     async fn apply_genesis(self, genesis: genesis::AppState) -> anyhow::Result<Self> {
         // Check that we haven't already applied a genesis state:
         if self.latest_version() != u64::MAX {
-            return Err(anyhow::anyhow!("database already initialized"));
+            anyhow::bail!("database already initialized");
         }
 
         // Apply the genesis state to the storage

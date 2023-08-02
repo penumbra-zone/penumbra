@@ -73,7 +73,7 @@ impl TryFrom<pb::Vote> for Vote {
 
     fn try_from(msg: pb::Vote) -> Result<Self, Self::Error> {
         let Some(vote_state) = pb::vote::Vote::from_i32(msg.vote) else {
-            return Err(anyhow!("invalid vote state"))
+            anyhow::bail!("invalid vote state")
         };
         match vote_state {
             pb::vote::Vote::Abstain => Ok(Vote::Abstain),

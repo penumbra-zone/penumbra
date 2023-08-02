@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 
 use penumbra_chain::genesis;
 use penumbra_storage::Storage;
@@ -103,7 +103,7 @@ impl Consensus {
 
         // Check that we haven't got a duplicated InitChain message for some reason:
         if self.storage.latest_version() != u64::MAX {
-            return Err(anyhow!("database already initialized"));
+            anyhow::bail!("database already initialized");
         }
         self.app.init_chain(&app_state).await;
 

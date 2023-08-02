@@ -439,11 +439,11 @@ impl UnauthTransaction {
         // Do some basic input sanity-checking.
         let spend_count = self.inner.spends().count();
         if auth_data.spend_auths.len() != spend_count {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "expected {} spend auths but got {}",
                 spend_count,
                 auth_data.spend_auths.len()
-            ));
+            );
         }
         // Overwrite the placeholder auth sigs with the real ones from `auth_data`
 

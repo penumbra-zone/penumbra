@@ -4,7 +4,7 @@ use std::{
     mem,
 };
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 
 use crate::note_record::SpendableNoteRecord;
 use penumbra_asset::{asset::DenomMetadata, Balance, Value};
@@ -174,7 +174,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // If there is no input, then there is no swap.
         if delta_1 == Amount::zero() && delta_2 == Amount::zero() {
-            return Err(anyhow!("No input value for swap"));
+            anyhow::bail!("No input value for swap");
         }
 
         // Create the `SwapPlaintext` representing the swap to be performed:
@@ -386,10 +386,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         //         // If there are no notes to vote with, return an error, because otherwise the user
         //         // would compose a transaction that would not satisfy their intention, and would
         //         // silently eat the fee.
-        //         return Err(anyhow!(
+        //         anyhow::bail!(
         //             "can't vote on proposal {} because no delegation notes were staked when voting started",
         //             proposal
-        //         ));
+        //         );
         //     }
         //
         //     for (record, identity_key) in records {

@@ -147,13 +147,13 @@ pub fn testnet_generate(
                                 rate_bps: fs.rate_bps,
                             })
                         })
-                        .collect::<Result<Vec<FundingStream>, anyhow::Error>>()?,
+                        .collect::<anyhow::Result<Vec<FundingStream>>>()?,
                 )
                 .context("unable to construct funding streams from validators.json")?,
                 sequence_number: v.sequence_number,
             })
         })
-        .collect::<Result<Vec<Validator>, anyhow::Error>>()?;
+        .collect::<anyhow::Result<Vec<Validator>>>()?;
 
     let default_params = ChainParameters::default();
     let active_validator_limit =

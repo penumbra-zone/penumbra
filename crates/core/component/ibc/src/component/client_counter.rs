@@ -1,5 +1,3 @@
-use anyhow::anyhow;
-
 use ibc_proto::google::protobuf::Any;
 use ibc_types::core::client::Height;
 use ibc_types::core::connection::{ChainId, ConnectionId};
@@ -52,7 +50,7 @@ impl TryFrom<pb::VerifiedHeights> for VerifiedHeights {
         let heights = msg.heights.into_iter().map(TryFrom::try_from).collect();
         match heights {
             Ok(heights) => Ok(VerifiedHeights { heights }),
-            Err(e) => Err(anyhow!(format!("invalid height: {e}"))),
+            Err(e) => anyhow::bail!(format!("invalid height: {e}")),
         }
     }
 }
@@ -132,10 +130,10 @@ pub(crate) mod ics02_validation {
             TendermintHeader::try_from(header)
                 .map_err(|e| anyhow!(format!("failed to deserialize tendermint header: {e}")))
         } else {
-            Err(anyhow!(format!(
+            anyhow::bail!(format!(
                 "expected a tendermint light client header, got: {}",
                 header.type_url.as_str()
-            )))
+            ))
         }
     }
 
@@ -149,10 +147,10 @@ pub(crate) mod ics02_validation {
                 ))
             })
         } else {
-            Err(anyhow!(format!(
+            anyhow::bail!(format!(
                 "expected tendermint consensus state, got: {}",
                 consensus_state.type_url.as_str()
-            )))
+            ))
         }
     }
     pub fn get_tendermint_client_state(client_state: Any) -> Result<TendermintClientState> {
@@ -163,10 +161,10 @@ pub(crate) mod ics02_validation {
                 ))
             })
         } else {
-            Err(anyhow!(format!(
+            anyhow::bail!(format!(
                 "expected tendermint client state, got: {}",
                 client_state.type_url.as_str()
-            )))
+            ))
         }
     }
 }
@@ -176,21 +174,17 @@ pub(crate) mod ics02_validation {
 // a) non-zero
 // b) greater or equal to 1/3
 // c) strictly less than 1
-fn validate_trust_threshold(trust_threshold: TrustThreshold) -> Result<(), anyhow::Error> {
+fn validate_trust_threshold(trust_threshold: TrustThreshold) -> anyhow::Result<()> {
     if trust_threshold.denominator() == 0 {
-        return Err(anyhow::anyhow!(
-            "trust threshold denominator cannot be zero"
-        ));
+        anyhow::bail!("trust threshold denominator cannot be zero");
     }
 
     if trust_threshold.numerator() * 3 < trust_threshold.denominator() {
-        return Err(anyhow::anyhow!("trust threshold must be greater than 1/3"));
+        anyhow::bail!("trust threshold must be greater than 1/3");
     }
 
     if trust_threshold.numerator() >= trust_threshold.denominator() {
-        return Err(anyhow::anyhow!(
-            "trust threshold must be strictly less than 1"
-        ));
+        anyhow::bail!("trust threshold must be strictly less than 1");
     }
 
     Ok(())
@@ -202,41 +196,35 @@ pub fn validate_penumbra_client_state(
     client_state: Any,
     chain_id: &str,
     current_height: u64,
-) -> Result<(), anyhow::Error> {
+) -> anyhow::Result<()> {
     let tm_client_state = ics02_validation::get_tendermint_client_state(client_state)?;
 
     if tm_client_state.frozen_height.is_some() {
-        return Err(anyhow::anyhow!("invalid client state: frozen"));
+        anyhow::bail!("invalid client state: frozen");
     }
 
     // NOTE: Chain ID validation is actually not standardized yet. see
     // https://github.com/informalsystems/ibc-rs/pull/304#discussion_r503917283
     let chain_id = ChainId::from_string(chain_id);
     if chain_id != tm_client_state.chain_id {
-        return Err(anyhow::anyhow!(
-            "invalid client state: chain id does not match"
-        ));
+        anyhow::bail!("invalid client state: chain id does not match");
     }
 
     // check that the revision number is the same as our chain ID's version
     if tm_client_state.latest_height().revision_number() != chain_id.version() {
-        return Err(anyhow::anyhow!(
-            "invalid client state: revision number does not match"
-        ));
+        anyhow::bail!("invalid client state: revision number does not match");
     }
 
     // check that the latest height isn't gte the current block height
     if tm_client_state.latest_height().revision_height() >= current_height {
-        return Err(anyhow::anyhow!(
-                "invalid client state: latest height is greater than or equal to the current block height"
-            ));
+        anyhow::bail!(
+            "invalid client state: latest height is greater than or equal to the current block height"
+        );
     }
 
     // check client proof specs match penumbra proof specs
     if PENUMBRA_PROOF_SPECS.clone() != tm_client_state.proof_specs {
-        return Err(anyhow::anyhow!(
-            "invalid client state: proof specs do not match"
-        ));
+        anyhow::bail!("invalid client state: proof specs do not match");
     }
 
     // check that the trust level is correct
@@ -246,9 +234,7 @@ pub fn validate_penumbra_client_state(
     //
     // - check unbonding period is greater than trusting period
     if tm_client_state.unbonding_period < tm_client_state.trusting_period {
-        return Err(anyhow::anyhow!(
-            "invalid client state: unbonding period is less than trusting period"
-        ));
+        anyhow::bail!("invalid client state: unbonding period is less than trusting period");
     }
 
     // TODO: check upgrade path

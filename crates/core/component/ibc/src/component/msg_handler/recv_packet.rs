@@ -37,13 +37,13 @@ impl MsgHandler for MsgRecvPacket {
             .await?
             .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
         if !channel.state_matches(&ChannelState::Open) {
-            return Err(anyhow::anyhow!("channel is not open"));
+            anyhow::bail!("channel is not open");
         }
 
         // TODO: capability authentication?
 
         if self.packet.port_on_a != channel.counterparty().port_id {
-            return Err(anyhow::anyhow!("packet source port does not match channel"));
+            anyhow::bail!("packet source port does not match channel");
         }
         let counterparty_channel = channel
             .counterparty()
@@ -51,9 +51,7 @@ impl MsgHandler for MsgRecvPacket {
             .ok_or_else(|| anyhow::anyhow!("missing channel id"))?;
 
         if self.packet.chan_on_a.ne(counterparty_channel) {
-            return Err(anyhow::anyhow!(
-                "packet source channel does not match channel"
-            ));
+            anyhow::bail!("packet source channel does not match channel");
         }
 
         let connection = state
@@ -62,14 +60,14 @@ impl MsgHandler for MsgRecvPacket {
             .ok_or_else(|| anyhow::anyhow!("connection not found for channel"))?;
 
         if !connection.state_matches(&ConnectionState::Open) {
-            return Err(anyhow::anyhow!("connection for channel is not open"));
+            anyhow::bail!("connection for channel is not open");
         }
 
         let block_height = state.get_block_height().await?;
         let height = IBCHeight::new(0, block_height)?;
 
         if self.packet.timeout_height_on_b.has_expired(height) {
-            return Err(anyhow::anyhow!("packet has timed out"));
+            anyhow::bail!("packet has timed out");
         }
 
         let packet_timeout = self
@@ -79,7 +77,7 @@ impl MsgHandler for MsgRecvPacket {
             .ok_or_else(|| anyhow::anyhow!("invalid timestamp"))?;
 
         if state.get_block_timestamp().await? >= packet_timeout {
-            return Err(anyhow::anyhow!("packet has timed out"));
+            anyhow::bail!("packet has timed out");
         }
 
         state.verify_packet_recv_proof(&connection, self).await?;
@@ -90,17 +88,17 @@ impl MsgHandler for MsgRecvPacket {
                 .await?;
 
             if self.packet.sequence != next_sequence_recv.into() {
-                return Err(anyhow::anyhow!("packet sequence number does not match"));
+                anyhow::bail!("packet sequence number does not match");
             }
         } else if state.seen_packet(&self.packet).await? {
-            return Err(anyhow::anyhow!("packet has already been processed"));
+            anyhow::bail!("packet has already been processed");
         }
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
             Ics20Transfer::recv_packet_check(&mut state, self).await?;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
 
         if channel.ordering == ChannelOrder::Ordered {
@@ -141,7 +139,7 @@ impl MsgHandler for MsgRecvPacket {
         if self.packet.port_on_b == transfer {
             Ics20Transfer::recv_packet_execute(state, self).await;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
 
         Ok(())

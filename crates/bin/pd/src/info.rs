@@ -61,7 +61,7 @@ impl Info {
         Self { storage }
     }
 
-    async fn info(&self, info: abci::request::Info) -> Result<abci::response::Info, anyhow::Error> {
+    async fn info(&self, info: abci::request::Info) -> anyhow::Result<abci::response::Info> {
         let state = self.storage.latest_snapshot();
         tracing::info!(?info, version = ?state.version());
 
@@ -118,10 +118,7 @@ impl Info {
         }
     }
 
-    async fn query(
-        &self,
-        query: abci::request::Query,
-    ) -> Result<abci::response::Query, anyhow::Error> {
+    async fn query(&self, query: abci::request::Query) -> anyhow::Result<abci::response::Query> {
         tracing::info!(?query);
 
         match query.path.as_str() {
@@ -468,7 +465,7 @@ impl Info {
 
                 for seq in request.packet_commitment_sequences {
                     if seq == 0 {
-                        return Err(anyhow::anyhow!("packet sequence {} cannot be 0", seq));
+                        anyhow::bail!("packet sequence {} cannot be 0", seq);
                     }
 
                     if !snapshot
@@ -515,7 +512,7 @@ impl Info {
 
                 for seq in request.packet_ack_sequences {
                     if seq == 0 {
-                        return Err(anyhow::anyhow!("packet sequence {} cannot be 0", seq));
+                        anyhow::bail!("packet sequence {} cannot be 0", seq);
                     }
 
                     if snapshot

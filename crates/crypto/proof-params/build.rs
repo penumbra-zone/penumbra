@@ -76,9 +76,9 @@ pub fn check_proving_key(file: &str) -> anyhow::Result<()> {
         }
         #[cfg(not(feature = "download-proving-keys"))]
         {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "proving key is too small; please enable the download-proving-keys feature"
-            ));
+            );
         }
     }
 

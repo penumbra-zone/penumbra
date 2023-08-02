@@ -56,17 +56,13 @@ impl Uptime {
     /// the current block height.  This should not happen in normal use (i.e.,
     /// it's probably reasonable to `expect` on the error), but the method
     /// takes an explicit height and checks it to flag misuse and detect bugs.
-    pub fn mark_height_as_signed(
-        &mut self,
-        height: u64,
-        signed: bool,
-    ) -> Result<(), anyhow::Error> {
+    pub fn mark_height_as_signed(&mut self, height: u64, signed: bool) -> anyhow::Result<()> {
         if height != self.as_of_block_height + 1 {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "Last block height was {} but next block height is {}",
                 self.as_of_block_height,
                 height
-            ));
+            );
         }
 
         // Use the bit vector as a ring buffer, overwriting the record for N blocks ago with this one.
@@ -110,7 +106,7 @@ impl TryFrom<pb::Uptime> for Uptime {
     fn try_from(msg: pb::Uptime) -> Result<Uptime, Self::Error> {
         let mut signatures = BitVec::from_vec(msg.bitvec);
         if signatures.len() < msg.window_len as usize {
-            return Err(anyhow::anyhow!("not enough data in bitvec buffer"));
+            anyhow::bail!("not enough data in bitvec buffer");
         }
         signatures.truncate(msg.window_len as usize);
         Ok(Uptime {

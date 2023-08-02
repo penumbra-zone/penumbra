@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 pub struct Nullifier(pub Fq);
 
 impl Nullifier {
-    pub fn parse_hex(str: &str) -> Result<Nullifier, anyhow::Error> {
+    pub fn parse_hex(str: &str) -> anyhow::Result<Nullifier> {
         let bytes = hex::decode(str)?;
         Nullifier::try_from(&bytes[..])
     }

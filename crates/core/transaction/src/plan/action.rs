@@ -293,7 +293,7 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
 
     fn try_from(proto: pb_t::ActionPlan) -> anyhow::Result<Self, Self::Error> {
         if proto.action.is_none() {
-            return Err(anyhow::anyhow!("missing action content"));
+            anyhow::bail!("missing action content");
         }
 
         match proto.action.unwrap() {

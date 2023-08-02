@@ -62,7 +62,7 @@ impl MsgHandler for MsgChannelOpenTry {
         if self.port_id_on_b == transfer {
             Ics20Transfer::chan_open_try_check(&mut state, self).await?;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
 
         let channel_id = state.next_channel_id().await.unwrap();
@@ -99,7 +99,7 @@ impl MsgHandler for MsgChannelOpenTry {
         if self.port_id_on_b == transfer {
             Ics20Transfer::chan_open_try_execute(state, self).await;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
 
         Ok(())
@@ -108,9 +108,7 @@ impl MsgHandler for MsgChannelOpenTry {
 
 pub fn connection_hops_eq_1(msg: &MsgChannelOpenTry) -> anyhow::Result<()> {
     if msg.connection_hops_on_b.len() != 1 {
-        return Err(anyhow::anyhow!(
-            "currently only channels with one connection hop are supported"
-        ));
+        anyhow::bail!("currently only channels with one connection hop are supported");
     }
     Ok(())
 }

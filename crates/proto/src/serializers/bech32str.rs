@@ -19,18 +19,18 @@ pub fn decode(
     let (hrp, data, variant) = bech32::decode(string)?;
 
     if variant != expected_variant {
-        return Err(anyhow::anyhow!(
+        anyhow::bail!(
             "wrong bech32 variant {:?}, expected {:?}",
             variant,
             expected_variant
-        ));
+        );
     }
     if hrp != expected_hrp {
-        return Err(anyhow::anyhow!(
+        anyhow::bail!(
             "wrong bech32 human readable part {}, expected {}",
             hrp,
             expected_hrp
-        ));
+        );
     }
 
     Ok(Vec::from_base32(&data).expect("bech32 decoding produces valid base32"))

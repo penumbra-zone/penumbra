@@ -63,7 +63,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     tokio::time::sleep(std::time::Duration::from_millis(500)).await;
     if let Some(status) = pclientd.try_wait()? {
         // An error occurred during startup, probably.
-        return Err(anyhow::anyhow!("pclientd exited early: {status:?}"));
+        anyhow::bail!("pclientd exited early: {status:?}");
     }
 
     // 3. Build a client for the daemon we just started.
@@ -163,7 +163,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     // Last, check that we didn't have any errors:
     if let Some(status) = pclientd.try_wait()? {
         // An error occurred during startup, probably.
-        return Err(anyhow::anyhow!("pclientd errored: {status:?}"));
+        anyhow::bail!("pclientd errored: {status:?}");
     }
     pclientd.kill().await?;
 

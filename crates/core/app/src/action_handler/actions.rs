@@ -69,9 +69,7 @@ impl ActionHandler for Action {
             Action::Output(action) => action.check_stateful(state).await,
             Action::IbcAction(action) => {
                 if !state.get_chain_params().await?.ibc_enabled {
-                    return Err(anyhow::anyhow!(
-                        "transaction contains IBC actions, but IBC is not enabled"
-                    ));
+                    anyhow::bail!("transaction contains IBC actions, but IBC is not enabled");
                 }
 
                 action.check_stateful(state).await

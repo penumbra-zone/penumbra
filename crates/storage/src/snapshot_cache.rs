@@ -1,8 +1,6 @@
 use crate::Snapshot;
 use std::{cmp, collections::VecDeque};
 
-use anyhow::anyhow;
-
 /// A circular cache for storing [`Snapshot`]s.
 ///
 /// # Usage
@@ -49,7 +47,7 @@ impl SnapshotCache {
     pub fn try_push(&mut self, snapshot: Snapshot) -> anyhow::Result<()> {
         let latest_version = self.latest().version();
         if latest_version.wrapping_add(1) != snapshot.version() {
-            return Err(anyhow!("snapshot_cache: trying to insert stale snapshots."));
+            anyhow::bail!("snapshot_cache: trying to insert stale snapshots.");
         }
 
         if self.cache.len() >= self.max_size {

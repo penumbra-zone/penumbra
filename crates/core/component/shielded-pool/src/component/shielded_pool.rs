@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use anyhow::anyhow;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_asset::{asset, Value};
@@ -79,11 +78,11 @@ pub trait StateReadExt: StateRead {
             .get::<SpendInfo>(&state_key::spent_nullifier_lookup(&nullifier))
             .await?
         {
-            return Err(anyhow!(
+            anyhow::bail!(
                 "nullifier {} was already spent in {:?}",
                 nullifier,
                 info.note_source,
-            ));
+            );
         }
         Ok(())
     }

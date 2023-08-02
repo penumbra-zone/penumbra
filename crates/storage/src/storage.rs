@@ -238,7 +238,7 @@ impl Storage {
         let new_version = old_version.wrapping_add(1);
         tracing::trace!(old_version, new_version);
         if old_version != snapshot.version() {
-            return Err(anyhow::anyhow!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, snapshot.version()));
+            anyhow::bail!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, snapshot.version());
         }
 
         self.commit_inner(changes, new_version).await

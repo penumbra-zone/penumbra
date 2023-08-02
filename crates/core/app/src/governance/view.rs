@@ -137,9 +137,9 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
             .await?
         {
             // If the nullifier was already voted with, error:
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "nullifier {nullifier} was already used for voting on proposal {proposal_id} at height {height}",
-            ));
+            );
         }
 
         Ok(())
@@ -229,10 +229,10 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     async fn validator_by_delegation_asset(&self, asset_id: asset::Id) -> Result<IdentityKey> {
         // Attempt to find the denom for the asset ID of the specified value
         let Some(denom) = self.denom_by_asset(&asset_id).await? else {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "asset ID {} does not correspond to a known denom",
                 asset_id
-            ));
+            );
         };
 
         // Attempt to find the validator identity for the specified denom, failing if it is not a
@@ -516,7 +516,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
         let prefix = state_key::deliver_dao_transactions_at_height(self.get_block_height().await?);
         let proposals: Vec<u64> = self
             .prefix_proto::<u64>(&prefix)
-            .map(|result| Ok::<_, anyhow::Error>(result?.1))
+            .map(|result| anyhow::Ok(result?.1))
             .try_collect()
             .await?;
 
@@ -572,11 +572,11 @@ pub trait StateWriteExt: StateWrite {
     async fn new_proposal(&mut self, proposal: &Proposal) -> Result<u64> {
         let proposal_id = self.next_proposal_id().await?;
         if proposal_id != proposal.id {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "proposal id {} does not match next proposal id {}",
                 proposal.id,
                 proposal_id
-            ));
+            );
         }
 
         // Snapshot the rate data and voting power for all active validators at this height
@@ -602,7 +602,7 @@ pub trait StateWriteExt: StateWrite {
                     None
                 };
                 // Return the pair, to be written to the state
-                Ok::<_, anyhow::Error>(per_validator)
+                anyhow::Ok(per_validator)
             });
         }
         // Iterate over all the futures and insert them into the state (this can be done in

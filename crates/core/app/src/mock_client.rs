@@ -60,11 +60,11 @@ impl MockClient {
         use penumbra_tct::Witness::*;
 
         if self.latest_height.wrapping_add(1) != block.height {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "wrong block height {} for latest height {}",
                 block.height,
                 self.latest_height
-            ));
+            );
         }
 
         for payload in block.state_payloads {

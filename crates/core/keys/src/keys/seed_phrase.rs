@@ -53,11 +53,11 @@ impl SeedPhrase {
     }
 
     /// Verify the checksum of this [`SeedPhrase`].
-    fn verify_checksum(&self) -> Result<(), anyhow::Error> {
+    fn verify_checksum(&self) -> anyhow::Result<()> {
         let mut bits = [false; NUM_TOTAL_BITS];
         for (i, word) in self.0.iter().enumerate() {
             if !BIP39_WORDS.contains(&word.as_str()) {
-                return Err(anyhow::anyhow!("invalid word in BIP39 seed phrase"));
+                anyhow::bail!("invalid word in BIP39 seed phrase");
             }
 
             let word_index = BIP39_WORDS.iter().position(|&x| x == word).unwrap();
@@ -109,10 +109,7 @@ impl std::str::FromStr for SeedPhrase {
             .collect::<Vec<String>>();
 
         if words.len() != NUM_WORDS {
-            return Err(anyhow::anyhow!(
-                "seed phrases should have {} words",
-                NUM_WORDS
-            ));
+            anyhow::bail!("seed phrases should have {} words", NUM_WORDS);
         }
 
         let seed_phrase = SeedPhrase(words.try_into().expect("can convert vec to arr"));

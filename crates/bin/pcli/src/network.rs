@@ -57,7 +57,7 @@ impl App {
     pub async fn submit_transaction(
         &mut self,
         transaction: Transaction,
-    ) -> Result<TransactionId, anyhow::Error> {
+    ) -> anyhow::Result<TransactionId> {
         println!("broadcasting transaction and awaiting confirmation...");
         let (id, detection_height) = self.view().broadcast_transaction(transaction, true).await?;
         if detection_height != 0 {
@@ -77,7 +77,7 @@ impl App {
     pub async fn submit_transaction_unconfirmed(
         &mut self,
         transaction: Transaction,
-    ) -> Result<(), anyhow::Error> {
+    ) -> anyhow::Result<()> {
         println!("broadcasting transaction without confirmation...");
         self.view()
             .broadcast_transaction(transaction, false)
@@ -100,23 +100,19 @@ impl App {
         }
     }
 
-    pub async fn specific_client(
-        &self,
-    ) -> Result<SpecificQueryServiceClient<Channel>, anyhow::Error> {
+    pub async fn specific_client(&self) -> anyhow::Result<SpecificQueryServiceClient<Channel>> {
         let channel = self.pd_channel().await?;
         Ok(SpecificQueryServiceClient::new(channel))
     }
 
-    pub async fn oblivious_client(
-        &self,
-    ) -> Result<ObliviousQueryServiceClient<Channel>, anyhow::Error> {
+    pub async fn oblivious_client(&self) -> anyhow::Result<ObliviousQueryServiceClient<Channel>> {
         let channel = self.pd_channel().await?;
         Ok(ObliviousQueryServiceClient::new(channel))
     }
 
     pub async fn tendermint_proxy_client(
         &self,
-    ) -> Result<TendermintProxyServiceClient<Channel>, anyhow::Error> {
+    ) -> anyhow::Result<TendermintProxyServiceClient<Channel>> {
         let channel = self.pd_channel().await?;
         Ok(TendermintProxyServiceClient::new(channel))
     }

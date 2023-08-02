@@ -47,9 +47,9 @@ impl TryFrom<pb::AssetId> for Id {
     fn try_from(value: pb::AssetId) -> Result<Self, Self::Error> {
         if !value.inner.is_empty() {
             if !value.alt_base_denom.is_empty() || !value.alt_bech32m.is_empty() {
-                return Err(anyhow::anyhow!(
+                anyhow::bail!(
                     "AssetId proto has both inner and alt_bech32m or alt_base_denom fields set"
-                ));
+                );
             }
             value.inner.as_slice().try_into()
         } else if !value.alt_bech32m.is_empty() {

@@ -17,13 +17,13 @@ impl MemoPlan {
     pub fn new<R: CryptoRng + RngCore>(
         rng: &mut R,
         plaintext: MemoPlaintext,
-    ) -> Result<MemoPlan, anyhow::Error> {
+    ) -> anyhow::Result<MemoPlan> {
         let key = PayloadKey::random_key(rng);
         Ok(MemoPlan { plaintext, key })
     }
 
     /// Create a [`MemoCiphertext`] from the [`MemoPlan`].
-    pub fn memo(&self) -> Result<MemoCiphertext, anyhow::Error> {
+    pub fn memo(&self) -> anyhow::Result<MemoCiphertext> {
         MemoCiphertext::encrypt(self.key.clone(), &self.plaintext)
     }
 }

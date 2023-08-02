@@ -437,10 +437,10 @@ impl Unit {
         }
     }
 
-    pub fn parse_value(&self, value: &str) -> Result<Amount, anyhow::Error> {
+    pub fn parse_value(&self, value: &str) -> anyhow::Result<Amount> {
         let split: Vec<&str> = value.split('.').collect();
         if split.len() > 2 {
-            Err(anyhow::anyhow!("expected only one decimal point"))
+            anyhow::bail!("expected only one decimal point")
         } else {
             let left = split[0];
 
@@ -456,7 +456,7 @@ impl Unit {
                 // This stanza means that the value is the base unit. Simply return v1.
                 return Ok(v1.into());
             } else if right.len() > self.exponent().into() {
-                return Err(anyhow::anyhow!("cannot represent this value"));
+                anyhow::bail!("cannot represent this value");
             }
 
             let v2_power_of_ten = 10u128.pow((self.exponent() - right.len() as u8).into());
@@ -469,7 +469,7 @@ impl Unit {
             if let Some(value) = v {
                 Ok(value.into())
             } else {
-                Err(anyhow::anyhow!("overflow!"))
+                anyhow::bail!("overflow!")
             }
         }
     }

@@ -18,7 +18,7 @@ impl ActionHandler for Swap {
     async fn check_stateless(&self, _context: ()) -> Result<()> {
         // Check that the trading pair is distinct.
         if self.body.trading_pair.asset_1() == self.body.trading_pair.asset_2() {
-            return Err(anyhow::anyhow!("Trading pair must be distinct"));
+            anyhow::bail!("Trading pair must be distinct");
         }
 
         self.proof.verify(

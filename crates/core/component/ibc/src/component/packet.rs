@@ -86,11 +86,11 @@ pub trait SendPacketRead: StateRead {
             })?;
 
         if channel.state_matches(&ChannelState::Closed) {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "channel {} on port {} is closed",
                 packet.source_channel,
                 packet.source_port
-            ));
+            );
         }
 
         // TODO: should we check dest port & channel here?
@@ -104,10 +104,7 @@ pub trait SendPacketRead: StateRead {
         // check that the client state is active so we don't do accidental sends on frozen clients.
         let client_state = self.get_client_state(&connection.client_id).await?;
         if client_state.is_frozen() {
-            return Err(anyhow::anyhow!(
-                "client {} is frozen",
-                &connection.client_id
-            ));
+            anyhow::bail!("client {} is frozen", &connection.client_id);
         }
 
         let latest_height = client_state.latest_height();
@@ -115,11 +112,11 @@ pub trait SendPacketRead: StateRead {
         // check that time timeout height hasn't already pased in the local client tracking the
         // receiving chain
         if packet.timeout_height <= latest_height {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "timeout height {} is less than the latest height {}",
                 packet.timeout_height,
                 latest_height.revision_height()
-            ));
+            );
         }
 
         Ok(IBCPacket::<Checked> {
@@ -212,7 +209,7 @@ pub trait WriteAcknowledgement: StateWrite {
     // see: https://github.com/cosmos/ibc/blob/8326e26e7e1188b95c32481ff00348a705b23700/spec/core/ics-004-channel-and-packet-semantics/README.md?plain=1#L779
     async fn write_acknowledgement(&mut self, packet: &Packet, ack_bytes: &[u8]) -> Result<()> {
         if ack_bytes.is_empty() {
-            return Err(anyhow::anyhow!("acknowledgement cannot be empty"));
+            anyhow::bail!("acknowledgement cannot be empty");
         }
 
         let exists_prev_ack = self
@@ -224,7 +221,7 @@ pub trait WriteAcknowledgement: StateWrite {
             .await?
             .is_some();
         if exists_prev_ack {
-            return Err(anyhow::anyhow!("acknowledgement already exists"));
+            anyhow::bail!("acknowledgement already exists");
         }
 
         let channel = self

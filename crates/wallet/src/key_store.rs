@@ -16,10 +16,10 @@ impl KeyStore {
     pub fn save(&self, path: impl AsRef<std::path::Path>) -> anyhow::Result<()> {
         if path.as_ref().exists() {
             let p = path.as_ref().to_string_lossy();
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "Wallet file already exists, refusing to overwrite it: {}",
                 &p
-            ));
+            );
         }
         use std::io::Write;
         let path = path.as_ref();

@@ -99,7 +99,7 @@ impl Read for TreeStore<'_, '_> {
                         let hash = <[u8; 32]>::try_from(hash)
                             .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))
                             .and_then(move |array| Hash::from_bytes(array).map_err(Into::into))?;
-                        Ok::<_, anyhow::Error>((Position::from(position as u64), height, hash))
+                        anyhow::Ok((Position::from(position as u64), height, hash))
                     })
                     .context("couldn't query database")
                 {
@@ -171,7 +171,7 @@ impl Read for TreeStore<'_, '_> {
                             .and_then(|array| {
                                 StateCommitment::try_from(array).map_err(Into::into)
                             })?;
-                        Ok::<_, anyhow::Error>((Position::from(position as u64), commitment))
+                        anyhow::Ok((Position::from(position as u64), commitment))
                     })
                     .context("couldn't query database")
                 {

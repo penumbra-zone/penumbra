@@ -29,11 +29,11 @@ impl ActionHandler for Undelegate {
         // Check whether the start epoch is correct first, to give a more helpful
         // error message if it's wrong.
         if u.start_epoch_index != rate_data.epoch_index {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "undelegation was prepared for next epoch {} but the next epoch is {}",
                 u.start_epoch_index,
                 rate_data.epoch_index
-            ));
+            );
         }
 
         // For undelegations, we enforce correct computation (with rounding)

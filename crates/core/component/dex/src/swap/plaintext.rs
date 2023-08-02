@@ -352,7 +352,7 @@ impl TryFrom<&[u8]> for SwapPlaintext {
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.len() != SWAP_LEN_BYTES {
-            return Err(anyhow!("incorrect length for serialized swap plaintext"));
+            anyhow::bail!("incorrect length for serialized swap plaintext");
         }
 
         let tp_bytes: [u8; 64] = bytes[0..64]

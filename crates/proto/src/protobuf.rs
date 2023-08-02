@@ -25,7 +25,7 @@ where
     }
 
     /// Decode this domain type from a byte buffer, via proto type `P`.
-    fn decode<B: bytes::Buf>(buf: B) -> Result<Self, anyhow::Error> {
+    fn decode<B: bytes::Buf>(buf: B) -> anyhow::Result<Self> {
         <Self::Proto as prost::Message>::decode(buf)?
             .try_into()
             .map_err(Into::into)
@@ -134,7 +134,7 @@ impl From<Clue> for ProtoClue {
 impl TryFrom<ProtoClue> for Clue {
     type Error = anyhow::Error;
 
-    fn try_from(proto: ProtoClue) -> anyhow::Result<Self, Self::Error> {
+    fn try_from(proto: ProtoClue) -> Result<Self, Self::Error> {
         let clue: [u8; 68] = proto.inner[..]
             .try_into()
             .map_err(|_| anyhow::anyhow!("expected 68-byte clue"))?;
