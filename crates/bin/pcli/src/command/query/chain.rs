@@ -1,8 +1,8 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_chain::params::ChainParameters;
-use penumbra_proto::client::v1alpha1::{ChainParametersRequest, InfoRequest};
+use penumbra_proto::client::v1alpha1::{ChainParametersRequest, EpochByHeightRequest, InfoRequest};
 use penumbra_stake::validator;
 
 // TODO: remove this subcommand and merge into `pcli q`
@@ -23,6 +23,7 @@ pub enum ChainCmd {
 
 pub struct Stats {
     current_block_height: u64,
+    current_epoch: u64,
     total_validators: u64,
     active_validators: u64,
     inactive_validators: u64,
@@ -119,6 +120,16 @@ impl ChainCmd {
             .into_inner();
 
         let current_block_height = info.last_block_height;
+        let current_epoch: u64 = client
+            .epoch_by_height(tonic::Request::new(EpochByHeightRequest {
+                height: current_block_height.clone(),
+            }))
+            .await?
+            .into_inner()
+            .epoch
+            .context("failed to find EpochByHeight message")?
+            .index;
+
         let chain_params = client
             .chain_parameters(tonic::Request::new(ChainParametersRequest {
                 chain_id: "".to_string(),
@@ -166,6 +177,7 @@ impl ChainCmd {
 
         Ok(Stats {
             current_block_height,
+            current_epoch,
             total_validators,
             active_validators,
             inactive_validators,
@@ -199,6 +211,7 @@ impl ChainCmd {
                         "Current Block Height",
                         &format!("{}", stats.current_block_height),
                     ])
+                    .add_row(vec!["Current Epoch", &format!("{}", stats.current_epoch)])
                     .add_row(vec![
                         "Total Validators",
                         &format!("{}", stats.total_validators),
