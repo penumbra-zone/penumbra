@@ -3,3 +3,4 @@ mod dlog;
 mod group;
 pub mod phase1;
 pub mod phase2;
+mod log;
