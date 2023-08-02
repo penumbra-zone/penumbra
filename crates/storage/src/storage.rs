@@ -34,7 +34,7 @@ impl std::fmt::Debug for Storage {
 struct Inner {
     snapshots: RwLock<SnapshotCache>,
     db: Arc<DB>,
-    state_tx: watch::Sender<Snapshot>,
+    tx_state: watch::Sender<Snapshot>,
 }
 
 impl Storage {
@@ -85,14 +85,14 @@ impl Storage {
                     let latest_snapshot = Snapshot::new(db.clone(), jmt_version);
 
                     // We discard the receiver here, because we'll construct new ones in subscribe()
-                    let (snapshot_tx, _) = watch::channel(latest_snapshot.clone());
+                    let (tx_snapshot, _) = watch::channel(latest_snapshot.clone());
 
                     let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot, 10));
 
                     Ok(Self(Arc::new(Inner {
                         snapshots,
                         db,
-                        state_tx: snapshot_tx,
+                        tx_state: tx_snapshot,
                     })))
                 })
             })?
@@ -112,7 +112,7 @@ impl Storage {
         // Calling subscribe() here to create a new receiver ensures
         // that all previous values are marked as seen, and the user
         // of the receiver will only be notified of *subsequent* values.
-        self.0.state_tx.subscribe()
+        self.0.tx_state.subscribe()
     }
 
     /// Returns a new [`State`] on top of the latest version of the tree.
@@ -218,7 +218,7 @@ impl Storage {
 
                     // Send fails if the channel is closed (i.e., if there are no receivers);
                     // in this case, we should ignore the error, we have no one to notify.
-                    let _ = inner.state_tx.send(latest_snapshot);
+                    let _ = inner.tx_state.send(latest_snapshot);
 
                     Ok(root_hash)
                 })
