@@ -46,8 +46,6 @@ use url::Url;
 
 use crate::{Planner, Storage, Worker};
 
-use base64::decode;
-
 /// A service that synchronizes private chain state and responds to queries
 /// about it.
 ///
@@ -548,24 +546,14 @@ impl ViewProtocolService for ViewService {
             .hash
             .clone();
 
-        tracing::debug!(hash = ?hash, length = ?hash.len(), "requesting transaction by hash");
+        tracing::debug!(hash = ?hash, length = ?hash.len(), "view protocol service: requesting transaction by hash");
 
-        let hex_decoded_hash = hex::decode(&hash).map_err(|e| {
-            tonic::Status::invalid_argument(format!("Could not parse transaction hash: {e:#}"))
+        let maybe_tx = self.storage.transaction_by_hash(&hash).await.map_err(|_| {
+            tonic::Status::failed_precondition(format!(
+                "Error retrieving transaction by hash {}",
+                hex::encode(&request.id.unwrap().hash)
+            ))
         })?;
-
-        tracing::debug!(hex_decoded_hash = ?hex_decoded_hash, length = ?hex_decoded_hash.len(), "decoding hash to hex");
-
-        let maybe_tx = self
-            .storage
-            .transaction_by_hash(&hex_decoded_hash)
-            .await
-            .map_err(|_| {
-                tonic::Status::failed_precondition(format!(
-                    "Error retrieving transaction by hash {}",
-                    hex::encode(&request.id.unwrap().hash)
-                ))
-            })?;
 
         let Some((height, tx)) = maybe_tx else {
             return Ok(tonic::Response::new(pb::TransactionInfoByHashResponse::default()));

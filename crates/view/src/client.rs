@@ -699,6 +699,7 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<TransactionInfo>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
+            tracing::debug!(id = ?id, "viewprotocolserviceclient::transaction_info_by_hash id");
             let rsp = ViewProtocolServiceClient::transaction_info_by_hash(
                 &mut self2,
                 tonic::Request::new(pb::TransactionInfoByHashRequest {

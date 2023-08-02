@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use penumbra_proto::{penumbra::core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -28,13 +29,29 @@ impl std::fmt::Display for Id {
 impl FromStr for Id {
     type Err = anyhow::Error;
 
+    /// Generates an Id from a hex-encoded string
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        tracing::debug!(
+            "parsing transaction ID string: {:?} length: {:?}",
+            s,
+            s.len()
+        );
+
         let bytes = hex::decode(s)?;
+
+        tracing::debug!(
+            "hex-decoded transaction ID string bytes: {:?} length: {:?}",
+            bytes,
+            bytes.len()
+        );
+
         if bytes.len() != 32 {
             return Err(anyhow::anyhow!("invalid transaction ID length"));
         }
+
         let mut id = [0u8; 32];
         id.copy_from_slice(&bytes);
+
         Ok(Id(id))
     }
 }
@@ -49,12 +66,9 @@ impl DomainType for Id {
 
 impl From<Id> for pb::Id {
     fn from(id: Id) -> pb::Id {
-        tracing::debug!("From<Id> Id: {:?}", &id);
-
-        let hash = id.0.to_vec().into();
-
-        tracing::debug!("From<Id> pb::Id.hash {:?}", &hash);
-
+        tracing::debug!("From<Id> Id: {:?} length: {:?}", &id.0, &id.0.len());
+        let hash: Bytes = id.0.to_vec().into();
+        tracing::debug!("From<Id> pb::Id.hash {:?} length: {:?}", &hash, &hash.len());
         pb::Id { hash }
     }
 }
@@ -64,15 +78,19 @@ impl TryFrom<pb::Id> for Id {
 
     fn try_from(proto: pb::Id) -> Result<Id, anyhow::Error> {
         let hash = proto.hash;
-
-        tracing::debug!("TryFrom<pb::Id> pb::Id.hash: {:?}", &hash);
+        tracing::debug!(
+            "TryFrom<pb::Id> pb::Id.hash: {:?} length: {:?}",
+            &hash,
+            &hash.len()
+        );
+        // Doing a length check on the proto.hash bytes can fail because the protobuf Bytes field will not always reflect the converted length
         if hash.len() != 32 {
             return Err(anyhow::anyhow!("invalid transaction ID length"));
         }
         let mut id = [0u8; 32];
         id.copy_from_slice(&hash);
+        tracing::debug!("TryFrom<pb::Id> Id: {:?} length: {:?}", &id, &id.len());
 
-        tracing::debug!("TryFrom<pb::Id> Id: {:?}", &Id(id));
         Ok(Id(id))
     }
 }

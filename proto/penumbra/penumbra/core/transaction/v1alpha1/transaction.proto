@@ -20,6 +20,8 @@ message Transaction {
 
 // A transaction ID, the Sha256 hash of a transaction.
 message Id {
+  // The hash of the transaction (i.e. the transaction ID), encoded in hexadecimal format (e.g. via hex::encode)
+  // This is the encoding used for transaction hashes in `pcli` commands and output.
   bytes hash = 1;
 }
 

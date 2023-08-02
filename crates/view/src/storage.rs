@@ -604,7 +604,7 @@ impl Storage {
     ) -> anyhow::Result<Option<(u64, Transaction)>> {
         let pool = self.pool.clone();
 
-        tracing::debug!(hash = ?tx_hash, length = ?tx_hash.len(), "requesting transaction by hash");
+        tracing::debug!(hash = ?tx_hash, length = ?tx_hash.len(), "storage: requesting transaction by hash");
 
         let tx_hash = tx_hash.to_vec();
 
@@ -620,8 +620,10 @@ impl Storage {
                 .optional()?
             {
                 let tx = Transaction::decode(tx_bytes.as_slice())?;
+                tracing::debug!("storage: found transaction by hash");
                 Ok(Some((block_height, tx)))
             } else {
+                tracing::debug!("storage: transaction not found");
                 Ok(None)
             }
         })

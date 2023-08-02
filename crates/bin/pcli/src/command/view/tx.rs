@@ -13,7 +13,7 @@ use penumbra_proto::{client::v1alpha1::GetTxRequest, DomainType};
 use penumbra_shielded_pool::{Note, NoteView};
 use penumbra_transaction::{
     view::action_view::{OutputView, SpendView},
-    Transaction,
+    Id, Transaction,
 };
 use penumbra_view::{TransactionInfo, ViewClient};
 
@@ -225,15 +225,24 @@ impl TxCmd {
     }
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         let fvk = app.fvk.clone();
-        let hash = self
+        let hash: penumbra_transaction::Id = self
             .hash
             // We have to convert to uppercase because `tendermint::Hash` only accepts uppercase :(
             .to_uppercase()
             .parse()
             .context("invalid transaction hash")?;
 
+        tracing::debug!(
+            "console transaction hash: {:?} length: {:?}",
+            hash,
+            hash.0.len()
+        );
+
+        let mut id = [0u8; 32];
+        id.copy_from_slice(&hash.0);
+
         // Retrieve Transaction from the view service first, or else the fullnode
-        let tx_info = if let Ok(tx_info) = app.view().transaction_info_by_hash(hash).await {
+        let tx_info = if let Ok(tx_info) = app.view().transaction_info_by_hash(Id(id)).await {
             tx_info
         } else {
             println!("Transaction not found in view service, fetching from fullnode...");
@@ -253,7 +262,7 @@ impl TxCmd {
 
             TransactionInfo {
                 height: rsp.height,
-                id: hash,
+                id: Id(id),
                 transaction: tx,
                 perspective: txp,
                 view: txv,

@@ -16,6 +16,8 @@ pub struct Transaction {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Id {
+    /// The hash of the transaction (i.e. the transaction ID), encoded in hexadecimal format (e.g. via hex::encode)
+    /// This is the encoding used for transaction hashes in `pcli` commands and output.
     #[prost(bytes = "bytes", tag = "1")]
     pub hash: ::prost::bytes::Bytes,
 }
