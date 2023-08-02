@@ -5,6 +5,8 @@ use ibc_types::core::client::ClientId;
 use ibc_types::core::client::ClientType;
 use ibc_types::core::client::Height;
 
+use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ClientTypePath};
+
 use ibc_types::lightclients::tendermint::{
     client_state::ClientState as TendermintClientState,
     consensus_state::ConsensusState as TendermintConsensusState,
@@ -116,11 +118,11 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 
     fn put_client(&mut self, client_id: &ClientId, client_state: TendermintClientState) {
         self.put_proto(
-            state_key::client_type(client_id),
+            ibc_types::path::ClientTypePath(client_id.clone()).to_string(),
             ibc_types::lightclients::tendermint::client_type().to_string(),
         );
 
-        self.put(state_key::client_state(client_id), client_state);
+        self.put(ClientStatePath(client_id.clone()).to_string(), client_state);
     }
 
     fn put_verified_heights(&mut self, client_id: &ClientId, verified_heights: VerifiedHeights) {
@@ -155,7 +157,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         consensus_state: TendermintConsensusState,
     ) -> Result<()> {
         self.put(
-            state_key::verified_client_consensus_state(&client_id, &height),
+            ClientConsensusStatePath::new(&client_id, &height).to_string(),
             consensus_state,
         );
 
@@ -200,14 +202,16 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn get_client_type(&self, client_id: &ClientId) -> Result<ClientType> {
-        self.get_proto(&state_key::client_type(client_id))
+        self.get_proto(&ClientTypePath(client_id.clone()).to_string())
             .await?
             .context(format!("could not find client type for {client_id}"))
             .map(ClientType::new)
     }
 
     async fn get_client_state(&self, client_id: &ClientId) -> Result<TendermintClientState> {
-        let client_state = self.get(&state_key::client_state(client_id)).await?;
+        let client_state = self
+            .get(&ClientStatePath(client_id.clone()).to_string())
+            .await?;
 
         client_state.context(format!("could not find client state for {client_id}"))
     }
@@ -240,15 +244,13 @@ pub trait StateReadExt: StateRead {
         height: Height,
         client_id: ClientId,
     ) -> Result<TendermintConsensusState> {
-        self.get(&state_key::verified_client_consensus_state(
-            &client_id, &height,
-        ))
-        .await?
-        .ok_or_else(|| {
-            anyhow::anyhow!(
+        self.get(&ClientConsensusStatePath::new(&client_id, &height).to_string())
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!(
                 "counterparty consensus state not found for client {client_id} at height {height}"
             )
-        })
+            })
     }
 
     async fn get_client_update_height(
