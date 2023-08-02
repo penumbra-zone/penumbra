@@ -1,4 +1,6 @@
 //! This module is very similar to the one for phase1, so reading that one might be useful.
+use std::hash;
+
 use ark_ec::Group;
 use ark_ff::{fields::Field, UniformRand, Zero};
 use rand_core::CryptoRngCore;
@@ -92,7 +94,7 @@ pub const CONTRIBUTION_HASH_SIZE: usize = 32;
 // Note: Don't need constant time equality because we're hashing public data: contributions.
 
 /// The hash of a contribution, providing a unique string for each contribution.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, hash::Hash)]
 pub struct ContributionHash(pub [u8; CONTRIBUTION_HASH_SIZE]);
 
 impl AsRef<[u8]> for ContributionHash {
