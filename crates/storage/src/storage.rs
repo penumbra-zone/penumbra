@@ -1,5 +1,6 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use std::{path::PathBuf, sync::Arc};
+use tokio_stream::wrappers::WatchStream;
 
 use anyhow::Result;
 use jmt::{
@@ -34,7 +35,8 @@ impl std::fmt::Debug for Storage {
 struct Inner {
     snapshots: RwLock<SnapshotCache>,
     db: Arc<DB>,
-    tx_state: watch::Sender<Snapshot>,
+    tx_dispatcher: watch::Sender<Snapshot>,
+    tx_state: Arc<watch::Sender<Snapshot>>,
 }
 
 impl Storage {
@@ -49,31 +51,23 @@ impl Storage {
                     opts.create_if_missing(true);
                     opts.create_missing_column_families(true);
 
-                    /*
-                       RocksDB columns:
-                       --> jmt: maps `storage::DbNodeKey` to `jmt::Node`, persists the internal
-                               structure of the JMT.
-                         Note: we need to use a newtype wrapper around `NodeKey` here, because
-                         we want a lexicographical ordering that maps to ascending jmt::Version.
-
-                       --> nonverifiable: maps arbitrary keys to arbitrary values, persists
-                                       the nonverifiable state.
-
-                       --> jmt_keys: index JMT keys (i.e. keyhash preimages).
-
-                       --> jmt_keys_by_keyhash: index JMT keys by their hash.
-
-                       --> jmt_values: maps KeyHash || BE(version) to an `Option<Vec<u8>>`
-                    */
-
+                    // RocksDB columns:
                     let db = Arc::new(DB::open_cf(
                         &opts,
                         path,
                         [
+                            // jmt: maps `storage::DbNodeKey` to `jmt::Node`, persists the internal structure of the JMT.
+                            // Note: we need to use a newtype wrapper around `NodeKey` here, because
+                            // we want a lexicographical ordering that maps to ascending jmt::Version.
                             "jmt",
+                            // nonverifiable: maps arbitrary keys to arbitrary values, persists
+                            // the nonverifiable state.
                             "nonverifiable",
+                            // jmt_keys: index JMT keys (i.e. keyhash preimages).
                             "jmt_keys",
+                            // jmt_keys_by_keyhash: index JMT keys by their hash.
                             "jmt_keys_by_keyhash",
+                            // jmt_values: maps KeyHash || BE(version) to an `Option<Vec<u8>>`
                             "jmt_values",
                         ],
                     )?);
@@ -84,15 +78,38 @@ impl Storage {
 
                     let latest_snapshot = Snapshot::new(db.clone(), jmt_version);
 
-                    // We discard the receiver here, because we'll construct new ones in subscribe()
-                    let (tx_snapshot, _) = watch::channel(latest_snapshot.clone());
+                    // A concurrent-safe ring buffer of the latest 10 snapshots.
+                    let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot.clone(), 10));
 
-                    let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot, 10));
+                    // We create two watch channels here:
+                    // dispatcher channel:
+                    // - `tx_dispatcher` is used by storage to signal that a new snapshot is available.
+                    // - `rx_dispatcher` is used by the dispatcher to receive new snapshots.
+                    // Snapshot channel:
+                    // - `tx_state` is used by the dispatcher to signal new snapshots to the rest of the system.
+                    // - `rx_state` is used by various components to subscribe to new snapshots.
+                    let (tx_state, _) = watch::channel(latest_snapshot.clone());
+                    let (tx_dispatcher, mut rx_dispatcher) = watch::channel(latest_snapshot);
+
+                    let tx_state = Arc::new(tx_state);
+                    let tx_state2 = tx_state.clone();
+                    tokio::spawn(async move {
+                        // TODO(erwan): is a watch stream more ergonomic here?
+                        // afaict it would only `None` if the sender is dropped
+                        while rx_dispatcher.changed().await.is_ok() {
+                            tracing::debug!("dispatcher has received a new snapshot");
+                            let snapshot = rx_dispatcher.borrow_and_update().clone();
+                            // [`watch::Sender<T>::send`] only returns an error if there are no
+                            // receivers, so we can safely ignore the result here.
+                            let _ = tx_state2.send(snapshot);
+                        }
+                    });
 
                     Ok(Self(Arc::new(Inner {
                         snapshots,
                         db,
-                        tx_state: tx_snapshot,
+                        tx_state,
+                        tx_dispatcher,
                     })))
                 })
             })?
@@ -218,7 +235,7 @@ impl Storage {
 
                     // Send fails if the channel is closed (i.e., if there are no receivers);
                     // in this case, we should ignore the error, we have no one to notify.
-                    let _ = inner.tx_state.send(latest_snapshot);
+                    let _ = inner.tx_dispatcher.send(latest_snapshot);
 
                     Ok(root_hash)
                 })
