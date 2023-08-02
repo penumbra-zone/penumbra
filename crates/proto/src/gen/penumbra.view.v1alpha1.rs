@@ -54,8 +54,10 @@ pub struct TransactionPlannerRequest {
     #[prost(message, optional, tag = "2")]
     pub fee: ::core::option::Option<super::super::core::crypto::v1alpha1::Fee>,
     /// The memo for the requested TransactionPlan
-    #[prost(string, tag = "3")]
-    pub memo: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub memo: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::MemoPlaintext,
+    >,
     /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
@@ -81,10 +83,12 @@ pub mod transaction_planner_request {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Output {
+        /// The amount and denomination in which the Output is issued.
         #[prost(message, optional, tag = "1")]
         pub value: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Value,
         >,
+        /// The address to which Output will be sent.
         #[prost(message, optional, tag = "2")]
         pub address: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Address,
@@ -93,14 +97,17 @@ pub mod transaction_planner_request {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Swap {
+        /// The amount and denomination to be traded in the Swap.
         #[prost(message, optional, tag = "1")]
         pub value: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Value,
         >,
+        /// The denomination to be received as a Output of the Swap.
         #[prost(message, optional, tag = "2")]
         pub target_asset: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::AssetId,
         >,
+        /// An optional fee to be paid for performing the Swap.
         #[prost(message, optional, tag = "3")]
         pub fee: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Fee,

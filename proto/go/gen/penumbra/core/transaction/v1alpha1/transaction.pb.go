@@ -2216,18 +2216,24 @@ func (x *WitnessData) GetStateCommitmentProofs() []*v1alpha1.StateCommitmentProo
 	return nil
 }
 
-// Describes a planned transaction.
+// Describes a planned transaction. Permits clients to prepare a transaction
+// prior submission, so that a user can review it prior to authorizing its execution.
 type TransactionPlan struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Actions      []*ActionPlan `protobuf:"bytes,1,rep,name=actions,proto3" json:"actions,omitempty"`
-	ExpiryHeight uint64        `protobuf:"varint,2,opt,name=expiry_height,json=expiryHeight,proto3" json:"expiry_height,omitempty"`
-	ChainId      string        `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	Fee          *v1alpha1.Fee `protobuf:"bytes,4,opt,name=fee,proto3" json:"fee,omitempty"`
-	CluePlans    []*CluePlan   `protobuf:"bytes,5,rep,name=clue_plans,json=cluePlans,proto3" json:"clue_plans,omitempty"`
-	MemoPlan     *MemoPlan     `protobuf:"bytes,6,opt,name=memo_plan,json=memoPlan,proto3" json:"memo_plan,omitempty"`
+	// The planner interface(s) for Actions to be performed, such as a Spend, Swap,
+	// or Delegation. See the ActionPlan docs for a full list of options.
+	Actions []*ActionPlan `protobuf:"bytes,1,rep,name=actions,proto3" json:"actions,omitempty"`
+	// Time, as block height, after which TransactionPlan should be considered invalid.
+	ExpiryHeight uint64 `protobuf:"varint,2,opt,name=expiry_height,json=expiryHeight,proto3" json:"expiry_height,omitempty"`
+	// The name of the network for which this TransactionPlan was built.
+	ChainId   string        `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	Fee       *v1alpha1.Fee `protobuf:"bytes,4,opt,name=fee,proto3" json:"fee,omitempty"`
+	CluePlans []*CluePlan   `protobuf:"bytes,5,rep,name=clue_plans,json=cluePlans,proto3" json:"clue_plans,omitempty"`
+	// Planning interface for constructing an optional Memo for the Transaction.
+	MemoPlan *MemoPlan `protobuf:"bytes,6,opt,name=memo_plan,json=memoPlan,proto3" json:"memo_plan,omitempty"`
 }
 
 func (x *TransactionPlan) Reset() {

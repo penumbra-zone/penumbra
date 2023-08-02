@@ -126,7 +126,7 @@ message TransactionPlannerRequest {
     // The fee for the requested TransactionPlan, if any.
     core.crypto.v1alpha1.Fee fee = 2;
     // The memo for the requested TransactionPlan
-    string memo = 3;
+    core.transaction.v1alpha1.MemoPlaintext memo = 3;
     // Identifies the account group to query.
     optional core.crypto.v1alpha1.AccountGroupId account_group_id = 14;
 
@@ -139,12 +139,17 @@ message TransactionPlannerRequest {
 
   // Request message subtypes
   message Output {
+    // The amount and denomination in which the Output is issued.
     core.crypto.v1alpha1.Value value = 1;
+    // The address to which Output will be sent.
     core.crypto.v1alpha1.Address address = 2;
   }
   message Swap {
+    // The amount and denomination to be traded in the Swap.
     core.crypto.v1alpha1.Value value = 1;
+    // The denomination to be received as a Output of the Swap.
     core.crypto.v1alpha1.AssetId target_asset = 2;
+    // An optional fee to be paid for performing the Swap.
     core.crypto.v1alpha1.Fee fee = 3;
   }
   message Delegate {
@@ -196,7 +201,7 @@ message BalancesRequest {
 }
 
 message BalancesResponse {
-  core.crypto.v1alpha1.AddressIndex account = 1; 
+  core.crypto.v1alpha1.AddressIndex account = 1;
   core.crypto.v1alpha1.Value balance = 2;
 }
 
