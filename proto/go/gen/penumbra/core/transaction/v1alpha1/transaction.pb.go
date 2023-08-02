@@ -98,6 +98,8 @@ type Id struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The hash of the transaction (i.e. the transaction ID), encoded in hexadecimal format (e.g. via hex::encode)
+	// This is the encoding used for transaction hashes in `pcli` commands and output.
 	Hash []byte `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
 }
 
