@@ -1,6 +1,7 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{Context, Result};
+use penumbra_sct::Nullifier;
 use penumbra_transaction::{AuthorizingData, Transaction};
 
 #[tracing::instrument(skip(tx))]
@@ -13,6 +14,31 @@ pub(super) fn valid_binding_signature(tx: &Transaction) -> Result<()> {
     tx.binding_verification_key()
         .verify(auth_hash.as_bytes(), tx.binding_sig())
         .context("binding signature failed to verify")
+}
+
+pub(super) fn no_duplicate_votes(tx: &Transaction) -> Result<()> {
+    // Disallow multiple `DelegatorVotes`s with the same proposal and the same `Nullifier`.
+    let mut nullifiers_by_proposal_id = BTreeMap::new();
+    for vote in tx.delegator_votes() {
+        // Get existing entries
+        let mut nullifiers_for_proposal: Vec<Nullifier> = nullifiers_by_proposal_id
+            .get(&vote.body.proposal)
+            .cloned()
+            .unwrap_or_default();
+
+        // Check for duplicate nullifiers, else add to vec and continue
+        if nullifiers_for_proposal.contains(&vote.body.nullifier) {
+            return Err(anyhow::anyhow!(
+                "Duplicate nullifier in transaction: {}",
+                &vote.body.nullifier
+            ));
+        } else {
+            nullifiers_for_proposal.push(vote.body.nullifier);
+            nullifiers_by_proposal_id.insert(vote.body.proposal, nullifiers_for_proposal);
+        }
+    }
+
+    Ok(())
 }
 
 pub(super) fn no_duplicate_nullifiers(tx: &Transaction) -> Result<()> {

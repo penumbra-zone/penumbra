@@ -15,7 +15,7 @@ mod stateless;
 
 use self::stateful::{claimed_anchor_is_valid, fmd_parameters_valid};
 use stateless::{
-    check_memo_exists_if_outputs_absent_if_not, no_duplicate_nullifiers,
+    check_memo_exists_if_outputs_absent_if_not, no_duplicate_nullifiers, no_duplicate_votes,
     num_clues_equal_to_num_outputs, valid_binding_signature,
 };
 
@@ -31,6 +31,7 @@ impl ActionHandler for Transaction {
         // TODO: unify code organization
         valid_binding_signature(self)?;
         no_duplicate_nullifiers(self)?;
+        no_duplicate_votes(self)?;
         num_clues_equal_to_num_outputs(self)?;
         check_memo_exists_if_outputs_absent_if_not(self)?;
 
