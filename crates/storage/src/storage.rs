@@ -115,9 +115,9 @@ impl Storage {
                     });
 
                     Ok(Self(Arc::new(Inner {
-                        // This isn't strictly necessary because the dispatcher task will
-                        // terminate when the sender is dropped, but it causes spurious
-                        // errors in certain test scenarios.
+                        // We don't need to wrap the task in a `CancelOnDrop<T>` because
+                        // the task will stop when the sender is dropped. However, certain
+                        // test scenarios require us to wait that all resources are released.
                         jh_dispatcher: Some(jh_dispatcher),
                         tx_dispatcher,
                         tx_state,
@@ -282,9 +282,11 @@ impl Storage {
 
     #[cfg(test)]
     /// Consumes the `Inner` storage and waits for all resources to be reclaimed.
+    /// Panics if there are still outstanding references to the `Inner` storage.
     pub(crate) async fn release(mut self) {
         if let Some(inner) = Arc::get_mut(&mut self.0) {
             inner.shutdown().await;
+            // `Inner` is dropped once the call completes.
         } else {
             panic!("Unable to get mutable reference to Inner");
         }
