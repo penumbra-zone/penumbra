@@ -1,5 +1,5 @@
-use ::futures::StreamExt;
-use penumbra_storage::*;
+use crate::*;
+use futures::StreamExt;
 
 /// Checks that deleting a nonexistent key behaves as expected (no errors, it's already gone)
 #[tokio::test]
@@ -20,27 +20,26 @@ async fn delete_nonexistent_key() -> anyhow::Result<()> {
 /// the next Storage::load() call is made. This is fixed by arranging the fields
 /// in Storage to be dropped in the right order. If this test fails, make sure
 /// to check that the dispatcher `Sender` is dropped first.
-#[ignore] // TODO: find a way to make the lock release (fs I/O) more synchronous.
 async fn db_lock_is_released() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
     let tmpdir = tempfile::tempdir()?;
 
     let storage = Storage::load(tmpdir.path().to_owned()).await?;
-    std::mem::drop(storage);
+    storage.release().await;
     let storage = Storage::load(tmpdir.path().to_owned()).await?;
-    std::mem::drop(storage);
+    storage.release().await;
     let storage = Storage::load(tmpdir.path().to_owned()).await?;
-    std::mem::drop(storage);
+    storage.release().await;
     let storage = Storage::load(tmpdir.path().to_owned()).await?;
-    std::mem::drop(storage);
+    storage.release().await;
     let storage = Storage::load(tmpdir.path().to_owned()).await?;
-    std::mem::drop(storage);
+    storage.release().await;
     let storage = Storage::load(tmpdir.path().to_owned()).await?;
-    std::mem::drop(storage);
+    storage.release().await;
     let storage = Storage::load(tmpdir.path().to_owned()).await?;
-    std::mem::drop(storage);
+    storage.release().await;
     let storage = Storage::load(tmpdir.path().to_owned()).await?;
-    std::mem::drop(storage);
+    storage.release().await;
 
     Ok(())
 }
@@ -631,7 +630,7 @@ async fn simple_flow() -> anyhow::Result<()> {
 
     // First, be sure to explicitly drop anything keeping a reference to the
     // RocksDB instance:
-    std::mem::drop(storage);
+    storage.release().await;
     // std::mem::drop(state0); // consumed in commit()
     std::mem::drop(state0a);
     std::mem::drop(state1);
