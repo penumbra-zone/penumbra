@@ -236,43 +236,60 @@ impl Storage {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            // If set, only return notes with the specified address index.
-            let address_clause = address_index
-            .map(|d| format!("x'{}'", hex::encode(d.to_bytes())))
-            .unwrap_or_else(|| "address_index".to_string());
+            let query = format!(
+                "SELECT notes.asset_id, notes.amount, spendable_notes.address_index
+                FROM    notes
+                JOIN    spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                WHERE   spendable_notes.height_spent IS NULL"
+            );
 
-            // If set, only return notes with the specified asset id.
-            let asset_clause = asset_id
-            .map(|id| format!("x'{}'", hex::encode(id.to_bytes())))
-            .unwrap_or_else(|| "asset_id".to_string());
+            tracing::debug!(?query);
 
             let mut balances = BTreeMap::new();
 
-            for result in pool.get()?
-                .prepare_cached(
-                    "SELECT notes.asset_id, notes.amount
-                    FROM    notes
-                    JOIN    spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-                    WHERE   spendable_notes.height_spent IS NULL
-                    AND     spendable_notes.address_index IS ?1
-                    AND     notes.asset_id IS ?2",
-                )?
-                .query_map([address_clause, asset_clause], |row| {
-                    let asset_id: Vec<u8> = row.get("asset_id")?;
-                    let amount: [u8; 16] = row.get("amount")?;
-                    Ok((asset_id, amount))
-                })? {
+            for result in pool
+                .get()?
+                .prepare_cached(query.as_str())?
+                .query_map([], |row| {
+                    let asset_id = row.get::<&str, Vec<u8>>("asset_id")?;
+                    let amount = row.get::<&str, Vec<u8>>("amount")?;
+                    let address_index = row.get::<&str, Vec<u8>>("address_index")?;
 
-                let (asset_id, amount) = result?;
+                    Ok((asset_id, amount, address_index))
+                })?
+            {
+                let (id, amount, index) = result?;
 
-                let amount_u128: u128 = u128::from_be_bytes(amount);
+                let id = Id::try_from(id.as_slice())?;
+
+                let amount: u128 = Amount::from_be_bytes(
+                    amount
+                        .as_slice()
+                        .try_into()
+                        .expect("amount slice of incorrect length"),
+                )
+                .into();
+
+                let index = AddressIndex::try_from(index.as_slice())?;
+
+                // Skip this entry if not captured by address index filter
+                if let Some(address_index) = address_index {
+                    if address_index != index {
+                        continue;
+                    }
+                }
+                // Skip this entry if not captured by asset id filter
+                if let Some(asset_id) = asset_id {
+                    if asset_id != id {
+                        continue;
+                    }
+                }
 
                 balances
-                    .entry(Id::try_from(asset_id.as_slice())?)
-                    .and_modify(|x| *x += amount_u128)
-                    .or_insert(amount_u128);
+                    .entry(id)
+                    .and_modify(|x| *x += amount)
+                    .or_insert(amount);
             }
-
             Ok(balances)
         })
         .await?
