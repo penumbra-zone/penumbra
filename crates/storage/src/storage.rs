@@ -34,10 +34,11 @@ impl std::fmt::Debug for Storage {
 // from leaking outside of this crate.
 struct Inner {
     tx_dispatcher: watch::Sender<Snapshot>,
-    /// A handle to the dispatcher task.
-    _jh_dispatcher: Option<CancelOnDrop<()>>,
     tx_state: Arc<watch::Sender<Snapshot>>,
     snapshots: RwLock<SnapshotCache>,
+    #[allow(dead_code)]
+    /// A handle to the dispatcher task.
+    jh_dispatcher: Option<tokio::task::JoinHandle<()>>,
     db: Arc<DB>,
 }
 
@@ -117,7 +118,7 @@ impl Storage {
                         // This isn't strictly necessary because the dispatcher task will
                         // terminate when the sender is dropped, but it causes spurious
                         // errors in certain test scenarios.
-                        _jh_dispatcher: Some(CancelOnDrop(Some(jh_dispatcher))),
+                        jh_dispatcher: Some(jh_dispatcher),
                         tx_dispatcher,
                         tx_state,
                         snapshots,
@@ -351,31 +352,12 @@ pub fn latest_version(db: &DB) -> Result<Option<jmt::Version>> {
     Ok(get_rightmost_leaf(db)?.map(|(node_key, _)| node_key.version()))
 }
 
-pub struct CancelOnDrop<T>(pub Option<tokio::task::JoinHandle<T>>);
-
-impl<T> CancelOnDrop<T> {
-    #[cfg(test)]
-    pub async fn shutdown(&mut self) {
-        if let Some(handle) = self.0.take() {
-            handle.abort();
-            let _ = handle.await;
-        }
-    }
-}
-
-impl<T> Drop for CancelOnDrop<T> {
-    fn drop(&mut self) {
-        if let Some(handle) = self.0.take() {
-            handle.abort();
-        }
-    }
-}
-
 impl Inner {
     #[cfg(test)]
     pub async fn shutdown(&mut self) {
-        if let Some(mut jh) = self._jh_dispatcher.take() {
-            jh.shutdown().await
+        if let Some(jh) = self.jh_dispatcher.take() {
+            jh.abort();
+            let _ = jh.await;
         }
     }
 }
