@@ -33,6 +33,8 @@ impl std::fmt::Debug for Storage {
 // A private inner element to prevent the `TreeWriter` implementation
 // from leaking outside of this crate.
 struct Inner {
+    /// A handle to the dispatcher task.
+    _jh_dispatcher: CancelOnDrop<()>,
     tx_dispatcher: watch::Sender<Snapshot>,
     tx_state: Arc<watch::Sender<Snapshot>>,
     snapshots: RwLock<SnapshotCache>,
@@ -98,7 +100,7 @@ impl Storage {
 
                     let tx_state = Arc::new(tx_state);
                     let tx_state2 = tx_state.clone();
-                    tokio::spawn(async move {
+                    let jh_dispatcher = tokio::spawn(async move {
                         tracing::info!("snapshot dispatcher task has started");
                         // If the sender is dropped, the task will terminate.
                         while rx_dispatcher.changed().await.is_ok() {
@@ -112,10 +114,11 @@ impl Storage {
                     });
 
                     Ok(Self(Arc::new(Inner {
+                        _jh_dispatcher: CancelOnDrop::new(jh_dispatcher),
+                        tx_dispatcher,
+                        tx_state,
                         snapshots,
                         db,
-                        tx_state,
-                        tx_dispatcher,
                     })))
                 })
             })?
@@ -333,6 +336,20 @@ fn get_rightmost_leaf(db: &DB) -> Result<Option<(NodeKey, LeafNode)>> {
 
 pub fn latest_version(db: &DB) -> Result<Option<jmt::Version>> {
     Ok(get_rightmost_leaf(db)?.map(|(node_key, _)| node_key.version()))
+}
+
+pub struct CancelOnDrop<T>(tokio::task::JoinHandle<T>);
+
+impl CancelOnDrop<()> {
+    pub fn new(handle: tokio::task::JoinHandle<()>) -> Self {
+        Self(handle)
+    }
+}
+
+impl<T> Drop for CancelOnDrop<T> {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
 }
 
 /// Represent a JMT key hash at a specific `jmt::Version`
