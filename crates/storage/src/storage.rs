@@ -33,10 +33,10 @@ impl std::fmt::Debug for Storage {
 // A private inner element to prevent the `TreeWriter` implementation
 // from leaking outside of this crate.
 struct Inner {
-    snapshots: RwLock<SnapshotCache>,
-    db: Arc<DB>,
     tx_dispatcher: watch::Sender<Snapshot>,
     tx_state: Arc<watch::Sender<Snapshot>>,
+    snapshots: RwLock<SnapshotCache>,
+    db: Arc<DB>,
 }
 
 impl Storage {
@@ -82,16 +82,15 @@ impl Storage {
                     let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot.clone(), 10));
 
                     // Setup a dispatcher task that acts as an intermediary between the storage
-                    // and the rest of the system. The dispatcher task is responsible for
-                    // forwarding new snapshots to the rest of the system.
-                    // We want to protect against slow subscribers that hold a read lock on the
-                    // watch channel for too long, as they could block the consensus-critical
-                    // commit logic, which needs to acquire a write lock on the watch channel in
-                    // order to update the latest snapshot.
-                    // dispatcher channel:
+                    // and the rest of the system. Its purpose is to forward new snapshots to
+                    // subscribers.
+                    // If we were to send snapshots directly to subscribers, a slow subscriber could
+                    // hold a lock on the watch channel for too long, and block the consensus-critical
+                    // commit logic, which needs to acquire a write lock on the watch channel.
+                    // dispatcher channel (internal):
                     // - `tx_dispatcher` is used by storage to signal that a new snapshot is available.
                     // - `rx_dispatcher` is used by the dispatcher to receive new snapshots.
-                    // Snapshot channel:
+                    // snapshot channel (external):
                     // - `tx_state` is used by the dispatcher to signal new snapshots to the rest of the system.
                     // - `rx_state` is used by various components to subscribe to new snapshots.
                     let (tx_state, _) = watch::channel(latest_snapshot.clone());
@@ -100,8 +99,8 @@ impl Storage {
                     let tx_state = Arc::new(tx_state);
                     let tx_state2 = tx_state.clone();
                     tokio::spawn(async move {
-                        // TODO(erwan): is a watch stream more ergonomic here?
-                        // afaict it would only `None` if the sender is dropped
+                        tracing::info!("snapshot dispatcher task has started");
+                        // If the sender is dropped, the task will terminate.
                         while rx_dispatcher.changed().await.is_ok() {
                             tracing::debug!("dispatcher has received a new snapshot");
                             let snapshot = rx_dispatcher.borrow_and_update().clone();
@@ -109,6 +108,7 @@ impl Storage {
                             // receivers, so we can safely ignore the result here.
                             let _ = tx_state2.send(snapshot);
                         }
+                        tracing::info!("dispatcher task has terminated")
                     });
 
                     Ok(Self(Arc::new(Inner {
