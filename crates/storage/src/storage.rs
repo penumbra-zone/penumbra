@@ -35,7 +35,7 @@ impl std::fmt::Debug for Storage {
 struct Inner {
     tx_dispatcher: watch::Sender<Snapshot>,
     /// A handle to the dispatcher task.
-    _jh_dispatcher: CancelOnDrop<()>,
+    _jh_dispatcher: Option<CancelOnDrop<()>>,
     tx_state: Arc<watch::Sender<Snapshot>>,
     snapshots: RwLock<SnapshotCache>,
     db: Arc<DB>,
@@ -117,7 +117,7 @@ impl Storage {
                         // This isn't strictly necessary because the dispatcher task will
                         // terminate when the sender is dropped, but it causes spurious
                         // errors in certain test scenarios.
-                        _jh_dispatcher: CancelOnDrop(jh_dispatcher),
+                        _jh_dispatcher: Some(CancelOnDrop(Some(jh_dispatcher))),
                         tx_dispatcher,
                         tx_state,
                         snapshots,
@@ -278,6 +278,16 @@ impl Storage {
     pub(crate) fn db(&self) -> Arc<DB> {
         self.0.db.clone()
     }
+
+    #[cfg(test)]
+    /// Consumes the `Inner` storage and waits for all resources to be reclaimed.
+    pub(crate) async fn release(mut self) {
+        if let Some(inner) = Arc::get_mut(&mut self.0) {
+            inner.shutdown().await;
+        } else {
+            panic!("Unable to get mutable reference to Inner");
+        }
+    }
 }
 
 impl TreeWriter for Inner {
@@ -341,11 +351,32 @@ pub fn latest_version(db: &DB) -> Result<Option<jmt::Version>> {
     Ok(get_rightmost_leaf(db)?.map(|(node_key, _)| node_key.version()))
 }
 
-pub struct CancelOnDrop<T>(pub tokio::task::JoinHandle<T>);
+pub struct CancelOnDrop<T>(pub Option<tokio::task::JoinHandle<T>>);
+
+impl<T> CancelOnDrop<T> {
+    #[cfg(test)]
+    pub async fn shutdown(&mut self) {
+        if let Some(handle) = self.0.take() {
+            handle.abort();
+            let _ = handle.await;
+        }
+    }
+}
 
 impl<T> Drop for CancelOnDrop<T> {
     fn drop(&mut self) {
-        self.0.abort();
+        if let Some(handle) = self.0.take() {
+            handle.abort();
+        }
+    }
+}
+
+impl Inner {
+    #[cfg(test)]
+    pub async fn shutdown(&mut self) {
+        if let Some(mut jh) = self._jh_dispatcher.take() {
+            jh.shutdown().await
+        }
     }
 }
 
