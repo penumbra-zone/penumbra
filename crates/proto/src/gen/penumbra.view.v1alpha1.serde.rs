@@ -4598,6 +4598,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.swaps.is_empty() {
             len += 1;
         }
+        if !self.swap_claims.is_empty() {
+            len += 1;
+        }
         if !self.delegations.is_empty() {
             len += 1;
         }
@@ -4626,6 +4629,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.swaps.is_empty() {
             struct_ser.serialize_field("swaps", &self.swaps)?;
         }
+        if !self.swap_claims.is_empty() {
+            struct_ser.serialize_field("swapClaims", &self.swap_claims)?;
+        }
         if !self.delegations.is_empty() {
             struct_ser.serialize_field("delegations", &self.delegations)?;
         }
@@ -4653,6 +4659,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "accountGroupId",
             "outputs",
             "swaps",
+            "swap_claims",
+            "swapClaims",
             "delegations",
             "undelegations",
             "ibc_actions",
@@ -4667,6 +4675,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             AccountGroupId,
             Outputs,
             Swaps,
+            SwapClaims,
             Delegations,
             Undelegations,
             IbcActions,
@@ -4697,6 +4706,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
                             "outputs" => Ok(GeneratedField::Outputs),
                             "swaps" => Ok(GeneratedField::Swaps),
+                            "swapClaims" | "swap_claims" => Ok(GeneratedField::SwapClaims),
                             "delegations" => Ok(GeneratedField::Delegations),
                             "undelegations" => Ok(GeneratedField::Undelegations),
                             "ibcActions" | "ibc_actions" => Ok(GeneratedField::IbcActions),
@@ -4725,6 +4735,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut account_group_id__ = None;
                 let mut outputs__ = None;
                 let mut swaps__ = None;
+                let mut swap_claims__ = None;
                 let mut delegations__ = None;
                 let mut undelegations__ = None;
                 let mut ibc_actions__ = None;
@@ -4768,6 +4779,12 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             }
                             swaps__ = Some(map.next_value()?);
                         }
+                        GeneratedField::SwapClaims => {
+                            if swap_claims__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swapClaims"));
+                            }
+                            swap_claims__ = Some(map.next_value()?);
+                        }
                         GeneratedField::Delegations => {
                             if delegations__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("delegations"));
@@ -4795,6 +4812,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     account_group_id: account_group_id__,
                     outputs: outputs__.unwrap_or_default(),
                     swaps: swaps__.unwrap_or_default(),
+                    swap_claims: swap_claims__.unwrap_or_default(),
                     delegations: delegations__.unwrap_or_default(),
                     undelegations: undelegations__.unwrap_or_default(),
                     ibc_actions: ibc_actions__.unwrap_or_default(),
@@ -5145,6 +5163,98 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Swap {
             }
         }
         deserializer.deserialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest.Swap", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for transaction_planner_request::SwapClaim {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.swap_commitment.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest.SwapClaim", len)?;
+        if let Some(v) = self.swap_commitment.as_ref() {
+            struct_ser.serialize_field("swapCommitment", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for transaction_planner_request::SwapClaim {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "swap_commitment",
+            "swapCommitment",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            SwapCommitment,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "swapCommitment" | "swap_commitment" => Ok(GeneratedField::SwapCommitment),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = transaction_planner_request::SwapClaim;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1alpha1.TransactionPlannerRequest.SwapClaim")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<transaction_planner_request::SwapClaim, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut swap_commitment__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::SwapCommitment => {
+                            if swap_commitment__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swapCommitment"));
+                            }
+                            swap_commitment__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(transaction_planner_request::SwapClaim {
+                    swap_commitment: swap_commitment__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest.SwapClaim", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for transaction_planner_request::Undelegate {

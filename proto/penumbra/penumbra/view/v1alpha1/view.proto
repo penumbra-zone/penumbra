@@ -133,6 +133,7 @@ message TransactionPlannerRequest {
   // Request contents
   repeated Output outputs = 20;
   repeated Swap swaps = 30;
+  repeated SwapClaim swap_claims = 31;
   repeated Delegate delegations = 40;
   repeated Undelegate undelegations = 50;
   repeated penumbra.core.ibc.v1alpha1.IbcAction ibc_actions = 60;
@@ -151,6 +152,12 @@ message TransactionPlannerRequest {
     core.crypto.v1alpha1.AssetId target_asset = 2;
     // An optional fee to be paid for performing the Swap.
     core.crypto.v1alpha1.Fee fee = 3;
+  }
+  message SwapClaim {
+    // SwapCommitment to identify the Swap to be claimed.
+    // Use the commitment from the Swap message:
+    // penumbra.core.dex.v1alpha1.Swap.body.payload.commitment.
+    core.crypto.v1alpha1.StateCommitment swap_commitment = 1;
   }
   message Delegate {
     core.crypto.v1alpha1.Amount amount = 1;

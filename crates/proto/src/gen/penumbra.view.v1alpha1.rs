@@ -68,6 +68,8 @@ pub struct TransactionPlannerRequest {
     pub outputs: ::prost::alloc::vec::Vec<transaction_planner_request::Output>,
     #[prost(message, repeated, tag = "30")]
     pub swaps: ::prost::alloc::vec::Vec<transaction_planner_request::Swap>,
+    #[prost(message, repeated, tag = "31")]
+    pub swap_claims: ::prost::alloc::vec::Vec<transaction_planner_request::SwapClaim>,
     #[prost(message, repeated, tag = "40")]
     pub delegations: ::prost::alloc::vec::Vec<transaction_planner_request::Delegate>,
     #[prost(message, repeated, tag = "50")]
@@ -111,6 +113,17 @@ pub mod transaction_planner_request {
         #[prost(message, optional, tag = "3")]
         pub fee: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Fee,
+        >,
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct SwapClaim {
+        /// SwapCommitment to identify the Swap to be claimed.
+        /// Use the commitment from the Swap message:
+        /// penumbra.core.dex.v1alpha1.Swap.body.payload.commitment.
+        #[prost(message, optional, tag = "1")]
+        pub swap_commitment: ::core::option::Option<
+            super::super::super::core::crypto::v1alpha1::StateCommitment,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
