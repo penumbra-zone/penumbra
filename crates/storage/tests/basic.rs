@@ -16,6 +16,35 @@ async fn delete_nonexistent_key() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+/// In rare cases, the database lock has not been (yet) released by the time
+/// the next Storage::load() call is made. This is fixed by arranging the fields
+/// in Storage to be dropped in the right order. If this test fails, make sure
+/// to check that the dispatcher `Sender` is dropped first.
+async fn db_lock_is_released() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
+    let tmpdir = tempfile::tempdir()?;
+
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    std::mem::drop(storage);
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    std::mem::drop(storage);
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    std::mem::drop(storage);
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    std::mem::drop(storage);
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    std::mem::drop(storage);
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    std::mem::drop(storage);
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    std::mem::drop(storage);
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    std::mem::drop(storage);
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn simple_flow() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
     let tmpdir = tempfile::tempdir()?;
