@@ -33,9 +33,9 @@ impl std::fmt::Debug for Storage {
 // A private inner element to prevent the `TreeWriter` implementation
 // from leaking outside of this crate.
 struct Inner {
+    tx_dispatcher: watch::Sender<Snapshot>,
     /// A handle to the dispatcher task.
     _jh_dispatcher: CancelOnDrop<()>,
-    tx_dispatcher: watch::Sender<Snapshot>,
     tx_state: Arc<watch::Sender<Snapshot>>,
     snapshots: RwLock<SnapshotCache>,
     db: Arc<DB>,
@@ -114,7 +114,10 @@ impl Storage {
                     });
 
                     Ok(Self(Arc::new(Inner {
-                        _jh_dispatcher: CancelOnDrop::new(jh_dispatcher),
+                        // This isn't strictly necessary because the dispatcher task will
+                        // terminate when the sender is dropped, but it causes spurious
+                        // errors in certain test scenarios.
+                        _jh_dispatcher: CancelOnDrop(jh_dispatcher),
                         tx_dispatcher,
                         tx_state,
                         snapshots,
@@ -338,13 +341,7 @@ pub fn latest_version(db: &DB) -> Result<Option<jmt::Version>> {
     Ok(get_rightmost_leaf(db)?.map(|(node_key, _)| node_key.version()))
 }
 
-pub struct CancelOnDrop<T>(tokio::task::JoinHandle<T>);
-
-impl CancelOnDrop<()> {
-    pub fn new(handle: tokio::task::JoinHandle<()>) -> Self {
-        Self(handle)
-    }
-}
+pub struct CancelOnDrop<T>(pub tokio::task::JoinHandle<T>);
 
 impl<T> Drop for CancelOnDrop<T> {
     fn drop(&mut self) {
