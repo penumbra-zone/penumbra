@@ -1,6 +1,17 @@
-docs/
-.github/
-target/**
+# exclude everything by default from container images,
+# re-add directories explicitly.
+**/
+!crates/
+!Cargo.toml
+!Cargo.lock
+!.cargo/
+# git directory for vergen. unfortunately, breaks cache
+# on every commit.
+!.git/
 
-# We'll generate relayer configs dynamically for now
-deployments/relayer/configs/*
+# testnets for 'pd testnet generate' defaults
+!testnets/
+# metrics containers
+!deployments/config/
+# relayer container
+!deployments/relayer/
