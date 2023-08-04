@@ -31,7 +31,7 @@ pub trait Phase {
     fn parent_hash(contribution: &Self::RawContribution) -> ContributionHash;
 
     /// The elements in a contribution.
-    fn elements(contribution: &Self::Contribution) -> Self::CRSElements;
+    fn elements(contribution: &Self::Contribution) -> &Self::CRSElements;
 
     /// Validate a contribution relative to some root elements.
     ///
@@ -90,7 +90,7 @@ impl<P: Phase> ContributionLog<P> {
             // 3. Check if we're linked to the parent elements.
             let linked = match last_good.as_ref() {
                 None => P::is_linked_to(&contribution, root),
-                Some(c) => P::is_linked_to(c, root),
+                Some(c) => P::is_linked_to(&contribution, P::elements(c)),
             };
             if !linked {
                 continue;
@@ -100,5 +100,151 @@ impl<P: Phase> ContributionLog<P> {
         }
 
         last_good
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn hash_from_u8(x: u8) -> ContributionHash {
+        let mut out = [0u8; CONTRIBUTION_HASH_SIZE];
+        out[0] = x;
+        ContributionHash(out)
+    }
+
+    // Our strategy here is to have a dummy phase setup where the validity
+    // and linkedness of elements is self-evident.
+
+    #[derive(Clone, Copy, Debug, PartialEq)]
+    struct DummyElements {
+        id: u8,
+    }
+
+    impl Hashable for DummyElements {
+        fn hash(&self) -> ContributionHash {
+            hash_from_u8(self.id)
+        }
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq)]
+    struct DummyContribution {
+        parent: u8,
+        elements: DummyElements,
+        valid: bool,
+        linked: bool,
+    }
+
+    impl Hashable for DummyContribution {
+        fn hash(&self) -> ContributionHash {
+            self.elements.hash()
+        }
+    }
+
+    struct DummyPhase;
+
+    impl Phase for DummyPhase {
+        type CRSElements = DummyElements;
+
+        type RawContribution = DummyContribution;
+
+        type Contribution = DummyContribution;
+
+        fn parent_hash(contribution: &Self::RawContribution) -> ContributionHash {
+            hash_from_u8(contribution.parent)
+        }
+
+        fn elements(contribution: &Self::Contribution) -> &Self::CRSElements {
+            &contribution.elements
+        }
+
+        fn validate(
+            root: &Self::CRSElements,
+            contribution: &Self::RawContribution,
+        ) -> Option<Self::Contribution> {
+            if contribution.valid {
+                Some(*contribution)
+            } else {
+                None
+            }
+        }
+
+        fn is_linked_to(contribution: &Self::Contribution, elements: &Self::CRSElements) -> bool {
+            contribution.linked
+        }
+    }
+
+    // Quick contribution creation, since we need many such examples
+    macro_rules! contribution {
+        ($parent: expr, $id: expr, $valid: expr, $linked: expr) => {
+            DummyContribution {
+                parent: $parent,
+                elements: DummyElements { id: $id },
+                valid: $valid,
+                linked: $linked,
+            }
+        };
+    }
+
+    #[test]
+    fn test_empty_log_search_returns_none() {
+        let log: ContributionLog<DummyPhase> = ContributionLog::new(vec![]);
+        assert!(log
+            .last_good_contribution(&DummyElements { id: 0 })
+            .is_none());
+    }
+
+    #[test]
+    fn test_single_valid_log_search() {
+        let log: ContributionLog<DummyPhase> =
+            ContributionLog::new(vec![contribution!(0, 1, true, true)]);
+        assert_eq!(
+            log.last_good_contribution(&DummyElements { id: 0 }),
+            Some(log.contributions[0])
+        );
+    }
+
+    #[test]
+    fn test_multi_valid_log_search() {
+        let log: ContributionLog<DummyPhase> = ContributionLog::new(vec![
+            contribution!(0, 1, true, true),
+            contribution!(1, 2, true, true),
+        ]);
+        assert_eq!(
+            log.last_good_contribution(&DummyElements { id: 0 }),
+            Some(log.contributions[1])
+        );
+    }
+
+    #[test]
+    fn test_multi_valid_log_search_bad_root() {
+        let log: ContributionLog<DummyPhase> = ContributionLog::new(vec![
+            contribution!(0, 1, true, true),
+            contribution!(1, 2, true, true),
+        ]);
+        assert_eq!(log.last_good_contribution(&DummyElements { id: 2 }), None);
+    }
+
+    #[test]
+    fn test_multi_log_with_skips_search() {
+        let log: ContributionLog<DummyPhase> = ContributionLog::new(vec![
+            contribution!(0, 1, true, true),
+            // Invalid
+            contribution!(1, 2, false, true),
+            // Valid
+            contribution!(1, 3, true, true),
+            // Valid, but wrong parent
+            contribution!(1, 4, true, true),
+            // Valid
+            contribution!(3, 5, true, true),
+            // Bad linking
+            contribution!(5, 6, true, false),
+            // Valid
+            contribution!(5, 7, true, true),
+        ]);
+        assert_eq!(
+            log.last_good_contribution(&DummyElements { id: 0 }),
+            Some(log.contributions[6])
+        );
     }
 }
