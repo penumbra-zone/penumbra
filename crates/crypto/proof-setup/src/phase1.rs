@@ -254,6 +254,16 @@ impl Hashable for RawContribution {
     }
 }
 
+impl From<Contribution> for RawContribution {
+    fn from(value: Contribution) -> Self {
+        Self {
+            parent: value.parent,
+            new_elements: value.new_elements.raw,
+            linking_proof: value.linking_proof
+        }
+    }
+}
+
 /// Represents a contribution to phase1 of the ceremony.
 ///
 /// This contribution is linked to a previous contribution, which it builds upon.
@@ -267,19 +277,9 @@ pub struct Contribution {
     linking_proof: LinkingProof,
 }
 
-impl Contribution {
-    fn to_raw(self) -> RawContribution {
-        RawContribution {
-            parent: self.parent,
-            new_elements: self.new_elements.raw,
-            linking_proof: self.linking_proof,
-        }
-    }
-}
-
 impl Hashable for Contribution {
     fn hash(&self) -> ContributionHash {
-        self.to_owned().to_raw().hash()
+        RawContribution::from(self.to_owned()).hash()
     }
 }
 

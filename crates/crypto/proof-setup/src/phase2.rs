@@ -3,8 +3,9 @@ use std::hash;
 
 use ark_ec::Group;
 use ark_ff::{fields::Field, UniformRand, Zero};
-use rand_core::CryptoRngCore;
+use rand_core::{CryptoRngCore, OsRng};
 
+use crate::log::{ContributionHash, Hashable, Phase, CONTRIBUTION_HASH_SIZE};
 use crate::{
     dlog,
     group::{BatchedPairingChecker11, GroupHasher, Hash, F, G1, G2},
@@ -54,9 +55,11 @@ impl RawCRSElements {
 
         Some(CRSElements { raw: self })
     }
+}
 
+impl Hashable for RawCRSElements {
     /// Hash these elements, producing a succinct digest.
-    fn hash(&self) -> Hash {
+    fn hash(&self) -> ContributionHash {
         let mut hasher = GroupHasher::new(b"PC$:crs_elmnts2");
         hasher.eat_g1(&self.delta_1);
         hasher.eat_g2(&self.delta_2);
@@ -71,7 +74,7 @@ impl RawCRSElements {
             hasher.eat_g1(&v);
         }
 
-        hasher.finalize_bytes()
+        ContributionHash(hasher.finalize_bytes())
     }
 }
 
@@ -83,23 +86,52 @@ pub struct CRSElements {
     raw: RawCRSElements,
 }
 
-impl CRSElements {
-    fn hash(&self) -> Hash {
+impl Hashable for CRSElements {
+    fn hash(&self) -> ContributionHash {
         self.raw.hash()
     }
 }
 
-pub const CONTRIBUTION_HASH_SIZE: usize = 32;
+/// Represents a raw, unvalidated contribution.
+#[derive(Clone, Debug)]
+pub struct RawContribution {
+    pub parent: ContributionHash,
+    pub new_elements: RawCRSElements,
+    linking_proof: dlog::Proof,
+}
 
-// Note: Don't need constant time equality because we're hashing public data: contributions.
+impl RawContribution {
+    /// Check the internal integrity of this contribution, potentially producing
+    /// a valid one.
+    fn validate<R: CryptoRngCore>(self, rng: &mut R, root: &CRSElements) -> Option<Contribution> {
+        self.new_elements
+            .validate(rng, root)
+            .map(|new_elements| Contribution {
+                parent: self.parent,
+                new_elements,
+                linking_proof: self.linking_proof,
+            })
+    }
+}
 
-/// The hash of a contribution, providing a unique string for each contribution.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, hash::Hash)]
-pub struct ContributionHash(pub [u8; CONTRIBUTION_HASH_SIZE]);
+impl Hashable for RawContribution {
+    fn hash(&self) -> ContributionHash {
+        let mut hasher = GroupHasher::new(b"PC$:contrbution2");
+        hasher.eat_bytes(self.parent.as_ref());
+        hasher.eat_bytes(self.new_elements.hash().as_ref());
+        hasher.eat_bytes(self.linking_proof.hash().as_ref());
 
-impl AsRef<[u8]> for ContributionHash {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
+        ContributionHash(hasher.finalize_bytes())
+    }
+}
+
+impl From<Contribution> for RawContribution {
+    fn from(value: Contribution) -> Self {
+        Self {
+            parent: value.parent,
+            new_elements: value.new_elements.raw,
+            linking_proof: value.linking_proof,
+        }
     }
 }
 
@@ -116,17 +148,13 @@ pub struct Contribution {
     linking_proof: dlog::Proof,
 }
 
-impl Contribution {
-    /// Hash this contribution, producing a unique digest.
-    pub fn hash(&self) -> ContributionHash {
-        let mut hasher = GroupHasher::new(b"PC$:contrbution2");
-        hasher.eat_bytes(self.parent.as_ref());
-        hasher.eat_bytes(self.new_elements.hash().as_ref());
-        hasher.eat_bytes(self.linking_proof.hash().as_ref());
-
-        ContributionHash(hasher.finalize_bytes())
+impl Hashable for Contribution {
+    fn hash(&self) -> ContributionHash {
+        RawContribution::from(self.to_owned()).hash()
     }
+}
 
+impl Contribution {
     /// Make a new contribution, over the previous CRS elements.
     ///
     /// We also need a hash of the parent contribution we're building on.
@@ -187,6 +215,37 @@ impl Contribution {
             return false;
         }
         true
+    }
+}
+
+/// A dummy struct to implement the phase trait.
+#[derive(Clone, Debug, Default)]
+struct Phase2;
+
+impl Phase for Phase2 {
+    type CRSElements = CRSElements;
+
+    type RawContribution = RawContribution;
+
+    type Contribution = Contribution;
+
+    fn parent_hash(contribution: &Self::RawContribution) -> ContributionHash {
+        contribution.parent
+    }
+
+    fn elements(contribution: &Self::Contribution) -> &Self::CRSElements {
+        &contribution.new_elements
+    }
+
+    fn validate(
+        root: &Self::CRSElements,
+        contribution: &Self::RawContribution,
+    ) -> Option<Self::Contribution> {
+        contribution.to_owned().validate(&mut OsRng, root)
+    }
+
+    fn is_linked_to(contribution: &Self::Contribution, elements: &Self::CRSElements) -> bool {
+        contribution.is_linked_to(elements)
     }
 }
 
