@@ -5,7 +5,13 @@ pub const CONTRIBUTION_HASH_SIZE: usize = 32;
 ///
 /// This is also used as the output of hashing CRS elements.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct ContributionHash([u8; CONTRIBUTION_HASH_SIZE]);
+pub struct ContributionHash(pub [u8; CONTRIBUTION_HASH_SIZE]);
+
+impl AsRef<[u8]> for ContributionHash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
 
 /// Represents an item that can be hashed.
 pub trait Hashable {
