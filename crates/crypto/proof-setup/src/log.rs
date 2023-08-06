@@ -185,7 +185,7 @@ mod test {
         }
 
         fn validate(
-            root: &Self::CRSElements,
+            _root: &Self::CRSElements,
             contribution: &Self::RawContribution,
         ) -> Option<Self::Contribution> {
             if contribution.valid {
@@ -195,7 +195,7 @@ mod test {
             }
         }
 
-        fn is_linked_to(contribution: &Self::Contribution, elements: &Self::CRSElements) -> bool {
+        fn is_linked_to(contribution: &Self::Contribution, _elements: &Self::CRSElements) -> bool {
             contribution.linked
         }
     }
