@@ -6,7 +6,6 @@ use ark_ec::pairing::{Pairing, PairingOutput};
 use ark_ec::scalar_mul::{variable_base::VariableBaseMSM, ScalarMul};
 use ark_ff::fields::PrimeField;
 use ark_serialize::CanonicalSerialize;
-use blake2b_simd;
 use decaf377::Bls12_377;
 use rand_core::CryptoRngCore;
 

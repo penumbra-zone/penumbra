@@ -4,9 +4,9 @@ use rand_core::{CryptoRngCore, OsRng};
 
 use crate::dlog;
 use crate::group::{
-    pairing, BatchedPairingChecker11, BatchedPairingChecker12, GroupHasher, Hash, F, G1, G2,
+    pairing, BatchedPairingChecker11, BatchedPairingChecker12, GroupHasher, F, G1, G2,
 };
-use crate::log::{ContributionHash, Hashable, Phase, CONTRIBUTION_HASH_SIZE};
+use crate::log::{ContributionHash, Hashable, Phase};
 
 /// Check that a given degree is high enough.
 ///
@@ -62,7 +62,7 @@ impl RawCRSElements {
         if self.x_1.len() != long_len(d) {
             return None;
         }
-        return Some(d);
+        Some(d)
     }
 
     /// Validate the internal consistency of these elements, producing a validated struct.
@@ -234,7 +234,7 @@ impl RawContribution {
             .map(|new_elements| Contribution {
                 parent: self.parent,
                 new_elements,
-                linking_proof: self.linking_proof.clone(),
+                linking_proof: self.linking_proof,
             })
     }
 }
@@ -259,7 +259,7 @@ impl From<Contribution> for RawContribution {
         Self {
             parent: value.parent,
             new_elements: value.new_elements.raw,
-            linking_proof: value.linking_proof
+            linking_proof: value.linking_proof,
         }
     }
 }
@@ -447,6 +447,7 @@ mod test {
     use rand_core::OsRng;
 
     use crate::group::F;
+    use crate::log::CONTRIBUTION_HASH_SIZE;
 
     /// The degree we use for tests.
     ///

@@ -1,14 +1,13 @@
 //! This module is very similar to the one for phase1, so reading that one might be useful.
-use std::hash;
 
 use ark_ec::Group;
 use ark_ff::{fields::Field, UniformRand, Zero};
 use rand_core::{CryptoRngCore, OsRng};
 
-use crate::log::{ContributionHash, Hashable, Phase, CONTRIBUTION_HASH_SIZE};
+use crate::log::{ContributionHash, Hashable, Phase};
 use crate::{
     dlog,
-    group::{BatchedPairingChecker11, GroupHasher, Hash, F, G1, G2},
+    group::{BatchedPairingChecker11, GroupHasher, F, G1, G2},
 };
 
 /// Raw CRS elements, not yet validated for consistency.
@@ -66,12 +65,12 @@ impl Hashable for RawCRSElements {
 
         hasher.eat_usize(self.inv_delta_p_1.len());
         for v in &self.inv_delta_p_1 {
-            hasher.eat_g1(&v);
+            hasher.eat_g1(v);
         }
 
         hasher.eat_usize(self.inv_delta_t_1.len());
         for v in &self.inv_delta_t_1 {
-            hasher.eat_g1(&v);
+            hasher.eat_g1(v);
         }
 
         ContributionHash(hasher.finalize_bytes())
@@ -252,6 +251,8 @@ impl Phase for Phase2 {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    use crate::log::CONTRIBUTION_HASH_SIZE;
 
     use rand_core::OsRng;
 
