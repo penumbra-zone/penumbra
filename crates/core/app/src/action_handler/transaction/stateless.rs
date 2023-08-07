@@ -1,7 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{Context, Result};
-use penumbra_sct::Nullifier;
 use penumbra_transaction::{AuthorizingData, Transaction};
 
 #[tracing::instrument(skip(tx))]
@@ -21,28 +20,25 @@ pub(super) fn no_duplicate_votes(tx: &Transaction) -> Result<()> {
     let mut nullifiers_by_proposal_id = BTreeMap::new();
     for vote in tx.delegator_votes() {
         // Get existing entries
-        let mut nullifiers_for_proposal: Vec<Nullifier> = nullifiers_by_proposal_id
-            .get(&vote.body.proposal)
-            .cloned()
-            .unwrap_or_default();
+        let nullifiers_for_proposal = nullifiers_by_proposal_id
+            .entry(vote.body.proposal)
+            .or_insert(BTreeSet::default());
 
-        // Check for duplicate nullifiers, else add to vec and continue
-        if nullifiers_for_proposal.contains(&vote.body.nullifier) {
+        // If there was a duplicate nullifier for this proposal, this call will return `false`:
+        let not_duplicate = nullifiers_for_proposal.insert(vote.body.nullifier);
+        if !not_duplicate {
             return Err(anyhow::anyhow!(
                 "Duplicate nullifier in transaction: {}",
                 &vote.body.nullifier
             ));
-        } else {
-            nullifiers_for_proposal.push(vote.body.nullifier);
-            nullifiers_by_proposal_id.insert(vote.body.proposal, nullifiers_for_proposal);
         }
     }
 
     Ok(())
 }
 
-pub(super) fn no_duplicate_nullifiers(tx: &Transaction) -> Result<()> {
-    // Disallow multiple `Spend`s with the same `Nullifier`.
+pub(super) fn no_duplicate_spends(tx: &Transaction) -> Result<()> {
+    // Disallow multiple `Spend`s or `SwapClaim`s with the same `Nullifier`.
     // This can't be implemented in the (`Spend`)[`crate::action_handler::actions::spend::Spend`] `ActionHandler`
     // because it requires access to the entire transaction, and we don't want to perform the check across the entire
     // transaction for *each* `Spend` within the transaction, only once.
