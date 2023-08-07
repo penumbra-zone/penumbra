@@ -584,7 +584,7 @@ where
 {
     type Item = Result<(Vec<u8>, Vec<u8>)>;
 
-    fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         // This implementation interleaves items from the underlying stream with
         // items in cache layers.  To do this, it tracks the last key it
         // returned, then, for each item in the underlying stream, searches for
@@ -610,7 +610,6 @@ where
         //          │search range of key-value pairs in cache layers that could
         //          │affect whether to yield the next item in the underlying stream
 
-        /*
         // Optimization: ensure we have a peekable item in the underlying stream before continuing.
         let mut this = self.project();
         ready!(this.underlying.as_mut().poll_peek(cx));
@@ -725,7 +724,5 @@ where
                 }
             }
         }
-        */
-        todo!()
     }
 }
