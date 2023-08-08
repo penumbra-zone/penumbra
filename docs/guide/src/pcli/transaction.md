@@ -152,7 +152,7 @@ This will handle generating the swap transaction and you'd soon have the market-
 in `gm` tokens returned to you, or the original investment of 1 `penumbra` tokens returned if there wasn't
 enough liquidity available to perform the swap.
 
-## Replicating a UniswapV2 (`x*y=k`) pool 
+## Replicating a UniswapV2 (`x*y=k`) pool
 
 Penumbra's constant-price pool is a versatile market primitive, allowing users extensive control over their trading strategies. It's not solely for active DEX quoters; with our AMM replication tool, users can emulate any passive AMM of their choice. The testnet comes with a built-in UniswapV2 replicator that is utilized as such:
 
@@ -170,3 +170,65 @@ You will be prompted a disclaimer which you should read carefully, and accept or
 The replicating market makers tool will then generate a list of positions that you can submit by pressing "y", or reject by pressing "n".
 
 There are other pairs available that you can try this tool on, for example `gm:gn` or `gm:penumbra`.
+
+## IBC withdrawals
+
+<!--
+N.B. These steps were written based on a local relayer setup, transferring packets
+between a local devnet and preview. The plan is to run a public relayer between
+testnet & preview again, starting with Testnet 59 Enceladus. We cannot run the relayer
+until 59, due to pcli incompatibilities between the branches.
+-->
+
+Penumbra aims to implement full IBC support for cross-chain asset transfers. For now, however,
+we're only running a relayer between Penumbra testnet chains. To exercise the IBC withdrawal logic,
+you'll need wallet identities on the two Penumbra chains. It's OK to reuse a wallet address between chains,
+but you must be able to interact with both chains independently.
+
+First, on the primary chain, the public testnet, find the channel that maps to preview:
+
+<!--
+It's somewhat absurd to recommend a gnarly one-liner like this, but I'm documenting
+the actual steps I take when exercising this functionality. We have an issue for
+a real query command: https://github.com/penumbra-zone/penumbra/issues/2937
+-->
+```bash
+while read -r i ; do
+    if ! pcli query ibc channel --channel-id $i ; then
+        echo "Most recently active channel is: $(( i - 1))" ;
+        break ;
+    fi ;
+done <<< "$(seq 0 10)"
+```
+
+You should see output like "Most recently active channel is: 0". Make note of that number,
+as we'll need it for the withdrawal command. Next, create a second wallet identity:
+
+```bash
+cargo run --release --bin pcli -- --data-path /tmp/pcli-ibc-test keys generate
+cargo run --release --bin pcli -- --data-path /tmp/pcli-ibc-test view address
+```
+
+Make note of that address, as we'll also need that information. Now we're ready to initiate
+an IBC withdrawal. Using the primary wallet identity (by not overriding `--data-path`, as done above):
+
+```bash
+cargo run --release --bin pcli -- tx withdraw --to <PENUMBRA_ADDRESS> 10penumbra --channel <CHANNEL_ID>
+```
+
+Wait a moment, then check for receipt of the withdrawal on the counterparty chain:
+
+```bash
+cargo run --release --bin pcli -- --data-path /tmp/pcli-ibc-test --node https://grpc.testnet-preview.penumbra.zone view balance
+```
+
+You should see output in the format of:
+
+```
+Account  Amount
+0        10000000transfer/channel-0/upenumbra
+```
+
+Congratulations: you've now successfully bridged assets between two chains, via Penumbra.\
+Remember that the channel id will change frequently, as it's reconfigured
+every time the `main` branch on the Penumbra git repository changes.

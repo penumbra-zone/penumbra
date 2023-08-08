@@ -17,7 +17,19 @@ pub enum IbcCmd {
     /// Queries for connection info
     Connection { connection_id: String },
     /// Queries for channel info
-    Channel { port: String, channel_id: String },
+    Channel {
+        /// The designation of the ICS port used for channel.
+        /// In the context of IBC, this is usually "transfer".
+        #[clap(long, default_value = "transfer")]
+        port: String,
+
+        /// The numeric id of the ICS channel to query for. This number was assigned
+        /// during channel creation by a relaying client. Refer to the documentation
+        /// for the relayer provider to understand which counterparty chain the
+        /// channel id refers to.
+        #[clap(long)]
+        channel_id: u64,
+    },
 }
 
 impl IbcCmd {
@@ -59,17 +71,19 @@ impl IbcCmd {
                 println!("{}", connection_json.to_colored_json_auto()?);
             }
             IbcCmd::Channel { port, channel_id } => {
-                let key = format!("channelEnds/ports/{port}/channels/{channel_id}");
+                let key = format!("channelEnds/ports/{port}/channels/channel-{channel_id}");
                 let value = client
                     .key_value(KeyValueRequest {
                         key,
                         ..Default::default()
                     })
                     .await
-                    .context(format!("Error finding channel: {port}:{channel_id}"))?
+                    .context(format!(
+                        "Error finding channel: {port}:channel-{channel_id}"
+                    ))?
                     .into_inner()
                     .value
-                    .context(format!("Channel {port}:{channel_id} not found"))?;
+                    .context(format!("Channel {port}:channel-{channel_id} not found"))?;
 
                 let channel = ChannelEnd::decode(value.value.as_ref())?;
                 let channel_json = serde_json::to_string_pretty(&channel)?;
