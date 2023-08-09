@@ -341,6 +341,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         let upcoming_base_rate: BaseRateData =
             previous_base_rate.next(chain_params.base_reward_rate);
 
+        tracing::debug!(?previous_base_rate);
         tracing::debug!(?upcoming_base_rate);
 
         // Update the base rates in the JMT:
@@ -424,14 +425,14 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 .expect("delegation token should be known");
 
             // Calculate the voting power in the newly beginning epoch
-            let voting_power = previous_validator_rate
+            let upcoming_voting_power = upcoming_validator_rate
                 .voting_power(delegation_token_supply.into(), &upcoming_base_rate);
-            tracing::debug!(?voting_power);
+            tracing::debug!(?upcoming_voting_power);
 
             // Update the state of the validator within the validator set
             // with the newly starting epoch's calculated exchange rate and power.
             self.set_validator_rates(&validator.identity_key, upcoming_validator_rate.clone());
-            self.set_validator_power(&validator.identity_key, voting_power)
+            self.set_validator_power(&validator.identity_key, upcoming_voting_power)
                 .await?;
 
             // Only Active validators produce commission rewards
@@ -475,7 +476,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
             }
 
             let delegation_denom = DelegationToken::from(&validator.identity_key).denom();
-            tracing::debug!(current_rate = ?previous_validator_rate);
+            tracing::debug!(?previous_validator_rate);
+            tracing::debug!(?upcoming_validator_rate);
             tracing::debug!(?delegation_delta);
             tracing::debug!(?delegation_token_supply);
             tracing::debug!(?delegation_denom);
