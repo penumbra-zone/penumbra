@@ -15,10 +15,6 @@ pub fn current_base_rate() -> &'static str {
     "staking/base_rate/current"
 }
 
-pub fn next_base_rate() -> &'static str {
-    "staking/base_rate/next"
-}
-
 pub mod validators {
     use super::*;
 
@@ -48,10 +44,6 @@ pub fn state_by_validator(id: &IdentityKey) -> String {
 
 pub fn current_rate_by_validator(id: &IdentityKey) -> String {
     format!("staking/validator_rate/current/{id}")
-}
-
-pub fn next_rate_by_validator(id: &IdentityKey) -> String {
-    format!("staking/validator_rate/next/{id}")
 }
 
 pub fn power_by_validator(id: &IdentityKey) -> String {

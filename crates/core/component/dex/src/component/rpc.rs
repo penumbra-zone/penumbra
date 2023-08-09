@@ -19,7 +19,48 @@ use penumbra_proto::{
     },
     DomainType, StateReadProto,
 };
-use penumbra_storage::{StateDelta, Storage};
+use penumbra_sct::component::StateReadExt as _;
+use penumbra_shielded_pool::component::SupplyRead as _;
+use penumbra_stake::rate::RateData;
+use penumbra_stake::StateReadExt as _;
+
+use penumbra_proto::DomainType;
+use penumbra_storage::StateDelta;
+use penumbra_storage::StateRead;
+use proto::client::v1alpha1::simulate_trade_request::routing;
+use proto::client::v1alpha1::simulate_trade_request::routing::Setting;
+use proto::client::v1alpha1::simulate_trade_request::Routing;
+use proto::client::v1alpha1::ArbExecutionRequest;
+use proto::client::v1alpha1::ArbExecutionResponse;
+use proto::client::v1alpha1::ArbExecutionsRequest;
+use proto::client::v1alpha1::ArbExecutionsResponse;
+use proto::client::v1alpha1::BatchSwapOutputDataResponse;
+use proto::client::v1alpha1::CurrentValidatorRateRequest;
+use proto::client::v1alpha1::CurrentValidatorRateResponse;
+use proto::client::v1alpha1::DenomMetadataByIdResponse;
+use proto::client::v1alpha1::LiquidityPositionByIdRequest;
+use proto::client::v1alpha1::LiquidityPositionByIdResponse;
+use proto::client::v1alpha1::LiquidityPositionsByIdRequest;
+use proto::client::v1alpha1::LiquidityPositionsByIdResponse;
+use proto::client::v1alpha1::LiquidityPositionsByPriceRequest;
+use proto::client::v1alpha1::LiquidityPositionsByPriceResponse;
+use proto::client::v1alpha1::LiquidityPositionsRequest;
+use proto::client::v1alpha1::LiquidityPositionsResponse;
+use proto::client::v1alpha1::PrefixValueRequest;
+use proto::client::v1alpha1::PrefixValueResponse;
+use proto::client::v1alpha1::SimulateTradeRequest;
+use proto::client::v1alpha1::SimulateTradeResponse;
+use proto::client::v1alpha1::SpreadRequest;
+use proto::client::v1alpha1::SpreadResponse;
+use proto::client::v1alpha1::SwapExecutionRequest;
+use proto::client::v1alpha1::SwapExecutionResponse;
+use proto::client::v1alpha1::SwapExecutionsRequest;
+use proto::client::v1alpha1::SwapExecutionsResponse;
+use proto::client::v1alpha1::TransactionByNoteRequest;
+use proto::client::v1alpha1::TransactionByNoteResponse;
+use proto::client::v1alpha1::ValidatorPenaltyRequest;
+use proto::client::v1alpha1::ValidatorPenaltyResponse;
+use proto::client::v1alpha1::ValidatorStatusResponse;
 use tonic::Status;
 use tracing::instrument;
 
@@ -146,6 +187,195 @@ impl QueryService for Server {
     }
 
     #[instrument(skip(self, request))]
+    async fn liquidity_position_by_id(
+        &self,
+        request: tonic::Request<LiquidityPositionByIdRequest>,
+    ) -> Result<tonic::Response<LiquidityPositionByIdResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+
+        let position_id: position::Id = request
+            .into_inner()
+            .position_id
+            .ok_or_else(|| Status::invalid_argument("empty message"))?
+            .try_into()
+            .map_err(|e: anyhow::Error| {
+                tonic::Status::invalid_argument(format!("error converting position_id: {e}"))
+            })?;
+
+        let position = state
+            .position_by_id(&position_id)
+            .await
+            .map_err(|e: anyhow::Error| {
+                tonic::Status::unavailable(format!("error fetching position from storage: {e}"))
+            })?
+            .ok_or_else(|| Status::not_found("position not found"))?;
+
+        Ok(tonic::Response::new(LiquidityPositionByIdResponse {
+            data: Some(position.into()),
+        }))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn liquidity_positions_by_id(
+        &self,
+        request: tonic::Request<LiquidityPositionsByIdRequest>,
+    ) -> Result<tonic::Response<Self::LiquidityPositionsByIdStream>, Status> {
+        let state = self.storage.latest_snapshot();
+
+        let position_ids: Vec<position::Id> = request
+            .into_inner()
+            .position_id
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<anyhow::Result<Vec<_>>>()
+            .map_err(|e: anyhow::Error| {
+                tonic::Status::invalid_argument(format!("error converting position_id: {e}"))
+            })?;
+
+        let s = try_stream! {
+            for position_id in position_ids {
+                let position = state
+                    .position_by_id(&position_id)
+                    .await
+                    .map_err(|e: anyhow::Error| {
+                        tonic::Status::unavailable(format!("error fetching position from storage: {e}"))
+                    })?
+                    .ok_or_else(|| Status::not_found("position not found"))?;
+
+                yield position.to_proto();
+            }
+        };
+        Ok(tonic::Response::new(
+            s.map_ok(|p: penumbra_proto::core::dex::v1alpha1::Position| {
+                LiquidityPositionsByIdResponse { data: Some(p) }
+            })
+            .map_err(|e: anyhow::Error| {
+                tonic::Status::unavailable(format!(
+                    "error getting position value from storage: {e}"
+                ))
+            })
+            // TODO: how do we instrument a Stream
+            //.instrument(Span::current())
+            .boxed(),
+        ))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn transaction_by_note(
+        &self,
+        request: tonic::Request<TransactionByNoteRequest>,
+    ) -> Result<tonic::Response<TransactionByNoteResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+        let cm = request
+            .into_inner()
+            .note_commitment
+            .ok_or_else(|| Status::invalid_argument("empty message"))?
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid commitment"))?;
+        let source = state
+            .note_source(cm)
+            .await
+            .map_err(|e| Status::unavailable(format!("error getting note source: {e}")))?
+            .ok_or_else(|| Status::not_found("note commitment not found"))?;
+        tracing::debug!(?cm, ?source);
+
+        Ok(tonic::Response::new(TransactionByNoteResponse {
+            note_source: Some(source.into()),
+        }))
+    }
+    #[instrument(skip(self, request))]
+    async fn validator_status(
+        &self,
+        request: tonic::Request<ValidatorStatusRequest>,
+    ) -> Result<tonic::Response<ValidatorStatusResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+
+        let id = request
+            .into_inner()
+            .identity_key
+            .ok_or_else(|| Status::invalid_argument("missing identity key"))?
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid identity key"))?;
+
+        let status = state
+            .validator_status(&id)
+            .await
+            .map_err(|e| Status::unavailable(format!("error getting validator status: {e}")))?
+            .ok_or_else(|| Status::not_found("validator not found"))?;
+
+        Ok(tonic::Response::new(ValidatorStatusResponse {
+            status: Some(status.into()),
+        }))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn validator_penalty(
+        &self,
+        request: tonic::Request<ValidatorPenaltyRequest>,
+    ) -> Result<tonic::Response<ValidatorPenaltyResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+
+        let request = request.into_inner();
+        let id = request
+            .identity_key
+            .ok_or_else(|| Status::invalid_argument("missing identity key"))?
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid identity key"))?;
+
+        let penalty = state
+            .compounded_penalty_over_range(&id, request.start_epoch_index, request.end_epoch_index)
+            .await
+            .map_err(|e| Status::unavailable(format!("error getting validator penalty: {e}")))?;
+
+        Ok(tonic::Response::new(ValidatorPenaltyResponse {
+            penalty: Some(penalty.into()),
+        }))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn current_validator_rate(
+        &self,
+        request: tonic::Request<CurrentValidatorRateRequest>,
+    ) -> Result<tonic::Response<CurrentValidatorRateResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+        state
+            .check_chain_id(&request.get_ref().chain_id)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+        let identity_key = request
+            .into_inner()
+            .identity_key
+            .ok_or_else(|| tonic::Status::invalid_argument("empty message"))?
+            .try_into()
+            .map_err(|_| tonic::Status::invalid_argument("invalid identity key"))?;
+
+        let rate_data = state
+            .current_validator_rate(&identity_key)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        match rate_data {
+            Some(r) => Ok(tonic::Response::new(CurrentValidatorRateResponse {
+                data: Some(r.into()),
+            })),
+            None => Err(Status::not_found("current validator rate not found")),
+        }
+    }
+
+    #[instrument(skip(self, request))]
+>>>>>>> 3cc7d6155 (Completely remove next-epoch rate calculations):crates/bin/pd/src/info/specific.rs
     /// Get the batch swap data associated with a given trading pair and height.
     async fn batch_swap_output_data(
         &self,

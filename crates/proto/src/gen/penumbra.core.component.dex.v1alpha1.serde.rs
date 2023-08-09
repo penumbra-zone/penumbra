@@ -1997,6 +1997,7 @@ impl serde::Serialize for LpNft {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
+
         if self.position_id.is_some() {
             len += 1;
         }
