@@ -349,7 +349,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         let validator_list = self.validator_list().await?;
         for validator in &validator_list {
             // Get the current rate for the validator...
-            let current_rate_unslashed = self
+            let previous_validator_rate_unslashed = self
                 .current_validator_rate(&validator.identity_key)
                 .await?
                 .ok_or_else(|| {
@@ -360,7 +360,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 .penalty_in_epoch(&validator.identity_key, epoch_to_end.index)
                 .await?
                 .unwrap_or_default();
-            let current_rate = current_rate_unslashed.slash(penalty);
+            let previous_validator_rate = previous_validator_rate_unslashed.slash(penalty);
 
             let validator_state = self
                 .validator_state(&validator.identity_key)
@@ -373,12 +373,11 @@ pub(crate) trait StakingImpl: StateWriteExt {
             let funding_streams = validator.funding_streams.clone();
 
             // Based on the upcoming base rate, calculate this validator's upcoming rate
-            let upcoming_validator_rate = current_rate.next(
+            let upcoming_validator_rate = previous_validator_rate.next(
                 &upcoming_base_rate,
                 funding_streams.as_ref(),
                 &validator_state,
             );
-            assert!(upcoming_validator_rate.epoch_index == epoch_to_end.index + 2);
 
             let total_delegations = delegations_by_validator
                 .get(&validator.identity_key)
@@ -400,7 +399,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             );
 
             let abs_unbonded_amount =
-                current_rate.unbonded_amount(delegation_delta.unsigned_abs()) as i128;
+                previous_validator_rate.unbonded_amount(delegation_delta.unsigned_abs()) as i128;
             let staking_delta = if delegation_delta >= 0 {
                 // Net delegation: subtract the unbonded amount from the staking token supply
                 -abs_unbonded_amount
@@ -425,8 +424,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 .expect("delegation token should be known");
 
             // Calculate the voting power in the newly beginning epoch
-            let voting_power =
-                current_rate.voting_power(delegation_token_supply.into(), &upcoming_base_rate);
+            let voting_power = previous_validator_rate
+                .voting_power(delegation_token_supply.into(), &upcoming_base_rate);
             tracing::debug!(?voting_power);
 
             // Update the state of the validator within the validator set
@@ -476,7 +475,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             }
 
             let delegation_denom = DelegationToken::from(&validator.identity_key).denom();
-            tracing::debug!(current_rate = ?current_rate);
+            tracing::debug!(current_rate = ?previous_validator_rate);
             tracing::debug!(?delegation_delta);
             tracing::debug!(?delegation_token_supply);
             tracing::debug!(?delegation_denom);
