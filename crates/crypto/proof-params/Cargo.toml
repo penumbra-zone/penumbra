@@ -12,7 +12,7 @@ penumbra-asset = { path = "../../core/asset/" }
 penumbra-keys = { path = "../../core/keys/" }
 
 # Git deps
-decaf377 = { version = "0.4", features = ["r1cs"] }
+decaf377 = { version = "0.5", features = ["r1cs"] }
 
 # Crates.io deps
 ark-ff = {version = "0.4", default-features = false}
