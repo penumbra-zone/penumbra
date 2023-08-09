@@ -1896,15 +1896,15 @@ dependencies = [
 
 [[package]]
 name = "decaf377-rdsa"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05131bac8c805909049979dc7d2e33bdfed9d2eb4a2390ea998d91a542ae4aca"
+checksum = "fc48f39a9939244f1d1e043b8065330022b8c4337cf359f32231fed8b2165973"
 dependencies = [
  "ark-ff",
  "ark-serialize",
  "blake2b_simd 0.5.11",
  "byteorder",
- "decaf377 0.4.0",
+ "decaf377 0.5.0",
  "digest 0.9.0",
  "hex",
  "rand_core 0.6.4",

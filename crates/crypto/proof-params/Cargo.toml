@@ -44,7 +44,7 @@ penumbra-fee = { path = "../../core/component/fee/" }
 penumbra-sct = { path = "../../core/component/sct/" }
 decaf377-fmd = { path = "../decaf377-fmd/" }
 decaf377-ka = { path = "../decaf377-ka/" }
-decaf377-rdsa = "0.6"
+decaf377-rdsa = "0.7"
 
 [build-dependencies]
 regex = {version = "1", optional=true }
