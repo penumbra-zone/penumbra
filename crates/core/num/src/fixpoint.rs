@@ -1187,14 +1187,18 @@ mod test {
             let mut rng = OsRng;
 
             let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
-            .expect("should be able to form proof");
+            .expect("in debug mode only, we assert that the circuit is satisfied, so we will panic here");
 
             let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
                 &vk,
                 &[],
                 &proof,
-            );
-            assert!(proof_result.is_ok());
+            ).expect("in release mode, we will be able to construct the proof, so we can unwrap the result");
+
+            // We want the same behavior in release or debug mode, so we will panic if the proof does not verify.
+            if !proof_result {
+                panic!("should not be able to verify proof");
+            }
         }
     }
 
@@ -1253,14 +1257,18 @@ mod test {
             let mut rng = OsRng;
 
             let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
-            .expect("should be able to form proof");
+            .expect("in debug mode only, we assert that the circuit is satisfied, so we will panic here");
 
             let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
                 &vk,
                 &[],
                 &proof,
-            );
-            assert!(proof_result.is_ok());
+            ).expect("in release mode, we will be able to construct the proof, so we can unwrap the result");
+
+            // We want the same behavior in release or debug mode, so we will panic if the proof does not verify.
+            if !proof_result {
+                panic!("should not be able to verify proof");
+            }
         }
     }
 
@@ -1277,10 +1285,18 @@ mod test {
             .expect("can perform setup");
         let mut rng = OsRng;
 
-        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
-            .expect("should be able to form proof");
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng).expect(
+            "in debug mode only, we assert that the circuit is satisfied, so we will panic here",
+        );
 
-        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(&vk, &[], &proof);
-        assert!(proof_result.is_ok());
+        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(&vk, &[], &proof)
+            .expect(
+            "in release mode, we will be able to construct the proof, so we can unwrap the result",
+        );
+
+        // We want the same behavior in release or debug mode, so we will panic if the proof does not verify.
+        if !proof_result {
+            panic!("should not be able to verify proof");
+        }
     }
 }
