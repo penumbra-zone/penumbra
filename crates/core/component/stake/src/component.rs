@@ -338,13 +338,13 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // from the allocation given by the distributions module, and remember the previous base
         // rate.
         let previous_base_rate = self.current_base_rate().await?; // now looking backwards, our current rate is the previous rate
-        let current_base_rate: BaseRateData =
+        let upcoming_base_rate: BaseRateData =
             previous_base_rate.next(chain_params.base_reward_rate);
 
-        tracing::debug!(current_base_rate = ?current_base_rate);
+        tracing::debug!(?upcoming_base_rate);
 
         // Update the base rates in the JMT:
-        self.set_base_rate(current_base_rate.clone()).await;
+        self.set_base_rate(upcoming_base_rate.clone()).await;
 
         let validator_list = self.validator_list().await?;
         for validator in &validator_list {
@@ -371,6 +371,14 @@ pub(crate) trait StakingImpl: StateWriteExt {
             tracing::debug!(?validator, "processing validator rate updates");
 
             let funding_streams = validator.funding_streams.clone();
+
+            // Based on the upcoming base rate, calculate this validator's upcoming rate
+            let upcoming_validator_rate = current_rate.next(
+                &upcoming_base_rate,
+                funding_streams.as_ref(),
+                &validator_state,
+            );
+            assert!(upcoming_validator_rate.epoch_index == epoch_to_end.index + 2);
 
             let total_delegations = delegations_by_validator
                 .get(&validator.identity_key)
@@ -418,12 +426,12 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
             // Calculate the voting power in the newly beginning epoch
             let voting_power =
-                current_rate.voting_power(delegation_token_supply.into(), &current_base_rate);
+                current_rate.voting_power(delegation_token_supply.into(), &upcoming_base_rate);
             tracing::debug!(?voting_power);
 
             // Update the state of the validator within the validator set
-            // with the newly starting epoch's calculated voting rate and power.
-            self.set_validator_rates(&validator.identity_key, current_rate.clone());
+            // with the newly starting epoch's calculated exchange rate and power.
+            self.set_validator_rates(&validator.identity_key, upcoming_validator_rate.clone());
             self.set_validator_power(&validator.identity_key, voting_power)
                 .await?;
 
@@ -436,7 +444,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 for stream in funding_streams {
                     let commission_reward_amount = stream.reward_amount(
                         delegation_token_supply,
-                        &current_base_rate,
+                        &upcoming_base_rate,
                         &previous_base_rate,
                     );
 
@@ -467,9 +475,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 }
             }
 
-            // rename to curr_rate so it lines up with next_rate (same # chars)
             let delegation_denom = DelegationToken::from(&validator.identity_key).denom();
-            tracing::debug!(curr_rate = ?current_rate);
+            tracing::debug!(current_rate = ?current_rate);
             tracing::debug!(?delegation_delta);
             tracing::debug!(?delegation_token_supply);
             tracing::debug!(?delegation_denom);
