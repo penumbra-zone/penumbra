@@ -122,15 +122,9 @@ impl ActionHandler for validator::Definition {
                 validator_reward_rate: 0,
                 validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
             };
-            let next_rate_data = RateData {
-                identity_key: validator_key,
-                epoch_index: cur_epoch.index + 1,
-                validator_reward_rate: 0,
-                validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
-            };
 
             state
-                .add_validator(v.validator.clone(), cur_rate_data, next_rate_data)
+                .add_validator(v.validator.clone(), cur_rate_data)
                 .await
                 .context("should be able to add validator during validator definition execution")?;
         }
