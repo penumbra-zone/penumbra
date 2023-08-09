@@ -44,7 +44,7 @@ impl TryFrom<Vec<u8>> for MemoPlaintext {
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         if bytes.len() < 80 {
-            return Err(anyhow!("malformed memo plaintext: missing sender address"));
+            anyhow::bail!("malformed memo plaintext: missing sender address");
         }
         let sender_address_bytes = &bytes[..80];
         let sender_address: Address = sender_address_bytes.try_into()?;
@@ -77,16 +77,13 @@ impl MemoPlaintext {
 
 impl MemoCiphertext {
     /// Encrypt a memo, returning its ciphertext.
-    pub fn encrypt(
-        memo_key: PayloadKey,
-        memo: &MemoPlaintext,
-    ) -> Result<MemoCiphertext, anyhow::Error> {
+    pub fn encrypt(memo_key: PayloadKey, memo: &MemoPlaintext) -> anyhow::Result<MemoCiphertext> {
         let memo_bytes: Vec<u8> = memo.into();
         let memo_len = memo_bytes.len();
         if memo_len > MEMO_LEN_BYTES {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "provided memo plaintext of length {memo_len} exceeds maximum memo length of {MEMO_LEN_BYTES}"
-            ));
+            );
         }
         let mut m = [0u8; MEMO_LEN_BYTES];
         m[..memo_len].copy_from_slice(&memo_bytes);
@@ -103,7 +100,7 @@ impl MemoCiphertext {
     pub fn decrypt(
         memo_key: &PayloadKey,
         ciphertext: MemoCiphertext,
-    ) -> Result<MemoPlaintext, anyhow::Error> {
+    ) -> anyhow::Result<MemoPlaintext> {
         let plaintext_bytes = MemoCiphertext::decrypt_bytes(memo_key, ciphertext)?;
 
         let sender_address_bytes = &plaintext_bytes[..80];
@@ -122,7 +119,7 @@ impl MemoCiphertext {
     pub fn decrypt_bytes(
         memo_key: &PayloadKey,
         ciphertext: MemoCiphertext,
-    ) -> Result<[u8; MEMO_LEN_BYTES], anyhow::Error> {
+    ) -> anyhow::Result<[u8; MEMO_LEN_BYTES]> {
         let decryption_result = memo_key
             .decrypt(ciphertext.0.to_vec(), PayloadKind::Memo)
             .map_err(|_| anyhow!("decryption error"))?;
@@ -141,7 +138,7 @@ impl MemoCiphertext {
         ovk: &OutgoingViewingKey,
         epk: &ka::Public,
         ciphertext: MemoCiphertext,
-    ) -> Result<MemoPlaintext, anyhow::Error> {
+    ) -> anyhow::Result<MemoPlaintext> {
         let shared_secret = Note::decrypt_key(wrapped_ovk, cm, cv, ovk, epk)
             .map_err(|_| anyhow!("key decryption error"))?;
 
@@ -176,9 +173,7 @@ impl TryFrom<&[u8]> for MemoCiphertext {
 
     fn try_from(input: &[u8]) -> Result<MemoCiphertext, Self::Error> {
         if input.len() > MEMO_CIPHERTEXT_LEN_BYTES {
-            return Err(anyhow::anyhow!(
-                "provided memo ciphertext exceeds maximum memo size"
-            ));
+            anyhow::bail!("provided memo ciphertext exceeds maximum memo size");
         }
         let mut mc = [0u8; MEMO_CIPHERTEXT_LEN_BYTES];
         mc[..input.len()].copy_from_slice(input);

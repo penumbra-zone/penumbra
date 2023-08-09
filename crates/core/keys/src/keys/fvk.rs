@@ -153,10 +153,10 @@ impl TryFrom<pb::FullViewingKey> for FullViewingKey {
 
     fn try_from(value: pb::FullViewingKey) -> Result<Self, Self::Error> {
         if value.inner.len() != 64 {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "Wrong byte length, expected 64 but found {}",
                 value.inner.len()
-            ));
+            );
         }
 
         let ak_bytes: [u8; 32] = value.inner[0..32].try_into().unwrap();

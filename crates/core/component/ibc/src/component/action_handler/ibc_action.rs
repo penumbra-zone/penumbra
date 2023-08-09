@@ -28,10 +28,7 @@ impl ActionHandler for IbcAction {
             IbcAction::Acknowledgement(msg) => msg.check_stateless().await?,
             IbcAction::Timeout(msg) => msg.check_stateless().await?,
             IbcAction::Unknown(msg) => {
-                return Err(anyhow::anyhow!(
-                    "unknown IBC message type: {}",
-                    msg.type_url
-                ))
+                anyhow::bail!("unknown IBC message type: {}", msg.type_url)
             }
         }
 
@@ -61,10 +58,7 @@ impl ActionHandler for IbcAction {
             IbcAction::Acknowledgement(msg) => msg.try_execute(state).await?,
             IbcAction::Timeout(msg) => msg.try_execute(state).await?,
             IbcAction::Unknown(msg) => {
-                return Err(anyhow::anyhow!(
-                    "unknown IBC message type: {}",
-                    msg.type_url
-                ))
+                anyhow::bail!("unknown IBC message type: {}", msg.type_url)
             }
         }
 

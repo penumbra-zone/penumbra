@@ -1,5 +1,6 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use std::{path::PathBuf, sync::Arc};
+// use tokio_stream::wrappers::WatchStream;
 
 use anyhow::Result;
 use jmt::{
@@ -32,9 +33,13 @@ impl std::fmt::Debug for Storage {
 // A private inner element to prevent the `TreeWriter` implementation
 // from leaking outside of this crate.
 struct Inner {
+    tx_dispatcher: watch::Sender<Snapshot>,
+    tx_state: Arc<watch::Sender<Snapshot>>,
     snapshots: RwLock<SnapshotCache>,
+    #[allow(dead_code)]
+    /// A handle to the dispatcher task.
+    jh_dispatcher: Option<tokio::task::JoinHandle<()>>,
     db: Arc<DB>,
-    state_tx: watch::Sender<Snapshot>,
 }
 
 impl Storage {
@@ -49,31 +54,23 @@ impl Storage {
                     opts.create_if_missing(true);
                     opts.create_missing_column_families(true);
 
-                    /*
-                       RocksDB columns:
-                       --> jmt: maps `storage::DbNodeKey` to `jmt::Node`, persists the internal
-                               structure of the JMT.
-                         Note: we need to use a newtype wrapper around `NodeKey` here, because
-                         we want a lexicographical ordering that maps to ascending jmt::Version.
-
-                       --> nonverifiable: maps arbitrary keys to arbitrary values, persists
-                                       the nonverifiable state.
-
-                       --> jmt_keys: index JMT keys (i.e. keyhash preimages).
-
-                       --> jmt_keys_by_keyhash: index JMT keys by their hash.
-
-                       --> jmt_values: maps KeyHash || BE(version) to an `Option<Vec<u8>>`
-                    */
-
+                    // RocksDB columns:
                     let db = Arc::new(DB::open_cf(
                         &opts,
                         path,
                         [
+                            // jmt: maps `storage::DbNodeKey` to `jmt::Node`, persists the internal structure of the JMT.
+                            // Note: we need to use a newtype wrapper around `NodeKey` here, because
+                            // we want a lexicographical ordering that maps to ascending jmt::Version.
                             "jmt",
+                            // nonverifiable: maps arbitrary keys to arbitrary values, persists
+                            // the nonverifiable state.
                             "nonverifiable",
+                            // jmt_keys: index JMT keys (i.e. keyhash preimages).
                             "jmt_keys",
+                            // jmt_keys_by_keyhash: index JMT keys by their hash.
                             "jmt_keys_by_keyhash",
+                            // jmt_values: maps KeyHash || BE(version) to an `Option<Vec<u8>>`
                             "jmt_values",
                         ],
                     )?);
@@ -84,15 +81,48 @@ impl Storage {
 
                     let latest_snapshot = Snapshot::new(db.clone(), jmt_version);
 
-                    // We discard the receiver here, because we'll construct new ones in subscribe()
-                    let (snapshot_tx, _) = watch::channel(latest_snapshot.clone());
+                    // A concurrent-safe ring buffer of the latest 10 snapshots.
+                    let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot.clone(), 10));
 
-                    let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot, 10));
+                    // Setup a dispatcher task that acts as an intermediary between the storage
+                    // and the rest of the system. Its purpose is to forward new snapshots to
+                    // subscribers.
+                    // If we were to send snapshots directly to subscribers, a slow subscriber could
+                    // hold a lock on the watch channel for too long, and block the consensus-critical
+                    // commit logic, which needs to acquire a write lock on the watch channel.
+                    // dispatcher channel (internal):
+                    // - `tx_dispatcher` is used by storage to signal that a new snapshot is available.
+                    // - `rx_dispatcher` is used by the dispatcher to receive new snapshots.
+                    // snapshot channel (external):
+                    // - `tx_state` is used by the dispatcher to signal new snapshots to the rest of the system.
+                    // - `rx_state` is used by various components to subscribe to new snapshots.
+                    let (tx_state, _) = watch::channel(latest_snapshot.clone());
+                    let (tx_dispatcher, mut rx_dispatcher) = watch::channel(latest_snapshot);
+
+                    let tx_state = Arc::new(tx_state);
+                    let tx_state2 = tx_state.clone();
+                    let jh_dispatcher = tokio::spawn(async move {
+                        tracing::info!("snapshot dispatcher task has started");
+                        // If the sender is dropped, the task will terminate.
+                        while rx_dispatcher.changed().await.is_ok() {
+                            tracing::debug!("dispatcher has received a new snapshot");
+                            let snapshot = rx_dispatcher.borrow_and_update().clone();
+                            // [`watch::Sender<T>::send`] only returns an error if there are no
+                            // receivers, so we can safely ignore the result here.
+                            let _ = tx_state2.send(snapshot);
+                        }
+                        tracing::info!("dispatcher task has terminated")
+                    });
 
                     Ok(Self(Arc::new(Inner {
+                        // We don't need to wrap the task in a `CancelOnDrop<T>` because
+                        // the task will stop when the sender is dropped. However, certain
+                        // test scenarios require us to wait that all resources are released.
+                        jh_dispatcher: Some(jh_dispatcher),
+                        tx_dispatcher,
+                        tx_state,
                         snapshots,
                         db,
-                        state_tx: snapshot_tx,
                     })))
                 })
             })?
@@ -112,7 +142,7 @@ impl Storage {
         // Calling subscribe() here to create a new receiver ensures
         // that all previous values are marked as seen, and the user
         // of the receiver will only be notified of *subsequent* values.
-        self.0.state_tx.subscribe()
+        self.0.tx_state.subscribe()
     }
 
     /// Returns a new [`State`] on top of the latest version of the tree.
@@ -218,7 +248,7 @@ impl Storage {
 
                     // Send fails if the channel is closed (i.e., if there are no receivers);
                     // in this case, we should ignore the error, we have no one to notify.
-                    let _ = inner.state_tx.send(latest_snapshot);
+                    let _ = inner.tx_dispatcher.send(latest_snapshot);
 
                     Ok(root_hash)
                 })
@@ -238,7 +268,7 @@ impl Storage {
         let new_version = old_version.wrapping_add(1);
         tracing::trace!(old_version, new_version);
         if old_version != snapshot.version() {
-            return Err(anyhow::anyhow!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, snapshot.version()));
+            anyhow::bail!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, snapshot.version());
         }
 
         self.commit_inner(changes, new_version).await
@@ -248,6 +278,18 @@ impl Storage {
     #[cfg(test)]
     pub(crate) fn db(&self) -> Arc<DB> {
         self.0.db.clone()
+    }
+
+    #[cfg(test)]
+    /// Consumes the `Inner` storage and waits for all resources to be reclaimed.
+    /// Panics if there are still outstanding references to the `Inner` storage.
+    pub(crate) async fn release(mut self) {
+        if let Some(inner) = Arc::get_mut(&mut self.0) {
+            inner.shutdown().await;
+            // `Inner` is dropped once the call completes.
+        } else {
+            panic!("Unable to get mutable reference to Inner");
+        }
     }
 }
 
@@ -310,6 +352,16 @@ fn get_rightmost_leaf(db: &DB) -> Result<Option<(NodeKey, LeafNode)>> {
 
 pub fn latest_version(db: &DB) -> Result<Option<jmt::Version>> {
     Ok(get_rightmost_leaf(db)?.map(|(node_key, _)| node_key.version()))
+}
+
+impl Inner {
+    #[cfg(test)]
+    pub async fn shutdown(&mut self) {
+        if let Some(jh) = self.jh_dispatcher.take() {
+            jh.abort();
+            let _ = jh.await;
+        }
+    }
 }
 
 /// Represent a JMT key hash at a specific `jmt::Version`

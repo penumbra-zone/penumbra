@@ -1282,7 +1282,7 @@ pub trait StateWriteExt: StateWrite {
     ) -> Result<()> {
         tracing::debug!("setting validator power");
         if voting_power as i64 > MAX_VOTING_POWER || (voting_power as i64) < 0 {
-            return Err(anyhow::anyhow!("invalid voting power"));
+            anyhow::bail!("invalid voting power");
         }
 
         self.put_proto(state_key::power_by_validator(identity_key), voting_power);

@@ -31,7 +31,7 @@ impl MsgHandler for MsgChannelOpenConfirm {
             .await?
             .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
         if !channel.state_matches(&ChannelState::TryOpen) {
-            return Err(anyhow::anyhow!("channel is not in the correct state"));
+            anyhow::bail!("channel is not in the correct state");
         }
 
         // TODO: capability authentication?
@@ -41,7 +41,7 @@ impl MsgHandler for MsgChannelOpenConfirm {
             .await?
             .ok_or_else(|| anyhow::anyhow!("connection not found for channel"))?;
         if !connection.state_matches(&ConnectionState::Open) {
-            return Err(anyhow::anyhow!("connection for channel is not open"));
+            anyhow::bail!("connection for channel is not open");
         }
 
         let expected_connection_hops = vec![connection
@@ -80,7 +80,7 @@ impl MsgHandler for MsgChannelOpenConfirm {
         if self.port_id_on_b == transfer {
             Ics20Transfer::chan_open_confirm_check(&mut state, self).await?;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
 
         channel.set_state(ChannelState::Open);
@@ -105,7 +105,7 @@ impl MsgHandler for MsgChannelOpenConfirm {
         if self.port_id_on_b == transfer {
             Ics20Transfer::chan_open_confirm_execute(state, self).await;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
 
         Ok(())

@@ -221,20 +221,17 @@ impl TryFrom<BTreeMap<Id, DenomMetadata>> for Cache {
             if let Some(denom) = REGISTRY.parse_denom(&denom.base_denom().denom) {
                 let id = denom.id();
                 if provided_id != id {
-                    return Err(anyhow::anyhow!(
+                    anyhow::bail!(
                         "provided id {} for denom {} does not match computed id {}",
                         provided_id,
                         denom,
                         id
-                    ));
+                    );
                 }
                 cache.insert(id, denom.clone());
                 units.insert(denom.base_denom().denom, denom.base_unit());
             } else {
-                return Err(anyhow::anyhow!(
-                    "invalid base denom {}",
-                    denom.base_denom().denom
-                ));
+                anyhow::bail!("invalid base denom {}", denom.base_denom().denom);
             }
         }
         Ok(Self { cache, units })

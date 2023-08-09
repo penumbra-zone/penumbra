@@ -11,7 +11,7 @@ use crate::{AuthorizeRequest, PreAuthorization};
 /// A trait for checking whether a transaction plan is allowed by a policy.
 pub trait Policy {
     /// Checks whether the proposed transaction plan is allowed by this policy.
-    fn check(&self, request: &AuthorizeRequest) -> Result<(), anyhow::Error>;
+    fn check(&self, request: &AuthorizeRequest) -> anyhow::Result<()>;
 }
 
 /// A set of basic spend authorization policies.
@@ -94,7 +94,7 @@ mod ed25519_vec_base64 {
 }
 
 impl Policy for AuthPolicy {
-    fn check(&self, request: &AuthorizeRequest) -> Result<(), anyhow::Error> {
+    fn check(&self, request: &AuthorizeRequest) -> anyhow::Result<()> {
         let plan = &request.plan;
         match self {
             AuthPolicy::DestinationAllowList {
@@ -102,18 +102,12 @@ impl Policy for AuthPolicy {
             } => {
                 for output in plan.output_plans() {
                     if !allowed_destination_addresses.contains(&output.dest_address) {
-                        return Err(anyhow::anyhow!(
-                            "output {:?} has dest_address not in allow list",
-                            output
-                        ));
+                        anyhow::bail!("output {:?} has dest_address not in allow list", output);
                     }
                 }
                 for swap in plan.swap_plans() {
                     if !allowed_destination_addresses.contains(&swap.swap_plaintext.claim_address) {
-                        return Err(anyhow::anyhow!(
-                            "swap {:?} has claim_address not in allow list",
-                            swap
-                        ));
+                        anyhow::bail!("swap {:?} has claim_address not in allow list", swap);
                     }
                 }
                 Ok(())
@@ -125,10 +119,7 @@ impl Policy for AuthPolicy {
                         | ActionPlan::Output { .. }
                         | ActionPlan::IbcAction { .. } => {}
                         _ => {
-                            return Err(anyhow::anyhow!(
-                                "action {:?} not allowed by OnlyRelay policy",
-                                action
-                            ));
+                            anyhow::bail!("action {:?} not allowed by OnlyRelay policy", action);
                         }
                     }
                 }
@@ -140,7 +131,7 @@ impl Policy for AuthPolicy {
 }
 
 impl Policy for PreAuthorizationPolicy {
-    fn check(&self, request: &AuthorizeRequest) -> Result<(), anyhow::Error> {
+    fn check(&self, request: &AuthorizeRequest) -> anyhow::Result<()> {
         match self {
             PreAuthorizationPolicy::Ed25519 {
                 required_signatures,
@@ -169,11 +160,11 @@ impl Policy for PreAuthorizationPolicy {
                 }
 
                 if seen_signers.len() < *required_signatures as usize {
-                    return Err(anyhow::anyhow!(
+                    anyhow::bail!(
                         "required {} pre-authorization signatures but only saw {}",
                         required_signatures,
                         seen_signers.len(),
-                    ));
+                    );
                 }
                 Ok(())
             }

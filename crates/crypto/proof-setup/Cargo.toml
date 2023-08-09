@@ -1,0 +1,16 @@
+[package]
+name = "penumbra-proof-setup"
+version = "0.58.0"
+edition = "2021"
+
+[dependencies]
+ark-ec = "0.4.2"
+ark-ff = "0.4.2"
+ark-serialize = "0.4.2"
+blake2b_simd = "0.5"
+rand_core = { version = "0.6", features = ["getrandom"] }
+# Git dependencies
+decaf377 = "0.4"
+
+[dev-dependencies]
+

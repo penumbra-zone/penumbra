@@ -1,5 +1,5 @@
-use ::futures::StreamExt;
-use penumbra_storage::*;
+use crate::*;
+use futures::StreamExt;
 
 /// Checks that deleting a nonexistent key behaves as expected (no errors, it's already gone)
 #[tokio::test]
@@ -11,6 +11,34 @@ async fn delete_nonexistent_key() -> anyhow::Result<()> {
     let mut state_init = StateDelta::new(storage.latest_snapshot());
     state_init.delete("nonexist".to_string());
     storage.commit(state_init).await?;
+
+    Ok(())
+}
+
+#[tokio::test]
+/// In rare cases, the database lock has not been (yet) released by the time
+/// the next Storage::load() call is made. This is fixed by `Storage::release()`
+/// which mimicks the behavior of an async drop (releasing resources).
+async fn db_lock_is_released() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
+    let tmpdir = tempfile::tempdir()?;
+
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    storage.release().await;
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    storage.release().await;
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    storage.release().await;
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    storage.release().await;
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    storage.release().await;
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    storage.release().await;
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    storage.release().await;
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    storage.release().await;
 
     Ok(())
 }
@@ -601,7 +629,7 @@ async fn simple_flow() -> anyhow::Result<()> {
 
     // First, be sure to explicitly drop anything keeping a reference to the
     // RocksDB instance:
-    std::mem::drop(storage);
+    storage.release().await;
     // std::mem::drop(state0); // consumed in commit()
     std::mem::drop(state0a);
     std::mem::drop(state1);

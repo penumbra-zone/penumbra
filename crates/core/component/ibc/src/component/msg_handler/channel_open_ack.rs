@@ -69,7 +69,7 @@ impl MsgHandler for MsgChannelOpenAck {
         if self.port_id_on_a == transfer {
             Ics20Transfer::chan_open_ack_check(&mut state, self).await?;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
 
         channel.set_state(ChannelState::Open);
@@ -96,7 +96,7 @@ impl MsgHandler for MsgChannelOpenAck {
         if self.port_id_on_a == transfer {
             Ics20Transfer::chan_open_ack_execute(state, self).await;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
 
         Ok(())

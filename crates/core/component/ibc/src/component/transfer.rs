@@ -75,10 +75,7 @@ pub trait Ics20TransferWriteExt: StateWrite {
         // create packet, assume it's already checked since the component caller contract calls `check` before `execute`
         let checked_packet = IBCPacket::<Unchecked>::from(withdrawal.clone()).assume_checked();
 
-        let prefix = format!(
-            "{}/{}/",
-            &withdrawal.source_port, &withdrawal.source_channel
-        );
+        let prefix = format!("transfer/{}/", &withdrawal.source_channel);
         if !withdrawal.denom.starts_with(&prefix) {
             // we are the source. add the value balance to the escrow channel.
             let existing_value_balance: Amount = self
@@ -115,15 +112,11 @@ impl<T: StateWrite + ?Sized> Ics20TransferWriteExt for T {}
 impl AppHandlerCheck for Ics20Transfer {
     async fn chan_open_init_check<S: StateRead>(_state: S, msg: &MsgChannelOpenInit) -> Result<()> {
         if msg.ordering != ChannelOrder::Unordered {
-            return Err(anyhow::anyhow!(
-                "channel order must be unordered for Ics20 transfer"
-            ));
+            anyhow::bail!("channel order must be unordered for Ics20 transfer");
         }
         let ics20_version = Version::new("ics20-1".to_string());
         if msg.version_proposal != ics20_version {
-            return Err(anyhow::anyhow!(
-                "channel version must be ics20 for Ics20 transfer"
-            ));
+            anyhow::bail!("channel version must be ics20 for Ics20 transfer");
         }
 
         Ok(())
@@ -131,16 +124,12 @@ impl AppHandlerCheck for Ics20Transfer {
 
     async fn chan_open_try_check<S: StateRead>(_state: S, msg: &MsgChannelOpenTry) -> Result<()> {
         if msg.ordering != ChannelOrder::Unordered {
-            return Err(anyhow::anyhow!(
-                "channel order must be unordered for Ics20 transfer"
-            ));
+            anyhow::bail!("channel order must be unordered for Ics20 transfer");
         }
         let ics20_version = Version::new("ics20-1".to_string());
 
         if msg.version_supported_on_a != ics20_version {
-            return Err(anyhow::anyhow!(
-                "counterparty version must be ics20-1 for Ics20 transfer"
-            ));
+            anyhow::bail!("counterparty version must be ics20-1 for Ics20 transfer");
         }
 
         Ok(())
@@ -149,9 +138,7 @@ impl AppHandlerCheck for Ics20Transfer {
     async fn chan_open_ack_check<S: StateRead>(_state: S, msg: &MsgChannelOpenAck) -> Result<()> {
         let ics20_version = Version::new("ics20-1".to_string());
         if msg.version_on_b != ics20_version {
-            return Err(anyhow::anyhow!(
-                "counterparty version must be ics20-1 for Ics20 transfer"
-            ));
+            anyhow::bail!("counterparty version must be ics20-1 for Ics20 transfer");
         }
 
         Ok(())
@@ -178,7 +165,7 @@ impl AppHandlerCheck for Ics20Transfer {
         _msg: &MsgChannelCloseInit,
     ) -> Result<()> {
         // always abort transaction
-        return Err(anyhow::anyhow!("ics20 always aborts on close init"));
+        anyhow::bail!("ics20 always aborts on close init");
     }
 
     async fn recv_packet_check<S: StateRead>(_state: S, _msg: &MsgRecvPacket) -> Result<()> {
@@ -202,9 +189,7 @@ impl AppHandlerCheck for Ics20Transfer {
 
             let amount_penumbra: Amount = packet_data.amount.try_into()?;
             if value_balance < amount_penumbra {
-                return Err(anyhow::anyhow!(
-                    "insufficient balance to refund tokens to sender"
-                ));
+                anyhow::bail!("insufficient balance to refund tokens to sender");
             }
         }
 
@@ -278,7 +263,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
 
         if value_balance < receiver_amount {
             // error text here is from the ics20 spec
-            return Err(anyhow::anyhow!("transfer coins failed"));
+            anyhow::bail!("transfer coins failed");
         }
 
         state
@@ -372,9 +357,7 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
             .unwrap_or_else(Amount::zero);
 
         if value_balance < amount {
-            return Err(anyhow::anyhow!(
-                "couldn't return coins in timeout: not enough value balance"
-            ));
+            anyhow::bail!("couldn't return coins in timeout: not enough value balance");
         }
 
         state

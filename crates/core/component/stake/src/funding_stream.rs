@@ -114,9 +114,7 @@ impl TryFrom<pb::FundingStream> for FundingStream {
                     .try_into()
                     .map_err(|e| anyhow::anyhow!("invalid funding stream rate: {}", e))?;
                 if rate_bps > 10_000 {
-                    return Err(anyhow::anyhow!(
-                        "funding stream rate exceeds 100% (10,000bps)"
-                    ));
+                    anyhow::bail!("funding stream rate exceeds 100% (10,000bps)");
                 }
                 Ok(FundingStream::ToAddress { address, rate_bps })
             }
@@ -126,9 +124,7 @@ impl TryFrom<pb::FundingStream> for FundingStream {
                     .try_into()
                     .map_err(|e| anyhow::anyhow!("invalid funding stream rate: {}", e))?;
                 if rate_bps > 10_000 {
-                    return Err(anyhow::anyhow!(
-                        "funding stream rate exceeds 100% (10,000bps)"
-                    ));
+                    anyhow::bail!("funding stream rate exceeds 100% (10,000bps)");
                 }
                 Ok(FundingStream::ToDao { rate_bps })
             }
@@ -164,9 +160,7 @@ impl TryFrom<Vec<FundingStream>> for FundingStreams {
 
     fn try_from(funding_streams: Vec<FundingStream>) -> Result<Self, Self::Error> {
         if funding_streams.iter().map(|fs| fs.rate_bps()).sum::<u16>() > 10_000 {
-            return Err(anyhow::anyhow!(
-                "sum of funding rates exceeds 100% (10,000bps)"
-            ));
+            anyhow::bail!("sum of funding rates exceeds 100% (10,000bps)");
         }
 
         Ok(Self { funding_streams })

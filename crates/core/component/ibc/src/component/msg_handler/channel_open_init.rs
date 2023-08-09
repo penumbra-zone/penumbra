@@ -38,7 +38,7 @@ impl MsgHandler for MsgChannelOpenInit {
         if self.port_id_on_a == transfer {
             Ics20Transfer::chan_open_init_check(&mut state, self).await?;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
         let channel_id = state.next_channel_id().await.unwrap();
         let new_channel = ChannelEnd {
@@ -69,18 +69,16 @@ impl MsgHandler for MsgChannelOpenInit {
         if self.port_id_on_a == transfer {
             Ics20Transfer::chan_open_init_execute(state, self).await;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
 
         Ok(())
     }
 }
 
-fn connection_hops_eq_1(msg: &MsgChannelOpenInit) -> Result<(), anyhow::Error> {
+fn connection_hops_eq_1(msg: &MsgChannelOpenInit) -> anyhow::Result<()> {
     if msg.connection_hops_on_a.len() != 1 {
-        return Err(anyhow::anyhow!(
-            "currently only channels with one connection hop are supported"
-        ));
+        anyhow::bail!("currently only channels with one connection hop are supported");
     }
     Ok(())
 }
@@ -108,7 +106,7 @@ async fn verify_channel_does_not_exist<S: StateRead>(
 ) -> anyhow::Result<()> {
     let channel = state.get_channel(channel_id, port_id).await?;
     if channel.is_some() {
-        return Err(anyhow::anyhow!("channel already exists"));
+        anyhow::bail!("channel already exists");
     }
     Ok(())
 }

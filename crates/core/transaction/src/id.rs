@@ -32,7 +32,7 @@ impl FromStr for Id {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes = hex::decode(s)?;
         if bytes.len() != 32 {
-            return Err(anyhow::anyhow!("invalid transaction ID length"));
+            anyhow::bail!("invalid transaction ID length");
         }
         let mut id = [0u8; 32];
         id.copy_from_slice(&bytes);
@@ -59,10 +59,10 @@ impl From<Id> for pb::Id {
 impl TryFrom<pb::Id> for Id {
     type Error = anyhow::Error;
 
-    fn try_from(proto: pb::Id) -> Result<Id, anyhow::Error> {
+    fn try_from(proto: pb::Id) -> anyhow::Result<Id> {
         let hash = proto.hash;
         if hash.len() != 32 {
-            return Err(anyhow::anyhow!("invalid transaction ID length"));
+            anyhow::bail!("invalid transaction ID length");
         }
         let mut id = [0u8; 32];
         id.copy_from_slice(&hash);

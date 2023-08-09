@@ -312,7 +312,7 @@ impl TryFrom<pb::PositionState> for State {
     fn try_from(v: pb::PositionState) -> Result<Self, Self::Error> {
         let Some(position_state) = pb::position_state::PositionStateEnum::from_i32(v.state) else {
             // maps to an invalid position state
-            return Err(anyhow!("invalid position state!"))
+            anyhow::bail!("invalid position state!")
         };
 
         match position_state {

@@ -118,7 +118,7 @@ impl Note {
     ///
     /// Note: to ensure determinism, this uses a zero rseed when
     /// creating the note.
-    pub fn from_allocation(allocation: Allocation) -> Result<Note, anyhow::Error> {
+    pub fn from_allocation(allocation: Allocation) -> anyhow::Result<Note> {
         Note::from_parts(
             allocation.address,
             Value {

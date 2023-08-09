@@ -30,9 +30,7 @@ impl TransparentEncryptionProof {
                 blinding * encryption_key.0 + decaf377::Fr::from(limb.0) * decaf377::basepoint();
 
             if c1 != ctxt.c1 || c2 != ctxt.c2 {
-                return Err(anyhow::anyhow!(
-                    "TransparentEncryptionProof: verification failed"
-                ));
+                anyhow::bail!("TransparentEncryptionProof: verification failed");
             }
         }
 

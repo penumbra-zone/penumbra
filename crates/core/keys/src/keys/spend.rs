@@ -134,10 +134,7 @@ impl TryFrom<&[u8]> for SpendKeyBytes {
     type Error = anyhow::Error;
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() != SPENDKEY_LEN_BYTES {
-            return Err(anyhow::anyhow!(
-                "spendseed must be 32 bytes, got {:?}",
-                slice.len()
-            ));
+            anyhow::bail!("spendseed must be 32 bytes, got {:?}", slice.len());
         }
 
         let mut bytes = [0u8; SPENDKEY_LEN_BYTES];

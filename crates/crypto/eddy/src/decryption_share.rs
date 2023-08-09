@@ -79,11 +79,11 @@ impl DecryptionShare<Unverified> {
         // key share, the transcript won't match anyways, but it's a helpful
         // check against misuse.
         if self.participant_index != pub_key_share.participant_index {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "decryption share participant index {} does not match public key share index {}",
                 self.participant_index,
                 pub_key_share.participant_index
-            ));
+            );
         }
 
         transcript.begin_decryption();

@@ -88,7 +88,7 @@ impl ViewService {
     /// To create multiple [`ViewService`]s, clone the [`ViewService`] returned
     /// by this method, rather than calling it multiple times.  That way, each clone
     /// will be backed by the same scanning task, rather than each spawning its own.
-    pub async fn new(storage: Storage, node: Url) -> Result<Self, anyhow::Error> {
+    pub async fn new(storage: Storage, node: Url) -> anyhow::Result<Self> {
         let (worker, sct, error_slot, sync_height_rx) =
             Worker::new(storage.clone(), node.clone()).await?;
 
@@ -147,7 +147,7 @@ impl ViewService {
         &self,
         transaction: Transaction,
         await_detection: bool,
-    ) -> Result<penumbra_transaction::Id, anyhow::Error> {
+    ) -> anyhow::Result<penumbra_transaction::Id> {
         use penumbra_app::ActionHandler;
 
         // 1. Pre-check the transaction for (stateless) validity.
@@ -169,11 +169,11 @@ impl ViewService {
             .into_inner();
         tracing::info!(?node_rsp);
         if node_rsp.code != 0 {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "Error submitting transaction: code {}, log: {}",
                 node_rsp.code,
                 node_rsp.log,
-            ));
+            );
         }
 
         // 3. Optionally wait for the transaction to be detected by the view service.
@@ -212,7 +212,7 @@ impl ViewService {
 
     async fn tendermint_proxy_client(
         &self,
-    ) -> Result<TendermintProxyServiceClient<Channel>, anyhow::Error> {
+    ) -> anyhow::Result<TendermintProxyServiceClient<Channel>> {
         let client = TendermintProxyServiceClient::connect(self.node.to_string()).await?;
 
         Ok(client)
@@ -221,7 +221,7 @@ impl ViewService {
     /// Return the latest block height known by the fullnode or its peers, as
     /// well as whether the fullnode is caught up with that height.
     #[instrument(skip(self))]
-    pub async fn latest_known_block_height(&self) -> Result<(u64, bool), anyhow::Error> {
+    pub async fn latest_known_block_height(&self) -> anyhow::Result<(u64, bool)> {
         let mut client = self.tendermint_proxy_client().await?;
 
         let rsp = client.get_status(GetStatusRequest {}).await?.into_inner();
@@ -252,7 +252,7 @@ impl ViewService {
     }
 
     #[instrument(skip(self))]
-    pub async fn status(&self) -> Result<StatusResponse, anyhow::Error> {
+    pub async fn status(&self) -> anyhow::Result<StatusResponse> {
         let sync_height = self.storage.last_sync_height().await?.unwrap_or(0);
 
         let (latest_known_block_height, node_catching_up) =

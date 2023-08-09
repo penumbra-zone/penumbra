@@ -33,7 +33,7 @@ impl MsgHandler for MsgTimeout {
             .await?
             .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
         if !channel.state_matches(&ChannelState::Open) {
-            return Err(anyhow::anyhow!("channel is not open"));
+            anyhow::bail!("channel is not open");
         }
 
         // TODO: capability authentication?
@@ -42,14 +42,10 @@ impl MsgHandler for MsgTimeout {
             .channel_id()
             .ok_or_else(|| anyhow::anyhow!("missing channel id"))?)
         {
-            return Err(anyhow::anyhow!(
-                "packet destination channel does not match channel"
-            ));
+            anyhow::bail!("packet destination channel does not match channel");
         }
         if self.packet.port_on_b != channel.counterparty().port_id {
-            return Err(anyhow::anyhow!(
-                "packet destination port does not match channel"
-            ));
+            anyhow::bail!("packet destination port does not match channel");
         }
 
         let connection = state
@@ -64,9 +60,7 @@ impl MsgHandler for MsgTimeout {
 
         // check that timeout height or timeout timestamp has passed on the other end
         if !self.packet.timed_out(&chain_ts, chain_height) {
-            return Err(anyhow::anyhow!(
-                "packet has not timed out on the counterparty chain"
-            ));
+            anyhow::bail!("packet has not timed out on the counterparty chain");
         }
 
         // verify that we actually sent this packet
@@ -75,13 +69,13 @@ impl MsgHandler for MsgTimeout {
             .await?
             .ok_or_else(|| anyhow::anyhow!("packet commitment not found"))?;
         if commitment != commit_packet(&self.packet) {
-            return Err(anyhow::anyhow!("packet commitment does not match"));
+            anyhow::bail!("packet commitment does not match");
         }
 
         if channel.ordering == ChannelOrder::Ordered {
             // ordered channel: check that packet has not been received
             if self.next_seq_recv_on_b != self.packet.sequence {
-                return Err(anyhow::anyhow!("packet sequence number does not match"));
+                anyhow::bail!("packet sequence number does not match");
             }
 
             // in the case of a timed-out ordered packet, the counterparty should have
@@ -99,7 +93,7 @@ impl MsgHandler for MsgTimeout {
         if self.packet.port_on_b == transfer {
             Ics20Transfer::timeout_packet_check(&mut state, self).await?;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
 
         state.delete_packet_commitment(
@@ -136,7 +130,7 @@ impl MsgHandler for MsgTimeout {
         if self.packet.port_on_b == transfer {
             Ics20Transfer::timeout_packet_execute(state, self).await;
         } else {
-            return Err(anyhow::anyhow!("invalid port id"));
+            anyhow::bail!("invalid port id");
         }
 
         Ok(())

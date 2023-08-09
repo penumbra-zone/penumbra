@@ -101,15 +101,15 @@ impl Reset {
             std::fs::remove_file(&view_path)?;
             println!("Deleted view data at {view_path}");
         } else if view_path.exists() {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "Expected view data at {} but found something that is not a file; refusing to delete it",
                 view_path
-            ));
+            );
         } else {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "No view data exists at {}, so it cannot be deleted",
                 view_path
-            ));
+            );
         }
 
         Ok(())

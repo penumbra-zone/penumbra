@@ -1,7 +1,7 @@
 use std::io::Read;
 use std::str::FromStr;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use directories::ProjectDirs;
 use penumbra_keys::keys::SeedPhrase;
 use rand_core::OsRng;
@@ -113,15 +113,15 @@ impl KeysCmd {
                     std::fs::remove_file(&wallet_path)?;
                     println!("Deleted wallet file at {wallet_path}");
                 } else if wallet_path.exists() {
-                    return Err(anyhow!(
-                            "Expected wallet file at {} but found something that is not a file; refusing to delete it",
-                            wallet_path
-                        ));
+                    anyhow::bail!(
+                        "Expected wallet file at {} but found something that is not a file; refusing to delete it",
+                        wallet_path
+                    );
                 } else {
-                    return Err(anyhow!(
+                    anyhow::bail!(
                         "No wallet exists at {}, so it cannot be deleted",
                         wallet_path
-                    ));
+                    );
                 }
             }
         };

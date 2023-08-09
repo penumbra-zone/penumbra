@@ -154,11 +154,11 @@ impl Storage {
                     })
                     .context("failed to query client version: the database was probably created by an old client version, and needs to be reset and resynchronized")?;
 
-                return Err(anyhow!(
+                anyhow::bail!(
                     "can't load view database created by client version {} using client version {}: they have different schemata, so you need to reset your view database and resynchronize",
                     database_client_version,
                     env!("VERGEN_GIT_SEMVER"),
-                ));
+                );
             }
 
             Ok(storage)
@@ -236,43 +236,60 @@ impl Storage {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            // If set, only return notes with the specified address index.
-            let address_clause = address_index
-            .map(|d| format!("x'{}'", hex::encode(d.to_bytes())))
-            .unwrap_or_else(|| "address_index".to_string());
+            let query = format!(
+                "SELECT notes.asset_id, notes.amount, spendable_notes.address_index
+                FROM    notes
+                JOIN    spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                WHERE   spendable_notes.height_spent IS NULL"
+            );
 
-            // If set, only return notes with the specified asset id.
-            let asset_clause = asset_id
-            .map(|id| format!("x'{}'", hex::encode(id.to_bytes())))
-            .unwrap_or_else(|| "asset_id".to_string());
+            tracing::debug!(?query);
 
             let mut balances = BTreeMap::new();
 
-            for result in pool.get()?
-                .prepare_cached(
-                    "SELECT notes.asset_id, notes.amount
-                    FROM    notes
-                    JOIN    spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-                    WHERE   spendable_notes.height_spent IS NULL
-                    AND     spendable_notes.address_index IS ?1
-                    AND     notes.asset_id IS ?2",
-                )?
-                .query_map([address_clause, asset_clause], |row| {
-                    let asset_id: Vec<u8> = row.get("asset_id")?;
-                    let amount: [u8; 16] = row.get("amount")?;
-                    Ok((asset_id, amount))
-                })? {
+            for result in pool
+                .get()?
+                .prepare_cached(query.as_str())?
+                .query_map([], |row| {
+                    let asset_id = row.get::<&str, Vec<u8>>("asset_id")?;
+                    let amount = row.get::<&str, Vec<u8>>("amount")?;
+                    let address_index = row.get::<&str, Vec<u8>>("address_index")?;
 
-                let (asset_id, amount) = result?;
+                    Ok((asset_id, amount, address_index))
+                })?
+            {
+                let (id, amount, index) = result?;
 
-                let amount_u128: u128 = u128::from_be_bytes(amount);
+                let id = Id::try_from(id.as_slice())?;
+
+                let amount: u128 = Amount::from_be_bytes(
+                    amount
+                        .as_slice()
+                        .try_into()
+                        .expect("amount slice of incorrect length"),
+                )
+                .into();
+
+                let index = AddressIndex::try_from(index.as_slice())?;
+
+                // Skip this entry if not captured by address index filter
+                if let Some(address_index) = address_index {
+                    if address_index != index {
+                        continue;
+                    }
+                }
+                // Skip this entry if not captured by asset id filter
+                if let Some(asset_id) = asset_id {
+                    if asset_id != id {
+                        continue;
+                    }
+                }
 
                 balances
-                    .entry(Id::try_from(asset_id.as_slice())?)
-                    .and_modify(|x| *x += amount_u128)
-                    .or_insert(amount_u128);
+                    .entry(id)
+                    .and_modify(|x| *x += amount)
+                    .or_insert(amount);
             }
-
             Ok(balances)
         })
         .await?
@@ -321,7 +338,7 @@ impl Storage {
         }
 
         if !await_detection {
-            return Err(anyhow!("Note commitment {} not found", note_commitment));
+            anyhow::bail!("Note commitment {} not found", note_commitment);
         }
 
         // Otherwise, wait for newly detected notes and check whether they're
@@ -337,15 +354,15 @@ impl Storage {
 
                 Err(e) => match e {
                     RecvError::Closed => {
-                        return Err(anyhow!(
+                        anyhow::bail!(
                             "Receiver error during note detection: closed (no more active senders)"
-                        ))
+                        );
                     }
                     RecvError::Lagged(count) => {
-                        return Err(anyhow!(
+                        anyhow::bail!(
                             "Receiver error during note detection: lagged (by {:?} messages)",
                             count
-                        ))
+                        );
                     }
                 },
             };
@@ -381,7 +398,7 @@ impl Storage {
         }
 
         if !await_detection {
-            return Err(anyhow!("swap commitment {} not found", swap_commitment));
+            anyhow::bail!("swap commitment {} not found", swap_commitment);
         }
 
         // Otherwise, wait for newly detected swaps and check whether they're
@@ -397,15 +414,15 @@ impl Storage {
 
                 Err(e) => match e {
                     RecvError::Closed => {
-                        return Err(anyhow!(
+                        anyhow::bail!(
                             "Receiver error during swap detection: closed (no more active senders)"
-                        ))
+                        );
                     }
                     RecvError::Lagged(count) => {
-                        return Err(anyhow!(
+                        anyhow::bail!(
                             "Receiver error during swap detection: lagged (by {:?} messages)",
                             count
-                        ))
+                        );
                     }
                 },
             };
@@ -433,7 +450,7 @@ impl Storage {
                 .prepare_cached("SELECT height_spent FROM spendable_notes WHERE nullifier = ?1")?
                 .query_and_then([nullifier_bytes], |row| {
                     let height_spent: Option<u64> = row.get("height_spent")?;
-                    Ok::<_, anyhow::Error>(height_spent)
+                    anyhow::Ok(height_spent)
                 })?
                 .next()
                 .transpose()
@@ -480,9 +497,7 @@ impl Storage {
                 .prepare_cached("SELECT height FROM sync_height ORDER BY height DESC LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<i64>>(0))?;
 
-            Ok::<_, anyhow::Error>(
-                u64::try_from(height.ok_or_else(|| anyhow!("missing sync height"))?).ok(),
-            )
+            anyhow::Ok(u64::try_from(height.ok_or_else(|| anyhow!("missing sync height"))?).ok())
         })
         .await?
     }
@@ -561,7 +576,7 @@ impl Storage {
                 .query_and_then([starting_block, ending_block], |row| {
                     let block_height: u64 = row.get("block_height")?;
                     let tx_hash: Vec<u8> = row.get("tx_hash")?;
-                    Ok::<_, anyhow::Error>((block_height, tx_hash))
+                    anyhow::Ok((block_height, tx_hash))
                 })?
                 .collect()
         })
@@ -591,7 +606,7 @@ impl Storage {
                     let tx_hash: Vec<u8> = row.get("tx_hash")?;
                     let tx_bytes: Vec<u8> = row.get("tx_bytes")?;
                     let tx = Transaction::decode(tx_bytes.as_slice())?;
-                    Ok::<_, anyhow::Error>((block_height, tx_hash, tx))
+                    anyhow::Ok((block_height, tx_hash, tx))
                 })?
                 .collect()
         })
@@ -665,7 +680,7 @@ impl Storage {
                 .next()
                 .transpose()?;
 
-            Ok::<_, anyhow::Error>(record)
+            anyhow::Ok(record)
         })
         .await??
         {
@@ -673,10 +688,7 @@ impl Storage {
         }
 
         if !await_detection {
-            return Err(anyhow!(
-                "Note commitment for nullifier {:?} not found",
-                nullifier
-            ));
+            anyhow::bail!("Note commitment for nullifier {:?} not found", nullifier);
         }
 
         // Otherwise, wait for newly detected notes and check whether they're
@@ -692,15 +704,15 @@ impl Storage {
 
                 Err(e) => match e {
                     RecvError::Closed => {
-                        return Err(anyhow!(
+                        anyhow::bail!(
                             "Receiver error during note detection: closed (no more active senders)"
-                        ))
+                        );
                     }
                     RecvError::Lagged(count) => {
-                        return Err(anyhow!(
+                        anyhow::bail!(
                             "Receiver error during note detection: lagged (by {:?} messages)",
                             count
-                        ))
+                        );
                     }
                 },
             };
@@ -721,7 +733,7 @@ impl Storage {
                         .parse_denom(&denom)
                         .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?;
 
-                    Ok::<_, anyhow::Error>(denom_metadata)
+                    anyhow::Ok(denom_metadata)
                 })?
                 .collect()
         })
@@ -742,7 +754,7 @@ impl Storage {
                     let denom_metadata = asset::REGISTRY
                         .parse_denom(&denom)
                         .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?;
-                    Ok::<_, anyhow::Error>(denom_metadata)
+                    anyhow::Ok(denom_metadata)
                 })?
                 .next()
                 .transpose()
@@ -766,7 +778,7 @@ impl Storage {
                     let denom_metadata = asset::REGISTRY
                         .parse_denom(&denom)
                         .ok_or_else(|| anyhow::anyhow!("invalid denomination {}", denom))?;
-                    Ok::<_, anyhow::Error>(denom_metadata)
+                    anyhow::Ok(denom_metadata)
                 })?
                 .collect()
         })
@@ -863,14 +875,14 @@ impl Storage {
             }
 
             if amount_total < amount_to_spend.unwrap_or_default() {
-                return Err(anyhow!(
+                anyhow::bail!(
                     "requested amount of {} exceeds total of {}",
                     amount_to_spend.unwrap_or_default(),
                     amount_total
-                ));
+                );
             }
 
-            Ok::<_, anyhow::Error>(output)
+            anyhow::Ok(output)
         })
         .await?
     }
@@ -917,7 +929,7 @@ impl Storage {
                     ",
                 ))?
                 .query_and_then((), |row| row.try_into())?
-                .collect::<Result<Vec<_>, anyhow::Error>>()?;
+                .collect::<anyhow::Result<Vec<_>>>()?;
 
             // TODO: this could be internalized into the SQL query in principle, but it's easier to
             // do it this way; if it becomes slow, we can do it better
@@ -1031,11 +1043,11 @@ impl Storage {
         })?;
 
         if height != last_sync_height + 1 {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "Wrong block height {} for latest sync height {}",
                 height,
                 last_sync_height
-            ));
+            );
         }
 
         *self.uncommitted_height.lock() = Some(height.try_into().unwrap());
@@ -1128,9 +1140,9 @@ impl Storage {
                         },
                         rseed,
                     )?;
-                    Ok::<_, anyhow::Error>((note.commit(), note))
+                    anyhow::Ok((note.commit(), note))
                 })?
-                .collect::<Result<BTreeMap<_, _>, anyhow::Error>>()
+                .collect::<anyhow::Result<BTreeMap<_, _>>>()
         }).await?
     }
 
@@ -1181,11 +1193,11 @@ impl Storage {
         };
 
         if !correct_height {
-            return Err(anyhow::anyhow!(
+            anyhow::bail!(
                 "Wrong block height {} for latest sync height {:?}",
                 filtered_block.height,
                 last_sync_height
-            ));
+            );
         }
 
         let pool = self.pool.clone();
@@ -1413,7 +1425,7 @@ impl Storage {
                 let _ = scanned_swaps_tx.send(swap_record.clone());
             }
 
-            Ok::<_, anyhow::Error>(new_sct)
+            anyhow::Ok(new_sct)
         })
         .await??;
 

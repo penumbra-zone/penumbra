@@ -1,0 +1,23 @@
+---
+# docker-compose file for running a sidecar metrics deployment.
+# Requires a running fullnode, exposing metrics on http://localhost:8080
+# on the host machine.
+
+version: "3.7"
+services:
+  # The Grafana service, which pulls data from Prometheus and serves a web UI.
+  grafana:
+    image: penumbra-grafana
+    build:
+      context: ../../
+      dockerfile: deployments/containerfiles/Dockerfile-grafana
+    network_mode: host
+    user: "${UID:-1000}"
+
+  # The Prometheus service, for scraping metrics from Penumbra's pd metrics port.
+  prom:
+    image: "docker.io/prom/prometheus"
+    network_mode: host
+    volumes:
+      # TODO: this path is not accurate
+      - /home/conor/src/penumbra/deployments/config/prometheus.yml:/etc/prometheus/prometheus.yml:ro

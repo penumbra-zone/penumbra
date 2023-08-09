@@ -229,7 +229,7 @@ impl TryFrom<&[u8]> for Address {
 
     fn try_from(jumbled_bytes: &[u8]) -> Result<Self, Self::Error> {
         if jumbled_bytes.len() != ADDRESS_LEN_BYTES {
-            return Err(anyhow::anyhow!("address malformed"));
+            anyhow::bail!("address malformed");
         }
 
         let unjumbled_bytes =

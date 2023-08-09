@@ -36,10 +36,11 @@ Following Monday (release day):
 - [ ] Bump the version number and push its tag, via [cargo-release](https://crates.io/crates/cargo-release).
     - [ ] Run `cargo release minor` for a new testnet, or `cargo release patch` for a bugfix. For the latter, make sure you're on a dedicated release branch.
     - [ ] Push the commit and newly generated tag, e.g. `v0.51.0`, to the remote.
-- [ ] Wait for the "Release" workflow to complete: it'll take ~90m, most of which is the macOS builds.
+- [ ] Wait for the ["Release" workflow](https://github.com/penumbra-zone/penumbra/actions/workflows/release.yml) to complete: it'll take ~60m, most of which is the Windows builds.
 - [ ] Edit the newly created (and published) release object, then click "Generate release notes." Cut and paste the generated text from the bottom to the top of the post, then save it.
-- [ ] You must [manually review](https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments) the `Waiting` deployment in the GitHub Action UI before the deployment will begin. Monitor the GitHub action to ensure it completes after it is approved.
+- [ ] You must [manually review](https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments) the [`Waiting` deployment in the GitHub Actions UI](https://github.com/penumbra-zone/penumbra/actions/workflows/deploy-testnet.yml) before the deployment will begin. Monitor the GitHub action to ensure it completes after it is approved.
 - [ ] Delegate to the Penumbra Labs CI validators; use amounts of ~200k `penumbra` per validator.
+- [ ] Open a position to provide some initial liquidity: `pcli tx lp replicate xyk penumbra:test_usd 20000penumbra --current-price 20`
 - [ ] Update Galileo deployment, [following docs](https://github.com/penumbra-zone/galileo).
-- [ ] Make GitHub release object and include the announcement
+- [ ] Update Osiris deployment, [following docs](https://github.com/penumbra-zone/osiris).
 - [ ] Make the announcement to Discord! 🎉🎉🎉

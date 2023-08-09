@@ -506,20 +506,26 @@ pub struct WitnessData {
         super::super::crypto::v1alpha1::StateCommitmentProof,
     >,
 }
-/// Describes a planned transaction.
+/// Describes a planned transaction. Permits clients to prepare a transaction
+/// prior submission, so that a user can review it prior to authorizing its execution.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionPlan {
+    /// The planner interface(s) for Actions to be performed, such as a Spend, Swap,
+    /// or Delegation. See the ActionPlan docs for a full list of options.
     #[prost(message, repeated, tag = "1")]
     pub actions: ::prost::alloc::vec::Vec<ActionPlan>,
+    /// Time, as block height, after which TransactionPlan should be considered invalid.
     #[prost(uint64, tag = "2")]
     pub expiry_height: u64,
+    /// The name of the network for which this TransactionPlan was built.
     #[prost(string, tag = "3")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "4")]
     pub fee: ::core::option::Option<super::super::crypto::v1alpha1::Fee>,
     #[prost(message, repeated, tag = "5")]
     pub clue_plans: ::prost::alloc::vec::Vec<CluePlan>,
+    /// Planning interface for constructing an optional Memo for the Transaction.
     #[prost(message, optional, tag = "6")]
     pub memo_plan: ::core::option::Option<MemoPlan>,
 }

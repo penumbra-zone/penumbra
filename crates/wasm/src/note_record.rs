@@ -5,12 +5,13 @@ use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note};
 use penumbra_tct as tct;
 use std::convert::{TryFrom, TryInto};
-
+use tsify::Tsify;
 use serde::{Deserialize, Serialize};
 
 /// Corresponds to the SpendableNoteRecord proto
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Tsify, Serialize, Deserialize, Debug, Clone)]
 #[serde(try_from = "pb::SpendableNoteRecord", into = "pb::SpendableNoteRecord")]
+#[tsify(into_wasm_abi, from_wasm_abi)]
 pub struct SpendableNoteRecord {
     pub note_commitment: note::StateCommitment,
     pub note: Note,

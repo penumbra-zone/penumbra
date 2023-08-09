@@ -546,7 +546,7 @@ pub async fn transaction_info_inner(
 }
 
 pub async fn get_asset(id: &Id) -> Option<DenomMetadata> {
-    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 11).ok()?;
+    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok()?;
 
     let db: IdbDatabase = db_req.into_future().await.ok()?;
 
@@ -563,7 +563,7 @@ pub async fn get_asset(id: &Id) -> Option<DenomMetadata> {
 }
 
 pub async fn get_note(commitment: &note::StateCommitment) -> Option<SpendableNoteRecord> {
-    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 11).ok()?;
+    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok()?;
 
     let db: IdbDatabase = db_req.into_future().await.ok()?;
 
@@ -580,7 +580,7 @@ pub async fn get_note(commitment: &note::StateCommitment) -> Option<SpendableNot
 }
 
 pub async fn get_note_by_nullifier(nullifier: &Nullifier) -> Option<SpendableNoteRecord> {
-    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 11).ok()?;
+    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok()?;
 
     let db: IdbDatabase = db_req.into_future().await.ok()?;
 

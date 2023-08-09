@@ -71,14 +71,14 @@ pub trait AppHashRead {
     async fn get_with_proof_to_apphash(
         &self,
         key: Vec<u8>,
-    ) -> Result<(Option<Vec<u8>>, MerkleProof), anyhow::Error>;
+    ) -> anyhow::Result<(Option<Vec<u8>>, MerkleProof)>;
 
     async fn get_with_proof_to_apphash_tm(
         &self,
         key: Vec<u8>,
-    ) -> Result<Option<(Vec<u8>, tendermint::merkle::proof::ProofOps)>, anyhow::Error>;
+    ) -> anyhow::Result<Option<(Vec<u8>, tendermint::merkle::proof::ProofOps)>>;
 
-    async fn app_hash(&self) -> Result<AppHash, anyhow::Error>;
+    async fn app_hash(&self) -> anyhow::Result<AppHash>;
 }
 
 #[async_trait]

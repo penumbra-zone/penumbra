@@ -266,7 +266,7 @@ impl FromStr for Ratio {
             .ok_or_else(|| anyhow::anyhow!("missing denominator"))?
             .parse()?;
         if parts.next().is_some() {
-            return Err(anyhow::anyhow!("too many parts"));
+            anyhow::bail!("too many parts");
         }
         Ok(Ratio {
             numerator,

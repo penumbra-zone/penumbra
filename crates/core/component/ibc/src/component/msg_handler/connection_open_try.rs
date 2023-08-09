@@ -89,7 +89,7 @@ impl MsgHandler for MsgConnectionOpenTry {
         // check if the client is frozen
         // TODO: should we also check if the client is expired here?
         if trusted_client_state.is_frozen() {
-            return Err(anyhow::anyhow!("client is frozen"));
+            anyhow::bail!("client is frozen");
         }
 
         // get the stored consensus state for the counterparty
@@ -199,9 +199,7 @@ async fn consensus_height_is_correct<S: StateRead>(
 ) -> anyhow::Result<()> {
     let current_height = IBCHeight::new(0, state.get_block_height().await?)?;
     if msg.consensus_height_of_b_on_a > current_height {
-        return Err(anyhow::anyhow!(
-            "consensus height is greater than the current block height",
-        ));
+        anyhow::bail!("consensus height is greater than the current block height",);
     }
 
     Ok(())

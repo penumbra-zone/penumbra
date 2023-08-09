@@ -54,8 +54,10 @@ pub struct TransactionPlannerRequest {
     #[prost(message, optional, tag = "2")]
     pub fee: ::core::option::Option<super::super::core::crypto::v1alpha1::Fee>,
     /// The memo for the requested TransactionPlan
-    #[prost(string, tag = "3")]
-    pub memo: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub memo: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::MemoPlaintext,
+    >,
     /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
@@ -66,6 +68,8 @@ pub struct TransactionPlannerRequest {
     pub outputs: ::prost::alloc::vec::Vec<transaction_planner_request::Output>,
     #[prost(message, repeated, tag = "30")]
     pub swaps: ::prost::alloc::vec::Vec<transaction_planner_request::Swap>,
+    #[prost(message, repeated, tag = "31")]
+    pub swap_claims: ::prost::alloc::vec::Vec<transaction_planner_request::SwapClaim>,
     #[prost(message, repeated, tag = "40")]
     pub delegations: ::prost::alloc::vec::Vec<transaction_planner_request::Delegate>,
     #[prost(message, repeated, tag = "50")]
@@ -81,10 +85,12 @@ pub mod transaction_planner_request {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Output {
+        /// The amount and denomination in which the Output is issued.
         #[prost(message, optional, tag = "1")]
         pub value: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Value,
         >,
+        /// The address to which Output will be sent.
         #[prost(message, optional, tag = "2")]
         pub address: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Address,
@@ -93,17 +99,31 @@ pub mod transaction_planner_request {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Swap {
+        /// The amount and denomination to be traded in the Swap.
         #[prost(message, optional, tag = "1")]
         pub value: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Value,
         >,
+        /// The denomination to be received as a Output of the Swap.
         #[prost(message, optional, tag = "2")]
         pub target_asset: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::AssetId,
         >,
+        /// An optional fee to be paid for performing the Swap.
         #[prost(message, optional, tag = "3")]
         pub fee: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Fee,
+        >,
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct SwapClaim {
+        /// SwapCommitment to identify the Swap to be claimed.
+        /// Use the commitment from the Swap message:
+        /// penumbra.core.dex.v1alpha1.Swap.body.payload.commitment.
+        #[prost(message, optional, tag = "1")]
+        pub swap_commitment: ::core::option::Option<
+            super::super::super::core::crypto::v1alpha1::StateCommitment,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]

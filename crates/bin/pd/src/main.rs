@@ -298,6 +298,11 @@ async fn main() -> anyhow::Result<()> {
                 })
                 // Allow HTTP/1, which will be used by grpc-web connections.
                 .accept_http1(true)
+                // Sets a timeout for all gRPC requests, but note that in the case of streaming
+                // requests, the timeout is only applied to the initial request. This means that
+                // this does not prevent long lived streams, for example to allow clients to obtain
+                // new blocks.
+                .timeout(std::time::Duration::from_secs(7))
                 // Wrap each of the gRPC services in a tonic-web proxy:
                 .add_service(tonic_web::enable(ObliviousQueryServiceServer::new(
                     info.clone(),
@@ -352,6 +357,12 @@ async fn main() -> anyhow::Result<()> {
             // Configure a Prometheus recorder and exporter.
             let (recorder, exporter) = PrometheusBuilder::new()
                 .with_http_listener(metrics_bind)
+                // Set explicit buckets so that Prometheus endpoint emits true histograms, rather
+                // than the default distribution type summaries, for time-series data.
+                .set_buckets_for_metric(
+                    metrics_exporter_prometheus::Matcher::Prefix("penumbra_dex_".to_string()),
+                    penumbra_dex::component::metrics::DEX_BUCKETS,
+                )?
                 .build()
                 .expect("failed to build prometheus recorder");
 
@@ -406,10 +417,10 @@ async fn main() -> anyhow::Result<()> {
 
             // If the output directory already exists, bail out, rather than overwriting.
             if output_dir.exists() {
-                return Err(anyhow::anyhow!(
+                anyhow::bail!(
                     "output directory {:?} already exists, refusing to overwrite it",
                     output_dir
-                ));
+                );
             }
 
             // Check whether an external address was set, and parse as TendermintAddress.
@@ -474,10 +485,10 @@ async fn main() -> anyhow::Result<()> {
             let output_dir = get_testnet_dir(testnet_dir);
             // If the output directory already exists, bail out, rather than overwriting.
             if output_dir.exists() {
-                return Err(anyhow::anyhow!(
+                anyhow::bail!(
                     "output directory {:?} already exists, refusing to overwrite it",
                     output_dir
-                ));
+                );
             }
 
             // Build and write local configs based on input flags.
