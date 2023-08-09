@@ -255,7 +255,8 @@ type TransactionPlannerRequest struct {
 	ExpiryHeight uint64 `protobuf:"varint,1,opt,name=expiry_height,json=expiryHeight,proto3" json:"expiry_height,omitempty"`
 	// The fee for the requested TransactionPlan, if any.
 	Fee *v1alpha11.Fee `protobuf:"bytes,2,opt,name=fee,proto3" json:"fee,omitempty"`
-	// The memo for the requested TransactionPlan
+	// The memo for the requested TransactionPlan.
+	// The memo must be unspecified unless `outputs` is nonempty.
 	Memo *v1alpha1.MemoPlaintext `protobuf:"bytes,3,opt,name=memo,proto3" json:"memo,omitempty"`
 	// Identifies the account group to query.
 	AccountGroupId *v1alpha11.AccountGroupId `protobuf:"bytes,14,opt,name=account_group_id,json=accountGroupId,proto3,oneof" json:"account_group_id,omitempty"`
