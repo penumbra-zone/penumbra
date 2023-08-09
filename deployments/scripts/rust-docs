@@ -28,7 +28,7 @@ cargo +nightly doc --no-deps \
   -p poseidon377 \
   -p poseidon-paramgen \
   -p poseidon-permutation \
-  -p decaf377 \
+  -p decaf377@0.5.0 \
   -p decaf377-rdsa \
   -p decaf377-fmd \
   -p decaf377-ka \
