@@ -334,9 +334,10 @@ pub(crate) trait StakingImpl: StateWriteExt {
         let chain_params = self.get_stake_params().await?;
 
         tracing::debug!("processing base rate");
-        // We are transitioning to the next epoch, so set "cur_base_rate" to the base rate derived
-        // from the allocation given by the distributions module, and remember the previous base
-        // rate.
+
+        // We consider ourselves to be "in between" epochs at this point: the current base rate of
+        // the epoch we are ending is the "previous base rate", while the base rate of the next
+        // epoch about to begin is the "upcoming base rate":
         let previous_base_rate = self.current_base_rate().await?; // now looking backwards, our current rate is the previous rate
         let upcoming_base_rate: BaseRateData =
             previous_base_rate.next(chain_params.base_reward_rate);
@@ -344,23 +345,31 @@ pub(crate) trait StakingImpl: StateWriteExt {
         tracing::debug!(?previous_base_rate);
         tracing::debug!(?upcoming_base_rate);
 
-        // Update the base rates in the JMT:
+        // Update the base rates in the JMT to the upcoming base rate.
         self.set_base_rate(upcoming_base_rate.clone()).await;
 
         let validator_list = self.validator_list().await?;
         for validator in &validator_list {
-            // Get the current rate for the validator...
+            // We consider ourselves to be "in between" epochs right now, so the current validator
+            // rate for the epoch we are ending is the "previous validator rate", while the rate we
+            // will calculate for the next epoch about to start is the "upcoming validator rate":
             let previous_validator_rate_unslashed = self
                 .current_validator_rate(&validator.identity_key)
                 .await?
                 .ok_or_else(|| {
                     anyhow::anyhow!("validator had ID in validator_list but rate not found in JMT")
                 })?;
-            // ... as soon as we apply any penalties recorded in the previous epoch.
+
+            // The above validator rate has not yet had any accumulated slashing penalties applied,
+            // so we need to apply them now:
             let penalty = self
                 .penalty_in_epoch(&validator.identity_key, epoch_to_end.index)
                 .await?
                 .unwrap_or_default();
+
+            // The *actual* previous validator rate (as opposed to the merely anticipated one that
+            // was written early into the state) is that previous validator rate, minus the slashing
+            // penalties that it incurred in the previous epoch:
             let previous_validator_rate = previous_validator_rate_unslashed.slash(penalty);
 
             let validator_state = self
@@ -380,6 +389,10 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 &validator_state,
             );
 
+            // Total the delegations and undelegations for this validator in the closing epoch, to
+            // find the delta between the two. This delta will be used to calculate the changes to
+            // the validator's voting power, and the change in supply of the delegation tokens and
+            // the staking token.
             let total_delegations = delegations_by_validator
                 .get(&validator.identity_key)
                 .into_iter()
@@ -487,10 +500,6 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // we can determine which validators are Active for the next epoch.
         self.process_validator_unbondings().await?;
         self.set_active_and_inactive_validators().await?;
-
-        // The pending delegation changes should be empty at the beginning of the next epoch.
-        // TODO: check that this was a no-op
-        // self.delegation_changes = Default::default();
 
         Ok(())
     }
