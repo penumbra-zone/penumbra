@@ -2,9 +2,7 @@
 
 use penumbra_num::Amount;
 use penumbra_proto::client::v1alpha1::CurrentValidatorRateResponse;
-use penumbra_proto::{
-    client::v1alpha1::NextValidatorRateResponse, core::stake::v1alpha1 as pb, DomainType, TypeUrl,
-};
+use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::{validator::State, FundingStream, IdentityKey};
@@ -252,25 +250,6 @@ impl TryFrom<pb::BaseRateData> for BaseRateData {
             base_reward_rate: v.base_reward_rate,
             base_exchange_rate: v.base_exchange_rate,
         })
-    }
-}
-
-impl From<RateData> for NextValidatorRateResponse {
-    fn from(r: RateData) -> Self {
-        NextValidatorRateResponse {
-            data: Some(r.into()),
-        }
-    }
-}
-
-impl TryFrom<NextValidatorRateResponse> for RateData {
-    type Error = anyhow::Error;
-
-    fn try_from(value: NextValidatorRateResponse) -> Result<Self, Self::Error> {
-        value
-            .data
-            .ok_or_else(|| anyhow::anyhow!("empty NextValidatorRateResponse message"))?
-            .try_into()
     }
 }
 

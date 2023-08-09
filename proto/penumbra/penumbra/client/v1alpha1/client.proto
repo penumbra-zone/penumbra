@@ -113,7 +113,6 @@ service SpecificQueryService {
   rpc TransactionByNote(TransactionByNoteRequest) returns (TransactionByNoteResponse);
   rpc ValidatorStatus(ValidatorStatusRequest) returns (ValidatorStatusResponse);
   rpc ValidatorPenalty(ValidatorPenaltyRequest) returns (ValidatorPenaltyResponse);
-  rpc NextValidatorRate(NextValidatorRateRequest) returns (NextValidatorRateResponse);
   rpc CurrentValidatorRate(CurrentValidatorRateRequest) returns (CurrentValidatorRateResponse);
 
   rpc BatchSwapOutputData(BatchSwapOutputDataRequest) returns (BatchSwapOutputDataResponse);
@@ -191,16 +190,6 @@ message CurrentValidatorRateRequest {
 }
 
 message CurrentValidatorRateResponse {
-  core.stake.v1alpha1.RateData data = 1;
-}
-
-message NextValidatorRateRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
-  core.crypto.v1alpha1.IdentityKey identity_key = 2;
-}
-
-message NextValidatorRateResponse {
   core.stake.v1alpha1.RateData data = 1;
 }
 
