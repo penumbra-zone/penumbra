@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 parking_lot = "0.12"
-decaf377 = "0.4"
+decaf377 = "0.5"
 anyhow = "1"
 futures = "0.3"
 merlin = "3"
