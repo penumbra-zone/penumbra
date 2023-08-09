@@ -38,7 +38,7 @@ penumbra-keys = { path = "../../../core/keys", default-features = false  }
 
 # Penumbra dependencies
 decaf377 = {version = "0.5", features = ["r1cs"] }
-decaf377-rdsa = { version = "0.6" }
+decaf377-rdsa = { version = "0.7" }
 ark-r1cs-std = {version = "0.4", default-features = false }
 ark-relations = "0.4"
 ark-ff = { version = "0.4", default_features = false }
