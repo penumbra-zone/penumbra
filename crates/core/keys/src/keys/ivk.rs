@@ -1,12 +1,11 @@
-use ark_ff::{Field, One, PrimeField};
+use ark_ff::PrimeField;
 use rand_core::{CryptoRng, RngCore};
 
-use ark_r1cs_std::fields::nonnative::NonNativeFieldVar;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{
     r1cs::{ElementVar, FqVar},
-    Fq, Fr,
+    FieldExt, Fq, Fr,
 };
 
 use super::{AddressIndex, Diversifier, DiversifierKey};
@@ -93,21 +92,7 @@ impl IncomingViewingKey {
 }
 
 pub struct IncomingViewingKeyVar {
-    inner: NonNativeFieldVar<Fr, Fq>,
-}
-
-/// Convert little-endian boolean constraints into a field element
-pub fn convert_le_bits_to_non_native_var(bits: &[Boolean<Fq>]) -> NonNativeFieldVar<Fr, Fq> {
-    let mut acc = NonNativeFieldVar::<Fr, Fq>::zero();
-    let mut power = Fr::one();
-
-    bits.iter().for_each(|b| {
-        acc += NonNativeFieldVar::<Fr, Fq>::from(b.clone())
-            * NonNativeFieldVar::<Fr, Fq>::constant(power);
-        power.double_in_place();
-    });
-
-    acc
+    inner: FqVar,
 }
 
 impl IncomingViewingKeyVar {
@@ -116,15 +101,48 @@ impl IncomingViewingKeyVar {
         let cs = nk.inner.cs();
         let ivk_domain_sep = FqVar::new_constant(cs.clone(), *IVK_DOMAIN_SEP)?;
         let ivk_mod_q = poseidon377::r1cs::hash_2(
-            cs,
+            cs.clone(),
             &ivk_domain_sep,
             (nk.inner.clone(), ak.inner.compress_to_field()?),
         )?;
 
-        // Reduce `ivk_mod_q` modulo r
-        let ivk_bits = ivk_mod_q.to_bits_le()?;
-        let ivk = convert_le_bits_to_non_native_var(&ivk_bits);
-        Ok(IncomingViewingKeyVar { inner: ivk })
+        // OOC: Reduce `ivk_mod_q` modulo r
+        let r_modulus: Fq = ark_ff::MontFp!(
+            "2111115437357092606062206234695386632838870926408408195193685246394721360383"
+        );
+        let ivk_mod_q_ooc: Fq = ivk_mod_q.value().unwrap_or_default();
+        let ivk_mod_r_ooc = Fr::from_le_bytes_mod_order(&ivk_mod_q_ooc.to_bytes());
+
+        // We also need ivk reduced mod r as an Fq for inserting back into the circuit
+        let ivk_mod_r_ooc_q = Fq::from_le_bytes_mod_order(&ivk_mod_r_ooc.to_bytes());
+        let ivk_mod_r = FqVar::new_witness(cs.clone(), || Ok(ivk_mod_r_ooc_q))?;
+
+        // Finally, we figure out how many times we needed to subtract r from ivk_mod_q_ooc to get ivk_mod_r_ooc.
+        let mut temp_ivk_mod_q = ivk_mod_q_ooc;
+        let mut a = 0;
+        while temp_ivk_mod_q > r_modulus {
+            temp_ivk_mod_q -= r_modulus;
+            a += 1;
+        }
+
+        // Now we add constraints to demonstrate that `ivk_mod_r` is the correct
+        // reduction from `ivk_mod_q`.
+        //
+        // Constrain: ivk_mod_q = mod_r * a + ivk_mod_r
+        let mod_r_var = FqVar::new_constant(cs.clone(), r_modulus)?;
+        let a_var = FqVar::new_witness(cs.clone(), || Ok(Fq::from(a)))?;
+        let rhs = &mod_r_var * &a_var + &ivk_mod_r;
+        ivk_mod_q.enforce_equal(&rhs)?;
+
+        // Constrain: a <= 4
+        let four = FqVar::new_constant(cs, Fq::from(4))?;
+        a_var.enforce_cmp(&four, core::cmp::Ordering::Less, true)?;
+
+        // Constrain: ivk_mod_r < r
+        // Here we can use the existing `enforce_cmp` method on FqVar as r <= (q-1)/2.
+        ivk_mod_r.enforce_cmp(&mod_r_var, core::cmp::Ordering::Less, false)?;
+
+        Ok(IncomingViewingKeyVar { inner: ivk_mod_r })
     }
 
     /// Derive a transmission key from the given diversified base.
