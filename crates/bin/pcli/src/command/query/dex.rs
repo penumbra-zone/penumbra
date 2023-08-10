@@ -45,6 +45,7 @@ pub enum DexCmd {
         trading_pair: DirectedTradingPair,
     },
     /// Display information about an arb execution at a specific height.
+    #[clap(visible_alias = "arb")]
     ArbExecution {
         /// The height to query for the swap execution.
         #[clap(long)]
