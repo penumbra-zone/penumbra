@@ -821,15 +821,15 @@ mod test {
         #[test]
         fn add(
             a_int in any::<u64>(),
-            a_frac in any::<u64>(),
+            a_frac in any::<u128>(),
             b_int in any::<u64>(),
-            b_frac in any::<u64>(),
+            b_frac in any::<u128>(),
         ) {
             let a = U128x128(
-                U256([a_frac.into(), a_int.into()])
+                U256([a_frac, a_int.into()])
             );
             let b = U128x128(
-                U256([b_frac.into(), b_int.into()])
+                U256([b_frac, b_int.into()])
             );
             let result = a.checked_add(&b);
 
