@@ -16,6 +16,7 @@ use crate::{
 };
 
 pub const IVK_LEN_BYTES: usize = 64;
+const MOD_R_QUOTIENT: usize = 4;
 
 /// Allows viewing incoming notes, i.e., notes sent to the spending key this
 /// key is derived from.
@@ -134,16 +135,12 @@ impl IncomingViewingKeyVar {
 
         // Constrain: a <= 4
         //
-        // Warning: This relies on the relative size of the fields (mod r and mod q).
-        // See test `enforce_field_assumptions`.
-        //
         // We could use `enforce_cmp` to add an a <= 4 constraint, but it's cheaper
         // to add constraints to demonstrate a(a-1)(a-2)(a-3)(a-4) = 0.
         let mut mul = a_var.clone();
-        mul *= a_var.clone() - FqVar::new_constant(cs.clone(), Fq::from(1))?;
-        mul *= a_var.clone() - FqVar::new_constant(cs.clone(), Fq::from(2))?;
-        mul *= a_var.clone() - FqVar::new_constant(cs.clone(), Fq::from(3))?;
-        mul *= a_var - FqVar::new_constant(cs.clone(), Fq::from(4))?;
+        for i in 1..=MOD_R_QUOTIENT {
+            mul *= a_var.clone() - FqVar::new_constant(cs.clone(), Fq::from(i as u64))?;
+        }
         let zero = FqVar::new_constant(cs, Fq::zero())?;
         mul.enforce_equal(&zero)?;
 
@@ -212,8 +209,6 @@ mod test {
 
     #[test]
     fn enforce_field_assumptions() {
-        const MOD_R_QUOTIENT: usize = 4;
-
         use num_bigint::BigUint;
         use num_traits::ops::checked::CheckedSub;
 
