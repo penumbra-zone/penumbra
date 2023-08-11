@@ -3,14 +3,18 @@ use rand_core::OsRng;
 
 use penumbra_proof_setup::{
     log::{ContributionHash, Hashable},
-    phase1::{CRSElements, Contribution},
+    phase1::{CRSElements, Contribution, RawContribution},
 };
 
 fn run_phase1_prove(parent: ContributionHash, old: &CRSElements) -> Contribution {
     Contribution::make(&mut OsRng, parent, old)
 }
 
-fn run_phase1_verify() {}
+fn run_phase1_verify(contribution: RawContribution) {
+    contribution
+        .validate(&mut OsRng)
+        .expect("this is a valid contribution");
+}
 
 fn phase1_benchmarks(c: &mut Criterion) {
     // Generate contribution for degree = 37,655
@@ -23,7 +27,10 @@ fn phase1_benchmarks(c: &mut Criterion) {
         b.iter(|| run_phase1_prove(root_hash, &root))
     });
 
-    // c.bench_function("phase 1 verify", |b| b.iter(|| run_phase1_verify()));
+    let new_contribution = Contribution::make(&mut OsRng, root_hash, &root);
+    c.bench_function("phase 1 verify", |b| {
+        b.iter(|| run_phase1_verify(new_contribution.clone().into()))
+    });
 }
 
 criterion_group! {
