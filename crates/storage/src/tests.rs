@@ -1315,3 +1315,67 @@ async fn range_query_bad_range() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+/// Test that specifying an inverted range does not work.
+async fn range_query_storage() -> anyhow::Result<()> {
+    use crate::read::StateRead;
+    use crate::write::StateWrite;
+    tracing_subscriber::fmt::init();
+    let tmpdir = tempfile::tempdir()?;
+
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    let mut delta = StateDelta::new(storage.latest_snapshot());
+
+    delta.nonverifiable_put_raw(b"a/aaaaa".to_vec(), b"1".to_vec());
+    delta.nonverifiable_put_raw(b"a/aaaab".to_vec(), b"2".to_vec());
+    delta.nonverifiable_put_raw(b"a/aaaac".to_vec(), b"3".to_vec());
+    delta.nonverifiable_put_raw(b"b/boat".to_vec(), b"4".to_vec());
+    storage.commit(delta).await?;
+
+    let state_init = storage.latest_snapshot();
+    let mut range = state_init.nonverifiable_range_raw(Some(b"a/"), ..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"a/aaaaa".to_vec(), b"1".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"a/aaaab".to_vec(), b"2".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"a/aaaac".to_vec(), b"3".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let mut range = state_init.nonverifiable_range_raw(Some(b"a/"), b"aaaa".to_vec()..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"a/aaaaa".to_vec(), b"1".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"a/aaaab".to_vec(), b"2".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"a/aaaac".to_vec(), b"3".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let mut range = state_init.nonverifiable_range_raw(Some(b"b/"), b"chorizo".to_vec()..)?;
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let mut range = state_init.nonverifiable_range_raw(Some(b"b/"), ..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"b/boat".to_vec(), b"4".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+    Ok(())
+}
