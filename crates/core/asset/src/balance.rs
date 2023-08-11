@@ -353,13 +353,9 @@ impl BalanceVar {
 
             // We scalar mul first with value (small), _then_ negate [v]G_v if needed
             let vG = G_v.scalar_mul_le(value_amount.to_bits_le()?.iter())?;
-            let commitment_plus_contribution = commitment.clone() + &vG;
-            let commitment_minus_contribution = commitment - vG;
-            commitment = ElementVar::conditionally_select(
-                sign,
-                &commitment_plus_contribution,
-                &commitment_minus_contribution,
-            )?;
+            let minus_vG = vG.negate()?;
+            let to_add = ElementVar::conditionally_select(sign, &vG, &minus_vG)?;
+            commitment = commitment + to_add;
         }
         Ok(BalanceCommitmentVar { inner: commitment })
     }
@@ -383,7 +379,7 @@ impl std::ops::Add for BalanceVar {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        let mut balance_vec = self.inner.clone();
+        let mut balance_vec = self.inner;
         for (asset_id, (sign, amount)) in other.inner {
             balance_vec.push((asset_id, (sign, amount)));
         }
