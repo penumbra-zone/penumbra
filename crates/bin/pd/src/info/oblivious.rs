@@ -236,17 +236,8 @@ impl ObliviousQueryService for Info {
                     "catching up from start height to current end height"
                 );
 
-                // We need to send block responses in order, but fetching the
-                // compact block involves disk I/O, so we want to look ahead and
-                // start fetching compact blocks, rather than waiting for each
-                // state query to complete sequentially.
-                //
-                // To do this, we spawn a task that runs ahead and queues block
-                // fetches from the state.  Each block fetch is also spawned as
-                // a new task, so they execute independently, and those tasks'
-                // JoinHandles are sent back to this task using a bounded
-                // channel.  The channel bound prevents the queueing task from
-                // running too far ahead.
+                // We rely on a range query to fetch compact blocks in order and
+                // pipe them to the client sync stream.
                 let storage2 = storage.clone();
                 let latest_snapshot = storage2.latest_snapshot();
                 while let Some(compact_block) = latest_snapshot
