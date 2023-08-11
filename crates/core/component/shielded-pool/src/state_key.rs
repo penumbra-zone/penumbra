@@ -6,6 +6,11 @@ pub fn token_supply(asset_id: &asset::Id) -> String {
     format!("shielded_pool/assets/{asset_id}/token_supply")
 }
 
+// The total supply of penumbra tokens in any form (unstaked, staked, or unbonding)
+pub fn staking_token_total_supply() -> &'static str {
+    "shielded_pool/staking_token_total_supply"
+}
+
 pub fn known_assets() -> &'static str {
     "shielded_pool/known_assets"
 }
