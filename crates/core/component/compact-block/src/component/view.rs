@@ -1,3 +1,4 @@
+use crate::state_key::state_key::compact_block;
 use crate::{state_key, CompactBlock};
 use anyhow::Context;
 use anyhow::Error;
@@ -17,6 +18,10 @@ pub trait StateReadExt: StateRead {
         &self,
         start_height: u64,
     ) -> Pin<Box<dyn Stream<Item = Result<CompactBlock>> + Send + 'static>> {
+        self.nonverifiable_range_raw(
+            Some(compact_block::prefix()),
+            compact_block::key_component(start_height).as_bytes()..,
+        );
         self.nonverifiable_prefix_raw(&state_key::compact_block(start_height).as_bytes())
             .map(|result| {
                 result.and_then(|(_, v)| {
