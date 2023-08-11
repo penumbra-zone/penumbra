@@ -88,16 +88,14 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Get all the note requests necessary to fulfill the current [`Balance`].
     pub fn notes_requests(
         &self,
-        account_group_id: AccountGroupId,
-        source: AddressIndex,
     ) -> (Vec<NotesRequest>, Vec<NotesForVotingRequest>) {
         (
             self.balance
                 .required()
                 .map(|Value { asset_id, amount }| NotesRequest {
-                    account_group_id: Some(account_group_id.into()),
+                    account_group_id: None,
                     asset_id: Some(asset_id.into()),
-                    address_index: Some(source.into()),
+                    address_index: None,
                     amount_to_spend: Some(amount.into()),
                     include_spent: false,
                     ..Default::default()
@@ -112,9 +110,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                              start_block_height, ..
                          },
                      )| NotesForVotingRequest {
-                        account_group_id: Some(account_group_id.into()),
+                        account_group_id: None,
                         votable_at_height: *start_block_height,
-                        address_index: Some(source.into()),
+                        address_index: None,
                         ..Default::default()
                     },
                 )
@@ -400,30 +398,30 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// provided to supply the notes and other information.
     ///
     /// Clears the contents of the planner, which can be re-used.
-    pub async fn plan(
-        &mut self,
-        account_group_id: AccountGroupId,
-        source: AddressIndex,
-        self_address: Address
-    ) -> anyhow::Result<TransactionPlan> {
-        // Gather all the information needed from the view service
-        let chain_params: ChainParameters = Default::default();
-        let fmd_params: FmdParameters =  Default::default();
-        let mut spendable_notes = Vec::new();
-        let mut voting_notes = Vec::new();
-        let (spendable_requests, voting_requests) = self.notes_requests(account_group_id, source);
-
-
-        // Plan the transaction using the gathered information
-
-        self.plan_with_spendable_and_votable_notes(
-            &chain_params,
-            &fmd_params,
-            spendable_notes,
-            voting_notes,
-            self_address,
-        )
-    }
+    // pub async fn plan(
+    //     &mut self,
+    //     account_group_id: AccountGroupId,
+    //     source: AddressIndex,
+    //     self_address: Address
+    // ) -> anyhow::Result<TransactionPlan> {
+    //     // Gather all the information needed from the view service
+    //     let chain_params: ChainParameters = Default::default();
+    //     let fmd_params: FmdParameters =  Default::default();
+    //     let mut spendable_notes = Vec::new();
+    //     let mut voting_notes = Vec::new();
+    //     // let (spendable_requests, voting_requests) = self.notes_requests(account_group_id, source);
+    //
+    //
+    //     // Plan the transaction using the gathered information
+    //
+    //     self.plan_with_spendable_and_votable_notes(
+    //         &chain_params,
+    //         &fmd_params,
+    //         spendable_notes,
+    //         voting_notes,
+    //         self_address,
+    //     )
+    // }
 
     /// Add spends and change outputs as required to balance the transaction, using the spendable
     /// notes provided. It is the caller's responsibility to ensure that the notes are the result of

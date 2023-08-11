@@ -16,6 +16,7 @@ use std::convert::TryFrom;
 use std::str::FromStr;
 
 use anyhow::Context;
+use rand_core::OsRng;
 use penumbra_keys::keys::{SeedPhrase, SpendKey};
 use wasm_bindgen::prelude::*;
 
@@ -74,6 +75,20 @@ pub fn get_address_by_index(full_viewing_key: &str, index: u32) -> JsValue {
     );
 
     return serde_wasm_bindgen::to_value(&address_str).unwrap();
+}
+
+#[wasm_bindgen]
+pub fn get_ephemeral_address(full_viewing_key: &str, index: u32) -> JsValue {
+    utils::set_panic_hook();
+    let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())
+        .context("The provided string is not a valid FullViewingKey")
+        .unwrap();
+
+    let (address, _dtk) = fvk.ephemeral_address(OsRng,index.into());
+
+    let proto = address.to_proto();
+
+    return serde_wasm_bindgen::to_value(&proto).unwrap();
 }
 
 #[wasm_bindgen]

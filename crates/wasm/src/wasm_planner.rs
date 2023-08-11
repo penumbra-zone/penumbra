@@ -3,17 +3,23 @@ use indexed_db_futures::prelude::OpenDbRequest;
 use rand_core::OsRng;
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::wasm_bindgen;
+use penumbra_dex::swap_claim::SwapClaimPlan;
 use penumbra_dex::TradingPair;
 use penumbra_proto::client::v1alpha1::simulate_trade_request::routing::Setting::Default;
 use penumbra_proto::core::chain::v1alpha1::{ChainParameters, FmdParameters};
-use penumbra_proto::core::crypto::v1alpha1::{Address, DenomMetadata, Fee, Value};
-use penumbra_proto::core::dex::v1alpha1::SwapClaimPlan;
+use penumbra_proto::core::crypto::v1alpha1::{Address, DenomMetadata, Fee, StateCommitment, Value};
 use penumbra_proto::core::transaction::v1alpha1::{MemoPlaintext, TransactionPlan};
 use penumbra_proto::DomainType;
 use penumbra_proto::view::v1alpha1::NotesRequest;
 use penumbra_shielded_pool::OutputPlan;
 use crate::note_record::SpendableNoteRecord;
 use crate::planner::Planner;
+use crate::swap_record;
+use crate::swap_record::SwapRecord;
+use decaf377::{Fq};
+use ark_ff::UniformRand;
+
+
 
 #[wasm_bindgen]
 pub struct WasmPlanner {
@@ -64,10 +70,23 @@ impl WasmPlanner {
         Ok(())
     }
 
-    pub fn swap_claim(&mut self, plan: JsValue) -> Result<(), JsValue> {
-        let swap_claim_proto: SwapClaimPlan = serde_wasm_bindgen::from_value(plan)?;
+    pub async fn swap_claim(&mut self, swap_commitment: JsValue) -> Result<(), JsValue> {
+        let swap_commitment_proto: StateCommitment = serde_wasm_bindgen::from_value(swap_commitment)?;
 
-        self.planner.swap_claim(swap_claim_proto.try_into().unwrap());
+        let swap_record = get_swap_by_commitment(swap_commitment_proto).await.unwrap();
+        let chain_params_proto: ChainParameters = get_chain_parameters().await.unwrap();
+
+
+        let swap_claim_plan = SwapClaimPlan {
+            swap_plaintext: swap_record.swap,
+            position: swap_record.position,
+            output_data: swap_record.output_data,
+            epoch_duration: chain_params_proto.epoch_duration,
+            proof_blinding_r: Fq::rand(&mut OsRng),
+            proof_blinding_s: Fq::rand(&mut OsRng),
+        };
+
+        self.planner.swap_claim(swap_claim_plan);
         Ok(())
     }
 
@@ -160,6 +179,23 @@ pub async fn get_fmd_parameters() -> Option<FmdParameters> {
 
     let value: Option<JsValue> = store
         .get_owned("fmd")
+        .ok()?
+        .await
+        .ok()?;
+
+    serde_wasm_bindgen::from_value(value?).ok()?
+}
+
+pub async fn get_swap_by_commitment(swap_commitment: StateCommitment) -> Option<SwapRecord> {
+    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok()?;
+
+    let db: IdbDatabase = db_req.into_future().await.ok()?;
+
+    let tx = db.transaction_on_one("swap").ok()?;
+    let store = tx.object_store("swap").ok()?;
+
+    let value: Option<JsValue> = store
+        .get_owned(base64::encode(swap_commitment.inner))
         .ok()?
         .await
         .ok()?;
