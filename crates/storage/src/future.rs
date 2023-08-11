@@ -561,10 +561,10 @@ where
     }
 }
 
-/// This implementation is a work-in-progress:
-/// MERGEBLOCK(erwan): detail how this implementation difers from
-/// `StateDeltaNonconsensusPrefixRawStream`.
 #[pin_project]
+/// A stream of key-value pairs that interleaves a nonverifiable storage and caching layers.
+// This implementation differs from [`StateDeltaNonconsensusPrefixRawStream`] sin how
+// it specifies the search space for the cache.
 pub struct StateDeltaNonconsensusRangeRawStream<St>
 where
     St: Stream<Item = Result<(Vec<u8>, Vec<u8>)>>,
