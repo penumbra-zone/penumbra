@@ -624,6 +624,22 @@ where
         // It's stored separately so that the contents of the
         layer_guards.push(this.leaf_cache.read());
 
+        let prefix = this.prefix.clone().unwrap_or_default();
+        let start = this.range.0.clone().unwrap_or_default();
+        let end = this.range.1.clone().unwrap_or_default();
+
+        let prefix_start = {
+            let mut prefix_start = prefix.clone();
+            prefix_start.extend_from_slice(&start);
+            prefix_start
+        };
+
+        let prefix_end = {
+            let mut prefix_end = prefix.clone();
+            prefix_end.extend_from_slice(&end);
+            prefix_end
+        };
+
         loop {
             // Obtain a reference to the next key-value pair from the underlying stream.
             let peeked = match ready!(this.underlying.as_mut().poll_peek(cx)) {
@@ -634,19 +650,33 @@ where
                 None => None,
             };
 
-            // To determine whether or not we should return the peeked value, we
-            // need to search the cache layers for keys that are between the last
-            // key we returned (exclusive, so we make forward progress on the
-            // stream) and the peeked key (inclusive, because we need to find out
-            // whether or not there was a covering deletion).
+            // In order to decide which key to return next, we need to inspect the
+            // cache layers for keys that are between the last key we returned (exclusive)
+            // and the peeked key (inclusive). In particular, we need to find out whether:
+            // - there is a covering deletion or update for any key that is part of our
+            //   range but precedes the peeked key, or
+            // - there is a newly inserted key that precedes the peeked key.
+            // We do this by setting the search range to be:
+            // if there is a last key, then (last key, peeked key],
+            // otherwise, if there is a lower bound, then [lower bound, peeked key],
+            // otherwise, (-∞, peeked key].
             let search_range = (
                 this.last_key
                     .as_ref()
-                    .map(Bound::Excluded)
-                    .unwrap_or(Bound::Included(this.prefix)),
-                peeked
-                    .map(|(k, _)| Bound::Included(k))
-                    .unwrap_or(Bound::Unbounded),
+                    .map(|k| Bound::Excluded(k))
+                    .unwrap_or(Bound::Included(prefix_start.as_ref())),
+                peeked.map(|(k, _v)| Bound::Included(k)).unwrap_or(
+                    this.range
+                        .1
+                        .as_ref()
+                        .map(|_| Bound::Excluded(prefix_end.as_ref()))
+                        .unwrap_or(Bound::Unbounded),
+                ),
+            );
+
+            tracing::debug!(
+                "searching cache layers for key-value pairs in range {:?}",
+                search_range
             );
 
             // It'd be slightly cleaner to initialize `leftmost_pair` with the
@@ -662,7 +692,15 @@ where
                     .unwrap()
                     .nonverifiable_changes
                     .range::<Vec<u8>, _>(search_range)
-                    .take_while(|(k, _v)| k.starts_with(this.prefix))
+                    .take_while(|(k, v)| {
+                        tracing::debug!(?v, ?k, "found key-value pair in cache layer");
+                        match peeked {
+                            Some((peeked_k, _)) => {
+                                k.starts_with(prefix.as_slice()) && k <= &peeked_k
+                            }
+                            None => k.starts_with(prefix.as_slice()),
+                        }
+                    })
                     .next();
 
                 // Check whether the new pair, if any, is the new leftmost pair.
