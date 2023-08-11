@@ -209,4 +209,36 @@ mod test {
 
         assert!(!ivk.views_address(&other_address));
     }
+
+    #[test]
+    fn enforce_field_assumptions() {
+        const MOD_R_QUOTIENT: usize = 4;
+
+        use num_bigint::BigUint;
+        use num_traits::ops::checked::CheckedSub;
+
+        let fq_modulus: BigUint = Fq::MODULUS.into();
+        let max_q: BigUint = &fq_modulus - 1u32;
+        let fr_modulus: BigUint = Fr::MODULUS.into();
+        assert!(
+            fr_modulus < fq_modulus,
+            "we assume that our scalar field is smaller than our base field"
+        );
+
+        let mut multiple = 0;
+        let mut res = max_q;
+        loop {
+            res = if let Some(x) = res.checked_sub(&fr_modulus) {
+                multiple += 1;
+                x
+            } else {
+                break;
+            };
+        }
+
+        assert_eq!(
+            MOD_R_QUOTIENT, multiple,
+            "`a = fr_modulus * 4 + r mod q` only works on specific curve parameters"
+        );
+    }
 }
