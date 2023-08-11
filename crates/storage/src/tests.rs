@@ -1317,7 +1317,94 @@ async fn range_query_bad_range() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-/// Test that specifying an inverted range does not work.
+/// Test that the semantics of the range query do not change when the state is
+/// persisted.
+async fn range_query_storage_basic() -> anyhow::Result<()> {
+    use crate::read::StateRead;
+    use crate::write::StateWrite;
+    tracing_subscriber::fmt::init();
+    let tmpdir = tempfile::tempdir()?;
+
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+    let mut delta = StateDelta::new(storage.latest_snapshot());
+
+    for height in 0..100 {
+        delta.nonverifiable_put_raw(
+            format!("compact_block/{:020}", height).as_bytes().to_vec(),
+            format!("compact_block/{:020}", height).as_bytes().to_vec(),
+        );
+    }
+
+    // We insert keys before the compact block keys.
+    for key in 0..10 {
+        delta.nonverifiable_put_raw(
+            format!("ante/{:020}", key).as_bytes().to_vec(),
+            format!("ante/{:020}", key).as_bytes().to_vec(),
+        );
+    }
+
+    // We insert keys after the compact block keys.
+    for key in 0..10 {
+        delta.nonverifiable_put_raw(
+            format!("post/{:020}", key).as_bytes().to_vec(),
+            format!("postƒ/{:020}", key).as_bytes().to_vec(),
+        );
+    }
+
+    storage.commit(delta).await?;
+
+    let state_init = storage.latest_snapshot();
+    let mut range = state_init.nonverifiable_range_raw(Some(b"compact_block/"), ..)?;
+    for height in 0..100 {
+        assert_eq!(
+            range.next().await.transpose()?,
+            Some((
+                format!("compact_block/{:020}", height).as_bytes().to_vec(),
+                format!("compact_block/{:020}", height).as_bytes().to_vec()
+            )),
+            "height: {}",
+            height
+        );
+    }
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let cb_50 = format!("{:020}", 50).as_bytes().to_vec();
+    let cb_80 = format!("{:020}", 80).as_bytes().to_vec();
+    let mut range = state_init.nonverifiable_range_raw(Some(b"compact_block/"), cb_50..cb_80)?;
+    for height in 50..80 {
+        assert_eq!(
+            range.next().await.transpose()?,
+            Some((
+                format!("compact_block/{:020}", height).as_bytes().to_vec(),
+                format!("compact_block/{:020}", height).as_bytes().to_vec()
+            )),
+            "height: {}",
+            height
+        );
+    }
+    assert_eq!(range.next().await.transpose()?, None);
+
+    let cb_80 = format!("{:020}", 80).as_bytes().to_vec();
+    let mut range = state_init.nonverifiable_range_raw(Some(b"compact_block/"), ..cb_80)?;
+    for height in 0..80 {
+        assert_eq!(
+            range.next().await.transpose()?,
+            Some((
+                format!("compact_block/{:020}", height).as_bytes().to_vec(),
+                format!("compact_block/{:020}", height).as_bytes().to_vec()
+            )),
+            "height: {}",
+            height
+        );
+    }
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+    Ok(())
+}
+
+#[tokio::test]
+/// Test that prefixed range queries work over the persisted state.
 async fn range_query_storage() -> anyhow::Result<()> {
     use crate::read::StateRead;
     use crate::write::StateWrite;
