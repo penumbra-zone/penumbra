@@ -54,9 +54,16 @@ Performance as of commit `98590ef2dd92ea75fa3bd6f09b3c24fec3fe36ff` benchmarked 
 
 ## zk-SNARK Ceremony Benchmarks
 
-Benchmarks for the zk-SNARK ceremony can be ran via:
+Run benchmarks for the zk-SNARK ceremony via:
 
 ```shell
 cd crates/crypto/proof-setup
 cargo bench
 ```
+
+Performance as of commit `7b4aca1c15929558444dedc8ec620e189eb96a6c` benchmarked on a 2023 Macbook Pro M2 (12 core CPU) with 32 GB memory:
+
+| Task    | Time |
+| -------- | ------- |
+| Phase 1 prove  | 41.6s    |
+| Phase 1 verify | 84.4s    |
