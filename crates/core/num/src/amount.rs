@@ -57,6 +57,12 @@ impl Amount {
             .map(|inner| Self { inner })
     }
 
+    pub fn checked_add_signed(&self, rhs: i128) -> Option<Self> {
+        Some(Amount {
+            inner: self.inner.checked_add_signed(rhs)?,
+        })
+    }
+
     pub fn saturating_add(&self, rhs: &Self) -> Self {
         Self {
             inner: self.inner.saturating_add(rhs.inner),
