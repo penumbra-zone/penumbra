@@ -61,7 +61,7 @@ pub trait StateRead: Send + Sync {
     /// This method does not support inclusive ranges, and will return an error if passed one.
     ///
     /// Users should generally prefer to use wrapper methods in an extension trait.
-    fn nonverifiable_range(
+    fn nonverifiable_range_raw(
         &self,
         prefix: Option<&[u8]>,
         range: impl RangeBounds<Vec<u8>>,
@@ -91,12 +91,12 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a S {
         (**self).nonverifiable_prefix_raw(prefix)
     }
 
-    fn nonverifiable_range(
+    fn nonverifiable_range_raw(
         &self,
         prefix: Option<&[u8]>,
-        range: impl RangeBounds<Vec<u8>>,
-    ) -> Result<S::NonconsensusRangeRawStream> {
-        (**self).nonverifiable_range(prefix, range)
+        range: impl std::ops::RangeBounds<Vec<u8>>,
+    ) -> anyhow::Result<Self::NonconsensusRangeRawStream> {
+        (**self).nonverifiable_range_raw(prefix, range)
     }
 
     fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
@@ -135,12 +135,12 @@ impl<'a, S: StateRead + Send + Sync> StateRead for &'a mut S {
         (**self).nonverifiable_prefix_raw(prefix)
     }
 
-    fn nonverifiable_range(
+    fn nonverifiable_range_raw(
         &self,
         prefix: Option<&[u8]>,
         range: impl RangeBounds<Vec<u8>>,
     ) -> Result<S::NonconsensusRangeRawStream> {
-        (**self).nonverifiable_range(prefix, range)
+        (**self).nonverifiable_range_raw(prefix, range)
     }
 
     fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
@@ -179,12 +179,12 @@ impl<S: StateRead + Send + Sync> StateRead for Arc<S> {
         (**self).nonverifiable_prefix_raw(prefix)
     }
 
-    fn nonverifiable_range(
+    fn nonverifiable_range_raw(
         &self,
         prefix: Option<&[u8]>,
         range: impl RangeBounds<Vec<u8>>,
     ) -> Result<Self::NonconsensusRangeRawStream> {
-        (**self).nonverifiable_range(prefix, range)
+        (**self).nonverifiable_range_raw(prefix, range)
     }
 
     fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
@@ -237,7 +237,7 @@ impl StateRead for () {
         futures::stream::iter(std::iter::empty())
     }
 
-    fn nonverifiable_range(
+    fn nonverifiable_range_raw(
         &self,
         _prefix: Option<&[u8]>,
         _range: impl RangeBounds<Vec<u8>>,
