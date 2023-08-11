@@ -349,44 +349,42 @@ impl StateRead for Snapshot {
         let prefix = prefix.unwrap_or_default();
 
         let (start, end) = (start.unwrap_or_default(), end.unwrap_or_default());
+        let end_is_empty = end.is_empty();
 
-        let prefixed_start = {
-            let mut prefixed_start = prefix.to_vec();
-            prefixed_start.extend_from_slice(&start);
-            prefixed_start
-        };
+        let mut prefix_start = Vec::with_capacity(prefix.len() + start.len());
+        let mut prefix_end = Vec::with_capacity(prefix.len() + end.len());
 
-        let prefixed_end = {
-            let mut prefixed_end = prefix.to_vec();
-            prefixed_end.extend_from_slice(&end);
-            prefixed_end
-        };
+        prefix_start.extend(prefix);
+        prefix_start.extend(start);
+        prefix_end.extend(prefix);
+        prefix_end.extend(end);
 
         tracing::debug!(
-            ?prefixed_start,
-            ?prefixed_end,
+            ?prefix_start,
+            ?prefix_end,
             ?prefix,
             "nonverifiable_range_raw"
         );
 
-        options.set_iterate_lower_bound(prefixed_start);
+        options.set_iterate_lower_bound(prefix_start);
 
-        // In the current implementation, range queries only go forward,
-        // so if the upper key is unbounded, we don't set specify it in the
-        // iterator options even if a prefix is specified. Here's an example:
+        // Our range queries implementation relies on forward iteration, which
+        // means that if the upper key is unbounded and a prefix has been set
+        // we cannot set the upper bound to the prefix. This is because the
+        // prefix is used as a lower bound for the iterator, and the upper bound
+        // is used to stop the iteration.
+        // If we set the upper bound to the prefix, we would get a range consisting of:
         // ```
-        //      prefix: "compactblock/"
-        //      start: 001
-        //      end: unbounded
+        // "compactblock/001" to "compactblock/"
         // ```
-        // If we set the upper bound to the prefix, we would get a range consisting
-        // of: "compactblock/001" to "compactblock/" which would not return anything.
-        if !end.is_empty() {
-            options.set_iterate_upper_bound(prefixed_end);
+        // which would not return anything.
+        if !end_is_empty {
+            options.set_iterate_upper_bound(prefix_end);
         }
 
         let mode = rocksdb::IteratorMode::Start;
         let (tx, rx) = mpsc::channel::<Result<(Vec<u8>, Vec<u8>)>>(10);
+        let prefix = prefix.to_vec();
 
         tokio::task::Builder::new()
             .name("Snapshot::nonverifiable_range_raw")
@@ -400,6 +398,14 @@ impl StateRead for Snapshot {
                     let iter = self2.0.snapshot.iterator_cf_opt(keys_cf, options, mode);
                     for i in iter {
                         let (key, value) = i?;
+
+                        // This is a bit of a hack, but RocksDB doesn't let us express the "prefixed range-queries",
+                        // that we want to support. In particular, we want to be able to do a prefix query that starts
+                        // at a particular key, and does not have an upper bound. Since we can't create an iterator that
+                        // cover this range, we have to filter out the keys that don't match the prefix.
+                        if !prefix.is_empty() && !key.starts_with(&prefix) {
+                            break;
+                        }
                         tx.blocking_send(Ok((key.into(), value.into())))?;
                     }
                     Ok::<(), anyhow::Error>(())
