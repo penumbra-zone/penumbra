@@ -624,21 +624,18 @@ where
         // It's stored separately so that the contents of the
         layer_guards.push(this.leaf_cache.read());
 
-        let prefix = this.prefix.clone().unwrap_or_default();
-        let start = this.range.0.clone().unwrap_or_default();
-        let end = this.range.1.clone().unwrap_or_default();
+        let (binding_prefix, binding_start, binding_end) = (Vec::new(), Vec::new(), Vec::new());
+        let prefix = this.prefix.as_ref().unwrap_or(&binding_prefix);
+        let start = this.range.0.as_ref().unwrap_or(&binding_start);
+        let end = this.range.1.as_ref().unwrap_or(&binding_end);
 
-        let prefix_start = {
-            let mut prefix_start = prefix.clone();
-            prefix_start.extend_from_slice(&start);
-            prefix_start
-        };
+        let mut prefix_start = Vec::with_capacity(prefix.len() + start.len());
+        let mut prefix_end = Vec::with_capacity(prefix.len() + end.len());
 
-        let prefix_end = {
-            let mut prefix_end = prefix.clone();
-            prefix_end.extend_from_slice(&end);
-            prefix_end
-        };
+        prefix_start.extend(prefix);
+        prefix_start.extend(start);
+        prefix_end.extend(prefix);
+        prefix_end.extend(end);
 
         loop {
             // Obtain a reference to the next key-value pair from the underlying stream.
