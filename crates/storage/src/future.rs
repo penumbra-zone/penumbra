@@ -647,29 +647,24 @@ where
                 None => None,
             };
 
-            // In order to decide which key to return next, we need to inspect the
-            // cache layers for keys that are between the last key we returned (exclusive)
-            // and the peeked key (inclusive). In particular, we need to find out whether:
-            // - there is a covering deletion or update for any key that is part of our
-            //   range but precedes the peeked key, or
-            // - there is a newly inserted key that precedes the peeked key.
-            // We do this by setting the search range to be:
-            // if there is a last key, then (last key, peeked key],
-            // otherwise, if there is a lower bound, then [lower bound, peeked key],
-            // otherwise, (-∞, peeked key].
-            let search_range = (
-                this.last_key
+            // We want to decide which key to return next, so we have to inspect the cache layers.
+            // To do this, we have to define a search space so that we cover updates and new insertions
+            // that could affect the next key to return.
+            let lower_bound = match this.last_key.as_ref() {
+                Some(k) => Bound::Excluded(k),
+                None => Bound::Included(prefix_start.as_ref()),
+            };
+
+            let upper_bound = match peeked {
+                Some((k, _v)) => Bound::Included(k),
+                None => this
+                    .range
+                    .1
                     .as_ref()
-                    .map(|k| Bound::Excluded(k))
-                    .unwrap_or(Bound::Included(prefix_start.as_ref())),
-                peeked.map(|(k, _v)| Bound::Included(k)).unwrap_or(
-                    this.range
-                        .1
-                        .as_ref()
-                        .map(|_| Bound::Excluded(prefix_end.as_ref()))
-                        .unwrap_or(Bound::Unbounded),
-                ),
-            );
+                    .map_or(Bound::Unbounded, |_| Bound::Excluded(prefix_end.as_ref())),
+            };
+
+            let search_range = (lower_bound, upper_bound);
 
             tracing::debug!(
                 "searching cache layers for key-value pairs in range {:?}",
