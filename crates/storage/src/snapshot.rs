@@ -14,7 +14,7 @@ use tracing::Span;
 use crate::{
     metrics,
     storage::{DbNodeKey, VersionedKeyHash},
-    StateRead,
+    utils, StateRead,
 };
 
 mod rocks_wrapper;
@@ -321,25 +321,75 @@ impl StateRead for Snapshot {
         tokio_stream::wrappers::ReceiverStream::new(rx)
     }
 
-    fn nonverifiable_range(
+    /*
+
+    ALT:
+
+        fn nonverifiable_range_raw<T, U>(
         &self,
-        _prefix: Option<&[u8]>,
-        _range: impl std::ops::RangeBounds<Vec<u8>>,
+        prefix: Option<&[u8]>,
+        range: T,
+    ) -> anyhow::Result<Self::NonconsensusRangeRawStream>
+    where
+        T: std::ops::RangeBounds<U>,
+        U: Into<Vec<u8>>,
+    {
+
+         */
+    fn nonverifiable_range_raw(
+        &self,
+        prefix: Option<&[u8]>,
+        range: impl std::ops::RangeBounds<Vec<u8>>,
     ) -> anyhow::Result<Self::NonconsensusRangeRawStream> {
-        let _span = Span::current();
-        /*
+        let span = Span::current();
         let self2 = self.clone();
 
+        let (_range, (start, end)) = utils::convert_bounds(range)?;
         let mut options = rocksdb::ReadOptions::default();
-        options.set_iterate_range(rocksdb::PrefixRange(prefix));
+        let prefix = prefix.unwrap_or_default();
+
+        let (start, end) = (start.unwrap_or_default(), end.unwrap_or_default());
+
+        let prefixed_start = {
+            let mut prefixed_start = prefix.to_vec();
+            prefixed_start.extend_from_slice(&start);
+            prefixed_start
+        };
+
+        let prefixed_end = {
+            let mut prefixed_end = prefix.to_vec();
+            prefixed_end.extend_from_slice(&end);
+            prefixed_end
+        };
+
+        tracing::debug!(
+            ?prefixed_start,
+            ?prefixed_end,
+            ?prefix,
+            "nonverifiable_range_raw"
+        );
+
+        options.set_iterate_lower_bound(prefixed_start);
+
+        // In the current implementation, range queries only go forward,
+        // so if the upper key is unbounded, we don't set specify it in the
+        // iterator options even if a prefix is specified. Here's an example:
+        // ```
+        //      prefix: "compactblock/"
+        //      start: 001
+        //      end: unbounded
+        // ```
+        // If we set the upper bound to the prefix, we would get a range consisting
+        // of: "compactblock/001" to "compactblock/" which would not return anything.
+        if !end.is_empty() {
+            options.set_iterate_upper_bound(prefixed_end);
+        }
+
         let mode = rocksdb::IteratorMode::Start;
+        let (tx, rx) = mpsc::channel::<Result<(Vec<u8>, Vec<u8>)>>(10);
 
-        let (tx, rx) = mpsc::channel(10);
-
-        // Here we're operating on the nonverifiable data, which is a raw k/v store,
-        // so we just iterate over the keys.
         tokio::task::Builder::new()
-            .name("Snapshot::nonverifiable_prefix_raw")
+            .name("Snapshot::nonverifiable_range_raw")
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     let keys_cf = self2
@@ -357,9 +407,7 @@ impl StateRead for Snapshot {
             })
             .expect("should be able to spawn_blocking");
 
-        tokio_stream::wrappers::ReceiverStream::new(rx)
-        */
-        todo!()
+        Ok(tokio_stream::wrappers::ReceiverStream::new(rx))
     }
 
     fn object_get<T: Any + Send + Sync + Clone>(&self, _key: &str) -> Option<T> {
