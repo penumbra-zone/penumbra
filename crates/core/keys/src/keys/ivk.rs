@@ -1,4 +1,4 @@
-use ark_ff::PrimeField;
+use ark_ff::{PrimeField, Zero};
 use rand_core::{CryptoRng, RngCore};
 
 use ark_r1cs_std::prelude::*;
@@ -107,9 +107,7 @@ impl IncomingViewingKeyVar {
         )?;
 
         // OOC: Reduce `ivk_mod_q` modulo r
-        let r_modulus: Fq = ark_ff::MontFp!(
-            "2111115437357092606062206234695386632838870926408408195193685246394721360383"
-        );
+        let r_modulus: Fq = Fq::from(Fr::MODULUS);
         let ivk_mod_q_ooc: Fq = ivk_mod_q.value().unwrap_or_default();
         let ivk_mod_r_ooc = Fr::from_le_bytes_mod_order(&ivk_mod_q_ooc.to_bytes());
 
@@ -135,8 +133,19 @@ impl IncomingViewingKeyVar {
         ivk_mod_q.enforce_equal(&rhs)?;
 
         // Constrain: a <= 4
-        let four = FqVar::new_constant(cs, Fq::from(4))?;
-        a_var.enforce_cmp(&four, core::cmp::Ordering::Less, true)?;
+        //
+        // Warning: This relies on the relative size of the fields (mod r and mod q).
+        // See test `enforce_field_assumptions`.
+        //
+        // We could use `enforce_cmp` to add an a <= 4 constraint, but it's cheaper
+        // to add constraints to demonstrate a(a-1)(a-2)(a-3)(a-4) = 0.
+        let mut mul = a_var.clone();
+        mul *= a_var.clone() - FqVar::new_constant(cs.clone(), Fq::from(1))?;
+        mul *= a_var.clone() - FqVar::new_constant(cs.clone(), Fq::from(2))?;
+        mul *= a_var.clone() - FqVar::new_constant(cs.clone(), Fq::from(3))?;
+        mul *= a_var - FqVar::new_constant(cs.clone(), Fq::from(4))?;
+        let zero = FqVar::new_constant(cs, Fq::zero())?;
+        mul.enforce_equal(&zero)?;
 
         // Constrain: ivk_mod_r < r
         // Here we can use the existing `enforce_cmp` method on FqVar as r <= (q-1)/2.
