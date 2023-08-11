@@ -298,7 +298,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     );
     assert_eq!(range.next().await.transpose()?, None);
     std::mem::drop(range);
-    //     Nonconsensus range checks
+    //     Nonconsensus prefix checks
     let mut range = state0.nonverifiable_prefix_raw(b"i");
     assert_eq!(
         range.next().await.transpose()?,
@@ -355,7 +355,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     );
     assert_eq!(range.next().await.transpose()?, None);
     std::mem::drop(range);
-    //     Nonconsensus range checks
+    //     Nonconsensus prefix checks
     let mut range = tx10.nonverifiable_prefix_raw(b"i");
     assert_eq!(
         range.next().await.transpose()?,
@@ -687,6 +687,631 @@ async fn simple_flow() -> anyhow::Result<()> {
     );
     assert_eq!(range.next().await.transpose()?, None);
     std::mem::drop(range);
+    let mut range = state1a.nonverifiable_range_raw(Some(b"i"), b"A".to_vec()..b"C".to_vec())?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iA".to_vec(), b"A".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iB".to_vec(), b"B".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+    let mut range = state1a.nonverifiable_range_raw(Some(b"i"), b"B".to_vec()..b"C".to_vec())?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iB".to_vec(), b"B".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let mut range = state1a.nonverifiable_range_raw(Some(b"i"), b"A".to_vec()..b"F".to_vec())?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iA".to_vec(), b"A".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iB".to_vec(), b"B".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iC".to_vec(), b"C".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let mut range = state1a.nonverifiable_range_raw(Some(b"i"), b"A".to_vec()..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iA".to_vec(), b"A".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iB".to_vec(), b"B".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iC".to_vec(), b"C".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iF".to_vec(), b"F".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+
+    let mut range = state1a.nonverifiable_range_raw(Some(b"i"), ..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iA".to_vec(), b"A".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iB".to_vec(), b"B".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iC".to_vec(), b"C".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iF".to_vec(), b"F".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let mut range = state1a.nonverifiable_range_raw(None, b"i".to_vec()..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iA".to_vec(), b"A".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iB".to_vec(), b"B".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iC".to_vec(), b"C".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iF".to_vec(), b"F".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let mut range = state1a.nonverifiable_range_raw(None, b"iA".to_vec()..b"iB".to_vec())?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iA".to_vec(), b"A".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    Ok(())
+}
+
+#[tokio::test]
+/// Test that range queries over the nonverifiable store work as expected.
+/// A range query can have a prefix, a start key, and an end key, so we want to test:
+/// - queries with no prefix, no start key, and no end key
+/// - queries with no prefix, a start key, and no end key
+/// - queries with no prefix, no start key, and an end key
+/// - queries with no prefix, a start key, and an end key
+/// - queries with a prefix, no start key, and no end key
+/// - queries with a prefix, a start key, and no end key
+/// - queries with a prefix, no start key, and an end key
+async fn range_queries_basic() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
+    let tmpdir = tempfile::tempdir()?;
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+
+    let mut state_init = StateDelta::new(storage.latest_snapshot());
+
+    // Check that range queries over an empty store work does not return any results.
+    let mut range = state_init.nonverifiable_range_raw(None, ..)?;
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let mut tx00 = StateDelta::new(&mut state_init);
+    tx00.nonverifiable_put_raw(b"iA".to_vec(), b"A".to_vec());
+    tx00.nonverifiable_put_raw(b"iC".to_vec(), b"C".to_vec());
+    tx00.nonverifiable_put_raw(b"iF".to_vec(), b"F".to_vec());
+    tx00.nonverifiable_put_raw(
+        b"random_key_not_prefixed".to_vec(),
+        b"quetzalcoatl".to_vec(),
+    );
+
+    // Check that keys with the wrong prefix are not included in the results.
+    let mut range = tx00.nonverifiable_range_raw(Some(b"i"), ..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iA".to_vec(), b"A".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iC".to_vec(), b"C".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iF".to_vec(), b"F".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    // Insert an entry that precedes the current last entry
+    tx00.nonverifiable_put_raw(b"iD".to_vec(), b"D".to_vec());
+
+    // Check that the new entry is included in the results.
+    let mut range = tx00.nonverifiable_range_raw(Some(b"i"), ..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iA".to_vec(), b"A".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iC".to_vec(), b"C".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iD".to_vec(), b"D".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iF".to_vec(), b"F".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    tx00.apply();
+    // Check that the new entry is included in the results.
+    let mut range = state_init.nonverifiable_range_raw(Some(b"i"), ..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iA".to_vec(), b"A".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iC".to_vec(), b"C".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iD".to_vec(), b"D".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iF".to_vec(), b"F".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let mut tx01 = StateDelta::new(&mut state_init);
+    tx01.nonverifiable_delete(b"iA".to_vec());
+    tx01.nonverifiable_put_raw(b"iC".to_vec(), b"China".to_vec());
+    tx01.nonverifiable_put_raw(b"iD".to_vec(), b"Denmark".to_vec());
+    tx01.nonverifiable_put_raw(b"iF".to_vec(), b"Finland".to_vec());
+
+    // Check that the updated entries are included in the results.
+    let mut range = tx01.nonverifiable_range_raw(Some(b"i"), ..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iC".to_vec(), b"China".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iD".to_vec(), b"Denmark".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iF".to_vec(), b"Finland".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    // Check that setting the lower bound to the first key doesn't change the results.
+    let mut range = tx01.nonverifiable_range_raw(Some(b"i"), b"C".to_vec()..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iC".to_vec(), b"China".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iD".to_vec(), b"Denmark".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iF".to_vec(), b"Finland".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    // Check that setting the upper bound to a key that doesn't exist doesn't change the results.
+    let mut range = tx01.nonverifiable_range_raw(Some(b"i"), ..b"Z".to_vec())?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iC".to_vec(), b"China".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iD".to_vec(), b"Denmark".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iF".to_vec(), b"Finland".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    // Check that using a manually prefixed keys doesn't change the results.
+    let mut range = tx01.nonverifiable_range_raw(None, b"i".to_vec()..b"iZ".to_vec())?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iC".to_vec(), b"China".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iD".to_vec(), b"Denmark".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iF".to_vec(), b"Finland".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+    tx01.apply();
+
+    // Check that all entries are included in the results.
+    let mut range = state_init.nonverifiable_range_raw(None, ..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iC".to_vec(), b"China".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iD".to_vec(), b"Denmark".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"iF".to_vec(), b"Finland".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((
+            b"random_key_not_prefixed".to_vec(),
+            b"quetzalcoatl".to_vec()
+        ))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let mut tx02 = StateDelta::new(&mut state_init);
+
+    for i in 0..=100 {
+        tx02.nonverifiable_put_raw(
+            format!("compact_block/{:020}", i).as_bytes().to_vec(),
+            format!("{}", i).as_bytes().to_vec(),
+        );
+    }
+
+    // Check that all compact blocks are included in the results.
+    let mut range = tx02.nonverifiable_range_raw(Some(b"compact_block/"), ..)?;
+    for i in 0..=100 {
+        assert_eq!(
+            range.next().await.transpose()?,
+            Some((
+                format!("compact_block/{:020}", i).as_bytes().to_vec(),
+                format!("{}", i).as_bytes().to_vec()
+            ))
+        );
+    }
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+    let cb_10 = format!("{:020}", 10).as_bytes().to_vec();
+
+    // Check that setting a lower bound works.
+    let mut range = tx02.nonverifiable_range_raw(Some(b"compact_block/"), cb_10.clone()..)?;
+    for i in 10..=100 {
+        assert_eq!(
+            range.next().await.transpose()?,
+            Some((
+                format!("compact_block/{:020}", i).as_bytes().to_vec(),
+                format!("{}", i).as_bytes().to_vec()
+            )),
+            "i={}",
+            i
+        );
+    }
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let cb_20 = format!("{:020}", 20).as_bytes().to_vec();
+
+    // Check that specifying a full range works.
+    let mut range =
+        tx02.nonverifiable_range_raw(Some(b"compact_block/"), cb_10.clone()..cb_20.clone())?;
+    for i in 10..20 {
+        assert_eq!(
+            range.next().await.transpose()?,
+            Some((
+                format!("compact_block/{:020}", i).as_bytes().to_vec(),
+                format!("{}", i).as_bytes().to_vec()
+            ))
+        );
+    }
+    assert_eq!(range.next().await.transpose()?, None);
+
+    // Check that leaving the lower bound unspecified works.
+    let mut range = tx02.nonverifiable_range_raw(Some(b"compact_block/"), ..cb_20)?;
+    for i in 0..20 {
+        assert_eq!(
+            range.next().await.transpose()?,
+            Some((
+                format!("compact_block/{:020}", i).as_bytes().to_vec(),
+                format!("{}", i).as_bytes().to_vec()
+            ))
+        );
+    }
+    assert_eq!(range.next().await.transpose()?, None);
+
+    // Delete compact blocks [9;21]
+    let deleted_keys = (9..=21)
+        .map(|i| format!("compact_block/{:020}", i).as_bytes().to_vec())
+        .collect::<Vec<_>>();
+    for key in deleted_keys.iter() {
+        tx02.nonverifiable_delete(key.clone());
+    }
+
+    // Check that the deleted compact blocks are not included in the results.
+    let mut range = tx02.nonverifiable_range_raw(Some(b"compact_block/"), ..)?;
+    for i in 0..=100 {
+        if i >= 9 && i <= 21 {
+            continue;
+        }
+        assert_eq!(
+            range.next().await.transpose()?,
+            Some((
+                format!("compact_block/{:020}", i).as_bytes().to_vec(),
+                format!("{}", i).as_bytes().to_vec()
+            )),
+            "i={}",
+            i
+        );
+    }
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let cb_9 = format!("{:020}", 9).as_bytes().to_vec();
+    let cb_15 = format!("{:020}", 15).as_bytes().to_vec();
+    let cb_21 = format!("{:020}", 21).as_bytes().to_vec();
+    let cb_22 = format!("{:020}", 22).as_bytes().to_vec();
+    let cb_23 = format!("{:020}", 23).as_bytes().to_vec();
+
+    // Check that the deleted compact blocks are not included in the results, even if they're in the bound argument.
+    let mut range = tx02.nonverifiable_range_raw(Some(b"compact_block/"), cb_9.clone()..)?;
+    for i in 22..=100 {
+        let found = range.next().await.transpose()?;
+        let foundstr = String::from_utf8(found.clone().unwrap().0).unwrap();
+        println!("{i}: foundstr={}", foundstr);
+        assert_eq!(
+            found,
+            Some((
+                format!("compact_block/{:020}", i).as_bytes().to_vec(),
+                format!("{}", i).as_bytes().to_vec()
+            ))
+        );
+    }
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    // Check a variety of deleted bounds.
+    let mut range = tx02.nonverifiable_range_raw(Some(b"compact_block/"), cb_9.clone()..cb_15)?;
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let mut range = tx02.nonverifiable_range_raw(Some(b"compact_block/"), cb_9.clone()..cb_21)?;
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let mut range = tx02.nonverifiable_range_raw(Some(b"compact_block/"), cb_9.clone()..cb_22)?;
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let mut range = tx02.nonverifiable_range_raw(Some(b"compact_block/"), cb_9.clone()..cb_23)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((
+            format!("compact_block/{:020}", 22).as_bytes().to_vec(),
+            format!("{}", 22).as_bytes().to_vec()
+        ))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    Ok(())
+}
+
+#[tokio::test]
+/// Test that overwrites work correctly, and that we can read the latest value.
+async fn range_query_overwrites() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
+    let tmpdir = tempfile::tempdir()?;
+
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+
+    let state_init = StateDelta::new(storage.latest_snapshot());
+    // Check that reads on an empty state return Ok(None)
+    let mut range = state_init.nonverifiable_range_raw(None, ..)?;
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+    Ok(())
+}
+
+#[tokio::test]
+/// Test that inserting a value that precedes the peeked value works.
+async fn range_query_prepend_peeked_value() -> anyhow::Result<()> {
+    use crate::StateWrite;
+    tracing_subscriber::fmt::init();
+    let tmpdir = tempfile::tempdir()?;
+
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+
+    let mut state_init = StateDelta::new(storage.latest_snapshot());
+    state_init.nonverifiable_put_raw(b"b".to_vec(), b"beluga".to_vec());
+    state_init.nonverifiable_put_raw(b"c".to_vec(), b"charm".to_vec());
+    storage.commit(state_init).await?;
+
+    let mut state = StateDelta::new(storage.latest_snapshot());
+    let mut range = state.nonverifiable_range_raw(None, ..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"b".to_vec(), b"beluga".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"c".to_vec(), b"charm".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    state.nonverifiable_put_raw(b"a".to_vec(), b"aroma".to_vec());
+
+    // Check that the new value preceding the first peeked value is returned (no bound)
+    let mut range = state.nonverifiable_range_raw(None, ..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"a".to_vec(), b"aroma".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"b".to_vec(), b"beluga".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"c".to_vec(), b"charm".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    // Check that the new value preceding the first peeked value is returned (with bound)
+    let mut range = state.nonverifiable_range_raw(None, b"a".to_vec()..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"a".to_vec(), b"aroma".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"b".to_vec(), b"beluga".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"c".to_vec(), b"charm".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    // Check that the new value preceding the first peeked value is NOT returned.
+    let mut range = state.nonverifiable_range_raw(None, b"b".to_vec()..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"b".to_vec(), b"beluga".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"c".to_vec(), b"charm".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    Ok(())
+}
+
+#[tokio::test]
+/// Test that specifying an inverted range does not work.
+async fn range_query_ordering() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
+    let tmpdir = tempfile::tempdir()?;
+
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+
+    let mut state_init = StateDelta::new(storage.latest_snapshot());
+    let mut range = state_init.nonverifiable_range_raw(None, ..)?;
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    state_init.nonverifiable_put_raw(b"c/charm".to_vec(), b"charm".to_vec());
+    state_init.nonverifiable_put_raw(b"a/aroma".to_vec(), b"aroma".to_vec());
+    state_init.nonverifiable_put_raw(b"a/apple".to_vec(), b"apple".to_vec());
+    state_init.nonverifiable_put_raw(b"b/boat".to_vec(), b"boat".to_vec());
+
+    let mut range = state_init.nonverifiable_range_raw(None, ..)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"a/apple".to_vec(), b"apple".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"a/aroma".to_vec(), b"aroma".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"b/boat".to_vec(), b"boat".to_vec()))
+    );
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"c/charm".to_vec(), b"charm".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let lower = b"b/".to_vec();
+    let upper = b"c/".to_vec();
+    let mut range = state_init.nonverifiable_range_raw(None, lower..upper)?;
+    assert_eq!(
+        range.next().await.transpose()?,
+        Some((b"b/boat".to_vec(), b"boat".to_vec()))
+    );
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let upper1 = b"c/".to_vec();
+    let upper2 = b"c/".to_vec();
+    let mut range = state_init.nonverifiable_range_raw(None, upper1..upper2)?;
+    assert_eq!(range.next().await.transpose()?, None);
+    std::mem::drop(range);
+
+    let lower = b"b/".to_vec();
+    let upper = b"c/".to_vec();
+    let range = state_init.nonverifiable_range_raw(None, upper..lower);
+    assert!(range.is_err());
+    std::mem::drop(range);
+
+    Ok(())
+}
+
+#[tokio::test]
+/// Test that passing in an absurd range does not work.
+async fn range_query_bad_range() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
+    let tmpdir = tempfile::tempdir()?;
+
+    let storage = Storage::load(tmpdir.path().to_owned()).await?;
+
+    let state_init = StateDelta::new(storage.latest_snapshot());
+
+    let lower = format!("{:020}", 0).as_bytes().to_vec();
+    let upper = format!("{:020}", 0).as_bytes().to_vec();
+
+    // Inclusive range are not supported.
+    let range = state_init.nonverifiable_range_raw(None, lower..=upper);
+    assert!(range.is_err());
+    std::mem::drop(range);
+
+    let lower = format!("{:020}", 0).as_bytes().to_vec();
+    let upper = format!("{:020}", 1).as_bytes().to_vec();
+    // Inclusive range are not supported.
+    let range = state_init.nonverifiable_range_raw(None, upper..lower);
+    assert!(range.is_err());
 
     Ok(())
 }
