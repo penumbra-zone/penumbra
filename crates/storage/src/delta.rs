@@ -9,7 +9,7 @@ use crate::{
         CacheFuture, StateDeltaNonconsensusPrefixRawStream, StateDeltaNonconsensusRangeRawStream,
         StateDeltaPrefixKeysStream, StateDeltaPrefixRawStream,
     },
-    Cache, EscapedByteSlice, StateRead, StateWrite,
+    utils, Cache, EscapedByteSlice, StateRead, StateWrite,
 };
 
 /// An arbitrarily-deeply nested stack of delta updates to an underlying state.
@@ -376,19 +376,18 @@ impl<S: StateRead> StateRead for StateDelta<S> {
         }
     }
 
-    fn nonverifiable_range(
+    fn nonverifiable_range_raw(
         &self,
         prefix: Option<&[u8]>,
         range: impl std::ops::RangeBounds<Vec<u8>>,
     ) -> anyhow::Result<Self::NonconsensusRangeRawStream> {
-        let (range, start, end) = crate::convert_bounds(range);
-
+        let (range, (start, end)) = utils::convert_bounds(range)?;
         let underlying = self
             .state
             .read()
             .as_ref()
             .expect("delta must not have been applied")
-            .nonverifiable_range(prefix, range)?
+            .nonverifiable_range_raw(prefix, range)?
             .peekable();
         Ok(StateDeltaNonconsensusRangeRawStream {
             underlying,
