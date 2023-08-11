@@ -62,6 +62,12 @@ pub trait SupplyWrite: StateWrite {
         let key = state_key::token_supply(asset_id);
         let current_supply: Amount = self.get_proto(&key).await?.unwrap_or(0u64).into();
 
+        // TODO: if the token was a staking token, update the total supply of staking tokens
+        // TODO: if the token was a delegation token, update the total supply of staking tokens
+        // using the correct exchange rate for that validator (via `unbonded_amount`)
+        // TODO: if the token was an unbonding token, update the total supply of staking tokens
+        // using a 1:1 exchange rate
+
         // TODO: replace with a single checked_add_signed call when mixed_integer_ops lands in stable (1.66)
         let new_supply: Amount = if change < 0 {
             current_supply
