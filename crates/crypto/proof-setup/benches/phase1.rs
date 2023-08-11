@@ -26,5 +26,9 @@ fn phase1_benchmarks(c: &mut Criterion) {
     // c.bench_function("phase 1 verify", |b| b.iter(|| run_phase1_verify()));
 }
 
-criterion_group!(benches, phase1_benchmarks);
+criterion_group! {
+  name = benches;
+  config = Criterion::default().sample_size(10);
+  targets = phase1_benchmarks
+}
 criterion_main!(benches);
