@@ -1,12 +1,15 @@
+use anyhow::{Context, Error};
+use prost::Message;
+use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
-use anyhow::{Context, Error};
 use penumbra_asset::{Balance, Value};
 use penumbra_chain::{EffectHash, EffectingData};
 use penumbra_keys::Address;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(try_from = "pb::DaoOutput", into = "pb::DaoOutput")]
 pub struct DaoOutput {
     pub value: Value,
     pub address: Address,
@@ -14,15 +17,14 @@ pub struct DaoOutput {
 
 impl EffectingData for DaoOutput {
     fn effect_hash(&self) -> EffectHash {
+        let effecting_data: pb::DaoOutput = self.clone().into();
+
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:daooutput")
             .to_state();
+        state.update(&effecting_data.encode_to_vec());
 
-        state.update(&self.address.encode_to_vec());
-        state.update(&self.value.amount.to_le_bytes());
-        state.update(&self.value.asset_id.to_bytes());
-
-        EffectHash(state.finalize().as_array().clone())
+        EffectHash(*state.finalize().as_array())
     }
 }
 
