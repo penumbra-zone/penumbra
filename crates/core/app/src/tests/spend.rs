@@ -10,7 +10,7 @@ use penumbra_keys::PayloadKey;
 use penumbra_num::Amount;
 use penumbra_shielded_pool::{component::ShieldedPool, SpendPlan};
 use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
-use penumbra_transaction::{AuthorizingData, Transaction, TransactionBody};
+use penumbra_transaction::{AuthorizingData, Transaction, TransactionBody, TransactionParameters};
 use rand_core::SeedableRng;
 use tendermint::abci;
 
@@ -237,17 +237,15 @@ async fn spend_duplicate_nullifier_same_transaction() {
     synthetic_blinding_factor += output_plan.value_blinding;
 
     // 5. Construct a transaction with both spends that use the same note/nullifier.
-    let chain_id = "test-chain-id".to_string();
     let transaction_body = TransactionBody {
         actions: vec![
             penumbra_transaction::Action::Spend(spend_1),
             penumbra_transaction::Action::Spend(spend_2),
             penumbra_transaction::Action::Output(output),
         ],
-        expiry_height: 1000,
-        chain_id,
+        transaction_parameters: TransactionParameters::default(),
         fee: Fee::from_staking_token_amount(0u64.into()),
-        fmd_clues: vec![],
+        detection_data: None,
         memo: None,
     };
     let binding_signing_key = SigningKey::from(synthetic_blinding_factor);
