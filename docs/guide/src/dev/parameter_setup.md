@@ -40,14 +40,14 @@ cd crates/crypto/proof-params
 cargo bench
 ```
 
-Performance as of commit `60edb882587d8ae4d9088f2e6e5a58ddc9980f9a` benchmarked on a 2020 Macbook Pro M1 (8 core CPU) with 8 GB memory:
+Performance as of commit `98590ef2dd92ea75fa3bd6f09b3c24fec3fe36ff` benchmarked on a 2023 Macbook Pro M2 (12 core CPU) with 32 GB memory:
 
 | Proof    | Number of constraints | Proving time |
 | -------- | ------- | ----- |
-| Spend  | 33,885    | 2.219s
-| Output | 17,892    | 1.101s
-| Delegator vote    | 35,978  | 2.236s
-| Undelegate claim | 23,670 | 1.364s
-| Swap | 37,655 | 2.255s
-| SwapClaim | 35,245 | 1.829s
-| Nullifier derivation | 953  | 0.126s
+| Spend  | 34,630    | 2.06s
+| Output | 13,875    | 667ms
+| Delegator vote    | 36,723  | 2.05s
+| Undelegate claim | 14,776 | 722ms
+| Swap | 25,700 | 1.21s
+| SwapClaim | 37,061 | 1.83s
+| Nullifier derivation | 394  | 59ms
