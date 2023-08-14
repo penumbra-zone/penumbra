@@ -279,6 +279,9 @@ impl ObliviousQueryService for Info {
                             return Err(tonic::Status::internal("error while sending block"));
                         }
                         Err(_) => {
+                            tracing::debug!(
+                                "client did not poll compact block stream for 1s, timing out"
+                            );
                             return Err(tonic::Status::deadline_exceeded(
                                 "timeout while sending block",
                             ));
