@@ -302,7 +302,7 @@ async fn main() -> anyhow::Result<()> {
                 // requests, the timeout is only applied to the initial request. This means that
                 // this does not prevent long lived streams, for example to allow clients to obtain
                 // new blocks.
-                .timeout(std::time::Duration::from_secs(7))
+                // .timeout(std::time::Duration::from_secs(7))
                 // Wrap each of the gRPC services in a tonic-web proxy:
                 .add_service(tonic_web::enable(ObliviousQueryServiceServer::new(
                     info.clone(),
