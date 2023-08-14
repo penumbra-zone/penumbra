@@ -298,6 +298,8 @@ async fn main() -> anyhow::Result<()> {
                 })
                 // Allow HTTP/1, which will be used by grpc-web connections.
                 .accept_http1(true)
+                // As part of #2932, we are disabling all timeouts until we circle back to our
+                // performance story.
                 // Sets a timeout for all gRPC requests, but note that in the case of streaming
                 // requests, the timeout is only applied to the initial request. This means that
                 // this does not prevent long lived streams, for example to allow clients to obtain
