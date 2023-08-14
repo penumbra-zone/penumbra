@@ -4,11 +4,12 @@ use decaf377_fmd::Clue;
 use penumbra_chain::EffectHash;
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},
-    swap, swap_claim, TradingPair,
+    swap, swap_claim,
 };
 use penumbra_fee::Fee;
 use penumbra_keys::{FullViewingKey, PayloadKey};
 use penumbra_proto::DomainType;
+use penumbra_proto::{core::dex::v1alpha1 as pbd, Message};
 use penumbra_shielded_pool::NotePayload;
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimBody};
 
@@ -275,37 +276,31 @@ impl EffectingData for Action {
 
 impl EffectingData for swap::Body {
     fn effect_hash(&self) -> EffectHash {
+        // The effecting data is in the body of the swap, so we can
+        // just use hash the proto-encoding of the body.
+        let effecting_data: pbd::SwapBody = self.clone().into();
+
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:swap_body")
             .to_state();
+        state.update(&effecting_data.encode_to_vec());
 
-        // All of these fields are fixed-length, so we can just throw them
-        // in the hash one after the other.
-        state.update(self.trading_pair.effect_hash().as_bytes());
-        state.update(&self.delta_1_i.to_le_bytes());
-        state.update(&self.delta_2_i.to_le_bytes());
-        state.update(&self.fee_commitment.to_bytes());
-        state.update(&self.payload.commitment.0.to_bytes());
-        state.update(&self.payload.encrypted_swap.0);
-
-        EffectHash(state.finalize().as_array().clone())
+        EffectHash(*state.finalize().as_array())
     }
 }
 
 impl EffectingData for swap_claim::Body {
     fn effect_hash(&self) -> EffectHash {
+        // The effecting data is in the body of the swap claim, so we can
+        // just use hash the proto-encoding of the body.
+        let effecting_data: pbd::SwapClaimBody = self.clone().into();
+
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:swapclaimbdy")
             .to_state();
+        state.update(&effecting_data.encode_to_vec());
 
-        // All of these fields are fixed-length, so we can just throw them
-        // in the hash one after the other.
-        state.update(&self.nullifier.0.to_bytes());
-        state.update(self.fee.effect_hash().as_bytes());
-        state.update(&self.output_1_commitment.0.to_bytes());
-        state.update(&self.output_2_commitment.0.to_bytes());
-
-        EffectHash(state.finalize().as_array().clone())
+        EffectHash(*state.finalize().as_array())
     }
 }
 
@@ -648,21 +643,6 @@ impl EffectingData for Fee {
         state.update(&self.0.asset_id.to_bytes());
 
         EffectHash(state.finalize().as_array().clone())
-    }
-}
-
-impl EffectingData for TradingPair {
-    fn effect_hash(&self) -> EffectHash {
-        EffectHash(
-            blake2b_simd::Params::default()
-                .personal(b"PAH:trading_pair")
-                .to_state()
-                .update(&self.asset_1().to_bytes())
-                .update(&self.asset_2().to_bytes())
-                .finalize()
-                .as_array()
-                .clone(),
-        )
     }
 }
 
