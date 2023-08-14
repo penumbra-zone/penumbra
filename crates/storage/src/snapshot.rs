@@ -321,21 +321,6 @@ impl StateRead for Snapshot {
         tokio_stream::wrappers::ReceiverStream::new(rx)
     }
 
-    /*
-
-    ALT:
-
-        fn nonverifiable_range_raw<T, U>(
-        &self,
-        prefix: Option<&[u8]>,
-        range: T,
-    ) -> anyhow::Result<Self::NonconsensusRangeRawStream>
-    where
-        T: std::ops::RangeBounds<U>,
-        U: Into<Vec<u8>>,
-    {
-
-         */
     fn nonverifiable_range_raw(
         &self,
         prefix: Option<&[u8]>,
