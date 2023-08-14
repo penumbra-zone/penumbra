@@ -267,32 +267,49 @@ impl ObliviousQueryService for Info {
                         .expect("block fetcher does not fail")
                         .expect("no error fetching block")
                         .expect("compact block for in-range height must be present");
+                    // Tracked in #2908: we previously added a timeout on `send` targeting
+                    // buffered streams staying full for too long. However, in at least a few
+                    // "regular usage" instances we observed client streams stopping too eagerly.
+                    // In #2932, it was established that the timeout had to be at least 10s to
+                    // accomodate those usecases.
+                    //
+                    // Although we cannot exclude that clients actually did not poll the stream for
+                    // more than `9s`, this seems unlikely. We are removing the timeout mechanism
+                    // altogether for now. This might negatively impact memory usage under load.
+                    // Future iterations of this work should start by moving block serialization
+                    // outside of the `send_op` future, and investigate if long blocking sends can
+                    // happen for benign reasons (i.e not caused by the client).
+                    //
+                    // let send_op = async { tx_blocks.send(Ok(block.into())).await };
+                    // match tokio::time::timeout(tokio::time::Duration::from_secs(2), send_op).await {
+                    //     Ok(Ok(_)) => {
+                    //         metrics::increment_counter!(
+                    //             metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
+                    //         );
+                    //     }
+                    //     Ok(Err(_)) => {
+                    //         return Err(tonic::Status::internal("error while sending block"));
+                    //     }
+                    //     Err(_) => {
+                    //         tracing::debug!(
+                    //             "client did not poll compact block stream for 1s, timing out"
+                    //         );
+                    //         return Err(tonic::Status::deadline_exceeded(
+                    //             "timeout while sending block",
+                    //         ));
+                    //     }
+                    // }
 
-                    let send_op = async { tx_blocks.send(Ok(block.into())).await };
-                    match tokio::time::timeout(tokio::time::Duration::from_secs(1), send_op).await {
-                        Ok(Ok(_)) => {
-                            metrics::increment_counter!(
-                                metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
-                            );
-                        }
-                        Ok(Err(_)) => {
-                            return Err(tonic::Status::internal("error while sending block"));
-                        }
-                        Err(_) => {
-                            tracing::debug!(
-                                "client did not poll compact block stream for 1s, timing out"
-                            );
-                            return Err(tonic::Status::deadline_exceeded(
-                                "timeout while sending block",
-                            ));
-                        }
-                    }
+                    tx_blocks.send(Ok(block.into())).await?;
+                    metrics::increment_counter!(
+                        metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
+                    );
                 }
 
                 // If the client didn't request a keep-alive, we're done.
                 if !keep_alive {
                     // Explicitly annotate the error type, so we can bubble up errors...
-                    return Ok(());
+                    return Ok::<(), anyhow::Error>(());
                 }
 
                 // Before we can stream new compact blocks as they're created,
