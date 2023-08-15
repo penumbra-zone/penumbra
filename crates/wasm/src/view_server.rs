@@ -203,6 +203,7 @@ impl ViewServer {
                             };
                             new_swaps.push(swap_record.clone());
                             self.swaps.insert(payload.commitment, swap_record);
+
                         }
                         None => {
                             self.nct.insert(Forget, payload.commitment).unwrap();
@@ -332,6 +333,33 @@ impl ViewServer {
                             };
                             new_swaps.push(swap_record.clone());
                             self.swaps.insert(payload.commitment, swap_record);
+
+                            let batch_data = block.swap_outputs.get(&swap.trading_pair).ok_or_else(|| {
+                                                                anyhow::anyhow!("server gave invalid compact block")})?;
+
+                            let (output_1, output_2) = swap.output_notes(batch_data);
+
+                            self.notes.insert(output_1.commit(), output_1);
+                            self.notes.insert(output_2.commit(), output_2);
+
+                            let address_index = self
+                                                            .fvk
+                                                            .incoming()
+                                                            .index_for_diversifier(note.diversifier());
+
+                            new_notes.push( SpendableNoteRecord {
+                                                                           note_commitment: output_1.commitment().clone(),
+                                                                           height_spent: None,
+                                                                           height_created: block.height,
+                                                                           note: output_1.clone(),
+                                                                           address_index,
+                                                                           nullifier,
+                                                                           position: note_position,
+                                                                           source,
+                                                                       });
+                            new_notes.push(output_2.clone());
+
+
                         }
                         None => {
                             self.nct.insert(Forget, payload.commitment).unwrap();

@@ -5554,8 +5554,10 @@ name = "penumbra-wasm"
 version = "0.58.0"
 dependencies = [
  "anyhow",
+ "ark-ff",
  "base64 0.20.0",
  "console_error_panic_hook",
+ "decaf377 0.4.0",
  "getrandom 0.2.10",
  "hex",
  "indexed_db_futures",
@@ -5577,6 +5579,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "serde-wasm-bindgen",
+ "tracing",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
