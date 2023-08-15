@@ -71,22 +71,13 @@ impl Ics20Withdrawal {
 
 impl EffectingData for Ics20Withdrawal {
     fn effect_hash(&self) -> EffectHash {
+        let effecting_data: pb::Ics20Withdrawal = self.clone().into();
+
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:ics20wthdrwl")
             .to_state();
+        state.update(&effecting_data.encode_to_vec());
 
-        let destination_chain_address_hash =
-            blake2b_simd::Params::default().hash(self.destination_chain_address.as_bytes());
-        let return_address = blake2b_simd::Params::default().hash(&self.return_address.to_vec());
-
-        state.update(&self.amount.to_le_bytes());
-        state.update(&self.denom.id().to_bytes());
-        state.update(&self.source_channel.as_bytes());
-
-        state.update(destination_chain_address_hash.as_bytes());
-        state.update(return_address.as_bytes());
-        state.update(&self.timeout_height.to_le_bytes());
-        state.update(&self.timeout_time.to_le_bytes());
         EffectHash(*state.finalize().as_array())
     }
 }
