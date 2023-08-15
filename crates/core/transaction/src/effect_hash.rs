@@ -547,55 +547,55 @@ impl EffectingData for proposal::Withdrawn<()> {
 
 impl EffectingData for PositionOpen {
     fn effect_hash(&self) -> EffectHash {
+        // The position open action consists only of the position, which
+        // we consider effecting data.
+        let effecting_data: pbd::PositionOpen = self.clone().into();
+
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:pos_open")
             .to_state();
+        state.update(&effecting_data.encode_to_vec());
 
-        // All of these fields are fixed-length, so we can just throw them in the hash one after the
-        // other.
-        state.update(&self.position.id().0);
-        state.update(&self.position.reserves.r1.to_le_bytes());
-        state.update(&self.position.reserves.r2.to_le_bytes());
-
-        EffectHash(state.finalize().as_array().clone())
+        EffectHash(*state.finalize().as_array())
     }
 }
 
 impl EffectingData for PositionClose {
     fn effect_hash(&self) -> EffectHash {
+        let effecting_data: pbd::PositionClose = self.clone().into();
+
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:pos_close")
             .to_state();
+        state.update(&effecting_data.encode_to_vec());
 
-        state.update(&self.position_id.0);
-
-        EffectHash(state.finalize().as_array().clone())
+        EffectHash(*state.finalize().as_array())
     }
 }
 
 impl EffectingData for PositionWithdraw {
     fn effect_hash(&self) -> EffectHash {
+        let effecting_data: pbd::PositionWithdraw = self.clone().into();
+
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:pos_withdraw")
             .to_state();
+        state.update(&effecting_data.encode_to_vec());
 
-        state.update(&self.position_id.0);
-        state.update(&self.reserves_commitment.to_bytes());
-
-        EffectHash(state.finalize().as_array().clone())
+        EffectHash(*state.finalize().as_array())
     }
 }
 
 impl EffectingData for PositionRewardClaim {
     fn effect_hash(&self) -> EffectHash {
+        let effecting_data: pbd::PositionRewardClaim = self.clone().into();
+
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:pos_rewrdclm")
             .to_state();
+        state.update(&effecting_data.encode_to_vec());
 
-        state.update(&self.position_id.0);
-        state.update(&self.rewards_commitment.to_bytes());
-
-        EffectHash(state.finalize().as_array().clone())
+        EffectHash(*state.finalize().as_array())
     }
 }
 
