@@ -9,7 +9,7 @@ use penumbra_dex::{
 use penumbra_fee::Fee;
 use penumbra_keys::{FullViewingKey, PayloadKey};
 use penumbra_proto::DomainType;
-use penumbra_proto::{core::dex::v1alpha1 as pbd, Message};
+use penumbra_proto::{core::dex::v1alpha1 as pbd, core::stake::v1alpha1 as pbs, Message};
 use penumbra_shielded_pool::NotePayload;
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimBody};
 
@@ -306,52 +306,44 @@ impl EffectingData for swap_claim::Body {
 
 impl EffectingData for Delegate {
     fn effect_hash(&self) -> EffectHash {
+        // For delegations, the entire action is considered effecting data.
+        let effecting_data: pbs::Delegate = self.clone().into();
+
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:delegate")
             .to_state();
+        state.update(&effecting_data.encode_to_vec());
 
-        // All of these fields are fixed-length, so we can just throw them
-        // in the hash one after the other.
-        state.update(&self.validator_identity.0.to_bytes());
-        state.update(&self.epoch_index.to_le_bytes());
-        state.update(&self.unbonded_amount.to_le_bytes());
-        state.update(&self.delegation_amount.to_le_bytes());
-
-        EffectHash(state.finalize().as_array().clone())
+        EffectHash(*state.finalize().as_array())
     }
 }
 
 impl EffectingData for Undelegate {
     fn effect_hash(&self) -> EffectHash {
+        // For undelegations, the entire action is considered effecting data.
+        let effecting_data: pbs::Undelegate = self.clone().into();
+
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:undelegate")
             .to_state();
+        state.update(&effecting_data.encode_to_vec());
 
-        // All of these fields are fixed-length, so we can just throw them
-        // in the hash one after the other.
-        state.update(&self.validator_identity.0.to_bytes());
-        state.update(&self.start_epoch_index.to_le_bytes());
-        state.update(&self.unbonded_amount.to_le_bytes());
-        state.update(&self.delegation_amount.to_le_bytes());
-
-        EffectHash(state.finalize().as_array().clone())
+        EffectHash(*state.finalize().as_array())
     }
 }
 
 impl EffectingData for UndelegateClaimBody {
     fn effect_hash(&self) -> EffectHash {
+        // The effecting data is in the body of the undelegate claim, so we can
+        // just use hash the proto-encoding of the body.
+        let effecting_data: pbs::UndelegateClaimBody = self.clone().into();
+
         let mut state = blake2b_simd::Params::default()
             .personal(b"PAH:udlgclm_body")
             .to_state();
+        state.update(&effecting_data.encode_to_vec());
 
-        // All of these fields are fixed-length, so we can just throw them
-        // in the hash one after the other.
-        state.update(&self.validator_identity.0.to_bytes());
-        state.update(&self.start_epoch_index.to_le_bytes());
-        state.update(&self.penalty.0.to_le_bytes());
-        state.update(&self.balance_commitment.to_bytes());
-
-        EffectHash(state.finalize().as_array().clone())
+        EffectHash(*state.finalize().as_array())
     }
 }
 
