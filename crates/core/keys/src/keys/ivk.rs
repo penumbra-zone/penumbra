@@ -1,7 +1,6 @@
-use ark_ff::PrimeField;
+use ark_ff::{PrimeField, Zero};
 use rand_core::{CryptoRng, RngCore};
 
-use ark_r1cs_std::fields::nonnative::NonNativeFieldVar;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{
@@ -17,6 +16,7 @@ use crate::{
 };
 
 pub const IVK_LEN_BYTES: usize = 64;
+const MOD_R_QUOTIENT: usize = 4;
 
 /// Allows viewing incoming notes, i.e., notes sent to the spending key this
 /// key is derived from.
@@ -93,7 +93,7 @@ impl IncomingViewingKey {
 }
 
 pub struct IncomingViewingKeyVar {
-    inner: NonNativeFieldVar<Fr, Fq>,
+    inner: FqVar,
 }
 
 impl IncomingViewingKeyVar {
@@ -107,15 +107,48 @@ impl IncomingViewingKeyVar {
             (nk.inner.clone(), ak.inner.compress_to_field()?),
         )?;
 
-        // Reduce `ivk_mod_q` modulo r
-        let inner_ivk_mod_q: Fq = ivk_mod_q.value().unwrap_or_default();
-        let ivk_mod_r = Fr::from_le_bytes_mod_order(&inner_ivk_mod_q.to_bytes());
-        let ivk = NonNativeFieldVar::<Fr, Fq>::new_variable(
-            cs,
-            || Ok(ivk_mod_r),
-            AllocationMode::Witness,
-        )?;
-        Ok(IncomingViewingKeyVar { inner: ivk })
+        // OOC: Reduce `ivk_mod_q` modulo r
+        let r_modulus: Fq = Fq::from(Fr::MODULUS);
+        let ivk_mod_q_ooc: Fq = ivk_mod_q.value().unwrap_or_default();
+        let ivk_mod_r_ooc = Fr::from_le_bytes_mod_order(&ivk_mod_q_ooc.to_bytes());
+
+        // We also need ivk reduced mod r as an Fq for inserting back into the circuit
+        let ivk_mod_r_ooc_q = Fq::from_le_bytes_mod_order(&ivk_mod_r_ooc.to_bytes());
+        let ivk_mod_r = FqVar::new_witness(cs.clone(), || Ok(ivk_mod_r_ooc_q))?;
+
+        // Finally, we figure out how many times we needed to subtract r from ivk_mod_q_ooc to get ivk_mod_r_ooc.
+        let mut temp_ivk_mod_q = ivk_mod_q_ooc;
+        let mut a = 0;
+        while temp_ivk_mod_q > r_modulus {
+            temp_ivk_mod_q -= r_modulus;
+            a += 1;
+        }
+
+        // Now we add constraints to demonstrate that `ivk_mod_r` is the correct
+        // reduction from `ivk_mod_q`.
+        //
+        // Constrain: ivk_mod_q = mod_r * a + ivk_mod_r
+        let mod_r_var = FqVar::new_constant(cs.clone(), r_modulus)?;
+        let a_var = FqVar::new_witness(cs.clone(), || Ok(Fq::from(a)))?;
+        let rhs = &mod_r_var * &a_var + &ivk_mod_r;
+        ivk_mod_q.enforce_equal(&rhs)?;
+
+        // Constrain: a <= 4
+        //
+        // We could use `enforce_cmp` to add an a <= 4 constraint, but it's cheaper
+        // to add constraints to demonstrate a(a-1)(a-2)(a-3)(a-4) = 0.
+        let mut mul = a_var.clone();
+        for i in 1..=MOD_R_QUOTIENT {
+            mul *= a_var.clone() - FqVar::new_constant(cs.clone(), Fq::from(i as u64))?;
+        }
+        let zero = FqVar::new_constant(cs, Fq::zero())?;
+        mul.enforce_equal(&zero)?;
+
+        // Constrain: ivk_mod_r < r
+        // Here we can use the existing `enforce_cmp` method on FqVar as r <= (q-1)/2.
+        ivk_mod_r.enforce_cmp(&mod_r_var, core::cmp::Ordering::Less, false)?;
+
+        Ok(IncomingViewingKeyVar { inner: ivk_mod_r })
     }
 
     /// Derive a transmission key from the given diversified base.
@@ -172,5 +205,35 @@ mod test {
             .0;
 
         assert!(!ivk.views_address(&other_address));
+    }
+
+    #[test]
+    fn enforce_field_assumptions() {
+        use num_bigint::BigUint;
+        use num_traits::ops::checked::CheckedSub;
+
+        let fq_modulus: BigUint = Fq::MODULUS.into();
+        let max_q: BigUint = &fq_modulus - 1u32;
+        let fr_modulus: BigUint = Fr::MODULUS.into();
+        assert!(
+            fr_modulus < fq_modulus,
+            "we assume that our scalar field is smaller than our base field"
+        );
+
+        let mut multiple = 0;
+        let mut res = max_q;
+        loop {
+            res = if let Some(x) = res.checked_sub(&fr_modulus) {
+                multiple += 1;
+                x
+            } else {
+                break;
+            };
+        }
+
+        assert_eq!(
+            MOD_R_QUOTIENT, multiple,
+            "`a = fr_modulus * 4 + r mod q` only works on specific curve parameters"
+        );
     }
 }

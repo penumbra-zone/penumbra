@@ -1,6 +1,6 @@
-use ark_ff::ToConstraintField;
+use ark_ff::{BigInteger, PrimeField, ToConstraintField};
 use ark_r1cs_std::{prelude::*, uint64::UInt64};
-use ark_relations::r1cs::SynthesisError;
+use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{Fq, Fr};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
@@ -83,6 +83,31 @@ impl ToConstraintField<Fq> for Amount {
     }
 }
 
+/// Return a boolean constraint indicating if the FqVar can be represented using n bits
+pub fn is_bit_constrained(
+    cs: ConstraintSystemRef<Fq>,
+    value: FqVar,
+    n: usize,
+) -> Result<Boolean<Fq>, SynthesisError> {
+    let inner = value.value().unwrap_or(Fq::from(1u64));
+
+    // Get only first n bits based on that value (OOC)
+    let inner_bigint = inner.into_bigint();
+    let bits = &inner_bigint.to_bits_le()[0..n];
+
+    // Allocate Boolean vars for first n bits
+    let mut boolean_constraints = Vec::new();
+    for bit in bits {
+        let boolean = Boolean::new_witness(cs.clone(), || Ok(bit))?;
+        boolean_constraints.push(boolean);
+    }
+
+    // Construct an FqVar from those n Boolean constraints
+    let constructed_fqvar = Boolean::<Fq>::le_bits_to_fp_var(&boolean_constraints.to_bits_le()?)
+        .expect("can convert to bits");
+    constructed_fqvar.is_eq(&value)
+}
+
 impl AmountVar {
     pub fn negate(&self) -> Result<Self, SynthesisError> {
         Ok(Self {
@@ -110,35 +135,36 @@ impl AmountVar {
         let rem = current_amount.checked_rem(divisor).unwrap_or(0);
 
         // Add corresponding in-circuit variables
-        let quo_var = AmountVar {
-            amount: FqVar::new_witness(self.cs(), || Ok(Fq::from(quo)))?,
-        };
-        let rem_var = AmountVar {
-            amount: FqVar::new_witness(self.cs(), || Ok(Fq::from(rem)))?,
-        };
+        let quo_var = AmountVar::new_witness(self.cs(), || Ok(Fq::from(quo)))?;
+        let rem_var = AmountVar::new_witness(self.cs(), || Ok(Fq::from(rem)))?;
+
+        // Constrain either quo_var or divisior_var to be 64 bits to guard against overflow
+        let q_is_64_bits = is_bit_constrained(self.cs(), quo_var.amount.clone(), 64)?;
+        let d_is_64_bits = is_bit_constrained(self.cs(), divisor_var.amount.clone(), 64)?;
+        let q_or_d_is_64_bits = q_is_64_bits.or(&d_is_64_bits)?;
+        q_or_d_is_64_bits.enforce_equal(&Boolean::constant(true))?;
 
         // Constrain: numerator = quo * divisor + rem
         let numerator_var = quo_var.clone() * divisor_var.clone() + rem_var.clone();
         self.enforce_equal(&numerator_var)?;
 
-        // In this stanza we constrain: 0 <= rem < divisor
-        let zero_var = AmountVar {
-            amount: FqVar::new_constant(self.cs(), Fq::from(0))?,
-        };
-        // Constrain: 0 <= rem
-        zero_var
-            .amount
-            .enforce_cmp(&rem_var.amount, core::cmp::Ordering::Less, true)?;
-        // Constrain: rem < divisor
+        // In this stanza we constrain: 0 <= rem < divisor.
+        //
+        // We do not need to explicitly constrain 0 <= rem, as that is done
+        // inside the `FqVar::enforce_cmp` function, which verifies the inputs are
+        // of size <(p-1)/2.
+        //
+        // See: https://docs.rs/ark-r1cs-std/latest/ark_r1cs_std/fields/fp/enum.FpVar.html#method.enforce_cmp
+        //
+        // Constrain: 0 <= rem < divisor
         rem_var
             .amount
             .enforce_cmp(&divisor_var.amount, core::cmp::Ordering::Less, false)?;
-        // Note: `FpVar::enforce_cmp` requires that the amounts have size (p-1)/2, which is
+        // As above, `FpVar::enforce_cmp` requires that the amounts have size <(p-1)/2 which is
         // true for amounts as they are 128 bits at most.
 
-        // Finally, division is undefined if the divisor is 0.
-        // Constrain: divisor != 0
-        divisor_var.enforce_not_equal(&zero_var)?;
+        // We do not need to check the divisor is non-zero, as that is already
+        // enforced by 0 <= r < d above.
 
         Ok((quo_var, rem_var))
     }
@@ -154,6 +180,24 @@ impl AllocVar<Amount, Fq> for AmountVar {
         let cs = ns.cs();
         let amount: Amount = *f()?.borrow();
         let inner_amount_var = FqVar::new_variable(cs, || Ok(Fq::from(amount)), mode)?;
+        // Check the amounts are 128 bits maximum
+        let _ = bit_constrain(inner_amount_var.clone(), 128);
+        Ok(Self {
+            amount: inner_amount_var,
+        })
+    }
+}
+
+impl AllocVar<Fq, Fq> for AmountVar {
+    fn new_variable<T: std::borrow::Borrow<Fq>>(
+        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
+        f: impl FnOnce() -> Result<T, SynthesisError>,
+        mode: ark_r1cs_std::prelude::AllocationMode,
+    ) -> Result<Self, SynthesisError> {
+        let ns = cs.into();
+        let cs = ns.cs();
+        let amount: Fq = *f()?.borrow();
+        let inner_amount_var = FqVar::new_variable(cs, || Ok(amount), mode)?;
         // Check the amounts are 128 bits maximum
         let _ = bit_constrain(inner_amount_var.clone(), 128);
         Ok(Self {

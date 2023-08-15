@@ -9,9 +9,10 @@ use penumbra_dex::{
     BatchSwapOutputData, DirectedTradingPair, SwapExecution, TradingPair,
 };
 use penumbra_proto::client::v1alpha1::{
-    specific_query_service_client::SpecificQueryServiceClient, BatchSwapOutputDataRequest,
-    DenomMetadataByIdRequest, LiquidityPositionByIdRequest, LiquidityPositionsByPriceRequest,
-    LiquidityPositionsRequest, SimulateTradeRequest, SwapExecutionRequest,
+    specific_query_service_client::SpecificQueryServiceClient, ArbExecutionRequest,
+    BatchSwapOutputDataRequest, DenomMetadataByIdRequest, LiquidityPositionByIdRequest,
+    LiquidityPositionsByPriceRequest, LiquidityPositionsRequest, SimulateTradeRequest,
+    SwapExecutionRequest,
 };
 use penumbra_view::ViewClient;
 use tonic::transport::Channel;
@@ -42,6 +43,13 @@ pub enum DexCmd {
         /// Pairs must be specified with a colon separating them, e.g. "penumbra:test_usd".
         #[clap(value_name = "asset_1:asset_2")]
         trading_pair: DirectedTradingPair,
+    },
+    /// Display information about an arb execution at a specific height.
+    #[clap(visible_alias = "arb")]
+    ArbExecution {
+        /// The height to query for the swap execution.
+        #[clap(long)]
+        height: u64,
     },
     /// Display information about all liquidity positions known to the chain.
     #[clap(display_order(900))]
@@ -116,6 +124,21 @@ impl DexCmd {
             .into_inner()
             .swap_execution
             .ok_or_else(|| anyhow::anyhow!("proto response missing swap execution"))?
+            .try_into()
+            .context("cannot parse batch swap output data")
+    }
+
+    pub async fn get_arb_execution(&self, app: &mut App, height: &u64) -> Result<SwapExecution> {
+        let mut client = app.specific_client().await?;
+        client
+            .arb_execution(ArbExecutionRequest {
+                height: *height,
+                ..Default::default()
+            })
+            .await?
+            .into_inner()
+            .swap_execution
+            .ok_or_else(|| anyhow::anyhow!("proto response missing arb execution"))?
             .try_into()
             .context("cannot parse batch swap output data")
     }
@@ -352,6 +375,11 @@ impl DexCmd {
                 trading_pair,
             } => {
                 let swap_execution = self.get_swap_execution(app, height, trading_pair).await?;
+
+                self.print_swap_execution(app, &swap_execution).await?;
+            }
+            DexCmd::ArbExecution { height } => {
+                let swap_execution = self.get_arb_execution(app, height).await?;
 
                 self.print_swap_execution(app, &swap_execution).await?;
             }

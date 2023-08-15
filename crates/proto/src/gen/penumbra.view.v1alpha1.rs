@@ -53,7 +53,8 @@ pub struct TransactionPlannerRequest {
     /// The fee for the requested TransactionPlan, if any.
     #[prost(message, optional, tag = "2")]
     pub fee: ::core::option::Option<super::super::core::crypto::v1alpha1::Fee>,
-    /// The memo for the requested TransactionPlan
+    /// The memo for the requested TransactionPlan.
+    /// The memo must be unspecified unless `outputs` is nonempty.
     #[prost(message, optional, tag = "3")]
     pub memo: ::core::option::Option<
         super::super::core::transaction::v1alpha1::MemoPlaintext,

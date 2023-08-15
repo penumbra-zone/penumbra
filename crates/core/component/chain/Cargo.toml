@@ -14,7 +14,7 @@ penumbra-component = { path = "../component", optional = true }
 penumbra-num = { path = "../../../core/num", default-features = false  } 
 
 # Penumbra dependencies
-decaf377 = "0.4"
+decaf377 = "0.5"
 
 tendermint = "0.32.0"
 ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.3.0", default-features = false }

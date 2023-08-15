@@ -28,8 +28,8 @@ ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.3
 
 # Crates.io deps
 ibc-proto = { version = "0.31.0", default-features = false }
-decaf377 = "0.4"
-decaf377-rdsa = { version = "0.6" }
+decaf377 = "0.5"
+decaf377-rdsa = { version = "0.7" }
 poseidon377 = { version = "0.6", features = ["r1cs"] }
 base64 = "0.21"
 ark-ff = { version = "0.4", default_features = false }

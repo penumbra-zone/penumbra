@@ -9,8 +9,7 @@ ark-ff = "0.4.2"
 ark-serialize = "0.4.2"
 blake2b_simd = "0.5"
 rand_core = { version = "0.6", features = ["getrandom"] }
-# Git dependencies
-decaf377 = "0.4"
+decaf377 = "0.5"
 
 [dev-dependencies]
 

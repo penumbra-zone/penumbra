@@ -1,5 +1,5 @@
 ---
-name: Create and publish container image
+name: Create and publish container images
 # Build strategy: we want to build new containers immediately
 # prior to deploying testnets using those containers. We don't
 # trigger the container-build workflow on merge or tag events;
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-push-penumbra:
+  penumbra:
     runs-on: buildjet-16vcpu-ubuntu-2004
     permissions:
       contents: read
@@ -51,14 +51,15 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           file: deployments/containerfiles/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  build-and-push-grafana:
-    runs-on: buildjet-16vcpu-ubuntu-2004
+  grafana:
+    # No need for a heavy runner, we're just copying in a few files, not compiling.
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -96,7 +97,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  build-and-push-relayer:
+  relayer:
     runs-on: ubuntu-latest
     permissions:
       contents: read

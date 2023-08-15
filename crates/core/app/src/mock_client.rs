@@ -12,9 +12,9 @@ use penumbra_tct as tct;
 pub struct MockClient {
     latest_height: u64,
     fvk: FullViewingKey,
-    notes: BTreeMap<note::StateCommitment, Note>,
+    pub notes: BTreeMap<note::StateCommitment, Note>,
     swaps: BTreeMap<tct::StateCommitment, SwapPlaintext>,
-    sct: penumbra_tct::Tree,
+    pub sct: penumbra_tct::Tree,
 }
 
 impl MockClient {

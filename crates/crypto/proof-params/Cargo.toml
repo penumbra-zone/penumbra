@@ -12,7 +12,7 @@ penumbra-asset = { path = "../../core/asset/" }
 penumbra-keys = { path = "../../core/keys/" }
 
 # Git deps
-decaf377 = { version = "0.4", features = ["r1cs"] }
+decaf377 = { version = "0.5", features = ["r1cs"] }
 
 # Crates.io deps
 ark-ff = {version = "0.4", default-features = false}
@@ -44,7 +44,7 @@ penumbra-fee = { path = "../../core/component/fee/" }
 penumbra-sct = { path = "../../core/component/sct/" }
 decaf377-fmd = { path = "../decaf377-fmd/" }
 decaf377-ka = { path = "../decaf377-ka/" }
-decaf377-rdsa = "0.6"
+decaf377-rdsa = "0.7"
 
 [build-dependencies]
 regex = {version = "1", optional=true }

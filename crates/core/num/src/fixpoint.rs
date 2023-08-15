@@ -284,28 +284,26 @@ impl U128x128Var {
         let z2_raw = &x2 + &y2;
         let z3_raw = &x3 + &y3;
 
-        // z0 < 2^64 + 2^64 < 2^(65) => 65 bits
-        let z0_bits = bit_constrain(z0_raw, 64)?; // no carry-in
+        // z0 <= (2^64 - 1) + (2^64 - 1) < 2^(65) => 65 bits
+        let z0_bits = bit_constrain(z0_raw, 65)?; // no carry-in
         let z0 = UInt64::from_bits_le(&z0_bits[0..64]);
         let c1 = Boolean::<Fq>::le_bits_to_fp_var(&z0_bits[64..].to_bits_le()?)?;
 
-        // z1 < 2^64 + 2^64 + 2^64 < 2^(66) => 66 bits
-        let z1_bits = bit_constrain(z1_raw + c1, 66)?; // carry-in c1
+        // z1 <= (2^64 - 1) + (2^64 - 1) + 1 < 2^(65) => 65 bits
+        let z1_bits = bit_constrain(z1_raw + c1, 65)?; // carry-in c1
         let z1 = UInt64::from_bits_le(&z1_bits[0..64]);
         let c2 = Boolean::<Fq>::le_bits_to_fp_var(&z1_bits[64..].to_bits_le()?)?;
 
-        // z2 < 2^64 + 2^64 + 2^64 < 2^(66) => 66 bits
-        let z2_bits = bit_constrain(z2_raw + c2, 66)?; // carry-in c2
+        // z2 <= (2^64 - 1) + (2^64 - 1) + 1 < 2^(65) => 65 bits
+        let z2_bits = bit_constrain(z2_raw + c2, 65)?; // carry-in c2
         let z2 = UInt64::from_bits_le(&z2_bits[0..64]);
         let c3 = Boolean::<Fq>::le_bits_to_fp_var(&z2_bits[64..].to_bits_le()?)?;
 
-        // z3 < 2^64 + 2^64 + 2^64 < 2^(66) => 66 bits
-        let z3_bits = bit_constrain(z3_raw + c3, 66)?; // carry-in c3
+        // z3 <= (2^64 - 1) + (2^64 - 1) + 1 < 2^(65) => 65 bits
+        // However, the last bit (65th) which would be used as a final carry flag, should be 0 if there is no overflow.
+        // As such, we can constrain the length for this call to 64 bits.
+        let z3_bits = bit_constrain(z3_raw + c3, 64)?; // carry-in c3
         let z3 = UInt64::from_bits_le(&z3_bits[0..64]);
-        let c4 = Boolean::<Fq>::le_bits_to_fp_var(&z3_bits[64..].to_bits_le()?)?;
-
-        // Constrain c4: No overflow.
-        c4.enforce_equal(&FqVar::zero())?;
 
         Ok(Self {
             limbs: [z0, z1, z2, z3],
@@ -362,11 +360,11 @@ impl U128x128Var {
 
         // t1 = (t0 >> 128) + z2
         let t1 = z2 + Boolean::<Fq>::le_bits_to_fp_var(&t0_bits[128..193].to_bits_le()?)?;
-        // Constrain: t1 fits in 129 bits
-        let t1_bits = bit_constrain(t1, 129)?;
+        // Constrain: t1 fits in 130 bits
+        let t1_bits = bit_constrain(t1, 130)?;
 
-        // w0 = t0 & 2^64 - 1
-        let w0 = UInt64::from_bits_le(&t0_bits[0..64]);
+        // w0 = t1 & 2^64 - 1
+        let w0 = UInt64::from_bits_le(&t1_bits[0..64]);
 
         // t2 = (t1 >> 64) + z3
         let t2 = z3 + Boolean::<Fq>::le_bits_to_fp_var(&t1_bits[64..129].to_bits_le()?)?;
@@ -378,14 +376,14 @@ impl U128x128Var {
 
         // t3 = (t2 >> 64) + z4
         let t3 = z4 + Boolean::<Fq>::le_bits_to_fp_var(&t2_bits[64..129].to_bits_le()?)?;
-        // Constrain: t3 fits in 129 bits
-        let t3_bits = bit_constrain(t3, 129)?;
+        // Constrain: t3 fits in 128 bits
+        let t3_bits = bit_constrain(t3, 128)?;
 
         // w2 = t3 & 2^64 - 1
         let w2 = UInt64::from_bits_le(&t3_bits[0..64]);
 
         // t4 = (t3 >> 64) + z5
-        let t4 = z5 + Boolean::<Fq>::le_bits_to_fp_var(&t3_bits[64..129].to_bits_le()?)?;
+        let t4 = z5 + Boolean::<Fq>::le_bits_to_fp_var(&t3_bits[64..128].to_bits_le()?)?;
         // Constrain: t4 fits in 64 bits
         let t4_bits = bit_constrain(t4, 64)?;
         // If we didn't overflow, it will fit in 64 bits.
@@ -426,40 +424,35 @@ impl U128x128Var {
         let other_bits: Vec<Boolean<Fq>> = other.to_bits_le().into_iter().rev().collect();
 
         // Now starting at the most significant side, compare bits.
-        let mut acc: Boolean<Fq> = Boolean::constant(true);
-        for (self_bit, other_bit) in zip(self_bits, other_bits) {
-            match ordering {
-                std::cmp::Ordering::Equal => unimplemented!("use `EqGadget` instead"),
-                std::cmp::Ordering::Less => {
-                    // Self must be less than other, so we want to "stop" (hit 0)
-                    // when we hit the most significant bit where other=1, self=0
-                    // self p | other q | desired output = !(!p /\ q)
-                    //   1    |   1     | 1
-                    //   1    |   0     | 1
-                    //   0    |   0     | 1
-                    //   0    |   1     | 0
-                    //
-                    // !(!p /\ q) by De Morgan is equivalent to p \/ !q:
-                    let this_bit_eq = self_bit.or(&other_bit.not())?;
-                    acc = acc.and(&this_bit_eq)?;
-                }
-                std::cmp::Ordering::Greater => {
-                    // Self must be greater than other, so we want to "stop" (hit 0)
-                    // when we hit the most significant bit where self=1, other=0
-                    // self p | other q | desired output = !(p /\ !q)
-                    //   1    |   1     | 1
-                    //   1    |   0     | 0
-                    //   0    |   0     | 1
-                    //   0    |   1     | 1
-                    //
-                    // !(p /\ !q) by De Morgan is equivalent to !p \/ q:
-                    let this_bit_eq = (self_bit.not()).or(&other_bit)?;
-                    acc = acc.and(&this_bit_eq)?;
-                }
+        // `gt` is true if we have conclusively determined that self > other.
+        // `lt` is true if we have conclusively determined that self < other.
+        let mut gt: Boolean<Fq> = Boolean::constant(false);
+        let mut lt: Boolean<Fq> = Boolean::constant(false);
+        for (p, q) in zip(self_bits, other_bits) {
+            // If we've determined that self > other, that will remain
+            // true as we continue to look at other bits. Otherwise,
+            // we need to make sure that we don't have self < other.
+            // At this point, if we see a 1 bit for self and a 0 bit for other,
+            // we know that self > other.
+            gt = gt.or(&lt.not().and(&p)?.and(&q.not())?)?;
+            // The exact same logic, but swapping gt <-> lt, p <-> q
+            lt = lt.or(&gt.not().and(&q)?.and(&p.not())?)?;
+        }
+
+        match ordering {
+            std::cmp::Ordering::Greater => {
+                gt.enforce_equal(&Boolean::constant(true))?;
+                lt.enforce_equal(&Boolean::constant(false))?;
+            }
+            std::cmp::Ordering::Less => {
+                gt.enforce_equal(&Boolean::constant(false))?;
+                lt.enforce_equal(&Boolean::constant(true))?;
+            }
+            std::cmp::Ordering::Equal => {
+                unimplemented!("use EqGadget for efficiency");
             }
         }
 
-        acc.enforce_equal(&Boolean::constant(false))?;
         Ok(())
     }
 
@@ -576,41 +569,38 @@ impl U128x128Var {
         // for the upper terms, we just need to enforce that they're 0, without the
         // possibility of wrapping in the finite field.
 
-        // z0 < 2^128 + 2^64 < 2^(128 + 1) => 129 bits
-        let z0_bits = bit_constrain(z0_raw, 129)?; // no carry-in
+        // z0 <= (2^64 - 1)(2^64 - 1) + (2^64 - 1) => 128 bits
+        let z0_bits = bit_constrain(z0_raw, 128)?; // no carry-in
         let z0 = Boolean::<Fq>::le_bits_to_fp_var(&z0_bits[0..64].to_bits_le()?)?;
-        let c1 = Boolean::<Fq>::le_bits_to_fp_var(&z0_bits[64..].to_bits_le()?)?; // 65 bits
+        let c1 = Boolean::<Fq>::le_bits_to_fp_var(&z0_bits[64..].to_bits_le()?)?; // 64 bits
 
-        // z1 < 2^64 + 2 * 2^128 + 2^65 < 3*2^128 < 2^(128 + 2) => 130 bits
-        let z1_bits = bit_constrain(z1_raw + c1, 130)?; // carry-in c1
+        // z1 <= 2*(2^64 - 1)(2^64 - 1) + (2^64 - 1) + carry (2^64 - 1) => 129 bits
+        let z1_bits = bit_constrain(z1_raw + c1, 129)?; // carry-in c1
         let z1 = Boolean::<Fq>::le_bits_to_fp_var(&z1_bits[0..64].to_bits_le()?)?;
-        let c2 = Boolean::<Fq>::le_bits_to_fp_var(&z1_bits[64..].to_bits_le()?)?; // 66 bits
+        let c2 = Boolean::<Fq>::le_bits_to_fp_var(&z1_bits[64..].to_bits_le()?)?; // 65 bits
 
-        // z2 < 2^64 + 3 * 2^128 + 2^66 < 4*2^128 = 2^(128 + 2) => 130 bits
+        // z2 <= 3*(2^64 - 1)(2^64 - 1) + (2^64 - 1) + carry (2^65 - 2) => 130 bits
         let z2_bits = bit_constrain(z2_raw + c2, 130)?; // carry-in c2
         let z2 = Boolean::<Fq>::le_bits_to_fp_var(&z2_bits[0..64].to_bits_le()?)?;
         let c3 = Boolean::<Fq>::le_bits_to_fp_var(&z2_bits[64..].to_bits_le()?)?; // 66 bits
 
-        // z3 < 2^64 + 4 * 2^128 + 2^66 < 5*2^128 = 2^(128 + 3) => 131 bits
-        let z3_bits = bit_constrain(z3_raw + c3, 131)?; // carry-in c3
+        // z3 <= 4*(2^64 - 1)(2^64 - 1) + (2^64 - 1) + carry (2^66 - 1) => 130 bits
+        let z3_bits = bit_constrain(z3_raw + c3, 130)?; // carry-in c3
         let z3 = Boolean::<Fq>::le_bits_to_fp_var(&z3_bits[0..64].to_bits_le()?)?;
-        let c4 = Boolean::<Fq>::le_bits_to_fp_var(&z3_bits[64..].to_bits_le()?)?; // 67 bits
+        let c4 = Boolean::<Fq>::le_bits_to_fp_var(&z3_bits[64..].to_bits_le()?)?; // 66 bits
 
-        // z4 < 3 * 2^128 + 2^67 < 4*2^128 = 2^(128 + 2) => 130 bits
-        let z4_bits = bit_constrain(z4_raw + c4, 130)?; // carry-in c4
+        // z4 <= 3*(2^64 - 1)(2^64 - 1) + carry (2^66 - 1) => 130 bits
+        // But extra bits beyond 128 spill into z6, which should be zero, so we can constrain to 128 bits.
+        let z4_bits = bit_constrain(z4_raw + c4, 128)?; // carry-in c4
         let z4 = Boolean::<Fq>::le_bits_to_fp_var(&z4_bits[0..64].to_bits_le()?)?;
-        let c5 = Boolean::<Fq>::le_bits_to_fp_var(&z4_bits[64..].to_bits_le()?)?; // 66 bits
+        let c5 = Boolean::<Fq>::le_bits_to_fp_var(&z4_bits[64..].to_bits_le()?)?; // 64 bits
 
-        // z5 < 2 * 2^128 + 2^66 < 3*2^128 = 2^(128 + 2) => 130 bits
-        let z5_bits = bit_constrain(z5_raw + c5, 130)?; // carry-in c5
+        // z5 <= 2*(2^64 - 1)(2^64 - 1) + (2^64 - 1)
+        // But if there is no overflow, the final carry (which would be c6 constructed from z5_bits[64..])
+        // should be zero. So instead of constructing that final carry, we can instead bit constrain z5 to
+        // the first 64 bits to save constraints.
+        let z5_bits = bit_constrain(z5_raw + c5, 64)?; // carry-in c5
         let z5 = Boolean::<Fq>::le_bits_to_fp_var(&z5_bits[0..64].to_bits_le()?)?;
-        let c6 = Boolean::<Fq>::le_bits_to_fp_var(&z5_bits[64..].to_bits_le()?)?; // 66 bits
-
-        // z6_plus < 2^128 + 2^66 < 2*2^128 = 2^(128 + 1) => 129 bits
-        // Since 129 bits < field modulus, we can enforce z6_plus = 0
-        // without bit constraining.
-        let z6_and_up = z6_raw + c6;
-        // Note: 129 + 384 = 513 so this is all of the remaining bits
 
         // Repeat:
         // We want to constrain
@@ -622,7 +612,8 @@ impl U128x128Var {
         z3.enforce_equal(&xbar1)?;
         z4.enforce_equal(&xbar2)?;
         z5.enforce_equal(&xbar3)?;
-        z6_and_up.enforce_equal(&FqVar::zero())?;
+        // z6_raw should be zero if there was no overflow.
+        z6_raw.enforce_equal(&FqVar::zero())?;
 
         Ok(q)
     }
@@ -731,10 +722,16 @@ mod test {
         #[test]
         fn multiply_and_round(
             a_int in any::<u64>(),
+            a_frac in any::<u64>(),
             b_int in any::<u64>(),
+            b_frac in any::<u64>(),
         ) {
-            let a = U128x128::from(a_int);
-            let b = U128x128::from(b_int);
+            let a = U128x128(
+                U256([a_frac.into(), a_int.into()])
+            );
+            let b = U128x128(
+                U256([b_frac.into(), b_int.into()])
+            );
 
             let result = a.checked_mul(&b);
 
@@ -820,17 +817,26 @@ mod test {
     }
 
     proptest! {
-        #![proptest_config(ProptestConfig::with_cases(1))]
+        #![proptest_config(ProptestConfig::with_cases(5))]
         #[test]
         fn add(
             a_int in any::<u64>(),
+            a_frac in any::<u128>(),
             b_int in any::<u64>(),
+            b_frac in any::<u128>(),
         ) {
-            let a = U128x128::from(a_int);
-            let b = U128x128::from(b_int);
-
+            let a = U128x128(
+                U256([a_frac, a_int.into()])
+            );
+            let b = U128x128(
+                U256([b_frac, b_int.into()])
+            );
             let result = a.checked_add(&b);
 
+            if result.is_err() {
+                // If the result overflowed, then we can't construct a valid proof.
+                return Ok(())
+            }
             let expected_c = result.expect("result should not overflow");
 
             let circuit = TestAdditionCircuit {
@@ -852,6 +858,35 @@ mod test {
             );
             assert!(proof_result.is_ok());
         }
+    }
+
+    #[test]
+    fn max_u64_addition() {
+        let a = U128x128(U256([u64::MAX as u128, 0]));
+        let b = U128x128(U256([u64::MAX as u128, 0]));
+
+        let result = a.checked_add(&b);
+
+        let expected_c = result.expect("result should not overflow");
+
+        let circuit = TestAdditionCircuit {
+            a,
+            b,
+            c: expected_c,
+        };
+
+        let (pk, vk) = TestAdditionCircuit::generate_test_parameters();
+        let mut rng = OsRng;
+
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+            .expect("should be able to form proof");
+
+        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
+            &vk,
+            &expected_c.to_field_elements().unwrap(),
+            &proof,
+        );
+        assert!(proof_result.is_ok());
     }
 
     struct TestAdditionCircuit {
@@ -894,15 +929,51 @@ mod test {
         }
     }
 
+    #[test]
+    fn max_division() {
+        let b = U128x128(U256([0, 1]));
+        let a = U128x128(U256([u128::MAX, u128::MAX]));
+
+        let result = a.checked_div(&b);
+
+        let expected_c = result.expect("result should not overflow");
+        dbg!(expected_c);
+
+        let circuit = TestDivisionCircuit {
+            a,
+            b,
+            c: expected_c,
+        };
+
+        let (pk, vk) = TestDivisionCircuit::generate_test_parameters();
+        let mut rng = OsRng;
+
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+            .expect("should be able to form proof");
+
+        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
+            &vk,
+            &expected_c.to_field_elements().unwrap(),
+            &proof,
+        );
+        assert!(proof_result.is_ok());
+    }
+
     proptest! {
-        #![proptest_config(ProptestConfig::with_cases(1))]
+        #![proptest_config(ProptestConfig::with_cases(10))]
         #[test]
         fn division(
             a_int in any::<u64>(),
-            b_int in any::<u64>(),
+            a_frac in any::<u64>(),
+            b_int in any::<u128>(),
+            b_frac in any::<u128>(),
         ) {
-            let a = U128x128::from(a_int);
-            let b = U128x128::from(b_int);
+            let a = U128x128(
+                U256([a_frac.into(), a_int.into()])
+            );
+            let b = U128x128(
+                U256([b_frac, b_int])
+            );
 
             // We can't divide by zero
             if b_int == 0 {
@@ -1058,6 +1129,174 @@ mod test {
             )
             .expect("can perform circuit specific setup");
             (pk, vk)
+        }
+    }
+
+    struct TestGreaterInvalidComparisonCircuit {
+        a: U128x128,
+        b: U128x128,
+    }
+
+    impl ConstraintSynthesizer<Fq> for TestGreaterInvalidComparisonCircuit {
+        fn generate_constraints(
+            self,
+            cs: ConstraintSystemRef<Fq>,
+        ) -> ark_relations::r1cs::Result<()> {
+            // In reality a < b, but we're asserting that a > b here (should panic)
+            let a_var = U128x128Var::new_witness(cs.clone(), || Ok(self.a))?;
+            let b_var = U128x128Var::new_witness(cs, || Ok(self.b))?;
+            a_var.enforce_cmp(&b_var, std::cmp::Ordering::Greater)?;
+
+            Ok(())
+        }
+    }
+
+    impl TestGreaterInvalidComparisonCircuit {
+        fn generate_test_parameters(
+        ) -> Result<(ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>), SynthesisError> {
+            let num: [u8; 32] = [0u8; 32];
+            let a = U128x128::from_bytes(num);
+            let b = U128x128::from_bytes(num);
+            let circuit = TestGreaterInvalidComparisonCircuit { a, b };
+            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
+        }
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(5))]
+        #[should_panic]
+        #[test]
+        fn invalid_greater_compare(
+            a_int in any::<u128>(),
+        ) {
+            // a < b
+            let a =
+                if a_int == u128::MAX {
+                    U128x128::from(a_int - 1)
+                } else {
+                    U128x128::from(a_int)
+                };
+            let b = (a + U128x128::from(1u64)).expect("should not overflow");
+
+            let circuit = TestGreaterInvalidComparisonCircuit {
+                a,
+                b,
+            };
+
+            let (pk, vk) = TestGreaterInvalidComparisonCircuit::generate_test_parameters().expect("can perform setup");
+            let mut rng = OsRng;
+
+            let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+            .expect("in debug mode only, we assert that the circuit is satisfied, so we will panic here");
+
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
+                &vk,
+                &[],
+                &proof,
+            ).expect("in release mode, we will be able to construct the proof, so we can unwrap the result");
+
+            // We want the same behavior in release or debug mode, so we will panic if the proof does not verify.
+            if !proof_result {
+                panic!("should not be able to verify proof");
+            }
+        }
+    }
+
+    struct TestLessInvalidComparisonCircuit {
+        c: U128x128,
+        d: U128x128,
+    }
+
+    impl ConstraintSynthesizer<Fq> for TestLessInvalidComparisonCircuit {
+        fn generate_constraints(
+            self,
+            cs: ConstraintSystemRef<Fq>,
+        ) -> ark_relations::r1cs::Result<()> {
+            // In reality c > d, but we're asserting that c < d here (should panic)
+            let c_var = U128x128Var::new_witness(cs.clone(), || Ok(self.c))?;
+            let d_var = U128x128Var::new_witness(cs, || Ok(self.d))?;
+            c_var.enforce_cmp(&d_var, std::cmp::Ordering::Less)?;
+
+            Ok(())
+        }
+    }
+
+    impl TestLessInvalidComparisonCircuit {
+        fn generate_test_parameters(
+        ) -> Result<(ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>), SynthesisError> {
+            let num: [u8; 32] = [0u8; 32];
+            let c = U128x128::from_bytes(num);
+            let d = U128x128::from_bytes(num);
+            let circuit = TestLessInvalidComparisonCircuit { c, d };
+            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
+        }
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(5))]
+        #[should_panic]
+        #[test]
+        fn invalid_less_compare(
+            c_int in any::<u128>(),
+        ) {
+            // c > d
+            let c =
+                if c_int == 0 {
+                    U128x128::from(c_int + 1)
+                } else {
+                    U128x128::from(c_int)
+                };
+            let d = (c - U128x128::from(1u64)).expect("should not underflow");
+
+            let circuit = TestLessInvalidComparisonCircuit {
+                c,
+                d,
+            };
+
+            let (pk, vk) = TestLessInvalidComparisonCircuit::generate_test_parameters().expect("can perform setup");
+            let mut rng = OsRng;
+
+            let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+            .expect("in debug mode only, we assert that the circuit is satisfied, so we will panic here");
+
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
+                &vk,
+                &[],
+                &proof,
+            ).expect("in release mode, we will be able to construct the proof, so we can unwrap the result");
+
+            // We want the same behavior in release or debug mode, so we will panic if the proof does not verify.
+            if !proof_result {
+                panic!("should not be able to verify proof");
+            }
+        }
+    }
+
+    #[should_panic]
+    #[test]
+    fn regression_invalid_less_compare() {
+        // c > d in reality, the circuit will attempt to prove c < d (should panic)
+        let c = U128x128::from(354389783742u64);
+        let d = U128x128::from(17u64);
+
+        let circuit = TestLessInvalidComparisonCircuit { c, d };
+
+        let (pk, vk) = TestLessInvalidComparisonCircuit::generate_test_parameters()
+            .expect("can perform setup");
+        let mut rng = OsRng;
+
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng).expect(
+            "in debug mode only, we assert that the circuit is satisfied, so we will panic here",
+        );
+
+        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(&vk, &[], &proof)
+            .expect(
+            "in release mode, we will be able to construct the proof, so we can unwrap the result",
+        );
+
+        // We want the same behavior in release or debug mode, so we will panic if the proof does not verify.
+        if !proof_result {
+            panic!("should not be able to verify proof");
         }
     }
 }
