@@ -14,10 +14,12 @@ use penumbra_proto::view::v1alpha1::NotesRequest;
 use penumbra_shielded_pool::OutputPlan;
 use crate::note_record::SpendableNoteRecord;
 use crate::planner::Planner;
-use crate::swap_record;
+use crate::{swap_record, utils};
 use crate::swap_record::SwapRecord;
 use decaf377::{Fq};
 use ark_ff::UniformRand;
+use web_sys::console as web_console;
+
 
 
 
@@ -71,6 +73,9 @@ impl WasmPlanner {
     }
 
     pub async fn swap_claim(&mut self, swap_commitment: JsValue) -> Result<(), JsValue> {
+
+        utils::set_panic_hook();
+
         let swap_commitment_proto: StateCommitment = serde_wasm_bindgen::from_value(swap_commitment)?;
 
         let swap_record = get_swap_by_commitment(swap_commitment_proto).await.unwrap();
@@ -117,7 +122,11 @@ impl WasmPlanner {
         self_address: JsValue
     ) -> Result<JsValue, JsValue> {
 
+        utils::set_panic_hook();
+
+
         let self_address_proto: Address = serde_wasm_bindgen::from_value(self_address)?;
+
 
 
         let chain_params_proto: ChainParameters = get_chain_parameters().await.unwrap();
@@ -187,12 +196,16 @@ pub async fn get_fmd_parameters() -> Option<FmdParameters> {
 }
 
 pub async fn get_swap_by_commitment(swap_commitment: StateCommitment) -> Option<SwapRecord> {
+
+    utils::set_panic_hook();
+
     let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok()?;
 
     let db: IdbDatabase = db_req.into_future().await.ok()?;
 
-    let tx = db.transaction_on_one("swap").ok()?;
-    let store = tx.object_store("swap").ok()?;
+    let tx = db.transaction_on_one("swaps").ok()?;
+    let store = tx.object_store("swaps").ok()?;
+
 
     let value: Option<JsValue> = store
         .get_owned(base64::encode(swap_commitment.inner))
