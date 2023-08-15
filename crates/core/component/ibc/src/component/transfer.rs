@@ -255,7 +255,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
         // check if we have enough balance to unescrow tokens to receiver
         let value_balance: Amount = state
             .get(&state_key::ics20_value_balance(
-                &msg.packet.chan_on_a,
+                &msg.packet.chan_on_b,
                 &unprefixed_denom.id(),
             ))
             .await?
@@ -278,7 +278,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
         // update the value balance
         let value_balance: Amount = state
             .get(&state_key::ics20_value_balance(
-                &msg.packet.chan_on_a,
+                &msg.packet.chan_on_b,
                 &unprefixed_denom.id(),
             ))
             .await?
@@ -287,7 +287,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
         // note: this arithmetic was checked above, but we do it again anyway.
         let new_value_balance = value_balance.checked_sub(&receiver_amount).unwrap();
         state.put(
-            state_key::ics20_value_balance(&msg.packet.chan_on_a, &denom.id()),
+            state_key::ics20_value_balance(&msg.packet.chan_on_b, &denom.id()),
             new_value_balance,
         );
     } else {
