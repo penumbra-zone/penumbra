@@ -97,6 +97,12 @@ pub trait Ics20TransferWriteExt: StateWrite {
 
             // NOTE: this burning should already be accomplished by the value balance check from
             // the withdrawal's balance commitment, so nothing to do here.
+            //
+
+            // update supply tracking of burned note
+            self.update_token_supply(&withdrawal.denom.id(), -(withdrawal.amount.value() as i128))
+                .await
+                .expect("couldn't update token supply in ics20 withdrawal!");
         }
 
         self.send_packet_execute(checked_packet).await;
