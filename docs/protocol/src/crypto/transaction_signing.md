@@ -11,8 +11,8 @@ for more details on `Spend` and `DelegatorVote` actions respectively).
 The `SpendAuth` signatures are created using a randomized signing key $rsk$ and the corresponding randomized verification key $rk$ provided on the action. The purpose of the randomization is to prevent linkage of verification keys across actions. 
 
 The `SpendAuth` signature is computed using the `decaf377-rdsa` `Sign` algorithm
-where the message to be signed is the *effect hash* (described below), and the
-`decaf377-rdsa` domain is `SpendAuth`.
+where the message to be signed is the *effect hash* of the entire transaction
+(described below), and the `decaf377-rdsa` domain is `SpendAuth`.
 
 ## Effect Hash
 
@@ -34,7 +34,7 @@ input `input`. The input of each effect hash is the proto-encoding of the action
 cases where the effecting data and authorizing data are the same, or the *body*
 of the action - in cases where the effecting data and authorizing data are different.
 
-Then the effect hash for each action is computed as:
+Then the effect hash _for each action_ is computed as:
 
 ```
 effect_hash = hash(label, proto_encode(proto))
@@ -42,6 +42,8 @@ effect_hash = hash(label, proto_encode(proto))
 
 where `proto` represents the proto used to represent the effecting data, and
 `proto_encode` represents encoding the proto message as a vector of bytes.
+
+### Per-Action Effect Hashes
 
 On a per-action basis, the effect hash is computed using the following labels and
 protos representing the effecting data in Penumbra:
@@ -70,6 +72,30 @@ protos representing the effecting data in Penumbra:
 | `PositionClose`  | `b"PAH:pos_close"`  | `PositionClose` |
 | `PositionWithdraw`  | `b"PAH:pos_withdraw"`  | `PositionWithdraw` |
 | `PositionRewardClaim`  | `b"PAH:pos_rewrdclm"`  | `PositionRewardClaim` |
+
+### Transaction Data Field Effect Hashes
+
+We compute the transaction data field effect hashes in the same manner as actions:
+
+| Field | Label  | Proto  |
+|---|---|---|
+| `TransactionParameters` | `b"PAH:tx_params"` | `TransactionParameters`  |
+| `Fee` | `b"PAH:fee"` | `Fee` |
+| `Clue`  | `b"PAH:decaffmdclue"`  | `Clue` |
+| `MemoCiphertext` | `b"PAH:memo"` | `MemoCiphertext`
+
+For the `DetectionData`, we compute the effect hash where `eh(c_i)` represents the effect hash of the $i^{th}$ clue via:
+
+`effect_hash = hash(b"PAH:detect_data", num clues || eh(c_0) || ... ||  eh(c_i))`
+
+### Transaction Effect Hash
+
+To compute the effect hash of the _entire transaction_, we combine the hashes of the individual fields in the transaction body. First we include the fixed-sized effect hashes of the per-transaction data fields: the transaction parameters `eh(tx_params)`, fee `eh(fee)`, (optional) detection data `eh(detection_data)`, and (optional) memo `eh(memo)` which are derived as described above. Then, we include the number of actions $j$ and the fixed-size effect hash of each action `a_0` through `a_j`. Combining all fields:
+
+```
+effect_hash = hash(b"PAH:tx_body", eh(tx_params) || eh(fee) || eh(memo) || eh(detection_data) || j || eh(a_0) || ... || eh(a_j))
+```
+
 
 ## `Binding` Signature
 
