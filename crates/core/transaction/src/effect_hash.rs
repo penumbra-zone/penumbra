@@ -1,4 +1,4 @@
-use blake2b_simd::{Hash, Params};
+use blake2b_simd::Params;
 use decaf377_fmd::Clue;
 use penumbra_chain::EffectHash;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
@@ -23,8 +23,10 @@ use crate::{
         DelegatorVote, DelegatorVoteBody, Proposal, ProposalDepositClaim, ProposalSubmit,
         ProposalWithdraw, ValidatorVote, ValidatorVoteBody, Vote,
     },
+    memo::MemoCiphertext,
     plan::TransactionPlan,
-    Action, Transaction, TransactionBody,
+    transaction::DetectionData,
+    Action, Transaction, TransactionBody, TransactionParameters,
 };
 
 // Note: temporarily duplicate of chain/EffectingData
@@ -59,31 +61,27 @@ impl TransactionBody {
             .to_state();
 
         // Hash the fixed data of the transaction body.
-        state.update(chain_id_effect_hash(&self.chain_id()).as_bytes());
-        state.update(&self.expiry_height().to_le_bytes());
+        state.update(self.transaction_parameters.effect_hash().as_bytes());
         state.update(self.fee.effect_hash().as_bytes());
         if self.memo.is_some() {
             let memo = self.memo.clone();
-            state.update(&memo.unwrap().0);
+            state.update(memo.expect("memo is some").effect_hash().as_bytes());
+        }
+        if self.detection_data.is_some() {
+            let detection_data = self.detection_data.clone();
+            state.update(
+                detection_data
+                    .expect("detection data is some")
+                    .effect_hash()
+                    .as_bytes(),
+            );
         }
 
-        // Hash the actions.
+        // Hash the number of actions, then each action.
         let num_actions = self.actions.len() as u32;
         state.update(&num_actions.to_le_bytes());
         for action in &self.actions {
             state.update(action.effect_hash().as_bytes());
-        }
-
-        // Hash the clues.
-        match self.detection_data {
-            None => {}
-            Some(ref detection_data) => {
-                let num_clues = detection_data.fmd_clues.len() as u32;
-                state.update(&num_clues.to_le_bytes());
-                for fmd_clue in &detection_data.fmd_clues {
-                    state.update(fmd_clue.effect_hash().as_bytes());
-                }
-            }
         }
 
         EffectHash(state.finalize().as_array().clone())
@@ -108,16 +106,32 @@ impl TransactionPlan {
             .to_state();
 
         // Hash the fixed data of the transaction body.
-        state.update(chain_id_effect_hash(&self.chain_id).as_bytes());
-        state.update(&self.expiry_height.to_le_bytes());
+        let tx_params = TransactionParameters {
+            chain_id: self.chain_id.clone(),
+            expiry_height: self.expiry_height,
+        };
+        state.update(tx_params.effect_hash().as_bytes());
         state.update(self.fee.effect_hash().as_bytes());
 
         // Hash the memo and save the memo key for use with outputs later.
         let mut memo_key: Option<PayloadKey> = None;
         if self.memo_plan.is_some() {
             let memo_plan = self.memo_plan.clone().unwrap();
-            state.update(memo_plan.memo().unwrap().0.as_ref());
+            let memo_ciphertext = memo_plan.memo().expect("can compute ciphertext");
+            state.update(memo_ciphertext.effect_hash().as_bytes());
             memo_key = Some(memo_plan.key);
+        }
+
+        // Hash the detection data.
+        let detection_data = DetectionData {
+            fmd_clues: self
+                .clue_plans
+                .iter()
+                .map(|clue_plan| clue_plan.clue())
+                .collect(),
+        };
+        if !self.clue_plans.is_empty() {
+            state.update(detection_data.effect_hash().as_bytes());
         }
 
         let num_actions = self.actions.len() as u32;
@@ -218,20 +232,9 @@ impl TransactionPlan {
         for ics20_withdrawal in self.ics20_withdrawals() {
             state.update(ics20_withdrawal.effect_hash().as_bytes());
         }
-        let num_clues = self.clue_plans.len() as u32;
-        state.update(&num_clues.to_le_bytes());
-        for clue_plan in self.clue_plans() {
-            state.update(clue_plan.clue().effect_hash().as_bytes());
-        }
 
         EffectHash(state.finalize().as_array().clone())
     }
-}
-
-fn chain_id_effect_hash(chain_id: &str) -> Hash {
-    blake2b_simd::Params::default()
-        .personal(b"PAH:chain_id")
-        .hash(chain_id.as_bytes())
 }
 
 impl EffectingData for Action {
@@ -473,6 +476,22 @@ impl EffectingData for PositionRewardClaim {
     }
 }
 
+impl EffectingData for DetectionData {
+    fn effect_hash(&self) -> EffectHash {
+        let mut state = blake2b_simd::Params::default()
+            .personal(b"PAH:detect_data")
+            .to_state();
+
+        let num_clues = self.fmd_clues.len() as u32;
+        state.update(&num_clues.to_le_bytes());
+        for fmd_clue in &self.fmd_clues {
+            state.update(fmd_clue.effect_hash().as_bytes());
+        }
+
+        EffectHash(state.finalize().as_array().clone())
+    }
+}
+
 impl EffectingData for Clue {
     fn effect_hash(&self) -> EffectHash {
         let data: pbc::Clue = self.clone().into();
@@ -480,10 +499,24 @@ impl EffectingData for Clue {
     }
 }
 
+impl EffectingData for TransactionParameters {
+    fn effect_hash(&self) -> EffectHash {
+        let params: pbt::TransactionParameters = self.clone().into();
+        hash_proto_effecting_data(TransactionParameters::TYPE_URL, &params)
+    }
+}
+
 impl EffectingData for Fee {
     fn effect_hash(&self) -> EffectHash {
         let proto_encoded_fee: pbc::Fee = self.clone().into();
         hash_proto_effecting_data(Fee::TYPE_URL, &proto_encoded_fee)
+    }
+}
+
+impl EffectingData for MemoCiphertext {
+    fn effect_hash(&self) -> EffectHash {
+        let proto_encoded_memo: pbt::MemoCiphertext = self.clone().into();
+        hash_proto_effecting_data(MemoCiphertext::TYPE_URL, &proto_encoded_memo)
     }
 }
 
