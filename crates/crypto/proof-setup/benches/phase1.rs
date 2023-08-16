@@ -17,7 +17,7 @@ fn run_phase1_verify(contribution: RawContribution) {
 }
 
 fn phase1_benchmarks(c: &mut Criterion) {
-    // Generate contribution for degree = 37,655
+    // Generate contribution for degree = 37,061
     // (size of largest proof)
     let d = 37_655;
     let root = CRSElements::root(d);
