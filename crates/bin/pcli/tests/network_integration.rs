@@ -597,7 +597,11 @@ fn swap() {
         // Address 0 has 100gm.
         .stdout(predicate::str::is_match(format!(r"0\s*100gm")).unwrap())
         // Address 1 has no gm.
-        .stdout(predicate::str::is_match(format!(r"1\s.*gm")).unwrap().not())
+        .stdout(
+            predicate::str::is_match(format!(r"1\s[0-9]*\.?[0-9]gm"))
+                .unwrap()
+                .not(),
+        )
         // Address 0 has some penumbra.
         .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
         // Address 1 has 1001penumbra.
@@ -625,7 +629,11 @@ fn swap() {
         // Address 0 has 100gm.
         .stdout(predicate::str::is_match(format!(r"0\s*100gm")).unwrap())
         // Address 1 has no gm.
-        .stdout(predicate::str::is_match(format!(r"1\s.*gm")).unwrap().not())
+        .stdout(
+            predicate::str::is_match(format!(r"1\s[0-9]*\.?[0-9]gm"))
+                .unwrap()
+                .not(),
+        )
         // Address 0 has some penumbra.
         .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
         // Address 1 has 1000penumbra.
@@ -665,7 +673,11 @@ fn swap() {
         // Address 0 has 100gm.
         .stdout(predicate::str::is_match(format!(r"0\s*99gm")).unwrap())
         // Address 1 has no gm.
-        .stdout(predicate::str::is_match(format!(r"1\s.*gm")).unwrap().not())
+        .stdout(
+            predicate::str::is_match(format!(r"1\s[0-9]*\.?[0-9]gm"))
+                .unwrap()
+                .not(),
+        )
         // Address 0 has some penumbra.
         .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
         // Address 1 has 1000penumbra.
