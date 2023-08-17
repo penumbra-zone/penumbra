@@ -363,7 +363,7 @@ impl TxCmd {
 
                 let mut planner = Planner::new(OsRng);
                 planner.fee(swap_fee);
-                planner.swap(input, into, swap_claim_fee.clone(), claim_address)?;
+                planner.swap(input, into.id(), swap_claim_fee.clone(), claim_address)?;
 
                 let account_group_id = app.fvk.account_group_id();
                 let plan = planner

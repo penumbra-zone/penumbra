@@ -150,18 +150,18 @@ message TransactionPlannerRequest {
     core.crypto.v1alpha1.Address address = 2;
   }
   message Swap {
-    // The amount and denomination to be traded in the Swap.
+    // The input amount and denomination to be traded in the Swap.
     core.crypto.v1alpha1.Value value = 1;
     // The denomination to be received as a Output of the Swap.
     core.crypto.v1alpha1.AssetId target_asset = 2;
-    // An optional fee to be paid for performing the Swap.
+    // The pre-paid fee to be paid for claiming the Swap outputs.
     core.crypto.v1alpha1.Fee fee = 3;
+    // The address to which swap claim output will be sent.
+    core.crypto.v1alpha1.Address claim_address = 4;
   }
   message SwapClaim {
-    // SwapCommitment to identify the Swap to be claimed.
-    // Use the commitment from the Swap message:
-    // penumbra.core.dex.v1alpha1.Swap.body.payload.commitment.
-    core.crypto.v1alpha1.StateCommitment swap_commitment = 1;
+    // Plan for the swap to be claimed.
+    core.dex.v1alpha1.SwapClaimPlan swap_claim_plan = 1;
   }
   message Delegate {
     core.crypto.v1alpha1.Amount amount = 1;
