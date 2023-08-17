@@ -72,7 +72,9 @@ impl From<Proposal> for pb::Proposal {
         };
         match inner.payload {
             ProposalPayload::Signaling { commit } => {
-                proposal.signaling = Some(pb::proposal::Signaling { commit });
+                proposal.signaling = Some(pb::proposal::Signaling {
+                    commit: commit.unwrap_or(String::default()),
+                });
             }
             ProposalPayload::Emergency { halt_chain } => {
                 proposal.emergency = Some(pb::proposal::Emergency { halt_chain });
@@ -106,7 +108,11 @@ impl TryFrom<pb::Proposal> for Proposal {
             description: inner.description,
             payload: if let Some(signaling) = inner.signaling {
                 ProposalPayload::Signaling {
-                    commit: signaling.commit,
+                    commit: if signaling.commit == String::default() {
+                        None
+                    } else {
+                        Some(signaling.commit)
+                    },
                 }
             } else if let Some(emergency) = inner.emergency {
                 ProposalPayload::Emergency {
