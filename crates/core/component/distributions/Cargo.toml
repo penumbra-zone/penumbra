@@ -18,6 +18,8 @@ penumbra-storage = { path = "../../../storage", optional = true }
 penumbra-component = { path = "../component", optional = true }
 penumbra-chain = { path = "../chain", default-features = false }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
+penumbra-stake = { path = "../stake", default-features = false }
+penumbra-dex = { path = "../dex", default-features = false }
 
 # Crates.io deps
 async-trait = "0.1.52"
@@ -26,3 +28,4 @@ tracing = "0.1"
 tendermint = "0.34.0"
 
 [dev-dependencies]
+proptest = "1"
