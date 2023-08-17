@@ -71,13 +71,14 @@ impl Component for Distributions {
 }
 
 /// Given an association of keys to weights, sum the weights, scaling down the weights uniformly to
-/// make sure that the total weight fits in a `u128`, returning the total and the scaled weights.
-fn total_and_scale_to_u128<K>(weights: Vec<(K, u128)>) -> (u128, Vec<(K, u128)>) {
+/// make sure that the total weight fits in a `u128`, returning the total and modifying the weights
+/// in-place. This does not preserve the ordering of the weights.
+fn scale_to_u128<K>(weights: &mut Vec<(K, u128)>) -> u128 {
     // Calculate the total weight, tracking overflows so we can compute a scaling factor in the case
     // when the total of weights exceeds `u128::MAX`.
     let mut total_weight_remainder: u128 = 0;
     let mut number_of_overflows: u128 = 0;
-    for (_, weight) in &weights {
+    for (_, weight) in weights.iter() {
         if let Some(new) = total_weight_remainder.checked_add(*weight) {
             total_weight_remainder = new;
         } else {
@@ -105,8 +106,8 @@ fn total_and_scale_to_u128<K>(weights: Vec<(K, u128)>) -> (u128, Vec<(K, u128)>)
     // Even if there was overflow, the new total weight may be less than `u128::MAX`, since loss of
     // precision when dividing individual weights may have reduced the total weight.
     let mut total_scaled_weight: u128 = 0;
-    let mut scaled_weights = Vec::with_capacity(weights.len());
-    for (key, weight) in weights {
+    let mut i = 0;
+    while let Some(weight) = weights.get(i).map(|(_, weight)| *weight) {
         // Scale each weight down by dividing it by the scaling factor and rounding down.
         let scaled_weight = (U128x128::from(weight) / scaling_factor)
             .expect("scaling factor is never zero")
@@ -118,11 +119,14 @@ fn total_and_scale_to_u128<K>(weights: Vec<(K, u128)>) -> (u128, Vec<(K, u128)>)
         // Only output the scaled weight if it is greater than zero, since we don't want to do extra
         // work for weights that are dropped by scaling.
         if scaled_weight != 0 {
-            scaled_weights.push((key, scaled_weight));
+            weights[i].1 = scaled_weight;
+            i += 1;
+        } else {
+            weights.swap_remove(i);
         }
     }
 
-    (total_scaled_weight, scaled_weights)
+    total_scaled_weight
 }
 
 /// Return an exact allocation of `total_allocation` units of allocation, proportioned according to
@@ -133,7 +137,7 @@ fn total_and_scale_to_u128<K>(weights: Vec<(K, u128)>) -> (u128, Vec<(K, u128)>)
 /// list of allocations is returned.
 fn exact_allocation<K: Ord>(
     mut total_allocation: u128,
-    weights: Vec<(K, u128)>,
+    mut weights: Vec<(K, u128)>,
 ) -> Option<Vec<(K, u128)>> {
     // If the total allocation is zero, then we can allocate nothing to any key, regardless of what
     // the weights assigned to each key are.
@@ -142,7 +146,7 @@ fn exact_allocation<K: Ord>(
     }
 
     // Scale the weights down to fit in a `u128`.
-    let (mut total_weight, mut weights) = total_and_scale_to_u128(weights);
+    let mut total_weight = scale_to_u128(&mut weights);
 
     // If the total weight is zero, then we can't allocate anything, which would violate the
     // guarantee to allocate exactly if we returned any result.
@@ -197,13 +201,13 @@ mod test {
     proptest! {
         #[test]
         fn total_and_scale_to_u128_is_exact(
-            weights in proptest::collection::vec((0..u8::MAX, 0..u128::MAX), 0..(u8::MAX as usize))
+            mut weights in proptest::collection::vec((0..u8::MAX, 0..u128::MAX), 0..(u8::MAX as usize))
         ) {
-            let (total_weight, scaled_weights) = total_and_scale_to_u128(weights.clone());
+            let total_weight = scale_to_u128(&mut weights);
 
             // The total weight is the sum of the scaled weights (implicit in this is that the sum
             // of scaled weights doesn't overflow, which will panic the test).
-            let actual_total_weight: u128 = scaled_weights.iter().map(|(_, weight)| *weight).sum();
+            let actual_total_weight: u128 = weights.iter().map(|(_, weight)| *weight).sum();
             prop_assert_eq!(total_weight, actual_total_weight, "total weight is not exact");
         }
 
