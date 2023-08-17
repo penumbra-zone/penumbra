@@ -2916,7 +2916,7 @@ dependencies = [
 [[package]]
 name = "ibc-types"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
 dependencies = [
  "ibc-types-core-channel",
  "ibc-types-core-client",
@@ -2933,7 +2933,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-channel"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2963,7 +2963,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-client"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
 dependencies = [
  "bytes",
  "derive_more",
@@ -2988,7 +2988,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-commitment"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3021,7 +3021,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-connection"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3049,7 +3049,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-domain-type"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3059,7 +3059,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-identifier"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
 dependencies = [
  "displaydoc",
  "serde",
@@ -3068,7 +3068,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-lightclients-tendermint"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3103,7 +3103,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-path"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3124,7 +3124,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-timestamp"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
 dependencies = [
  "bytes",
  "displaydoc",
@@ -3141,7 +3141,7 @@ dependencies = [
 [[package]]
 name = "ibc-types-transfer"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
 dependencies = [
  "displaydoc",
  "serde",
