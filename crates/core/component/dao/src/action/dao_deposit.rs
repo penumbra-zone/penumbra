@@ -1,29 +1,14 @@
 use anyhow::{Context, Error};
-use prost::Message;
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_asset::{Balance, Value};
-use penumbra_chain::{EffectHash, EffectingData};
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::DaoDeposit", into = "pb::DaoDeposit")]
 pub struct DaoDeposit {
     pub value: Value,
-}
-
-impl EffectingData for DaoDeposit {
-    fn effect_hash(&self) -> EffectHash {
-        let effecting_data: pb::DaoDeposit = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:daodeposit")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
-    }
 }
 
 impl DaoDeposit {
