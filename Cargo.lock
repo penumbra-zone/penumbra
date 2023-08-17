@@ -4969,9 +4969,12 @@ dependencies = [
  "async-trait",
  "penumbra-chain",
  "penumbra-component",
+ "penumbra-dex",
  "penumbra-proto",
  "penumbra-shielded-pool",
+ "penumbra-stake",
  "penumbra-storage",
+ "proptest",
  "tendermint",
  "tracing",
 ]
