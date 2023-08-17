@@ -5,8 +5,10 @@ use std::{
 };
 
 use anyhow::{anyhow, Context};
+use ark_std::UniformRand;
 use async_stream::try_stream;
 use camino::Utf8Path;
+use decaf377::Fq;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_asset::{asset, Value};
 use penumbra_dex::{
@@ -356,6 +358,11 @@ impl ViewProtocolService for ViewService {
     ) -> Result<tonic::Response<pb::TransactionPlannerResponse>, tonic::Status> {
         let prq = request.into_inner();
 
+        let chain_params =
+            self.storage.chain_params().await.map_err(|e| {
+                tonic::Status::internal(format!("could not get chain params: {:#}", e))
+            })?;
+
         let mut planner = Planner::new(OsRng);
         planner
             .fee(
@@ -431,17 +438,34 @@ impl ViewProtocolService for ViewService {
         }
 
         for swap_claim in prq.swap_claims {
-            let swap_claim_plan: SwapClaimPlan = swap_claim
-                .swap_claim_plan
-                .ok_or_else(|| tonic::Status::invalid_argument("Missing swap claim plan"))?
+            let swap_commitment: StateCommitment = swap_claim
+                .swap_commitment
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing swap commitment"))?
                 .try_into()
                 .map_err(|e| {
                     tonic::Status::invalid_argument(format!(
-                        "Could not parse swap claim plan: {e:#}"
+                        "Could not parse swap commitment: {e:#}"
+                    ))
+                })?;
+            let swap_record = self
+                .storage
+                // TODO: should there be a timeout on detection here instead?
+                .swap_by_commitment(swap_commitment, false)
+                .await
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!(
+                        "Could not fetch swap by commitment: {e:#}"
                     ))
                 })?;
 
-            planner.swap_claim(swap_claim_plan);
+            planner.swap_claim(SwapClaimPlan {
+                swap_plaintext: swap_record.swap,
+                position: swap_record.position,
+                output_data: swap_record.output_data,
+                epoch_duration: chain_params.epoch_duration,
+                proof_blinding_r: Fq::rand(&mut OsRng),
+                proof_blinding_s: Fq::rand(&mut OsRng),
+            });
         }
 
         for delegation in prq.delegations {
@@ -538,11 +562,11 @@ impl ViewProtocolService for ViewService {
             planner.position_withdraw(position_id, reserves, trading_pair);
         }
 
-        let mut client_of_self =
-            ViewProtocolServiceClient::new(ViewProtocolServiceServer::new(self.clone()));
         let fvk = self.storage.full_viewing_key().await.map_err(|e| {
             tonic::Status::failed_precondition(format!("Error retrieving full viewing key: {e:#}"))
         })?;
+        let mut client_of_self =
+            ViewProtocolServiceClient::new(ViewProtocolServiceServer::new(self.clone()));
         let plan = planner
             .plan(&mut client_of_self, fvk.account_group_id(), 0u32.into())
             .await

@@ -136,10 +136,12 @@ pub mod transaction_planner_request {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct SwapClaim {
-        /// Plan for the swap to be claimed.
+        /// SwapCommitment to identify the Swap to be claimed.
+        /// Use the commitment from the Swap message:
+        /// penumbra.core.dex.v1alpha1.Swap.body.payload.commitment.
         #[prost(message, optional, tag = "1")]
-        pub swap_claim_plan: ::core::option::Option<
-            super::super::super::core::dex::v1alpha1::SwapClaimPlan,
+        pub swap_commitment: ::core::option::Option<
+            super::super::super::core::crypto::v1alpha1::StateCommitment,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]

@@ -160,8 +160,10 @@ message TransactionPlannerRequest {
     core.crypto.v1alpha1.Address claim_address = 4;
   }
   message SwapClaim {
-    // Plan for the swap to be claimed.
-    core.dex.v1alpha1.SwapClaimPlan swap_claim_plan = 1;
+    // SwapCommitment to identify the Swap to be claimed.
+    // Use the commitment from the Swap message:
+    // penumbra.core.dex.v1alpha1.Swap.body.payload.commitment.
+    core.crypto.v1alpha1.StateCommitment swap_commitment = 1;
   }
   message Delegate {
     core.crypto.v1alpha1.Amount amount = 1;

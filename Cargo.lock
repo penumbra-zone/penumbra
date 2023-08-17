@@ -5465,6 +5465,7 @@ name = "penumbra-view"
 version = "0.58.0"
 dependencies = [
  "anyhow",
+ "ark-std",
  "async-stream 0.2.1",
  "async-trait",
  "bytes",
