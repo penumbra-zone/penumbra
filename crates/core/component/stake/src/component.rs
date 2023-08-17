@@ -17,6 +17,7 @@ use penumbra_chain::{
 };
 use penumbra_component::Component;
 use penumbra_dao::component::StateWriteExt as _;
+use penumbra_num::Amount;
 use penumbra_proto::{
     state::future::{DomainFuture, ProtoFuture},
     StateReadProto, StateWriteProto,
@@ -290,10 +291,6 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
     #[instrument(skip(self, epoch_to_end), fields(index = epoch_to_end.index))]
     async fn end_epoch(&mut self, epoch_to_end: Epoch) -> Result<()> {
-        // calculate rate data for next rate, move previous next rate to cur rate,
-        // and save the next rate data. ensure that non-Active validators maintain constant rates.
-        let chain_params = self.get_chain_params().await?;
-
         tracing::debug!("processing base rate");
 
         // Grab the validator list as a vector since we need to iterate over it twice
@@ -339,7 +336,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         for height in epoch_to_end.start_height..=end_height {
             let changes = self.delegation_changes(height.try_into().unwrap()).await?;
             for d in changes.delegations {
-                let delta = d
+                let delta: i128 = d
                     .delegation_amount
                     .value()
                     .try_into()
@@ -350,7 +347,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 total_delegations += 1;
             }
             for u in changes.undelegations {
-                let delta =
+                let delta: i128 =
                     u.delegation_amount.value().try_into().map_err(|_| {
                         anyhow::anyhow!("undelegation amount larger than i128::MAX")
                     })?;
@@ -398,35 +395,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         }
 
         // Find out how much stake is delegated to the active validator set only
-        let mut total_active_stake: u128 = 0;
-        for validator in &validator_list {
-            // Filter the list for active validators only
-            // TODO: use an index so we don't have to iterate over the whole list
-            let validator_state = self
-                .validator_state(&validator.identity_key)
-                .await?
-                .ok_or_else(|| {
-                    anyhow::anyhow!("validator had ID in validator_list but state not found in JMT")
-                })?;
-            if validator_state != validator::State::Active {
-                continue;
-            }
-
-            let delegation_token_supply = self
-                .token_supply(&DelegationToken::from(validator.identity_key).id())
-                .await?
-                .expect("delegation token should be known");
-
-            let validator_rate = self
-                .current_validator_rate(&validator.identity_key)
-                .await?
-                .ok_or_else(|| {
-                    anyhow::anyhow!("validator had ID in validator_list but rate not found in JMT")
-                })?;
-
-            // Add the validator's unbonded amount to the total active stake
-            total_active_stake += validator_rate.unbonded_amount(delegation_token_supply.into());
-        }
+        let previous_total_active_stake = self.total_active_stake().await?;
 
         // Ask the distributions component for the total issuance of the staking token to be
         // distributed as staking rewards this epoch
@@ -436,8 +405,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // the epoch we are ending is the "previous base rate", while the base rate of the next
         // epoch about to begin is the "upcoming base rate":
         let previous_base_rate = self.current_base_rate().await?; // looking backwards, our current rate is the previous rate
-        const BPS_SQUARED: u128 = 1_0000_0000; // reward rate is measured in basis points squared
-        let upcoming_base_reward_rate = issuance * BPS_SQUARED / total_active_stake;
+        const BPS_SQUARED: u64 = 1_0000_0000; // reward rate is measured in basis points squared
+        let upcoming_base_reward_rate = issuance * BPS_SQUARED / previous_total_active_stake;
         let upcoming_base_rate = previous_base_rate.next(upcoming_base_reward_rate);
 
         tracing::debug!(?previous_base_rate);
@@ -479,8 +448,25 @@ pub(crate) trait StakingImpl: StateWriteExt {
             tracing::debug!(validator = ?validator.identity_key, ?previous_validator_rate, ?upcoming_validator_rate);
         }
 
-        // TODO: loop over the active validators again to calculate the remainder of issuance that
+        // Loop over the active validators again to calculate the remainder of issuance that
         // couldn't be assigned due to precision loss, and write it back to the state
+        let upcoming_total_active_stake = self.total_active_stake().await?;
+        tracing::debug!(?previous_total_active_stake, ?upcoming_total_active_stake);
+
+        // Calculate the remainder of issuance that couldn't be assigned due to precision loss, and
+        // set it as the next epoch's staking issuance. The distributions module will take this as
+        // an input to determine the next epoch's staking rewards.
+        let unissued = issuance
+            .checked_sub(upcoming_total_active_stake)
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "total active stake ({}) is greater than issuance ({})",
+                    upcoming_total_active_stake,
+                    issuance
+                )
+            })?;
+        tracing::debug!(?unissued);
+        self.set_staking_issuance(unissued);
 
         // Update each validator's voting power
         for validator in &validator_list {
@@ -739,6 +725,53 @@ pub(crate) trait StakingImpl: StateWriteExt {
         );
 
         Ok(())
+    }
+
+    /// Calculate the amount of stake that is delegated to the currently active validator set,
+    /// denominated in the staking token.
+    #[instrument(skip(self))]
+    async fn total_active_stake(&mut self) -> Result<u64> {
+        let validator_list = self.validator_identity_list().await?;
+
+        let mut total_active_stake: u64 = 0;
+        for validator in &validator_list {
+            // Filter the list for active validators only
+            // TODO: use an index so we don't have to iterate over the whole list
+            let validator_state = self.validator_state(&validator).await?.ok_or_else(|| {
+                anyhow::anyhow!("validator had ID in validator_list but state not found in JMT")
+            })?;
+            if validator_state != validator::State::Active {
+                continue;
+            }
+
+            let delegation_token_supply = self
+                .token_supply(&DelegationToken::from(validator).id())
+                .await?
+                .expect("delegation token should be known");
+
+            let validator_rate =
+                self.current_validator_rate(&validator)
+                    .await?
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "validator had ID in validator_list but rate not found in JMT"
+                        )
+                    })?;
+
+            // Add the validator's unbonded amount to the total active stake
+            total_active_stake = total_active_stake
+                .checked_add(
+                    validator_rate
+                        .unbonded_amount(delegation_token_supply.into())
+                        .try_into()
+                        .map_err(|_| {
+                            anyhow::anyhow!("validator rate unbonded amount overflowed u64")
+                        })?,
+                )
+                .ok_or_else(|| anyhow::anyhow!("total active stake overflowed u64"))?;
+        }
+
+        Ok(total_active_stake)
     }
 
     #[instrument(skip(self, last_commit_info))]
@@ -1095,6 +1128,13 @@ pub trait StateReadExt: StateRead {
             .unwrap_or_default()
     }
 
+    /// Gets the staking issuance for this epoch.
+    async fn staking_issuance(&self) -> Result<u64> {
+        self.get_proto(&state_key::current_staking_issuance())
+            .await
+            .map(Option::unwrap_or_default)
+    }
+
     async fn penalty_in_epoch(
         &self,
         id: &IdentityKey,
@@ -1249,6 +1289,7 @@ pub trait StateReadExt: StateRead {
         &self,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<IdentityKey>>> + Send + 'static>> {
         let mut iks = Vec::new();
+        //
         // TODO: boxing here is to avoid an Unpin problem.. should
         // we bound the StateRead stream GATs as Unpin?
         // TODO: why did the previous implementation of this method
@@ -1361,6 +1402,12 @@ pub trait StateWriteExt: StateWrite {
         let mut changes = self.stub_delegation_changes();
         changes.undelegations.push(undelegation);
         self.put_stub_delegation_changes(changes);
+    }
+
+    /// Sets the staking issuance for the next epoch (which may be modified by the distributions
+    /// module before being consumed later).
+    fn set_staking_issuance(&mut self, issuance: u64) {
+        self.put_proto(state_key::current_staking_issuance().to_string(), issuance)
     }
 
     #[instrument(skip(self))]
