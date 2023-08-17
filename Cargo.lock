@@ -4970,6 +4970,7 @@ dependencies = [
  "penumbra-chain",
  "penumbra-component",
  "penumbra-dex",
+ "penumbra-num",
  "penumbra-proto",
  "penumbra-shielded-pool",
  "penumbra-stake",
