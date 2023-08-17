@@ -59,7 +59,7 @@ pub struct TransactionPlannerRequest {
     pub memo: ::core::option::Option<
         super::super::core::transaction::v1alpha1::MemoPlaintext,
     >,
-    /// Identifies the account group to query.
+    /// Identifies the account group to query. Defaults to 0.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
         super::super::core::crypto::v1alpha1::AccountGroupId,
@@ -583,18 +583,28 @@ pub struct TransactionInfoByHashRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionInfoRequest {
     /// If present, return only transactions after this height.
-    #[prost(uint64, optional, tag = "1")]
-    pub start_height: ::core::option::Option<u64>,
+    #[prost(message, optional, tag = "1")]
+    pub start_height: ::core::option::Option<transaction_info_request::BlockHeight>,
     /// If present, return only transactions before this height.
-    #[prost(uint64, optional, tag = "2")]
-    pub end_height: ::core::option::Option<u64>,
+    #[prost(message, optional, tag = "2")]
+    pub end_height: ::core::option::Option<transaction_info_request::BlockHeight>,
+}
+/// Nested message and enum types in `TransactionInfoRequest`.
+pub mod transaction_info_request {
+    /// Submessage to represent optionality for specifying heights.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct BlockHeight {
+        #[prost(uint64, tag = "1")]
+        pub height: u64,
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionInfo {
     /// The height the transaction was included in a block, if known.
-    #[prost(uint64, optional, tag = "1")]
-    pub height: ::core::option::Option<u64>,
+    #[prost(message, optional, tag = "1")]
+    pub height: ::core::option::Option<transaction_info::BlockHeight>,
     /// The hash of the transaction.
     #[prost(message, optional, tag = "2")]
     pub id: ::core::option::Option<super::super::core::transaction::v1alpha1::Id>,
@@ -613,6 +623,16 @@ pub struct TransactionInfo {
     pub view: ::core::option::Option<
         super::super::core::transaction::v1alpha1::TransactionView,
     >,
+}
+/// Nested message and enum types in `TransactionInfo`.
+pub mod transaction_info {
+    /// Submessage to represent optionality for block height.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct BlockHeight {
+        #[prost(uint64, tag = "1")]
+        pub height: u64,
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -668,14 +688,25 @@ pub struct SpendableNoteRecord {
     #[prost(uint64, tag = "5")]
     pub height_created: u64,
     /// Records whether the note was spent (and if so, at what height).
-    #[prost(uint64, optional, tag = "6")]
-    pub height_spent: ::core::option::Option<u64>,
+    /// Present if the note was spent, otherwise absent.
+    #[prost(message, optional, tag = "6")]
+    pub height_spent: ::core::option::Option<spendable_note_record::BlockHeight>,
     /// The note position.
     #[prost(uint64, tag = "7")]
     pub position: u64,
     /// The source of the note (a tx hash or otherwise)
     #[prost(message, optional, tag = "8")]
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
+}
+/// Nested message and enum types in `SpendableNoteRecord`.
+pub mod spendable_note_record {
+    /// A submessage to represent optionality for height at which a note was spent.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct BlockHeight {
+        #[prost(uint64, tag = "1")]
+        pub height: u64,
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -696,10 +727,21 @@ pub struct SwapRecord {
     pub output_data: ::core::option::Option<
         super::super::core::dex::v1alpha1::BatchSwapOutputData,
     >,
-    #[prost(uint64, optional, tag = "6")]
-    pub height_claimed: ::core::option::Option<u64>,
+    /// If present, height at which Swap was claimed.
+    #[prost(message, optional, tag = "6")]
+    pub height_claimed: ::core::option::Option<swap_record::BlockHeight>,
     #[prost(message, optional, tag = "7")]
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
+}
+/// Nested message and enum types in `SwapRecord`.
+pub mod swap_record {
+    /// Submessage to represent optionality for block height.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct BlockHeight {
+        #[prost(uint64, tag = "1")]
+        pub height: u64,
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

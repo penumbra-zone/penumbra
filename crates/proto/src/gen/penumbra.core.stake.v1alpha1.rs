@@ -133,11 +133,19 @@ pub struct ValidatorStatus {
 pub struct BondingState {
     #[prost(enumeration = "bonding_state::BondingStateEnum", tag = "1")]
     pub state: i32,
-    #[prost(uint64, optional, tag = "2")]
-    pub unbonding_epoch: ::core::option::Option<u64>,
+    /// Present if needed to specify unbonding epoch.
+    #[prost(message, optional, tag = "2")]
+    pub unbonding_epoch: ::core::option::Option<bonding_state::UnbondingEpoch>,
 }
 /// Nested message and enum types in `BondingState`.
 pub mod bonding_state {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct UnbondingEpoch {
+        /// The epoch in which stake becomes unbonded.
+        #[prost(uint64, tag = "1")]
+        pub epoch: u64,
+    }
     #[derive(
         Clone,
         Copy,

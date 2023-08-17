@@ -273,6 +273,14 @@ pub struct ProposalOutcome {
 }
 /// Nested message and enum types in `ProposalOutcome`.
 pub mod proposal_outcome {
+    /// Whether or not the proposal was withdrawn.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Withdrawn {
+        /// The reason for withdrawing the proposal during the voting period.
+        #[prost(string, tag = "1")]
+        pub reason: ::prost::alloc::string::String,
+    }
     /// The proposal was passed.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -281,21 +289,17 @@ pub mod proposal_outcome {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Failed {
-        /// The proposal was withdrawn during the voting period.
-        #[prost(string, optional, tag = "1")]
-        pub withdrawn_with_reason: ::core::option::Option<
-            ::prost::alloc::string::String,
-        >,
+        /// Present if the proposal was withdrawn during the voting period.
+        #[prost(message, optional, tag = "1")]
+        pub withdrawn: ::core::option::Option<Withdrawn>,
     }
     /// The proposal did not pass, and was slashed.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Slashed {
-        /// The proposal was withdrawn during the voting period.
-        #[prost(string, optional, tag = "1")]
-        pub withdrawn_with_reason: ::core::option::Option<
-            ::prost::alloc::string::String,
-        >,
+        /// Present if the proposal was withdrawn during the voting period.
+        #[prost(message, optional, tag = "1")]
+        pub withdrawn: ::core::option::Option<Withdrawn>,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -355,8 +359,15 @@ pub mod proposal {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Signaling {
         /// The commit to be voted upon, if any is relevant.
-        #[prost(string, optional, tag = "1")]
-        pub commit: ::core::option::Option<::prost::alloc::string::String>,
+        #[prost(message, optional, tag = "1")]
+        pub commit: ::core::option::Option<Commit>,
+    }
+    /// The sha1 hash of a git commit, used to indicate a specific version of the software.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Commit {
+        #[prost(string, tag = "1")]
+        pub commit: ::prost::alloc::string::String,
     }
     /// An emergency proposal can be passed instantaneously by a 2/3 majority of validators, without
     /// waiting for the voting period to expire.

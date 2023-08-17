@@ -53,7 +53,9 @@ impl From<State> for pb::BondingState {
                 }
             },
             unbonding_epoch: match v {
-                State::Unbonding { unbonding_epoch } => Some(unbonding_epoch),
+                State::Unbonding { unbonding_epoch } => Some(pb::bonding_state::UnbondingEpoch {
+                    epoch: unbonding_epoch,
+                }),
                 _ => None,
             },
         }
@@ -74,7 +76,9 @@ impl TryFrom<pb::BondingState> for State {
                 let Some(unbonding_epoch) = v.unbonding_epoch else {
                     anyhow::bail!("unbonding epoch should be set for unbonding state")
                 };
-                Ok(State::Unbonding { unbonding_epoch })
+                Ok(State::Unbonding {
+                    unbonding_epoch: unbonding_epoch.epoch,
+                })
             }
             pb::bonding_state::BondingStateEnum::Unspecified => {
                 Err(anyhow::anyhow!("unspecified bonding state!"))

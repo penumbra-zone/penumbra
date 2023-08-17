@@ -713,7 +713,8 @@ where
             let tx_info = TransactionInfo {
                 height: rsp
                     .height
-                    .ok_or_else(|| anyhow::anyhow!("missing height"))?,
+                    .ok_or_else(|| anyhow::anyhow!("missing height"))?
+                    .height,
                 id: rsp
                     .id
                     .ok_or_else(|| anyhow::anyhow!("missing id"))?
@@ -745,8 +746,14 @@ where
         let mut self2 = self.clone();
         async move {
             let rsp = self2.transaction_info(tonic::Request::new(pb::TransactionInfoRequest {
-                start_height,
-                end_height,
+                start_height: match start_height {
+                    Some(h) => Some(pb::transaction_info_request::BlockHeight { height: h }),
+                    None => None,
+                },
+                end_height: match end_height {
+                    Some(h) => Some(pb::transaction_info_request::BlockHeight { height: h }),
+                    None => None,
+                },
             }));
             let pb_txs: Vec<_> = rsp.await?.into_inner().try_collect().await?;
 
@@ -760,7 +767,8 @@ where
                     let tx_info = TransactionInfo {
                         height: tx_rsp
                             .height
-                            .ok_or_else(|| anyhow::anyhow!("missing height"))?,
+                            .ok_or_else(|| anyhow::anyhow!("missing height"))?
+                            .height,
                         transaction: tx_rsp
                             .transaction
                             .ok_or_else(|| {

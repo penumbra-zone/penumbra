@@ -1059,6 +1059,97 @@ impl<'de> serde::Deserialize<'de> for Proposal {
         deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.Proposal", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for proposal::Commit {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.commit.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.Proposal.Commit", len)?;
+        if !self.commit.is_empty() {
+            struct_ser.serialize_field("commit", &self.commit)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for proposal::Commit {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "commit",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Commit,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "commit" => Ok(GeneratedField::Commit),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = proposal::Commit;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.governance.v1alpha1.Proposal.Commit")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal::Commit, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut commit__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Commit => {
+                            if commit__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("commit"));
+                            }
+                            commit__ = Some(map.next_value()?);
+                        }
+                    }
+                }
+                Ok(proposal::Commit {
+                    commit: commit__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.Proposal.Commit", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for proposal::DaoSpend {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -1702,12 +1793,12 @@ impl serde::Serialize for proposal_outcome::Failed {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.withdrawn_with_reason.is_some() {
+        if self.withdrawn.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.ProposalOutcome.Failed", len)?;
-        if let Some(v) = self.withdrawn_with_reason.as_ref() {
-            struct_ser.serialize_field("withdrawnWithReason", v)?;
+        if let Some(v) = self.withdrawn.as_ref() {
+            struct_ser.serialize_field("withdrawn", v)?;
         }
         struct_ser.end()
     }
@@ -1719,13 +1810,12 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Failed {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "withdrawn_with_reason",
-            "withdrawnWithReason",
+            "withdrawn",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            WithdrawnWithReason,
+            Withdrawn,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -1747,7 +1837,7 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Failed {
                         E: serde::de::Error,
                     {
                         match value {
-                            "withdrawnWithReason" | "withdrawn_with_reason" => Ok(GeneratedField::WithdrawnWithReason),
+                            "withdrawn" => Ok(GeneratedField::Withdrawn),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -1767,19 +1857,19 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Failed {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut withdrawn_with_reason__ = None;
+                let mut withdrawn__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::WithdrawnWithReason => {
-                            if withdrawn_with_reason__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("withdrawnWithReason"));
+                        GeneratedField::Withdrawn => {
+                            if withdrawn__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("withdrawn"));
                             }
-                            withdrawn_with_reason__ = map.next_value()?;
+                            withdrawn__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(proposal_outcome::Failed {
-                    withdrawn_with_reason: withdrawn_with_reason__,
+                    withdrawn: withdrawn__,
                 })
             }
         }
@@ -1865,12 +1955,12 @@ impl serde::Serialize for proposal_outcome::Slashed {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.withdrawn_with_reason.is_some() {
+        if self.withdrawn.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.ProposalOutcome.Slashed", len)?;
-        if let Some(v) = self.withdrawn_with_reason.as_ref() {
-            struct_ser.serialize_field("withdrawnWithReason", v)?;
+        if let Some(v) = self.withdrawn.as_ref() {
+            struct_ser.serialize_field("withdrawn", v)?;
         }
         struct_ser.end()
     }
@@ -1882,13 +1972,12 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Slashed {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "withdrawn_with_reason",
-            "withdrawnWithReason",
+            "withdrawn",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            WithdrawnWithReason,
+            Withdrawn,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -1910,7 +1999,7 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Slashed {
                         E: serde::de::Error,
                     {
                         match value {
-                            "withdrawnWithReason" | "withdrawn_with_reason" => Ok(GeneratedField::WithdrawnWithReason),
+                            "withdrawn" => Ok(GeneratedField::Withdrawn),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -1930,23 +2019,114 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Slashed {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut withdrawn_with_reason__ = None;
+                let mut withdrawn__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::WithdrawnWithReason => {
-                            if withdrawn_with_reason__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("withdrawnWithReason"));
+                        GeneratedField::Withdrawn => {
+                            if withdrawn__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("withdrawn"));
                             }
-                            withdrawn_with_reason__ = map.next_value()?;
+                            withdrawn__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(proposal_outcome::Slashed {
-                    withdrawn_with_reason: withdrawn_with_reason__,
+                    withdrawn: withdrawn__,
                 })
             }
         }
         deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.ProposalOutcome.Slashed", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for proposal_outcome::Withdrawn {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.reason.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.ProposalOutcome.Withdrawn", len)?;
+        if !self.reason.is_empty() {
+            struct_ser.serialize_field("reason", &self.reason)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for proposal_outcome::Withdrawn {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "reason",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Reason,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "reason" => Ok(GeneratedField::Reason),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = proposal_outcome::Withdrawn;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.governance.v1alpha1.ProposalOutcome.Withdrawn")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal_outcome::Withdrawn, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut reason__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Reason => {
+                            if reason__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("reason"));
+                            }
+                            reason__ = Some(map.next_value()?);
+                        }
+                    }
+                }
+                Ok(proposal_outcome::Withdrawn {
+                    reason: reason__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.ProposalOutcome.Withdrawn", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for ProposalState {
