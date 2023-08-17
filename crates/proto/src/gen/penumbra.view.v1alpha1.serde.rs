@@ -5555,12 +5555,12 @@ impl serde::Serialize for transaction_planner_request::SwapClaim {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.swap_claim_plan.is_some() {
+        if self.swap_commitment.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest.SwapClaim", len)?;
-        if let Some(v) = self.swap_claim_plan.as_ref() {
-            struct_ser.serialize_field("swapClaimPlan", v)?;
+        if let Some(v) = self.swap_commitment.as_ref() {
+            struct_ser.serialize_field("swapCommitment", v)?;
         }
         struct_ser.end()
     }
@@ -5572,13 +5572,13 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::SwapClaim {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "swap_claim_plan",
-            "swapClaimPlan",
+            "swap_commitment",
+            "swapCommitment",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            SwapClaimPlan,
+            SwapCommitment,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -5600,7 +5600,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::SwapClaim {
                         E: serde::de::Error,
                     {
                         match value {
-                            "swapClaimPlan" | "swap_claim_plan" => Ok(GeneratedField::SwapClaimPlan),
+                            "swapCommitment" | "swap_commitment" => Ok(GeneratedField::SwapCommitment),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -5620,19 +5620,19 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::SwapClaim {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut swap_claim_plan__ = None;
+                let mut swap_commitment__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::SwapClaimPlan => {
-                            if swap_claim_plan__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("swapClaimPlan"));
+                        GeneratedField::SwapCommitment => {
+                            if swap_commitment__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swapCommitment"));
                             }
-                            swap_claim_plan__ = map.next_value()?;
+                            swap_commitment__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(transaction_planner_request::SwapClaim {
-                    swap_claim_plan: swap_claim_plan__,
+                    swap_commitment: swap_commitment__,
                 })
             }
         }
