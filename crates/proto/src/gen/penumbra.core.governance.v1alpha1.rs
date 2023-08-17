@@ -282,20 +282,16 @@ pub mod proposal_outcome {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Failed {
         /// The proposal was withdrawn during the voting period.
-        #[prost(string, optional, tag = "1")]
-        pub withdrawn_with_reason: ::core::option::Option<
-            ::prost::alloc::string::String,
-        >,
+        #[prost(string, tag = "1")]
+        pub withdrawn_with_reason: ::prost::alloc::string::String,
     }
     /// The proposal did not pass, and was slashed.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Slashed {
         /// The proposal was withdrawn during the voting period.
-        #[prost(string, optional, tag = "1")]
-        pub withdrawn_with_reason: ::core::option::Option<
-            ::prost::alloc::string::String,
-        >,
+        #[prost(string, tag = "1")]
+        pub withdrawn_with_reason: ::prost::alloc::string::String,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -355,8 +351,8 @@ pub mod proposal {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Signaling {
         /// The commit to be voted upon, if any is relevant.
-        #[prost(string, optional, tag = "1")]
-        pub commit: ::core::option::Option<::prost::alloc::string::String>,
+        #[prost(string, tag = "1")]
+        pub commit: ::prost::alloc::string::String,
     }
     /// An emergency proposal can be passed instantaneously by a 2/3 majority of validators, without
     /// waiting for the voting period to expire.

@@ -163,13 +163,13 @@ message ProposalOutcome {
   // The proposal did not pass.
   message Failed {
       // The proposal was withdrawn during the voting period.
-      optional string withdrawn_with_reason = 1;
+      string withdrawn_with_reason = 1;
   }
 
   // The proposal did not pass, and was slashed.
   message Slashed {
       // The proposal was withdrawn during the voting period.
-      optional string withdrawn_with_reason = 1;
+      string withdrawn_with_reason = 1;
   }
 
   oneof outcome {
@@ -212,7 +212,7 @@ message Proposal {
   // It optionally contains a reference to a commit which contains code to upgrade the chain.
   message Signaling {
     // The commit to be voted upon, if any is relevant.
-    optional string commit = 1;
+    string commit = 1;
   }
 
   // An emergency proposal can be passed instantaneously by a 2/3 majority of validators, without

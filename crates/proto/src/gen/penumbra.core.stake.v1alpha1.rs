@@ -133,8 +133,8 @@ pub struct ValidatorStatus {
 pub struct BondingState {
     #[prost(enumeration = "bonding_state::BondingStateEnum", tag = "1")]
     pub state: i32,
-    #[prost(uint64, optional, tag = "2")]
-    pub unbonding_epoch: ::core::option::Option<u64>,
+    #[prost(uint64, tag = "2")]
+    pub unbonding_epoch: u64,
 }
 /// Nested message and enum types in `BondingState`.
 pub mod bonding_state {

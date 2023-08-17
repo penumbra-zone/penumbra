@@ -2996,7 +2996,7 @@ impl serde::Serialize for SpendableNoteRecord {
         if self.height_created != 0 {
             len += 1;
         }
-        if self.height_spent.is_some() {
+        if self.height_spent != 0 {
             len += 1;
         }
         if self.position != 0 {
@@ -3021,8 +3021,8 @@ impl serde::Serialize for SpendableNoteRecord {
         if self.height_created != 0 {
             struct_ser.serialize_field("heightCreated", ToString::to_string(&self.height_created).as_str())?;
         }
-        if let Some(v) = self.height_spent.as_ref() {
-            struct_ser.serialize_field("heightSpent", ToString::to_string(&v).as_str())?;
+        if self.height_spent != 0 {
+            struct_ser.serialize_field("heightSpent", ToString::to_string(&self.height_spent).as_str())?;
         }
         if self.position != 0 {
             struct_ser.serialize_field("position", ToString::to_string(&self.position).as_str())?;
@@ -3159,7 +3159,7 @@ impl<'de> serde::Deserialize<'de> for SpendableNoteRecord {
                                 return Err(serde::de::Error::duplicate_field("heightSpent"));
                             }
                             height_spent__ = 
-                                map.next_value::<::std::option::Option<::pbjson::private::NumberDeserialize<_>>>()?.map(|x| x.0)
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Position => {
@@ -3184,7 +3184,7 @@ impl<'de> serde::Deserialize<'de> for SpendableNoteRecord {
                     address_index: address_index__,
                     nullifier: nullifier__,
                     height_created: height_created__.unwrap_or_default(),
-                    height_spent: height_spent__,
+                    height_spent: height_spent__.unwrap_or_default(),
                     position: position__.unwrap_or_default(),
                     source: source__,
                 })
@@ -3845,7 +3845,7 @@ impl serde::Serialize for SwapRecord {
         if self.output_data.is_some() {
             len += 1;
         }
-        if self.height_claimed.is_some() {
+        if self.height_claimed != 0 {
             len += 1;
         }
         if self.source.is_some() {
@@ -3867,8 +3867,8 @@ impl serde::Serialize for SwapRecord {
         if let Some(v) = self.output_data.as_ref() {
             struct_ser.serialize_field("outputData", v)?;
         }
-        if let Some(v) = self.height_claimed.as_ref() {
-            struct_ser.serialize_field("heightClaimed", ToString::to_string(&v).as_str())?;
+        if self.height_claimed != 0 {
+            struct_ser.serialize_field("heightClaimed", ToString::to_string(&self.height_claimed).as_str())?;
         }
         if let Some(v) = self.source.as_ref() {
             struct_ser.serialize_field("source", v)?;
@@ -3997,7 +3997,7 @@ impl<'de> serde::Deserialize<'de> for SwapRecord {
                                 return Err(serde::de::Error::duplicate_field("heightClaimed"));
                             }
                             height_claimed__ = 
-                                map.next_value::<::std::option::Option<::pbjson::private::NumberDeserialize<_>>>()?.map(|x| x.0)
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Source => {
@@ -4014,7 +4014,7 @@ impl<'de> serde::Deserialize<'de> for SwapRecord {
                     position: position__.unwrap_or_default(),
                     nullifier: nullifier__,
                     output_data: output_data__,
-                    height_claimed: height_claimed__,
+                    height_claimed: height_claimed__.unwrap_or_default(),
                     source: source__,
                 })
             }
@@ -4030,7 +4030,7 @@ impl serde::Serialize for TransactionInfo {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.height.is_some() {
+        if self.height != 0 {
             len += 1;
         }
         if self.id.is_some() {
@@ -4046,8 +4046,8 @@ impl serde::Serialize for TransactionInfo {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionInfo", len)?;
-        if let Some(v) = self.height.as_ref() {
-            struct_ser.serialize_field("height", ToString::to_string(&v).as_str())?;
+        if self.height != 0 {
+            struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if let Some(v) = self.id.as_ref() {
             struct_ser.serialize_field("id", v)?;
@@ -4142,7 +4142,7 @@ impl<'de> serde::Deserialize<'de> for TransactionInfo {
                                 return Err(serde::de::Error::duplicate_field("height"));
                             }
                             height__ = 
-                                map.next_value::<::std::option::Option<::pbjson::private::NumberDeserialize<_>>>()?.map(|x| x.0)
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Id => {
@@ -4172,7 +4172,7 @@ impl<'de> serde::Deserialize<'de> for TransactionInfo {
                     }
                 }
                 Ok(TransactionInfo {
-                    height: height__,
+                    height: height__.unwrap_or_default(),
                     id: id__,
                     transaction: transaction__,
                     perspective: perspective__,
@@ -4374,18 +4374,18 @@ impl serde::Serialize for TransactionInfoRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.start_height.is_some() {
+        if self.start_height != 0 {
             len += 1;
         }
-        if self.end_height.is_some() {
+        if self.end_height != 0 {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionInfoRequest", len)?;
-        if let Some(v) = self.start_height.as_ref() {
-            struct_ser.serialize_field("startHeight", ToString::to_string(&v).as_str())?;
+        if self.start_height != 0 {
+            struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
         }
-        if let Some(v) = self.end_height.as_ref() {
-            struct_ser.serialize_field("endHeight", ToString::to_string(&v).as_str())?;
+        if self.end_height != 0 {
+            struct_ser.serialize_field("endHeight", ToString::to_string(&self.end_height).as_str())?;
         }
         struct_ser.end()
     }
@@ -4458,7 +4458,7 @@ impl<'de> serde::Deserialize<'de> for TransactionInfoRequest {
                                 return Err(serde::de::Error::duplicate_field("startHeight"));
                             }
                             start_height__ = 
-                                map.next_value::<::std::option::Option<::pbjson::private::NumberDeserialize<_>>>()?.map(|x| x.0)
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::EndHeight => {
@@ -4466,14 +4466,14 @@ impl<'de> serde::Deserialize<'de> for TransactionInfoRequest {
                                 return Err(serde::de::Error::duplicate_field("endHeight"));
                             }
                             end_height__ = 
-                                map.next_value::<::std::option::Option<::pbjson::private::NumberDeserialize<_>>>()?.map(|x| x.0)
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
                 }
                 Ok(TransactionInfoRequest {
-                    start_height: start_height__,
-                    end_height: end_height__,
+                    start_height: start_height__.unwrap_or_default(),
+                    end_height: end_height__.unwrap_or_default(),
                 })
             }
         }

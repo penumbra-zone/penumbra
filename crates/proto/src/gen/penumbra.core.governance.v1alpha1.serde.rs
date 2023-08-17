@@ -1361,12 +1361,12 @@ impl serde::Serialize for proposal::Signaling {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.commit.is_some() {
+        if !self.commit.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.Proposal.Signaling", len)?;
-        if let Some(v) = self.commit.as_ref() {
-            struct_ser.serialize_field("commit", v)?;
+        if !self.commit.is_empty() {
+            struct_ser.serialize_field("commit", &self.commit)?;
         }
         struct_ser.end()
     }
@@ -1432,12 +1432,12 @@ impl<'de> serde::Deserialize<'de> for proposal::Signaling {
                             if commit__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("commit"));
                             }
-                            commit__ = map.next_value()?;
+                            commit__ = Some(map.next_value()?);
                         }
                     }
                 }
                 Ok(proposal::Signaling {
-                    commit: commit__,
+                    commit: commit__.unwrap_or_default(),
                 })
             }
         }
@@ -1702,12 +1702,12 @@ impl serde::Serialize for proposal_outcome::Failed {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.withdrawn_with_reason.is_some() {
+        if !self.withdrawn_with_reason.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.ProposalOutcome.Failed", len)?;
-        if let Some(v) = self.withdrawn_with_reason.as_ref() {
-            struct_ser.serialize_field("withdrawnWithReason", v)?;
+        if !self.withdrawn_with_reason.is_empty() {
+            struct_ser.serialize_field("withdrawnWithReason", &self.withdrawn_with_reason)?;
         }
         struct_ser.end()
     }
@@ -1774,12 +1774,12 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Failed {
                             if withdrawn_with_reason__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("withdrawnWithReason"));
                             }
-                            withdrawn_with_reason__ = map.next_value()?;
+                            withdrawn_with_reason__ = Some(map.next_value()?);
                         }
                     }
                 }
                 Ok(proposal_outcome::Failed {
-                    withdrawn_with_reason: withdrawn_with_reason__,
+                    withdrawn_with_reason: withdrawn_with_reason__.unwrap_or_default(),
                 })
             }
         }
@@ -1865,12 +1865,12 @@ impl serde::Serialize for proposal_outcome::Slashed {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.withdrawn_with_reason.is_some() {
+        if !self.withdrawn_with_reason.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.ProposalOutcome.Slashed", len)?;
-        if let Some(v) = self.withdrawn_with_reason.as_ref() {
-            struct_ser.serialize_field("withdrawnWithReason", v)?;
+        if !self.withdrawn_with_reason.is_empty() {
+            struct_ser.serialize_field("withdrawnWithReason", &self.withdrawn_with_reason)?;
         }
         struct_ser.end()
     }
@@ -1937,12 +1937,12 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Slashed {
                             if withdrawn_with_reason__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("withdrawnWithReason"));
                             }
-                            withdrawn_with_reason__ = map.next_value()?;
+                            withdrawn_with_reason__ = Some(map.next_value()?);
                         }
                     }
                 }
                 Ok(proposal_outcome::Slashed {
-                    withdrawn_with_reason: withdrawn_with_reason__,
+                    withdrawn_with_reason: withdrawn_with_reason__.unwrap_or_default(),
                 })
             }
         }
