@@ -86,6 +86,11 @@ impl U128x128 {
         Self(U256::from_words(hi, lo))
     }
 
+    /// Construct this number from integral and fractional parts.
+    pub fn from_parts(integral: u128, fractional: u128) -> Self {
+        Self(U256::from_words(integral, fractional))
+    }
+
     pub fn ratio<T: Into<Self>>(numerator: T, denominator: T) -> Result<Self, Error> {
         numerator.into() / denominator.into()
     }
@@ -109,6 +114,19 @@ impl U128x128 {
             *self
         } else {
             Self(U256::from_words(integral + 1, 0u128))
+        }
+    }
+
+    /// Rounds the number to the nearest integer.
+    ///
+    /// If the fractional part is exactly 0.5, then this rounds up.
+    pub fn round_nearest(&self) -> Self {
+        let (_, fractional) = self.0.into_words();
+        let half = 1u128 << 127;
+        if fractional < half {
+            self.round_down()
+        } else {
+            self.round_up()
         }
     }
 
