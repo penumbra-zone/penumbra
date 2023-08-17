@@ -5420,6 +5420,9 @@ impl serde::Serialize for transaction_planner_request::Swap {
         if self.fee.is_some() {
             len += 1;
         }
+        if self.claim_address.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest.Swap", len)?;
         if let Some(v) = self.value.as_ref() {
             struct_ser.serialize_field("value", v)?;
@@ -5429,6 +5432,9 @@ impl serde::Serialize for transaction_planner_request::Swap {
         }
         if let Some(v) = self.fee.as_ref() {
             struct_ser.serialize_field("fee", v)?;
+        }
+        if let Some(v) = self.claim_address.as_ref() {
+            struct_ser.serialize_field("claimAddress", v)?;
         }
         struct_ser.end()
     }
@@ -5444,6 +5450,8 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Swap {
             "target_asset",
             "targetAsset",
             "fee",
+            "claim_address",
+            "claimAddress",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -5451,6 +5459,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Swap {
             Value,
             TargetAsset,
             Fee,
+            ClaimAddress,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -5475,6 +5484,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Swap {
                             "value" => Ok(GeneratedField::Value),
                             "targetAsset" | "target_asset" => Ok(GeneratedField::TargetAsset),
                             "fee" => Ok(GeneratedField::Fee),
+                            "claimAddress" | "claim_address" => Ok(GeneratedField::ClaimAddress),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -5497,6 +5507,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Swap {
                 let mut value__ = None;
                 let mut target_asset__ = None;
                 let mut fee__ = None;
+                let mut claim_address__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Value => {
@@ -5517,12 +5528,19 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Swap {
                             }
                             fee__ = map.next_value()?;
                         }
+                        GeneratedField::ClaimAddress => {
+                            if claim_address__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("claimAddress"));
+                            }
+                            claim_address__ = map.next_value()?;
+                        }
                     }
                 }
                 Ok(transaction_planner_request::Swap {
                     value: value__,
                     target_asset: target_asset__,
                     fee: fee__,
+                    claim_address: claim_address__,
                 })
             }
         }
@@ -5537,12 +5555,12 @@ impl serde::Serialize for transaction_planner_request::SwapClaim {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.swap_commitment.is_some() {
+        if self.swap_claim_plan.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest.SwapClaim", len)?;
-        if let Some(v) = self.swap_commitment.as_ref() {
-            struct_ser.serialize_field("swapCommitment", v)?;
+        if let Some(v) = self.swap_claim_plan.as_ref() {
+            struct_ser.serialize_field("swapClaimPlan", v)?;
         }
         struct_ser.end()
     }
@@ -5554,13 +5572,13 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::SwapClaim {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "swap_commitment",
-            "swapCommitment",
+            "swap_claim_plan",
+            "swapClaimPlan",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            SwapCommitment,
+            SwapClaimPlan,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -5582,7 +5600,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::SwapClaim {
                         E: serde::de::Error,
                     {
                         match value {
-                            "swapCommitment" | "swap_commitment" => Ok(GeneratedField::SwapCommitment),
+                            "swapClaimPlan" | "swap_claim_plan" => Ok(GeneratedField::SwapClaimPlan),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -5602,19 +5620,19 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::SwapClaim {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut swap_commitment__ = None;
+                let mut swap_claim_plan__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::SwapCommitment => {
-                            if swap_commitment__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("swapCommitment"));
+                        GeneratedField::SwapClaimPlan => {
+                            if swap_claim_plan__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swapClaimPlan"));
                             }
-                            swap_commitment__ = map.next_value()?;
+                            swap_claim_plan__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(transaction_planner_request::SwapClaim {
-                    swap_commitment: swap_commitment__,
+                    swap_claim_plan: swap_claim_plan__,
                 })
             }
         }

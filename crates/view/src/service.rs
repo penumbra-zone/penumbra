@@ -14,6 +14,7 @@ use penumbra_dex::{
         position::{self, Position},
         Reserves,
     },
+    swap_claim::SwapClaimPlan,
     TradingPair,
 };
 use penumbra_fee::Fee;
@@ -389,11 +390,58 @@ impl ViewProtocolService for ViewService {
             planner.output(value, address);
         }
 
-        #[allow(clippy::never_loop)]
-        for _swap in prq.swaps {
-            return Err(tonic::Status::unimplemented(
-                "Swaps are not yet implemented, sorry!",
-            ));
+        for swap in prq.swaps {
+            let value: Value = swap
+                .value
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing value"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse value: {e:#}"))
+                })?;
+
+            let target_asset: asset::Id = swap
+                .target_asset
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing target asset"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse target asset: {e:#}"))
+                })?;
+
+            let fee: Fee = swap
+                .fee
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing fee"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse fee: {e:#}"))
+                })?;
+
+            let claim_address: Address = swap
+                .claim_address
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing claim address"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse claim address: {e:#}"))
+                })?;
+
+            planner
+                .swap(value, target_asset, fee, claim_address)
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not plan swap: {e:#}"))
+                })?;
+        }
+
+        for swap_claim in prq.swap_claims {
+            let swap_claim_plan: SwapClaimPlan = swap_claim
+                .swap_claim_plan
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing swap claim plan"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!(
+                        "Could not parse swap claim plan: {e:#}"
+                    ))
+                })?;
+
+            planner.swap_claim(swap_claim_plan);
         }
 
         for delegation in prq.delegations {

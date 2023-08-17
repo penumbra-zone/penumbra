@@ -112,7 +112,7 @@ pub mod transaction_planner_request {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Swap {
-        /// The amount and denomination to be traded in the Swap.
+        /// The input amount and denomination to be traded in the Swap.
         #[prost(message, optional, tag = "1")]
         pub value: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Value,
@@ -122,21 +122,24 @@ pub mod transaction_planner_request {
         pub target_asset: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::AssetId,
         >,
-        /// An optional fee to be paid for performing the Swap.
+        /// The pre-paid fee to be paid for claiming the Swap outputs.
         #[prost(message, optional, tag = "3")]
         pub fee: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Fee,
+        >,
+        /// The address to which swap claim output will be sent.
+        #[prost(message, optional, tag = "4")]
+        pub claim_address: ::core::option::Option<
+            super::super::super::core::crypto::v1alpha1::Address,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct SwapClaim {
-        /// SwapCommitment to identify the Swap to be claimed.
-        /// Use the commitment from the Swap message:
-        /// penumbra.core.dex.v1alpha1.Swap.body.payload.commitment.
+        /// Plan for the swap to be claimed.
         #[prost(message, optional, tag = "1")]
-        pub swap_commitment: ::core::option::Option<
-            super::super::super::core::crypto::v1alpha1::StateCommitment,
+        pub swap_claim_plan: ::core::option::Option<
+            super::super::super::core::dex::v1alpha1::SwapClaimPlan,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]

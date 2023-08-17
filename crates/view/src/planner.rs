@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::Result;
 
-use penumbra_asset::{asset::DenomMetadata, Balance, Value};
+use penumbra_asset::{asset, Balance, Value};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_dao::DaoDeposit;
 use penumbra_dex::{
@@ -210,13 +210,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub fn swap(
         &mut self,
         input_value: Value,
-        into_denom: DenomMetadata,
+        into_asset: asset::Id,
         swap_claim_fee: Fee,
         claim_address: Address,
     ) -> Result<&mut Self> {
         // Determine the canonical order for the assets being swapped.
         // This will determine whether the input amount is assigned to delta_1 or delta_2.
-        let trading_pair = TradingPair::new(input_value.asset_id, into_denom.id());
+        let trading_pair = TradingPair::new(input_value.asset_id, into_asset);
 
         // If `trading_pair.asset_1` is the input asset, then `delta_1` is the input amount,
         // and `delta_2` is 0.
