@@ -20,6 +20,7 @@ penumbra-chain = { path = "../chain", default-features = false }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 penumbra-stake = { path = "../stake", default-features = false }
 penumbra-dex = { path = "../dex", default-features = false }
+penumbra-num = { path = "../../num", default-features = false }
 
 # Crates.io deps
 async-trait = "0.1.52"
