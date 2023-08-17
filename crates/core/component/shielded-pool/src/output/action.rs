@@ -5,7 +5,7 @@ use bytes::Bytes;
 use penumbra_asset::balance;
 use penumbra_keys::symmetric::{OvkWrappedKey, WrappedMemoKey};
 use penumbra_proto::{
-    core::crypto::v1alpha1 as pbc, core::transaction::v1alpha1 as pb, DomainType, Message, TypeUrl,
+    core::crypto::v1alpha1 as pbc, core::transaction::v1alpha1 as pb, DomainType, TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 

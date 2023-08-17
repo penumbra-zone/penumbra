@@ -8,7 +8,7 @@ use penumbra_asset::{
 };
 use penumbra_governance::ProposalNft;
 use penumbra_num::Amount;
-use penumbra_proto::core::governance::v1alpha1 as pb;
+use penumbra_proto::{core::governance::v1alpha1 as pb, TypeUrl};
 
 use crate::{
     proposal::{Outcome, Withdrawn},
@@ -56,6 +56,10 @@ impl TryFrom<pb::ProposalDepositClaim> for ProposalDepositClaim {
                 .try_into()?,
         })
     }
+}
+
+impl TypeUrl for ProposalDepositClaim {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ProposalDepositClaim";
 }
 
 impl IsAction for ProposalDepositClaim {

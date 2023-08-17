@@ -9,12 +9,12 @@ use penumbra_dex::{
 use penumbra_fee::Fee;
 use penumbra_ibc::Ics20Withdrawal;
 use penumbra_keys::{FullViewingKey, PayloadKey};
-use penumbra_proto::DomainType;
 use penumbra_proto::{
     core::crypto::v1alpha1 as pbc, core::dex::v1alpha1 as pbd, core::governance::v1alpha1 as pbg,
     core::ibc::v1alpha1 as pbi, core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pbt,
     Message,
 };
+use penumbra_proto::{DomainType, TypeUrl};
 use penumbra_shielded_pool::{output, spend};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimBody};
 
@@ -26,8 +26,6 @@ use crate::{
     plan::TransactionPlan,
     Action, Transaction, TransactionBody,
 };
-
-use penumbra_chain::EffectingData as _;
 
 // Note: temporarily duplicate of chain/EffectingData
 pub trait EffectingData {
@@ -279,11 +277,17 @@ impl EffectingData for Action {
     }
 }
 
-/// A helper function to hash the data of a proto-encoded message.
-fn hash_proto_effecting_data<M: Message>(personalization: &[u8], message: &M) -> EffectHash {
-    let mut state = blake2b_simd::Params::default()
-        .personal(personalization)
-        .to_state();
+/// A helper function to hash the data of a proto-encoded message, using
+/// the variable-length `TypeUrl` of the corresponding domain type as a
+/// personalization string.
+fn hash_proto_effecting_data<M: Message>(personalization: &str, message: &M) -> EffectHash {
+    let mut state = blake2b_simd::State::new();
+
+    // The `TypeUrl` provided as a personalization string is variable length,
+    // so we first include the length in bytes as a fixed-length prefix.
+    let length = personalization.len() as u64;
+    state.update(&length.to_le_bytes());
+    state.update(personalization.as_bytes());
     state.update(&message.encode_to_vec());
 
     EffectHash(*state.finalize().as_array())
@@ -292,7 +296,7 @@ fn hash_proto_effecting_data<M: Message>(personalization: &[u8], message: &M) ->
 impl EffectingData for Ics20Withdrawal {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbi::Ics20Withdrawal = self.clone().into();
-        hash_proto_effecting_data(b"PAH:ics20wthdrwl", &effecting_data)
+        hash_proto_effecting_data(Ics20Withdrawal::TYPE_URL, &effecting_data)
     }
 }
 
@@ -301,7 +305,7 @@ impl EffectingData for output::Body {
         // The effecting data is in the body of the output, so we can
         // just use hash the proto-encoding of the body.
         let body: pbt::OutputBody = self.clone().into();
-        hash_proto_effecting_data(b"PAH:output_body", &body)
+        hash_proto_effecting_data(output::Body::TYPE_URL, &body)
     }
 }
 
@@ -310,28 +314,28 @@ impl EffectingData for spend::Body {
         // The effecting data is in the body of the spend, so we can
         // just use hash the proto-encoding of the body.
         let body: pbt::SpendBody = self.clone().into();
-        hash_proto_effecting_data(b"PAH:spend_body", &body)
+        hash_proto_effecting_data(spend::Body::TYPE_URL, &body)
     }
 }
 
 impl EffectingData for DaoDeposit {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::DaoDeposit = self.clone().into();
-        hash_proto_effecting_data(b"PAH:daodeposit", &effecting_data)
+        hash_proto_effecting_data(DaoDeposit::TYPE_URL, &effecting_data)
     }
 }
 
 impl EffectingData for DaoSpend {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::DaoSpend = self.clone().into();
-        hash_proto_effecting_data(b"PAH:daospend", &effecting_data)
+        hash_proto_effecting_data(DaoSpend::TYPE_URL, &effecting_data)
     }
 }
 
 impl EffectingData for DaoOutput {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::DaoOutput = self.clone().into();
-        hash_proto_effecting_data(b"PAH:daooutput", &effecting_data)
+        hash_proto_effecting_data(DaoOutput::TYPE_URL, &effecting_data)
     }
 }
 
@@ -340,7 +344,7 @@ impl EffectingData for swap::Body {
         // The effecting data is in the body of the swap, so we can
         // just use hash the proto-encoding of the body.
         let effecting_data: pbd::SwapBody = self.clone().into();
-        hash_proto_effecting_data(b"PAH:swap_body", &effecting_data)
+        hash_proto_effecting_data(swap::Body::TYPE_URL, &effecting_data)
     }
 }
 
@@ -349,7 +353,7 @@ impl EffectingData for swap_claim::Body {
         // The effecting data is in the body of the swap claim, so we can
         // just use hash the proto-encoding of the body.
         let effecting_data: pbd::SwapClaimBody = self.clone().into();
-        hash_proto_effecting_data(b"PAH:swapclaimbdy", &effecting_data)
+        hash_proto_effecting_data(swap_claim::Body::TYPE_URL, &effecting_data)
     }
 }
 
@@ -357,7 +361,7 @@ impl EffectingData for Delegate {
     fn effect_hash(&self) -> EffectHash {
         // For delegations, the entire action is considered effecting data.
         let effecting_data: pbs::Delegate = self.clone().into();
-        hash_proto_effecting_data(b"PAH:delegate", &effecting_data)
+        hash_proto_effecting_data(Delegate::TYPE_URL, &effecting_data)
     }
 }
 
@@ -365,7 +369,7 @@ impl EffectingData for Undelegate {
     fn effect_hash(&self) -> EffectHash {
         // For undelegations, the entire action is considered effecting data.
         let effecting_data: pbs::Undelegate = self.clone().into();
-        hash_proto_effecting_data(b"PAH:undelegate", &effecting_data)
+        hash_proto_effecting_data(Undelegate::TYPE_URL, &effecting_data)
     }
 }
 
@@ -374,28 +378,28 @@ impl EffectingData for UndelegateClaimBody {
         // The effecting data is in the body of the undelegate claim, so we can
         // just use hash the proto-encoding of the body.
         let effecting_data: pbs::UndelegateClaimBody = self.clone().into();
-        hash_proto_effecting_data(b"PAH:udlgclm_body", &effecting_data)
+        hash_proto_effecting_data(UndelegateClaimBody::TYPE_URL, &effecting_data)
     }
 }
 
 impl EffectingData for Proposal {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::Proposal = self.clone().into();
-        hash_proto_effecting_data(b"PAH:proposal", &effecting_data)
+        hash_proto_effecting_data(Proposal::TYPE_URL, &effecting_data)
     }
 }
 
 impl EffectingData for ProposalSubmit {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::ProposalSubmit = self.clone().into();
-        hash_proto_effecting_data(b"PAH:prop_submit", &effecting_data)
+        hash_proto_effecting_data(ProposalSubmit::TYPE_URL, &effecting_data)
     }
 }
 
 impl EffectingData for ProposalWithdraw {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::ProposalWithdraw = self.clone().into();
-        hash_proto_effecting_data(b"PAH:prop_withdrw", &effecting_data)
+        hash_proto_effecting_data(ProposalWithdraw::TYPE_URL, &effecting_data)
     }
 }
 
@@ -414,28 +418,28 @@ impl EffectingData for DelegatorVote {
 impl EffectingData for Vote {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::Vote = self.clone().into();
-        hash_proto_effecting_data(b"PAH:vote", &effecting_data)
+        hash_proto_effecting_data(Vote::TYPE_URL, &effecting_data)
     }
 }
 
 impl EffectingData for ValidatorVoteBody {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::ValidatorVoteBody = self.clone().into();
-        hash_proto_effecting_data(b"PAH:val_vote", &effecting_data)
+        hash_proto_effecting_data(ValidatorVoteBody::TYPE_URL, &effecting_data)
     }
 }
 
 impl EffectingData for DelegatorVoteBody {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::DelegatorVoteBody = self.clone().into();
-        hash_proto_effecting_data(b"PAH:del_vote", &effecting_data)
+        hash_proto_effecting_data(DelegatorVoteBody::TYPE_URL, &effecting_data)
     }
 }
 
 impl EffectingData for ProposalDepositClaim {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::ProposalDepositClaim = self.clone().into();
-        hash_proto_effecting_data(b"PAH:prop_dep_clm", &effecting_data)
+        hash_proto_effecting_data(ProposalDepositClaim::TYPE_URL, &effecting_data)
     }
 }
 
@@ -444,46 +448,42 @@ impl EffectingData for PositionOpen {
         // The position open action consists only of the position, which
         // we consider effecting data.
         let effecting_data: pbd::PositionOpen = self.clone().into();
-        hash_proto_effecting_data(b"PAH:pos_open", &effecting_data)
+        hash_proto_effecting_data(PositionOpen::TYPE_URL, &effecting_data)
     }
 }
 
 impl EffectingData for PositionClose {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbd::PositionClose = self.clone().into();
-        hash_proto_effecting_data(b"PAH:pos_close", &effecting_data)
+        hash_proto_effecting_data(PositionClose::TYPE_URL, &effecting_data)
     }
 }
 
 impl EffectingData for PositionWithdraw {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbd::PositionWithdraw = self.clone().into();
-        hash_proto_effecting_data(b"PAH:pos_withdraw", &effecting_data)
+        hash_proto_effecting_data(PositionWithdraw::TYPE_URL, &effecting_data)
     }
 }
 
 impl EffectingData for PositionRewardClaim {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbd::PositionRewardClaim = self.clone().into();
-        hash_proto_effecting_data(b"PAH:pos_rewrdclm", &effecting_data)
+        hash_proto_effecting_data(PositionRewardClaim::TYPE_URL, &effecting_data)
     }
 }
 
 impl EffectingData for Clue {
     fn effect_hash(&self) -> EffectHash {
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:decaffmdclue")
-            .to_state();
-
-        state.update(&self.0);
-        EffectHash(state.finalize().as_array().clone())
+        let data: pbc::Clue = self.clone().into();
+        hash_proto_effecting_data(Clue::TYPE_URL, &data)
     }
 }
 
 impl EffectingData for Fee {
     fn effect_hash(&self) -> EffectHash {
         let proto_encoded_fee: pbc::Fee = self.clone().into();
-        hash_proto_effecting_data(b"PAH:fee", &proto_encoded_fee)
+        hash_proto_effecting_data(Fee::TYPE_URL, &proto_encoded_fee)
     }
 }
 
@@ -621,8 +621,7 @@ mod tests {
                 .collect(),
         };
         let transaction = plan
-            .clone()
-            .build(fvk, witness_data.clone())
+            .build(fvk, witness_data)
             .unwrap()
             .authorize(&mut OsRng, &auth_data)
             .unwrap();
