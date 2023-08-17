@@ -15,6 +15,10 @@ pub fn current_base_rate() -> &'static str {
     "staking/base_rate/current"
 }
 
+pub fn current_staking_issuance() -> &'static str {
+    "staking/issuance/current"
+}
+
 pub mod validators {
     use super::*;
 
