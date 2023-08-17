@@ -5,7 +5,7 @@ use penumbra_chain::{
     NoteSource,
 };
 use penumbra_compact_block::{CompactBlock, StatePayload};
-use penumbra_dex::swap::{SwapPayload, SwapPlaintext};
+use penumbra_dex::swap::{SwapClaimPayload, SwapPayload, SwapPlaintext};
 use penumbra_keys::FullViewingKey;
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{Note, NotePayload};
@@ -78,6 +78,18 @@ pub async fn scan_block(
             )
         };
 
+    // Trial-decrypt a swap with our own specific viewing key
+    let trial_decrypt_swap_claim =
+        |swap_claim_payload: SwapClaimPayload| -> tokio::task::JoinHandle<Option<SwapClaim>> {
+            // TODO: change fvk to Arc<FVK> in Worker and pass to scan_block as Arc
+            // need this so the task is 'static and not dependent on key lifetime
+            let fvk2 = fvk.clone();
+            tokio::spawn(
+                async move { swap_claim_payload.trial_decrypt(&fvk2) }
+                    .instrument(tracing::Span::current()),
+            )
+        };
+
     // Nullifiers we've found in this block
     let spent_nullifiers: Vec<Nullifier> = nullifiers;
 
@@ -85,6 +97,7 @@ pub async fn scan_block(
     let mut note_decryptions = Vec::new();
     let mut swap_decryptions = Vec::new();
     let mut unknown_commitments = Vec::new();
+    let mut swap_claim_decryptions = Vec::new();
 
     for payload in state_payloads.iter() {
         match payload {
