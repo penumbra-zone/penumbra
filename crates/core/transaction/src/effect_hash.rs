@@ -1,17 +1,21 @@
 use blake2b_simd::{Hash, Params};
 use decaf377_fmd::Clue;
 use penumbra_chain::EffectHash;
+use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},
     swap, swap_claim,
 };
 use penumbra_fee::Fee;
+use penumbra_ibc::Ics20Withdrawal;
 use penumbra_keys::{FullViewingKey, PayloadKey};
 use penumbra_proto::DomainType;
 use penumbra_proto::{
     core::crypto::v1alpha1 as pbc, core::dex::v1alpha1 as pbd, core::governance::v1alpha1 as pbg,
-    core::stake::v1alpha1 as pbs, Message,
+    core::ibc::v1alpha1 as pbi, core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pbt,
+    Message,
 };
+use penumbra_shielded_pool::{output, spend};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimBody};
 
 use crate::{
@@ -235,8 +239,8 @@ fn chain_id_effect_hash(chain_id: &str) -> Hash {
 impl EffectingData for Action {
     fn effect_hash(&self) -> EffectHash {
         match self {
-            Action::Output(output) => crate::Compat(&output.body).effect_hash(),
-            Action::Spend(spend) => crate::Compat(&spend.body).effect_hash(),
+            Action::Output(output) => output.body.effect_hash(),
+            Action::Spend(spend) => spend.body.effect_hash(),
             Action::Delegate(delegate) => delegate.effect_hash(),
             Action::Undelegate(undelegate) => undelegate.effect_hash(),
             Action::UndelegateClaim(claim) => claim.body.effect_hash(),
@@ -283,6 +287,52 @@ fn hash_proto_effecting_data<M: Message>(personalization: &[u8], message: &M) ->
     state.update(&message.encode_to_vec());
 
     EffectHash(*state.finalize().as_array())
+}
+
+impl EffectingData for Ics20Withdrawal {
+    fn effect_hash(&self) -> EffectHash {
+        let effecting_data: pbi::Ics20Withdrawal = self.clone().into();
+        hash_proto_effecting_data(b"PAH:ics20wthdrwl", &effecting_data)
+    }
+}
+
+impl EffectingData for output::Body {
+    fn effect_hash(&self) -> EffectHash {
+        // The effecting data is in the body of the output, so we can
+        // just use hash the proto-encoding of the body.
+        let body: pbt::OutputBody = self.clone().into();
+        hash_proto_effecting_data(b"PAH:output_body", &body)
+    }
+}
+
+impl EffectingData for spend::Body {
+    fn effect_hash(&self) -> EffectHash {
+        // The effecting data is in the body of the spend, so we can
+        // just use hash the proto-encoding of the body.
+        let body: pbt::SpendBody = self.clone().into();
+        hash_proto_effecting_data(b"PAH:spend_body", &body)
+    }
+}
+
+impl EffectingData for DaoDeposit {
+    fn effect_hash(&self) -> EffectHash {
+        let effecting_data: pbg::DaoDeposit = self.clone().into();
+        hash_proto_effecting_data(b"PAH:daodeposit", &effecting_data)
+    }
+}
+
+impl EffectingData for DaoSpend {
+    fn effect_hash(&self) -> EffectHash {
+        let effecting_data: pbg::DaoSpend = self.clone().into();
+        hash_proto_effecting_data(b"PAH:daospend", &effecting_data)
+    }
+}
+
+impl EffectingData for DaoOutput {
+    fn effect_hash(&self) -> EffectHash {
+        let effecting_data: pbg::DaoOutput = self.clone().into();
+        hash_proto_effecting_data(b"PAH:daooutput", &effecting_data)
+    }
 }
 
 impl EffectingData for swap::Body {

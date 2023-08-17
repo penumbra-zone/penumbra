@@ -3,7 +3,6 @@ use std::convert::{TryFrom, TryInto};
 use anyhow::{Context, Error};
 use bytes::Bytes;
 use penumbra_asset::balance;
-use penumbra_chain::{EffectHash, EffectingData};
 use penumbra_keys::symmetric::{OvkWrappedKey, WrappedMemoKey};
 use penumbra_proto::{
     core::crypto::v1alpha1 as pbc, core::transaction::v1alpha1 as pb, DomainType, Message, TypeUrl,
@@ -25,22 +24,6 @@ pub struct Body {
     pub balance_commitment: balance::Commitment,
     pub ovk_wrapped_key: OvkWrappedKey,
     pub wrapped_memo_key: WrappedMemoKey,
-}
-
-impl EffectingData for Body {
-    fn effect_hash(&self) -> EffectHash {
-        // The effecting data is in the body of the output, so we can
-        // just use hash the proto-encoding of the body.
-        let body: pb::OutputBody = self.clone().into();
-        let body_data = body.encode_to_vec();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:output_body")
-            .to_state();
-        state.update(&body_data);
-
-        EffectHash(*state.finalize().as_array())
-    }
 }
 
 impl TypeUrl for Output {

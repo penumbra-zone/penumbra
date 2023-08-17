@@ -13,19 +13,6 @@ pub struct DaoSpend {
     pub value: Value,
 }
 
-impl EffectingData for DaoSpend {
-    fn effect_hash(&self) -> EffectHash {
-        let effecting_data: pb::DaoSpend = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:daospend")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
-    }
-}
-
 impl DaoSpend {
     pub fn balance(&self) -> Balance {
         // Spends from the DAO produce value

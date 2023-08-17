@@ -26,22 +26,6 @@ pub struct Body {
     pub rk: VerificationKey<SpendAuth>,
 }
 
-impl EffectingData for Body {
-    fn effect_hash(&self) -> EffectHash {
-        // The effecting data is in the body of the spend, so we can
-        // just use hash the proto-encoding of the body.
-        let body: transaction::SpendBody = self.clone().into();
-        let body_data = body.encode_to_vec();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:spend_body")
-            .to_state();
-        state.update(&body_data);
-
-        EffectHash(*state.finalize().as_array())
-    }
-}
-
 impl TypeUrl for Spend {
     const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.Spend";
 }
