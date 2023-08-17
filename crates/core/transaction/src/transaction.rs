@@ -540,13 +540,11 @@ impl DomainType for TransactionBody {
 
 impl From<TransactionBody> for pbt::TransactionBody {
     fn from(msg: TransactionBody) -> Self {
-        let encrypted_memo: pbt::MemoData = match msg.memo {
-            Some(memo) => pbt::MemoData {
-                encrypted_memo: Some(bytes::Bytes::copy_from_slice(&memo.0)),
-            },
-            None => pbt::MemoData {
-                encrypted_memo: None,
-            },
+        let encrypted_memo: Option<pbt::MemoData> = match msg.memo {
+            Some(memo) => Some(pbt::MemoData {
+                encrypted_memo: bytes::Bytes::copy_from_slice(&memo.0),
+            }),
+            None => None,
         };
 
         pbt::TransactionBody {
@@ -554,7 +552,7 @@ impl From<TransactionBody> for pbt::TransactionBody {
             transaction_parameters: Some(msg.transaction_parameters.into()),
             fee: Some(msg.fee.into()),
             detection_data: msg.detection_data.map(|x| x.into()),
-            memo_data: Some(encrypted_memo),
+            memo_data: encrypted_memo,
         }
     }
 }
@@ -578,13 +576,9 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             .try_into()
             .context("fee malformed")?;
 
-        let memo = match proto
-            .memo_data
-            .ok_or_else(|| anyhow::anyhow!("transaction body missing memo data field"))?
-            .encrypted_memo
-        {
-            Some(bytes) => Some(
-                bytes[..]
+        let memo = match proto.memo_data {
+            Some(m) => Some(
+                m.encrypted_memo[..]
                     .try_into()
                     .context("encrypted memo malformed while parsing transaction body")?,
             ),
