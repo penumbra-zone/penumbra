@@ -44,17 +44,20 @@ impl DomainType for State {
 
 impl From<State> for pb::BondingState {
     fn from(v: State) -> Self {
-        pb::BondingState {
-            state: match v {
-                State::Bonded => pb::bonding_state::BondingStateEnum::Bonded as i32,
-                State::Unbonded => pb::bonding_state::BondingStateEnum::Unbonded as i32,
-                State::Unbonding { unbonding_epoch: _ } => {
-                    pb::bonding_state::BondingStateEnum::Unbonding as i32
-                }
+        match v {
+            State::Bonded => pb::BondingState {
+                state: pb::bonding_state::BondingStateEnum::Bonded as i32,
+                // REVIEW: Is it safe to use 0 here? What does it mean?
+                unbonding_epoch: 0,
             },
-            unbonding_epoch: match v {
-                State::Unbonding { unbonding_epoch } => Some(unbonding_epoch),
-                _ => None,
+            State::Unbonded => pb::BondingState {
+                state: pb::bonding_state::BondingStateEnum::Unbonded as i32,
+                // REVIEW: Is it safe to use 0 here? What does it mean?
+                unbonding_epoch: 0,
+            },
+            State::Unbonding { unbonding_epoch } => pb::BondingState {
+                state: pb::bonding_state::BondingStateEnum::Unbonding as i32,
+                unbonding_epoch,
             },
         }
     }
@@ -70,12 +73,9 @@ impl TryFrom<pb::BondingState> for State {
         match bonding_state {
             pb::bonding_state::BondingStateEnum::Bonded => Ok(State::Bonded),
             pb::bonding_state::BondingStateEnum::Unbonded => Ok(State::Unbonded),
-            pb::bonding_state::BondingStateEnum::Unbonding => {
-                let Some(unbonding_epoch) = v.unbonding_epoch else {
-                    anyhow::bail!("unbonding epoch should be set for unbonding state")
-                };
-                Ok(State::Unbonding { unbonding_epoch })
-            }
+            pb::bonding_state::BondingStateEnum::Unbonding => Ok(State::Unbonding {
+                unbonding_epoch: v.unbonding_epoch,
+            }),
             pb::bonding_state::BondingStateEnum::Unspecified => {
                 Err(anyhow::anyhow!("unspecified bonding state!"))
             }
