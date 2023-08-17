@@ -23,7 +23,7 @@ penumbra-num = { path = "../../../core/num", default-features = false  }
 penumbra-keys = { path = "../../../core/keys", default-features = false  } 
 
 # Penumbra dependencies
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.3.0", default-features = false }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", rev = "99d1484398f13aa35578948d34537bb8bb9848d9", default-features = false }
 ibc-proto = { version = "0.31.0", default-features = false }
 
 # Crates.io deps
