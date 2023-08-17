@@ -273,6 +273,14 @@ pub struct ProposalOutcome {
 }
 /// Nested message and enum types in `ProposalOutcome`.
 pub mod proposal_outcome {
+    /// Whether or not the proposal was withdrawn.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Withdrawn {
+        /// The reason for withdrawing the proposal during the voting period.
+        #[prost(string, tag = "1")]
+        pub reason: ::prost::alloc::string::String,
+    }
     /// The proposal was passed.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -281,17 +289,17 @@ pub mod proposal_outcome {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Failed {
-        /// The proposal was withdrawn during the voting period.
-        #[prost(string, tag = "1")]
-        pub withdrawn_with_reason: ::prost::alloc::string::String,
+        /// Present if the proposal was withdrawn during the voting period.
+        #[prost(message, optional, tag = "1")]
+        pub withdrawn: ::core::option::Option<Withdrawn>,
     }
     /// The proposal did not pass, and was slashed.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Slashed {
-        /// The proposal was withdrawn during the voting period.
-        #[prost(string, tag = "1")]
-        pub withdrawn_with_reason: ::prost::alloc::string::String,
+        /// Present if the proposal was withdrawn during the voting period.
+        #[prost(message, optional, tag = "1")]
+        pub withdrawn: ::core::option::Option<Withdrawn>,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
