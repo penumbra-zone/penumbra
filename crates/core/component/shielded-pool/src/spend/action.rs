@@ -4,8 +4,7 @@ use anyhow::{Context, Error};
 use bytes::Bytes;
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use penumbra_asset::balance;
-use penumbra_chain::{EffectHash, EffectingData};
-use penumbra_proto::{core::transaction::v1alpha1 as transaction, DomainType, Message, TypeUrl};
+use penumbra_proto::{core::transaction::v1alpha1 as transaction, DomainType, TypeUrl};
 use penumbra_sct::Nullifier;
 use serde::{Deserialize, Serialize};
 

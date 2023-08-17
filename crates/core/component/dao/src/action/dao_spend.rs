@@ -1,10 +1,8 @@
 use anyhow::{Context, Error};
-use prost::Message;
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_asset::{Balance, Value};
-use penumbra_chain::{EffectHash, EffectingData};
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
