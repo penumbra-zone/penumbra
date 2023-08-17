@@ -275,18 +275,22 @@ impl EffectingData for Action {
     }
 }
 
+/// A helper function to hash the data of a proto-encoded message.
+fn hash_proto_effecting_data<M: Message>(personalization: &[u8], message: &M) -> EffectHash {
+    let mut state = blake2b_simd::Params::default()
+        .personal(personalization)
+        .to_state();
+    state.update(&message.encode_to_vec());
+
+    EffectHash(*state.finalize().as_array())
+}
+
 impl EffectingData for swap::Body {
     fn effect_hash(&self) -> EffectHash {
         // The effecting data is in the body of the swap, so we can
         // just use hash the proto-encoding of the body.
         let effecting_data: pbd::SwapBody = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:swap_body")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:swap_body", &effecting_data)
     }
 }
 
@@ -295,13 +299,7 @@ impl EffectingData for swap_claim::Body {
         // The effecting data is in the body of the swap claim, so we can
         // just use hash the proto-encoding of the body.
         let effecting_data: pbd::SwapClaimBody = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:swapclaimbdy")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:swapclaimbdy", &effecting_data)
     }
 }
 
@@ -309,13 +307,7 @@ impl EffectingData for Delegate {
     fn effect_hash(&self) -> EffectHash {
         // For delegations, the entire action is considered effecting data.
         let effecting_data: pbs::Delegate = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:delegate")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:delegate", &effecting_data)
     }
 }
 
@@ -323,13 +315,7 @@ impl EffectingData for Undelegate {
     fn effect_hash(&self) -> EffectHash {
         // For undelegations, the entire action is considered effecting data.
         let effecting_data: pbs::Undelegate = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:undelegate")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:undelegate", &effecting_data)
     }
 }
 
@@ -338,52 +324,28 @@ impl EffectingData for UndelegateClaimBody {
         // The effecting data is in the body of the undelegate claim, so we can
         // just use hash the proto-encoding of the body.
         let effecting_data: pbs::UndelegateClaimBody = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:udlgclm_body")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:udlgclm_body", &effecting_data)
     }
 }
 
 impl EffectingData for Proposal {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::Proposal = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:proposal")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:proposal", &effecting_data)
     }
 }
 
 impl EffectingData for ProposalSubmit {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::ProposalSubmit = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:prop_submit")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:prop_submit", &effecting_data)
     }
 }
 
 impl EffectingData for ProposalWithdraw {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::ProposalWithdraw = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:prop_withdrw")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:prop_withdrw", &effecting_data)
     }
 }
 
@@ -402,52 +364,28 @@ impl EffectingData for DelegatorVote {
 impl EffectingData for Vote {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::Vote = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:vote")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:vote", &effecting_data)
     }
 }
 
 impl EffectingData for ValidatorVoteBody {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::ValidatorVoteBody = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:val_vote")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:val_vote", &effecting_data)
     }
 }
 
 impl EffectingData for DelegatorVoteBody {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::DelegatorVoteBody = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:del_vote")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:del_vote", &effecting_data)
     }
 }
 
 impl EffectingData for ProposalDepositClaim {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbg::ProposalDepositClaim = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:prop_dep_clm")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:prop_dep_clm", &effecting_data)
     }
 }
 
@@ -456,52 +394,28 @@ impl EffectingData for PositionOpen {
         // The position open action consists only of the position, which
         // we consider effecting data.
         let effecting_data: pbd::PositionOpen = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:pos_open")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:pos_open", &effecting_data)
     }
 }
 
 impl EffectingData for PositionClose {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbd::PositionClose = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:pos_close")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:pos_close", &effecting_data)
     }
 }
 
 impl EffectingData for PositionWithdraw {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbd::PositionWithdraw = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:pos_withdraw")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:pos_withdraw", &effecting_data)
     }
 }
 
 impl EffectingData for PositionRewardClaim {
     fn effect_hash(&self) -> EffectHash {
         let effecting_data: pbd::PositionRewardClaim = self.clone().into();
-
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:pos_rewrdclm")
-            .to_state();
-        state.update(&effecting_data.encode_to_vec());
-
-        EffectHash(*state.finalize().as_array())
+        hash_proto_effecting_data(b"PAH:pos_rewrdclm", &effecting_data)
     }
 }
 
@@ -519,12 +433,7 @@ impl EffectingData for Clue {
 impl EffectingData for Fee {
     fn effect_hash(&self) -> EffectHash {
         let proto_encoded_fee: pbc::Fee = self.clone().into();
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:fee")
-            .to_state();
-        state.update(&proto_encoded_fee.encode_to_vec());
-
-        EffectHash(state.finalize().as_array().clone())
+        hash_proto_effecting_data(b"PAH:fee", &proto_encoded_fee)
     }
 }
 
