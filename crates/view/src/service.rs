@@ -9,7 +9,13 @@ use async_stream::try_stream;
 use camino::Utf8Path;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_asset::{asset, Value};
-use penumbra_dex::{lp::position, TradingPair};
+use penumbra_dex::{
+    lp::{
+        position::{self, Position},
+        Reserves,
+    },
+    TradingPair,
+};
 use penumbra_fee::Fee;
 use penumbra_keys::{
     keys::{AccountGroupId, AddressIndex, FullViewingKey},
@@ -430,6 +436,58 @@ impl ViewProtocolService for ViewService {
                 })?;
 
             planner.undelegate(value.amount, rate_data);
+        }
+
+        for position_open in prq.position_opens {
+            let position: Position = position_open
+                .position
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing position"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse position: {e:#}"))
+                })?;
+
+            planner.position_open(position);
+        }
+
+        for position_close in prq.position_closes {
+            let position_id: position::Id = position_close
+                .position_id
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing position_id"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse position ID: {e:#}"))
+                })?;
+
+            planner.position_close(position_id);
+        }
+
+        for position_withdraw in prq.position_withdraws {
+            let position_id: position::Id = position_withdraw
+                .position_id
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing position_id"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse position ID: {e:#}"))
+                })?;
+
+            let reserves: Reserves = position_withdraw
+                .reserves
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing reserves"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse reserves: {e:#}"))
+                })?;
+
+            let trading_pair: TradingPair = position_withdraw
+                .trading_pair
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing pair"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse pair: {e:#}"))
+                })?;
+
+            planner.position_withdraw(position_id, reserves, trading_pair);
         }
 
         let mut client_of_self =

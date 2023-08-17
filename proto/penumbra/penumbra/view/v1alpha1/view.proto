@@ -138,6 +138,9 @@ message TransactionPlannerRequest {
   repeated Delegate delegations = 40;
   repeated Undelegate undelegations = 50;
   repeated penumbra.core.ibc.v1alpha1.IbcAction ibc_actions = 60;
+  repeated PositionOpen position_opens = 70;
+  repeated PositionClose position_closes = 71;
+  repeated PositionWithdraw position_withdraws = 72;
 
   // Request message subtypes
   message Output {
@@ -167,6 +170,25 @@ message TransactionPlannerRequest {
   message Undelegate {
     core.crypto.v1alpha1.Value value = 1;
     core.stake.v1alpha1.RateData rate_data = 2;
+  }
+  message PositionOpen {
+    // Contains the data defining the position, sufficient to compute its `PositionId`.
+    //
+    // Positions are immutable, so the `PositionData` (and hence the `PositionId`)
+    // are unchanged over the entire lifetime of the position.
+    core.dex.v1alpha1.Position position = 1;
+  }
+  message PositionClose {
+    // The position to close.
+    core.dex.v1alpha1.PositionId position_id = 1;
+  }
+  message PositionWithdraw {
+    // The position to withdraw.
+    core.dex.v1alpha1.PositionId position_id = 1;
+    // The position's final reserves.
+    core.dex.v1alpha1.Reserves reserves = 2;
+    // The trading pair of the position.
+    core.dex.v1alpha1.TradingPair trading_pair = 3;
   }
 }
 

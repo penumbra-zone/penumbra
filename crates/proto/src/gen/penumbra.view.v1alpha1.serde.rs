@@ -4610,6 +4610,15 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.ibc_actions.is_empty() {
             len += 1;
         }
+        if !self.position_opens.is_empty() {
+            len += 1;
+        }
+        if !self.position_closes.is_empty() {
+            len += 1;
+        }
+        if !self.position_withdraws.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest", len)?;
         if self.expiry_height != 0 {
             struct_ser.serialize_field("expiryHeight", ToString::to_string(&self.expiry_height).as_str())?;
@@ -4641,6 +4650,15 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.ibc_actions.is_empty() {
             struct_ser.serialize_field("ibcActions", &self.ibc_actions)?;
         }
+        if !self.position_opens.is_empty() {
+            struct_ser.serialize_field("positionOpens", &self.position_opens)?;
+        }
+        if !self.position_closes.is_empty() {
+            struct_ser.serialize_field("positionCloses", &self.position_closes)?;
+        }
+        if !self.position_withdraws.is_empty() {
+            struct_ser.serialize_field("positionWithdraws", &self.position_withdraws)?;
+        }
         struct_ser.end()
     }
 }
@@ -4665,6 +4683,12 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "undelegations",
             "ibc_actions",
             "ibcActions",
+            "position_opens",
+            "positionOpens",
+            "position_closes",
+            "positionCloses",
+            "position_withdraws",
+            "positionWithdraws",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -4679,6 +4703,9 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             Delegations,
             Undelegations,
             IbcActions,
+            PositionOpens,
+            PositionCloses,
+            PositionWithdraws,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -4710,6 +4737,9 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "delegations" => Ok(GeneratedField::Delegations),
                             "undelegations" => Ok(GeneratedField::Undelegations),
                             "ibcActions" | "ibc_actions" => Ok(GeneratedField::IbcActions),
+                            "positionOpens" | "position_opens" => Ok(GeneratedField::PositionOpens),
+                            "positionCloses" | "position_closes" => Ok(GeneratedField::PositionCloses),
+                            "positionWithdraws" | "position_withdraws" => Ok(GeneratedField::PositionWithdraws),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -4739,6 +4769,9 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut delegations__ = None;
                 let mut undelegations__ = None;
                 let mut ibc_actions__ = None;
+                let mut position_opens__ = None;
+                let mut position_closes__ = None;
+                let mut position_withdraws__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::ExpiryHeight => {
@@ -4803,6 +4836,24 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             }
                             ibc_actions__ = Some(map.next_value()?);
                         }
+                        GeneratedField::PositionOpens => {
+                            if position_opens__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionOpens"));
+                            }
+                            position_opens__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::PositionCloses => {
+                            if position_closes__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionCloses"));
+                            }
+                            position_closes__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::PositionWithdraws => {
+                            if position_withdraws__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionWithdraws"));
+                            }
+                            position_withdraws__ = Some(map.next_value()?);
+                        }
                     }
                 }
                 Ok(TransactionPlannerRequest {
@@ -4816,6 +4867,9 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     delegations: delegations__.unwrap_or_default(),
                     undelegations: undelegations__.unwrap_or_default(),
                     ibc_actions: ibc_actions__.unwrap_or_default(),
+                    position_opens: position_opens__.unwrap_or_default(),
+                    position_closes: position_closes__.unwrap_or_default(),
+                    position_withdraws: position_withdraws__.unwrap_or_default(),
                 })
             }
         }
@@ -5037,6 +5091,316 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Output {
             }
         }
         deserializer.deserialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest.Output", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for transaction_planner_request::PositionClose {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.position_id.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest.PositionClose", len)?;
+        if let Some(v) = self.position_id.as_ref() {
+            struct_ser.serialize_field("positionId", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for transaction_planner_request::PositionClose {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "position_id",
+            "positionId",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            PositionId,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "positionId" | "position_id" => Ok(GeneratedField::PositionId),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = transaction_planner_request::PositionClose;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1alpha1.TransactionPlannerRequest.PositionClose")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<transaction_planner_request::PositionClose, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut position_id__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::PositionId => {
+                            if position_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionId"));
+                            }
+                            position_id__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(transaction_planner_request::PositionClose {
+                    position_id: position_id__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest.PositionClose", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for transaction_planner_request::PositionOpen {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.position.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest.PositionOpen", len)?;
+        if let Some(v) = self.position.as_ref() {
+            struct_ser.serialize_field("position", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for transaction_planner_request::PositionOpen {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "position",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Position,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "position" => Ok(GeneratedField::Position),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = transaction_planner_request::PositionOpen;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1alpha1.TransactionPlannerRequest.PositionOpen")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<transaction_planner_request::PositionOpen, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut position__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Position => {
+                            if position__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("position"));
+                            }
+                            position__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(transaction_planner_request::PositionOpen {
+                    position: position__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest.PositionOpen", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for transaction_planner_request::PositionWithdraw {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.position_id.is_some() {
+            len += 1;
+        }
+        if self.reserves.is_some() {
+            len += 1;
+        }
+        if self.trading_pair.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest.PositionWithdraw", len)?;
+        if let Some(v) = self.position_id.as_ref() {
+            struct_ser.serialize_field("positionId", v)?;
+        }
+        if let Some(v) = self.reserves.as_ref() {
+            struct_ser.serialize_field("reserves", v)?;
+        }
+        if let Some(v) = self.trading_pair.as_ref() {
+            struct_ser.serialize_field("tradingPair", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for transaction_planner_request::PositionWithdraw {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "position_id",
+            "positionId",
+            "reserves",
+            "trading_pair",
+            "tradingPair",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            PositionId,
+            Reserves,
+            TradingPair,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "positionId" | "position_id" => Ok(GeneratedField::PositionId),
+                            "reserves" => Ok(GeneratedField::Reserves),
+                            "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = transaction_planner_request::PositionWithdraw;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1alpha1.TransactionPlannerRequest.PositionWithdraw")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<transaction_planner_request::PositionWithdraw, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut position_id__ = None;
+                let mut reserves__ = None;
+                let mut trading_pair__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::PositionId => {
+                            if position_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionId"));
+                            }
+                            position_id__ = map.next_value()?;
+                        }
+                        GeneratedField::Reserves => {
+                            if reserves__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("reserves"));
+                            }
+                            reserves__ = map.next_value()?;
+                        }
+                        GeneratedField::TradingPair => {
+                            if trading_pair__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tradingPair"));
+                            }
+                            trading_pair__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(transaction_planner_request::PositionWithdraw {
+                    position_id: position_id__,
+                    reserves: reserves__,
+                    trading_pair: trading_pair__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest.PositionWithdraw", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for transaction_planner_request::Swap {
