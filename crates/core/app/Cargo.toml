@@ -62,7 +62,7 @@ parking_lot = "0.12"
 tendermint = "0.33.0"
 tendermint-proto = "0.33.0"
 tendermint-light-client-verifier = "0.33.0"
-ibc-types = { version = "0.3.0", default-features = false }
+ibc-types = { version = "0.5.0", default-features = false }
 ibc-proto = { version = "0.33.0", default-features = false, features = ["server"] }
 
 [dev-dependencies]
