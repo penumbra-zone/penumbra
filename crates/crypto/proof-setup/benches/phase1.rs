@@ -10,10 +10,11 @@ fn run_phase1_prove(parent: ContributionHash, old: &CRSElements) -> Contribution
     Contribution::make(&mut OsRng, parent, old)
 }
 
-fn run_phase1_verify(contribution: RawContribution) {
-    contribution
+fn run_phase1_verify(contribution: RawContribution, parent: &CRSElements) {
+    let validated_contribution = contribution
         .validate(&mut OsRng)
         .expect("this is a valid contribution");
+    let _ = validated_contribution.is_linked_to(parent);
 }
 
 fn phase1_benchmarks(c: &mut Criterion) {
@@ -29,7 +30,7 @@ fn phase1_benchmarks(c: &mut Criterion) {
 
     let new_contribution = Contribution::make(&mut OsRng, root_hash, &root);
     c.bench_function("phase 1 verify", |b| {
-        b.iter(|| run_phase1_verify(new_contribution.clone().into()))
+        b.iter(|| run_phase1_verify(new_contribution.clone().into(), &root))
     });
 }
 
