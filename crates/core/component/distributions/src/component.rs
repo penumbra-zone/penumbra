@@ -2,15 +2,19 @@ pub mod state_key;
 
 mod view;
 
-use std::sync::Arc;
+use std::{
+    fmt::{self, Display, Formatter},
+    sync::Arc,
+};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::{component::StateReadExt as _, genesis, params::ChainParameters};
+use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
+use penumbra_chain::{component::StateReadExt as _, genesis};
 use penumbra_component::Component;
-use penumbra_num::fixpoint::U128x128;
-use penumbra_storage::StateWrite;
-use tendermint::abci;
+use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_storage::{StateRead, StateWrite};
+use tracing::instrument;
 pub use view::{StateReadExt, StateWriteExt};
 
 use penumbra_dex::{component::StateReadExt as _, component::StateWriteExt as _};
@@ -22,294 +26,181 @@ pub struct Distributions {}
 impl Component for Distributions {
     type AppState = genesis::AppState;
 
-    async fn init_chain<S: StateWrite>(_state: S, _app_state: &Self::AppState) {}
-
-    async fn begin_block<S: StateWrite + 'static>(
-        _state: &mut Arc<S>,
-        _begin_block: &abci::request::BeginBlock,
-    ) {
+    #[instrument(name = "distributions", skip(state, app_state))]
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: &Self::AppState) {
+        // Tally up the total issuance of the staking token from the genesis allocations, so that we
+        // can accurately track the total amount issued in the future.
+        let genesis_issuance = app_state
+            .allocations
+            .iter()
+            .filter(|alloc| {
+                // Filter only for allocations of the staking token
+                asset::REGISTRY.parse_denom(&alloc.denom).map(|d| d.id())
+                    == Some(*STAKING_TOKEN_ASSET_ID)
+            })
+            .fold(0u64, |sum, alloc| {
+                // Total the allocations
+                sum.checked_add(
+                    u128::from(alloc.amount)
+                        .try_into()
+                        .expect("genesis issuance does not overflow `u64`"),
+                )
+                .expect("genesis issuance does not overflow `u64`")
+            });
+        tracing::info!(
+            "total genesis issuance of staking token: {}",
+            genesis_issuance
+        );
+        state.set_total_issued(genesis_issuance);
     }
 
-    async fn end_block<S: StateWrite + 'static>(
-        _state: &mut Arc<S>,
-        _end_block: &abci::request::EndBlock,
-    ) {
-    }
-
+    #[instrument(name = "distributions", skip(state))]
     async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> Result<()> {
         let state = Arc::get_mut(state).expect("state `Arc` is unique");
 
-        // // Get the remainders of issuances that couldn't be distributed last epoch, due to precision
-        // // loss or lack of activity.
-        // let staking_remainder: u64 = state.staking_issuance().await?;
-        // let dex_remainder: u64 = 0; // TODO: get this from the dex once LP rewards are implemented
-        // let remainder = staking_remainder
-        //     .checked_add(dex_remainder)
-        //     .ok_or_else(|| {
-        //         anyhow::anyhow!("staking and dex remainders overflowed when added together")
-        //     })?
-        //     .checked_add(state.remainder().await?)
-        //     .ok_or_else(|| {
-        //         anyhow::anyhow!(
-        //             "staking and dex remainders overflowed when added to the previous remainder"
-        //         )
-        //     })?;
+        // Get the remainders of issuances that couldn't be distributed last epoch, due to precision
+        // loss or lack of activity.
+        let staking_remainder: u64 = state.staking_issuance().await?;
+        let dex_remainder: u64 = 0; // TODO: get this from the dex once LP rewards are implemented
 
-        // // Clear out the remaining issuances, so that if we don't issue anything to one of them, we
-        // // don't leave the remainder there.
-        // state.set_staking_issuance(0);
-        // // TODO: clear dex issuance
+        // Sum all the per-component remainders together, including any remainder in the
+        // distribution component itself left over undistributed in the previous epoch
+        let last_epoch_remainder =
+            staking_remainder
+                .checked_add(dex_remainder)
+                .ok_or_else(|| {
+                    anyhow::anyhow!("staking and dex remainders overflowed when added together")
+                })?;
 
-        // // Get the total issuance and new remainder for this epoch
-        // let (issuance, remainder) = state.total_issuance(remainder).await?;
+        // The remainder from the previous epoch could not be issued, so subtract it from the total
+        // issuance for all time.
+        let total_issued = state
+            .total_issued()
+            .await?
+            .checked_sub(last_epoch_remainder)
+            .expect(
+                "total issuance is greater than or equal to the remainder from the previous epoch",
+            );
+        state.set_total_issued(total_issued);
 
-        // // Set the remainder to be carried over to the next epoch
-        // state.set_remainder(remainder).await?;
+        // Add the remainder from the previous epoch to the remainder carried over from before then.
+        let remainder = last_epoch_remainder
+            .checked_add(state.remainder().await?)
+            .expect("remainder does not overflow `u64`");
+
+        tracing::info!(
+            ?remainder,
+            ?last_epoch_remainder,
+            ?staking_remainder,
+            ?dex_remainder,
+        );
+
+        // Clear out the remaining issuances, so that if we don't issue anything to one of them, we
+        // don't leave the remainder there.
+        state.set_staking_issuance(0);
+        // TODO: clear dex issuance
+
+        // Get the total issuance and new remainder for this epoch
+        let (issuance, remainder) = state.total_issuance_and_remainder(remainder).await?;
+
+        tracing::info!(new_issuance = ?issuance, new_remainder = ?remainder);
+
+        // Set the remainder to be carried over to the next epoch
+        state.set_remainder(remainder);
+
+        // Set the cumulative total issuance (pending receipt of remainders, which may decrease it
+        // next epoch)
+        state.set_total_issued(total_issued + issuance);
+
+        // Determine the allocation of the issuance between the different components: this returns a
+        // set of weights, which we'll use to scale the total issuance
+        let weights = state.issuance_weights().await?;
+
+        // Allocate the issuance according to the weights
+        if let Some(allocation) = penumbra_num::allocate(issuance.into(), weights) {
+            for (component, issuance) in allocation {
+                use ComponentName::*;
+                let issuance: u64 = issuance.try_into().expect("total issuance is within `u64`");
+                tracing::info!(%component, ?issuance, "issuing tokens to component"
+                );
+                match component {
+                    Staking => state.set_staking_issuance(issuance),
+                    Dex => todo!("set dex issuance"),
+                }
+            }
+        }
 
         Ok(())
     }
 }
 
-/// Given an association of keys to weights, sum the weights, scaling down the weights uniformly to
-/// make sure that the total weight fits in a `u128`, returning the total and modifying the weights
-/// in-place. This does not preserve the ordering of the weights.
-fn scale_to_u128<K>(weights: &mut Vec<(K, u128)>) -> u128 {
-    // Calculate the total weight, tracking overflows so we can compute a scaling factor in the case
-    // when the total of weights exceeds `u128::MAX`. This is computing the sum as a `u256` in two
-    // limbs of `u128`: hi and lo.
-    let mut lo: u128 = 0;
-    let mut hi: u128 = 0;
-    for (_, weight) in weights.iter() {
-        if let Some(new_lo) = lo.checked_add(*weight) {
-            lo = new_lo;
-        } else {
-            // If lo overflows, track the overflow in hi.
-            hi += 1;
-            // Explicitly wrapping-add the weight to lo, so that we can continue without losing the remainder.
-            lo = lo.wrapping_add(*weight);
-        };
-    }
-
-    // Compute a scaling factor such that the total weight is scaled down to fit in a `u128` if this
-    // scaling factor is applied to each weight.
-    let scaling_factor = if hi == 0 {
-        // If there were no overflows, then the scaling factor is 1. This special case is desirable
-        // so that we get *zero* precision loss for weights that fit in a `u128`, rather than
-        // round-down loss from dividing by a computed scaling factor.
-        U128x128::from(1u8)
-    } else {
-        // If there were overflows, then the scaling factor is (hi . lo) as a U128x128. This is done
-        // so that if the total weight exceeds `u128::MAX`, we scale down the weights to fit within
-        // that bound: i.e., the hi limb of the total weight is the integral part of the scaling
-        // factor, since it represents by how many times we have exceeded `u128::MAX`.
-        U128x128::from_parts(hi, lo)
-    };
-
-    // Compute a new set of weights and total weight by applying the scaling factor to the weights.
-    // Even if there was overflow, the new total weight may be less than `u128::MAX`, since loss of
-    // precision when dividing individual weights may have reduced the total weight. This is done
-    // in-place using `Vec::swap_remove` to avoid allocating a new vector.
-    let mut total_scaled_weight: u128 = 0;
-    let mut i = 0;
-    while let Some(weight) = weights.get(i).map(|w| w.1) {
-        // Scale each weight down by dividing it by the scaling factor and rounding down.
-        let scaled_weight = (U128x128::from(weight) / scaling_factor)
-            .expect("scaling factor is never zero")
-            .round_down() // must round *down* to avoid total exceeding `u128::MAX` in all situations
-            .try_into()
-            .expect("rounded amount is always integral");
-        // Track the total scaled weight, so we can return it.
-        total_scaled_weight += scaled_weight;
-        // Only output the scaled weight if it is greater than zero, since we don't want to do extra
-        // work for weights that are dropped by scaling.
-        if scaled_weight != 0 {
-            weights[i].1 = scaled_weight;
-            i += 1;
-        } else {
-            weights.swap_remove(i);
-        }
-    }
-
-    total_scaled_weight
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+enum ComponentName {
+    Staking,
+    Dex,
 }
 
-/// Return an exact allocation of `total_allocation` units of allocation, proportioned according to
-/// the given `weights`.
-///
-/// This method minimizes the average error ratio in the allocations, and error is bounded by at
-/// most 1 unit of allocation per key.
-fn exact_allocation<K: Ord>(
-    mut total_allocation: u128,
-    mut weights: Vec<(K, u128)>,
-) -> Option<impl Iterator<Item = (K, u128)>> {
-    // If the total allocation is zero, then every key will be allocated zero, so we can forget all
-    // the weights without doing any more processing of them.
-    if total_allocation == 0 {
-        weights.clear();
-    }
-
-    // Scale the weights down to fit in a `u128`.
-    let mut total_weight = scale_to_u128(&mut weights);
-
-    // If the total weight is zero, then we can't allocate anything, which would violate the
-    // guarantee to allocate exactly if we returned any result.
-    if total_weight == 0 && total_allocation != 0 {
-        return None;
-    }
-
-    // For each key in the weights, calculate the allocation for that key, sequentially iterating
-    // from least-weighted to most-weighted.
-    //
-    // This minimizes the *percentage* error in the allocations, because as the total remaining
-    // allocation decreases, the amount of error in a rounding division increases, but since we are
-    // ascending the weights, we're pushing higher error (which, notably, is capped at 1 unit of
-    // allocation, maximum!) to the most-weighted keys, which means that the average *percentage*
-    // error is minimized, since the total allocation to the most-weighted keys is the highest, and
-    // therefore the absolute error matters least to them.
-    //
-    // If two keys are equally-weighted, then it could happen that one key gets 1 unit of allocation
-    // more than the other: this is deterministic based on comparing the keys, since we sort the
-    // weights in ascending lexicographic order of (key, weight).
-    //
-    // This approach is loosely based off https://stackoverflow.com/a/38905829.
-    weights.sort();
-    Some(weights.into_iter().filter_map(move |(key, weight)| {
-        // The allocation for this key is the total allocation times the fraction of the total
-        // weight that this key has, rounded to the nearest integer.
-        let fraction_of_total_weight =
-            U128x128::ratio(weight, total_weight).expect("total weight is not zero");
-        let fractional_allocation = U128x128::from(total_allocation) * fraction_of_total_weight;
-        let integral_allocation = fractional_allocation
-            .expect("fraction of total weight is never greater than one")
-            .round_nearest() // must round to *nearest* to minimize error
-            .try_into()
-            .expect("rounded amount is always integral");
-        // We've assigned this weight, so subtract it from the remaining total.
-        total_weight -= weight;
-        // We've assigned this integral allocation, so subtract it from the remaining total.
-        total_allocation -= integral_allocation;
-        // Return the key and its allocation.
-        if integral_allocation != 0 {
-            Some((key, integral_allocation))
-        } else {
-            None
+impl Display for ComponentName {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            ComponentName::Staking => write!(f, "staking"),
+            ComponentName::Dex => write!(f, "dex"),
         }
-    }))
+    }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use proptest::prelude::*;
-
-    proptest! {
-        #[test]
-        fn total_and_scale_to_u128_is_exact(
-            mut weights in proptest::collection::vec((0..u8::MAX, 0..u128::MAX), 0..(u8::MAX as usize))
-        ) {
-            let total_weight = scale_to_u128(&mut weights);
-
-            // The total weight is the sum of the scaled weights (implicit in this is that the sum
-            // of scaled weights doesn't overflow, which will panic the test).
-            let actual_total_weight: u128 = weights.iter().map(|(_, weight)| *weight).sum();
-            prop_assert_eq!(total_weight, actual_total_weight, "total weight is not exact");
-        }
-
-        #[test]
-        fn exact_allocation_is_exact(
-            total_allocation in 0u128..u128::MAX,
-            weights in proptest::collection::vec((0..u8::MAX, 0..u128::MAX), 0..(u8::MAX as usize))
-        ) {
-            let total_weight_is_zero = weights.iter().all(|(_, weight)| *weight == 0);
-            let allocation = exact_allocation(total_allocation, weights.clone());
-
-            // If an allocation was returned, it is exact, and the total weight must have been
-            // nonzero; otherwise, the total weight must have been zero.
-            if let Some(allocation) = allocation {
-                // If an allocation was returned, then the total allocation is exactly the requested amount.
-                let actual_total_allocation: u128 = allocation.map(|(_, allocation)| allocation).sum();
-                prop_assert_eq!(total_allocation, actual_total_allocation, "total allocation is not exact");
-                // And the total weight was not zero.
-                prop_assert!(!total_weight_is_zero, "total weight is zero when allocation returned");
-            } else {
-                // Otherwise, the total weight was zero.
-                prop_assert!(total_weight_is_zero, "total weight is not zero when no allocation returned");
-            }
-        }
+#[async_trait]
+trait DistributionsImpl
+where
+    Self: StateRead + StateWrite,
+{
+    // Compute the total issuance for this epoch, and the remainder that will be carried over to
+    // the next epoch, given the remainder that was carried forward from the preceding epoch.
+    async fn total_issuance_and_remainder(&self, remainder: u64) -> Result<(u64, u64)> {
+        // This currently computes the new issuance by multiplying the total staking token ever
+        // issued by the base reward rate. This is a stand-in for a more accurate and good model of
+        // issuance, which will be implemented later. For now, this inflates the total issuance of
+        // staking tokens by a fixed ratio per epoch.
+        let base_reward_rate = self.get_chain_params().await?.base_reward_rate;
+        let total_issued = self.total_issued().await?;
+        const BPS_SQUARED: u64 = 1_0000_0000; // reward rate is measured in basis points squared
+        let new_issuance = total_issued * base_reward_rate / BPS_SQUARED;
+        let issuance = new_issuance + remainder;
+        Ok((issuance, 0))
     }
 
-    #[test]
-    fn exact_allocation_simple() {
-        fn alloc<const N: usize>(n: u128, ws: [(&str, u128); N]) -> Option<Vec<(&str, u128)>> {
-            exact_allocation(n, ws.to_vec()).map(|a| a.collect::<Vec<_>>())
-        }
+    // Determine in each epoch what the relative weight of issuance per component should be. The
+    // returned list of weights is used to allocate the total issuance between the different
+    // components, and does not need to sum to any particular total; it will be rescaled to the
+    // total issuance determined by `total_issuance_and_remainder`.
+    async fn issuance_weights(&self) -> Result<Vec<(ComponentName, u128)>> {
+        // Currently, only issue staking rewards:
+        Ok(vec![(ComponentName::Staking, 1)])
+    }
 
-        assert_eq!(None, alloc(1, []), "can't allocate something to nobody");
-        assert_eq!(
-            None,
-            alloc(1, [("a", 0)]),
-            "can't allocate something to zero weights"
-        );
-        assert_eq!(Some(vec![]), alloc(0, []), "can allocate nothing to nobody");
-        assert_eq!(
-            Some(vec![]),
-            alloc(0, [("a", 1)]),
-            "can allocate nothing to somebody"
-        );
-        assert_eq!(
-            Some(vec![]),
-            alloc(0, [("a", 0)]),
-            "can allocate nothing to zero weights"
-        );
-        assert_eq!(
-            Some(vec![("a", 1)]),
-            alloc(1, [("a", 1)]),
-            "can allocate the whole pot to one person"
-        );
-        assert_eq!(
-            Some(vec![("a", 1)]),
-            alloc(1, [("a", 2)]),
-            "doubling the weight doesn't change the allocation"
-        );
-        assert_eq!(
-            Some(vec![("a", 1), ("b", 1)]),
-            alloc(2, [("a", 1), ("b", 1)]),
-            "can allocate the whole pot to two people exactly evenly"
-        );
-        assert_eq!(
-            Some(vec![("a", 1), ("b", 1)]),
-            alloc(2, [("a", 2), ("b", 2)]),
-            "doubling the weight doesn't change the allocation for two people"
-        );
-        assert_eq!(
-            Some(vec![("a", 1), ("b", 1)]),
-            alloc(2, [("a", 1), ("b", 2)]),
-            "allocating two units to two people with different weights"
-        );
-        assert_eq!(
-            Some(vec![("a", 1), ("b", 1)]),
-            alloc(2, [("a", 2), ("b", 1)]),
-            "allocating two units to two people with different weights, reverse order"
-        );
-        assert_eq!(
-            Some(vec![("a", 1), ("b", 1)]),
-            alloc(2, [("a", 1), ("b", 1), ("c", 1)]),
-            "can't allocate 2 units 3 people exactly evenly, so pick the first two"
-        );
-        assert_eq!(
-            Some(vec![("a", 1),/*       */("c", 1)]),
-            alloc(2, [("a", 1), ("b", 1), ("c", 2)]),
-            "can't allocate 2 units 3 people exactly evenly, so pick the first low-weight and the first high-weight"
-        );
-        assert_eq!(
-            Some(vec![/*      */ ("b", 2), ("c", 1)]),
-            alloc(3, [("a", 1), ("b", 3), ("c", 2)]),
-            "allocating 3 units to 3 people with different weights"
-        );
-        assert_eq!(
-            Some(vec![("a", 2), /*     */ ("b", 1)]),
-            alloc(3, [("a", u128::MAX), ("b", u128::MAX / 2)]),
-            "can allocate exactly even when the total weight is greater than u128::MAX"
-        );
+    // Get the remainder of the issuance that couldn't be distributed in the previous epoch.
+    async fn remainder(&self) -> Result<u64> {
+        self.get_proto(state_key::remainder())
+            .await
+            .map(Option::unwrap_or_default)
+    }
+
+    // Set the remainder of the issuance that will be carried forward to the next epoch.
+    fn set_remainder(&mut self, remainder: u64) {
+        self.put_proto(state_key::remainder().to_string(), remainder)
+    }
+
+    // Get the total issuance of staking tokens for all time.
+    async fn total_issued(&self) -> Result<u64> {
+        self.get_proto(state_key::total_issued())
+            .await
+            .map(Option::unwrap_or_default)
+    }
+
+    // Set the total issuance of staking tokens for all time.
+    fn set_total_issued(&mut self, total_issued: u64) {
+        self.put_proto(state_key::total_issued().to_string(), total_issued)
     }
 }
+
+impl<S: StateRead + StateWrite> DistributionsImpl for S {}

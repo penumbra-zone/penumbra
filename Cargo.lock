@@ -4822,6 +4822,7 @@ version = "0.58.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "penumbra-asset",
  "penumbra-chain",
  "penumbra-component",
  "penumbra-dex",
