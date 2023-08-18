@@ -36,7 +36,7 @@ penumbra-compact-block = { path = "../core/component/compact-block", default-fea
 penumbra-app           = { path = "../core/app" }
 penumbra-transaction   = { path = "../core/transaction" }
 
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", rev = "99d1484398f13aa35578948d34537bb8bb9848d9", default-features = false }
+ibc-types = { version = "0.3.0", default-features = false }
 
 decaf377 = {version = "0.5", features = ["r1cs"] }
 tokio = { version = "1.22", features = ["full"] }
