@@ -4967,6 +4967,7 @@ version = "0.60.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "penumbra-asset",
  "penumbra-chain",
  "penumbra-component",
  "penumbra-dex",
