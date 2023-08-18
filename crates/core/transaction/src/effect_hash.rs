@@ -64,8 +64,13 @@ impl TransactionBody {
         state.update(self.transaction_parameters.effect_hash().as_bytes());
         state.update(self.fee.effect_hash().as_bytes());
         if self.memo.is_some() {
-            let memo = self.memo.clone();
-            state.update(memo.expect("memo is some").effect_hash().as_bytes());
+            let memo_ciphertext = self.memo.clone();
+            state.update(
+                memo_ciphertext
+                    .expect("memo is some")
+                    .effect_hash()
+                    .as_bytes(),
+            );
         }
         if self.detection_data.is_some() {
             let detection_data = self.detection_data.clone();
@@ -123,14 +128,14 @@ impl TransactionPlan {
         }
 
         // Hash the detection data.
-        let detection_data = DetectionData {
-            fmd_clues: self
-                .clue_plans
-                .iter()
-                .map(|clue_plan| clue_plan.clue())
-                .collect(),
-        };
         if !self.clue_plans.is_empty() {
+            let detection_data = DetectionData {
+                fmd_clues: self
+                    .clue_plans
+                    .iter()
+                    .map(|clue_plan| clue_plan.clue())
+                    .collect(),
+            };
             state.update(detection_data.effect_hash().as_bytes());
         }
 
