@@ -94,7 +94,7 @@ impl Component for Distributions {
             .checked_add(state.remainder().await?)
             .expect("remainder does not overflow `u64`");
 
-        tracing::info!(
+        tracing::debug!(
             ?remainder,
             ?last_epoch_remainder,
             ?staking_remainder,
@@ -109,7 +109,7 @@ impl Component for Distributions {
         // Get the total issuance and new remainder for this epoch
         let (issuance, remainder) = state.total_issuance_and_remainder(remainder).await?;
 
-        tracing::info!(new_issuance = ?issuance, new_remainder = ?remainder);
+        tracing::debug!(new_issuance = ?issuance, new_remainder = ?remainder);
 
         // Set the remainder to be carried over to the next epoch
         state.set_remainder(remainder);
@@ -127,7 +127,7 @@ impl Component for Distributions {
             for (component, issuance) in allocation {
                 use ComponentName::*;
                 let issuance: u64 = issuance.try_into().expect("total issuance is within `u64`");
-                tracing::info!(%component, ?issuance, "issuing tokens to component"
+                tracing::debug!(%component, ?issuance, "issuing tokens to component"
                 );
                 match component {
                     Staking => state.set_staking_issuance(issuance),
