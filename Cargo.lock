@@ -2916,7 +2916,8 @@ dependencies = [
 [[package]]
 name = "ibc-types"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a36c2a1835c820277281cc0d93bcd43591c0854c1739c507b7cd3f4170981bd"
 dependencies = [
  "ibc-types-core-channel",
  "ibc-types-core-client",
@@ -2933,8 +2934,10 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-channel"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63198ba14656ec0182a683ab15bcc823738d295c855489ba7396769fc30223b1"
 dependencies = [
+ "anyhow",
  "bytes",
  "derive_more",
  "displaydoc",
@@ -2963,8 +2966,10 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-client"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68fff89eba5126a8b1337b6be9e51dfad7130e23335f410db5d80261a4c5d5d2"
 dependencies = [
+ "anyhow",
  "bytes",
  "derive_more",
  "displaydoc",
@@ -2988,7 +2993,8 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-commitment"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be9217cdfacc9cb58a5e9ec46ed7445d347772d8a90bbacd824868b30e513c94"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3021,8 +3027,10 @@ dependencies = [
 [[package]]
 name = "ibc-types-core-connection"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf4571b3ff025b41d1095185ceb059dd185ab5dadcc1d8fd36a58a6ef3c3dc1e"
 dependencies = [
+ "anyhow",
  "bytes",
  "derive_more",
  "displaydoc",
@@ -3049,7 +3057,8 @@ dependencies = [
 [[package]]
 name = "ibc-types-domain-type"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "922dd53d1eb471552735732580c5a8a03c7d42e3e41763dea76ec9f9c2121f84"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3059,7 +3068,8 @@ dependencies = [
 [[package]]
 name = "ibc-types-identifier"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b113c4e965f34392d7bd0b50e8215f54e8c343c47110cf4525da269f224d165"
 dependencies = [
  "displaydoc",
  "serde",
@@ -3068,8 +3078,10 @@ dependencies = [
 [[package]]
 name = "ibc-types-lightclients-tendermint"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d53e9f3f5a7d9005f01930f7af94b4409c07f4178b724b9defae5b13e99ddb27"
 dependencies = [
+ "anyhow",
  "bytes",
  "derive_more",
  "displaydoc",
@@ -3103,7 +3115,8 @@ dependencies = [
 [[package]]
 name = "ibc-types-path"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "671f7970711a3eaa25d95fa4613491fe7c680c526251b1e62ce4ca23ce418c32"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3124,7 +3137,8 @@ dependencies = [
 [[package]]
 name = "ibc-types-timestamp"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b8a10964b6684614d092f524861a5eae7c5bd69af6949582d7ed00c89dd1e83"
 dependencies = [
  "bytes",
  "displaydoc",
@@ -3141,7 +3155,8 @@ dependencies = [
 [[package]]
 name = "ibc-types-transfer"
 version = "0.3.0"
-source = "git+https://github.com/penumbra-zone/ibc-types?rev=99d1484398f13aa35578948d34537bb8bb9848d9#99d1484398f13aa35578948d34537bb8bb9848d9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51ae4dec259191735de7c7d0fed2d66ca2a0d392ed253eae47bb8770cc19d43e"
 dependencies = [
  "displaydoc",
  "serde",
