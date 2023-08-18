@@ -21,7 +21,7 @@ penumbra-tendermint-proxy = { path = "../../util/tendermint-proxy" }
 penumbra-chain            = { path = "../../core/component/chain" , features = ["component"] }
 
 # Penumbra dependencies
-tower-abci = "0.8.0"
+tower-abci = "0.9.0"
 tower-actor = "0.1.0"
 
 # External dependencies
