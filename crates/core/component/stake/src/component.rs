@@ -22,7 +22,6 @@ use penumbra_chain::{
 };
 use penumbra_component::Component;
 use penumbra_dao::component::StateWriteExt as _;
-use penumbra_num::Amount;
 use penumbra_proto::{
     state::future::{DomainFuture, ProtoFuture},
     StateReadProto, StateWriteProto,
