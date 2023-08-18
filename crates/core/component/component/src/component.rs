@@ -35,9 +35,10 @@ pub trait Component {
     /// implementor MUST ensure that any clones of the `Arc` are dropped before
     /// it returns, so that `state.get_mut().is_some()` on completion.
     async fn begin_block<S: StateWrite + 'static>(
-        state: &mut Arc<S>,
-        begin_block: &abci::request::BeginBlock,
-    );
+        _state: &mut Arc<S>,
+        _begin_block: &abci::request::BeginBlock,
+    ) {
+    }
 
     /// Ends the block, optionally inspecting the ABCI
     /// [`EndBlock`](abci::request::EndBlock) request, and performing any batch
@@ -54,9 +55,10 @@ pub trait Component {
     /// implementor MUST ensure that any clones of the `Arc` are dropped before
     /// it returns, so that `state.get_mut().is_some()` on completion.
     async fn end_block<S: StateWrite + 'static>(
-        state: &mut Arc<S>,
-        end_block: &abci::request::EndBlock,
-    );
+        _state: &mut Arc<S>,
+        _end_block: &abci::request::EndBlock,
+    ) {
+    }
 
     /// Ends the epoch, applying component-specific state transitions that should occur when an epoch ends.
     ///
@@ -67,5 +69,7 @@ pub trait Component {
     /// called, `state.get_mut().is_some()`, i.e., the `Arc` is not shared.  The
     /// implementor MUST ensure that any clones of the `Arc` are dropped before
     /// it returns, so that `state.get_mut().is_some()` on completion.
-    async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> Result<()>;
+    async fn end_epoch<S: StateWrite + 'static>(_state: &mut Arc<S>) -> Result<()> {
+        Ok(())
+    }
 }
