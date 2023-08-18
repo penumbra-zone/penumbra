@@ -733,53 +733,6 @@ pub(crate) trait StakingImpl: StateWriteExt {
         Ok(())
     }
 
-    /// Calculate the amount of stake that is delegated to the currently active validator set,
-    /// denominated in the staking token.
-    #[instrument(skip(self))]
-    async fn total_active_stake(&mut self) -> Result<u64> {
-        let validator_list = self.validator_identity_list().await?;
-
-        let mut total_active_stake: u64 = 0;
-        for validator in &validator_list {
-            // Filter the list for active validators only
-            // TODO: use an index so we don't have to iterate over the whole list
-            let validator_state = self.validator_state(&validator).await?.ok_or_else(|| {
-                anyhow::anyhow!("validator had ID in validator_list but state not found in JMT")
-            })?;
-            if validator_state != validator::State::Active {
-                continue;
-            }
-
-            let delegation_token_supply = self
-                .token_supply(&DelegationToken::from(validator).id())
-                .await?
-                .expect("delegation token should be known");
-
-            let validator_rate =
-                self.current_validator_rate(&validator)
-                    .await?
-                    .ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "validator had ID in validator_list but rate not found in JMT"
-                        )
-                    })?;
-
-            // Add the validator's unbonded amount to the total active stake
-            total_active_stake = total_active_stake
-                .checked_add(
-                    validator_rate
-                        .unbonded_amount(delegation_token_supply.into())
-                        .try_into()
-                        .map_err(|_| {
-                            anyhow::anyhow!("validator rate unbonded amount overflowed u64")
-                        })?,
-                )
-                .ok_or_else(|| anyhow::anyhow!("total active stake overflowed u64"))?;
-        }
-
-        Ok(total_active_stake)
-    }
-
     #[instrument(skip(self, last_commit_info))]
     async fn track_uptime(&mut self, last_commit_info: &CommitInfo) -> Result<()> {
         // Note: this probably isn't the correct height for the LastCommitInfo,
@@ -1413,6 +1366,53 @@ pub trait StateReadExt: StateRead {
             };
 
         Ok(std::cmp::min(default_unbonding, validator_unbonding))
+    }
+
+    /// Calculate the amount of stake that is delegated to the currently active validator set,
+    /// denominated in the staking token.
+    #[instrument(skip(self))]
+    async fn total_active_stake(&self) -> Result<u64> {
+        let validator_list = self.validator_identity_list().await?;
+
+        let mut total_active_stake: u64 = 0;
+        for validator in &validator_list {
+            // Filter the list for active validators only
+            // TODO: use an index so we don't have to iterate over the whole list
+            let validator_state = self.validator_state(validator).await?.ok_or_else(|| {
+                anyhow::anyhow!("validator had ID in validator_list but state not found in JMT")
+            })?;
+            if validator_state != validator::State::Active {
+                continue;
+            }
+
+            let delegation_token_supply = self
+                .token_supply(&DelegationToken::from(validator).id())
+                .await?
+                .expect("delegation token should be known");
+
+            let validator_rate =
+                self.current_validator_rate(validator)
+                    .await?
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "validator had ID in validator_list but rate not found in JMT"
+                        )
+                    })?;
+
+            // Add the validator's unbonded amount to the total active stake
+            total_active_stake = total_active_stake
+                .checked_add(
+                    validator_rate
+                        .unbonded_amount(delegation_token_supply.into())
+                        .try_into()
+                        .map_err(|_| {
+                            anyhow::anyhow!("validator rate unbonded amount overflowed u64")
+                        })?,
+                )
+                .ok_or_else(|| anyhow::anyhow!("total active stake overflowed u64"))?;
+        }
+
+        Ok(total_active_stake)
     }
 }
 
