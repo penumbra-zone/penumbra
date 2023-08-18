@@ -457,10 +457,16 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // set it as the next epoch's staking issuance. The distributions module will take this as
         // an input to determine the next epoch's staking rewards.
         let unissued = issuance
-            .checked_sub(upcoming_total_active_stake)
+            .checked_sub(upcoming_total_active_stake.checked_sub(previous_total_active_stake).ok_or_else(|| {
+                anyhow::anyhow!(
+                    "upcoming total active stake ({}) is less than previous total active stake ({})",
+                    upcoming_total_active_stake,
+                    previous_total_active_stake
+                )
+            })?)
             .ok_or_else(|| {
                 anyhow::anyhow!(
-                    "total active stake ({}) is greater than issuance ({})",
+                    "actual issuance ({}) is greater than input issuance ({})",
                     upcoming_total_active_stake,
                     issuance
                 )
