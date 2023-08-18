@@ -155,15 +155,20 @@ fn exact_allocation<K: Ord>(
     }
 
     // For each key in the weights, calculate the allocation for that key, sequentially iterating
-    // from least-weighted to most-weighted. This minimizes the *percentage* error in the
-    // allocations, because as the total allocation decreases, the amount of error in a rounding
-    // division increases, but since we are ascending the weights, we're pushing higher error
-    // (which, notably, is capped at 1 unit of allocation, maximum!) to the most-weighted keys,
-    // which means that the average *percentage* error is minimized, since the total allocation
-    // to the most-weighted keys is the highest, and therefore the absolute error matters least
-    // to them. If two keys are equally-weighted, then it could happen that one key gets 1 unit
-    // of allocation more than the other: this is deterministic based on comparing the keys,
-    // since we sort the weights in ascending lexicographic order of (key, weight).
+    // from least-weighted to most-weighted.
+    //
+    // This minimizes the *percentage* error in the allocations, because as the total remaining
+    // allocation decreases, the amount of error in a rounding division increases, but since we are
+    // ascending the weights, we're pushing higher error (which, notably, is capped at 1 unit of
+    // allocation, maximum!) to the most-weighted keys, which means that the average *percentage*
+    // error is minimized, since the total allocation to the most-weighted keys is the highest, and
+    // therefore the absolute error matters least to them.
+    //
+    // If two keys are equally-weighted, then it could happen that one key gets 1 unit of allocation
+    // more than the other: this is deterministic based on comparing the keys, since we sort the
+    // weights in ascending lexicographic order of (key, weight).
+    //
+    // This approach is loosely based off https://stackoverflow.com/a/38905829.
     weights.sort();
     weights
         .into_iter()
