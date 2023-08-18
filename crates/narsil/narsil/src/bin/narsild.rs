@@ -137,7 +137,7 @@ async fn main() -> anyhow::Result<()> {
                 .context("Unable to initialize RocksDB storage")?;
 
             use penumbra_tower_trace::trace::request_span;
-            use penumbra_tower_trace::RequestExt;
+            use penumbra_tower_trace::v034::RequestExt;
 
             let info = Info::new(storage.clone());
             let consensus = tower::ServiceBuilder::new()

@@ -2,7 +2,8 @@ use anyhow::Result;
 
 use penumbra_chain::genesis;
 use penumbra_storage::Storage;
-use tendermint::abci::{self, ConsensusRequest as Request, ConsensusResponse as Response};
+use tendermint::abci;
+use tendermint::v0_34::abci::{ConsensusRequest as Request, ConsensusResponse as Response};
 use tokio::sync::mpsc;
 use tower_actor::Message;
 use tracing::Instrument;
@@ -78,12 +79,6 @@ impl Consensus {
                         .await
                         .expect("commit must succeed"),
                 ),
-                Request::PrepareProposal(_) => {
-                    unimplemented!("Tendermint v034 does not support `PrepareProposal`")
-                }
-                Request::ProcessProposal(_) => {
-                    unimplemented!("Tendermint v034 does not support `ProcessProposal`")
-                }
             }));
         }
         Ok(())
