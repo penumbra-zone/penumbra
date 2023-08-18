@@ -61,9 +61,9 @@ cd crates/crypto/proof-setup
 cargo bench
 ```
 
-Performance as of commit `eb5c4a26b925ae7c8fd3e3d6c3eb28f8fc49ddee` benchmarked on a 2023 Macbook Pro M2 (12 core CPU) with 32 GB memory using 37,061 constraints (SwapClaim circuit):
+Performance as of commit `1ed963657c16e49c65a8e9ecf998d57fcce8f200` benchmarked on a 2023 Macbook Pro M2 (12 core CPU) with 32 GB memory using 37,061 constraints (SwapClaim circuit):
 
 | Task    | Time |
 | -------- | ------- |
 | Phase 1 prove  | 40.3s    |
-| Phase 1 verify | 84.2s    |
+| Phase 1 verify | 88.7s    |
