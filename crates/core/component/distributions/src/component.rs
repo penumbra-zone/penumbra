@@ -107,7 +107,8 @@ fn scale_to_u128<K>(weights: &mut Vec<(K, u128)>) -> u128 {
 
     // Compute a new set of weights and total weight by applying the scaling factor to the weights.
     // Even if there was overflow, the new total weight may be less than `u128::MAX`, since loss of
-    // precision when dividing individual weights may have reduced the total weight.
+    // precision when dividing individual weights may have reduced the total weight. This is done
+    // in-place using `Vec::swap_remove` to avoid allocating a new vector.
     let mut total_scaled_weight: u128 = 0;
     let mut i = 0;
     while let Some(weight) = weights.get(i).map(|(_, weight)| *weight) {
