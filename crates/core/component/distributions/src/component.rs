@@ -75,31 +75,34 @@ impl Component for Distributions {
 /// in-place. This does not preserve the ordering of the weights.
 fn scale_to_u128<K>(weights: &mut Vec<(K, u128)>) -> u128 {
     // Calculate the total weight, tracking overflows so we can compute a scaling factor in the case
-    // when the total of weights exceeds `u128::MAX`.
-    let mut total_weight_remainder: u128 = 0;
-    let mut number_of_overflows: u128 = 0;
+    // when the total of weights exceeds `u128::MAX`. This is computing the sum as a `u256` in two
+    // limbs of `u128`: hi and lo.
+    let mut lo: u128 = 0;
+    let mut hi: u128 = 0;
     for (_, weight) in weights.iter() {
-        if let Some(new) = total_weight_remainder.checked_add(*weight) {
-            total_weight_remainder = new;
+        if let Some(new_lo) = lo.checked_add(*weight) {
+            lo = new_lo;
         } else {
-            // If the total weight overflows, track the overflow and continue, so we accumulate
-            // an exact accounting of the total weight, even if it overflows.
-            number_of_overflows += 1;
-            // The remaining total weight after we track the overflow is the weight that was going
-            // to overflow things, minus the amount remaining prior to overflow (i.e. the remainder).
-            total_weight_remainder = weight - (u128::MAX - total_weight_remainder);
+            // If lo overflows, track the overflow in hi.
+            hi += 1;
+            // Explicitly wrapping-add the weight to lo, so that we can continue without losing the remainder.
+            lo = lo.wrapping_add(*weight);
         };
     }
 
     // Compute a scaling factor such that the total weight is scaled down to fit in a `u128` if this
     // scaling factor is applied to each weight.
-    let scaling_factor = if number_of_overflows == 0 {
-        // If there were no overflows, then the scaling factor is 1.
+    let scaling_factor = if hi == 0 {
+        // If there were no overflows, then the scaling factor is 1. This special case is desirable
+        // so that we get *zero* precision loss for weights that fit in a `u128`, rather than
+        // round-down loss from dividing by a computed scaling factor.
         U128x128::from(1u8)
     } else {
-        // If there were overflows, then the scaling factor is (number_of_overflows . total_weight) as
-        // a U128x128.
-        U128x128::from_parts(number_of_overflows, total_weight_remainder)
+        // If there were overflows, then the scaling factor is (hi . lo) as a U128x128. This is done
+        // so that if the total weight exceeds `u128::MAX`, we scale down the weights to fit within
+        // that bound: i.e., the hi limb of the total weight is the integral part of the scaling
+        // factor, since it represents by how many times we have exceeded `u128::MAX`.
+        U128x128::from_parts(hi, lo)
     };
 
     // Compute a new set of weights and total weight by applying the scaling factor to the weights.
