@@ -587,12 +587,22 @@ impl From<Outcome<String>> for pb::ProposalOutcome {
             }
             Outcome::Failed { withdrawn } => {
                 pb::proposal_outcome::Outcome::Failed(pb::proposal_outcome::Failed {
-                    withdrawn_with_reason: withdrawn.into(),
+                    withdrawn: match withdrawn {
+                        Withdrawn::No => None,
+                        Withdrawn::WithReason { reason } => {
+                            Some(pb::proposal_outcome::Withdrawn { reason })
+                        }
+                    },
                 })
             }
             Outcome::Slashed { withdrawn } => {
                 pb::proposal_outcome::Outcome::Slashed(pb::proposal_outcome::Slashed {
-                    withdrawn_with_reason: withdrawn.into(),
+                    withdrawn: match withdrawn {
+                        Withdrawn::No => None,
+                        Withdrawn::WithReason { reason } => {
+                            Some(pb::proposal_outcome::Withdrawn { reason })
+                        }
+                    },
                 })
             }
         };
@@ -615,14 +625,22 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
                     Outcome::Passed
                 }
                 pb::proposal_outcome::Outcome::Failed(pb::proposal_outcome::Failed {
-                    withdrawn_with_reason,
+                    withdrawn,
                 }) => Outcome::Failed {
-                    withdrawn: withdrawn_with_reason.into(),
+                    withdrawn: if let Some(pb::proposal_outcome::Withdrawn { reason }) = withdrawn {
+                        Withdrawn::WithReason { reason }
+                    } else {
+                        Withdrawn::No
+                    },
                 },
                 pb::proposal_outcome::Outcome::Slashed(pb::proposal_outcome::Slashed {
-                    withdrawn_with_reason,
+                    withdrawn,
                 }) => Outcome::Slashed {
-                    withdrawn: withdrawn_with_reason.into(),
+                    withdrawn: if let Some(pb::proposal_outcome::Withdrawn { reason }) = withdrawn {
+                        Withdrawn::WithReason { reason }
+                    } else {
+                        Withdrawn::No
+                    },
                 },
             },
         )
@@ -645,12 +663,20 @@ impl From<Outcome<()>> for pb::ProposalOutcome {
             }
             Outcome::Failed { withdrawn } => {
                 pb::proposal_outcome::Outcome::Failed(pb::proposal_outcome::Failed {
-                    withdrawn_with_reason: <Option<()>>::from(withdrawn).map(|()| "".to_string()),
+                    withdrawn: <Option<()>>::from(withdrawn).map(|()| {
+                        pb::proposal_outcome::Withdrawn {
+                            reason: "".to_string(),
+                        }
+                    }),
                 })
             }
             Outcome::Slashed { withdrawn } => {
                 pb::proposal_outcome::Outcome::Slashed(pb::proposal_outcome::Slashed {
-                    withdrawn_with_reason: <Option<()>>::from(withdrawn).map(|()| "".to_string()),
+                    withdrawn: <Option<()>>::from(withdrawn).map(|()| {
+                        pb::proposal_outcome::Withdrawn {
+                            reason: "".to_string(),
+                        }
+                    }),
                 })
             }
         };
@@ -673,14 +699,14 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<()> {
                     Outcome::Passed
                 }
                 pb::proposal_outcome::Outcome::Failed(pb::proposal_outcome::Failed {
-                    withdrawn_with_reason,
+                    withdrawn,
                 }) => Outcome::Failed {
-                    withdrawn: <Withdrawn<String>>::from(withdrawn_with_reason).try_into()?,
+                    withdrawn: <Withdrawn<String>>::from(withdrawn.map(|w| w.reason)).try_into()?,
                 },
                 pb::proposal_outcome::Outcome::Slashed(pb::proposal_outcome::Slashed {
-                    withdrawn_with_reason,
+                    withdrawn,
                 }) => Outcome::Slashed {
-                    withdrawn: <Withdrawn<String>>::from(withdrawn_with_reason).try_into()?,
+                    withdrawn: <Withdrawn<String>>::from(withdrawn.map(|w| w.reason)).try_into()?,
                 },
             },
         )
