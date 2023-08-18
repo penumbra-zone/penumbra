@@ -28,19 +28,22 @@ The data that is _not_ effecting data is *authorizing data*:
 For example, the nullifier on a `Spend` is effecting data, whereas the
 proofs or signatures associated with the `Spend` are authorizing data.
 
-In Penumbra, the effect hash of each transaction is computed using the hash
-function `hash(label, input)` as BLAKE2b-512 with personalization `label` on
-input `input`. The input of each effect hash is the proto-encoding of the action - in
+In Penumbra, the effect hash of each transaction is computed using the BLAKE2b-512
+hash function. The effect hash is derived from the proto-encoding of the action - in
 cases where the effecting data and authorizing data are the same, or the *body*
 of the action - in cases where the effecting data and authorizing data are different.
+Each proto has a unique string associated with it which we call its *Type URL*,
+which is included in the inputs to BLAKE2b-512.
+Type URLs are variable length, so a fixed-length field (8 bytes) is first included
+in the hash to denote the length of the Type URL field.
 
-Then the effect hash _for each action_ is computed as:
+Summarizing the above, the effect hash _for each action_ is computed as:
 
 ```
-effect_hash = hash(label, proto_encode(proto))
+effect_hash = BLAKE2b-512(len(type_url) || type_url || proto_encode(proto))
 ```
 
-where `proto` represents the proto used to represent the effecting data, and
+where `type_url` is the bytes of the variable-length`proto` represents the proto used to represent the effecting data, and
 `proto_encode` represents encoding the proto message as a vector of bytes.
 
 ### Per-Action Effect Hashes
@@ -48,45 +51,47 @@ where `proto` represents the proto used to represent the effecting data, and
 On a per-action basis, the effect hash is computed using the following labels and
 protos representing the effecting data in Penumbra:
 
-| Action | Label  | Proto  |
+| Action | Type URL  | Proto  |
 |---|---|---|
-| `Spend` | `b"PAH:spend_body"` | `SpendBody`  |
-| `Output` | `b"PAH:output_body"` | `OutputBody` |
-| `Ics20Withdrawal`  | `b"PAH:ics20wthdrwl"`  | `Ics20Withdrawal` |
-| `Swap`  | `b"PAH:swap_body"`  | `SwapBody` |
-| `SwapClaim`  | `b"PAH:swapclaimbdy"`  | `SwapClaimBody` |
-| `Delegate`  | `b"PAH:delegate"`  | `Delegate` |
-| `Undelegate`  | `b"PAH:undelegate"`  | `Undelegate` |
-| `UndelegateClaim`  | `b"PAH:udlgclm_body"`  | `UndelegateClaimBody` |
-| `Proposal`  | `b"PAH:proposal"`  | `Proposal` |
-| `ProposalSubmit`  | `b"PAH:prop_submit"`  | `ProposalSubmit` |
-| `ProposalWithdraw`  | `b"PAH:prop_withdrw"`  | `ProposalWithdraw` |
-| `ProposalDepositClaim`  | `b"PAH:prop_dep_clm"`   | `ProposalDepositClaim` |
-| `Vote`  | `b"PAH:vote"`  | `Vote` |
-| `ValidatorVote`  | `b"PAH:val_vote"`  | `ValidatorVoteBody` |
-| `DelegatorVote`  | `b"PAH:del_vote"`  | `DelegatorVoteBody` |
-| `DaoDeposit`  | `b"PAH:daodeposit"`  | `DaoDeposit` |
-| `DaoOutput`  | `b"PAH:daooutput"`  | `DaoOutput` |
-| `DaoSpend`  | `b"PAH:daospend"`  | `DaoSpend` |
-| `PositionOpen`  | `b"PAH:pos_open"`  | `PositionOpen` |
-| `PositionClose`  | `b"PAH:pos_close"`  | `PositionClose` |
-| `PositionWithdraw`  | `b"PAH:pos_withdraw"`  | `PositionWithdraw` |
-| `PositionRewardClaim`  | `b"PAH:pos_rewrdclm"`  | `PositionRewardClaim` |
+| `Spend` | `b"/penumbra.core.transaction.v1alpha1.SpendBody"` | `SpendBody`  |
+| `Output` | `b"/penumbra.core.transaction.v1alpha1.OutputBody"` | `OutputBody` |
+| `Ics20Withdrawal`  | `b"/penumbra.core.ibc.v1alpha1.Ics20Withdrawal"`  | `Ics20Withdrawal` |
+| `Swap`  | `b"/penumbra.core.dex.v1alpha1.SwapBody"`  | `SwapBody` |
+| `SwapClaim`  | `b"/penumbra.core.dex.v1alpha1.SwapClaimBody"`  | `SwapClaimBody` |
+| `Delegate`  | `b"/penumbra.core.stake.v1alpha1.Delegate"`  | `Delegate` |
+| `Undelegate`  | `b"/penumbra.core.stake.v1alpha1.Undelegate"`  | `Undelegate` |
+| `UndelegateClaim`  | `b"/penumbra.core.stake.v1alpha1.UndelegateClaimBody"`  | `UndelegateClaimBody` |
+| `Proposal`  | `b"/penumbra.core.governance.v1alpha1.Proposal"`  | `Proposal` |
+| `ProposalSubmit`  | `b"/penumbra.core.governance.v1alpha1.ProposalSubmit"`  | `ProposalSubmit` |
+| `ProposalWithdraw`  | `b"/penumbra.core.governance.v1alpha1.ProposalWithdraw"`  | `ProposalWithdraw` |
+| `ProposalDepositClaim`  | `b"/penumbra.core.governance.v1alpha1.ProposalDepositClaim"`   | `ProposalDepositClaim` |
+| `Vote`  | `b"/penumbra.core.governance.v1alpha1.Vote"`  | `Vote` |
+| `ValidatorVote`  | `b"/penumbra.core.governance.v1alpha1.ValidatorVoteBody"`  | `ValidatorVoteBody` |
+| `DelegatorVote`  | `b"/penumbra.core.governance.v1alpha1.DelegatorVoteBody"`  | `DelegatorVoteBody` |
+| `DaoDeposit`  | `b"/penumbra.core.governance.v1alpha1.DaoDepositt"`  | `DaoDeposit` |
+| `DaoOutput`  | `b"/penumbra.core.governance.v1alpha1.DaoOutput"`  | `DaoOutput` |
+| `DaoSpend`  | `b"/penumbra.core.governance.v1alpha1.DaoSpend"`  | `DaoSpend` |
+| `PositionOpen`  | `b"/penumbra.core.dex.v1alpha1.PositionOpen"`  | `PositionOpen` |
+| `PositionClose`  | `b"/penumbra.core.dex.v1alpha1.PositionClose"`  | `PositionClose` |
+| `PositionWithdraw`  | `b"/penumbra.core.dex.v1alpha1.PositionWithdraw"`  | `PositionWithdraw` |
+| `PositionRewardClaim`  | `b"/penumbra.core.dex.v1alpha1.PositionRewardClaim"`  | `PositionRewardClaim` |
 
 ### Transaction Data Field Effect Hashes
 
 We compute the transaction data field effect hashes in the same manner as actions:
 
-| Field | Label  | Proto  |
+| Field | Type URL  | Proto  |
 |---|---|---|
-| `TransactionParameters` | `b"PAH:tx_params"` | `TransactionParameters`  |
-| `Fee` | `b"PAH:fee"` | `Fee` |
-| `Clue`  | `b"PAH:decaffmdclue"`  | `Clue` |
-| `MemoCiphertext` | `b"PAH:memo"` | `MemoCiphertext`
+| `TransactionParameters` | `b"/penumbra.core.transaction.v1alpha1.TransactionParameters"` | `TransactionParameters`  |
+| `Fee` | `b"/penumbra.core.crypto.v1alpha1.Fee"` | `Fee` |
+| `Clue`  | `b"/penumbra.core.crypto.v1alpha1.Clue"`  | `Clue` |
+| `MemoCiphertext` | `b"/penumbra.core.crypto.v1alpha1.MemoCiphertext"` | `MemoCiphertext`
 
-For the `DetectionData`, we compute the effect hash where `eh(c_i)` represents the effect hash of the $i^{th}$ clue via:
+For the `DetectionData`, we compute the effect hash via:
 
 `effect_hash = hash(b"PAH:detect_data", num clues || eh(c_0) || ... ||  eh(c_i))`
+
+where `eh(c_i)` represents the effect hash of the $i^{th}$ clue.
 
 ### Transaction Effect Hash
 
@@ -95,7 +100,6 @@ To compute the effect hash of the _entire transaction_, we combine the hashes of
 ```
 effect_hash = hash(b"PAH:tx_body", eh(tx_params) || eh(fee) || eh(memo) || eh(detection_data) || j || eh(a_0) || ... || eh(a_j))
 ```
-
 
 ## `Binding` Signature
 
