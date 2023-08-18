@@ -222,7 +222,7 @@ pub async fn scan_block(
     #[cfg(feature = "sct-divergence-check")]
     tracing::debug!(tct_root = %state_commitment_tree.root(), "tct root");
 
-    //Filter nullifiers to remove any without matching note commitments
+    //Filter nullifiers to remove any without matching note or swap commitments
 
     let filtered_nullifiers = storage.filter_nullifiers(spent_nullifiers).await?;
 

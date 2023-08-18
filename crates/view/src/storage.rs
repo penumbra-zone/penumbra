@@ -1160,7 +1160,11 @@ impl Storage {
         spawn_blocking(move || {
             pool.get()?
                 .prepare(&format!(
-                    "SELECT nullifier FROM spendable_notes WHERE nullifier IN ({})",
+                    "SELECT nullifier FROM (
+                    SELECT nullifier FROM spendable_notes
+                    UNION
+                    SELECT nullifier FROM swaps
+                ) WHERE nullifier IN ({})",
                     nullifiers
                         .iter()
                         .map(|x| format!("x'{}'", hex::encode(x.0.to_bytes())))
@@ -1324,7 +1328,8 @@ impl Storage {
                     )?
                     .next()
                     .transpose()?
-                    .ok_or_else(|| anyhow!("denom must exist for note we know about"))?;
+                    .unwrap_or("unknown".to_string());
+                    //.ok_or_else(|| anyhow!("denom must exist for note we know about"))?;
 
                 // Mark spent notes as spent
                 if let Some(spent_commitment) = spent_commitment {
@@ -1355,7 +1360,6 @@ impl Storage {
             // Record all transactions
             for transaction in transactions {
                 let tx_bytes = transaction.encode_to_vec();
-                // We have to create an explicit temporary borrow, because the sqlx api is bad (see above)
                 let tx_hash_owned = sha2::Sha256::digest(&tx_bytes);
                 let tx_hash = tx_hash_owned.as_slice();
                 let tx_block_height = filtered_block.height as i64;
