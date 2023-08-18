@@ -109,7 +109,10 @@ mod tests {
     use penumbra_fee::Fee;
     use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
     use penumbra_tct as tct;
-    use penumbra_transaction::{plan::TransactionPlan, WitnessData};
+    use penumbra_transaction::{
+        plan::{CluePlan, TransactionPlan},
+        WitnessData,
+    };
     use rand_core::OsRng;
 
     use crate::ActionHandler;
@@ -153,7 +156,7 @@ mod tests {
                 SpendPlan::new(&mut OsRng, note2, auth_path2.position()).into(),
                 OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
             ],
-            clue_plans: vec![],
+            clue_plans: vec![CluePlan::new(&mut OsRng, *test_keys::ADDRESS_1, 1)],
             memo_plan: None,
         };
 
