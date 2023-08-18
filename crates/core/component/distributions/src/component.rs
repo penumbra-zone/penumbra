@@ -111,7 +111,7 @@ fn scale_to_u128<K>(weights: &mut Vec<(K, u128)>) -> u128 {
     // in-place using `Vec::swap_remove` to avoid allocating a new vector.
     let mut total_scaled_weight: u128 = 0;
     let mut i = 0;
-    while let Some(weight) = weights.get(i).map(|(_, weight)| *weight) {
+    while let Some(weight) = weights.get(i).map(|w| w.1) {
         // Scale each weight down by dividing it by the scaling factor and rounding down.
         let scaled_weight = (U128x128::from(weight) / scaling_factor)
             .expect("scaling factor is never zero")
@@ -142,11 +142,11 @@ fn scale_to_u128<K>(weights: &mut Vec<(K, u128)>) -> u128 {
 fn exact_allocation<K: Ord>(
     mut total_allocation: u128,
     mut weights: Vec<(K, u128)>,
-) -> Option<Vec<(K, u128)>> {
-    // If the total allocation is zero, then we can allocate nothing to any key, regardless of what
-    // the weights assigned to each key are.
+) -> Option<impl Iterator<Item = (K, u128)>> {
+    // If the total allocation is zero, then every key will be allocated zero, so we can forget all
+    // the weights without doing any more processing of them.
     if total_allocation == 0 {
-        return Some(Vec::new());
+        weights.clear();
     }
 
     // Scale the weights down to fit in a `u128`.
@@ -154,7 +154,7 @@ fn exact_allocation<K: Ord>(
 
     // If the total weight is zero, then we can't allocate anything, which would violate the
     // guarantee to allocate exactly if we returned any result.
-    if total_weight == 0 {
+    if total_weight == 0 && total_allocation != 0 {
         return None;
     }
 
@@ -174,32 +174,28 @@ fn exact_allocation<K: Ord>(
     //
     // This approach is loosely based off https://stackoverflow.com/a/38905829.
     weights.sort();
-    weights
-        .into_iter()
-        .filter_map(|(key, weight)| {
-            // The allocation for this key is the total allocation times the fraction of the total
-            // weight that this key has, rounded to the nearest integer.
-            let fraction_of_total_weight =
-                U128x128::ratio(weight, total_weight).expect("total weight is not zero");
-            let fractional_allocation = U128x128::from(total_allocation) * fraction_of_total_weight;
-            let integral_allocation = fractional_allocation
-                .expect("fraction of total weight is never greater than one")
-                .round_nearest() // must round to *nearest* to minimize error
-                .try_into()
-                .expect("rounded amount is always integral");
-            // We've assigned this weight, so subtract it from the remaining total.
-            total_weight -= weight;
-            // We've assigned this integral allocation, so subtract it from the remaining total.
-            total_allocation -= integral_allocation;
-            // Return the key and its allocation.
-            if integral_allocation != 0 {
-                Some((key, integral_allocation))
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>()
-        .into()
+    Some(weights.into_iter().filter_map(move |(key, weight)| {
+        // The allocation for this key is the total allocation times the fraction of the total
+        // weight that this key has, rounded to the nearest integer.
+        let fraction_of_total_weight =
+            U128x128::ratio(weight, total_weight).expect("total weight is not zero");
+        let fractional_allocation = U128x128::from(total_allocation) * fraction_of_total_weight;
+        let integral_allocation = fractional_allocation
+            .expect("fraction of total weight is never greater than one")
+            .round_nearest() // must round to *nearest* to minimize error
+            .try_into()
+            .expect("rounded amount is always integral");
+        // We've assigned this weight, so subtract it from the remaining total.
+        total_weight -= weight;
+        // We've assigned this integral allocation, so subtract it from the remaining total.
+        total_allocation -= integral_allocation;
+        // Return the key and its allocation.
+        if integral_allocation != 0 {
+            Some((key, integral_allocation))
+        } else {
+            None
+        }
+    }))
 }
 
 #[cfg(test)]
@@ -232,7 +228,7 @@ mod test {
             // nonzero; otherwise, the total weight must have been zero.
             if let Some(allocation) = allocation {
                 // If an allocation was returned, then the total allocation is exactly the requested amount.
-                let actual_total_allocation: u128 = allocation.iter().map(|(_, allocation)| *allocation).sum();
+                let actual_total_allocation: u128 = allocation.map(|(_, allocation)| allocation).sum();
                 prop_assert_eq!(total_allocation, actual_total_allocation, "total allocation is not exact");
                 // And the total weight was not zero.
                 prop_assert!(!total_weight_is_zero, "total weight is zero when allocation returned");
@@ -245,76 +241,75 @@ mod test {
 
     #[test]
     fn exact_allocation_simple() {
-        let alloc = exact_allocation::<&str>;
-        assert_eq!(None, alloc(1, vec![]), "can't allocate something to nobody");
+        fn alloc<const N: usize>(n: u128, ws: [(&str, u128); N]) -> Option<Vec<(&str, u128)>> {
+            exact_allocation(n, ws.to_vec()).map(|a| a.collect::<Vec<_>>())
+        }
+
+        assert_eq!(None, alloc(1, []), "can't allocate something to nobody");
         assert_eq!(
             None,
-            alloc(1, vec![("a", 0)]),
+            alloc(1, [("a", 0)]),
             "can't allocate something to zero weights"
         );
+        assert_eq!(Some(vec![]), alloc(0, []), "can allocate nothing to nobody");
         assert_eq!(
             Some(vec![]),
-            alloc(0, vec![]),
-            "can allocate nothing to nobody"
-        );
-        assert_eq!(
-            Some(vec![]),
-            alloc(0, vec![("a", 1)]),
+            alloc(0, [("a", 1)]),
             "can allocate nothing to somebody"
         );
         assert_eq!(
             Some(vec![]),
-            alloc(0, vec![("a", 0)]),
+            alloc(0, [("a", 0)]),
             "can allocate nothing to zero weights"
         );
         assert_eq!(
             Some(vec![("a", 1)]),
-            alloc(1, vec![("a", 1)]),
+            alloc(1, [("a", 1)]),
             "can allocate the whole pot to one person"
         );
         assert_eq!(
             Some(vec![("a", 1)]),
-            alloc(1, vec![("a", 2)]),
+            alloc(1, [("a", 2)]),
             "doubling the weight doesn't change the allocation"
         );
         assert_eq!(
             Some(vec![("a", 1), ("b", 1)]),
-            alloc(2, vec![("a", 1), ("b", 1)]),
+            alloc(2, [("a", 1), ("b", 1)]),
             "can allocate the whole pot to two people exactly evenly"
         );
         assert_eq!(
             Some(vec![("a", 1), ("b", 1)]),
-            alloc(2, vec![("a", 2), ("b", 2)]),
+            alloc(2, [("a", 2), ("b", 2)]),
             "doubling the weight doesn't change the allocation for two people"
         );
         assert_eq!(
             Some(vec![("a", 1), ("b", 1)]),
-            alloc(2, vec![("a", 1), ("b", 2)]),
+            alloc(2, [("a", 1), ("b", 2)]),
             "allocating two units to two people with different weights"
         );
         assert_eq!(
             Some(vec![("a", 1), ("b", 1)]),
-            alloc(2, vec![("a", 2), ("b", 1)]),
+            alloc(2, [("a", 2), ("b", 1)]),
             "allocating two units to two people with different weights, reverse order"
         );
         assert_eq!(
             Some(vec![("a", 1), ("b", 1)]),
-            alloc(2, vec![("a", 1), ("b", 1), ("c", 1)]),
+            alloc(2, [("a", 1), ("b", 1), ("c", 1)]),
             "can't allocate 2 units 3 people exactly evenly, so pick the first two"
         );
         assert_eq!(
-            Some(vec![("a", 1), ("c", 1)]),
-            alloc(2, vec![("a", 1), ("b", 1), ("c", 2)]),
+            Some(vec![("a", 1),/*       */("c", 1)]),
+            alloc(2, [("a", 1), ("b", 1), ("c", 2)]),
             "can't allocate 2 units 3 people exactly evenly, so pick the first low-weight and the first high-weight"
         );
         assert_eq!(
-            Some(vec![("b", 2), ("c", 1)]),
-            alloc(3, vec![("a", 1), ("b", 3), ("c", 2)]),
+            Some(vec![/*      */ ("b", 2), ("c", 1)]),
+            alloc(3, [("a", 1), ("b", 3), ("c", 2)]),
             "allocating 3 units to 3 people with different weights"
         );
         assert_eq!(
-            Some(vec![("a", 2), ("b", 1)]),
-            alloc(3, vec![("a", u128::MAX), ("b", u128::MAX / 2)]),
+            Some(vec![("a", 2), /*     */ ("b", 1)]),
+            alloc(3, [("a", u128::MAX), ("b", u128::MAX / 2)]),
             "can allocate exactly even when the total weight is greater than u128::MAX"
         );
     }
