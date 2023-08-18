@@ -2,9 +2,9 @@ use anyhow::Result;
 
 use penumbra_storage::{Snapshot, Storage};
 
-use tendermint::abci::{MempoolRequest as Request, MempoolResponse as Response};
 use tendermint::v0_34::abci::request::{CheckTx as CheckTxReq, CheckTxKind};
 use tendermint::v0_34::abci::response::CheckTx as CheckTxRsp;
+use tendermint::v0_34::abci::{MempoolRequest as Request, MempoolResponse as Response};
 
 use tokio::sync::{mpsc, watch};
 use tower_actor::Message;

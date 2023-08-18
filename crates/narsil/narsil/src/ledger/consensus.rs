@@ -2,8 +2,10 @@ use anyhow::Result;
 
 use penumbra_chain::genesis;
 use penumbra_storage::Storage;
-use tendermint::abci;
-use tendermint::v0_34::abci::{ConsensusRequest as Request, ConsensusResponse as Response};
+use tendermint::abci::Event;
+use tendermint::v0_34::abci::{
+    request, response, ConsensusRequest as Request, ConsensusResponse as Response,
+};
 use tokio::sync::mpsc;
 use tower_actor::Message;
 use tracing::Instrument;
@@ -16,7 +18,7 @@ pub struct Consensus {
     app: App,
 }
 
-fn trace_events(events: &[abci::Event]) {
+fn trace_events(events: &[Event]) {
     for event in events {
         let span = tracing::info_span!("event", kind = ?event.kind);
         span.in_scope(|| {
@@ -88,10 +90,7 @@ impl Consensus {
     ///
     /// The genesis data is provided by tendermint, and is used to initialize
     /// the database.
-    async fn init_chain(
-        &mut self,
-        init_chain: abci::request::InitChain,
-    ) -> Result<abci::response::InitChain> {
+    async fn init_chain(&mut self, init_chain: request::InitChain) -> Result<response::InitChain> {
         // Note that errors cannot be handled in InitChain, the application must crash.
         let app_state: genesis::AppState = serde_json::from_slice(&init_chain.app_state_bytes)
             .expect("can parse app_state in genesis file");
@@ -120,7 +119,7 @@ impl Consensus {
             "finished init_chain"
         );
 
-        Ok(abci::response::InitChain {
+        Ok(response::InitChain {
             consensus_params: Some(init_chain.consensus_params),
             validators,
             app_hash: app_hash.0.to_vec().try_into()?,
@@ -129,19 +128,16 @@ impl Consensus {
 
     async fn begin_block(
         &mut self,
-        begin_block: abci::request::BeginBlock,
-    ) -> Result<abci::response::BeginBlock> {
+        begin_block: request::BeginBlock,
+    ) -> Result<response::BeginBlock> {
         // We don't need to print the block height, because it will already be
         // included in the span modeling the abci request handling.
         tracing::info!(time = ?begin_block.header.time, "beginning block");
         let events = self.app.begin_block(&begin_block).await;
-        Ok(abci::response::BeginBlock { events })
+        Ok(response::BeginBlock { events })
     }
 
-    async fn deliver_tx(
-        &mut self,
-        deliver_tx: abci::request::DeliverTx,
-    ) -> abci::response::DeliverTx {
+    async fn deliver_tx(&mut self, deliver_tx: request::DeliverTx) -> response::DeliverTx {
         // Unlike the other messages, DeliverTx is fallible, so
         // inspect the response to report errors.
         let rsp = self.app.deliver_tx_bytes(deliver_tx.tx.as_ref()).await;
@@ -149,14 +145,14 @@ impl Consensus {
         match rsp {
             Ok(events) => {
                 trace_events(&events);
-                abci::response::DeliverTx {
+                response::DeliverTx {
                     events,
                     ..Default::default()
                 }
             }
             Err(e) => {
                 tracing::info!(?e, "deliver_tx failed");
-                abci::response::DeliverTx {
+                response::DeliverTx {
                     code: 1.into(),
                     // Use the alternate format specifier to include the chain of error causes.
                     log: format!("{e:#}"),
@@ -166,10 +162,7 @@ impl Consensus {
         }
     }
 
-    async fn end_block(
-        &mut self,
-        end_block: abci::request::EndBlock,
-    ) -> Result<abci::response::EndBlock> {
+    async fn end_block(&mut self, end_block: request::EndBlock) -> Result<response::EndBlock> {
         let events = self.app.end_block(&end_block).await;
         trace_events(&events);
 
@@ -184,18 +177,18 @@ impl Consensus {
             "sending validator updates to tendermint"
         );
 
-        Ok(abci::response::EndBlock {
+        Ok(response::EndBlock {
             validator_updates,
             consensus_param_updates: None,
             events,
         })
     }
 
-    async fn commit(&mut self) -> Result<abci::response::Commit> {
+    async fn commit(&mut self) -> Result<response::Commit> {
         let app_hash = self.app.commit(self.storage.clone()).await;
         tracing::info!(?app_hash, "committed block");
 
-        Ok(abci::response::Commit {
+        Ok(response::Commit {
             data: app_hash.0.to_vec().into(),
             retain_height: 0u32.into(),
         })

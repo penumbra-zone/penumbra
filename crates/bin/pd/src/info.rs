@@ -33,7 +33,11 @@ use penumbra_ibc::component::ConnectionStateReadExt as _;
 use penumbra_storage::Storage;
 use prost::Message;
 use std::str::FromStr;
-use tendermint::v0_34::abci::{request, response::{Echo, self}, InfoRequest, InfoResponse};
+use tendermint::v0_34::abci::{
+    request,
+    response::{self, Echo},
+    InfoRequest, InfoResponse,
+};
 use tower_abci::BoxError;
 use tracing::Instrument;
 

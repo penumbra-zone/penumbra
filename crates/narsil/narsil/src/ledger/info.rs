@@ -7,8 +7,8 @@ use std::{
 use futures::FutureExt;
 use penumbra_chain::component::AppHashRead;
 use penumbra_storage::Storage;
-use tendermint::v0_34::abci::{self, response::Echo, InfoRequest, InfoResponse};
 use penumbra_tower_trace::v034::RequestExt;
+use tendermint::v0_34::abci::{self, response::Echo, InfoRequest, InfoResponse};
 use tower_abci::BoxError;
 use tracing::Instrument;
 

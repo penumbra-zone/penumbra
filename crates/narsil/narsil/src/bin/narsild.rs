@@ -6,7 +6,8 @@ use console_subscriber::ConsoleLayer;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
 use metrics_util::layers::Stack;
 use penumbra_tendermint_proxy::TendermintProxy;
-use tendermint::abci::{ConsensusRequest, MempoolRequest};
+use penumbra_tower_trace::v034::RequestExt;
+use tendermint::v0_34::abci::{ConsensusRequest, MempoolRequest};
 
 use narsil::{
     ledger::{consensus::Consensus, mempool::Mempool, snapshot::Snapshot, Info},
@@ -137,7 +138,6 @@ async fn main() -> anyhow::Result<()> {
                 .context("Unable to initialize RocksDB storage")?;
 
             use penumbra_tower_trace::trace::request_span;
-            use penumbra_tower_trace::v034::RequestExt;
 
             let info = Info::new(storage.clone());
             let consensus = tower::ServiceBuilder::new()
