@@ -1,7 +1,0 @@
-# Seeds for failure cases proptest has generated in the past. It is
-# automatically read and these particular cases re-run before any
-# novel cases are generated.
-#
-# It is recommended to check this file in to source control so that
-# everyone who runs the test benefits from these saved cases.
-cc c579f869b4dcc9a76671f215be421d17530c3a718105ae8da0e12b3ab7e68860 # shrinks to total_allocation = 0, weights = [(0, 34253812274906242307690838714801001574), (0, 306028554646032221155683768716967209882)]
