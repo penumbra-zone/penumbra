@@ -17,6 +17,7 @@ use penumbra_storage::{StateRead, StateWrite};
 use tracing::instrument;
 pub use view::{StateReadExt, StateWriteExt};
 
+#[allow(unused_imports)]
 use penumbra_dex::{component::StateReadExt as _, component::StateWriteExt as _};
 use penumbra_stake::{component::StateWriteExt as _, StateReadExt as _};
 
@@ -134,6 +135,7 @@ impl Component for Distributions {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 enum ComponentName {
     Staking,
