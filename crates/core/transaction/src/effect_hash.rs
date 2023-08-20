@@ -56,9 +56,12 @@ impl TransactionBody {
     }
 
     pub fn effect_hash(&self) -> EffectHash {
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:tx_body")
-            .to_state();
+        let personalization = TransactionBody::TYPE_URL;
+
+        let mut state = blake2b_simd::State::new();
+        let length = personalization.len() as u64;
+        state.update(&length.to_le_bytes());
+        state.update(personalization.as_bytes());
 
         // Hash the fixed data of the transaction body.
         state.update(self.transaction_parameters.effect_hash().as_bytes());
@@ -106,9 +109,12 @@ impl TransactionPlan {
         // complete `Action`s, we just need to construct the bodies of the
         // actions the transaction will have when constructed.
 
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:tx_body")
-            .to_state();
+        let personalization = TransactionBody::TYPE_URL;
+
+        let mut state = blake2b_simd::State::new();
+        let length = personalization.len() as u64;
+        state.update(&length.to_le_bytes());
+        state.update(personalization.as_bytes());
 
         // Hash the fixed data of the transaction body.
         let tx_params = TransactionParameters {
@@ -483,9 +489,12 @@ impl EffectingData for PositionRewardClaim {
 
 impl EffectingData for DetectionData {
     fn effect_hash(&self) -> EffectHash {
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:detect_data")
-            .to_state();
+        let personalization = DetectionData::TYPE_URL;
+
+        let mut state = blake2b_simd::State::new();
+        let length = personalization.len() as u64;
+        state.update(&length.to_le_bytes());
+        state.update(personalization.as_bytes());
 
         let num_clues = self.fmd_clues.len() as u32;
         state.update(&num_clues.to_le_bytes());
