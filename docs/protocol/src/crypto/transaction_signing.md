@@ -89,17 +89,19 @@ We compute the transaction data field effect hashes in the same manner as action
 
 For the `DetectionData`, we compute the effect hash via:
 
-`effect_hash = hash(b"PAH:detect_data", num clues || eh(c_0) || ... ||  eh(c_i))`
+`effect_hash = BLAKE2b-512(len(type_url) || type_url || num clues || eh(c_0) || ... ||  eh(c_i))`
 
-where `eh(c_i)` represents the effect hash of the $i^{th}$ clue.
+where `eh(c_i)` represents the effect hash of the $i^{th}$ clue, and `type_url` is the bytes `/penumbra.core.transaction.v1alpha1.DetectionData`.
 
 ### Transaction Effect Hash
 
 To compute the effect hash of the _entire transaction_, we combine the hashes of the individual fields in the transaction body. First we include the fixed-sized effect hashes of the per-transaction data fields: the transaction parameters `eh(tx_params)`, fee `eh(fee)`, (optional) detection data `eh(detection_data)`, and (optional) memo `eh(memo)` which are derived as described above. Then, we include the number of actions $j$ and the fixed-size effect hash of each action `a_0` through `a_j`. Combining all fields:
 
 ```
-effect_hash = hash(b"PAH:tx_body", eh(tx_params) || eh(fee) || eh(memo) || eh(detection_data) || j || eh(a_0) || ... || eh(a_j))
+effect_hash = BLAKE2b-512(len(type_url) || type_url || eh(tx_params) || eh(fee) || eh(memo) || eh(detection_data) || j || eh(a_0) || ... || eh(a_j))
 ```
+
+where the `type_url` are the bytes `/penumbra.core.transaction.v1alpha1.TransactionBody`.
 
 ## `Binding` Signature
 
