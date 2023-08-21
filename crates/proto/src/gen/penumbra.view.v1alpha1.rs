@@ -583,18 +583,18 @@ pub struct TransactionInfoByHashRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionInfoRequest {
     /// If present, return only transactions after this height.
-    #[prost(uint64, optional, tag = "1")]
-    pub start_height: ::core::option::Option<u64>,
+    #[prost(uint64, tag = "1")]
+    pub start_height: u64,
     /// If present, return only transactions before this height.
-    #[prost(uint64, optional, tag = "2")]
-    pub end_height: ::core::option::Option<u64>,
+    #[prost(uint64, tag = "2")]
+    pub end_height: u64,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionInfo {
     /// The height the transaction was included in a block, if known.
-    #[prost(uint64, optional, tag = "1")]
-    pub height: ::core::option::Option<u64>,
+    #[prost(uint64, tag = "1")]
+    pub height: u64,
     /// The hash of the transaction.
     #[prost(message, optional, tag = "2")]
     pub id: ::core::option::Option<super::super::core::transaction::v1alpha1::Id>,
@@ -668,8 +668,8 @@ pub struct SpendableNoteRecord {
     #[prost(uint64, tag = "5")]
     pub height_created: u64,
     /// Records whether the note was spent (and if so, at what height).
-    #[prost(uint64, optional, tag = "6")]
-    pub height_spent: ::core::option::Option<u64>,
+    #[prost(uint64, tag = "6")]
+    pub height_spent: u64,
     /// The note position.
     #[prost(uint64, tag = "7")]
     pub position: u64,
@@ -696,8 +696,8 @@ pub struct SwapRecord {
     pub output_data: ::core::option::Option<
         super::super::core::dex::v1alpha1::BatchSwapOutputData,
     >,
-    #[prost(uint64, optional, tag = "6")]
-    pub height_claimed: ::core::option::Option<u64>,
+    #[prost(uint64, tag = "6")]
+    pub height_claimed: u64,
     #[prost(message, optional, tag = "7")]
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
 }

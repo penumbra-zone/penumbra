@@ -805,7 +805,7 @@ impl ViewProtocolService for ViewService {
 
         let response = pb::TransactionInfoByHashResponse {
             tx_info: Some(pb::TransactionInfo {
-                height: Some(height),
+                height: height,
                 id: Some(tx.id().into()),
                 perspective: Some(txp.into()),
                 transaction: Some(tx.into()),
@@ -1172,10 +1172,22 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::TransactionInfoRequest>,
     ) -> Result<tonic::Response<Self::TransactionInfoStream>, tonic::Status> {
         self.check_worker().await?;
+        // Unpack optional start/end heights.
+        let start_height = if request.get_ref().start_height == 0 {
+            None
+        } else {
+            Some(request.get_ref().start_height)
+        };
+        let end_height = if request.get_ref().end_height == 0 {
+            None
+        } else {
+            Some(request.get_ref().end_height)
+        };
+
         // Fetch transactions from storage.
         let txs = self
             .storage
-            .transactions(request.get_ref().start_height, request.get_ref().end_height)
+            .transactions(start_height, end_height)
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error fetching transactions: {e}")))?;
 
