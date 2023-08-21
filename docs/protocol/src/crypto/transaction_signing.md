@@ -43,8 +43,10 @@ Summarizing the above, the effect hash _for each action_ is computed as:
 effect_hash = BLAKE2b-512(len(type_url) || type_url || proto_encode(proto))
 ```
 
-where `type_url` is the bytes of the variable-length`proto` represents the proto used to represent the effecting data, and
-`proto_encode` represents encoding the proto message as a vector of bytes.
+where `type_url` is the bytes of the variable-length type URL, `len(type_url)` is the length of the type URL encoded as 8
+bytes in little-endian byte order, `proto` represents the proto used to represent
+the effecting data, and `proto_encode` represents encoding the proto message as
+a vector of bytes.
 
 ### Per-Action Effect Hashes
 
@@ -91,7 +93,7 @@ For the `DetectionData`, we compute the effect hash via:
 
 `effect_hash = BLAKE2b-512(len(type_url) || type_url || num clues || eh(c_0) || ... ||  eh(c_i))`
 
-where `eh(c_i)` represents the effect hash of the $i^{th}$ clue, and `type_url` is the bytes `/penumbra.core.transaction.v1alpha1.DetectionData`.
+where `len(type_url)` is the length of the type URL encoded as 8 bytes in little-endian byte order, `eh(c_i)` represents the effect hash of the $i^{th}$ clue, and `type_url` is the bytes `/penumbra.core.transaction.v1alpha1.DetectionData`.
 
 ### Transaction Effect Hash
 
@@ -101,7 +103,8 @@ To compute the effect hash of the _entire transaction_, we combine the hashes of
 effect_hash = BLAKE2b-512(len(type_url) || type_url || eh(tx_params) || eh(fee) || eh(memo) || eh(detection_data) || j || eh(a_0) || ... || eh(a_j))
 ```
 
-where the `type_url` are the bytes `/penumbra.core.transaction.v1alpha1.TransactionBody`.
+where the `type_url` are the bytes `/penumbra.core.transaction.v1alpha1.TransactionBody`,
+and `len(type_url)` is the length of that string encoded as 8 bytes in little-endian byte order.
 
 ## `Binding` Signature
 
