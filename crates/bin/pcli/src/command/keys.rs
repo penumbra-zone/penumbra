@@ -27,7 +27,11 @@ pub enum KeysCmd {
 pub enum ImportCmd {
     /// Import wallet from an existing 24-word seed phrase. Will prompt for input interactively.
     /// Also accepts input from stdin, for use with pipes.
-    Phrase,
+    Phrase {
+        /// If true, will use legacy BIP39 derivation.
+        #[clap(short, long, default_value = "false")]
+        legacy_bip39_derivation: bool,
+    },
 }
 
 #[derive(Debug, clap::Subcommand)]
@@ -74,11 +78,13 @@ impl KeysCmd {
                 // shared by users accidentally in log output.
                 println!("YOUR PRIVATE SEED PHRASE: {seed_phrase}\nDO NOT SHARE WITH ANYONE!");
 
-                let wallet = KeyStore::from_seed_phrase(seed_phrase);
+                let wallet = KeyStore::from_seed_phrase_bip39(seed_phrase);
                 wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                 self.archive_wallet(&wallet)?;
             }
-            KeysCmd::Import(ImportCmd::Phrase) => {
+            KeysCmd::Import(ImportCmd::Phrase {
+                legacy_bip39_derivation,
+            }) => {
                 let mut seed_phrase = String::new();
                 // The `rpassword` crate doesn't support reading from stdin, so we check
                 // for an interactive session. We must support non-interactive use cases,
@@ -94,9 +100,15 @@ impl KeysCmd {
                         seed_phrase = seed_phrase.trim().to_string();
                     }
                 }
-                let wallet = KeyStore::from_seed_phrase(SeedPhrase::from_str(&seed_phrase)?);
-                wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
-                self.archive_wallet(&wallet)?;
+
+                if *legacy_bip39_derivation {
+                    let wallet =
+                        KeyStore::from_seed_phrase_bip39(SeedPhrase::from_str(&seed_phrase)?);
+                    wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
+                    self.archive_wallet(&wallet)?;
+                } else {
+                    unimplemented!()
+                }
             }
             KeysCmd::Export(ExportCmd::FullViewingKey) => {
                 let wallet = KeyStore::load(data_dir.join(crate::CUSTODY_FILE_NAME))?;
