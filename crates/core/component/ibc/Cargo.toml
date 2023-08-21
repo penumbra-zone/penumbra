@@ -44,6 +44,8 @@ sha2 = "0.10.6"
 once_cell = "1.17.1"
 base64 = "0.20"
 blake2b_simd = "0.5"
+tonic = "0.9"
+tower = "0.4"
 
 [dev-dependencies]
 tokio = {version = "1.3", features = ["full"]}
