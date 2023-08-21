@@ -259,7 +259,7 @@ mod tests {
 
 
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-            let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+            let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
             let fvk_recipient = sk_recipient.full_viewing_key();
             let ivk_recipient = fvk_recipient.incoming();
             let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
@@ -302,7 +302,7 @@ mod tests {
         let (pk, vk) = generate_prepared_test_parameters::<OutputCircuit>(&mut rng);
 
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
@@ -351,7 +351,7 @@ mod tests {
         let (pk, vk) = generate_prepared_test_parameters::<OutputCircuit>(&mut rng);
 
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-        let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());

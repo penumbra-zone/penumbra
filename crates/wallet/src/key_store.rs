@@ -46,7 +46,7 @@ impl KeyStore {
     pub fn from_seed_phrase(seed_phrase: SeedPhrase) -> Self {
         // Currently we support a single spend authority per wallet. In the future,
         // we can derive multiple spend seeds from a single seed phrase.
-        let spend_key = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let spend_key = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
 
         Self { spend_key }
     }

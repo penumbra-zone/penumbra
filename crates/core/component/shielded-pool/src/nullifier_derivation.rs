@@ -74,7 +74,7 @@ impl ConstraintSynthesizer<Fq> for NullifierDerivationCircuit {
 impl DummyWitness for NullifierDerivationCircuit {
     fn with_dummy_witness() -> Self {
         let seed_phrase = SeedPhrase::from_randomness(&[b'f'; 32]);
-        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -221,7 +221,7 @@ mod tests {
 
 
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-            let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+            let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
             let fvk_sender = sk_sender.full_viewing_key();
             let ivk_sender = fvk_sender.incoming();
             let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());

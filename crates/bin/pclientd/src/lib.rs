@@ -201,7 +201,7 @@ impl Opt {
 
                 let (spend_key, full_viewing_key) = match (seed_phrase, view) {
                     (Some(seed_phrase), None) => {
-                        let spend_key = SpendKey::from_seed_phrase(
+                        let spend_key = SpendKey::from_seed_phrase_bip39(
                             SeedPhrase::from_str(seed_phrase.as_str())?,
                             0,
                         );

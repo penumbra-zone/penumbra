@@ -92,7 +92,7 @@ impl SpendKey {
     /// authorities from a single seed phrase.
     ///
     /// [`BIP39`]: https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
-    pub fn from_seed_phrase(seed_phrase: SeedPhrase, index: u64) -> Self {
+    pub fn from_seed_phrase_bip39(seed_phrase: SeedPhrase, index: u64) -> Self {
         let password = format!("{seed_phrase}");
         let salt = format!("mnemonic{index}");
         let mut spend_seed_bytes = [0u8; 32];
