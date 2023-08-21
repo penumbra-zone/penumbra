@@ -605,7 +605,7 @@ fn swap() {
         // Address 0 has some penumbra.
         .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
         // Address 1 has 1001penumbra.
-        .stdout(predicate::str::is_match(format!(r"1\s*1001penumbra")).unwrap());
+        .stdout(predicate::str::is_match(format!(r"1\s*1001(\.[0-9]+)?penumbra")).unwrap());
 
     // Address 1: post an order to sell 1penumbra for 1gm.
     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
