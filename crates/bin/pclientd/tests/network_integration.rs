@@ -30,7 +30,7 @@ use tokio::process::Command as TokioCommand;
 #[ignore]
 #[tokio::test]
 async fn transaction_send_flow() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt::try_init().ok();
     // Create a tempdir for the pclientd instance to run in.
     let data_dir = tempdir().unwrap();
 
@@ -173,7 +173,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
 #[ignore]
 #[tokio::test]
 async fn swap_claim_flow() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt::try_init().ok();
     // Create a tempdir for the pclientd instance to run in.
     let data_dir = tempdir().unwrap();
 
