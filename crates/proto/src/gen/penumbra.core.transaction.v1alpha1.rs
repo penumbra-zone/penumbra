@@ -51,8 +51,8 @@ pub struct TransactionBody {
 pub struct MemoData {
     /// The encrypted data. It will only be populated if there are
     /// outputs in the actions of the transaction. 528 bytes.
-    #[prost(bytes = "bytes", optional, tag = "1")]
-    pub encrypted_memo: ::core::option::Option<::prost::bytes::Bytes>,
+    #[prost(bytes = "bytes", tag = "1")]
+    pub encrypted_memo: ::prost::bytes::Bytes,
 }
 /// The parameters determining if a transaction should be accepted by the chain.
 #[allow(clippy::derive_partial_eq_without_eq)]

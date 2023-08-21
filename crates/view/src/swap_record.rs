@@ -34,7 +34,10 @@ impl From<SwapRecord> for pb::SwapRecord {
             position: msg.position.into(),
             nullifier: Some(msg.nullifier.into()),
             output_data: Some(msg.output_data.into()),
-            height_claimed: msg.height_claimed,
+            height_claimed: match msg.height_claimed {
+                Some(h) => h,
+                None => 0,
+            },
             source: Some(msg.source.into()),
         }
     }
@@ -61,7 +64,11 @@ impl TryFrom<pb::SwapRecord> for SwapRecord {
                 .output_data
                 .ok_or_else(|| anyhow::anyhow!("missing output_data"))?
                 .try_into()?,
-            height_claimed: value.height_claimed,
+            height_claimed: if value.height_claimed > 0 {
+                Some(value.height_claimed)
+            } else {
+                None
+            },
             source: value
                 .source
                 .ok_or_else(|| anyhow::anyhow!("missing source"))?

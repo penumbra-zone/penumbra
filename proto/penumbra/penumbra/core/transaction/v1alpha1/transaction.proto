@@ -45,7 +45,7 @@ message TransactionBody {
 message MemoData {
   // The encrypted data. It will only be populated if there are
   // outputs in the actions of the transaction. 528 bytes.
-  optional bytes encrypted_memo = 1;
+  bytes encrypted_memo = 1;
 }
 
 // The parameters determining if a transaction should be accepted by the chain.
@@ -156,10 +156,10 @@ message TransactionBodyView {
   crypto.v1alpha1.Fee fee = 3;
   // The detection data in this transaction, only populated if
   // there are outputs in the actions of this transaction.
-  optional DetectionData detection_data = 4;
+  DetectionData detection_data = 4;
   // An optional view of a transaction memo. It will only be populated if there are
   // outputs in the actions of this transaction.
-  optional MemoView memo_view = 5;
+  MemoView memo_view = 5;
 }
 
 // A view of a specific state change action performed by a transaction.

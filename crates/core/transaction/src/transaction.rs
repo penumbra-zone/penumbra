@@ -542,10 +542,10 @@ impl From<TransactionBody> for pbt::TransactionBody {
     fn from(msg: TransactionBody) -> Self {
         let encrypted_memo: pbt::MemoData = match msg.memo {
             Some(memo) => pbt::MemoData {
-                encrypted_memo: Some(bytes::Bytes::copy_from_slice(&memo.0)),
+                encrypted_memo: bytes::Bytes::copy_from_slice(&memo.0),
             },
             None => pbt::MemoData {
-                encrypted_memo: None,
+                encrypted_memo: Bytes::default(),
             },
         };
 
@@ -578,17 +578,19 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             .try_into()
             .context("fee malformed")?;
 
-        let memo = match proto
+        let encrypted_memo = proto
             .memo_data
             .ok_or_else(|| anyhow::anyhow!("transaction body missing memo data field"))?
-            .encrypted_memo
-        {
-            Some(bytes) => Some(
-                bytes[..]
+            .encrypted_memo;
+
+        let memo: Option<MemoCiphertext> = if encrypted_memo.is_empty() {
+            None
+        } else {
+            Some(
+                encrypted_memo[..]
                     .try_into()
                     .context("encrypted memo malformed while parsing transaction body")?,
-            ),
-            None => None,
+            )
         };
 
         let detection_data = match proto.detection_data {
