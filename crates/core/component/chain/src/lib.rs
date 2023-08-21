@@ -45,14 +45,8 @@ pub mod test_keys {
             .expect("hardcoded test addresses should be valid")
     });
 
-    pub static SPEND_KEY: Lazy<SpendKey> = Lazy::new(|| {
-        SpendKey::from_seed_phrase(
-            SEED_PHRASE
-                .parse()
-                .expect("hardcoded test seed phrase should be valid"),
-            0,
-        )
-    });
+    pub static SPEND_KEY: Lazy<SpendKey> =
+        Lazy::new(|| SpendKey::from_seed_phrase_bip39(SEED_PHRASE.parse().unwrap(), 0));
 
     pub static FULL_VIEWING_KEY: Lazy<FullViewingKey> =
         Lazy::new(|| SPEND_KEY.full_viewing_key().clone());

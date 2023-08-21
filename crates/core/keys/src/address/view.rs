@@ -112,8 +112,8 @@ mod tests {
 
     #[test]
     fn address_view_basic() {
-        let sk1 = SpendKey::from_seed_phrase(SeedPhrase::generate(OsRng), 0);
-        let sk2 = SpendKey::from_seed_phrase(SeedPhrase::generate(OsRng), 0);
+        let sk1 = SpendKey::from_seed_phrase_bip39(SeedPhrase::generate(OsRng), 0);
+        let sk2 = SpendKey::from_seed_phrase_bip39(SeedPhrase::generate(OsRng), 0);
 
         let fvk1 = sk1.full_viewing_key();
         let fvk2 = sk2.full_viewing_key();

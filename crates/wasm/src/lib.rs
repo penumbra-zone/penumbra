@@ -26,7 +26,7 @@ pub use view_server::ViewServer;
 pub fn generate_spend_key(seed_phrase: &str) -> JsValue {
     utils::set_panic_hook();
     let seed = SeedPhrase::from_str(seed_phrase).unwrap();
-    let spend_key = SpendKey::from_seed_phrase(seed, 0);
+    let spend_key = SpendKey::from_seed_phrase_bip39(seed, 0);
 
     let proto = spend_key.to_proto();
     let spend_key_str = &bech32str::encode(

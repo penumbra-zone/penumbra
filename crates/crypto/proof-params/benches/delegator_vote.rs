@@ -54,7 +54,7 @@ fn delegator_vote_proving_time(c: &mut Criterion) {
     let value_to_send = Value::from_str("1upenumbra").expect("valid value");
 
     let seed_phrase = SeedPhrase::generate(OsRng);
-    let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+    let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
     let fvk_sender = sk_sender.full_viewing_key();
     let ivk_sender = fvk_sender.incoming();
     let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
