@@ -56,12 +56,7 @@ impl TransactionBody {
     }
 
     pub fn effect_hash(&self) -> EffectHash {
-        let personalization = TransactionBody::TYPE_URL;
-
-        let mut state = blake2b_simd::State::new();
-        let length = personalization.len() as u64;
-        state.update(&length.to_le_bytes());
-        state.update(personalization.as_bytes());
+        let mut state = create_personalized_state(TransactionBody::TYPE_URL);
 
         // Hash the fixed data of the transaction body.
         state.update(self.transaction_parameters.effect_hash().as_bytes());
@@ -109,12 +104,7 @@ impl TransactionPlan {
         // complete `Action`s, we just need to construct the bodies of the
         // actions the transaction will have when constructed.
 
-        let personalization = TransactionBody::TYPE_URL;
-
-        let mut state = blake2b_simd::State::new();
-        let length = personalization.len() as u64;
-        state.update(&length.to_le_bytes());
-        state.update(personalization.as_bytes());
+        let mut state = create_personalized_state(TransactionBody::TYPE_URL);
 
         // Hash the fixed data of the transaction body.
         let tx_params = TransactionParameters {
@@ -295,6 +285,14 @@ impl EffectingData for Action {
 /// the variable-length `TypeUrl` of the corresponding domain type as a
 /// personalization string.
 fn hash_proto_effecting_data<M: Message>(personalization: &str, message: &M) -> EffectHash {
+    let mut state = create_personalized_state(personalization);
+    state.update(&message.encode_to_vec());
+
+    EffectHash(*state.finalize().as_array())
+}
+
+/// A helper function to create a BLAKE2b `State` instance given a variable-length personalization string.
+fn create_personalized_state(personalization: &str) -> blake2b_simd::State {
     let mut state = blake2b_simd::State::new();
 
     // The `TypeUrl` provided as a personalization string is variable length,
@@ -302,9 +300,8 @@ fn hash_proto_effecting_data<M: Message>(personalization: &str, message: &M) -> 
     let length = personalization.len() as u64;
     state.update(&length.to_le_bytes());
     state.update(personalization.as_bytes());
-    state.update(&message.encode_to_vec());
 
-    EffectHash(*state.finalize().as_array())
+    state
 }
 
 impl EffectingData for Ics20Withdrawal {
@@ -489,12 +486,7 @@ impl EffectingData for PositionRewardClaim {
 
 impl EffectingData for DetectionData {
     fn effect_hash(&self) -> EffectHash {
-        let personalization = DetectionData::TYPE_URL;
-
-        let mut state = blake2b_simd::State::new();
-        let length = personalization.len() as u64;
-        state.update(&length.to_le_bytes());
-        state.update(personalization.as_bytes());
+        let mut state = create_personalized_state(DetectionData::TYPE_URL);
 
         let num_clues = self.fmd_clues.len() as u32;
         state.update(&num_clues.to_le_bytes());
