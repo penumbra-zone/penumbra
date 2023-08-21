@@ -12,4 +12,8 @@ rand_core = { version = "0.6", features = ["getrandom"] }
 decaf377 = "0.5"
 
 [dev-dependencies]
+criterion = { version = "0.4", features = ["html_reports"] }
 
+[[bench]]
+name = "phase1"
+harness = false
