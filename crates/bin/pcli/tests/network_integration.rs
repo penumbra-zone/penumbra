@@ -637,7 +637,7 @@ fn swap() {
         // Address 0 has some penumbra.
         .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
         // Address 1 has 1000penumbra.
-        .stdout(predicate::str::is_match(format!(r"1\s*1000penumbra")).unwrap());
+        .stdout(predicate::str::is_match(format!(r"1\s*1000(\.[0-9]+)?penumbra")).unwrap());
 
     // Address 1: swaps 1gm for 1penumbra.
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
@@ -681,7 +681,7 @@ fn swap() {
         // Address 0 has some penumbra.
         .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
         // Address 1 has 1000penumbra.
-        .stdout(predicate::str::is_match(format!(r"1\s*1000penumbra")).unwrap());
+        .stdout(predicate::str::is_match(format!(r"1\s*1000(\.[0-9]+)?penumbra")).unwrap());
 
     // Close and withdraw any existing liquidity positions.
     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
@@ -734,7 +734,7 @@ fn swap() {
         // Address 0 has some penumbra.
         .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
         // Address 1 has 1000penumbra.
-        .stdout(predicate::str::is_match(format!(r"1\s*1000penumbra")).unwrap());
+        .stdout(predicate::str::is_match(format!(r"1\s*1000(\.[0-9]+)?penumbra")).unwrap());
 }
 
 // Note: As part of #2589, we changed the way DEX calculations are performed. In particular,
