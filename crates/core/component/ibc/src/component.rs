@@ -5,6 +5,7 @@ mod client;
 mod client_counter;
 mod connection;
 mod connection_counter;
+mod grpc_query;
 mod ibc_component;
 mod metrics;
 mod msg_handler;
