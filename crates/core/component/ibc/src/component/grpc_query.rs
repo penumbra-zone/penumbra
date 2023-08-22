@@ -23,11 +23,63 @@ use ibc_proto::ibc::core::client::v1::{
     QueryUpgradedClientStateResponse, QueryUpgradedConsensusStateRequest,
     QueryUpgradedConsensusStateResponse,
 };
+use ibc_proto::ibc::core::connection::v1::query_server::Query as ConnectionQuery;
+use ibc_proto::ibc::core::connection::v1::{
+    QueryClientConnectionsRequest, QueryClientConnectionsResponse,
+    QueryConnectionClientStateRequest, QueryConnectionClientStateResponse,
+    QueryConnectionConsensusStateRequest, QueryConnectionConsensusStateResponse,
+    QueryConnectionRequest, QueryConnectionResponse, QueryConnectionsRequest,
+    QueryConnectionsResponse,
+};
 use tonic::{Response, Status};
 use tower::ServiceExt;
 
 #[derive(Clone)]
 pub struct IbcQuery();
+
+#[async_trait]
+impl ConnectionQuery for IbcQuery {
+    /// Connection queries an IBC connection end.
+    async fn connection(
+        &self,
+        request: tonic::Request<QueryConnectionRequest>,
+    ) -> std::result::Result<tonic::Response<QueryConnectionResponse>, tonic::Status> {
+        todo!()
+    }
+    /// Connections queries all the IBC connections of a chain.
+    async fn connections(
+        &self,
+        request: tonic::Request<QueryConnectionsRequest>,
+    ) -> std::result::Result<tonic::Response<QueryConnectionsResponse>, tonic::Status> {
+        todo!()
+    }
+    /// ClientConnections queries the connection paths associated with a client
+    /// state.
+    async fn client_connections(
+        &self,
+        request: tonic::Request<QueryClientConnectionsRequest>,
+    ) -> std::result::Result<tonic::Response<QueryClientConnectionsResponse>, tonic::Status> {
+        todo!()
+    }
+    /// ConnectionClientState queries the client state associated with the
+    /// connection.
+    async fn connection_client_state(
+        &self,
+        request: tonic::Request<QueryConnectionClientStateRequest>,
+    ) -> std::result::Result<tonic::Response<QueryConnectionClientStateResponse>, tonic::Status>
+    {
+        todo!()
+    }
+    /// ConnectionConsensusState queries the consensus state associated with the
+    /// connection.
+    async fn connection_consensus_state(
+        &self,
+        request: tonic::Request<QueryConnectionConsensusStateRequest>,
+    ) -> std::result::Result<tonic::Response<QueryConnectionConsensusStateResponse>, tonic::Status>
+    {
+        todo!()
+    }
+}
 
 #[async_trait]
 impl ConsensusQuery for IbcQuery {
