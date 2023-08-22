@@ -61,12 +61,11 @@ impl TestnetConfig {
         epoch_duration: Option<u64>,
         unbonding_epochs: Option<u64>,
     ) -> anyhow::Result<TestnetConfig> {
-        let peer_address = peer_address_template.unwrap_or("127.0.0.1".to_string());
         let external_addresses = external_addresses.unwrap_or(Vec::new());
 
         let testnet_validators = Self::collect_validators(
             validators_input_file,
-            peer_address.clone(),
+            peer_address_template.clone(),
             external_addresses,
         )?;
 
@@ -78,10 +77,9 @@ impl TestnetConfig {
 
         // Convert to domain type, for use with other Penumbra interfaces.
         // We do this conversion once and store it in the struct for convenience.
-        let validators = &testnet_validators
-            .iter()
-            .map(|v| v.try_into().unwrap())
-            .collect::<Vec<Validator>>();
+        let validators: anyhow::Result<Vec<Validator>> =
+            testnet_validators.iter().map(|v| v.try_into()).collect();
+        let validators = validators?;
 
         let app_state = Self::make_appstate(
             chain_id,
@@ -99,7 +97,7 @@ impl TestnetConfig {
             testnet_dir: get_testnet_dir(testnet_dir),
             testnet_validators,
             validators: validators.to_vec(),
-            peer_address_template: Some(peer_address),
+            peer_address_template,
             tendermint_timeout_commit,
         })
     }
@@ -109,7 +107,7 @@ impl TestnetConfig {
     /// testnets.
     fn collect_validators(
         validators_input_file: Option<PathBuf>,
-        peer_address_template: String,
+        peer_address_template: Option<String>,
         external_addresses: Vec<TendermintAddress>,
     ) -> anyhow::Result<Vec<TestnetValidator>> {
         let testnet_validators = if let Some(validators_input_file) = validators_input_file {
@@ -136,7 +134,10 @@ impl TestnetConfig {
             .into_iter()
             .enumerate()
             .map(|(i, v)| TestnetValidator {
-                peer_address_template: Some(format!("{peer_address_template}-{i}")),
+                peer_address_template: match &peer_address_template {
+                    Some(t) => Some(format!("{t}-{i}")),
+                    None => None,
+                },
                 external_address: external_addresses.get(i).cloned(),
                 ..v
             })
@@ -258,12 +259,13 @@ impl TestnetConfig {
             let node_dir = self.testnet_dir.clone().join(node_name.clone());
 
             // Each node should include only the IPs for *other* nodes in their peers list.
-            let ips_minus_mine = self
+            let ips_minus_mine: anyhow::Result<Vec<TendermintAddress>> = self
                 .testnet_validators
                 .iter()
-                .map(|v| v.peering_address().unwrap())
-                .filter(|a| *a != v.peering_address().unwrap())
-                .collect::<Vec<_>>();
+                .map(|v| v.peering_address())
+                .filter(|a| *a.as_ref().unwrap() != v.peering_address().unwrap())
+                .collect();
+            let ips_minus_mine = ips_minus_mine?;
             tracing::debug!(?ips_minus_mine, "Found these peer ips");
 
             let external_address: Option<TendermintAddress> = match &v.external_address {
@@ -422,14 +424,35 @@ impl TestnetValidator {
     ///
     /// In order for the set of genesis validators to communicate with each other,
     /// they must have initial peer information seeded into their Tendermint config files.
+    /// If an `external_address` was set, use that. Next, check for a `peer_address_template`.
+    /// Finally, fall back to localhost.
     pub fn peering_address(&self) -> anyhow::Result<TendermintAddress> {
-        let tm_host = match &self.peer_address_template {
-            Some(h) => h,
-            None => "127.0.0.1",
-        };
         let tm_node_id = node::Id::from(self.keys.node_key_pk.ed25519().unwrap());
-        let tm_url: TendermintAddress = format!("{tm_node_id}@{tm_host}:26656").parse()?;
-        Ok(tm_url)
+        tracing::debug!(?self.name, ?self.external_address, ?self.peer_address_template, "Looking up peering_address");
+        let r: TendermintAddress = match &self.external_address {
+            // The `external_address` is a TendermintAddress, so unpack as enum to retrieve
+            // the host/port info.
+            Some(a) => match a {
+                TendermintAddress::Tcp {
+                    peer_id: _,
+                    host,
+                    port,
+                } => format!("{tm_node_id}@{}:{}", host, port).parse()?,
+                // The other enum type is TendermintAddress::Unix, see
+                // https://docs.rs/tendermint-config/0.33.0/tendermint_config/index.html
+                _ => {
+                    anyhow::bail!(
+                        "Only TCP format is supported for tendermint addresses: {}",
+                        a
+                    );
+                }
+            },
+            None => match &self.peer_address_template {
+                Some(t) => format!("{tm_node_id}@{t}:26656").parse()?,
+                None => format!("{tm_node_id}@127.0.0.1:26656").parse()?,
+            },
+        };
+        Ok(r)
     }
 
     /// Hardcoded initial state for Tendermint, used for writing configs.
