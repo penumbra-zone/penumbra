@@ -19,8 +19,9 @@ pub trait StateReadExt: StateRead {
     ) -> Pin<Box<dyn Stream<Item = Result<CompactBlock>> + Send + 'static>> {
         self.nonverifiable_range_raw(
             Some(state_key::prefix().as_bytes()),
-            state_key::height(start_height).as_bytes()..,
+            state_key::height(start_height).as_bytes().to_vec()..,
         )
+        .expect("valid range is provided")
         .map(|result| {
             result.and_then(|(_, v)| {
                 CompactBlock::decode(&mut v.as_slice())
