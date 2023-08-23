@@ -1,10 +1,11 @@
 //! This module is very similar to the one for phase1, so reading that one might be useful.
-
 use ark_ec::Group;
 use ark_ff::{fields::Field, UniformRand, Zero};
+use ark_relations::r1cs::ConstraintMatrices;
 use rand_core::{CryptoRngCore, OsRng};
 
 use crate::log::{ContributionHash, Hashable, Phase};
+use crate::phase1;
 use crate::{
     dlog,
     group::{BatchedPairingChecker11, GroupHasher, F, G1, G2},
@@ -88,6 +89,83 @@ pub struct CRSElements {
 impl Hashable for CRSElements {
     fn hash(&self) -> ContributionHash {
         self.raw.hash()
+    }
+}
+
+impl CRSElements {
+    pub fn transition(phase1: phase1::CRSElements, circuit: &ConstraintMatrices<F>) -> Self {
+        // To understand this function, it can be good to recap the relationship between
+        // R1CS constraints and QAP constraints.
+        //
+        // While we call the constaints a "circuit", they're really an R1CS system.
+        // The circuit contains matrices A, B, C. Each of these matrices has the same size.
+        // The number of columns is the number of variables in our circuit,
+        // along with an additional column for each constraint, representing an
+        // "internal variable".
+        // The number of rows is simply the number of constraints in our circuit.
+        //
+        // To transform the circuit into a QAP, each column of a matrix becomes a polynomial.
+        // For the matrix A, we have uᵢ(X), for B, vᵢ(X), and C, wᵢ(X).
+        // We also have a domain, a list of field elements, such that evaluting each polynomial
+        // on the domain produces the entries of the corresponding matrix column.
+        //
+        // Furthermore, we also pad the matrices before this transformation.
+        // The bottom of A is filled with:
+        //   1 0 0 ...
+        //   0 1 0 ...
+        //   0 0 1 ...
+        //   .........
+        // based on the number of instance variables. This is to avoid
+        // potential malleability issues. See: https://geometry.xyz/notebook/groth16-malleability.
+        // B and C are simply padded with 0 to match this size.
+        //
+        // Finally, the domain might be larger than the size of these matrices,
+        // and so we simply add rows filled with 0 to match the size of the domain.
+        //
+        // Now, we don't need to calculate these polynomials directly, instead what we care about
+        // is the polynomials pᵢ(X) = α uᵢ(X) + β vᵢ(X) + wᵢ(X), evaluated at [x],
+        // and the evaluations [t(x)xⁱ], where t is a polynomial that's 0 everywhere over the
+        // domain.
+        //
+        // Our strategy here is to make use of lagrange polynomials Lⱼ(X), which
+        // are 0 everywhere over the domain except for the jth entry.
+        // Specifically, if we have the evaluations Lⱼ([x]), we can then calculate
+        // each pᵢ([x]) by a linear combination over these evaluations,
+        // using the coefficients in that matrix column.
+        // Note that the matrices are very sparse, so there are only a linear
+        // number of such operations to do, instead of a quadratic number.
+        //
+        // For calculating the lagrange polynomials, we want to avoid a quadratic
+        // solution. To do so, we need to exploit the structure of the domain
+        // we use: specifically, the fact that we can do fast fourier transforms (FFTs)
+        // in it. (See section 3 of https://eprint.iacr.org/2017/602 for the origin
+        // of most of this exposition).
+        //
+        // Our domain consists of successive powers of a root of unity: 1, ω, ω², ...,
+        // such that ωᵈ = 1. The number of entries in the domain is d, in total.
+        // This is useful, because we can quickly convert a polynomial p(X), represented
+        // as a table of coefficients, into an evaluation table p(ωⁱ) (i ∈ [d]).
+        //
+        // We can also use this for evaluating the lagrange polynomials.
+        // First, note the following equality:
+        //  Lⱼ(X) = d⁻¹∑ᵢ (Xω⁻ʲ)ⁱ
+        // (because the sum over all roots of unity is 0).
+        // Defining:
+        //  Pₓ(Y) := d⁻¹∑ᵢ xⁱ Yⁱ
+        // we can write Lⱼ(x) = Lⱼ(x) = Pₓ(ω⁻ʲ).
+        //
+        // What we want is [Lⱼ(x)] for each j. With this equality, we see that we
+        // can get this by doing an FFT over Pₓ(Y). This will also work even if
+        // the coefficients are group elements, and not scalars.
+        // (We also need to reverse the order of the resulting FFT).
+        //
+        // The structure of the domain also helps us with the vanishing polynomial, t.
+        // The polynomial (Xᵈ − 1) is 0 everywhere over the domain, and give us
+        // a simple expression for t(X). The evaluations [t(x)xⁱ] can then be obtained
+        // by using simple indexing.
+        //
+        // Ok, that was the explanation, now onto the code.
+        todo!()
     }
 }
 
