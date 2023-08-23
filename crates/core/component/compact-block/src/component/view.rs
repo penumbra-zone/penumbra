@@ -11,9 +11,8 @@ use std::pin::Pin;
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    /// Returns a stream of [`CompactBlock`]s starting from `start_height`.A
-    /// If `start_height` is not found, the stream will be empty.
-    async fn stream_compact_block(
+    /// Returns a stream of [`CompactBlock`]s starting from `start_height`.
+    fn stream_compact_block(
         &self,
         start_height: u64,
     ) -> Pin<Box<dyn Stream<Item = Result<CompactBlock>> + Send + 'static>> {

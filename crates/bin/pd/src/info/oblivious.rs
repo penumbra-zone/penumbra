@@ -1,5 +1,6 @@
 use std::pin::Pin;
 
+use anyhow::bail;
 use async_stream::try_stream;
 use futures::{
     stream::{StreamExt, TryStreamExt},
@@ -240,15 +241,15 @@ impl ObliviousQueryService for Info {
                 // pipe them to the client sync stream.
                 let storage2 = storage.clone();
                 let latest_snapshot = storage2.latest_snapshot();
-                while let Some(compact_block) = latest_snapshot
-                    .stream_compact_block(start_height)
-                    .await
-                    .next()
-                    .await
-                {
-                    let compact_block = compact_block.map_err(|_| {
-                        tonic::Status::internal("error deserializing block from storage")
-                    })?;
+                let mut cb_stream = latest_snapshot.stream_compact_block(start_height);
+
+                while let Some(res_compact_block) = cb_stream.next().await {
+                    let compact_block = match res_compact_block {
+                        Ok(compact_block) => compact_block,
+                        Err(e) => {
+                            bail!("error streaming compact blocks: {e}")
+                        }
+                    };
                     if compact_block.height > end_height {
                         break;
                     }
