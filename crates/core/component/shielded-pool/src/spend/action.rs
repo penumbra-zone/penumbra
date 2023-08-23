@@ -2,12 +2,11 @@ use std::convert::{TryFrom, TryInto};
 
 use anyhow::{Context, Error};
 use bytes::Bytes;
-use decaf377::FieldExt;
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use penumbra_asset::balance;
-use penumbra_chain::{EffectHash, EffectingData};
 use penumbra_proto::{core::transaction::v1alpha1 as transaction, DomainType, TypeUrl};
 use penumbra_sct::Nullifier;
+use serde::{Deserialize, Serialize};
 
 use crate::SpendProof;
 
@@ -18,27 +17,12 @@ pub struct Spend {
     pub proof: SpendProof,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(try_from = "transaction::SpendBody", into = "transaction::SpendBody")]
 pub struct Body {
     pub balance_commitment: balance::Commitment,
     pub nullifier: Nullifier,
     pub rk: VerificationKey<SpendAuth>,
-}
-
-impl EffectingData for Body {
-    fn effect_hash(&self) -> EffectHash {
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:spend_body")
-            .to_state();
-
-        // All of these fields are fixed-length, so we can just throw them
-        // in the hash one after the other.
-        state.update(&self.balance_commitment.to_bytes());
-        state.update(&self.nullifier.0.to_bytes());
-        state.update(&self.rk.to_bytes());
-
-        EffectHash(state.finalize().as_array().clone())
-    }
 }
 
 impl TypeUrl for Spend {

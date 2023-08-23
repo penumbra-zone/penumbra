@@ -710,10 +710,13 @@ where
             .tx_info
             .ok_or_else(|| anyhow::anyhow!("empty TransactionInfoByHashResponse message"))?;
 
+            // Check some assumptions about response structure
+            if rsp.height == 0 {
+                anyhow::bail!("missing height");
+            }
+
             let tx_info = TransactionInfo {
-                height: rsp
-                    .height
-                    .ok_or_else(|| anyhow::anyhow!("missing height"))?,
+                height: rsp.height,
                 id: rsp
                     .id
                     .ok_or_else(|| anyhow::anyhow!("missing id"))?
@@ -744,9 +747,14 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<Vec<TransactionInfo>>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
+            // Unpack optional block heights
+            let start_h = if let Some(h) = start_height { h } else { 0 };
+
+            let end_h = if let Some(h) = end_height { h } else { 0 };
+
             let rsp = self2.transaction_info(tonic::Request::new(pb::TransactionInfoRequest {
-                start_height,
-                end_height,
+                start_height: start_h,
+                end_height: end_h,
             }));
             let pb_txs: Vec<_> = rsp.await?.into_inner().try_collect().await?;
 
@@ -757,10 +765,13 @@ where
                         .tx_info
                         .ok_or_else(|| anyhow::anyhow!("empty TransactionInfoResponse message"))?;
 
+                    // Confirm height is populated
+                    if tx_rsp.height == 0 {
+                        anyhow::bail!("missing height");
+                    }
+
                     let tx_info = TransactionInfo {
-                        height: tx_rsp
-                            .height
-                            .ok_or_else(|| anyhow::anyhow!("missing height"))?,
+                        height: tx_rsp.height,
                         transaction: tx_rsp
                             .transaction
                             .ok_or_else(|| {

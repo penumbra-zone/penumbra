@@ -2102,12 +2102,12 @@ impl serde::Serialize for MemoData {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.encrypted_memo.is_some() {
+        if !self.encrypted_memo.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.MemoData", len)?;
-        if let Some(v) = self.encrypted_memo.as_ref() {
-            struct_ser.serialize_field("encryptedMemo", pbjson::private::base64::encode(&v).as_str())?;
+        if !self.encrypted_memo.is_empty() {
+            struct_ser.serialize_field("encryptedMemo", pbjson::private::base64::encode(&self.encrypted_memo).as_str())?;
         }
         struct_ser.end()
     }
@@ -2175,13 +2175,13 @@ impl<'de> serde::Deserialize<'de> for MemoData {
                                 return Err(serde::de::Error::duplicate_field("encryptedMemo"));
                             }
                             encrypted_memo__ = 
-                                map.next_value::<::std::option::Option<::pbjson::private::BytesDeserialize<_>>>()?.map(|x| x.0)
+                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
                 }
                 Ok(MemoData {
-                    encrypted_memo: encrypted_memo__,
+                    encrypted_memo: encrypted_memo__.unwrap_or_default(),
                 })
             }
         }

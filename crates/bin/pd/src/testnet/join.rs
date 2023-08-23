@@ -6,7 +6,8 @@ use std::path::PathBuf;
 use tendermint_config::net::Address as TendermintAddress;
 use url::Url;
 
-use crate::testnet::{generate_tm_config, parse_tm_address, write_configs, ValidatorKeys};
+use crate::testnet::config::{parse_tm_address, TestnetTendermintConfig};
+use crate::testnet::generate::TestnetValidator;
 
 /// Bootstrap a connection to a testnet, via a node on that testnet.
 /// Look up network peer info from the target node, and seed the tendermint
@@ -21,7 +22,7 @@ pub async fn testnet_join(
 ) -> anyhow::Result<()> {
     let mut node_dir = output_dir;
     node_dir.push("node0");
-    let genesis_url = node.join("/genesis")?;
+    let genesis_url = node.join("genesis")?;
     tracing::info!(?genesis_url, "fetching genesis");
     // We need to download the genesis data and the node ID from the remote node.
     // TODO: replace with TendermintProxyServiceClient
@@ -51,9 +52,9 @@ pub async fn testnet_join(
     }
     let new_peers = fetch_peers(&node).await?;
     peers.extend(new_peers);
-    tracing::info!(?peers);
+    tracing::info!(?peers, "Network peers for inclusion in generated configs");
 
-    let tm_config = generate_tm_config(
+    let tm_config = TestnetTendermintConfig::new(
         node_name,
         peers,
         external_address,
@@ -61,8 +62,8 @@ pub async fn testnet_join(
         Some(tm_p2p_bind),
     )?;
 
-    let vk = ValidatorKeys::generate();
-    write_configs(node_dir, &vk, &genesis, tm_config)?;
+    let tv = TestnetValidator::default();
+    tm_config.write_config(node_dir, &tv, &genesis)?;
     Ok(())
 }
 
@@ -94,7 +95,7 @@ pub async fn fetch_listen_address(tm_url: &Url) -> Option<TendermintAddress> {
     // Next we'll look up the node_id, so we can assemble a self-authenticating
     // Tendermint Address, in the form of <id>@<url>.
     let node_id = client
-        .get(tm_url.join("/status").ok()?)
+        .get(tm_url.join("status").ok()?)
         .send()
         .await
         .ok()?
@@ -124,7 +125,8 @@ pub async fn fetch_listen_address(tm_url: &Url) -> Option<TendermintAddress> {
 /// addresses like `localhost` or `0.0.0.0`.
 pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>> {
     let client = reqwest::Client::new();
-    let net_info_url = tm_url.join("/net_info")?;
+    let net_info_url = tm_url.join("net_info")?;
+    tracing::debug!(%net_info_url, "Fetching peers of bootstrap node");
     let net_info_peers = client
         .get(net_info_url)
         .send()
@@ -137,8 +139,15 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
         .cloned()
         .unwrap_or_default();
 
+    if net_info_peers.len() == 0 {
+        tracing::warn!(
+            ?net_info_peers,
+            "Bootstrap node reported 0 peers; we'll have no way to get blocks"
+        );
+    }
     let mut peers = Vec::new();
     for raw_peer in net_info_peers {
+        tracing::debug!(?raw_peer, "Analyzing whether to include candidate peer");
         let node_id: tendermint::node::Id = raw_peer
             .get("node_info")
             .and_then(|v| v.get("id"))
@@ -151,10 +160,17 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
             .and_then(|v| v.as_str())
             .ok_or_else(|| {
                 anyhow::anyhow!("Could not parse node_info.listen_addr from JSON response")
-            })?;
+            })?
+            // Depending on node config, there may or may not be a protocol prefix.
+            // Remove it so we can treat it as a SocketAddr when checking for internal/external.
+            .replace("tcp://", "");
 
         // Filter out addresses that are obviously not external addresses.
-        if !address_could_be_external(listen_addr) {
+        if !address_could_be_external(&listen_addr) {
+            tracing::debug!(
+                ?listen_addr,
+                "Skipping candidate peer due to internal listener address"
+            );
             continue;
         }
 
@@ -197,7 +213,7 @@ fn address_could_be_external(address: &str) -> bool {
 pub fn parse_tm_address_listener(s: &str) -> Option<TendermintAddress> {
     let re = regex::Regex::new(r"Listener\(.*@(tcp://)?(.*)\)").ok()?;
     let groups = re.captures(s).unwrap();
-    let r: Option<String> = groups.get(2).map_or(None, |m| Some(m.as_str().to_string()));
+    let r: Option<String> = groups.get(2).map(|m| m.as_str().to_string());
     match r {
         Some(t) => {
             // Haven't observed a local addr in Listener field, but let's make sure

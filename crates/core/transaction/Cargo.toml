@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-transaction"
-version = "0.58.0"
+version = "0.59.0"
 edition = "2021"
 
 [dependencies]
@@ -24,7 +24,7 @@ penumbra-asset = { path = "../asset", default-features = false }
 penumbra-keys = { path = "../keys", default-features = false }
 
 # Git deps
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.3.0", default-features = false }
+ibc-types = { version = "0.3.0", default-features = false }
 
 # Crates.io deps
 ibc-proto = { version = "0.31.0", default-features = false }

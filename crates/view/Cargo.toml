@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-view"
-version = "0.58.0"
+version = "0.59.0"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"
 description = "The view RPC library for the Penumbra Zone"
@@ -12,33 +12,37 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = []
+default = ["std"]
 # When this feature is enabled, the view worker will request every single
 # SCT root, to pinpoint exactly where any SCT root divergence occurs.
 sct-divergence-check = []
+std = ["ark-std/std"]
 
 [dependencies]
 # Workspace dependencies
-penumbra-proto         = { path = "../proto", features = ["rpc"] }
-penumbra-tct           = { path = "../crypto/tct" }
-penumbra-num        = { path = "../core/num" }
-penumbra-keys        = { path = "../core/keys" }
-penumbra-asset        = { path = "../core/asset" }
-penumbra-chain         = { path = "../core/component/chain" }
-penumbra-shielded-pool = { path = "../core/component/shielded-pool", default-features = false, features = ["proving-keys"] }
-penumbra-stake         = { path = "../core/component/stake", default-features = false }
-penumbra-ibc           = { path = "../core/component/ibc", default-features = false }
-penumbra-dao           = { path = "../core/component/dao", default-features = false }
-penumbra-dex           = { path = "../core/component/dex", default-features = false }
-penumbra-sct           = { path = "../core/component/sct", default-features = false }
-penumbra-fee           = { path = "../core/component/fee", default-features = false }
+penumbra-proto = { path = "../proto", features = ["rpc"] }
+penumbra-tct = { path = "../crypto/tct" }
+penumbra-num = { path = "../core/num" }
+penumbra-keys = { path = "../core/keys" }
+penumbra-asset = { path = "../core/asset" }
+penumbra-chain = { path = "../core/component/chain" }
+penumbra-shielded-pool = { path = "../core/component/shielded-pool", default-features = false, features = [
+    "proving-keys",
+] }
+penumbra-stake = { path = "../core/component/stake", default-features = false }
+penumbra-ibc = { path = "../core/component/ibc", default-features = false }
+penumbra-dao = { path = "../core/component/dao", default-features = false }
+penumbra-dex = { path = "../core/component/dex", default-features = false }
+penumbra-sct = { path = "../core/component/sct", default-features = false }
+penumbra-fee = { path = "../core/component/fee", default-features = false }
 penumbra-compact-block = { path = "../core/component/compact-block", default-features = false }
-penumbra-app           = { path = "../core/app" }
-penumbra-transaction   = { path = "../core/transaction" }
+penumbra-app = { path = "../core/app" }
+penumbra-transaction = { path = "../core/transaction" }
 
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.3.0", default-features = false }
+ibc-types = { version = "0.3.0", default-features = false }
 
-decaf377 = {version = "0.5", features = ["r1cs"] }
+ark-std = { version = "0.4", default-features = false }
+decaf377 = { version = "0.5", features = ["r1cs"] }
 tokio = { version = "1.22", features = ["full"] }
 tokio-stream = { version = "0.1.8", features = ["sync"] }
 anyhow = "1"

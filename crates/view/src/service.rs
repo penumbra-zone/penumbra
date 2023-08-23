@@ -5,11 +5,20 @@ use std::{
 };
 
 use anyhow::{anyhow, Context};
+use ark_std::UniformRand;
 use async_stream::try_stream;
 use camino::Utf8Path;
+use decaf377::Fq;
 use futures::stream::{StreamExt, TryStreamExt};
 use penumbra_asset::{asset, Value};
-use penumbra_dex::{lp::position, TradingPair};
+use penumbra_dex::{
+    lp::{
+        position::{self, Position},
+        Reserves,
+    },
+    swap_claim::SwapClaimPlan,
+    TradingPair,
+};
 use penumbra_fee::Fee;
 use penumbra_keys::{
     keys::{AccountGroupId, AddressIndex, FullViewingKey},
@@ -349,6 +358,11 @@ impl ViewProtocolService for ViewService {
     ) -> Result<tonic::Response<pb::TransactionPlannerResponse>, tonic::Status> {
         let prq = request.into_inner();
 
+        let chain_params =
+            self.storage.chain_params().await.map_err(|e| {
+                tonic::Status::internal(format!("could not get chain params: {:#}", e))
+            })?;
+
         let mut planner = Planner::new(OsRng);
         planner
             .fee(
@@ -383,11 +397,75 @@ impl ViewProtocolService for ViewService {
             planner.output(value, address);
         }
 
-        #[allow(clippy::never_loop)]
-        for _swap in prq.swaps {
-            return Err(tonic::Status::unimplemented(
-                "Swaps are not yet implemented, sorry!",
-            ));
+        for swap in prq.swaps {
+            let value: Value = swap
+                .value
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing value"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse value: {e:#}"))
+                })?;
+
+            let target_asset: asset::Id = swap
+                .target_asset
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing target asset"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse target asset: {e:#}"))
+                })?;
+
+            let fee: Fee = swap
+                .fee
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing fee"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse fee: {e:#}"))
+                })?;
+
+            let claim_address: Address = swap
+                .claim_address
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing claim address"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse claim address: {e:#}"))
+                })?;
+
+            planner
+                .swap(value, target_asset, fee, claim_address)
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not plan swap: {e:#}"))
+                })?;
+        }
+
+        for swap_claim in prq.swap_claims {
+            let swap_commitment: StateCommitment = swap_claim
+                .swap_commitment
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing swap commitment"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!(
+                        "Could not parse swap commitment: {e:#}"
+                    ))
+                })?;
+            let swap_record = self
+                .storage
+                // TODO: should there be a timeout on detection here instead?
+                .swap_by_commitment(swap_commitment, false)
+                .await
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!(
+                        "Could not fetch swap by commitment: {e:#}"
+                    ))
+                })?;
+
+            planner.swap_claim(SwapClaimPlan {
+                swap_plaintext: swap_record.swap,
+                position: swap_record.position,
+                output_data: swap_record.output_data,
+                epoch_duration: chain_params.epoch_duration,
+                proof_blinding_r: Fq::rand(&mut OsRng),
+                proof_blinding_s: Fq::rand(&mut OsRng),
+            });
         }
 
         for delegation in prq.delegations {
@@ -432,11 +510,63 @@ impl ViewProtocolService for ViewService {
             planner.undelegate(value.amount, rate_data);
         }
 
-        let mut client_of_self =
-            ViewProtocolServiceClient::new(ViewProtocolServiceServer::new(self.clone()));
+        for position_open in prq.position_opens {
+            let position: Position = position_open
+                .position
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing position"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse position: {e:#}"))
+                })?;
+
+            planner.position_open(position);
+        }
+
+        for position_close in prq.position_closes {
+            let position_id: position::Id = position_close
+                .position_id
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing position_id"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse position ID: {e:#}"))
+                })?;
+
+            planner.position_close(position_id);
+        }
+
+        for position_withdraw in prq.position_withdraws {
+            let position_id: position::Id = position_withdraw
+                .position_id
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing position_id"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse position ID: {e:#}"))
+                })?;
+
+            let reserves: Reserves = position_withdraw
+                .reserves
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing reserves"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse reserves: {e:#}"))
+                })?;
+
+            let trading_pair: TradingPair = position_withdraw
+                .trading_pair
+                .ok_or_else(|| tonic::Status::invalid_argument("Missing pair"))?
+                .try_into()
+                .map_err(|e| {
+                    tonic::Status::invalid_argument(format!("Could not parse pair: {e:#}"))
+                })?;
+
+            planner.position_withdraw(position_id, reserves, trading_pair);
+        }
+
         let fvk = self.storage.full_viewing_key().await.map_err(|e| {
             tonic::Status::failed_precondition(format!("Error retrieving full viewing key: {e:#}"))
         })?;
+        let mut client_of_self =
+            ViewProtocolServiceClient::new(ViewProtocolServiceServer::new(self.clone()));
         let plan = planner
             .plan(&mut client_of_self, fvk.account_group_id(), 0u32.into())
             .await
@@ -675,7 +805,7 @@ impl ViewProtocolService for ViewService {
 
         let response = pb::TransactionInfoByHashResponse {
             tx_info: Some(pb::TransactionInfo {
-                height: Some(height),
+                height: height,
                 id: Some(tx.id().into()),
                 perspective: Some(txp.into()),
                 transaction: Some(tx.into()),
@@ -1042,10 +1172,22 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::TransactionInfoRequest>,
     ) -> Result<tonic::Response<Self::TransactionInfoStream>, tonic::Status> {
         self.check_worker().await?;
+        // Unpack optional start/end heights.
+        let start_height = if request.get_ref().start_height == 0 {
+            None
+        } else {
+            Some(request.get_ref().start_height)
+        };
+        let end_height = if request.get_ref().end_height == 0 {
+            None
+        } else {
+            Some(request.get_ref().end_height)
+        };
+
         // Fetch transactions from storage.
         let txs = self
             .storage
-            .transactions(request.get_ref().start_height, request.get_ref().end_height)
+            .transactions(start_height, end_height)
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error fetching transactions: {e}")))?;
 

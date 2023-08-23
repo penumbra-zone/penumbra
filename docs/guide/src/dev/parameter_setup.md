@@ -1,6 +1,6 @@
 # Zero-Knowledge Proofs
 
-## Parameter Setup
+## Test Parameter Setup
 
 Penumbra's zero-knowledge proofs require circuit-specific parameters to be
 generated in a preprocessing phase. There are two
@@ -31,7 +31,7 @@ To add a _new_ circuit to the parameter setup, you should modify
 Then edit `penumbra-proof-params` to reference the new parameters created in
 `proof-params/src/gen`.
 
-## Benchmarks
+## Circuit Benchmarks
 
 We have benchmarks for all proofs in the `penumbra-proof-params` crate. You can run them via:
 
@@ -51,3 +51,19 @@ Performance as of commit `98590ef2dd92ea75fa3bd6f09b3c24fec3fe36ff` benchmarked 
 | Swap | 25,700 | 1.21s
 | SwapClaim | 37,061 | 1.83s
 | Nullifier derivation | 394  | 59ms
+
+## zk-SNARK Ceremony Benchmarks
+
+Run benchmarks for the zk-SNARK ceremony via:
+
+```shell
+cd crates/crypto/proof-setup
+cargo bench
+```
+
+Performance as of commit `1ed963657c16e49c65a8e9ecf998d57fcce8f200` benchmarked on a 2023 Macbook Pro M2 (12 core CPU) with 32 GB memory using 37,061 constraints (SwapClaim circuit):
+
+| Task    | Time |
+| -------- | ------- |
+| Phase 1 prove  | 40.3s    |
+| Phase 1 verify | 88.7s    |

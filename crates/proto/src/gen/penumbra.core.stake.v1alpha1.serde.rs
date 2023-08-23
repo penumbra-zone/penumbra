@@ -143,7 +143,7 @@ impl serde::Serialize for BondingState {
         if self.state != 0 {
             len += 1;
         }
-        if self.unbonding_epoch.is_some() {
+        if self.unbonding_epoch != 0 {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.stake.v1alpha1.BondingState", len)?;
@@ -152,8 +152,8 @@ impl serde::Serialize for BondingState {
                 .ok_or_else(|| serde::ser::Error::custom(format!("Invalid variant {}", self.state)))?;
             struct_ser.serialize_field("state", &v)?;
         }
-        if let Some(v) = self.unbonding_epoch.as_ref() {
-            struct_ser.serialize_field("unbondingEpoch", ToString::to_string(&v).as_str())?;
+        if self.unbonding_epoch != 0 {
+            struct_ser.serialize_field("unbondingEpoch", ToString::to_string(&self.unbonding_epoch).as_str())?;
         }
         struct_ser.end()
     }
@@ -231,14 +231,14 @@ impl<'de> serde::Deserialize<'de> for BondingState {
                                 return Err(serde::de::Error::duplicate_field("unbondingEpoch"));
                             }
                             unbonding_epoch__ = 
-                                map.next_value::<::std::option::Option<::pbjson::private::NumberDeserialize<_>>>()?.map(|x| x.0)
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
                 }
                 Ok(BondingState {
                     state: state__.unwrap_or_default(),
-                    unbonding_epoch: unbonding_epoch__,
+                    unbonding_epoch: unbonding_epoch__.unwrap_or_default(),
                 })
             }
         }

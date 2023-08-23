@@ -5,6 +5,7 @@ use penumbra_proof_params::GROTH16_PROOF_LENGTH_BYTES;
 use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
+use serde::{Deserialize, Serialize};
 
 use crate::BatchSwapOutputData;
 
@@ -61,7 +62,8 @@ impl TryFrom<pb::SwapClaim> for SwapClaim {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(try_from = "pb::SwapClaimBody", into = "pb::SwapClaimBody")]
 pub struct Body {
     pub nullifier: Nullifier,
     pub fee: Fee,

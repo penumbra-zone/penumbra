@@ -169,20 +169,26 @@ pub enum TxCmd {
     #[clap(display_order = 250)]
     Withdraw {
         /// Address on the receiving chain,
-        /// e.g. cosmos1grgelyng2v6v3t8z87wu3sxgt9m5s03xvslewd
+        /// e.g. cosmos1grgelyng2v6v3t8z87wu3sxgt9m5s03xvslewd. The chain_id for the counterparty
+        /// chain will be discovered automatically, based on the `--channel` setting.
         #[clap(long)]
         to: String,
 
         /// The value to withdraw, eg "1000upenumbra"
         value: String,
+
         /// The IBC channel on the primary Penumbra chain to use for performing the withdrawal.
         /// This channel must already exist, as configured by a relayer client.
-        /// You can search for channels via e.g. `pcli query ibc transfer channel-0`.
+        /// You can search for channels via e.g. `pcli query ibc channel transfer 0`.
         #[clap(long)]
-        channel: String,
+        channel: u64,
 
+        /// Block height on the current chain, after which the withdrawal will be considered
+        /// invalid if not already relayed.
         #[clap(long, default_value = "0", display_order = 100)]
         timeout_height: u64,
+        /// Timestamp, specified in epoch time, after which the withdrawal will be considered
+        /// invalid if not already relayed.
         #[clap(long, default_value = "0", display_order = 150)]
         timeout_timestamp: u64,
 
@@ -357,7 +363,7 @@ impl TxCmd {
 
                 let mut planner = Planner::new(OsRng);
                 planner.fee(swap_fee);
-                planner.swap(input, into, swap_claim_fee.clone(), claim_address)?;
+                planner.swap(input, into.id(), swap_claim_fee.clone(), claim_address)?;
 
                 let account_group_id = app.fvk.account_group_id();
                 let plan = planner
@@ -864,7 +870,8 @@ impl TxCmd {
                     timeout_height,
                     timeout_time: timeout_timestamp,
                     return_address: ephemeral_return_address,
-                    source_channel: ChannelId::from_str(channel)?,
+                    // TODO: impl From<u64> for ChannelId
+                    source_channel: ChannelId::from_str(format!("channel-{}", channel).as_ref())?,
                 };
 
                 let plan = Planner::new(OsRng)

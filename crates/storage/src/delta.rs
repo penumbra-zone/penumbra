@@ -6,10 +6,10 @@ use tendermint::abci;
 
 use crate::{
     future::{
-        CacheFuture, StateDeltaNonconsensusPrefixRawStream, StateDeltaPrefixKeysStream,
-        StateDeltaPrefixRawStream,
+        CacheFuture, StateDeltaNonconsensusPrefixRawStream, StateDeltaNonconsensusRangeRawStream,
+        StateDeltaPrefixKeysStream, StateDeltaPrefixRawStream,
     },
-    Cache, EscapedByteSlice, StateRead, StateWrite,
+    utils, Cache, EscapedByteSlice, StateRead, StateWrite,
 };
 
 /// An arbitrarily-deeply nested stack of delta updates to an underlying state.
@@ -167,6 +167,8 @@ impl<S: StateRead> StateRead for StateDelta<S> {
     type PrefixKeysStream = StateDeltaPrefixKeysStream<S::PrefixKeysStream>;
     type NonconsensusPrefixRawStream =
         StateDeltaNonconsensusPrefixRawStream<S::NonconsensusPrefixRawStream>;
+    type NonconsensusRangeRawStream =
+        StateDeltaNonconsensusRangeRawStream<S::NonconsensusRangeRawStream>;
 
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         // Check if we have a cache hit in the leaf cache.
@@ -372,6 +374,29 @@ impl<S: StateRead> StateRead for StateDelta<S> {
             last_key: None,
             prefix: prefix.to_vec(),
         }
+    }
+
+    fn nonverifiable_range_raw(
+        &self,
+        prefix: Option<&[u8]>,
+        range: impl std::ops::RangeBounds<Vec<u8>>,
+    ) -> anyhow::Result<Self::NonconsensusRangeRawStream> {
+        let (range, (start, end)) = utils::convert_bounds(range)?;
+        let underlying = self
+            .state
+            .read()
+            .as_ref()
+            .expect("delta must not have been applied")
+            .nonverifiable_range_raw(prefix, range)?
+            .peekable();
+        Ok(StateDeltaNonconsensusRangeRawStream {
+            underlying,
+            layers: self.layers.clone(),
+            leaf_cache: self.leaf_cache.clone(),
+            last_key: None,
+            prefix: prefix.map(|p| p.to_vec()),
+            range: (start, end),
+        })
     }
 }
 

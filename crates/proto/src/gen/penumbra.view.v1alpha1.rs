@@ -79,6 +79,18 @@ pub struct TransactionPlannerRequest {
     pub ibc_actions: ::prost::alloc::vec::Vec<
         super::super::core::ibc::v1alpha1::IbcAction,
     >,
+    #[prost(message, repeated, tag = "70")]
+    pub position_opens: ::prost::alloc::vec::Vec<
+        transaction_planner_request::PositionOpen,
+    >,
+    #[prost(message, repeated, tag = "71")]
+    pub position_closes: ::prost::alloc::vec::Vec<
+        transaction_planner_request::PositionClose,
+    >,
+    #[prost(message, repeated, tag = "72")]
+    pub position_withdraws: ::prost::alloc::vec::Vec<
+        transaction_planner_request::PositionWithdraw,
+    >,
 }
 /// Nested message and enum types in `TransactionPlannerRequest`.
 pub mod transaction_planner_request {
@@ -100,7 +112,7 @@ pub mod transaction_planner_request {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Swap {
-        /// The amount and denomination to be traded in the Swap.
+        /// The input amount and denomination to be traded in the Swap.
         #[prost(message, optional, tag = "1")]
         pub value: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Value,
@@ -110,10 +122,15 @@ pub mod transaction_planner_request {
         pub target_asset: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::AssetId,
         >,
-        /// An optional fee to be paid for performing the Swap.
+        /// The pre-paid fee to be paid for claiming the Swap outputs.
         #[prost(message, optional, tag = "3")]
         pub fee: ::core::option::Option<
             super::super::super::core::crypto::v1alpha1::Fee,
+        >,
+        /// The address to which swap claim output will be sent.
+        #[prost(message, optional, tag = "4")]
+        pub claim_address: ::core::option::Option<
+            super::super::super::core::crypto::v1alpha1::Address,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -149,6 +166,46 @@ pub mod transaction_planner_request {
         #[prost(message, optional, tag = "2")]
         pub rate_data: ::core::option::Option<
             super::super::super::core::stake::v1alpha1::RateData,
+        >,
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct PositionOpen {
+        /// Contains the data defining the position, sufficient to compute its `PositionId`.
+        ///
+        /// Positions are immutable, so the `PositionData` (and hence the `PositionId`)
+        /// are unchanged over the entire lifetime of the position.
+        #[prost(message, optional, tag = "1")]
+        pub position: ::core::option::Option<
+            super::super::super::core::dex::v1alpha1::Position,
+        >,
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct PositionClose {
+        /// The position to close.
+        #[prost(message, optional, tag = "1")]
+        pub position_id: ::core::option::Option<
+            super::super::super::core::dex::v1alpha1::PositionId,
+        >,
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct PositionWithdraw {
+        /// The position to withdraw.
+        #[prost(message, optional, tag = "1")]
+        pub position_id: ::core::option::Option<
+            super::super::super::core::dex::v1alpha1::PositionId,
+        >,
+        /// The position's final reserves.
+        #[prost(message, optional, tag = "2")]
+        pub reserves: ::core::option::Option<
+            super::super::super::core::dex::v1alpha1::Reserves,
+        >,
+        /// The trading pair of the position.
+        #[prost(message, optional, tag = "3")]
+        pub trading_pair: ::core::option::Option<
+            super::super::super::core::dex::v1alpha1::TradingPair,
         >,
     }
 }
@@ -526,18 +583,18 @@ pub struct TransactionInfoByHashRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionInfoRequest {
     /// If present, return only transactions after this height.
-    #[prost(uint64, optional, tag = "1")]
-    pub start_height: ::core::option::Option<u64>,
+    #[prost(uint64, tag = "1")]
+    pub start_height: u64,
     /// If present, return only transactions before this height.
-    #[prost(uint64, optional, tag = "2")]
-    pub end_height: ::core::option::Option<u64>,
+    #[prost(uint64, tag = "2")]
+    pub end_height: u64,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionInfo {
     /// The height the transaction was included in a block, if known.
-    #[prost(uint64, optional, tag = "1")]
-    pub height: ::core::option::Option<u64>,
+    #[prost(uint64, tag = "1")]
+    pub height: u64,
     /// The hash of the transaction.
     #[prost(message, optional, tag = "2")]
     pub id: ::core::option::Option<super::super::core::transaction::v1alpha1::Id>,
@@ -611,8 +668,8 @@ pub struct SpendableNoteRecord {
     #[prost(uint64, tag = "5")]
     pub height_created: u64,
     /// Records whether the note was spent (and if so, at what height).
-    #[prost(uint64, optional, tag = "6")]
-    pub height_spent: ::core::option::Option<u64>,
+    #[prost(uint64, tag = "6")]
+    pub height_spent: u64,
     /// The note position.
     #[prost(uint64, tag = "7")]
     pub position: u64,
@@ -639,8 +696,8 @@ pub struct SwapRecord {
     pub output_data: ::core::option::Option<
         super::super::core::dex::v1alpha1::BatchSwapOutputData,
     >,
-    #[prost(uint64, optional, tag = "6")]
-    pub height_claimed: ::core::option::Option<u64>,
+    #[prost(uint64, tag = "6")]
+    pub height_claimed: u64,
     #[prost(message, optional, tag = "7")]
     pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
 }

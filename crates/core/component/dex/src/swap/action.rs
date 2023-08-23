@@ -6,6 +6,7 @@ use penumbra_num::Amount;
 use penumbra_proto::{
     core::crypto::v1alpha1 as pbc, core::dex::v1alpha1 as pb, DomainType, TypeUrl,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::TradingPair;
 
@@ -73,7 +74,8 @@ impl TryFrom<pb::Swap> for Swap {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(try_from = "pb::SwapBody", into = "pb::SwapBody")]
 pub struct Body {
     pub trading_pair: TradingPair,
     pub delta_1_i: Amount,

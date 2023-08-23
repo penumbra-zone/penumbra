@@ -1,9 +1,6 @@
 #![allow(clippy::clone_on_copy)]
 #![recursion_limit = "512"]
-use std::{
-    net::{Ipv4Addr, SocketAddr},
-    path::PathBuf,
-};
+use std::{net::SocketAddr, path::PathBuf};
 
 use console_subscriber::ConsoleLayer;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
@@ -15,8 +12,9 @@ use futures::stream::TryStreamExt;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::events::EventIndexLayer;
 use pd::testnet::{
-    generate::testnet_generate, get_testnet_dir, join::testnet_join, parse_tm_address,
-    url_has_necessary_parts,
+    config::{get_testnet_dir, parse_tm_address, url_has_necessary_parts},
+    generate::TestnetConfig,
+    join::testnet_join,
 };
 use penumbra_proto::client::v1alpha1::{
     oblivious_query_service_server::ObliviousQueryServiceServer,
@@ -152,9 +150,27 @@ enum TestnetCommand {
         /// Testnet name [default: latest testnet].
         #[clap(long)]
         chain_id: Option<String>,
-        /// IP Address to start `tendermint` nodes on. Increments by three to make room for `pd` per node.
-        #[clap(long, default_value = "192.167.10.11")]
-        starting_ip: Ipv4Addr,
+        /// Base hostname for a validator's p2p service. If multiple validators
+        /// exist in the genesis, e.g. via `--validators-input-file`, then
+        /// numeric suffixes are automatically added, e.g. "-0", "-1", etc.
+        /// Helpful for when you know the validator DNS names ahead of time,
+        /// e.g. in Kubernetes service addresses. These option is most useful
+        /// to provide peering on a private network setup. If you plan to expose
+        /// the validator P2P services to the internet, see the `--external-addresses` option.
+        #[clap(long)]
+        peer_address_template: Option<String>,
+
+        /// Public addresses and ports for the Tendermint P2P services of the genesis
+        /// validator. Accepts comma-separated values, to support multiple validators.
+        /// If `--validators-input-file` is used to increase the number
+        /// of validators, and the `--external-addresses` flag is set, then the number of
+        /// external addresses must equal the number of validators. See the
+        /// `--peer-address-template` flag if you don't plan to expose the network
+        /// to public peers.
+        #[clap(long)]
+        // TODO we should support DNS names here. However, there are complications:
+        // https://github.com/tendermint/tendermint/issues/1521
+        external_addresses: Option<String>,
     },
 
     /// Like `testnet generate`, but joins the testnet to which the specified node belongs
@@ -298,6 +314,8 @@ async fn main() -> anyhow::Result<()> {
                 })
                 // Allow HTTP/1, which will be used by grpc-web connections.
                 .accept_http1(true)
+                // As part of #2932, we are disabling all timeouts until we circle back to our
+                // performance story.
                 // Sets a timeout for all gRPC requests, but note that in the case of streaming
                 // requests, the timeout is only applied to the initial request. This means that
                 // this does not prevent long lived streams, for example to allow clients to obtain
@@ -454,11 +472,7 @@ async fn main() -> anyhow::Result<()> {
         RootCommand::Testnet {
             tn_cmd:
                 TestnetCommand::Generate {
-                    // TODO this config is gated on a "populate persistent peers"
-                    // setting in the Go tendermint binary. Populating the persistent
-                    // peers will be useful in local setups until peer discovery via a seed
-                    // works.
-                    starting_ip,
+                    peer_address_template,
                     timeout_commit,
                     epoch_duration,
                     unbonding_epochs,
@@ -467,6 +481,7 @@ async fn main() -> anyhow::Result<()> {
                     validators_input_file,
                     chain_id,
                     preserve_chain_id,
+                    external_addresses,
                 },
             testnet_dir,
         } => {
@@ -491,18 +506,44 @@ async fn main() -> anyhow::Result<()> {
                 );
             }
 
+            // Unpack external address information into a vec, since there could be multiple
+            // values. We don't yet know how many validators will be in the genesis, but the
+            // Testnet::generate constructor will assert that the number of external addresses,
+            // if Some, is equal to the number of validators.
+            let external_addresses: anyhow::Result<Vec<TendermintAddress>> =
+                match external_addresses {
+                    Some(a) => a
+                        .split(',')
+                        .map(|x| {
+                            x.parse()
+                                .context(format!("Failed to parse external address: {x}"))
+                        })
+                        .collect(),
+                    None => Ok(Vec::new()),
+                };
+
+            let external_addresses = external_addresses?;
+
             // Build and write local configs based on input flags.
-            testnet_generate(
-                output_dir,
+            tracing::info!(?chain_id, "Generating network config");
+            let t = TestnetConfig::generate(
                 &chain_id,
-                active_validator_limit,
+                Some(output_dir),
+                peer_address_template,
+                Some(external_addresses),
+                allocations_input_file,
+                validators_input_file,
                 timeout_commit,
+                active_validator_limit,
                 epoch_duration,
                 unbonding_epochs,
-                starting_ip,
-                validators_input_file,
-                allocations_input_file,
             )?;
+            tracing::info!(
+                n_validators = t.validators.len(),
+                chain_id = %t.genesis.chain_id,
+                "Writing config files for network"
+            );
+            t.write_configs()?;
         }
     }
     Ok(())

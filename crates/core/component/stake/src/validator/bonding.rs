@@ -53,8 +53,8 @@ impl From<State> for pb::BondingState {
                 }
             },
             unbonding_epoch: match v {
-                State::Unbonding { unbonding_epoch } => Some(unbonding_epoch),
-                _ => None,
+                State::Unbonding { unbonding_epoch } => unbonding_epoch,
+                _ => 0,
             },
         }
     }
@@ -71,7 +71,9 @@ impl TryFrom<pb::BondingState> for State {
             pb::bonding_state::BondingStateEnum::Bonded => Ok(State::Bonded),
             pb::bonding_state::BondingStateEnum::Unbonded => Ok(State::Unbonded),
             pb::bonding_state::BondingStateEnum::Unbonding => {
-                let Some(unbonding_epoch) = v.unbonding_epoch else {
+                let unbonding_epoch = if v.unbonding_epoch > 0 {
+                    v.unbonding_epoch
+                } else {
                     anyhow::bail!("unbonding epoch should be set for unbonding state")
                 };
                 Ok(State::Unbonding { unbonding_epoch })

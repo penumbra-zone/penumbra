@@ -36,7 +36,10 @@ impl From<SpendableNoteRecord> for pb::SpendableNoteRecord {
             address_index: Some(v.address_index.into()),
             nullifier: Some(v.nullifier.into()),
             height_created: v.height_created,
-            height_spent: v.height_spent,
+            height_spent: match v.height_spent {
+                Some(h) => h,
+                None => 0,
+            },
             position: v.position.into(),
             source: Some(v.source.into()),
         }
@@ -64,7 +67,11 @@ impl TryFrom<pb::SpendableNoteRecord> for SpendableNoteRecord {
                 .ok_or_else(|| anyhow::anyhow!("missing nullifier"))?
                 .try_into()?,
             height_created: v.height_created,
-            height_spent: v.height_spent,
+            height_spent: if v.height_spent > 0 {
+                Some(v.height_spent)
+            } else {
+                None
+            },
             position: v.position.into(),
             source: v
                 .source

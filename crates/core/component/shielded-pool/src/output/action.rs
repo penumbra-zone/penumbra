@@ -2,13 +2,12 @@ use std::convert::{TryFrom, TryInto};
 
 use anyhow::{Context, Error};
 use bytes::Bytes;
-use decaf377::FieldExt;
 use penumbra_asset::balance;
-use penumbra_chain::{EffectHash, EffectingData};
 use penumbra_keys::symmetric::{OvkWrappedKey, WrappedMemoKey};
 use penumbra_proto::{
     core::crypto::v1alpha1 as pbc, core::transaction::v1alpha1 as pb, DomainType, TypeUrl,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{NotePayload, OutputProof};
 
@@ -18,31 +17,13 @@ pub struct Output {
     pub proof: OutputProof,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(try_from = "pb::OutputBody", into = "pb::OutputBody")]
 pub struct Body {
     pub note_payload: NotePayload,
     pub balance_commitment: balance::Commitment,
     pub ovk_wrapped_key: OvkWrappedKey,
     pub wrapped_memo_key: WrappedMemoKey,
-}
-
-impl EffectingData for Body {
-    fn effect_hash(&self) -> EffectHash {
-        let mut state = blake2b_simd::Params::default()
-            .personal(b"PAH:output_body")
-            .to_state();
-
-        // All of these fields are fixed-length, so we can just throw them
-        // in the hash one after the other.
-        state.update(&self.note_payload.note_commitment.0.to_bytes());
-        state.update(&self.note_payload.ephemeral_key.0);
-        state.update(&self.note_payload.encrypted_note.0);
-        state.update(&self.balance_commitment.to_bytes());
-        state.update(&self.wrapped_memo_key.0);
-        state.update(&self.ovk_wrapped_key.0);
-
-        EffectHash(state.finalize().as_array().clone())
-    }
 }
 
 impl TypeUrl for Output {

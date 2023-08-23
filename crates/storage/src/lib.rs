@@ -46,6 +46,7 @@ mod snapshot_cache;
 mod storage;
 #[cfg(test)]
 mod tests;
+mod utils;
 mod write;
 
 pub use crate::metrics::register_metrics;

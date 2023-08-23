@@ -88,3 +88,20 @@ impl TypeUrl for AppState {
 impl DomainType for AppState {
     type Proto = pb::GenesisAppState;
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    /// Check that the default implementation of AppState contains zero validators,
+    /// requiring validators to be passed in out of band. N.B. there's also a
+    /// `validators` field in the [`tendermint::Genesis`] struct, which we don't use,
+    /// preferring the AppState definition instead.
+    #[test]
+    fn check_validator_defaults() -> anyhow::Result<()> {
+        let a = AppState {
+            ..Default::default()
+        };
+        assert!(a.validators.len() == 0);
+        Ok(())
+    }
+}

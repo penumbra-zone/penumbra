@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-ibc"
-version = "0.58.0"
+version = "0.59.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -23,7 +23,7 @@ penumbra-num = { path = "../../../core/num", default-features = false  }
 penumbra-keys = { path = "../../../core/keys", default-features = false  } 
 
 # Penumbra dependencies
-ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", version = "0.3.0", default-features = false }
+ibc-types = { version = "0.3.0", default-features = false }
 ibc-proto = { version = "0.31.0", default-features = false }
 
 # Crates.io deps
