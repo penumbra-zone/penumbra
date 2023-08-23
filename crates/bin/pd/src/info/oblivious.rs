@@ -265,7 +265,7 @@ impl ObliviousQueryService for Info {
                     // Future iterations of this work should start by moving block serialization
                     // outside of the `send_op` future, and investigate if long blocking sends can
                     // happen for benign reasons (i.e not caused by the client).
-                    tx_blocks.send(Ok(block.into())).await?;
+                    tx_blocks.send(Ok(compact_block.into())).await?;
                     metrics::increment_counter!(
                         metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
                     );
