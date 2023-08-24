@@ -260,6 +260,6 @@ message Proposal {
   message UpgradePlan {
     string name = 1;
     uint64 height = 2;
-    string metadata = 3;
+    string info = 3;
   }
 }
