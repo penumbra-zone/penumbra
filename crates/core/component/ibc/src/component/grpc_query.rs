@@ -294,7 +294,56 @@ impl ConsensusQuery for IbcQuery {
         request: tonic::Request<QueryPacketAcknowledgementsRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketAcknowledgementsResponse>, tonic::Status>
     {
-        todo!()
+        let snapshot = self.0.latest_snapshot();
+        let height = snapshot.version();
+        let request = request.get_ref();
+
+        let chan_id: ChannelId = ChannelId::from_str(&request.channel_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+        let port_id: PortId = PortId::from_str(&request.port_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+
+        let ack_counter = snapshot
+            .get_ack_sequence(&chan_id, &port_id)
+            .await
+            .map_err(|e| {
+                tonic::Status::aborted(format!(
+                    "couldn't get ack sequence for channel {chan_id} and port {port_id}: {e}"
+                ))
+            })?;
+
+        let mut acks = vec![];
+        for ack_idx in 0..ack_counter {
+            let ack = snapshot
+                .get_packet_acknowledgement(&port_id, &chan_id, ack_idx)
+                .await.map_err(|e| {
+                    tonic::Status::aborted(format!(
+                        "couldn't get packet acknowledgement for channel {chan_id} and port {port_id} at index {ack_idx}: {e}"
+                    ))
+                })?
+                .ok_or(anyhow::anyhow!("couldn't find ack")).map_err(|e| {
+                    tonic::Status::aborted(format!(
+                        "couldn't get packet acknowledgement for channel {chan_id} and port {port_id} at index {ack_idx}: {e}"
+                    ))
+                })?;
+
+            let ack_state = PacketState {
+                port_id: request.port_id.clone(),
+                channel_id: request.channel_id.clone(),
+                sequence: ack_idx,
+                data: ack.clone(),
+            };
+
+            acks.push(ack_state);
+        }
+
+        let res = QueryPacketAcknowledgementsResponse {
+            acknowledgements: acks,
+            pagination: None,
+            height: None,
+        };
+
+        Ok(tonic::Response::new(res))
     }
     /// UnreceivedPackets returns all the unreceived IBC packets associated with a
     /// channel and sequences.
