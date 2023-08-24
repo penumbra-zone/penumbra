@@ -31,7 +31,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryConnectionRequest, QueryConnectionResponse, QueryConnectionsRequest,
     QueryConnectionsResponse,
 };
-use ibc_types::core::connection::ConnectionId;
+use ibc_types::core::connection::{ConnectionId, IdentifiedConnectionEnd};
 use ibc_types::DomainType;
 use penumbra_chain::component::AppHashRead;
 use prost::Message;
@@ -71,7 +71,7 @@ impl ConnectionQuery for IbcQuery {
 
                 (conn, res.1)
             })
-            .map_err(|e| tonic::Status::aborted("couldn't get connection: {e}"))?;
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get connection: {e}")))?;
 
         let conn = conn.map_err(|e| tonic::Status::aborted("couldn't decode connection: {e}"))?;
 
@@ -93,7 +93,43 @@ impl ConnectionQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryConnectionsRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionsResponse>, tonic::Status> {
-        todo!()
+        let snapshot = self.0.latest_snapshot();
+        let height = snapshot.version();
+
+        let connection_counter = snapshot
+            .get_connection_counter()
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get connection counter: {e}")))?;
+
+        let mut connections = vec![];
+        for conn_idx in 0..connection_counter.0 {
+            let conn_id = ConnectionId(format!("connection-{}", conn_idx));
+            let connection = snapshot
+                .get_connection(&conn_id)
+                .await
+                .map_err(|e| {
+                    tonic::Status::aborted(format!("couldn't get connection {conn_id}: {e}"))
+                })?
+                .unwrap();
+            let id_conn = IdentifiedConnectionEnd {
+                connection_id: conn_id,
+                connection_end: connection,
+            };
+            connections.push(id_conn.into());
+        }
+
+        let height = Height {
+            revision_number: 0,
+            revision_height: height.into(),
+        };
+
+        let res = QueryConnectionsResponse {
+            connections,
+            pagination: None,
+            height: height,
+        };
+
+        Ok(tonic::Response::new(res))
     }
     /// ClientConnections queries the connection paths associated with a client
     /// state.
