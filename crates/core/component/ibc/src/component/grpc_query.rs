@@ -1,7 +1,8 @@
+use anyhow::Context;
 use async_trait::async_trait;
 use ibc_proto::ibc::core::channel::v1::query_server::Query as ConsensusQuery;
 use ibc_proto::ibc::core::channel::v1::{
-    QueryChannelClientStateRequest, QueryChannelClientStateResponse,
+    PacketState, QueryChannelClientStateRequest, QueryChannelClientStateResponse,
     QueryChannelConsensusStateRequest, QueryChannelConsensusStateResponse, QueryChannelRequest,
     QueryChannelResponse, QueryChannelsRequest, QueryChannelsResponse,
     QueryConnectionChannelsRequest, QueryConnectionChannelsResponse,
@@ -31,6 +32,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryConnectionRequest, QueryConnectionResponse, QueryConnectionsRequest,
     QueryConnectionsResponse,
 };
+use ibc_types::core::channel::{ChannelId, PortId};
 use ibc_types::core::connection::{ConnectionId, IdentifiedConnectionEnd};
 use ibc_types::DomainType;
 use penumbra_chain::component::AppHashRead;
@@ -40,7 +42,7 @@ use tonic::{Response, Status};
 
 use crate::component::ConnectionStateReadExt;
 
-use super::state_key;
+use super::{state_key, ChannelStateReadExt};
 
 #[derive(Clone)]
 pub struct IbcQuery(penumbra_storage::Storage);
@@ -126,7 +128,7 @@ impl ConnectionQuery for IbcQuery {
         let res = QueryConnectionsResponse {
             connections,
             pagination: None,
-            height: height,
+            height: Some(height),
         };
 
         Ok(tonic::Response::new(res))
@@ -213,7 +215,61 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryPacketCommitmentsRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketCommitmentsResponse>, tonic::Status> {
-        todo!()
+        let snapshot = self.0.latest_snapshot();
+        let height = snapshot.version();
+        let request = request.get_ref();
+
+        let chan_id: ChannelId = ChannelId::from_str(&request.channel_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+        let port_id: PortId = PortId::from_str(&request.port_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+
+        let mut commitment_states = vec![];
+        let commitment_counter = snapshot
+            .get_send_sequence(&chan_id, &port_id)
+            .await
+            .map_err(|e| {
+                tonic::Status::aborted(format!(
+                    "couldn't get send sequence for channel {chan_id} and port {port_id}: {e}"
+                ))
+            })?;
+
+        // this starts at 1; the first commitment index is 1 (from ibc spec)
+        for commitment_idx in 1..commitment_counter {
+            let commitment = snapshot
+                .get_packet_commitment_by_id(&chan_id, &port_id, commitment_idx)
+                .await.map_err(|e| {
+                    tonic::Status::aborted(format!(
+                        "couldn't get packet commitment for channel {chan_id} and port {port_id} at index {commitment_idx}: {e}"
+                    ))
+                })?;
+            if commitment.is_none() {
+                continue;
+            }
+            let commitment = commitment.unwrap();
+
+            let commitment_state = PacketState {
+                port_id: request.port_id.clone(),
+                channel_id: request.channel_id.clone(),
+                sequence: commitment_idx,
+                data: commitment.clone(),
+            };
+
+            commitment_states.push(commitment_state);
+        }
+
+        let height = Height {
+            revision_number: 0,
+            revision_height: height.into(),
+        };
+
+        let res = QueryPacketCommitmentsResponse {
+            commitments: commitment_states,
+            pagination: None,
+            height: Some(height),
+        };
+
+        Ok(tonic::Response::new(res))
     }
     /// PacketReceipt queries if a given packet sequence has been received on the
     /// queried chain
