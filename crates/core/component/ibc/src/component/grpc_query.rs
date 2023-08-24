@@ -351,7 +351,48 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryUnreceivedPacketsRequest>,
     ) -> std::result::Result<tonic::Response<QueryUnreceivedPacketsResponse>, tonic::Status> {
-        todo!()
+        let snapshot = self.0.latest_snapshot();
+        let height = snapshot.version();
+        let request = request.get_ref();
+
+        let chan_id: ChannelId = ChannelId::from_str(&request.channel_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+        let port_id: PortId = PortId::from_str(&request.port_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+
+        let mut unreceived_seqs = vec![];
+
+        for seq in request.packet_commitment_sequences.clone() {
+            if seq == 0 {
+                return Err(tonic::Status::aborted(format!(
+                    "packet sequence {} cannot be 0",
+                    seq
+                )));
+            }
+
+            if !snapshot
+                .seen_packet_by_channel(&chan_id, &port_id, seq)
+                .await.map_err(|e| {
+                    tonic::Status::aborted(format!(
+                        "couldn't get packet commitment for channel {chan_id} and port {port_id} at index {seq}: {e}"
+                    ))
+                })?
+            {
+                unreceived_seqs.push(seq);
+            }
+        }
+
+        let height = Height {
+            revision_number: 0,
+            revision_height: height.into(),
+        };
+
+        let res = QueryUnreceivedPacketsResponse {
+            sequences: unreceived_seqs,
+            height: Some(height),
+        };
+
+        Ok(tonic::Response::new(res))
     }
     /// UnreceivedAcks returns all the unreceived IBC acknowledgements associated
     /// with a channel and sequences.
