@@ -32,7 +32,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryConnectionRequest, QueryConnectionResponse, QueryConnectionsRequest,
     QueryConnectionsResponse,
 };
-use ibc_types::core::channel::{ChannelId, PortId};
+use ibc_types::core::channel::{ChannelId, IdentifiedChannelEnd, PortId};
 use ibc_types::core::connection::{ConnectionId, IdentifiedConnectionEnd};
 use ibc_types::DomainType;
 use penumbra_chain::component::AppHashRead;
@@ -175,7 +175,43 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryChannelsRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelsResponse>, tonic::Status> {
-        todo!()
+        let snapshot = self.0.latest_snapshot();
+        let height = Height {
+            revision_number: 0,
+            revision_height: snapshot.version().into(),
+        };
+
+        let channel_counter = snapshot
+            .get_channel_counter()
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get channel counter: {e}")))?;
+
+        let mut channels = vec![];
+        for chan_idx in 0..channel_counter {
+            let chan_id = ChannelId(format!("channel-{}", chan_idx));
+            let channel = snapshot
+                .get_channel(&chan_id, &PortId::transfer())
+                .await
+                .map_err(|e| {
+                    tonic::Status::aborted(format!("couldn't get channel {chan_id}: {e}"))
+                })?
+                .unwrap();
+
+            let id_chan = IdentifiedChannelEnd {
+                channel_id: chan_id,
+                port_id: PortId::transfer(),
+                channel_end: channel,
+            };
+            channels.push(id_chan.into());
+        }
+
+        let res = QueryChannelsResponse {
+            channels,
+            pagination: None,
+            height: Some(height),
+        };
+
+        Ok(tonic::Response::new(res))
     }
     /// ConnectionChannels queries all the channels associated with a connection
     /// end.
