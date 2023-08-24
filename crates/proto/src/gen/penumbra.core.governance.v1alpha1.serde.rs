@@ -891,6 +891,9 @@ impl serde::Serialize for Proposal {
         if self.dao_spend.is_some() {
             len += 1;
         }
+        if self.upgrade_plan.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.Proposal", len)?;
         if self.id != 0 {
             struct_ser.serialize_field("id", ToString::to_string(&self.id).as_str())?;
@@ -913,6 +916,9 @@ impl serde::Serialize for Proposal {
         if let Some(v) = self.dao_spend.as_ref() {
             struct_ser.serialize_field("daoSpend", v)?;
         }
+        if let Some(v) = self.upgrade_plan.as_ref() {
+            struct_ser.serialize_field("upgradePlan", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -932,6 +938,8 @@ impl<'de> serde::Deserialize<'de> for Proposal {
             "parameterChange",
             "dao_spend",
             "daoSpend",
+            "upgrade_plan",
+            "upgradePlan",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -943,6 +951,7 @@ impl<'de> serde::Deserialize<'de> for Proposal {
             Emergency,
             ParameterChange,
             DaoSpend,
+            UpgradePlan,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -971,6 +980,7 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                             "emergency" => Ok(GeneratedField::Emergency),
                             "parameterChange" | "parameter_change" => Ok(GeneratedField::ParameterChange),
                             "daoSpend" | "dao_spend" => Ok(GeneratedField::DaoSpend),
+                            "upgradePlan" | "upgrade_plan" => Ok(GeneratedField::UpgradePlan),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -997,6 +1007,7 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                 let mut emergency__ = None;
                 let mut parameter_change__ = None;
                 let mut dao_spend__ = None;
+                let mut upgrade_plan__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Id => {
@@ -1043,6 +1054,12 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                             }
                             dao_spend__ = map.next_value()?;
                         }
+                        GeneratedField::UpgradePlan => {
+                            if upgrade_plan__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("upgradePlan"));
+                            }
+                            upgrade_plan__ = map.next_value()?;
+                        }
                     }
                 }
                 Ok(Proposal {
@@ -1053,6 +1070,7 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                     emergency: emergency__,
                     parameter_change: parameter_change__,
                     dao_spend: dao_spend__,
+                    upgrade_plan: upgrade_plan__,
                 })
             }
         }
@@ -1442,6 +1460,133 @@ impl<'de> serde::Deserialize<'de> for proposal::Signaling {
             }
         }
         deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.Proposal.Signaling", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for proposal::UpgradePlan {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.name.is_empty() {
+            len += 1;
+        }
+        if self.height != 0 {
+            len += 1;
+        }
+        if !self.info.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.governance.v1alpha1.Proposal.UpgradePlan", len)?;
+        if !self.name.is_empty() {
+            struct_ser.serialize_field("name", &self.name)?;
+        }
+        if self.height != 0 {
+            struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
+        }
+        if !self.info.is_empty() {
+            struct_ser.serialize_field("info", &self.info)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for proposal::UpgradePlan {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "name",
+            "height",
+            "info",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Name,
+            Height,
+            Info,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "name" => Ok(GeneratedField::Name),
+                            "height" => Ok(GeneratedField::Height),
+                            "info" => Ok(GeneratedField::Info),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = proposal::UpgradePlan;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.governance.v1alpha1.Proposal.UpgradePlan")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal::UpgradePlan, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut name__ = None;
+                let mut height__ = None;
+                let mut info__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Name => {
+                            if name__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("name"));
+                            }
+                            name__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::Height => {
+                            if height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("height"));
+                            }
+                            height__ = 
+                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Info => {
+                            if info__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("info"));
+                            }
+                            info__ = Some(map.next_value()?);
+                        }
+                    }
+                }
+                Ok(proposal::UpgradePlan {
+                    name: name__.unwrap_or_default(),
+                    height: height__.unwrap_or_default(),
+                    info: info__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.governance.v1alpha1.Proposal.UpgradePlan", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for ProposalDepositClaim {

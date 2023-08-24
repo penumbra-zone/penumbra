@@ -348,6 +348,8 @@ pub struct Proposal {
     pub parameter_change: ::core::option::Option<proposal::ParameterChange>,
     #[prost(message, optional, tag = "8")]
     pub dao_spend: ::core::option::Option<proposal::DaoSpend>,
+    #[prost(message, optional, tag = "9")]
+    pub upgrade_plan: ::core::option::Option<proposal::UpgradePlan>,
 }
 /// Nested message and enum types in `Proposal`.
 pub mod proposal {
@@ -404,5 +406,17 @@ pub mod proposal {
         /// data or authorization signatures, but it may use the `DaoSpend` action.
         #[prost(message, optional, tag = "2")]
         pub transaction_plan: ::core::option::Option<::pbjson_types::Any>,
+    }
+    /// An upgrade plan describes a candidate upgrade to be executed at a certain height. If passed, the chain
+    /// will halt at the specified height.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct UpgradePlan {
+        #[prost(string, tag = "1")]
+        pub name: ::prost::alloc::string::String,
+        #[prost(uint64, tag = "2")]
+        pub height: u64,
+        #[prost(string, tag = "3")]
+        pub info: ::prost::alloc::string::String,
     }
 }
