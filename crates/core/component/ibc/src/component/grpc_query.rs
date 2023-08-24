@@ -219,7 +219,49 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryConnectionChannelsRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionChannelsResponse>, tonic::Status> {
-        todo!()
+        let snapshot = self.0.latest_snapshot();
+        let height = Height {
+            revision_number: 0,
+            revision_height: snapshot.version().into(),
+        };
+        let request = request.get_ref();
+
+        let connection_id: ConnectionId = ConnectionId::from_str(&request.connection)
+            .map_err(|e| tonic::Status::aborted(format!("invalid connection id: {e}")))?;
+
+        // look up all of the channels for this connection
+        let channel_counter = snapshot
+            .get_channel_counter()
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get channel counter: {e}")))?;
+
+        let mut channels = vec![];
+        for chan_idx in 0..channel_counter {
+            let chan_id = ChannelId(format!("channel-{}", chan_idx));
+            let channel = snapshot
+                .get_channel(&chan_id, &PortId::transfer())
+                .await
+                .map_err(|e| {
+                    tonic::Status::aborted(format!("couldn't get channel {chan_id}: {e}"))
+                })?
+                .unwrap();
+            if channel.connection_hops.contains(&connection_id) {
+                let id_chan = IdentifiedChannelEnd {
+                    channel_id: chan_id,
+                    port_id: PortId::transfer(),
+                    channel_end: channel,
+                };
+                channels.push(id_chan.into());
+            }
+        }
+
+        let res = QueryConnectionChannelsResponse {
+            channels,
+            pagination: None,
+            height: None,
+        };
+
+        Ok(tonic::Response::new(res))
     }
     /// ChannelClientState queries for the client state for the channel associated
     /// with the provided channel identifiers.
