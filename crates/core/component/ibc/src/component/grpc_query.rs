@@ -15,7 +15,7 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 use ibc_proto::ibc::core::client::v1::query_server::Query as ClientQuery;
 use ibc_proto::ibc::core::client::v1::{
-    QueryClientParamsRequest, QueryClientParamsResponse, QueryClientStateRequest,
+    Height, QueryClientParamsRequest, QueryClientParamsResponse, QueryClientStateRequest,
     QueryClientStateResponse, QueryClientStatesRequest, QueryClientStatesResponse,
     QueryClientStatusRequest, QueryClientStatusResponse, QueryConsensusStateHeightsRequest,
     QueryConsensusStateHeightsResponse, QueryConsensusStateRequest, QueryConsensusStateResponse,
@@ -25,17 +25,25 @@ use ibc_proto::ibc::core::client::v1::{
 };
 use ibc_proto::ibc::core::connection::v1::query_server::Query as ConnectionQuery;
 use ibc_proto::ibc::core::connection::v1::{
-    QueryClientConnectionsRequest, QueryClientConnectionsResponse,
+    ConnectionEnd, QueryClientConnectionsRequest, QueryClientConnectionsResponse,
     QueryConnectionClientStateRequest, QueryConnectionClientStateResponse,
     QueryConnectionConsensusStateRequest, QueryConnectionConsensusStateResponse,
     QueryConnectionRequest, QueryConnectionResponse, QueryConnectionsRequest,
     QueryConnectionsResponse,
 };
+use ibc_types::core::connection::ConnectionId;
+use ibc_types::DomainType;
+use penumbra_chain::component::AppHashRead;
+use prost::Message;
+use std::str::FromStr;
 use tonic::{Response, Status};
-use tower::ServiceExt;
+
+use crate::component::ConnectionStateReadExt;
+
+use super::state_key;
 
 #[derive(Clone)]
-pub struct IbcQuery();
+pub struct IbcQuery(penumbra_storage::Storage);
 
 #[async_trait]
 impl ConnectionQuery for IbcQuery {
@@ -44,7 +52,41 @@ impl ConnectionQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryConnectionRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionResponse>, tonic::Status> {
-        todo!()
+        let snapshot = self.0.latest_snapshot();
+        let connection_id = &ConnectionId::from_str(&request.get_ref().connection_id)
+            .map_err(|e| tonic::Status::aborted("invalid connection id"))?;
+
+        let (conn, proof) = snapshot
+            .get_with_proof_to_apphash(
+                state_key::connections::by_connection_id(connection_id)
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map(|res| {
+                let conn = res
+                    .0
+                    .map(|conn_bytes| ConnectionEnd::decode(conn_bytes.as_ref()))
+                    .transpose();
+
+                (conn, res.1)
+            })
+            .map_err(|e| tonic::Status::aborted("couldn't get connection: {e}"))?;
+
+        let conn = conn.map_err(|e| tonic::Status::aborted("couldn't decode connection: {e}"))?;
+
+        let height = Height {
+            revision_number: 0,
+            revision_height: snapshot.version().into(),
+        };
+
+        let res = QueryConnectionResponse {
+            connection: conn,
+            proof: proof.encode_to_vec(),
+            proof_height: Some(height),
+        };
+
+        Ok(tonic::Response::new(res))
     }
     /// Connections queries all the IBC connections of a chain.
     async fn connections(
