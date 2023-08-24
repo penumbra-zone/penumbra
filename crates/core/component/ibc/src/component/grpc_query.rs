@@ -16,11 +16,12 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 use ibc_proto::ibc::core::client::v1::query_server::Query as ClientQuery;
 use ibc_proto::ibc::core::client::v1::{
-    Height, QueryClientParamsRequest, QueryClientParamsResponse, QueryClientStateRequest,
-    QueryClientStateResponse, QueryClientStatesRequest, QueryClientStatesResponse,
-    QueryClientStatusRequest, QueryClientStatusResponse, QueryConsensusStateHeightsRequest,
-    QueryConsensusStateHeightsResponse, QueryConsensusStateRequest, QueryConsensusStateResponse,
-    QueryConsensusStatesRequest, QueryConsensusStatesResponse, QueryUpgradedClientStateRequest,
+    Height, IdentifiedClientState, QueryClientParamsRequest, QueryClientParamsResponse,
+    QueryClientStateRequest, QueryClientStateResponse, QueryClientStatesRequest,
+    QueryClientStatesResponse, QueryClientStatusRequest, QueryClientStatusResponse,
+    QueryConsensusStateHeightsRequest, QueryConsensusStateHeightsResponse,
+    QueryConsensusStateRequest, QueryConsensusStateResponse, QueryConsensusStatesRequest,
+    QueryConsensusStatesResponse, QueryUpgradedClientStateRequest,
     QueryUpgradedClientStateResponse, QueryUpgradedConsensusStateRequest,
     QueryUpgradedConsensusStateResponse,
 };
@@ -33,6 +34,7 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryConnectionsResponse,
 };
 use ibc_types::core::channel::{ChannelId, IdentifiedChannelEnd, PortId};
+use ibc_types::core::client::ClientId;
 use ibc_types::core::connection::{ConnectionId, IdentifiedConnectionEnd};
 use ibc_types::DomainType;
 use penumbra_chain::component::AppHashRead;
@@ -40,7 +42,7 @@ use prost::Message;
 use std::str::FromStr;
 use tonic::{Response, Status};
 
-use crate::component::ConnectionStateReadExt;
+use crate::component::{ClientStateReadExt, ConnectionStateReadExt};
 
 use super::{state_key, ChannelStateReadExt};
 
@@ -542,7 +544,37 @@ impl ClientQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryClientStatesRequest>,
     ) -> std::result::Result<tonic::Response<QueryClientStatesResponse>, tonic::Status> {
-        todo!()
+        let snapshot = self.0.latest_snapshot();
+        let height = Height {
+            revision_number: 0,
+            revision_height: snapshot.version().into(),
+        };
+
+        let client_counter = snapshot
+            .client_counter()
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get client counter: {e}")))?
+            .0;
+
+        let mut client_states = vec![];
+        for client_idx in 0..client_counter {
+            // NOTE: currently, we only look up tendermint clients, because we only support tendermint clients.
+            let client_id = ClientId::from_str(format!("07-tendermint-{}", client_idx).as_str())
+                .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
+            let client_state = snapshot.get_client_state(&client_id).await;
+            let id_client = IdentifiedClientState {
+                client_id: client_id.to_string(),
+                client_state: client_state.ok().map(|state| state.into()), // send None if we couldn't find the client state
+            };
+            client_states.push(id_client);
+        }
+
+        let res = QueryClientStatesResponse {
+            client_states,
+            pagination: None,
+        };
+
+        Ok(tonic::Response::new(res))
     }
     /// ConsensusState queries a consensus state associated with a client state at
     /// a given height.
