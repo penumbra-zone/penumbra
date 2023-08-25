@@ -7,43 +7,67 @@ mod words;
 use words::BIP39_WORDS;
 
 pub const NUM_PBKDF2_ROUNDS: u32 = 2048;
-pub const NUM_WORDS: usize = 24;
-pub const NUM_ENTROPY_BITS: usize = 256;
-pub const NUM_CHECKSUM_BITS: usize = 8;
-pub const NUM_TOTAL_BITS: usize = NUM_ENTROPY_BITS + NUM_CHECKSUM_BITS;
+pub const NUM_WORDS_SHORT: usize = 12;
+pub const NUM_WORDS_LONG: usize = 24;
+
+pub const NUM_ENTROPY_BITS_LONG: usize = 256;
 pub const NUM_BITS_PER_WORD: usize = 11;
 pub const NUM_BITS_PER_BYTE: usize = 8;
 
 /// A mnemonic seed phrase. Used to generate [`SpendSeed`]s.
-pub struct SeedPhrase(pub [String; NUM_WORDS]);
+pub struct SeedPhrase(pub Vec<String>);
 
 impl SeedPhrase {
     /// Randomly generates a BIP39 [`SeedPhrase`].
     pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
-        let mut randomness = [0u8; NUM_ENTROPY_BITS / NUM_BITS_PER_BYTE];
+        let mut randomness = [0u8; NUM_ENTROPY_BITS_LONG / NUM_BITS_PER_BYTE];
         rng.fill_bytes(&mut randomness);
-        Self::from_randomness(randomness)
+        Self::from_randomness(&randomness, NUM_WORDS_LONG)
     }
 
-    /// Given 32 bytes of randomness, generate a [`SeedPhrase`].
-    pub fn from_randomness(randomness: [u8; 32]) -> Self {
-        let mut bits = [false; NUM_TOTAL_BITS];
-        for (i, bit) in bits[0..NUM_ENTROPY_BITS].iter_mut().enumerate() {
+    /// Number of words in this [`SeedPhrase`].
+    pub fn length(&self) -> usize {
+        self.0.len()
+    }
+
+    /// Given bytes of randomness, generate a [`SeedPhrase`].
+    pub fn from_randomness(randomness: &[u8], length: usize) -> Self {
+        // If the length is 12 words, the length of the randomness should be 16 bytes.
+        // Else if the length is 24 words, the length of the randomness should be 32 bytes.
+        if length == NUM_WORDS_SHORT {
+            assert_eq!(randomness.len(), 16);
+        } else if length == NUM_WORDS_LONG {
+            assert_eq!(randomness.len(), 32);
+        } else {
+            panic!("invalid length for BIP39 seed phrase");
+        }
+
+        let num_checksum_bits = randomness.len() * 8 / 32;
+        let num_entropy_bits = length * NUM_BITS_PER_WORD - num_checksum_bits;
+        let num_total_bits = num_entropy_bits + num_checksum_bits;
+        let mut bits = vec![false; num_total_bits];
+        for (i, bit) in bits[0..num_entropy_bits].iter_mut().enumerate() {
             *bit = (randomness[i / NUM_BITS_PER_BYTE] & (1 << (7 - (i % NUM_BITS_PER_BYTE)))) > 0
         }
 
-        // We take the first 256/32 = 8 bits of the SHA256 hash of the randomness and
+        // We take the first (entropy length in bits)/32 of the SHA256 hash of the randomness and
         // treat it as a checksum. We append that checksum byte to the initial randomness.
+        //
+        // For 24-word seed phrases, the entropy length in bits is 256 (= 32 * 8), so the checksum
+        // is 8 bits. For 12-word seed phrases, the entropy length in bits is 128 (= 16 * 8), so the
+        // checksum is 4 bits.
         let mut hasher = sha2::Sha256::new();
         hasher.update(randomness);
         let checksum = hasher.finalize()[0];
-        for (i, bit) in bits[NUM_ENTROPY_BITS..].iter_mut().enumerate() {
+        for (i, bit) in bits[num_entropy_bits..].iter_mut().enumerate() {
             *bit = (checksum & (1 << (7 - (i % NUM_BITS_PER_BYTE)))) > 0
         }
+        let checksum_bits = &bits[num_entropy_bits..];
+        let checksum = convert_bits_to_usize(checksum_bits) as u8;
 
         // Concatenated bits are split into groups of 11 bits, each
         // encoding a number that is an index into the BIP39 word list.
-        let mut words: [String; NUM_WORDS] = Default::default();
+        let mut words = vec![String::new(); length];
         for (i, word) in words.iter_mut().enumerate() {
             let bits_this_word = &bits[i * NUM_BITS_PER_WORD..(i + 1) * NUM_BITS_PER_WORD];
             let word_index = convert_bits_to_usize(bits_this_word);
@@ -54,13 +78,19 @@ impl SeedPhrase {
 
     /// Verify the checksum of this [`SeedPhrase`].
     fn verify_checksum(&self) -> anyhow::Result<()> {
-        let mut bits = [false; NUM_TOTAL_BITS];
+        let num_checksum_bits = self.length() * NUM_BITS_PER_WORD / 32;
+        let num_entropy_bits = self.length() * NUM_BITS_PER_WORD - num_checksum_bits;
+        let num_total_bits = num_entropy_bits + num_checksum_bits;
+        let mut bits = vec![false; num_total_bits];
         for (i, word) in self.0.iter().enumerate() {
             if !BIP39_WORDS.contains(&word.as_str()) {
                 anyhow::bail!("invalid word in BIP39 seed phrase");
             }
 
-            let word_index = BIP39_WORDS.iter().position(|&x| x == word).unwrap();
+            let word_index = BIP39_WORDS
+                .iter()
+                .position(|&x| x == word)
+                .expect("can get index of word");
             let word_bits = &mut bits[i * NUM_BITS_PER_WORD..(i + 1) * NUM_BITS_PER_WORD];
             word_bits
                 .iter_mut()
@@ -68,22 +98,28 @@ impl SeedPhrase {
                 .for_each(|(j, bit)| *bit = (word_index >> (NUM_BITS_PER_WORD - 1 - j)) & 1 == 1);
         }
 
-        let mut randomness = [0u8; NUM_ENTROPY_BITS / NUM_BITS_PER_BYTE];
+        let mut randomness = vec![0u8; num_entropy_bits / NUM_BITS_PER_BYTE];
         for (i, random_byte) in randomness.iter_mut().enumerate() {
             let bits_this_byte = &bits[i * NUM_BITS_PER_BYTE..(i + 1) * NUM_BITS_PER_BYTE];
             *random_byte = convert_bits_to_usize(bits_this_byte) as u8;
         }
 
-        let checksum_bits = &bits[NUM_ENTROPY_BITS..];
-        let checksum = convert_bits_to_usize(checksum_bits) as u8;
-
         let mut hasher = sha2::Sha256::new();
         hasher.update(randomness);
-        if hasher.finalize()[0] != checksum {
-            Err(anyhow::anyhow!("seed phrase checksum did not validate"))
-        } else {
-            Ok(())
+        let calculated_checksum = hasher.finalize()[0];
+
+        let mut calculated_checksum_bits = vec![false; num_checksum_bits];
+        for (i, bit) in calculated_checksum_bits.iter_mut().enumerate() {
+            *bit = (calculated_checksum & (1 << (7 - (i % NUM_BITS_PER_BYTE)))) > 0
         }
+
+        let checksum_bits = &bits[num_entropy_bits..];
+        for (expected_bit, checksum_bit) in checksum_bits.iter().zip(calculated_checksum_bits) {
+            if checksum_bit != *expected_bit {
+                return Err(anyhow::anyhow!("seed phrase checksum did not validate"));
+            }
+        }
+        Ok(())
     }
 }
 
@@ -108,11 +144,15 @@ impl std::str::FromStr for SeedPhrase {
             .map(|w| w.to_lowercase())
             .collect::<Vec<String>>();
 
-        if words.len() != NUM_WORDS {
-            anyhow::bail!("seed phrases should have {} words", NUM_WORDS);
+        if words.len() != NUM_WORDS_LONG && words.len() != NUM_WORDS_SHORT {
+            anyhow::bail!(
+                "seed phrases should have {} or {} words",
+                NUM_WORDS_LONG,
+                NUM_WORDS_SHORT
+            );
         }
 
-        let seed_phrase = SeedPhrase(words.try_into().expect("can convert vec to arr"));
+        let seed_phrase = SeedPhrase(words);
         seed_phrase.verify_checksum()?;
 
         Ok(seed_phrase)
@@ -135,7 +175,8 @@ mod tests {
     #[test]
     fn bip39_mnemonic_derivation() {
         // These test vectors are taken from: https://github.com/trezor/python-mnemonic/blob/master/vectors.json
-        let randomness_arr: [&str; 8] = [
+        let randomness_arr: [&str; 9] = [
+            "00000000000000000000000000000000",
             "0000000000000000000000000000000000000000000000000000000000000000",
             "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
             "8080808080808080808080808080808080808080808080808080808080808080",
@@ -145,7 +186,8 @@ mod tests {
             "066dca1a2bb7e8a1db2832148ce9933eea0f3ac9548d793112d9a95c9407efad",
             "f585c11aec520db57dd353c69554b21a89b20fb0650966fa0a9d6f74fd989d8f",
         ];
-        let expected_phrase_arr: [&str; 8] = [
+        let expected_phrase_arr: [&str; 9] = [
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
             "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art",
             "legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth title",
             "letter advice cage absurd amount doctor acoustic avoid letter advice cage absurd amount doctor acoustic avoid letter advice cage absurd amount doctor acoustic bless",
@@ -159,8 +201,9 @@ mod tests {
         for (hex_randomness, expected_phrase) in
             randomness_arr.iter().zip(expected_phrase_arr.iter())
         {
+            let length = expected_phrase.split_whitespace().count();
             let randomness = hex::decode(hex_randomness).expect("can decode test vector");
-            let actual_phrase = SeedPhrase::from_randomness(randomness.clone().try_into().unwrap());
+            let actual_phrase = SeedPhrase::from_randomness(&randomness[..], length);
             assert_eq!(actual_phrase.to_string(), *expected_phrase);
         }
     }
