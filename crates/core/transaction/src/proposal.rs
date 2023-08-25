@@ -97,6 +97,9 @@ impl From<Proposal> for pb::Proposal {
                     }),
                 });
             }
+            ProposalPayload::UpgradePlan { name, height, info } => {
+                proposal.upgrade_plan = Some(pb::proposal::UpgradePlan { name, height, info });
+            }
         }
         proposal
     }
@@ -183,6 +186,9 @@ pub enum ProposalKind {
     /// A DAO spend proposal.
     #[cfg_attr(feature = "clap", clap(display_order = 400))]
     DaoSpend,
+    /// An upgrade proposal.
+    #[cfg_attr(feature = "clap", clap(display_order = 500))]
+    UpgradePlan,
 }
 
 impl FromStr for ProposalKind {
@@ -194,6 +200,7 @@ impl FromStr for ProposalKind {
             "emergency" => Ok(ProposalKind::Emergency),
             "parameterchange" => Ok(ProposalKind::ParameterChange),
             "daospend" => Ok(ProposalKind::DaoSpend),
+            "upgradeplan" => Ok(ProposalKind::UpgradePlan),
             _ => Err(anyhow::anyhow!("invalid proposal kind: {}", s)),
         }
     }
@@ -207,6 +214,7 @@ impl Proposal {
             ProposalPayload::Emergency { .. } => ProposalKind::Emergency,
             ProposalPayload::ParameterChange { .. } => ProposalKind::ParameterChange,
             ProposalPayload::DaoSpend { .. } => ProposalKind::DaoSpend,
+            ProposalPayload::UpgradePlan { .. } => ProposalKind::UpgradePlan,
         }
     }
 }
@@ -252,6 +260,13 @@ pub enum ProposalPayload {
         /// action.
         transaction_plan: TransactionPlan,
     },
+    /// An upgrade plan proposal describes a planned upgrade to the chain. If ratified, the chain
+    /// will halt at the specified height, trigger an epoch transition, and halt the chain.
+    UpgradePlan {
+        name: String,
+        height: u64,
+        info: String,
+    },
 }
 
 /// A TOML-serializable version of `ProposalPayload`, meant for human consumption.
@@ -270,6 +285,11 @@ pub enum ProposalPayloadToml {
     },
     DaoSpend {
         transaction: String,
+    },
+    UpgradePlan {
+        name: String,
+        height: u64,
+        info: String,
     },
 }
 
@@ -292,6 +312,9 @@ impl TryFrom<ProposalPayloadToml> for ProposalPayload {
                 ))
                 .context("couldn't decode transaction plan from proto")?,
             },
+            ProposalPayloadToml::UpgradePlan { name, height, info } => {
+                ProposalPayload::UpgradePlan { name, height, info }
+            }
         })
     }
 }
@@ -312,6 +335,9 @@ impl From<ProposalPayload> for ProposalPayloadToml {
                     transaction_plan.encode_to_vec(),
                 ),
             },
+            ProposalPayload::UpgradePlan { name, height, info } => {
+                ProposalPayloadToml::UpgradePlan { name, height, info }
+            }
         }
     }
 }

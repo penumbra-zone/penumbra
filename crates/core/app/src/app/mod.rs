@@ -415,6 +415,7 @@ impl App {
             .expect("we have exclusive ownership of the State at commit()");
 
         // Check if someone has signaled that we should halt.
+        // TODO(erwan): manage upgrade halt and epoch regen
         let should_halt = state
             .is_chain_halted(TOTAL_HALT_COUNT)
             .await
