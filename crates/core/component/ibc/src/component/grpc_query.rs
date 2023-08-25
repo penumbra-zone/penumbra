@@ -1,4 +1,3 @@
-use anyhow::Context;
 use async_trait::async_trait;
 use ibc_proto::ibc::core::channel::v1::query_server::Query as ConsensusQuery;
 use ibc_proto::ibc::core::channel::v1::{
@@ -48,6 +47,12 @@ use super::{state_key, ChannelStateReadExt};
 
 #[derive(Clone)]
 pub struct IbcQuery(penumbra_storage::Storage);
+
+impl IbcQuery {
+    pub fn new(storage: penumbra_storage::Storage) -> Self {
+        Self(storage)
+    }
+}
 
 #[async_trait]
 impl ConnectionQuery for IbcQuery {

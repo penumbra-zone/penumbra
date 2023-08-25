@@ -9,6 +9,9 @@ use metrics_util::layers::Stack;
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 use futures::stream::TryStreamExt;
+use ibc_proto::ibc::core::channel::v1::query_server::QueryServer as ChannelQueryServer;
+use ibc_proto::ibc::core::client::v1::query_server::QueryServer as ClientQueryServer;
+use ibc_proto::ibc::core::connection::v1::query_server::QueryServer as ConnectionQueryServer;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::events::EventIndexLayer;
 use pd::testnet::{
@@ -326,6 +329,8 @@ async fn main() -> anyhow::Result<()> {
                 )
                 .expect("failed to spawn abci server");
 
+            let ibc = penumbra_ibc::component::IbcQuery::new(storage.clone());
+
             let grpc_server = Server::builder()
                 .trace_fn(|req| match remote_addr(req) {
                     Some(remote_addr) => {
@@ -349,6 +354,9 @@ async fn main() -> anyhow::Result<()> {
                 .add_service(tonic_web::enable(SpecificQueryServiceServer::new(
                     info.clone(),
                 )))
+                .add_service(tonic_web::enable(ClientQueryServer::new(ibc.clone())))
+                .add_service(tonic_web::enable(ChannelQueryServer::new(ibc.clone())))
+                .add_service(tonic_web::enable(ConnectionQueryServer::new(ibc.clone())))
                 .add_service(tonic_web::enable(TendermintProxyServiceServer::new(
                     tm_proxy.clone(),
                 )))
