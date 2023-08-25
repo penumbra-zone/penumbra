@@ -79,7 +79,7 @@ pub fn base64_to_bech32(prefix: &str, base64_str: &str) -> JsValue {
     utils::set_panic_hook();
 
     let bech32 = &bech32str::encode(
-        &base64::decode(base64_str).unwrap(),
+        &base64::Engine::decode(&base64::engine::general_purpose::STANDARD, base64_str).unwrap(),
         prefix,
         bech32str::Bech32m,
     );
@@ -112,7 +112,8 @@ pub fn get_short_address_by_index(full_viewing_key: &str, index: u32) -> JsValue
 #[wasm_bindgen]
 pub fn decode_transaction(tx_bytes: &str) -> JsValue {
     utils::set_panic_hook();
-    let tx_vec: Vec<u8> = base64::decode(tx_bytes).unwrap();
+    let tx_vec: Vec<u8> =
+        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, tx_bytes).unwrap();
     let transaction: Transaction = Transaction::try_from(tx_vec).unwrap();
     return serde_wasm_bindgen::to_value(&transaction).unwrap();
 }

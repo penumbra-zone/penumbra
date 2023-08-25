@@ -554,7 +554,10 @@ pub async fn get_asset(id: &Id) -> Option<DenomMetadata> {
     let store = tx.object_store("assets").ok()?;
 
     let value: Option<JsValue> = store
-        .get_owned(base64::encode(id.to_proto().inner))
+        .get_owned(base64::Engine::encode(
+            &base64::engine::general_purpose::STANDARD,
+            id.to_proto().inner,
+        ))
         .ok()?
         .await
         .ok()?;
@@ -571,7 +574,10 @@ pub async fn get_note(commitment: &note::StateCommitment) -> Option<SpendableNot
     let store = tx.object_store("spendable_notes").ok()?;
 
     let value: Option<JsValue> = store
-        .get_owned(base64::encode(commitment.to_proto().inner))
+        .get_owned(base64::Engine::encode(
+            &base64::engine::general_purpose::STANDARD,
+            commitment.to_proto().inner,
+        ))
         .ok()?
         .await
         .ok()?;
@@ -590,7 +596,10 @@ pub async fn get_note_by_nullifier(nullifier: &Nullifier) -> Option<SpendableNot
     let value: Option<JsValue> = store
         .index("nullifier")
         .ok()?
-        .get_owned(&base64::encode(nullifier.to_proto().inner))
+        .get_owned(&base64::Engine::encode(
+            &base64::engine::general_purpose::STANDARD,
+            nullifier.to_proto().inner,
+        ))
         .ok()?
         .await
         .ok()?;
