@@ -106,6 +106,7 @@ impl ActionHandler for ProposalSubmit {
                     }
                 }
             }
+            UpgradePlan { .. } => {}
         }
 
         Ok(())
@@ -170,6 +171,7 @@ impl ActionHandler for ProposalSubmit {
                     "submitted DAO spend transaction failed to execute in current chain state",
                 )?;
             }
+            ProposalPayload::UpgradePlan { .. } => {}
         }
 
         Ok(())
