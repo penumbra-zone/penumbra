@@ -767,7 +767,7 @@ dependencies = [
  "sync_wrapper",
  "tokio",
  "tower",
- "tower-http",
+ "tower-http 0.3.5",
  "tower-layer",
  "tower-service",
 ]
@@ -1395,7 +1395,7 @@ checksum = "c2895653b4d9f1538a83970077cb01dfc77a4810524e51a110944688e916b18e"
 dependencies = [
  "prost",
  "prost-types",
- "tonic 0.9.2",
+ "tonic",
  "tracing-core",
 ]
 
@@ -1417,7 +1417,7 @@ dependencies = [
  "thread_local",
  "tokio",
  "tokio-stream",
- "tonic 0.9.2",
+ "tonic",
  "tracing",
  "tracing-core",
  "tracing-subscriber 0.3.17",
@@ -2917,7 +2917,7 @@ dependencies = [
  "serde",
  "subtle-encoding",
  "tendermint-proto",
- "tonic 0.9.2",
+ "tonic",
 ]
 
 [[package]]
@@ -3856,7 +3856,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.8",
- "tonic 0.8.3",
+ "tonic",
  "tonic-web",
  "tower",
  "tower-abci",
@@ -4350,7 +4350,7 @@ dependencies = [
  "tokio-stream",
  "tokio-util 0.7.8",
  "toml 0.7.6",
- "tonic 0.8.3",
+ "tonic",
  "tower",
  "tracing",
  "tracing-subscriber 0.3.17",
@@ -4402,7 +4402,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "toml 0.5.11",
- "tonic 0.8.3",
+ "tonic",
  "tonic-reflection",
  "tonic-web",
  "tower",
@@ -4489,7 +4489,7 @@ dependencies = [
  "tokio-stream",
  "tokio-util 0.7.8",
  "toml 0.5.11",
- "tonic 0.8.3",
+ "tonic",
  "tonic-reflection",
  "tonic-web",
  "tower",
@@ -4602,7 +4602,7 @@ dependencies = [
  "tendermint-light-client-verifier",
  "tendermint-proto",
  "tokio",
- "tonic 0.8.3",
+ "tonic",
  "tracing",
  "tracing-subscriber 0.3.17",
  "vergen",
@@ -4741,7 +4741,7 @@ dependencies = [
  "serde_with 2.3.3",
  "tokio",
  "toml 0.5.11",
- "tonic 0.8.3",
+ "tonic",
  "tracing",
  "vergen",
 ]
@@ -4962,7 +4962,7 @@ dependencies = [
  "tendermint",
  "tendermint-light-client-verifier",
  "tokio",
- "tonic 0.9.2",
+ "tonic",
  "tower",
  "tracing",
 ]
@@ -5029,7 +5029,7 @@ dependencies = [
  "reqwest",
  "serde_json",
  "tokio",
- "tonic 0.8.3",
+ "tonic",
  "tracing",
  "tracing-subscriber 0.3.17",
  "url",
@@ -5169,7 +5169,7 @@ dependencies = [
  "serde",
  "subtle-encoding",
  "tendermint",
- "tonic 0.8.3",
+ "tonic",
  "tracing",
 ]
 
@@ -5394,8 +5394,8 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.8",
- "tonic 0.8.3",
- "tower-http",
+ "tonic",
+ "tower-http 0.3.5",
  "tracing-subscriber 0.3.17",
 ]
 
@@ -5423,7 +5423,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.8",
- "tonic 0.8.3",
+ "tonic",
  "tower",
  "tower-service",
  "tracing",
@@ -5445,7 +5445,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.8",
- "tonic 0.8.3",
+ "tonic",
  "tower",
  "tower-service",
  "tracing",
@@ -5553,7 +5553,7 @@ dependencies = [
  "tendermint",
  "tokio",
  "tokio-stream",
- "tonic 0.8.3",
+ "tonic",
  "tracing",
  "tracing-subscriber 0.2.25",
  "url",
@@ -5593,7 +5593,7 @@ dependencies = [
  "serde_json",
  "serde_with 1.14.0",
  "tokio",
- "tonic 0.8.3",
+ "tonic",
  "tower",
  "tracing",
 ]
@@ -6589,6 +6589,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustls"
+version = "0.21.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d1feddffcfcc0b33f5c6ce9a29e341e4cd59c3f78e7ee45f4a40c038b1d6cbb"
+dependencies = [
+ "log",
+ "ring",
+ "rustls-webpki 0.101.4",
+ "sct 0.7.0",
+]
+
+[[package]]
 name = "rustls-acme"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6636,6 +6648,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d3987094b1d07b653b7dfdc3f70ce9a1da9c51ac18c1b06b662e4f9a0e9f4b2"
 dependencies = [
  "base64 0.21.2",
+]
+
+[[package]]
+name = "rustls-webpki"
+version = "0.100.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6207cd5ed3d8dca7816f8f3725513a34609c0c765bf652b8c3cb4cfd87db46b"
+dependencies = [
+ "ring",
+ "untrusted",
+]
+
+[[package]]
+name = "rustls-webpki"
+version = "0.101.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d93931baf2d282fff8d3a532bbfd7653f734643161b87e3e01e59a04439bf0d"
+dependencies = [
+ "ring",
+ "untrusted",
 ]
 
 [[package]]
@@ -7746,6 +7778,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-rustls"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c28327cf380ac148141087fbfb9de9d7bd4e84ab5d2c28fbc911d753de8a7081"
+dependencies = [
+ "rustls 0.21.6",
+ "tokio",
+]
+
+[[package]]
 name = "tokio-stream"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7835,45 +7877,11 @@ dependencies = [
 
 [[package]]
 name = "tonic"
-version = "0.8.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f219fad3b929bef19b1f86fbc0358d35daed8f2cac972037ac0dc10bbb8d5fb"
-dependencies = [
- "async-stream 0.3.5",
- "async-trait",
- "axum 0.6.19",
- "base64 0.13.1",
- "bytes",
- "futures-core",
- "futures-util",
- "h2",
- "http",
- "http-body",
- "hyper",
- "hyper-timeout",
- "percent-encoding",
- "pin-project",
- "prost",
- "prost-derive",
- "rustls-pemfile",
- "tokio",
- "tokio-rustls 0.23.4",
- "tokio-stream",
- "tokio-util 0.7.8",
- "tower",
- "tower-layer",
- "tower-service",
- "tracing",
- "tracing-futures",
- "webpki-roots 0.22.6",
-]
-
-[[package]]
-name = "tonic"
 version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3082666a3a6433f7f511c7192923fa1fe07c69332d3c6a2e6bb040b569199d5a"
 dependencies = [
+ "async-stream 0.3.5",
  "async-trait",
  "axum 0.6.19",
  "base64 0.21.2",
@@ -7888,42 +7896,46 @@ dependencies = [
  "percent-encoding",
  "pin-project",
  "prost",
+ "rustls-pemfile",
  "tokio",
+ "tokio-rustls 0.24.1",
  "tokio-stream",
  "tower",
  "tower-layer",
  "tower-service",
  "tracing",
+ "webpki-roots 0.23.1",
 ]
 
 [[package]]
 name = "tonic-reflection"
-version = "0.6.0"
+version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67494bad4dda4c9bffae901dfe14e2b2c0f760adb4706dc10beeb81799f7f7b2"
+checksum = "0543d7092032041fbeac1f2c84304537553421a11a623c2301b12ef0264862c7"
 dependencies = [
- "bytes",
  "prost",
  "prost-types",
  "tokio",
  "tokio-stream",
- "tonic 0.8.3",
+ "tonic",
 ]
 
 [[package]]
 name = "tonic-web"
-version = "0.4.0"
+version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e392f7556972523aa87ddb0fc7f2d2ce530559956706aa081bb0bd8fed158559"
+checksum = "21b00ec4842256d1fe0a46176e2ef5bc357664c66e7d91aff5a7d43d83a65f47"
 dependencies = [
- "base64 0.13.1",
+ "base64 0.21.2",
  "bytes",
  "futures-core",
  "http",
  "http-body",
  "hyper",
  "pin-project",
- "tonic 0.8.3",
+ "tonic",
+ "tower-http 0.4.3",
+ "tower-layer",
  "tower-service",
  "tracing",
 ]
@@ -8004,6 +8016,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "tower-http"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "55ae70283aba8d2a8b411c695c437fe25b8b5e44e23e780662002fc72fb47a82"
+dependencies = [
+ "bitflags 2.3.3",
+ "bytes",
+ "futures-core",
+ "futures-util",
+ "http",
+ "http-body",
+ "http-range-header",
+ "pin-project-lite",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
 name = "tower-layer"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8047,16 +8077,6 @@ checksum = "0955b8137a1df6f1a2e9a37d8a6656291ff0297c1a97c24e0d8425fe2312f79a"
 dependencies = [
  "once_cell",
  "valuable",
-]
-
-[[package]]
-name = "tracing-futures"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97d095ae15e245a057c8e8451bab9b3ee1e1f68e9ba2b4fbc18d0ac5237835f2"
-dependencies = [
- "pin-project",
- "tracing",
 ]
 
 [[package]]
@@ -8464,11 +8484,11 @@ dependencies = [
 
 [[package]]
 name = "webpki-roots"
-version = "0.22.6"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6c71e40d7d2c34a5106301fb632274ca37242cd0c9d3e64dbece371a40a2d87"
+checksum = "b03058f88386e5ff5310d9111d53f48b17d732b401aeb83a8d5190f2ac459338"
 dependencies = [
- "webpki 0.22.0",
+ "rustls-webpki 0.100.1",
 ]
 
 [[package]]
