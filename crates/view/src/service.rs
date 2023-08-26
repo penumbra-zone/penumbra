@@ -681,7 +681,9 @@ impl ViewProtocolService for ViewService {
             })?;
 
         let Some((height, tx)) = maybe_tx else {
-            return Ok(tonic::Response::new(pb::TransactionInfoByHashResponse::default()));
+            return Ok(tonic::Response::new(
+                pb::TransactionInfoByHashResponse::default(),
+            ));
         };
 
         // First, create a TxP with the payload keys visible to our FVK and no other data.

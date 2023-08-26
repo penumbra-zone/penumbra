@@ -73,7 +73,7 @@ impl<S: StateRead + 'static> Path<S> {
         let target_pair = DirectedTradingPair::new(self.end().clone(), new_end.clone());
         let Some(best_price_position) = self.state.best_position(&target_pair).await? else {
             tracing::debug!("no best position, failing to extend path");
-            return Ok(None)
+            return Ok(None);
         };
         // Deindex the position we "consumed" in this and all descendant state forks,
         // ensuring we don't double-count liquidity while traversing cycles.
