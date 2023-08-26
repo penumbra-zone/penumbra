@@ -229,10 +229,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     async fn validator_by_delegation_asset(&self, asset_id: asset::Id) -> Result<IdentityKey> {
         // Attempt to find the denom for the asset ID of the specified value
         let Some(denom) = self.denom_by_asset(&asset_id).await? else {
-            anyhow::bail!(
-                "asset ID {} does not correspond to a known denom",
-                asset_id
-            );
+            anyhow::bail!("asset ID {} does not correspond to a known denom", asset_id);
         };
 
         // Attempt to find the validator identity for the specified denom, failing if it is not a
@@ -255,9 +252,14 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
         // Attempt to look up the snapshotted `RateData` for the validator at the start of the proposal
         let Some(rate_data) = self
             .rate_data_at_proposal_start(proposal_id, validator_identity)
-            .await? else {
-                anyhow::bail!("validator {} was not active at the start of proposal {}", validator_identity, proposal_id);
-            };
+            .await?
+        else {
+            anyhow::bail!(
+                "validator {} was not active at the start of proposal {}",
+                validator_identity,
+                proposal_id
+            );
+        };
 
         // Check that the unbonded amount is correct relative to that exchange rate
         if rate_data.unbonded_amount(value.amount.value()) != unbonded_amount.value() {

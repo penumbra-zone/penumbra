@@ -457,7 +457,7 @@ impl TreeReader for Inner {
                 .iterator_cf_opt(jmt_values_cf, readopts, IteratorMode::End);
 
         let Some(tuple) = iterator.next() else {
-            return Ok(None)
+            return Ok(None);
         };
 
         let (_key, v) = tuple?;

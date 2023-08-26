@@ -128,7 +128,7 @@ impl AppHashRead for Snapshot {
         key: Vec<u8>,
     ) -> Result<Option<(Vec<u8>, TendermintMerkleProof)>> {
         let (Some(value), ics23_proof) = self.get_with_proof_to_apphash(key.to_vec()).await? else {
-            return Ok(None)
+            return Ok(None);
         };
 
         let jmt_op = tendermint::merkle::proof::ProofOp {

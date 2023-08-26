@@ -214,7 +214,8 @@ where
                 (None, Some(_)) => {
                     // There's no cache hit before the peeked pair, so we want
                     // to extract and return it from the underlying stream.
-                    let Poll::Ready(Some(Ok((k, v)))) = this.underlying.as_mut().poll_next(cx) else {
+                    let Poll::Ready(Some(Ok((k, v)))) = this.underlying.as_mut().poll_next(cx)
+                    else {
                         unreachable!("peeked stream must yield peeked item");
                     };
                     overwrite_in_place(this.last_key, &k);
@@ -381,7 +382,8 @@ where
                 (None, Some(_)) => {
                     // There's no cache hit before the peeked pair, so we want
                     // to extract and return it from the underlying stream.
-                    let Poll::Ready(Some(Ok((k, v)))) = this.underlying.as_mut().poll_next(cx) else {
+                    let Poll::Ready(Some(Ok((k, v)))) = this.underlying.as_mut().poll_next(cx)
+                    else {
                         unreachable!("peeked stream must yield peeked item");
                     };
                     overwrite_in_place(this.last_key, &k);
@@ -742,7 +744,8 @@ where
                 (None, Some(_)) => {
                     // There's no cache hit before the peeked pair, so we want
                     // to extract and return it from the underlying stream.
-                    let Poll::Ready(Some(Ok((k, v)))) = this.underlying.as_mut().poll_next(cx) else {
+                    let Poll::Ready(Some(Ok((k, v)))) = this.underlying.as_mut().poll_next(cx)
+                    else {
                         unreachable!("peeked stream must yield peeked item");
                     };
                     overwrite_in_place(this.last_key, &k);

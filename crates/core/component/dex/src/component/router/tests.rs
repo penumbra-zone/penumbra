@@ -1902,7 +1902,7 @@ async fn path_search_commutative() -> anyhow::Result<()> {
         }
 
         let Some(path_entry) = cache_guard2.0.remove(&pen.id()) else {
-             panic!("path entry not found");
+            panic!("path entry not found");
         };
 
         let best_path = path_entry.path;
@@ -2024,7 +2024,7 @@ async fn path_search_unique() -> anyhow::Result<()> {
         }
 
         let Some(path_entry) = cache_guard2.0.remove(&atom.id()) else {
-             panic!("path entry not found");
+            panic!("path entry not found");
         };
 
         let best_path = path_entry.path;
