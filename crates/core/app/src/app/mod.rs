@@ -415,11 +415,15 @@ impl App {
             .expect("we have exclusive ownership of the State at commit()");
 
         // Check if someone has signaled that we should halt.
-        // TODO(erwan): manage upgrade halt and epoch regen
         let should_halt = state
             .is_chain_halted(TOTAL_HALT_COUNT)
             .await
             .expect("must be able to read halt flag");
+
+        let is_upgrade_height = state
+            .is_upgrade_height()
+            .await
+            .expect("must be able to read upgrade height");
 
         // Commit the pending writes, clearing the state.
         let jmt_root = storage
@@ -430,6 +434,11 @@ impl App {
         // If we should halt, we should end the process here.
         if should_halt {
             tracing::info!("committed block when a chain halt was signaled; exiting now");
+            std::process::exit(0);
+        }
+
+        if is_upgrade_height {
+            tracing::info!("committed block at upgrade height; exiting now");
             std::process::exit(0);
         }
 

@@ -31,6 +31,10 @@ pub fn halted(total_halt_count: u64) -> Vec<u8> {
     key
 }
 
+pub fn next_upgrade() -> &'static str {
+    "chain/next_upgrade"
+}
+
 // These are used for the object store:
 pub fn chain_params_changed() -> &'static str {
     "chain_params_changed"

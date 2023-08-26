@@ -884,8 +884,9 @@ pub trait StateWriteExt: StateWrite {
                 // be slotted in at the end of the block:
                 self.deliver_dao_transaction(proposal_id).await?;
             }
-            ProposalPayload::UpgradePlan { .. } => {
-                tracing::info!("upgrade plan proposal passed, nothing to do for now");
+            ProposalPayload::UpgradePlan { height } => {
+                tracing::info!(target_height = height, "upgrade plan proposal passed");
+                self.signal_upgrade(*height).await?;
             }
         }
 
