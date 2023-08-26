@@ -97,8 +97,8 @@ impl From<Proposal> for pb::Proposal {
                     }),
                 });
             }
-            ProposalPayload::UpgradePlan { name, height, info } => {
-                proposal.upgrade_plan = Some(pb::proposal::UpgradePlan { name, height, info });
+            ProposalPayload::UpgradePlan { height } => {
+                proposal.upgrade_plan = Some(pb::proposal::UpgradePlan { height });
             }
         }
         proposal
@@ -262,11 +262,7 @@ pub enum ProposalPayload {
     },
     /// An upgrade plan proposal describes a planned upgrade to the chain. If ratified, the chain
     /// will halt at the specified height, trigger an epoch transition, and halt the chain.
-    UpgradePlan {
-        name: String,
-        height: u64,
-        info: String,
-    },
+    UpgradePlan { height: u64 },
 }
 
 /// A TOML-serializable version of `ProposalPayload`, meant for human consumption.
@@ -287,9 +283,7 @@ pub enum ProposalPayloadToml {
         transaction: String,
     },
     UpgradePlan {
-        name: String,
         height: u64,
-        info: String,
     },
 }
 
@@ -312,9 +306,7 @@ impl TryFrom<ProposalPayloadToml> for ProposalPayload {
                 ))
                 .context("couldn't decode transaction plan from proto")?,
             },
-            ProposalPayloadToml::UpgradePlan { name, height, info } => {
-                ProposalPayload::UpgradePlan { name, height, info }
-            }
+            ProposalPayloadToml::UpgradePlan { height } => ProposalPayload::UpgradePlan { height },
         })
     }
 }
@@ -335,9 +327,7 @@ impl From<ProposalPayload> for ProposalPayloadToml {
                     transaction_plan.encode_to_vec(),
                 ),
             },
-            ProposalPayload::UpgradePlan { name, height, info } => {
-                ProposalPayloadToml::UpgradePlan { name, height, info }
-            }
+            ProposalPayload::UpgradePlan { height } => ProposalPayloadToml::UpgradePlan { height },
         }
     }
 }
