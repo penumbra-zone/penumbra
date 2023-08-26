@@ -126,6 +126,22 @@ pub trait StateReadExt: StateRead {
             .is_some())
     }
 
+    /// Returns true if the next height is an upgrade height. We do this because we want to
+    /// decide whether to upgrade before we commit the block.
+    async fn is_upgrade_height(&self) -> Result<bool> {
+        let Some(next_upgrade_height) = self
+            .nonverifiable_get_raw(state_key::next_upgrade().as_bytes())
+            .await?
+        else {
+            return Ok(false);
+        };
+
+        let next_upgrade_height = u64::from_be_bytes(next_upgrade_height.as_slice().try_into()?);
+
+        let current_height = self.get_block_height().await?;
+        Ok(current_height.saturating_add(1) == next_upgrade_height)
+    }
+
     /// Returns true if the chain parameters have been changed in this block.
     fn chain_params_changed(&self) -> bool {
         self.object_get::<()>(state_key::chain_params_changed())
@@ -208,6 +224,14 @@ pub trait StateWriteExt: StateWrite {
         // actually occur).
         self.nonverifiable_put_raw(state_key::halted(halt_count).to_vec(), vec![]);
 
+        Ok(())
+    }
+
+    async fn signal_upgrade(&mut self, height: u64) -> Result<()> {
+        self.nonverifiable_put_raw(
+            state_key::next_upgrade().into(),
+            height.to_be_bytes().to_vec(),
+        );
         Ok(())
     }
 
