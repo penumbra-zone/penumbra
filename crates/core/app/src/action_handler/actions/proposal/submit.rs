@@ -171,7 +171,9 @@ impl ActionHandler for ProposalSubmit {
                     "submitted DAO spend transaction failed to execute in current chain state",
                 )?;
             }
-            ProposalPayload::UpgradePlan { .. } => {}
+            ProposalPayload::UpgradePlan { .. } => {
+                // TODO(erwan): no stateful checks for upgrade plan.
+            }
         }
 
         Ok(())

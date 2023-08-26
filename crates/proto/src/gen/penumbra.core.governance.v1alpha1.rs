@@ -412,11 +412,7 @@ pub mod proposal {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct UpgradePlan {
-        #[prost(string, tag = "1")]
-        pub name: ::prost::alloc::string::String,
-        #[prost(uint64, tag = "2")]
+        #[prost(uint64, tag = "1")]
         pub height: u64,
-        #[prost(string, tag = "3")]
-        pub info: ::prost::alloc::string::String,
     }
 }

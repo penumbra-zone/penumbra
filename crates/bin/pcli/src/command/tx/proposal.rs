@@ -112,11 +112,7 @@ impl ProposalKindCmd {
                     }
                 }
             }
-            ProposalKindCmd::UpgradePlan { .. } => ProposalPayload::UpgradePlan {
-                name: "".to_string(),
-                height: 0,
-                info: "".to_string(),
-            },
+            ProposalKindCmd::UpgradePlan { .. } => ProposalPayload::UpgradePlan { height: 0 },
         };
 
         Ok(Proposal {
