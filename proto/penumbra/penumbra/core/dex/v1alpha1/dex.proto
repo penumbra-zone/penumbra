@@ -133,9 +133,9 @@ message SwapClaimView {
   }
 }
 
-// Holds two asset IDs. Ordering doesn't reflect trading direction. Instead, we
-// require `asset_1 < asset_2` as field elements, to ensure a canonical
-// representation of an unordered pair.
+// A TradingPair is an unordered tuple of two asset ids. Ordering does not
+// reflect trading direction. Instead, we require that `asset_1 < asset_2`
+// as field elements, to ensure a canonical representation of an unordered pair.
 message TradingPair {
   // The first asset of the pair.
   crypto.v1alpha1.AssetId asset_1 = 1;
@@ -332,7 +332,12 @@ message PositionRewardClaim {
   crypto.v1alpha1.BalanceCommitment rewards_commitment = 2;
 }
 
-// Contains the entire execution of a particular swap.
+// A SwapExecution is an execution trace of a swap.
+// It contains an ordered list of values that correspond to each hop
+// that a swap has taken. Each value contains an amount and an asset type
+// The trace at index 0 represents the input swap and the trace at the last
+// index represents the output. The effective price for a swap can be computed
+// by dividing the input amount by the output amount.
 message SwapExecution {
   // Contains all individual steps consisting of a trade trace.
   message Trace {
