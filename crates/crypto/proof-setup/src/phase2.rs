@@ -1,6 +1,9 @@
 //! This module is very similar to the one for phase1, so reading that one might be useful.
+#[macro_use]
+use anyhow::{Result, anyhow};
 use ark_ec::Group;
 use ark_ff::{fields::Field, UniformRand, Zero};
+use ark_poly::domain::{EvaluationDomain, Radix2EvaluationDomain};
 use ark_relations::r1cs::ConstraintMatrices;
 use rand_core::{CryptoRngCore, OsRng};
 
@@ -93,7 +96,10 @@ impl Hashable for CRSElements {
 }
 
 impl CRSElements {
-    pub fn transition(phase1: phase1::CRSElements, circuit: &ConstraintMatrices<F>) -> Self {
+    pub fn transition(
+        phase1: phase1::CRSElements,
+        circuit: &ConstraintMatrices<F>,
+    ) -> Result<Self> {
         // To understand this function, it can be good to recap the relationship between
         // R1CS constraints and QAP constraints.
         //
@@ -165,11 +171,115 @@ impl CRSElements {
         // by using simple indexing.
         //
         // Ok, that was the explanation, now onto the code.
-        todo!()
+        let circuit_size = circuit.num_constraints + circuit.num_instance_variables;
+        let domain: Radix2EvaluationDomain<F> =
+            Radix2EvaluationDomain::new(circuit_size).ok_or(anyhow!(
+                "Failed to create evaluation domain size (at least) {}",
+                circuit_size
+            ))?;
+        let domain_size = domain.size();
+        // 0. Check that the phase1 degree is large enough.
+        if phase1.degree < domain_size {
+            return Err(anyhow!(
+                "Phase1 elements not large enough: expected >= {}, found {}",
+                domain_size,
+                phase1.degree
+            ));
+        }
+        let d_inv = domain.size_inv();
+
+        // 1. Get the lagrange coefficients over [x].
+        // 1.1. Setup a polynomial that's 1/d * x^i at each coefficient.
+        let mut extracting_poly: Vec<_> = phase1
+            .raw
+            .x_1
+            .iter()
+            .copied()
+            .take(domain_size)
+            .map(|x| x * d_inv)
+            .collect();
+        domain.fft_in_place(&mut extracting_poly);
+        extracting_poly.reverse();
+        let lagrange = extracting_poly;
+
+        // 2. Do the same for [αx].
+        let mut extracting_poly: Vec<_> = phase1
+            .raw
+            .alpha_x_1
+            .iter()
+            .copied()
+            .take(domain_size)
+            .map(|x| x * d_inv)
+            .collect();
+        domain.fft_in_place(&mut extracting_poly);
+        extracting_poly.reverse();
+        let alpha_lagrange = extracting_poly;
+
+        // 3. Do the same for [βx].
+        let mut extracting_poly: Vec<_> = phase1
+            .raw
+            .beta_x_1
+            .iter()
+            .copied()
+            .take(domain_size)
+            .map(|x| x * d_inv)
+            .collect();
+        domain.fft_in_place(&mut extracting_poly);
+        extracting_poly.reverse();
+        let beta_lagrange = extracting_poly;
+        // 4. Accumulate the p_i polynomials evaluated over [x].
+        // This indexing is copied from ark_groth16/r1cs_to_qap.rs.html#106.
+        // (I spent a full massage chair cycle thinking about this and couldn't figure out
+        // why exactly they do it this way, but mirroring the code we're trying to be
+        // compatible with is a good idea).
+        let qap_num_variables =
+            (circuit.num_instance_variables - 1) + circuit.num_witness_variables;
+        let mut p = vec![G1::zero(); qap_num_variables + 1];
+
+        // This is where we add the identity matrix block at the end to avoid malleability
+        // shenanigans.
+        {
+            let start = 0;
+            let end = circuit.num_instance_variables;
+            let num_constraints = circuit.num_constraints;
+            // One deviation if you're reading the arkworks code is that we're modifying
+            // the entire p polynomial, and not u (which they call 'a'), but this effectively does
+            // the same thing, because the other polynomials are set to 0 at these points.
+            p[start..end].copy_from_slice(
+                &alpha_lagrange[(start + num_constraints)..(end + num_constraints)],
+            );
+        }
+
+        // Could zip here, but this looks cleaner to me.
+        for i in 0..circuit.num_constraints {
+            for &(ref coeff, j) in &circuit.a[i] {
+                p[j] += alpha_lagrange[i] * coeff;
+            }
+            for &(ref coeff, j) in &circuit.b[i] {
+                p[j] += beta_lagrange[i] * coeff;
+            }
+            for &(ref coeff, j) in &circuit.c[i] {
+                p[j] += lagrange[i] * coeff;
+            }
+        }
+
+        // 5. Calculate the t polynomial, evaluated multiplied by successive powers.
+        let t: Vec<_> = (0..(domain_size - 2))
+            .map(|i| phase1.raw.x_1[i + domain_size] - phase1.raw.x_1[i])
+            .collect();
+
+        Ok(Self {
+            raw: RawCRSElements {
+                delta_1: G1::generator(),
+                delta_2: G2::generator(),
+                inv_delta_p_1: p,
+                inv_delta_t_1: t,
+            },
+        })
     }
 }
 
-/// Represents a raw, unvalidated contribution.
+/// Represents a raw, unvalidatedontribution.
 #[derive(Clone, Debug)]
 pub struct RawContribution {
     pub parent: ContributionHash,
