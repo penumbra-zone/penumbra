@@ -5126,8 +5126,10 @@ dependencies = [
 name = "penumbra-proof-setup"
 version = "0.59.0"
 dependencies = [
+ "anyhow",
  "ark-ec",
  "ark-ff",
+ "ark-poly",
  "ark-relations",
  "ark-serialize",
  "blake2b_simd 0.5.11",

@@ -4,8 +4,10 @@ version = "0.59.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0"
 ark-ec = "0.4.2"
 ark-ff = "0.4.2"
+ark-poly = "0.4.2"
 ark-relations = "0.4"
 ark-serialize = "0.4.2"
 blake2b_simd = "0.5"
