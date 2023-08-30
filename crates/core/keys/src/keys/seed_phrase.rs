@@ -10,42 +10,94 @@ pub const NUM_PBKDF2_ROUNDS: u32 = 2048;
 pub const NUM_WORDS_SHORT: usize = 12;
 pub const NUM_WORDS_LONG: usize = 24;
 
+pub const NUM_ENTROPY_BITS_SHORT: usize = 128;
 pub const NUM_ENTROPY_BITS_LONG: usize = 256;
 pub const NUM_BITS_PER_WORD: usize = 11;
 pub const NUM_BITS_PER_BYTE: usize = 8;
+
+/// Allowed seed phrases for a [`SeedPhrase`]. We support either
+/// the minimum or maximum length.
+pub enum SeedPhraseType {
+    /// The minimum length for a BIP39 mnenomic seed phrase is 12 words.
+    MinimumLength,
+    /// The maximum length for a BIP39 mnenomic seed phrase is 24 words.
+    MaximumLength,
+}
+
+impl SeedPhraseType {
+    pub fn from_length(len: usize) -> anyhow::Result<Self> {
+        match len {
+            NUM_WORDS_SHORT => Ok(SeedPhraseType::MinimumLength),
+            NUM_WORDS_LONG => Ok(SeedPhraseType::MaximumLength),
+            _ => Err(anyhow::anyhow!("invalid seed phrase length")),
+        }
+    }
+
+    pub fn num_words(&self) -> usize {
+        match self {
+            SeedPhraseType::MinimumLength => NUM_WORDS_SHORT,
+            SeedPhraseType::MaximumLength => NUM_WORDS_LONG,
+        }
+    }
+
+    pub fn num_checksum_bits(&self) -> usize {
+        match self {
+            SeedPhraseType::MinimumLength => NUM_ENTROPY_BITS_SHORT / 32,
+            SeedPhraseType::MaximumLength => NUM_ENTROPY_BITS_LONG / 32,
+        }
+    }
+
+    pub fn num_entropy_bits(&self) -> usize {
+        match self {
+            SeedPhraseType::MinimumLength => NUM_ENTROPY_BITS_SHORT,
+            SeedPhraseType::MaximumLength => NUM_ENTROPY_BITS_LONG,
+        }
+    }
+
+    pub fn num_entropy_bytes(&self) -> usize {
+        match self {
+            SeedPhraseType::MinimumLength => NUM_ENTROPY_BITS_SHORT / NUM_BITS_PER_BYTE,
+            SeedPhraseType::MaximumLength => NUM_ENTROPY_BITS_LONG / NUM_BITS_PER_BYTE,
+        }
+    }
+
+    pub fn num_total_bits(&self) -> usize {
+        self.num_entropy_bits() + self.num_checksum_bits()
+    }
+}
 
 /// A mnemonic seed phrase. Used to generate [`SpendSeed`]s.
 pub struct SeedPhrase(pub Vec<String>);
 
 impl SeedPhrase {
-    /// Randomly generates a BIP39 [`SeedPhrase`].
+    /// Randomly generates a 24 word BIP39 [`SeedPhrase`].
     pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
         let mut randomness = [0u8; NUM_ENTROPY_BITS_LONG / NUM_BITS_PER_BYTE];
         rng.fill_bytes(&mut randomness);
         Self::from_randomness(&randomness, NUM_WORDS_LONG)
     }
 
-    /// Number of words in this [`SeedPhrase`].
-    pub fn length(&self) -> usize {
-        self.0.len()
+    /// Randomly generates a 12 word BIP39 [`SeedPhrase`].
+    pub fn short_generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
+        let mut randomness = [0u8; NUM_ENTROPY_BITS_SHORT / NUM_BITS_PER_BYTE];
+        rng.fill_bytes(&mut randomness);
+        Self::from_randomness(&randomness, NUM_WORDS_SHORT)
     }
 
     /// Given bytes of randomness, generate a [`SeedPhrase`].
     pub fn from_randomness(randomness: &[u8], length: usize) -> Self {
-        // If the length is 12 words, the length of the randomness should be 16 bytes.
-        // Else if the length is 24 words, the length of the randomness should be 32 bytes.
-        if length == NUM_WORDS_SHORT {
-            assert_eq!(randomness.len(), 16);
-        } else if length == NUM_WORDS_LONG {
-            assert_eq!(randomness.len(), 32);
-        } else {
-            panic!("invalid length for BIP39 seed phrase");
+        let seed_phrase_type =
+            SeedPhraseType::from_length(length).expect("can get seed phrase type");
+        if seed_phrase_type.num_entropy_bytes() != randomness.len() {
+            panic!(
+                "invalid length of randomness: expected {}, got {}",
+                seed_phrase_type.num_entropy_bytes(),
+                randomness.len()
+            );
         }
 
-        let num_checksum_bits = randomness.len() * 8 / 32;
-        let num_entropy_bits = length * NUM_BITS_PER_WORD - num_checksum_bits;
-        let num_total_bits = num_entropy_bits + num_checksum_bits;
-        let mut bits = vec![false; num_total_bits];
+        let num_entropy_bits = seed_phrase_type.num_entropy_bits();
+        let mut bits = vec![false; seed_phrase_type.num_total_bits()];
         for (i, bit) in bits[0..num_entropy_bits].iter_mut().enumerate() {
             *bit = (randomness[i / NUM_BITS_PER_BYTE] & (1 << (7 - (i % NUM_BITS_PER_BYTE)))) > 0
         }
@@ -62,12 +114,10 @@ impl SeedPhrase {
         for (i, bit) in bits[num_entropy_bits..].iter_mut().enumerate() {
             *bit = (checksum & (1 << (7 - (i % NUM_BITS_PER_BYTE)))) > 0
         }
-        let checksum_bits = &bits[num_entropy_bits..];
-        let checksum = convert_bits_to_usize(checksum_bits) as u8;
 
         // Concatenated bits are split into groups of 11 bits, each
         // encoding a number that is an index into the BIP39 word list.
-        let mut words = vec![String::new(); length];
+        let mut words = vec![String::new(); seed_phrase_type.num_words()];
         for (i, word) in words.iter_mut().enumerate() {
             let bits_this_word = &bits[i * NUM_BITS_PER_WORD..(i + 1) * NUM_BITS_PER_WORD];
             let word_index = convert_bits_to_usize(bits_this_word);
@@ -76,12 +126,15 @@ impl SeedPhrase {
         SeedPhrase(words)
     }
 
+    /// Number of words in this [`SeedPhrase`].
+    pub fn length(&self) -> usize {
+        self.0.len()
+    }
+
     /// Verify the checksum of this [`SeedPhrase`].
     fn verify_checksum(&self) -> anyhow::Result<()> {
-        let num_checksum_bits = self.length() * NUM_BITS_PER_WORD / 32;
-        let num_entropy_bits = self.length() * NUM_BITS_PER_WORD - num_checksum_bits;
-        let num_total_bits = num_entropy_bits + num_checksum_bits;
-        let mut bits = vec![false; num_total_bits];
+        let seed_phrase_type = SeedPhraseType::from_length(self.length())?;
+        let mut bits = vec![false; seed_phrase_type.num_total_bits()];
         for (i, word) in self.0.iter().enumerate() {
             if !BIP39_WORDS.contains(&word.as_str()) {
                 anyhow::bail!("invalid word in BIP39 seed phrase");
@@ -98,7 +151,7 @@ impl SeedPhrase {
                 .for_each(|(j, bit)| *bit = (word_index >> (NUM_BITS_PER_WORD - 1 - j)) & 1 == 1);
         }
 
-        let mut randomness = vec![0u8; num_entropy_bits / NUM_BITS_PER_BYTE];
+        let mut randomness = vec![0u8; seed_phrase_type.num_entropy_bits() / NUM_BITS_PER_BYTE];
         for (i, random_byte) in randomness.iter_mut().enumerate() {
             let bits_this_byte = &bits[i * NUM_BITS_PER_BYTE..(i + 1) * NUM_BITS_PER_BYTE];
             *random_byte = convert_bits_to_usize(bits_this_byte) as u8;
@@ -108,12 +161,12 @@ impl SeedPhrase {
         hasher.update(randomness);
         let calculated_checksum = hasher.finalize()[0];
 
-        let mut calculated_checksum_bits = vec![false; num_checksum_bits];
+        let mut calculated_checksum_bits = vec![false; seed_phrase_type.num_checksum_bits()];
         for (i, bit) in calculated_checksum_bits.iter_mut().enumerate() {
             *bit = (calculated_checksum & (1 << (7 - (i % NUM_BITS_PER_BYTE)))) > 0
         }
 
-        let checksum_bits = &bits[num_entropy_bits..];
+        let checksum_bits = &bits[seed_phrase_type.num_entropy_bits()..];
         for (expected_bit, checksum_bit) in checksum_bits.iter().zip(calculated_checksum_bits) {
             if checksum_bit != *expected_bit {
                 return Err(anyhow::anyhow!("seed phrase checksum did not validate"));
