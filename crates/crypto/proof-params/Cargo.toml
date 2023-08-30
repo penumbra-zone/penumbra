@@ -62,34 +62,34 @@ parallel = ["ark-ff/parallel", "decaf377/parallel", "ark-groth16/parallel", "ark
 [[bench]]
 name = "nullifier_derivation"
 harness = false
-required-features = ["proving-keys"]
+required-features = ["proving-keys", "parallel"]
 
 [[bench]]
 name = "output"
 harness = false
-required-features = ["proving-keys"]
+required-features = ["proving-keys", "parallel"]
 
 [[bench]]
 name = "delegator_vote"
 harness = false
-required-features = ["proving-keys"]
+required-features = ["proving-keys", "parallel"]
 
 [[bench]]
 name = "spend"
 harness = false
-required-features = ["proving-keys"]
+required-features = ["proving-keys", "parallel"]
 
 [[bench]]
 name = "swap"
 harness = false
-required-features = ["proving-keys"]
+required-features = ["proving-keys", "parallel"]
 
 [[bench]]
 name = "swap_claim"
 harness = false
-required-features = ["proving-keys"]
+required-features = ["proving-keys", "parallel"]
 
 [[bench]]
 name = "undelegate_claim"
 harness = false
-required-features = ["proving-keys"]
+required-features = ["proving-keys", "parallel"]

@@ -40,17 +40,17 @@ cd crates/crypto/proof-params
 cargo bench
 ```
 
-Performance as of commit `98590ef2dd92ea75fa3bd6f09b3c24fec3fe36ff` benchmarked on a 2023 Macbook Pro M2 (12 core CPU) with 32 GB memory:
+Performance as of commit `ce2d319bd5534fd28600227b28506e32b8504493` benchmarked on a 2023 Macbook Pro M2 (12 core CPU) with 32 GB memory and the `parallel` feature enabled:
 
 | Proof    | Number of constraints | Proving time |
 | -------- | ------- | ----- |
-| Spend  | 34,630    | 2.06s
-| Output | 13,875    | 667ms
-| Delegator vote    | 36,723  | 2.05s
-| Undelegate claim | 14,776 | 722ms
-| Swap | 25,700 | 1.21s
-| SwapClaim | 37,061 | 1.83s
-| Nullifier derivation | 394  | 59ms
+| Spend  | 34,630    | 388ms
+| Output | 13,875    | 130ms
+| Delegator vote    | 36,723  | 389ms
+| Undelegate claim | 14,776 | 139ms
+| Swap | 25,700 | 237ms
+| SwapClaim | 37,061 | 379ms
+| Nullifier derivation | 394  | 15ms
 
 ## zk-SNARK Ceremony Benchmarks
 
