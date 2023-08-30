@@ -1,5 +1,4 @@
 //! This module is very similar to the one for phase1, so reading that one might be useful.
-#[macro_use]
 use anyhow::{Result, anyhow};
 use ark_ec::Group;
 use ark_ff::{fields::Field, UniformRand, Zero};
