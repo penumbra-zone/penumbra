@@ -186,7 +186,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
 
 impl ParameterSetup for DelegatorVoteCircuit {
     fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
-        let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);
+        let seed_phrase = SeedPhrase::from_randomness(&[b'f'; 32]);
         let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
@@ -367,7 +367,7 @@ mod tests {
         let (pk, vk) = DelegatorVoteCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
 
-        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
         let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
@@ -438,7 +438,7 @@ mod tests {
         let (pk, vk) = DelegatorVoteCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
 
-        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
         let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
