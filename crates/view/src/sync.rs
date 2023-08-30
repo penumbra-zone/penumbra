@@ -81,6 +81,8 @@ pub async fn scan_block(
     // Nullifiers we've found in this block
     let spent_nullifiers: Vec<Nullifier> = nullifiers;
 
+    tracing::debug!("compact block spent nullifiers: {:?}", spent_nullifiers);
+
     // Trial-decrypt the notes in this block, keeping track of the ones that were meant for us
     let mut note_decryptions = Vec::new();
     let mut swap_decryptions = Vec::new();

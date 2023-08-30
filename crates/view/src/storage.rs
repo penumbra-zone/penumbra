@@ -7,6 +7,7 @@ use penumbra_asset::{asset, asset::DenomMetadata, asset::Id, Value};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_dex::{
     lp::position::{self, Position, State},
+    swap_claim::SwapClaim,
     TradingPair,
 };
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
@@ -307,6 +308,10 @@ impl Storage {
 
         let pool = self.pool.clone();
 
+        let note_commitment = hex::encode(note_commitment.0.to_bytes());
+
+        tracing::debug!("querying for note commitment", ?note_commitment);
+
         if let Some(record) = spawn_blocking(move || {
             // Check if we already have the record
             pool.get()?
@@ -326,7 +331,7 @@ impl Storage {
                     FROM notes
                     JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
                     WHERE notes.note_commitment = x'{}'",
-                    hex::encode(note_commitment.0.to_bytes())
+                    note_commitment
                 ))?
                 .query_and_then((), |record| record.try_into())?
                 .next()
@@ -1036,6 +1041,29 @@ impl Storage {
         Ok(())
     }
 
+    pub async fn record_swap_claim(
+        &self,
+        tx_hash: &[u8],
+        block_height: u64,
+        swap_claim: SwapClaim,
+    ) -> anyhow::Result<()> {
+        let pool = self.pool.clone();
+        let nullifier = swap_claim.body.nullifier.to_bytes().to_vec();
+
+        let block_height = block_height as i64;
+        let swap_claim_bytes = swap_claim.body.encode_to_vec();
+
+        tracing::debug!("recording swap claim: {:?}", swap_claim.body);
+
+        pool.get()?.execute(
+            "INSERT INTO swap_claims (nullifier, tx_hash, block_height, swap_claim)
+                    VALUES (?1, ?2, ?3, ?4)",
+            (&nullifier, &tx_hash, block_height, &swap_claim_bytes),
+        )?;
+
+        Ok(())
+    }
+
     pub async fn record_empty_block(&self, height: u64) -> anyhow::Result<()> {
         // Check that the incoming block height follows the latest recorded height
         let last_sync_height = self.last_sync_height().await?.ok_or_else(|| {
@@ -1157,7 +1185,7 @@ impl Storage {
 
         let pool = self.pool.clone();
 
-        spawn_blocking(move || {
+        let result = spawn_blocking(move || {
             pool.get()?
                 .prepare(&format!(
                     "SELECT nullifier FROM (
@@ -1177,7 +1205,11 @@ impl Storage {
                 })?
                 .collect()
         })
-        .await?
+        .await?;
+
+        tracing::debug!("filter_nullifiers: result = {:?}", result);
+
+        result
     }
 
     pub async fn record_block(

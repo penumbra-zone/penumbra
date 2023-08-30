@@ -274,6 +274,17 @@ impl Worker {
                                     .update_position(position_id, position::State::Claimed)
                                     .await?;
                             }
+                            penumbra_transaction::Action::SwapClaim(swap_claim) => {
+                                let tx_bytes = transaction.encode_to_vec();
+                                let tx_hash_owned = sha2::Sha256::digest(&tx_bytes);
+                                let tx_hash = tx_hash_owned.as_slice();
+                                let tx_block_height = filtered_block.height;
+                                self.storage
+                                    .record_swap_claim(tx_hash, tx_block_height, swap_claim.clone())
+                                    .await?;
+
+                                tracing::debug!("swap claim: {:?}", swap_claim.clone());
+                            }
                             _ => (),
                         };
                     }

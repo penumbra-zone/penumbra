@@ -116,6 +116,13 @@ CREATE TABLE swaps (
     source                  BLOB NOT NULL
 );
 
+CREATE TABLE swap_claims (
+    nullifier               BLOB PRIMARY KEY NOT NULL,
+    tx_hash                 BLOB NOT NULL,
+    block_height            BIGINT NOT NULL,
+    swap_claim              BLOB NOT NULL
+);
+
 CREATE INDEX swaps_nullifier_idx ON swaps (nullifier);
 
 CREATE TABLE positions (
