@@ -33,6 +33,14 @@ impl SeedPhraseType {
         }
     }
 
+    pub fn from_randomness_length(len: usize) -> anyhow::Result<Self> {
+        match len * NUM_BITS_PER_BYTE {
+            NUM_ENTROPY_BITS_SHORT => Ok(SeedPhraseType::MinimumLength),
+            NUM_ENTROPY_BITS_LONG => Ok(SeedPhraseType::MaximumLength),
+            _ => Err(anyhow::anyhow!("invalid randomness length")),
+        }
+    }
+
     pub fn num_words(&self) -> usize {
         match self {
             SeedPhraseType::MinimumLength => NUM_WORDS_SHORT,
@@ -54,13 +62,6 @@ impl SeedPhraseType {
         }
     }
 
-    pub fn num_entropy_bytes(&self) -> usize {
-        match self {
-            SeedPhraseType::MinimumLength => NUM_ENTROPY_BITS_SHORT / NUM_BITS_PER_BYTE,
-            SeedPhraseType::MaximumLength => NUM_ENTROPY_BITS_LONG / NUM_BITS_PER_BYTE,
-        }
-    }
-
     pub fn num_total_bits(&self) -> usize {
         self.num_entropy_bits() + self.num_checksum_bits()
     }
@@ -74,27 +75,22 @@ impl SeedPhrase {
     pub fn generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
         let mut randomness = [0u8; NUM_ENTROPY_BITS_LONG / NUM_BITS_PER_BYTE];
         rng.fill_bytes(&mut randomness);
-        Self::from_randomness(&randomness, NUM_WORDS_LONG)
+        Self::from_randomness(&randomness)
     }
 
     /// Randomly generates a 12 word BIP39 [`SeedPhrase`].
     pub fn short_generate<R: RngCore + CryptoRng>(mut rng: R) -> Self {
         let mut randomness = [0u8; NUM_ENTROPY_BITS_SHORT / NUM_BITS_PER_BYTE];
         rng.fill_bytes(&mut randomness);
-        Self::from_randomness(&randomness, NUM_WORDS_SHORT)
+        Self::from_randomness(&randomness)
     }
 
     /// Given bytes of randomness, generate a [`SeedPhrase`].
-    pub fn from_randomness(randomness: &[u8], length: usize) -> Self {
-        let seed_phrase_type =
-            SeedPhraseType::from_length(length).expect("can get seed phrase type");
-        if seed_phrase_type.num_entropy_bytes() != randomness.len() {
-            panic!(
-                "invalid length of randomness: expected {}, got {}",
-                seed_phrase_type.num_entropy_bytes(),
-                randomness.len()
-            );
-        }
+    pub fn from_randomness(randomness: &[u8]) -> Self {
+        // We infer if the seed phrase will be a valid length based on the number of
+        // random bytes generated.
+        let seed_phrase_type = SeedPhraseType::from_randomness_length(randomness.len())
+            .expect("can get seed phrase type from randomness length");
 
         let num_entropy_bits = seed_phrase_type.num_entropy_bits();
         let mut bits = vec![false; seed_phrase_type.num_total_bits()];
@@ -268,9 +264,8 @@ mod tests {
         for (hex_randomness, expected_phrase) in
             randomness_arr.iter().zip(expected_phrase_arr.iter())
         {
-            let length = expected_phrase.split_whitespace().count();
             let randomness = hex::decode(hex_randomness).expect("can decode test vector");
-            let actual_phrase = SeedPhrase::from_randomness(&randomness[..], length);
+            let actual_phrase = SeedPhrase::from_randomness(&randomness[..]);
             assert_eq!(actual_phrase.to_string(), *expected_phrase);
             actual_phrase
                 .verify_checksum()

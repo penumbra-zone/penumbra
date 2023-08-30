@@ -253,7 +253,7 @@ mod tests {
 
             let mut rng = OsRng;
 
-            let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
             let fvk_recipient = sk_recipient.full_viewing_key();
             let ivk_recipient = fvk_recipient.incoming();
@@ -296,7 +296,7 @@ mod tests {
         let (pk, vk) = OutputCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
 
-        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
         let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
@@ -345,7 +345,7 @@ mod tests {
         let (pk, vk) = OutputCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
 
-        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
         let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();

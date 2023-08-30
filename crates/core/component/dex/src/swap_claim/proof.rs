@@ -217,7 +217,7 @@ impl ParameterSetup for SwapClaimCircuit {
                 .id(),
         };
 
-        let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);
+        let seed_phrase = SeedPhrase::from_randomness(&[b'f'; 32]);
         let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
@@ -416,7 +416,7 @@ mod tests {
 
         let mut rng = OsRng;
 
-        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
+        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
         let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
