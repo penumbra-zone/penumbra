@@ -175,8 +175,15 @@ mod tests {
     #[test]
     fn bip39_mnemonic_derivation() {
         // These test vectors are taken from: https://github.com/trezor/python-mnemonic/blob/master/vectors.json
-        let randomness_arr: [&str; 9] = [
+        let randomness_arr: [&str; 16] = [
             "00000000000000000000000000000000",
+            "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
+            "80808080808080808080808080808080",
+            "ffffffffffffffffffffffffffffffff",
+            "9e885d952ad362caeb4efe34a8e91bd2",
+            "c0ba5a8e914111210f2bd131f3d5e08d",
+            "23db8160a31d3e0dca3688ed941adbf3",
+            "f30f8c1da665478f49b001d94c5fc452",
             "0000000000000000000000000000000000000000000000000000000000000000",
             "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f",
             "8080808080808080808080808080808080808080808080808080808080808080",
@@ -186,8 +193,15 @@ mod tests {
             "066dca1a2bb7e8a1db2832148ce9933eea0f3ac9548d793112d9a95c9407efad",
             "f585c11aec520db57dd353c69554b21a89b20fb0650966fa0a9d6f74fd989d8f",
         ];
-        let expected_phrase_arr: [&str; 9] = [
+        let expected_phrase_arr: [&str; 16] = [
             "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+            "legal winner thank year wave sausage worth useful legal winner thank yellow",
+            "letter advice cage absurd amount doctor acoustic avoid letter advice cage above",
+            "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong",
+            "ozone drill grab fiber curtain grace pudding thank cruise elder eight picnic",
+            "scheme spot photo card baby mountain device kick cradle pact join borrow",
+            "cat swing flag economy stadium alone churn speed unique patch report train",
+            "vessel ladder alter error federal sibling chat ability sun glass valve picture",
             "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art",
             "legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth title",
             "letter advice cage absurd amount doctor acoustic avoid letter advice cage absurd amount doctor acoustic avoid letter advice cage absurd amount doctor acoustic bless",
@@ -205,6 +219,9 @@ mod tests {
             let randomness = hex::decode(hex_randomness).expect("can decode test vector");
             let actual_phrase = SeedPhrase::from_randomness(&randomness[..], length);
             assert_eq!(actual_phrase.to_string(), *expected_phrase);
+            actual_phrase
+                .verify_checksum()
+                .expect("checksum should validate");
         }
     }
 
