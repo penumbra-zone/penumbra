@@ -155,6 +155,10 @@ impl TryFrom<pb::Proposal> for Proposal {
                         TransactionPlan::decode(transaction_plan.value)?
                     },
                 }
+            } else if let Some(upgrade_plan) = inner.upgrade_plan {
+                ProposalPayload::UpgradePlan {
+                    height: upgrade_plan.height,
+                }
             } else {
                 anyhow::bail!("missing proposal payload or unknown proposal type");
             },
