@@ -415,10 +415,10 @@ impl App {
     pub async fn commit(&mut self, storage: Storage) -> AppHash {
         // We need to extract the State we've built up to commit it.  Fill in a dummy state.
         let dummy_state = StateDelta::new(storage.latest_snapshot());
-        let state = Arc::try_unwrap(std::mem::replace(&mut self.state, Arc::new(dummy_state)))
+        let mut state = Arc::try_unwrap(std::mem::replace(&mut self.state, Arc::new(dummy_state)))
             .expect("we have exclusive ownership of the State at commit()");
 
-        // Check if someone has signaled that we should halt.
+        // Check if an emergency halt has been signaled.
         let should_halt = state
             .is_chain_halted(TOTAL_HALT_COUNT)
             .await
@@ -428,6 +428,16 @@ impl App {
             .is_upgrade_height()
             .await
             .expect("must be able to read upgrade height");
+
+        if is_upgrade_height {
+            tracing::info!("upgrade height reached, signaling halt");
+            // If we are about to reach an upgrade height, we want to increase the
+            // halt counter to prevent the chain from restarting without manual intervention.
+            state
+                .signal_halt()
+                .await
+                .expect("must be able to signal halt");
+        }
 
         // Commit the pending writes, clearing the state.
         let jmt_root = storage
