@@ -931,6 +931,7 @@ impl Storage {
                 .query_and_then((), |row| row.try_into())?
                 .collect::<anyhow::Result<Vec<_>>>()?;
 
+
             // TODO: this could be internalized into the SQL query in principle, but it's easier to
             // do it this way; if it becomes slow, we can do it better
             let mut results = Vec::new();
@@ -939,7 +940,7 @@ impl Storage {
                 let denom: String = dbtx.query_row_and_then(
                     "SELECT denom FROM assets WHERE asset_id = ?1",
                     [asset_id],
-                    |row| row.get("asset_id")
+                    |row| row.get("denom")
                 )?;
 
                 let identity_key = DelegationToken::from_str(&denom)
