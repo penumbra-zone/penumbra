@@ -126,8 +126,9 @@ pub trait StateReadExt: StateRead {
             .is_some())
     }
 
-    /// Returns true if the next height is an upgrade height. We do this because we want to
-    /// decide whether to upgrade before we commit the block.
+    /// Returns true if the next height is an upgrade height.
+    /// We look-ahead to the next height because we want to halt the chain immediately after
+    /// committing the block.
     async fn is_upgrade_height(&self) -> Result<bool> {
         let Some(next_upgrade_height) = self
             .nonverifiable_get_raw(state_key::next_upgrade().as_bytes())
@@ -227,6 +228,9 @@ pub trait StateWriteExt: StateWrite {
         Ok(())
     }
 
+    /// Record the next upgrade height.
+    /// Right after committing the state for this height, the chain will halt and wait for an upgrade.
+    /// It uses the same mechanism as emergency halting to prevent the chain from restarting.
     async fn signal_upgrade(&mut self, height: u64) -> Result<()> {
         self.nonverifiable_put_raw(
             state_key::next_upgrade().into(),
