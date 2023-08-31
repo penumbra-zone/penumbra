@@ -18,7 +18,11 @@ pub enum KeysCmd {
     #[clap(subcommand)]
     Export(ExportCmd),
     /// Generate a new seed phrase and import its corresponding key.
-    Generate,
+    Generate {
+        /// If true, will use experimental BIP44 derivation.
+        #[clap(long, default_missing_value = "true", default_value = "false")]
+        bip44_derivation: bool,
+    },
     /// Delete the entire wallet permanently.
     Delete,
 }
@@ -28,9 +32,9 @@ pub enum ImportCmd {
     /// Import wallet from an existing 24-word seed phrase. Will prompt for input interactively.
     /// Also accepts input from stdin, for use with pipes.
     Phrase {
-        /// If true, will use legacy BIP39 derivation.
-        #[clap(short, long, default_value = "false")]
-        legacy_bip39_derivation: bool,
+        /// If true, will use experimental BIP44 derivation.
+        #[clap(long, default_missing_value = "true", default_value = "false")]
+        bip44_derivation: bool,
     },
 }
 
@@ -71,20 +75,22 @@ impl KeysCmd {
     pub fn exec(&self, data_dir: impl AsRef<camino::Utf8Path>) -> Result<()> {
         let data_dir = data_dir.as_ref();
         match self {
-            KeysCmd::Generate => {
-                let seed_phrase = SeedPhrase::generate(OsRng);
+            KeysCmd::Generate { bip44_derivation } => {
+                let seed_phrase: SeedPhrase = SeedPhrase::generate(OsRng);
 
                 // xxx: Something better should be done here, this is in danger of being
                 // shared by users accidentally in log output.
                 println!("YOUR PRIVATE SEED PHRASE: {seed_phrase}\nDO NOT SHARE WITH ANYONE!");
 
-                let wallet = KeyStore::from_seed_phrase_bip39(seed_phrase);
-                wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
-                self.archive_wallet(&wallet)?;
+                if *bip44_derivation {
+                    unimplemented!();
+                } else {
+                    let wallet = KeyStore::from_seed_phrase_bip39(seed_phrase);
+                    wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
+                    self.archive_wallet(&wallet)?;
+                }
             }
-            KeysCmd::Import(ImportCmd::Phrase {
-                legacy_bip39_derivation,
-            }) => {
+            KeysCmd::Import(ImportCmd::Phrase { bip44_derivation }) => {
                 let mut seed_phrase = String::new();
                 // The `rpassword` crate doesn't support reading from stdin, so we check
                 // for an interactive session. We must support non-interactive use cases,
@@ -101,13 +107,13 @@ impl KeysCmd {
                     }
                 }
 
-                if *legacy_bip39_derivation {
+                if *bip44_derivation {
+                    unimplemented!();
+                } else {
                     let wallet =
                         KeyStore::from_seed_phrase_bip39(SeedPhrase::from_str(&seed_phrase)?);
                     wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                     self.archive_wallet(&wallet)?;
-                } else {
-                    unimplemented!()
                 }
             }
             KeysCmd::Export(ExportCmd::FullViewingKey) => {
