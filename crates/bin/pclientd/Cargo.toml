@@ -63,7 +63,7 @@ assert_cmd = "2.0"
 base64 = "0.20"
 ibc-types = "0.3.0"
 
-ibc-proto = "0.31.0"
+ibc-proto = { version = "0.31.0", default-features = false, features = ["server"] }
 
 [build-dependencies]
 vergen = "5"
