@@ -144,7 +144,7 @@ impl ConnectionQuery for IbcQuery {
     /// state.
     async fn client_connections(
         &self,
-        request: tonic::Request<QueryClientConnectionsRequest>,
+        _request: tonic::Request<QueryClientConnectionsRequest>,
     ) -> std::result::Result<tonic::Response<QueryClientConnectionsResponse>, tonic::Status> {
         todo!()
     }
@@ -152,7 +152,7 @@ impl ConnectionQuery for IbcQuery {
     /// connection.
     async fn connection_client_state(
         &self,
-        request: tonic::Request<QueryConnectionClientStateRequest>,
+        _request: tonic::Request<QueryConnectionClientStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionClientStateResponse>, tonic::Status>
     {
         todo!()
@@ -161,7 +161,7 @@ impl ConnectionQuery for IbcQuery {
     /// connection.
     async fn connection_consensus_state(
         &self,
-        request: tonic::Request<QueryConnectionConsensusStateRequest>,
+        _request: tonic::Request<QueryConnectionConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionConsensusStateResponse>, tonic::Status>
     {
         todo!()
@@ -173,14 +173,14 @@ impl ConsensusQuery for IbcQuery {
     /// Channel queries an IBC Channel.
     async fn channel(
         &self,
-        request: tonic::Request<QueryChannelRequest>,
+        _request: tonic::Request<QueryChannelRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelResponse>, tonic::Status> {
         todo!()
     }
     /// Channels queries all the IBC channels of a chain.
     async fn channels(
         &self,
-        request: tonic::Request<QueryChannelsRequest>,
+        _request: tonic::Request<QueryChannelsRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelsResponse>, tonic::Status> {
         let snapshot = self.0.latest_snapshot();
         let height = Height {
@@ -274,7 +274,7 @@ impl ConsensusQuery for IbcQuery {
     /// with the provided channel identifiers.
     async fn channel_client_state(
         &self,
-        request: tonic::Request<QueryChannelClientStateRequest>,
+        _request: tonic::Request<QueryChannelClientStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelClientStateResponse>, tonic::Status> {
         todo!()
     }
@@ -282,7 +282,7 @@ impl ConsensusQuery for IbcQuery {
     /// associated with the provided channel identifiers.
     async fn channel_consensus_state(
         &self,
-        request: tonic::Request<QueryChannelConsensusStateRequest>,
+        _request: tonic::Request<QueryChannelConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelConsensusStateResponse>, tonic::Status>
     {
         todo!()
@@ -290,7 +290,7 @@ impl ConsensusQuery for IbcQuery {
     /// PacketCommitment queries a stored packet commitment hash.
     async fn packet_commitment(
         &self,
-        request: tonic::Request<QueryPacketCommitmentRequest>,
+        _request: tonic::Request<QueryPacketCommitmentRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketCommitmentResponse>, tonic::Status> {
         todo!()
     }
@@ -360,14 +360,14 @@ impl ConsensusQuery for IbcQuery {
     /// queried chain
     async fn packet_receipt(
         &self,
-        request: tonic::Request<QueryPacketReceiptRequest>,
+        _request: tonic::Request<QueryPacketReceiptRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketReceiptResponse>, tonic::Status> {
         todo!()
     }
     /// PacketAcknowledgement queries a stored packet acknowledgement hash.
     async fn packet_acknowledgement(
         &self,
-        request: tonic::Request<QueryPacketAcknowledgementRequest>,
+        _request: tonic::Request<QueryPacketAcknowledgementRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketAcknowledgementResponse>, tonic::Status>
     {
         todo!()
@@ -530,7 +530,7 @@ impl ConsensusQuery for IbcQuery {
     /// NextSequenceReceive returns the next receive sequence for a given channel.
     async fn next_sequence_receive(
         &self,
-        request: tonic::Request<QueryNextSequenceReceiveRequest>,
+        _request: tonic::Request<QueryNextSequenceReceiveRequest>,
     ) -> std::result::Result<tonic::Response<QueryNextSequenceReceiveResponse>, tonic::Status> {
         todo!()
     }
@@ -540,7 +540,7 @@ impl ConsensusQuery for IbcQuery {
 impl ClientQuery for IbcQuery {
     async fn client_state(
         &self,
-        request: tonic::Request<QueryClientStateRequest>,
+        _request: tonic::Request<QueryClientStateRequest>,
     ) -> std::result::Result<Response<QueryClientStateResponse>, Status> {
         todo!()
     }
@@ -585,7 +585,7 @@ impl ClientQuery for IbcQuery {
     /// a given height.
     async fn consensus_state(
         &self,
-        request: tonic::Request<QueryConsensusStateRequest>,
+        _request: tonic::Request<QueryConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStateResponse>, tonic::Status> {
         todo!()
     }
@@ -593,14 +593,14 @@ impl ClientQuery for IbcQuery {
     /// client.
     async fn consensus_states(
         &self,
-        request: tonic::Request<QueryConsensusStatesRequest>,
+        _request: tonic::Request<QueryConsensusStatesRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStatesResponse>, tonic::Status> {
         todo!()
     }
     /// ConsensusStateHeights queries the height of every consensus states associated with a given client.
     async fn consensus_state_heights(
         &self,
-        request: tonic::Request<QueryConsensusStateHeightsRequest>,
+        _request: tonic::Request<QueryConsensusStateHeightsRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStateHeightsResponse>, tonic::Status>
     {
         todo!()
@@ -608,28 +608,28 @@ impl ClientQuery for IbcQuery {
     /// Status queries the status of an IBC client.
     async fn client_status(
         &self,
-        request: tonic::Request<QueryClientStatusRequest>,
+        _request: tonic::Request<QueryClientStatusRequest>,
     ) -> std::result::Result<tonic::Response<QueryClientStatusResponse>, tonic::Status> {
         todo!()
     }
     /// ClientParams queries all parameters of the ibc client.
     async fn client_params(
         &self,
-        request: tonic::Request<QueryClientParamsRequest>,
+        _request: tonic::Request<QueryClientParamsRequest>,
     ) -> std::result::Result<tonic::Response<QueryClientParamsResponse>, tonic::Status> {
         todo!()
     }
     /// UpgradedClientState queries an Upgraded IBC light client.
     async fn upgraded_client_state(
         &self,
-        request: tonic::Request<QueryUpgradedClientStateRequest>,
+        _request: tonic::Request<QueryUpgradedClientStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryUpgradedClientStateResponse>, tonic::Status> {
         todo!()
     }
     /// UpgradedConsensusState queries an Upgraded IBC consensus state.
     async fn upgraded_consensus_state(
         &self,
-        request: tonic::Request<QueryUpgradedConsensusStateRequest>,
+        _request: tonic::Request<QueryUpgradedConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryUpgradedConsensusStateResponse>, tonic::Status>
     {
         todo!()
