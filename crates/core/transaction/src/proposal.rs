@@ -204,7 +204,7 @@ impl FromStr for ProposalKind {
             "emergency" => Ok(ProposalKind::Emergency),
             "parameterchange" => Ok(ProposalKind::ParameterChange),
             "daospend" => Ok(ProposalKind::DaoSpend),
-            "upgradeplan" => Ok(ProposalKind::UpgradePlan),
+            "upgrade_plan" => Ok(ProposalKind::UpgradePlan),
             _ => Err(anyhow::anyhow!("invalid proposal kind: {}", s)),
         }
     }
