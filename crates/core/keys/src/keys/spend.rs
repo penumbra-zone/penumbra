@@ -6,6 +6,7 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use super::{
+    bip44,
     seed_phrase::{SeedPhrase, NUM_PBKDF2_ROUNDS},
     FullViewingKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey,
 };
