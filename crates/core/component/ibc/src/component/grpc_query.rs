@@ -63,7 +63,7 @@ impl ConnectionQuery for IbcQuery {
     ) -> std::result::Result<tonic::Response<QueryConnectionResponse>, tonic::Status> {
         let snapshot = self.0.latest_snapshot();
         let connection_id = &ConnectionId::from_str(&request.get_ref().connection_id)
-            .map_err(|e| tonic::Status::aborted("invalid connection id"))?;
+            .map_err(|e| tonic::Status::aborted(format!("invalid connection id: {e}")))?;
 
         let (conn, proof) = snapshot
             .get_with_proof_to_apphash(
@@ -82,7 +82,8 @@ impl ConnectionQuery for IbcQuery {
             })
             .map_err(|e| tonic::Status::aborted(format!("couldn't get connection: {e}")))?;
 
-        let conn = conn.map_err(|e| tonic::Status::aborted("couldn't decode connection: {e}"))?;
+        let conn =
+            conn.map_err(|e| tonic::Status::aborted(format!("couldn't decode connection: {e}")))?;
 
         let height = Height {
             revision_number: 0,
@@ -100,7 +101,7 @@ impl ConnectionQuery for IbcQuery {
     /// Connections queries all the IBC connections of a chain.
     async fn connections(
         &self,
-        request: tonic::Request<QueryConnectionsRequest>,
+        _request: tonic::Request<QueryConnectionsRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionsResponse>, tonic::Status> {
         let snapshot = self.0.latest_snapshot();
         let height = snapshot.version();
@@ -265,7 +266,7 @@ impl ConsensusQuery for IbcQuery {
         let res = QueryConnectionChannelsResponse {
             channels,
             pagination: None,
-            height: None,
+            height: Some(height),
         };
 
         Ok(tonic::Response::new(res))
@@ -380,7 +381,10 @@ impl ConsensusQuery for IbcQuery {
     ) -> std::result::Result<tonic::Response<QueryPacketAcknowledgementsResponse>, tonic::Status>
     {
         let snapshot = self.0.latest_snapshot();
-        let height = snapshot.version();
+        let height = Height {
+            revision_number: 0,
+            revision_height: snapshot.version().into(),
+        };
         let request = request.get_ref();
 
         let chan_id: ChannelId = ChannelId::from_str(&request.channel_id)
@@ -425,7 +429,7 @@ impl ConsensusQuery for IbcQuery {
         let res = QueryPacketAcknowledgementsResponse {
             acknowledgements: acks,
             pagination: None,
-            height: None,
+            height: Some(height),
         };
 
         Ok(tonic::Response::new(res))
@@ -547,13 +551,9 @@ impl ClientQuery for IbcQuery {
     /// ClientStates queries all the IBC light clients of a chain.
     async fn client_states(
         &self,
-        request: tonic::Request<QueryClientStatesRequest>,
+        _request: tonic::Request<QueryClientStatesRequest>,
     ) -> std::result::Result<tonic::Response<QueryClientStatesResponse>, tonic::Status> {
         let snapshot = self.0.latest_snapshot();
-        let height = Height {
-            revision_number: 0,
-            revision_height: snapshot.version().into(),
-        };
 
         let client_counter = snapshot
             .client_counter()
