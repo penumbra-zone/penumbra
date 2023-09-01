@@ -1,3 +1,5 @@
+use hmac::{Hmac, Mac};
+
 /// Penumbra's registered coin type.
 /// See: https://github.com/satoshilabs/slips/pull/1592
 const PENUMBRA_COIN_TYPE: u32 = 0x0001984;
@@ -71,4 +73,32 @@ mod tests {
         let path = Bip44Path::new(0, false, 0);
         assert_eq!(path.path(), "m/44'/6532'/0'/0/0");
     }
+}
+
+pub fn ckd_priv(k_par: [u8; 32], c_par: [u8; 32], i: u32) -> ([u8; 32], [u8; 32]) {
+    let mut hmac = Hmac::<sha2::Sha512>::new_from_slice(&c_par).expect("can create hmac");
+    if i >= 0x80000000 {
+        // Hardened derivation
+        hmac.update(&[0u8]);
+        hmac.update(&k_par);
+    } else {
+        hmac.update(&k_par);
+    }
+    hmac.update(&i.to_be_bytes());
+
+    // The output of the above hash is 64 bytes, and we split it into two 32 byte chunks, i_L and i_R.
+    let result = hmac.finalize().into_bytes();
+    let mut i_L = [0u8; 32];
+    i_L.copy_from_slice(&result[..32]);
+    let mut i_R = [0u8; 32];
+    i_R.copy_from_slice(&result[32..]);
+
+    // The result of the above is the child key k_i and the chain code c_i.
+    let c_i = i_R;
+
+    // TODO: k_i is derived as (k_par + i_L) % n
+    // n here is the order of the secp256k1 curve?
+    let k_i = todo!();
+
+    (k_i, c_i)
 }
