@@ -110,6 +110,7 @@ impl SpendKey {
     pub fn from_seed_phrase_bip44(seed_phrase: SeedPhrase, path: &Bip44Path) -> Self {
         // First derive the HD wallet master key.
         let password = format!("{seed_phrase}");
+        // The salt used for deriving the master key is defined in BIP32.
         let salt = "Bitcoin seed";
         let mut m_bytes = [0u8; 32];
         pbkdf2::<Hmac<sha2::Sha512>>(
