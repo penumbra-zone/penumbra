@@ -6,7 +6,7 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use super::{
-    bip44,
+    bip44::Bip44Path,
     seed_phrase::{SeedPhrase, NUM_PBKDF2_ROUNDS},
     FullViewingKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey,
 };
@@ -105,6 +105,23 @@ impl SpendKey {
         )
         .expect("seed phrase hash always succeeds");
         SpendKeyBytes(spend_seed_bytes).into()
+    }
+
+    pub fn from_seed_phrase_bip44(seed_phrase: SeedPhrase, path: &Bip44Path) -> Self {
+        // First derive the HD wallet master key.
+        let password = format!("{seed_phrase}");
+        let salt = "Bitcoin seed";
+        let mut m_bytes = [0u8; 32];
+        pbkdf2::<Hmac<sha2::Sha512>>(
+            password.as_bytes(),
+            salt.as_bytes(),
+            NUM_PBKDF2_ROUNDS,
+            &mut m_bytes,
+        )
+        .expect("seed phrase hash always succeeds");
+
+        // Now we derive the child keys from the BIP44 path.
+        todo!("impl CKDpriv function")
     }
 
     // XXX how many of these do we need? leave them for now

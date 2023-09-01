@@ -8,7 +8,7 @@ const PENUMBRA_COIN_TYPE: u32 = 0x0001984;
 ///
 /// BIP43: https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki
 /// BIP44: https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
-struct Bip44Path {
+pub struct Bip44Path {
     coin_type: u32,
     account: u32,
     change: bool,
