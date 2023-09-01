@@ -553,6 +553,21 @@ pub struct SwapByCommitmentResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UnclaimedSwapsRequest {
+    /// Identifies the account group to query.
+    #[prost(message, optional, tag = "1")]
+    pub account_group_id: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AccountGroupId,
+    >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UnclaimedSwapsResponse {
+    #[prost(message, optional, tag = "1")]
+    pub swap: ::core::option::Option<SwapRecord>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NullifierStatusRequest {
     #[prost(message, optional, tag = "2")]
     pub nullifier: ::core::option::Option<
@@ -1123,6 +1138,29 @@ pub mod view_protocol_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        /// Query for all unclaimed swaps.
+        pub async fn unclaimed_swaps(
+            &mut self,
+            request: impl tonic::IntoRequest<super::UnclaimedSwapsRequest>,
+        ) -> Result<
+            tonic::Response<tonic::codec::Streaming<super::UnclaimedSwapsResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/UnclaimedSwaps",
+            );
+            self.inner.server_streaming(request.into_request(), path, codec).await
+        }
         /// Query for whether a nullifier has been spent, optionally waiting until it is spent.
         pub async fn nullifier_status(
             &mut self,
@@ -1490,6 +1528,17 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::SwapByCommitmentRequest>,
         ) -> Result<tonic::Response<super::SwapByCommitmentResponse>, tonic::Status>;
+        /// Server streaming response type for the UnclaimedSwaps method.
+        type UnclaimedSwapsStream: futures_core::Stream<
+                Item = Result<super::UnclaimedSwapsResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        /// Query for all unclaimed swaps.
+        async fn unclaimed_swaps(
+            &self,
+            request: tonic::Request<super::UnclaimedSwapsRequest>,
+        ) -> Result<tonic::Response<Self::UnclaimedSwapsStream>, tonic::Status>;
         /// Query for whether a nullifier has been spent, optionally waiting until it is spent.
         async fn nullifier_status(
             &self,
@@ -2199,6 +2248,47 @@ pub mod view_protocol_service_server {
                                 send_compression_encodings,
                             );
                         let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/UnclaimedSwaps" => {
+                    #[allow(non_camel_case_types)]
+                    struct UnclaimedSwapsSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::ServerStreamingService<super::UnclaimedSwapsRequest>
+                    for UnclaimedSwapsSvc<T> {
+                        type Response = super::UnclaimedSwapsResponse;
+                        type ResponseStream = T::UnclaimedSwapsStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::UnclaimedSwapsRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).unclaimed_swaps(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = UnclaimedSwapsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

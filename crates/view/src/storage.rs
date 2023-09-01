@@ -429,6 +429,24 @@ impl Storage {
         }
     }
 
+    /// Query for all unclaimed swaps.
+    pub async fn unclaimed_swaps(&self) -> anyhow::Result<Vec<SwapRecord>> {
+        let pool = self.pool.clone();
+
+        let records = spawn_blocking(move || {
+            // Check if we already have the swap record
+            pool.get()?
+                .prepare(&format!(
+                    "SELECT * FROM swaps WHERE swaps.height_claimed is NULL"
+                ))?
+                .query_and_then((), |record| record.try_into())?
+                .collect::<anyhow::Result<Vec<_>>>()
+        })
+        .await??;
+
+        Ok(records)
+    }
+
     /// Query for a nullifier's status, optionally waiting until the nullifier is detected.
     pub async fn nullifier_status(
         &self,
@@ -1161,7 +1179,7 @@ impl Storage {
         spawn_blocking(move || {
             pool.get()?
                 .prepare(&format!(
-                    "SELECT nullifier FROM spendable_notes WHERE nullifier IN ({})",
+                    "SELECT nullifier FROM (SELECT nullifier FROM spendable_notes UNION SELECT nullifier FROM swaps) WHERE nullifier IN ({})",
                     nullifiers
                         .iter()
                         .map(|x| format!("x'{}'", hex::encode(x.0.to_bytes())))
@@ -1312,9 +1330,11 @@ impl Storage {
                     )?
                     .next()
                     .transpose()?;
+                println!("swap commitment? {:?}", swap_commitment);
 
                 // Check denom type
-                let spent_denom: String = dbtx.prepare_cached(
+                let spent_denom: String
+                = dbtx.prepare_cached(
                         "SELECT assets.denom
                         FROM spendable_notes JOIN notes LEFT JOIN assets ON notes.asset_id == assets.asset_id
                         WHERE nullifier = ?1"
@@ -1325,7 +1345,7 @@ impl Storage {
                     )?
                     .next()
                     .transpose()?
-                    .ok_or_else(|| anyhow!("denom must exist for note we know about"))?;
+                    .unwrap_or("unknown".to_string());
 
                 // Mark spent notes as spent
                 if let Some(spent_commitment) = spent_commitment {

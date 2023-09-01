@@ -309,6 +309,9 @@ impl ViewProtocolService for ViewService {
     type OwnedPositionIdsStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::OwnedPositionIdsResponse, tonic::Status>> + Send>,
     >;
+    type UnclaimedSwapsStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::UnclaimedSwapsResponse, tonic::Status>> + Send>,
+    >;
 
     async fn broadcast_transaction(
         &self,
@@ -1457,5 +1460,34 @@ impl ViewProtocolService for ViewService {
         _request: tonic::Request<pb::AuthorizeAndBuildRequest>,
     ) -> Result<tonic::Response<pb::AuthorizeAndBuildResponse>, tonic::Status> {
         unimplemented!("authorize_and_build")
+    }
+
+    async fn unclaimed_swaps(
+        &self,
+        request: tonic::Request<pb::UnclaimedSwapsRequest>,
+    ) -> Result<tonic::Response<Self::UnclaimedSwapsStream>, tonic::Status> {
+        self.check_worker().await?;
+        self.check_account_group_id(request.get_ref().account_group_id.as_ref())
+            .await?;
+
+        let swaps = self.storage.unclaimed_swaps().await.map_err(|e| {
+            tonic::Status::unavailable(format!("error fetching unclaimed swaps: {e}"))
+        })?;
+
+        let stream = try_stream! {
+            for swap in swaps {
+                yield pb::UnclaimedSwapsResponse{
+                    swap: Some(swap.into()),
+                }
+            }
+        };
+
+        Ok(tonic::Response::new(
+            stream
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!("error getting unclaimed swaps: {e}"))
+                })
+                .boxed(),
+        ))
     }
 }
