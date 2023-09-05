@@ -255,6 +255,19 @@ impl DelegatorVoteProof {
         // The blinding factor for the value commitment is zero since it
         // is not blinded.
         let zero_blinding = Fr::from(0);
+        tracing::debug!(
+            ?state_commitment_proof,
+            ?note,
+            ?spend_auth_randomizer,
+            ?ak,
+            ?nk,
+            ?anchor,
+            ?balance_commitment,
+            ?nullifier,
+            ?rk,
+            ?start_position,
+            "generating delegator vote proof"
+        );
         let circuit = DelegatorVoteCircuit {
             state_commitment_proof,
             note,

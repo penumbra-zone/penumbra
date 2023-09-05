@@ -24,8 +24,8 @@ pub struct DelegatorVote {
 impl IsAction for DelegatorVote {
     fn balance_commitment(&self) -> balance::Commitment {
         Value {
-            asset_id: VotingReceiptToken::new(self.body.proposal).id(),
             amount: self.body.unbonded_amount,
+            asset_id: VotingReceiptToken::new(self.body.proposal).id(),
         }
         .commit(Fr::zero())
     }
