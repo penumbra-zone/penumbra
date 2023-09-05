@@ -335,30 +335,42 @@ impl ViewServer {
                             self.swaps.insert(payload.commitment, swap_record);
 
                             let batch_data = block.swap_outputs.get(&swap.trading_pair).ok_or_else(|| {
-                                                                anyhow::anyhow!("server gave invalid compact block")})?;
+                                                                anyhow::anyhow!("server gave invalid compact block")}).unwrap();
 
                             let (output_1, output_2) = swap.output_notes(batch_data);
 
-                            self.notes.insert(output_1.commit(), output_1);
-                            self.notes.insert(output_2.commit(), output_2);
+                            let address_index_1 = self.fvk.incoming().index_for_diversifier(output_1.diversifier());
 
-                            let address_index = self
-                                                            .fvk
-                                                            .incoming()
-                                                            .index_for_diversifier(note.diversifier());
+                            let output_1_note = SpendableNoteRecord {
+                                note_commitment: output_1.commit(),
+                                height_spent: Some(0),
+                                height_created: block.height,
+                                note: output_1.clone(),
+                                address_index: address_index_1,
+                                nullifier,
+                                position: swap_position,
+                                source,
+                            };
 
-                            new_notes.push( SpendableNoteRecord {
-                                                                           note_commitment: output_1.commitment().clone(),
-                                                                           height_spent: None,
-                                                                           height_created: block.height,
-                                                                           note: output_1.clone(),
-                                                                           address_index,
-                                                                           nullifier,
-                                                                           position: note_position,
-                                                                           source,
-                                                                       });
-                            new_notes.push(output_2.clone());
+                            let address_index_2 = self.fvk.incoming().index_for_diversifier(output_2.diversifier());
 
+
+                            let output_2_note = SpendableNoteRecord {
+                                note_commitment: output_1.commit(),
+                                height_spent: Some(0),
+                                height_created: block.height,
+                                note: output_1.clone(),
+                                address_index: address_index_2,
+                                nullifier,
+                                position: swap_position,
+                                source,
+                            };
+
+                            self.notes.insert(output_1.commit(), output_1_note.clone());
+                            self.notes.insert(output_2.commit(), output_2_note.clone());
+
+                            new_notes.push(output_1_note.clone());
+                            new_notes.push(output_2_note.clone());
 
                         }
                         None => {
@@ -369,7 +381,14 @@ impl ViewServer {
                 StatePayload::RolledUp(commitment) => {
                     if self.notes.contains_key(&commitment) {
                         // This is a note we anticipated, so retain its auth path.
-                        self.nct.insert(Keep, commitment).unwrap();
+                        let position = self.nct.insert(Keep, commitment).unwrap();
+
+                        let mut note = self.notes.get(&commitment).unwrap().clone();
+                        note.position = position;
+                        note.height_spent = None;
+                        new_notes.push(note);
+
+
                     } else {
                         // This is someone else's note.
                         self.nct.insert(Forget, commitment).unwrap();
