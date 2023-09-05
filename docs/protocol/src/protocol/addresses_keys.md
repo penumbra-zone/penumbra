@@ -47,11 +47,14 @@ flowchart BT
     subgraph SK[Spending Key]
         direction LR;
         ask;
-        seed;
+        spend_key_bytes;
     end;
 
-    seed --> ask;
-    seed --> nk;
+    BIP44(BIP44 Seed Phrase) --> spend_key_bytes;
+    BIP39(Legacy Raw BIP39) --> spend_key_bytes;
+
+    spend_key_bytes --> ask;
+    spend_key_bytes --> nk;
 
     ask --> ak;
 

@@ -9,8 +9,10 @@ PBKDF2 with:
 * `mnemonic` concatenated with an index used as the salt, i.e. the
 default spend authority is derived using the salt `mnemonic0`
 
+TODO: describe new BIP44 derivation and change raw BIP39 derivation to be described as "legacy".
+
 The root key material for a particular spend authority is the 32-byte
-`seed` derived as above from the seed phrase. The `seed` value is used to derive
+`spend_key_bytes` derived as above from the seed phrase. The `spend_key_bytes` value is used to derive
 
 * $\mathsf{ask} \in \mathbb F_r$, the *spend authorization key*, and
 * $\mathsf{nk} \in \mathbb F_q$, the *nullifier key*,
@@ -20,12 +22,14 @@ personalization `label`, key `key`, and input `input`.  Define
 `from_le_bytes(bytes)` as the function that interprets its input bytes as an
 integer in little-endian order.  Then
 ```
-ask = from_le_bytes(prf_expand("Penumbra_ExpndSd", seed, 0)) mod r
-nk  = from_le_bytes(prf_expand("Penumbra_ExpndSd", seed, 0)) mod q
+ask = from_le_bytes(prf_expand("Penumbra_ExpndSd", spend_key_bytes, 0)) mod r
+nk  = from_le_bytes(prf_expand("Penumbra_ExpndSd", spend_key_bytes, 0)) mod q
 ```
 
-The *spending key* consists of `seed` and `ask`.  When using a hardware wallet
-or similar custody mechanism, the spending key remains on the device.
+The *spending key* consists of `spend_key_bytes` and `ask`.  (Since `ask` is
+derived from `spend_key_bytes`, only the `spend_key_bytes` need to be stored,
+but the `ask` is considered part of the spending key). When using a hardware
+wallet or similar custody mechanism, the spending key remains on the device.
 
 The spend authorization key $\mathsf{ask}$ is used as a `decaf377-rdsa` signing
 key.[^1] The corresponding verification key is the *spend verification key*
