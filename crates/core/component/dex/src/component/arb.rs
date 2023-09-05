@@ -70,7 +70,10 @@ pub trait Arbitrage: StateWrite + Sized {
             // guarantees about forward progress over precise application of
             // price limits, it technically could occur.
             tracing::debug!("mis-estimation in route-and-fill led to unprofitable arb, discarding");
-            return Ok(Value { amount: 0u64.into(), asset_id: arb_token });
+            return Ok(Value {
+                amount: 0u64.into(),
+                asset_id: arb_token,
+            });
         };
 
         if arb_profit == 0u64.into() {

@@ -1,7 +1,10 @@
 [package]
 name = "penumbra-wasm"
 version = "0.59.0"
-authors = ["Valentine <valentine@zpoken.io>"]
+authors = [
+    "Valentine <valentine@zpoken.io>",
+    "Gabe R. <gabe@penumbralabs.xyz"
+]
 edition = "2021"
 
 [lib]
@@ -11,42 +14,31 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook"]
 
 [dependencies]
-penumbra-proto         = { path = "../proto", default-features = false }
-penumbra-tct           = { path = "../crypto/tct/" }
-penumbra-num        = { path = "../core/num" }
-penumbra-asset        = { path = "../core/asset" }
-penumbra-keys        = { path = "../core/keys" }
-penumbra-transaction   = { path = "../core/transaction", default-features = false }
-penumbra-stake         = { path = "../core/component/stake", default-features = false }
-penumbra-dex           = { path = "../core/component/dex", default-features = false, features = ["proving-keys"] }
+penumbra-asset         = { path = "../core/asset" }
 penumbra-chain         = { path = "../core/component/chain", default-features = false }
+penumbra-compact-block = { path = "../core/component/compact-block", default-features = false }
+penumbra-dex           = { path = "../core/component/dex", default-features = false, features = ["proving-keys"] }
 penumbra-fee           = { path = "../core/component/fee", default-features = false }
+penumbra-keys          = { path = "../core/keys" }
+penumbra-num           = { path = "../core/num" }
+penumbra-proto         = { path = "../proto", default-features = false }
 penumbra-sct           = { path = "../core/component/sct", default-features = false }
 penumbra-shielded-pool = { path = "../core/component/shielded-pool", default-features = false, features = ["proving-keys"] }
-penumbra-compact-block = { path = "../core/component/compact-block", default-features = false }
+penumbra-stake         = { path = "../core/component/stake", default-features = false }
+penumbra-tct           = { path = "../crypto/tct" }
+penumbra-transaction   = { path = "../core/transaction", default-features = false }
 
-anyhow = "1"
-hex = "0.4"
-base64 = "0.20.0-alpha.1"
-serde = { version = "1.0", features = ["derive"] }
-wasm-bindgen = { version = "0.2.83"}
-serde-wasm-bindgen = "0.4.5"
-js-sys = "0.3"
-indexmap = "=1.9.2"
-web-sys = { version = "0.3.4", features = ["console"] }
-rand_core = { version = "0.6.3", features = ["getrandom"] }
-getrandom = { version = "0.2", features = ["js"] }
-console_error_panic_hook = { version = "0.1.6", optional = true }
-wee_alloc = { version = "0.4.5", optional = true }
-indexed_db_futures = {version = "0.3.0"}
-wasm-bindgen-futures = "0.4"
-tracing = "0.1"
-decaf377 = { version = "0.4" }
-ark-ff = { version = "0.4", features = ["std"] }
-
-
-
-
+anyhow                   = "1.0.75"
+base64                   = "0.21.2"
+console_error_panic_hook = { version = "0.1.7", optional = true }
+hex                      = "0.4.3"
+indexed_db_futures       = "0.3.0"
+rand_core                = { version = "0.6.4", features = ["getrandom"] }
+serde                    = { version = "1.0.186", features = ["derive"] }
+serde-wasm-bindgen       = "0.5.0"
+wasm-bindgen             = "0.2.87"
+wasm-bindgen-futures     = "0.4.37"
+web-sys                  = { version = "0.3.64", features = ["console"] }
 
 [dev-dependencies]
-wasm-bindgen-test = "0.3.13"
+wasm-bindgen-test = "0.3.37"

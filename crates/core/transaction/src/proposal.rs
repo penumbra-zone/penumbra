@@ -97,6 +97,9 @@ impl From<Proposal> for pb::Proposal {
                     }),
                 });
             }
+            ProposalPayload::UpgradePlan { height } => {
+                proposal.upgrade_plan = Some(pb::proposal::UpgradePlan { height });
+            }
         }
         proposal
     }
@@ -152,6 +155,10 @@ impl TryFrom<pb::Proposal> for Proposal {
                         TransactionPlan::decode(transaction_plan.value)?
                     },
                 }
+            } else if let Some(upgrade_plan) = inner.upgrade_plan {
+                ProposalPayload::UpgradePlan {
+                    height: upgrade_plan.height,
+                }
             } else {
                 anyhow::bail!("missing proposal payload or unknown proposal type");
             },
@@ -183,6 +190,9 @@ pub enum ProposalKind {
     /// A DAO spend proposal.
     #[cfg_attr(feature = "clap", clap(display_order = 400))]
     DaoSpend,
+    /// An upgrade proposal.
+    #[cfg_attr(feature = "clap", clap(display_order = 500))]
+    UpgradePlan,
 }
 
 impl FromStr for ProposalKind {
@@ -194,6 +204,7 @@ impl FromStr for ProposalKind {
             "emergency" => Ok(ProposalKind::Emergency),
             "parameterchange" => Ok(ProposalKind::ParameterChange),
             "daospend" => Ok(ProposalKind::DaoSpend),
+            "upgrade_plan" => Ok(ProposalKind::UpgradePlan),
             _ => Err(anyhow::anyhow!("invalid proposal kind: {}", s)),
         }
     }
@@ -207,6 +218,7 @@ impl Proposal {
             ProposalPayload::Emergency { .. } => ProposalKind::Emergency,
             ProposalPayload::ParameterChange { .. } => ProposalKind::ParameterChange,
             ProposalPayload::DaoSpend { .. } => ProposalKind::DaoSpend,
+            ProposalPayload::UpgradePlan { .. } => ProposalKind::UpgradePlan,
         }
     }
 }
@@ -252,6 +264,9 @@ pub enum ProposalPayload {
         /// action.
         transaction_plan: TransactionPlan,
     },
+    /// An upgrade plan proposal describes a planned upgrade to the chain. If ratified, the chain
+    /// will halt at the specified height, trigger an epoch transition, and halt the chain.
+    UpgradePlan { height: u64 },
 }
 
 /// A TOML-serializable version of `ProposalPayload`, meant for human consumption.
@@ -270,6 +285,9 @@ pub enum ProposalPayloadToml {
     },
     DaoSpend {
         transaction: String,
+    },
+    UpgradePlan {
+        height: u64,
     },
 }
 
@@ -292,6 +310,7 @@ impl TryFrom<ProposalPayloadToml> for ProposalPayload {
                 ))
                 .context("couldn't decode transaction plan from proto")?,
             },
+            ProposalPayloadToml::UpgradePlan { height } => ProposalPayload::UpgradePlan { height },
         })
     }
 }
@@ -312,6 +331,7 @@ impl From<ProposalPayload> for ProposalPayloadToml {
                     transaction_plan.encode_to_vec(),
                 ),
             },
+            ProposalPayload::UpgradePlan { height } => ProposalPayloadToml::UpgradePlan { height },
         }
     }
 }

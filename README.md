@@ -21,7 +21,11 @@ To participate in our test network, use Penumbra command line client [`pcli`][pc
 
 To join the test network as a full node, follow setup instructions for Penumbra node implementation [`pd`][pd].
 
+## Current work and roadmap
 
+For a high-level view of current work-in-progress and future items, check out our [project board][Board].
+
+[Board]: https://github.com/orgs/penumbra-zone/projects/17
 [Discord]: https://discord.gg/hKvkrqa3zC
 [Penumbra]: https://penumbra.zone
 [protocol]: https://protocol.penumbra.zone

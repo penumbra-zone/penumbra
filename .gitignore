@@ -43,3 +43,7 @@ deployments/relayer/configs/penumbra-local.json
 
 # Memory profiler, via bytehound or otherwise
 *.dat
+
+# npm dependencies
+node_modules
+build

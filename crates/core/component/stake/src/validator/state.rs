@@ -59,7 +59,8 @@ impl From<State> for pb::ValidatorState {
 impl TryFrom<pb::ValidatorState> for State {
     type Error = anyhow::Error;
     fn try_from(v: pb::ValidatorState) -> Result<Self, Self::Error> {
-        let Some(validator_state) = pb::validator_state::ValidatorStateEnum::from_i32(v.state) else {
+        let Some(validator_state) = pb::validator_state::ValidatorStateEnum::from_i32(v.state)
+        else {
             anyhow::bail!("invalid validator state!")
         };
         match validator_state {

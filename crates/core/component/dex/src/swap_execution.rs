@@ -21,7 +21,7 @@ impl SwapExecution {
             let output = trace.last()?;
             Some((input, output))
         }) else {
-            return Ok(None)
+            return Ok(None);
         };
 
         let price = U128x128::ratio(input.amount, output.amount)?;

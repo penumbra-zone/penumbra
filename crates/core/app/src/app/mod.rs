@@ -265,11 +265,15 @@ impl App {
         let current_height = state_tx.get_block_height().await.unwrap();
         let current_epoch = state_tx.epoch().await.unwrap();
 
-        let end_epoch = current_epoch
+        let is_end_epoch = current_epoch
             .is_scheduled_epoch_end(current_height, state_tx.get_epoch_duration().await.unwrap())
             || state_tx.epoch_ending_early();
 
-        if end_epoch {
+        // If a chain upgrade is scheduled for this block, we trigger an early epoch change
+        // so that the upgraded chain starts at a clean epoch boundary.
+        let is_chain_upgrade = state_tx.is_upgrade_height().await.unwrap();
+
+        if is_end_epoch || is_chain_upgrade {
             tracing::info!(?current_height, "ending epoch");
 
             let mut arc_state_tx = Arc::new(state_tx);
@@ -411,14 +415,29 @@ impl App {
     pub async fn commit(&mut self, storage: Storage) -> AppHash {
         // We need to extract the State we've built up to commit it.  Fill in a dummy state.
         let dummy_state = StateDelta::new(storage.latest_snapshot());
-        let state = Arc::try_unwrap(std::mem::replace(&mut self.state, Arc::new(dummy_state)))
+        let mut state = Arc::try_unwrap(std::mem::replace(&mut self.state, Arc::new(dummy_state)))
             .expect("we have exclusive ownership of the State at commit()");
 
-        // Check if someone has signaled that we should halt.
+        // Check if an emergency halt has been signaled.
         let should_halt = state
             .is_chain_halted(TOTAL_HALT_COUNT)
             .await
             .expect("must be able to read halt flag");
+
+        let is_upgrade_height = state
+            .is_upgrade_height()
+            .await
+            .expect("must be able to read upgrade height");
+
+        if is_upgrade_height {
+            tracing::info!("upgrade height reached, signaling halt");
+            // If we are about to reach an upgrade height, we want to increase the
+            // halt counter to prevent the chain from restarting without manual intervention.
+            state
+                .signal_halt()
+                .await
+                .expect("must be able to signal halt");
+        }
 
         // Commit the pending writes, clearing the state.
         let jmt_root = storage
@@ -429,6 +448,11 @@ impl App {
         // If we should halt, we should end the process here.
         if should_halt {
             tracing::info!("committed block when a chain halt was signaled; exiting now");
+            std::process::exit(0);
+        }
+
+        if is_upgrade_height {
+            tracing::info!("committed block at upgrade height; exiting now");
             std::process::exit(0);
         }
 

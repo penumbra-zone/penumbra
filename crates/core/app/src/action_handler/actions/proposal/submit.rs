@@ -106,6 +106,7 @@ impl ActionHandler for ProposalSubmit {
                     }
                 }
             }
+            UpgradePlan { .. } => {}
         }
 
         Ok(())
@@ -169,6 +170,9 @@ impl ActionHandler for ProposalSubmit {
                 tx.execute(StateDelta::new(state)).await.context(
                     "submitted DAO spend transaction failed to execute in current chain state",
                 )?;
+            }
+            ProposalPayload::UpgradePlan { .. } => {
+                // TODO(erwan): no stateful checks for upgrade plan.
             }
         }
 

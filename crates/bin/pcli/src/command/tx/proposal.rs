@@ -78,6 +78,8 @@ pub enum ProposalKindCmd {
         #[clap(long)]
         transaction_plan: Option<camino::Utf8PathBuf>,
     },
+    /// Generate a template for an upgrade propopsal,
+    UpgradePlan,
 }
 
 impl ProposalKindCmd {
@@ -110,6 +112,7 @@ impl ProposalKindCmd {
                     }
                 }
             }
+            ProposalKindCmd::UpgradePlan { .. } => ProposalPayload::UpgradePlan { height: 0 },
         };
 
         Ok(Proposal {

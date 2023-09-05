@@ -1,12 +1,36 @@
+use crate::{state_key, CompactBlock};
+use anyhow::Context;
+use anyhow::Error;
 use anyhow::Result;
 use async_trait::async_trait;
+use futures::Stream;
+use futures::StreamExt;
 use penumbra_proto::DomainType;
 use penumbra_storage::{StateRead, StateWrite};
-
-use crate::{state_key, CompactBlock};
+use std::pin::Pin;
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
+    /// Returns a stream of [`CompactBlock`]s starting from `start_height`.
+    fn stream_compact_block(
+        &self,
+        start_height: u64,
+    ) -> Pin<Box<dyn Stream<Item = Result<CompactBlock>> + Send + 'static>> {
+        self.nonverifiable_range_raw(
+            Some(state_key::prefix().as_bytes()),
+            state_key::height(start_height).as_bytes().to_vec()..,
+        )
+        .expect("valid range is provided")
+        .map(|result| {
+            result.and_then(|(_, v)| {
+                CompactBlock::decode(&mut v.as_slice())
+                    .map_err(Error::from)
+                    .context("failed to decode compact block")
+            })
+        })
+        .boxed()
+    }
+
     async fn compact_block(&self, height: u64) -> Result<Option<CompactBlock>> {
         Ok(self
             .nonverifiable_get_raw(&state_key::compact_block(height).as_bytes())
