@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
-use ark_ff::Zero;
 use async_trait::async_trait;
-use decaf377::Fr;
 use penumbra_chain::TransactionContext;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::action::{DelegatorVote, DelegatorVoteBody};
+use penumbra_transaction::{
+    action::{DelegatorVote, DelegatorVoteBody},
+    IsAction,
+};
 
 use crate::{
     governance::{StateReadExt as _, StateWriteExt as _},
@@ -25,13 +26,13 @@ impl ActionHandler for DelegatorVote {
             body:
                 DelegatorVoteBody {
                     start_position,
-                    value,
                     nullifier,
                     rk,
+                    unbonded_amount: _, // Used to compute the balance commitment.
                     // Unused in stateless checks:
-                    vote: _,            // Only used when executing the vote
-                    proposal: _,        // Checked against the current open proposals statefully
-                    unbonded_amount: _, // Also checked against the proposal's snapshot exchange rate statefully
+                    value: _,
+                    vote: _,     // Only used when executing the vote
+                    proposal: _, // Checked against the current open proposals statefully
                 },
         } = self;
 
@@ -44,7 +45,7 @@ impl ActionHandler for DelegatorVote {
             .verify(
                 &DELEGATOR_VOTE_PROOF_VERIFICATION_KEY,
                 context.anchor,
-                value.commit(Fr::zero()),
+                self.balance_commitment(),
                 *nullifier,
                 *rk,
                 *start_position,
