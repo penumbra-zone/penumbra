@@ -1293,15 +1293,18 @@ impl ViewProtocolService for ViewService {
         Ok(tonic::Response::new(witness_response))
     }
 
+    #[instrument(skip(self))]
     async fn witness_and_build(
         &self,
         request: tonic::Request<pb::WitnessAndBuildRequest>,
     ) -> Result<tonic::Response<pb::WitnessAndBuildResponse>, tonic::Status> {
+        tracing::debug!("Building WitnessAndBuildRequest");
         let pb::WitnessAndBuildRequest {
             transaction_plan,
             authorization_data,
         } = request.into_inner();
 
+        tracing::debug!("Building TransactionPlan");
         let transaction_plan: TransactionPlan = transaction_plan
             .ok_or_else(|| tonic::Status::invalid_argument("missing transaction plan"))?
             .try_into()
@@ -1310,6 +1313,7 @@ impl ViewProtocolService for ViewService {
 
         // Get the witness data from the view service only for non-zero amounts of value,
         // since dummy spends will have a zero amount.
+        tracing::debug!("Gathering note commitments");
         let note_commitments = transaction_plan
             .spend_plans()
             .filter(|plan| plan.note.amount() != 0u64.into())
@@ -1326,12 +1330,14 @@ impl ViewProtocolService for ViewService {
             )
             .collect();
 
+        tracing::debug!("Inspecting authorization data");
         let authorization_data: AuthorizationData = authorization_data
             .ok_or_else(|| tonic::Status::invalid_argument("missing authorization data"))?
             .try_into()
             .map_err(|e: anyhow::Error| e.context("could not decode authorization data"))
             .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
 
+        tracing::debug!("Generating WitnessRequest");
         let witness_request = pb::WitnessRequest {
             account_group_id: Some(self.account_group_id.into()),
             note_commitments,
@@ -1339,6 +1345,7 @@ impl ViewProtocolService for ViewService {
             ..Default::default()
         };
 
+        tracing::debug!("Generating WitnessData");
         let witness_data: WitnessData = self
             .witness(tonic::Request::new(witness_request))
             .await?
@@ -1354,17 +1361,23 @@ impl ViewProtocolService for ViewService {
                 tonic::Status::failed_precondition("Error retrieving full viewing key")
             })?;
 
-        let transaction = Some(
-            transaction_plan
-                .build(&fvk, witness_data)
-                .map_err(|_| tonic::Status::failed_precondition("Error building transaction"))?
-                .authorize(&mut OsRng, &authorization_data)
-                .map_err(|_| tonic::Status::failed_precondition("Error authorizing transaction"))?
-                .into(),
-        );
+        tracing::debug!("Generating transaction from txp");
+//        let transaction = Some(
+//            transaction_plan
+//                .build(&fvk, witness_data)
+//                .map_err(|_| tonic::Status::failed_precondition("Error building transaction"))?
+//                .authorize(&mut OsRng, &authorization_data)
+//                .map_err(|_| tonic::Status::failed_precondition("Error authorizing transaction"))?
+//                .into(),
+//        );
+        tracing::debug!("Building txp");
+        let t1 = transaction_plan.build(&fvk, witness_data).map_err(|_| tonic::Status::failed_precondition("Error building transaction"))?;
+        tracing::debug!("Authorizing txp");
+        let t2 = t1.authorize(&mut OsRng, &authorization_data).map_err(|_| tonic::Status::failed_precondition("Error authorizing transaction"))?;
 
+        tracing::debug!("Returning WitnessAndBuildResponse");
         Ok(tonic::Response::new(pb::WitnessAndBuildResponse {
-            transaction,
+            transaction: Some(t2.into()),
         }))
     }
 
