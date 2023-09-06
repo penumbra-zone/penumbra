@@ -7,6 +7,7 @@ edition = "2021"
 anyhow = "1.0"
 ark-ec = "0.4.2"
 ark-ff = "0.4.2"
+ark-groth16 = "0.4.0"
 ark-poly = "0.4.2"
 ark-relations = "0.4"
 ark-serialize = "0.4.2"
@@ -15,6 +16,8 @@ rand_core = { version = "0.6", features = ["getrandom"] }
 decaf377 = "0.5"
 
 [dev-dependencies]
+ark-r1cs-std = "0.4.0"
+ark-snark = "0.4.0"
 criterion = { version = "0.4", features = ["html_reports"] }
 
 [[bench]]

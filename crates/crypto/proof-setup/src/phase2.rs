@@ -85,7 +85,7 @@ impl Hashable for RawCRSElements {
 /// When combined with the elements of phase 1, the entire CRS will be present.
 #[derive(Clone, Debug)]
 pub struct CRSElements {
-    raw: RawCRSElements,
+    pub(crate) raw: RawCRSElements,
 }
 
 impl Hashable for CRSElements {
