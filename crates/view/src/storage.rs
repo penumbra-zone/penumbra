@@ -1330,7 +1330,6 @@ impl Storage {
                     )?
                     .next()
                     .transpose()?;
-                println!("swap commitment? {:?}", swap_commitment);
 
                 // Check denom type
                 let spent_denom: String
