@@ -119,6 +119,16 @@ enum RootCommand {
         #[clap(subcommand)]
         tn_cmd: TestnetCommand,
     },
+
+    /// Export the storage state the full node.
+    Export {
+        /// The path to the directory to export the state to.
+        #[clap(long, display_order = 100)]
+        export_dir: PathBuf,
+        /// Whether to prune the JMT tree before exporting.
+        #[clap(long, display_order = 200)]
+        prune: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -544,6 +554,9 @@ async fn main() -> anyhow::Result<()> {
                 "Writing config files for network"
             );
             t.write_configs()?;
+        }
+        RootCommand::Export { .. } => {
+            todo!()
         }
     }
     Ok(())
