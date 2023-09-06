@@ -1318,15 +1318,17 @@ fn delegate_submit_proposal_and_vote() {
         .args([
             "--data-path",
             tmpdir.path().to_str().unwrap(),
-            "governance",
+            "tx",
             "proposal",
             "template",
             "signaling",
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS))
-        .output()
-        .unwrap()
-        .stdout;
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
     let template_str = String::from_utf8(template).unwrap();
     let template_file = load_string_to_file(template_str, &tmpdir);
     let template_path = template_file.path().to_str().unwrap();
@@ -1366,7 +1368,6 @@ fn delegate_submit_proposal_and_vote() {
             "--data-path",
             tmpdir.path().to_str().unwrap(),
             "tx",
-            "proposal",
             "vote",
             "yes",
             "--on",
