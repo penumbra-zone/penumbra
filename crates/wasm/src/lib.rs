@@ -16,8 +16,8 @@ use std::convert::TryFrom;
 use std::str::FromStr;
 
 use anyhow::Context;
-use rand_core::OsRng;
 use penumbra_keys::keys::{SeedPhrase, SpendKey};
+use rand_core::OsRng;
 use wasm_bindgen::prelude::*;
 
 use penumbra_transaction::Transaction;
@@ -84,7 +84,7 @@ pub fn get_ephemeral_address(full_viewing_key: &str, index: u32) -> JsValue {
         .context("The provided string is not a valid FullViewingKey")
         .unwrap();
 
-    let (address, _dtk) = fvk.ephemeral_address(OsRng,index.into());
+    let (address, _dtk) = fvk.ephemeral_address(OsRng, index.into());
 
     let proto = address.to_proto();
 

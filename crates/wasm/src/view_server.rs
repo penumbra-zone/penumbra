@@ -9,7 +9,7 @@ use penumbra_keys::FullViewingKey;
 use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
 use penumbra_proto::DomainType;
 use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::note;
+use penumbra_shielded_pool::{note, Note};
 use penumbra_tct as tct;
 use penumbra_tct::Witness::*;
 use penumbra_transaction::Transaction;
@@ -109,146 +109,7 @@ impl ViewServer {
     }
 
     #[wasm_bindgen]
-    pub fn scan_block(
-        &mut self,
-        compact_block: JsValue,
-        last_position: JsValue,
-        last_forgotten: JsValue,
-    ) -> JsValue {
-        utils::set_panic_hook();
-
-        let stored_position: Option<StoredPosition> =
-            serde_wasm_bindgen::from_value(last_position).unwrap();
-        let stored_forgotten: Option<Forgotten> =
-            serde_wasm_bindgen::from_value(last_forgotten).unwrap();
-
-        let block_proto: penumbra_proto::core::chain::v1alpha1::CompactBlock =
-            serde_wasm_bindgen::from_value(compact_block).unwrap();
-
-        let block: CompactBlock = block_proto.try_into().unwrap();
-
-        let mut new_notes = Vec::new();
-        let mut new_swaps: Vec<SwapRecord> = Vec::new();
-
-        for state_payload in block.state_payloads {
-            let clone_payload = state_payload.clone();
-
-            match state_payload {
-                StatePayload::Note { note: payload, .. } => {
-                    match payload.trial_decrypt(&self.fvk) {
-                        Some(note) => {
-                            let note_position =
-                                self.nct.insert(Keep, payload.note_commitment).unwrap();
-
-                            let source = clone_payload.source().cloned().unwrap_or_default();
-                            let nullifier = Nullifier::derive(
-                                self.fvk.nullifier_key(),
-                                note_position,
-                                clone_payload.commitment(),
-                            );
-                            let address_index = self
-                                .fvk
-                                .incoming()
-                                .index_for_diversifier(note.diversifier());
-
-                            web_console::log_1(&"Found new notes".into());
-
-                            let note_record = SpendableNoteRecord {
-                                note_commitment: clone_payload.commitment().clone(),
-                                height_spent: None,
-                                height_created: block.height,
-                                note: note.clone(),
-                                address_index,
-                                nullifier,
-                                position: note_position,
-                                source,
-                            };
-                            new_notes.push(note_record.clone());
-                            self.notes
-                                .insert(payload.note_commitment, note_record.clone());
-                            self.notes_by_nullifier
-                                .insert(nullifier, note_record.clone());
-                        }
-                        None => {
-                            self.nct.insert(Forget, payload.note_commitment).unwrap();
-                        }
-                    }
-                }
-                StatePayload::Swap { swap: payload, .. } => {
-                    match payload.trial_decrypt(&self.fvk) {
-                        Some(swap) => {
-                            let swap_position = self.nct.insert(Keep, payload.commitment).unwrap();
-
-                            let batch_data = block
-                                .swap_outputs
-                                .get(&swap.trading_pair)
-                                .ok_or_else(|| anyhow::anyhow!("server gave invalid compact block"))
-                                .unwrap();
-
-                            let source = clone_payload.source().cloned().unwrap_or_default();
-                            let nullifier = Nullifier::derive(
-                                self.fvk.nullifier_key(),
-                                swap_position,
-                                clone_payload.commitment(),
-                            );
-
-                            let swap_record = SwapRecord {
-                                swap_commitment: clone_payload.commitment().clone(),
-                                swap: swap.clone(),
-                                position: swap_position,
-                                nullifier,
-                                source,
-                                output_data: batch_data.clone(),
-                                height_claimed: None,
-                            };
-                            new_swaps.push(swap_record.clone());
-                            self.swaps.insert(payload.commitment, swap_record);
-
-                        }
-                        None => {
-                            self.nct.insert(Forget, payload.commitment).unwrap();
-                        }
-                    }
-                }
-                StatePayload::RolledUp(commitment) => {
-                    if self.notes.contains_key(&commitment) {
-                        // This is a note we anticipated, so retain its auth path.
-                        self.nct.insert(Keep, commitment).unwrap();
-                    } else {
-                        // This is someone else's note.
-                        self.nct.insert(Forget, commitment).unwrap();
-                    }
-                }
-            }
-        }
-
-        self.nct.end_block().unwrap();
-        if block.epoch_root.is_some() {
-            self.nct.end_epoch().unwrap();
-        }
-
-        self.latest_height = block.height;
-
-        let nct_updates: Updates = self
-            .nct
-            .updates(
-                stored_position.unwrap_or_default(),
-                stored_forgotten.unwrap_or_default(),
-            )
-            .collect::<Updates>();
-
-        let result = ScanBlockResult {
-            height: self.latest_height,
-            nct_updates,
-            new_notes,
-            new_swaps,
-        };
-
-        return serde_wasm_bindgen::to_value(&result).unwrap();
-    }
-
-    #[wasm_bindgen]
-    pub fn scan_block_without_updates(&mut self, compact_block: JsValue) -> JsValue {
+    pub async fn scan_block(&mut self, compact_block: JsValue) -> JsValue {
         utils::set_panic_hook();
 
         let block_proto: penumbra_proto::core::chain::v1alpha1::CompactBlock =
@@ -334,44 +195,16 @@ impl ViewServer {
                             new_swaps.push(swap_record.clone());
                             self.swaps.insert(payload.commitment, swap_record);
 
-                            let batch_data = block.swap_outputs.get(&swap.trading_pair).ok_or_else(|| {
-                                                                anyhow::anyhow!("server gave invalid compact block")}).unwrap();
+                            let batch_data = block
+                                .swap_outputs
+                                .get(&swap.trading_pair)
+                                .ok_or_else(|| anyhow::anyhow!("server gave invalid compact block"))
+                                .unwrap();
 
                             let (output_1, output_2) = swap.output_notes(batch_data);
 
-                            let address_index_1 = self.fvk.incoming().index_for_diversifier(output_1.diversifier());
-
-                            let output_1_note = SpendableNoteRecord {
-                                note_commitment: output_1.commit(),
-                                height_spent: Some(0),
-                                height_created: block.height,
-                                note: output_1.clone(),
-                                address_index: address_index_1,
-                                nullifier,
-                                position: swap_position,
-                                source,
-                            };
-
-                            let address_index_2 = self.fvk.incoming().index_for_diversifier(output_2.diversifier());
-
-
-                            let output_2_note = SpendableNoteRecord {
-                                note_commitment: output_1.commit(),
-                                height_spent: Some(0),
-                                height_created: block.height,
-                                note: output_1.clone(),
-                                address_index: address_index_2,
-                                nullifier,
-                                position: swap_position,
-                                source,
-                            };
-
-                            self.notes.insert(output_1.commit(), output_1_note.clone());
-                            self.notes.insert(output_2.commit(), output_2_note.clone());
-
-                            new_notes.push(output_1_note.clone());
-                            new_notes.push(output_2_note.clone());
-
+                            store_advice(output_1).await;
+                            store_advice(output_2).await;
                         }
                         None => {
                             self.nct.insert(Forget, payload.commitment).unwrap();
@@ -381,14 +214,42 @@ impl ViewServer {
                 StatePayload::RolledUp(commitment) => {
                     if self.notes.contains_key(&commitment) {
                         // This is a note we anticipated, so retain its auth path.
-                        let position = self.nct.insert(Keep, commitment).unwrap();
 
-                        let mut note = self.notes.get(&commitment).unwrap().clone();
-                        note.position = position;
-                        note.height_spent = None;
-                        new_notes.push(note);
+                        let advice_result = read_advice(commitment).await;
 
+                        match advice_result {
+                            None => {}
+                            Some(note) => {
+                                let position = self.nct.insert(Keep, commitment).unwrap();
 
+                                let address_index_1 = self
+                                    .fvk
+                                    .incoming()
+                                    .index_for_diversifier(note.diversifier());
+
+                                let nullifier = Nullifier::derive(
+                                    self.fvk.nullifier_key(),
+                                    position,
+                                    &commitment,
+                                );
+
+                                let source = clone_payload.source().cloned().unwrap_or_default();
+
+                                let spendable_note = SpendableNoteRecord {
+                                    note_commitment: note.commit(),
+                                    height_spent: Some(u64::MAX),
+                                    height_created: block.height,
+                                    note: note.clone(),
+                                    address_index: address_index_1,
+                                    nullifier,
+                                    position: position,
+                                    source,
+                                };
+
+                                self.notes.insert(commitment, spendable_note.clone());
+                                new_notes.push(spendable_note.clone());
+                            }
+                        }
                     } else {
                         // This is someone else's note.
                         self.nct.insert(Forget, commitment).unwrap();
@@ -671,4 +532,43 @@ pub fn load_tree(stored_tree: StoredTree) -> Tree {
     }
     let tree = add_hashes.finish();
     return tree;
+}
+
+pub async fn store_advice(note: Note) {
+    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok().unwrap();
+
+    let db: IdbDatabase = db_req.into_future().await.ok().unwrap();
+
+    let tx = db.transaction_on_one("notes").ok().unwrap();
+    let store = tx.object_store("notes").ok().unwrap();
+
+    let note_proto: penumbra_proto::core::crypto::v1alpha1::Note = note.clone().try_into().unwrap();
+    let note_js = serde_wasm_bindgen::to_value(&note_proto).ok().unwrap();
+
+    let commitment_proto = note.commit().to_proto();
+
+    let commitment_js = serde_wasm_bindgen::to_value(&commitment_proto)
+        .ok()
+        .unwrap();
+
+    store.put_key_val_owned(commitment_js, &note_js).unwrap();
+}
+
+pub async fn read_advice(commitment: note::StateCommitment) -> Option<Note> {
+    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok().unwrap();
+
+    let db: IdbDatabase = db_req.into_future().await.ok().unwrap();
+
+    let tx = db.transaction_on_one("notes").ok().unwrap();
+    let store = tx.object_store("notes").ok().unwrap();
+
+    let commitment_proto = commitment.to_proto();
+
+    let commitment_js = serde_wasm_bindgen::to_value(&commitment_proto)
+        .ok()
+        .unwrap();
+
+    let value: Option<JsValue> = store.get_owned(commitment_js).ok()?.await.ok()?;
+
+    serde_wasm_bindgen::from_value(value?).ok()?
 }

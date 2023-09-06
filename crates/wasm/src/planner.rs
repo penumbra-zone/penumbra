@@ -20,10 +20,7 @@ use penumbra_dex::{
     TradingPair,
 };
 use penumbra_fee::Fee;
-use penumbra_keys::{
-    keys::{AccountGroupId, AddressIndex},
-    Address,
-};
+use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
@@ -86,9 +83,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Get all the note requests necessary to fulfill the current [`Balance`].
-    pub fn notes_requests(
-        &self,
-    ) -> (Vec<NotesRequest>, Vec<NotesForVotingRequest>) {
+    pub fn notes_requests(&self) -> (Vec<NotesRequest>, Vec<NotesForVotingRequest>) {
         (
             self.balance
                 .required()
@@ -105,11 +100,11 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 .iter()
                 .map(
                     |(
-                         _proposal, // The request only cares about the start block height
-                         VoteIntent {
-                             start_block_height, ..
-                         },
-                     )| NotesForVotingRequest {
+                        _proposal, // The request only cares about the start block height
+                        VoteIntent {
+                            start_block_height, ..
+                        },
+                    )| NotesForVotingRequest {
                         account_group_id: None,
                         votable_at_height: *start_block_height,
                         address_index: None,
@@ -331,7 +326,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
-
     /// Vote with all possible vote weight on a given proposal.
     ///
     /// Voting twice on the same proposal in the same planner will overwrite the previous vote.
@@ -380,7 +374,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             position,
             unbonded_amount,
         )
-            .into();
+        .into();
         self.action(vote);
         self
     }
@@ -430,12 +424,12 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// Clears the contents of the planner, which can be re-used.
     #[instrument(skip(
-    self,
-    chain_params,
-    fmd_params,
-    self_address,
-    spendable_notes,
-    votable_notes,
+        self,
+        chain_params,
+        fmd_params,
+        self_address,
+        spendable_notes,
+        votable_notes,
     ))]
     pub fn plan_with_spendable_and_votable_notes(
         &mut self,
@@ -454,7 +448,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         for record in spendable_notes {
             self.spend(record.note, record.position);
         }
-
 
         // Add the required votes to the planner
         for (

@@ -60,7 +60,7 @@ pub fn send_plan(
             &fmd_params,
             send_tx.notes.try_into().unwrap(),
             Default::default(),
-            fvk.incoming().payment_address(AddressIndex::new(0)).0
+            fvk.incoming().payment_address(AddressIndex::new(0)).0,
         )
         .unwrap();
 
