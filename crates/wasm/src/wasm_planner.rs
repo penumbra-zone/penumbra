@@ -186,7 +186,7 @@ pub async fn get_swap_by_commitment(swap_commitment: StateCommitment) -> Option<
         .ok()?
         .await
         .ok()?;
-r
+
     serde_wasm_bindgen::from_value(value?).ok()?
 }
 
