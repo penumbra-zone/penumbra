@@ -3848,7 +3848,10 @@ impl serde::Serialize for SwapRecord {
         if self.height_claimed != 0 {
             len += 1;
         }
-        if self.source.is_some() {
+        if self.swap_tx_id.is_some() {
+            len += 1;
+        }
+        if self.claim_tx_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.SwapRecord", len)?;
@@ -3870,8 +3873,11 @@ impl serde::Serialize for SwapRecord {
         if self.height_claimed != 0 {
             struct_ser.serialize_field("heightClaimed", ToString::to_string(&self.height_claimed).as_str())?;
         }
-        if let Some(v) = self.source.as_ref() {
-            struct_ser.serialize_field("source", v)?;
+        if let Some(v) = self.swap_tx_id.as_ref() {
+            struct_ser.serialize_field("swapTxId", v)?;
+        }
+        if let Some(v) = self.claim_tx_id.as_ref() {
+            struct_ser.serialize_field("claimTxId", v)?;
         }
         struct_ser.end()
     }
@@ -3892,7 +3898,10 @@ impl<'de> serde::Deserialize<'de> for SwapRecord {
             "outputData",
             "height_claimed",
             "heightClaimed",
-            "source",
+            "swap_tx_id",
+            "swapTxId",
+            "claim_tx_id",
+            "claimTxId",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -3903,7 +3912,8 @@ impl<'de> serde::Deserialize<'de> for SwapRecord {
             Nullifier,
             OutputData,
             HeightClaimed,
-            Source,
+            SwapTxId,
+            ClaimTxId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3931,7 +3941,8 @@ impl<'de> serde::Deserialize<'de> for SwapRecord {
                             "nullifier" => Ok(GeneratedField::Nullifier),
                             "outputData" | "output_data" => Ok(GeneratedField::OutputData),
                             "heightClaimed" | "height_claimed" => Ok(GeneratedField::HeightClaimed),
-                            "source" => Ok(GeneratedField::Source),
+                            "swapTxId" | "swap_tx_id" => Ok(GeneratedField::SwapTxId),
+                            "claimTxId" | "claim_tx_id" => Ok(GeneratedField::ClaimTxId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3957,7 +3968,8 @@ impl<'de> serde::Deserialize<'de> for SwapRecord {
                 let mut nullifier__ = None;
                 let mut output_data__ = None;
                 let mut height_claimed__ = None;
-                let mut source__ = None;
+                let mut swap_tx_id__ = None;
+                let mut claim_tx_id__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::SwapCommitment => {
@@ -4000,11 +4012,17 @@ impl<'de> serde::Deserialize<'de> for SwapRecord {
                                 Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::Source => {
-                            if source__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("source"));
+                        GeneratedField::SwapTxId => {
+                            if swap_tx_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swapTxId"));
                             }
-                            source__ = map.next_value()?;
+                            swap_tx_id__ = map.next_value()?;
+                        }
+                        GeneratedField::ClaimTxId => {
+                            if claim_tx_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("claimTxId"));
+                            }
+                            claim_tx_id__ = map.next_value()?;
                         }
                     }
                 }
@@ -4015,7 +4033,8 @@ impl<'de> serde::Deserialize<'de> for SwapRecord {
                     nullifier: nullifier__,
                     output_data: output_data__,
                     height_claimed: height_claimed__.unwrap_or_default(),
-                    source: source__,
+                    swap_tx_id: swap_tx_id__,
+                    claim_tx_id: claim_tx_id__,
                 })
             }
         }

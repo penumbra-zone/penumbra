@@ -699,7 +699,13 @@ pub struct SwapRecord {
     #[prost(uint64, tag = "6")]
     pub height_claimed: u64,
     #[prost(message, optional, tag = "7")]
-    pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
+    pub swap_tx_id: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::Id,
+    >,
+    #[prost(message, optional, tag = "8")]
+    pub claim_tx_id: ::core::option::Option<
+        super::super::core::transaction::v1alpha1::Id,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

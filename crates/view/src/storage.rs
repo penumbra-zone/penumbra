@@ -1299,12 +1299,12 @@ impl Storage {
                 let swap_bytes = swap.swap.encode_to_vec();
                 let position = (u64::from(swap.position)) as i64;
                 let nullifier = swap.nullifier.to_bytes().to_vec();
-                let source = swap.source.to_bytes().to_vec();
+                let swap_tx_hash = swap.source.to_bytes().to_vec();
                 let output_data = swap.output_data.encode_to_vec();
 
                 dbtx.execute(
-                    "INSERT INTO swaps (swap_commitment, swap, position, nullifier, output_data, height_claimed, source)
-                    VALUES (?1, ?2, ?3, ?4, ?5, NULL, ?6)",
+                    "INSERT INTO swaps (swap_commitment, swap, position, nullifier, output_data, height_claimed, swap_tx_hash, claim_tx_hash)
+                    VALUES (?1, ?2, ?3, ?4, ?5, NULL, ?6, NULL)",
                     (
                         &swap_commitment,
                         &swap_bytes,
@@ -1312,7 +1312,7 @@ impl Storage {
                         &nullifier,
                         &output_data,
                         // height_claimed is NULL because the swap is newly discovered
-                        &source,
+                        &swap_tx_hash,
                     ),
                 )?;
             }
@@ -1336,7 +1336,7 @@ impl Storage {
                 .transpose()?;
 
                 let swap_commitment: Option<StateCommitment> = dbtx.prepare_cached(
-                        "UPDATE swaps SET height_claimed = ?1 WHERE nullifier = ?2 RETURNING swap_commitment"
+                        "UPDATE swaps SET height_claimed = ?1, claim_tx_hash = ?2, WHERE nullifier = ?3 RETURNING swap_commitment"
                     )?
                     .query_and_then(
                         (height_spent, &nullifier),

@@ -481,7 +481,8 @@ message SwapRecord {
   core.crypto.v1alpha1.Nullifier nullifier = 4;
   core.dex.v1alpha1.BatchSwapOutputData output_data = 5;
   uint64 height_claimed = 6;
-  core.chain.v1alpha1.NoteSource source = 7;
+  core.transaction.v1alpha1.Id swap_tx_id = 7;
+  core.transaction.v1alpha1.Id claim_tx_id = 8;
 }
 
 message OwnedPositionIdsRequest {

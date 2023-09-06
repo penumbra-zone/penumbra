@@ -3,6 +3,7 @@ use penumbra_dex::{swap::SwapPlaintext, BatchSwapOutputData};
 use penumbra_proto::{view::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
+use penumbra_transaction::Id as TxId;
 
 use r2d2_sqlite::rusqlite::Row;
 use serde::{Deserialize, Serialize};
@@ -16,7 +17,8 @@ pub struct SwapRecord {
     pub nullifier: Nullifier,
     pub output_data: BatchSwapOutputData,
     pub height_claimed: Option<u64>,
-    pub source: NoteSource,
+    pub swap_tx_id: TxId,
+    pub claim_tx_id: Option<TxId>,
 }
 
 impl TypeUrl for SwapRecord {
@@ -38,7 +40,8 @@ impl From<SwapRecord> for pb::SwapRecord {
                 Some(h) => h,
                 None => 0,
             },
-            source: Some(msg.source.into()),
+            swap_tx_id: Some(msg.swap_tx_id.into()),
+            claim_tx_id: msg.claim_tx_id.map(Into::into),
         }
     }
 }
@@ -69,10 +72,11 @@ impl TryFrom<pb::SwapRecord> for SwapRecord {
             } else {
                 None
             },
-            source: value
-                .source
-                .ok_or_else(|| anyhow::anyhow!("missing source"))?
+            swap_tx_id: value
+                .swap_tx_id
+                .ok_or_else(|| anyhow::anyhow!("missing swap_tx_id"))?
                 .try_into()?,
+            claim_tx_id: value.claim_tx_id.map(|id| id.try_into()).transpose()?,
         })
     }
 }
@@ -87,8 +91,12 @@ impl TryFrom<&Row<'_>> for SwapRecord {
             position: row.get::<_, u64>("position")?.into(),
             nullifier: row.get::<_, Vec<u8>>("nullifier")?[..].try_into()?,
             output_data: BatchSwapOutputData::decode(&row.get::<_, Vec<u8>>("output_data")?[..])?,
-            source: row.get::<_, Vec<u8>>("source")?[..].try_into()?,
             swap: SwapPlaintext::decode(&row.get::<_, Vec<u8>>("swap")?[..])?,
+            swap_tx_id: row.get::<_, Vec<u8>>("swap_tx_id")?[..].try_into()?,
+            claim_tx_id: row
+                .get::<_, Option<Vec<u8>>>("claim_tx_id")?
+                .map(|bytes| bytes[..].try_into())
+                .transpose()?,
         })
     }
 }
