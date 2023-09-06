@@ -475,7 +475,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 // at voting start time. If the validator was not active at the start of the
                 // proposal, the vote will be rejected by stateful verification, so skip the note
                 // and continue to the next one.
-                let Some(rate_data) = rate_data.get(&identity_key) else { continue };
+                let Some(rate_data) = rate_data.get(&identity_key) else {
+                            continue;
+                };
                 let unbonded_amount = rate_data
                     .unbonded_amount(record.note.amount().value())
                     .into();
