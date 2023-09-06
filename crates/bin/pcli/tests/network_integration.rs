@@ -68,6 +68,13 @@ fn load_wallet_into_tmpdir() -> TempDir {
     tmpdir
 }
 
+fn load_string_to_file(content: String, tmpdir: &TempDir) -> NamedTempFile {
+    let mut file = NamedTempFile::new_in(tmpdir.path()).unwrap();
+    use std::io::Write;
+    write!(file, "{}", content).unwrap();
+    file
+}
+
 /// Sync the wallet.
 fn sync(tmpdir: &TempDir) {
     let mut sync_cmd = Command::cargo_bin("pcli").unwrap();
@@ -1250,4 +1257,122 @@ fn test_orders() {
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     withdraw_cmd.assert().success();
+}
+
+#[ignore]
+#[test]
+fn delegate_submit_proposal_and_vote() {
+    let tmpdir = load_wallet_into_tmpdir();
+
+    // Get a validator from the testnet.
+    let validator = get_validator(&tmpdir);
+
+    // Now undelegate. We attempt `max_attempts` times in case an epoch boundary passes
+    // while we prepare the delegation. See issues #1522, #2047.
+    let max_attempts = 5;
+
+    let mut num_attempts = 0;
+    loop {
+        // Delegate a tiny bit of penumbra to the validator.
+        let mut delegate_cmd = Command::cargo_bin("pcli").unwrap();
+        delegate_cmd
+            .args([
+                "--data-path",
+                tmpdir.path().to_str().unwrap(),
+                "tx",
+                "delegate",
+                "1penumbra",
+                "--to",
+                validator.as_str(),
+            ])
+            .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+        let delegation_result = delegate_cmd.assert().try_success();
+
+        // If the undelegation command succeeded, we can exit this loop.
+        if delegation_result.is_ok() {
+            break;
+        } else {
+            num_attempts += 1;
+            if num_attempts >= max_attempts {
+                panic!("Exceeded max attempts for fallible command");
+            }
+        }
+    }
+
+    // Check we have some of the delegation token for that validator now.
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "balance",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    balance_cmd
+        .assert()
+        .stdout(predicate::str::is_match(validator.as_str()).unwrap());
+
+    let mut proposal_template_cmd = Command::cargo_bin("pcli").unwrap();
+    let template = proposal_template_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "governance",
+            "proposal",
+            "template",
+            "signaling",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS))
+        .output()
+        .unwrap()
+        .stdout;
+    let template_str = String::from_utf8(template).unwrap();
+    let template_file = load_string_to_file(template_str, &tmpdir);
+    let template_path = template_file.path().to_str().unwrap();
+
+    let mut submit_proposal_cmd = Command::cargo_bin("pcli").unwrap();
+    submit_proposal_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "proposal",
+            "submit",
+            "--file",
+            template_path,
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    submit_proposal_cmd.assert().success();
+    sync(&tmpdir);
+
+    let mut proposals_cmd = Command::cargo_bin("pcli").unwrap();
+    proposals_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "query",
+            "governance",
+            "list-proposals",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS))
+        .assert()
+        .success()
+        .stdout(predicate::str::is_match("A short title").unwrap());
+
+    let mut vote_cmd = Command::cargo_bin("pcli").unwrap();
+    vote_cmd
+        .args([
+            "--data-path",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "proposal",
+            "vote",
+            "yes",
+            "--on",
+            "0",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS))
+        .assert()
+        .success();
 }
