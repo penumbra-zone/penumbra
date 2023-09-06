@@ -1,0 +1,20 @@
+# Cannot use pclientd built from Penumbra feature branch,\
+# due to bullseye/bookworm mismatch.
+# FROM ghcr.io/penumbra-zone/penumbra:debug-witness-and-build AS pz
+
+FROM rust:1-bullseye AS pz
+
+RUN apt-get update && apt-get install -y \
+        build-essential \
+        pkg-config \
+        libssl-dev \
+        clang
+COPY . /app
+WORKDIR /app
+RUN cargo build --release
+
+# Reference the upstream Strangelove container image, which is required
+# for interchaintest, due to helper scripts and uid/gid info.
+FROM ghcr.io/strangelove-ventures/heighliner/penumbra:v0.59.0 AS sl
+
+COPY --from=pz /app/target/release/pclientd /bin/pclientd
