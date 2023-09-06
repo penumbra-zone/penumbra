@@ -182,11 +182,11 @@ pub async fn get_swap_by_commitment(swap_commitment: StateCommitment) -> Option<
     let store = tx.object_store("swaps").ok()?;
 
     let value: Option<JsValue> = store
-        .get_owned(base64::encode(swap_commitment.inner))
+        .get_owned(base64::Engine::encode(&base64::engine::general_purpose::STANDARD,swap_commitment.inner))
         .ok()?
         .await
         .ok()?;
-
+r
     serde_wasm_bindgen::from_value(value?).ok()?
 }
 
