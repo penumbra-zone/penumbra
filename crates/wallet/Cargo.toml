@@ -19,6 +19,7 @@ penumbra-num = { path = "../core/num" }
 penumbra-asset = { path = "../core/asset" }
 penumbra-keys = { path = "../core/keys" }
 penumbra-chain = { path = "../core/component/chain" }
+penumbra-dex = { path = "../core/component/dex" }
 penumbra-transaction = { path = "../core/transaction" }
 penumbra-app = { path = "../core/app" }
 penumbra-stake = { path = "../core/component/stake" }
@@ -29,8 +30,10 @@ penumbra-custody = { path = "../custody" }
 # External dependencies
 bytes = "1"
 bincode = "1.3.3"
-tokio = { version = "1.21.1", features = ["full"]}
-tower = { version = "0.4", features = ["full"]}
+ark-std = { version = "0.4", default_features = false }
+decaf377 = { version = "0.5" }
+tokio = { version = "1.21.1", features = ["full"] }
+tower = { version = "0.4", features = ["full"] }
 tonic = "0.8.1"
 tracing = "0.1"
 pin-project = "1"

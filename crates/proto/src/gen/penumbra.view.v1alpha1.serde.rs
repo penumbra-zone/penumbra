@@ -5839,6 +5839,189 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerResponse {
         deserializer.deserialize_struct("penumbra.view.v1alpha1.TransactionPlannerResponse", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for UnclaimedSwapsRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.account_group_id.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.UnclaimedSwapsRequest", len)?;
+        if let Some(v) = self.account_group_id.as_ref() {
+            struct_ser.serialize_field("accountGroupId", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for UnclaimedSwapsRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "account_group_id",
+            "accountGroupId",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            AccountGroupId,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = UnclaimedSwapsRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1alpha1.UnclaimedSwapsRequest")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<UnclaimedSwapsRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut account_group_id__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::AccountGroupId => {
+                            if account_group_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("accountGroupId"));
+                            }
+                            account_group_id__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(UnclaimedSwapsRequest {
+                    account_group_id: account_group_id__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1alpha1.UnclaimedSwapsRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for UnclaimedSwapsResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.swap.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.UnclaimedSwapsResponse", len)?;
+        if let Some(v) = self.swap.as_ref() {
+            struct_ser.serialize_field("swap", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for UnclaimedSwapsResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "swap",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Swap,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "swap" => Ok(GeneratedField::Swap),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = UnclaimedSwapsResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1alpha1.UnclaimedSwapsResponse")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<UnclaimedSwapsResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut swap__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Swap => {
+                            if swap__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swap"));
+                            }
+                            swap__ = map.next_value()?;
+                        }
+                    }
+                }
+                Ok(UnclaimedSwapsResponse {
+                    swap: swap__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1alpha1.UnclaimedSwapsResponse", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for ViewAuthRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

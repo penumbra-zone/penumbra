@@ -70,6 +70,9 @@ service ViewProtocolService {
   // Query for a swap by its swap commitment, optionally waiting until the swap is detected.
   rpc SwapByCommitment(SwapByCommitmentRequest) returns (SwapByCommitmentResponse);
 
+  // Query for all unclaimed swaps.
+  rpc UnclaimedSwaps(UnclaimedSwapsRequest) returns (stream UnclaimedSwapsResponse);
+
   // Query for whether a nullifier has been spent, optionally waiting until it is spent.
   rpc NullifierStatus(NullifierStatusRequest) returns (NullifierStatusResponse);
 
@@ -398,6 +401,15 @@ message SwapByCommitmentRequest {
 }
 
 message SwapByCommitmentResponse {
+  SwapRecord swap = 1;
+}
+
+message UnclaimedSwapsRequest {
+  // Identifies the account group to query.
+  core.crypto.v1alpha1.AccountGroupId account_group_id = 1;
+}
+
+message UnclaimedSwapsResponse {
   SwapRecord swap = 1;
 }
 
