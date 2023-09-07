@@ -17,6 +17,7 @@
 
 // The autogen code is not clippy-clean, so we disable some clippy warnings for this crate.
 #![allow(clippy::derive_partial_eq_without_eq)]
+#![allow(non_snake_case)]
 
 pub use prost::Message;
 

@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 use std::{
     borrow::Cow,
     collections::BTreeMap,
