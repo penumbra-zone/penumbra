@@ -559,20 +559,22 @@ async fn main() -> anyhow::Result<()> {
             t.write_configs()?;
         }
         RootCommand::Export {
-            data_path,
-            export_path,
+            mut data_path,
+            mut export_path,
             prune,
         } => {
-            tracing::info!("exporting state to {}", export_path.display());
             use fs_extra;
+
+            tracing::info!("exporting state to {}", export_path.display());
             let copy_opts = fs_extra::dir::CopyOptions::new();
+            data_path.push("rocksdb");
             let from = [data_path.as_path()];
             tracing::info!(
                 ?data_path,
                 ?export_path,
                 "copying from data dir to export dir",
             );
-            fs_extra::copy_items(&from, export_path.as_path(), &copy_opts);
+            fs_extra::copy_items(&from, export_path.as_path(), &copy_opts)?;
 
             tracing::info!("done copying");
             if !prune {
@@ -580,6 +582,13 @@ async fn main() -> anyhow::Result<()> {
             }
 
             tracing::info!("pruning JMT tree");
+            export_path.push("rocksdb");
+            let export = Storage::load(export_path).await?;
+            let _ = StateDelta::new(export.latest_snapshot());
+            // TODO:
+            // - add utilities in `penumbra_storage` to prune a tree
+            // - apply the delta to the exported storage
+            // - apply checks: root hash, size, etc.
             todo!()
         }
     }
