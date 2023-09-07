@@ -486,15 +486,8 @@ impl EffectingData for PositionRewardClaim {
 
 impl EffectingData for DetectionData {
     fn effect_hash(&self) -> EffectHash {
-        let mut state = create_personalized_state(DetectionData::TYPE_URL);
-
-        let num_clues = self.fmd_clues.len() as u32;
-        state.update(&num_clues.to_le_bytes());
-        for fmd_clue in &self.fmd_clues {
-            state.update(fmd_clue.effect_hash().as_bytes());
-        }
-
-        EffectHash(state.finalize().as_array().clone())
+        let effecting_data: pbt::DetectionData = self.clone().into();
+        hash_proto_effecting_data(DetectionData::TYPE_URL, &effecting_data)
     }
 }
 

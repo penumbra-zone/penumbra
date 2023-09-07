@@ -86,14 +86,8 @@ We compute the transaction data field effect hashes in the same manner as action
 |---|---|---|
 | `TransactionParameters` | `b"/penumbra.core.transaction.v1alpha1.TransactionParameters"` | `TransactionParameters`  |
 | `Fee` | `b"/penumbra.core.crypto.v1alpha1.Fee"` | `Fee` |
-| `Clue`  | `b"/penumbra.core.crypto.v1alpha1.Clue"`  | `Clue` |
 | `MemoCiphertext` | `b"/penumbra.core.crypto.v1alpha1.MemoCiphertext"` | `MemoCiphertext`
-
-For the `DetectionData`, we compute the effect hash via:
-
-`effect_hash = BLAKE2b-512(len(type_url) || type_url || num clues || eh(c_0) || ... ||  eh(c_i))`
-
-where `len(type_url)` is the length of the type URL encoded as 8 bytes in little-endian byte order, `eh(c_i)` represents the effect hash of the $i^{th}$ clue, and `type_url` is the bytes `/penumbra.core.transaction.v1alpha1.DetectionData`.
+| `DetectionData` | `b"/penumbra.core.transaction.v1alpha1.DetectionData"` | `DetectionData`
 
 ### Transaction Effect Hash
 
