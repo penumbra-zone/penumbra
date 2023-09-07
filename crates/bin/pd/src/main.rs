@@ -21,7 +21,7 @@ use penumbra_proto::client::v1alpha1::{
     specific_query_service_server::SpecificQueryServiceServer,
     tendermint_proxy_service_server::TendermintProxyServiceServer,
 };
-use penumbra_storage::Storage;
+use penumbra_storage::{StateDelta, Storage};
 use penumbra_tendermint_proxy::TendermintProxy;
 use penumbra_tower_trace::remote_addr;
 use rand::Rng;
@@ -122,11 +122,14 @@ enum RootCommand {
 
     /// Export the storage state the full node.
     Export {
-        /// The path to the directory to export the state to.
-        #[clap(long, display_order = 100)]
-        export_dir: PathBuf,
-        /// Whether to prune the JMT tree before exporting.
+        /// The data directory of the full node.
+        #[clap(long, env = "PENUMBRA_PD_HOME", display_order = 100)]
+        data_path: PathBuf,
+        /// The directory that the exported state will be written to.
         #[clap(long, display_order = 200)]
+        export_path: PathBuf,
+        /// Whether to prune the JMT tree.
+        #[clap(long, display_order = 300)]
         prune: bool,
     },
 }
@@ -555,7 +558,28 @@ async fn main() -> anyhow::Result<()> {
             );
             t.write_configs()?;
         }
-        RootCommand::Export { .. } => {
+        RootCommand::Export {
+            data_path,
+            export_path,
+            prune,
+        } => {
+            tracing::info!("exporting state to {}", export_path.display());
+            use fs_extra;
+            let copy_opts = fs_extra::dir::CopyOptions::new();
+            let from = [data_path.as_path()];
+            tracing::info!(
+                ?data_path,
+                ?export_path,
+                "copying from data dir to export dir",
+            );
+            fs_extra::copy_items(&from, export_path.as_path(), &copy_opts);
+
+            tracing::info!("done copying");
+            if !prune {
+                return Ok(());
+            }
+
+            tracing::info!("pruning JMT tree");
             todo!()
         }
     }
