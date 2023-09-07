@@ -120,6 +120,9 @@ pub fn transition(
     // the coefficients are group elements, and not scalars.
     // (We also need to reverse the order of the resulting FFT).
     //
+    // This is also equivalent to doing an inverse FFT, and not including
+    // the inverse of d in the polynomial.
+    //
     // The structure of the domain also helps us with the vanishing polynomial, t.
     // The polynomial (Xᵈ − 1) is 0 everywhere over the domain, and give us
     // a simple expression for t(X). The evaluations [t(x)xⁱ] can then be obtained
@@ -141,7 +144,6 @@ pub fn transition(
             phase1.degree
         ));
     }
-    let d_inv = domain.size_inv();
 
     // 1. Get the lagrange coefficients over [x].
     // 1.1. Setup a polynomial that's 1/d * x^i at each coefficient.
@@ -151,11 +153,12 @@ pub fn transition(
         .iter()
         .copied()
         .take(domain_size)
-        .map(|x| x * d_inv)
+        //.map(|x| x * d_inv)
         .collect();
-    domain.fft_in_place(&mut extracting_poly);
-    extracting_poly.reverse();
+    domain.ifft_in_place(&mut extracting_poly);
+    //extracting_poly.reverse();
     let lagrange_1 = extracting_poly;
+    dbg!(&lagrange_1);
 
     // 2. Do the same for [x]_2.
     let mut extracting_poly: Vec<_> = phase1
@@ -164,10 +167,10 @@ pub fn transition(
         .iter()
         .copied()
         .take(domain_size)
-        .map(|x| x * d_inv)
+        //.map(|x| x * d_inv)
         .collect();
-    domain.fft_in_place(&mut extracting_poly);
-    extracting_poly.reverse();
+    domain.ifft_in_place(&mut extracting_poly);
+    //extracting_poly.reverse();
     let lagrange_2 = extracting_poly;
 
     // 3. Do the same for [αx].
@@ -177,10 +180,10 @@ pub fn transition(
         .iter()
         .copied()
         .take(domain_size)
-        .map(|x| x * d_inv)
+        //.map(|x| x * d_inv)
         .collect();
-    domain.fft_in_place(&mut extracting_poly);
-    extracting_poly.reverse();
+    domain.ifft_in_place(&mut extracting_poly);
+    //extracting_poly.reverse();
     let alpha_lagrange_1 = extracting_poly;
 
     // 4. Do the same for [βx].
@@ -190,10 +193,10 @@ pub fn transition(
         .iter()
         .copied()
         .take(domain_size)
-        .map(|x| x * d_inv)
+        //.map(|x| x * d_inv)
         .collect();
-    domain.fft_in_place(&mut extracting_poly);
-    extracting_poly.reverse();
+    domain.ifft_in_place(&mut extracting_poly);
+    //extracting_poly.reverse();
     let beta_lagrange_1 = extracting_poly;
 
     // 5. Accumulate the p_i polynomials evaluated over [x].
@@ -218,7 +221,7 @@ pub fn transition(
         // the entire p polynomial, and not u (which they call 'a'), but this effectively does
         // the same thing, because the other polynomials are set to 0 at these points.
         p_1[start..end]
-            .copy_from_slice(&alpha_lagrange_1[(start + num_constraints)..(end + num_constraints)]);
+            .copy_from_slice(&beta_lagrange_1[(start + num_constraints)..(end + num_constraints)]);
         // We also modify u in the same way
         u_1[start..end]
             .copy_from_slice(&lagrange_1[(start + num_constraints)..(end + num_constraints)])
@@ -287,7 +290,9 @@ pub fn combine(
         b_g1_query: G1::normalize_batch(&extra.v_1),
         b_g2_query: G2::normalize_batch(&extra.v_2),
         h_query: G1::normalize_batch(&phase2out.raw.inv_delta_t_1),
-        l_query: G1::normalize_batch(&extra.p_1[circuit.num_instance_variables..]),
+        l_query: G1::normalize_batch(
+            &phase2out.raw.inv_delta_p_1[circuit.num_instance_variables..],
+        ),
     }
 }
 
@@ -302,7 +307,7 @@ mod test {
     };
     use ark_relations::r1cs::{self, ConstraintSynthesizer, ConstraintSystem, ConstraintSystemRef};
     use ark_snark::SNARK;
-    use rand_core::OsRng;
+    use rand_core::{OsRng, SeedableRng};
 
     use crate::log::Hashable;
 
@@ -347,13 +352,28 @@ mod test {
             .to_matrices()
             .ok_or(anyhow!("Failed to generate constraint matrices."))?;
 
+        let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1776);
+
         let degree = circuit_degree(&matrices)?;
         let phase1root = Phase1CRSElements::root(degree);
-        let phase1contribution =
-            Phase1Contribution::make(&mut OsRng, phase1root.hash(), &phase1root);
+
+        // Doing two contributions to make sure there's not some weird bug there
+        let phase1contribution = Phase1Contribution::make(&mut rng, phase1root.hash(), &phase1root);
+        let phase1contribution = Phase1Contribution::make(
+            &mut rng,
+            phase1contribution.hash(),
+            &phase1contribution.new_elements,
+        );
+
         let (extra, phase2root) = transition(&phase1contribution.new_elements, &matrices)?;
-        let phase2contribution =
-            Phase2Contribution::make(&mut OsRng, phase2root.hash(), &phase2root);
+
+        let phase2contribution = Phase2Contribution::make(&mut rng, phase2root.hash(), &phase2root);
+        let phase2contribution = Phase2Contribution::make(
+            &mut rng,
+            phase2contribution.hash(),
+            &phase2contribution.new_elements,
+        );
+
         let pk = combine(
             &matrices,
             &phase1contribution.new_elements,

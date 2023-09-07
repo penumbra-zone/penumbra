@@ -19,6 +19,7 @@ decaf377 = "0.5"
 ark-r1cs-std = "0.4.0"
 ark-snark = "0.4.0"
 criterion = { version = "0.4", features = ["html_reports"] }
+rand_chacha = "0.3.1"
 
 [[bench]]
 name = "phase1"
