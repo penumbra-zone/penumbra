@@ -166,8 +166,16 @@ impl TradingPairVar {
 impl ToConstraintField<Fq> for TradingPair {
     fn to_field_elements(&self) -> Option<Vec<Fq>> {
         let mut public_inputs = Vec::new();
-        public_inputs.extend(Fq::from(self.asset_1().0).to_field_elements().unwrap());
-        public_inputs.extend(Fq::from(self.asset_2().0).to_field_elements().unwrap());
+        public_inputs.extend(
+            Fq::from(self.asset_1().0)
+                .to_field_elements()
+                .expect("Fq types are Bls12-377 field members"),
+        );
+        public_inputs.extend(
+            Fq::from(self.asset_2().0)
+                .to_field_elements()
+                .expect("Fq types are Bls12-377 field members"),
+        );
         Some(public_inputs)
     }
 }

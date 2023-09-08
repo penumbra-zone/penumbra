@@ -1,3 +1,4 @@
+use anyhow::Context;
 use ark_ff::ToConstraintField;
 use ark_groth16::{
     r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey,
@@ -105,8 +106,10 @@ impl DummyWitness for SwapCircuit {
     fn with_dummy_witness() -> Self {
         let a = asset::Cache::with_known_assets()
             .get_unit("upenumbra")
-            .unwrap();
-        let b = asset::Cache::with_known_assets().get_unit("nala").unwrap();
+            .expect("upenumbra asset exists");
+        let b = asset::Cache::with_known_assets()
+            .get_unit("nala")
+            .expect("nala asset exists");
         let trading_pair = TradingPair::new(a.id(), b.id());
         let diversifier_bytes = [1u8; 16];
         let pk_d_bytes = decaf377::basepoint().vartime_compress().0;
@@ -126,7 +129,7 @@ impl DummyWitness for SwapCircuit {
                 amount: 3u64.into(),
                 asset_id: asset::Cache::with_known_assets()
                     .get_unit("upenumbra")
-                    .unwrap()
+                    .expect("upenumbra asset exists")
                     .id(),
             }),
             claim_address: address,
@@ -196,9 +199,24 @@ impl SwapProof {
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
-        public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
-        public_inputs.extend(swap_commitment.0.to_field_elements().unwrap());
-        public_inputs.extend(fee_commitment.0.to_field_elements().unwrap());
+        public_inputs.extend(
+            balance_commitment
+                .0
+                .to_field_elements()
+                .context("balance_commitment should be a Bls12-377 field member")?,
+        );
+        public_inputs.extend(
+            swap_commitment
+                .0
+                .to_field_elements()
+                .context("swap_commitment should be a Bls12-377 field member")?,
+        );
+        public_inputs.extend(
+            fee_commitment
+                .0
+                .to_field_elements()
+                .context("fee_commitment should be a Bls12-377 field member")?,
+        );
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();

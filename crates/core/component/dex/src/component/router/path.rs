@@ -84,7 +84,7 @@ impl<S: StateRead + 'static> Path<S> {
         let hop_price = best_price_position
             .phi
             .orient_end(new_end)
-            .unwrap()
+            .expect("position should be contain the end asset")
             .effective_price();
 
         match self.price * hop_price {

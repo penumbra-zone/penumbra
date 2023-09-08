@@ -208,11 +208,11 @@ impl DummyWitness for SwapClaimCircuit {
         let trading_pair = TradingPair {
             asset_1: asset::Cache::with_known_assets()
                 .get_unit("upenumbra")
-                .unwrap()
+                .expect("upenumbra denom is known")
                 .id(),
             asset_2: asset::Cache::with_known_assets()
                 .get_unit("nala")
-                .unwrap()
+                .expect("nala denom is known")
                 .id(),
         };
 
@@ -233,7 +233,7 @@ impl DummyWitness for SwapClaimCircuit {
                 amount: 3u64.into(),
                 asset_id: asset::Cache::with_known_assets()
                     .get_unit("upenumbra")
-                    .unwrap()
+                    .expect("upenumbra denom is known")
                     .id(),
             }),
             claim_address: address,
@@ -241,9 +241,12 @@ impl DummyWitness for SwapClaimCircuit {
         };
         let mut sct = tct::Tree::new();
         let swap_commitment = swap_plaintext.swap_commitment();
-        sct.insert(tct::Witness::Keep, swap_commitment).unwrap();
+        sct.insert(tct::Witness::Keep, swap_commitment)
+            .expect("insertion of the swap commitment into the SCT should succeed");
         let anchor = sct.root();
-        let state_commitment_proof = sct.witness(swap_commitment).unwrap();
+        let state_commitment_proof = sct
+            .witness(swap_commitment)
+            .expect("the SCT should be able to witness the just-inserted swap commitment");
         let nullifier = Nullifier(Fq::from(1));
         let claim_fee = Fee::default();
         let output_data = BatchSwapOutputData {
@@ -348,13 +351,46 @@ impl SwapClaimProof {
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
-        public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
-        public_inputs.extend(nullifier.0.to_field_elements().unwrap());
-        public_inputs.extend(Fq::from(fee.0.amount).to_field_elements().unwrap());
-        public_inputs.extend(fee.0.asset_id.0.to_field_elements().unwrap());
-        public_inputs.extend(output_data.to_field_elements().unwrap());
-        public_inputs.extend(note_commitment_1.0.to_field_elements().unwrap());
-        public_inputs.extend(note_commitment_2.0.to_field_elements().unwrap());
+        public_inputs.extend(
+            Fq::from(anchor.0)
+                .to_field_elements()
+                .expect("Fq types are Bls12-377 field members"),
+        );
+        public_inputs.extend(
+            nullifier
+                .0
+                .to_field_elements()
+                .expect("nullifier is a Bls12-377 field member"),
+        );
+        public_inputs.extend(
+            Fq::from(fee.0.amount)
+                .to_field_elements()
+                .expect("Fq types are Bls12-377 field members"),
+        );
+        public_inputs.extend(
+            fee.0
+                .asset_id
+                .0
+                .to_field_elements()
+                .expect("asset_id is a Bls12-377 field member"),
+        );
+        public_inputs.extend(
+            output_data
+                .to_field_elements()
+                .expect("output_data is a Bls12-377 field member"),
+        );
+        public_inputs.extend(
+            note_commitment_1
+                .0
+                .to_field_elements()
+                .expect("note_commitment_1 is a Bls12-377 field member"),
+        );
+        public_inputs.extend(
+            note_commitment_2
+                .0
+                .to_field_elements()
+                .expect("note_commitment_2 is a Bls12-377 field member"),
+        );
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
