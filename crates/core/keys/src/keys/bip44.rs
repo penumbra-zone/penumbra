@@ -1,3 +1,6 @@
+use ark_ff::Zero;
+use ark_secp256k1::Fr as Fsecp256k1;
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress};
 use hmac::{Hmac, Mac};
 
 /// Penumbra's registered coin type.
@@ -75,6 +78,7 @@ mod tests {
     }
 }
 
+#[allow(non_snake_case)]
 pub fn ckd_priv(k_par: [u8; 32], c_par: [u8; 32], i: u32) -> ([u8; 32], [u8; 32]) {
     let mut hmac = Hmac::<sha2::Sha512>::new_from_slice(&c_par).expect("can create hmac");
     if i >= 0x80000000 {
@@ -96,9 +100,33 @@ pub fn ckd_priv(k_par: [u8; 32], c_par: [u8; 32], i: u32) -> ([u8; 32], [u8; 32]
     // The result of the above is the child key k_i and the chain code c_i.
     let c_i = i_R;
 
-    // TODO: k_i is derived as (k_par + i_L) % n
-    // n here is the order of the secp256k1 curve?
-    let k_i = todo!();
+    // k_i is derived as (k_par + i_L) % n
+    // where n is the order of the secp256k1 curve:
+    //
+    // n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
+    //
+    // which in the Arkworks crate is the scalar field modulus, in decimal:
+    //
+    // 115792089237316195423570985008687907852837564279074904382605163141518161494337
+    //
+    // See:
+    // https://en.bitcoin.it/wiki/Secp256k1
+    // https://en.bitcoin.it/wiki/BIP_0032#Child_key_derivation_.28CKD.29_functions
+    let i_L_field = Fsecp256k1::deserialize_compressed(&i_L[..]).expect("valid Fr");
+    let k_i = Fsecp256k1::deserialize_compressed(&k_par[..]).expect("valid Fr") + i_L_field;
 
-    (k_i, c_i)
+    let mut i_L_mod_n_bytes = Vec::new();
+    i_L_field
+        .serialize_with_mode(&mut i_L_mod_n_bytes, Compress::Yes)
+        .expect("can serialize");
+    // Finally, we need to check if i_L ≥ n or k_i = 0, as the resulting key is invalid
+    if k_i == Fsecp256k1::zero() || i_L_mod_n_bytes != i_L.to_vec() {
+        // Key is invalid, proceed with the next value for i
+        return ckd_priv(k_par, c_par, i + 1);
+    }
+
+    let mut k_i_bytes = Vec::new();
+    k_i.serialize_with_mode(&mut k_i_bytes, Compress::Yes)
+        .expect("can serialize");
+    (k_i_bytes.try_into().expect("result fits in 32 bytes"), c_i)
 }
