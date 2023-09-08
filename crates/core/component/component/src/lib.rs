@@ -31,6 +31,7 @@
 //! `component` feature enabled, so it can assemble all of the `ActionHandler`
 //! implementations into a top-level `ActionHandler` implementation and call
 //! each component's `Component` implementation at the appropriate times.
+#![deny(clippy::unwrap_used)]
 
 mod action_handler;
 mod component;
