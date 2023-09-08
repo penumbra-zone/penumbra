@@ -5,7 +5,9 @@ mod client;
 mod client_counter;
 mod connection;
 mod connection_counter;
+#[cfg(feature = "rpc")]
 mod grpc_query;
+
 mod ibc_component;
 mod metrics;
 mod msg_handler;
@@ -20,5 +22,8 @@ pub use self::metrics::register_metrics;
 pub use channel::StateReadExt as ChannelStateReadExt;
 pub use client::StateReadExt as ClientStateReadExt;
 pub use connection::StateReadExt as ConnectionStateReadExt;
+
+#[cfg(feature = "rpc")]
 pub use grpc_query::IbcQuery;
+
 pub use ibc_component::IBCComponent;

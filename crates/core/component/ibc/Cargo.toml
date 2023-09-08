@@ -10,6 +10,7 @@ component = ["penumbra-component", "penumbra-storage", "penumbra-proto/penumbra-
 default = ["component", "std"]
 std = ["ibc-types/std"]
 docsrs = []
+rpc = ["dep:tonic"]
 
 [dependencies]
 # Workspace dependencies
@@ -44,7 +45,7 @@ sha2 = "0.10.6"
 once_cell = "1.17.1"
 base64 = "0.20"
 blake2b_simd = "0.5"
-tonic = "0.9"
+tonic = { version = "0.9", optional = true }
 tower = "0.4"
 
 [dev-dependencies]
