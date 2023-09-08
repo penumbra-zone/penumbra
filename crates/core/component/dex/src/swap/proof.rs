@@ -1,6 +1,6 @@
 use ark_ff::ToConstraintField;
 use ark_groth16::{
-    r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey,
+    r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey,
 };
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
@@ -14,7 +14,6 @@ use penumbra_fee::Fee;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
-use rand_core::OsRng;
 
 use penumbra_asset::{
     asset,
@@ -29,7 +28,7 @@ use crate::{
     TradingPair,
 };
 
-use penumbra_proof_params::{ParameterSetup, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_proof_params::{DummyWitness, GROTH16_PROOF_LENGTH_BYTES};
 
 pub struct SwapCircuit {
     /// The swap plaintext.
@@ -102,8 +101,8 @@ impl ConstraintSynthesizer<Fq> for SwapCircuit {
     }
 }
 
-impl ParameterSetup for SwapCircuit {
-    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+impl DummyWitness for SwapCircuit {
+    fn with_dummy_witness() -> Self {
         let a = asset::Cache::with_known_assets()
             .get_unit("upenumbra")
             .unwrap();
@@ -134,17 +133,13 @@ impl ParameterSetup for SwapCircuit {
             rseed: Rseed([1u8; 32]),
         };
 
-        let circuit = SwapCircuit {
+        Self {
             swap_plaintext: swap_plaintext.clone(),
             fee_blinding: Fr::from(1),
             swap_commitment: swap_plaintext.swap_commitment(),
             fee_commitment: balance::Commitment(decaf377::basepoint()),
             balance_commitment: balance::Commitment(decaf377::basepoint()),
-        };
-        let (pk, vk) =
-            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
-                .expect("can perform circuit specific setup");
-        (pk, vk)
+        }
     }
 }
 
@@ -251,7 +246,9 @@ mod tests {
     use penumbra_asset::{Balance, Value};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
     use penumbra_num::Amount;
+    use penumbra_proof_params::generate_prepared_test_parameters;
     use proptest::prelude::*;
+    use rand_core::OsRng;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {
         any::<[u8; 32]>()
@@ -263,9 +260,9 @@ mod tests {
     #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
     fn swap_proof_happy_path(fee_blinding in fr_strategy(), value1_amount in 2..200u64) {
-        let (pk, vk) = SwapCircuit::generate_prepared_test_parameters();
-
         let mut rng = OsRng;
+        let (pk, vk) = generate_prepared_test_parameters::<SwapCircuit>(&mut rng);
+
 
         let seed_phrase = SeedPhrase::generate(&mut rng);
         let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);

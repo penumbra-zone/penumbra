@@ -9,9 +9,10 @@ use ark_serialize::CanonicalSerialize;
 use decaf377::Bls12_377;
 use penumbra_dex::{swap::proof::SwapCircuit, swap_claim::proof::SwapClaimCircuit};
 use penumbra_governance::DelegatorVoteCircuit;
-use penumbra_proof_params::{ParameterSetup, ProvingKeyExt, VerifyingKeyExt};
+use penumbra_proof_params::{generate_test_parameters, VerifyingKeyExt, ProvingKeyExt};
 use penumbra_shielded_pool::{NullifierDerivationCircuit, OutputCircuit, SpendCircuit};
 use penumbra_stake::UndelegateClaimCircuit;
+use rand_core::OsRng;
 
 fn main() -> Result<()> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -28,23 +29,24 @@ fn main() -> Result<()> {
 
     // Generate the parameters for the current proofs and serialize them
     // to files in the target directory.
-    let (spend_pk, spend_vk) = SpendCircuit::generate_test_parameters();
+    let (spend_pk, spend_vk) = generate_test_parameters::<SpendCircuit>(&mut OsRng);
     write_params(&target_dir, "spend", &spend_pk, &spend_vk)?;
-    let (output_pk, output_vk) = OutputCircuit::generate_test_parameters();
+    let (output_pk, output_vk) = generate_test_parameters::<OutputCircuit>(&mut OsRng);
     write_params(&target_dir, "output", &output_pk, &output_vk)?;
-    let (swap_pk, swap_vk) = SwapCircuit::generate_test_parameters();
+    let (swap_pk, swap_vk) = generate_test_parameters::<SwapCircuit>(&mut OsRng);
     write_params(&target_dir, "swap", &swap_pk, &swap_vk)?;
-    let (swapclaim_pk, swapclaim_vk) = SwapClaimCircuit::generate_test_parameters();
+    let (swapclaim_pk, swapclaim_vk) = generate_test_parameters::<SwapClaimCircuit>(&mut OsRng);
     write_params(&target_dir, "swapclaim", &swapclaim_pk, &swapclaim_vk)?;
     let (undelegateclaim_pk, undelegateclaim_vk) =
-        UndelegateClaimCircuit::generate_test_parameters();
+        generate_test_parameters::<UndelegateClaimCircuit>(&mut OsRng);
     write_params(
         &target_dir,
         "undelegateclaim",
         &undelegateclaim_pk,
         &undelegateclaim_vk,
     )?;
-    let (delegator_vote_pk, delegator_vote_vk) = DelegatorVoteCircuit::generate_test_parameters();
+    let (delegator_vote_pk, delegator_vote_vk) =
+        generate_test_parameters::<DelegatorVoteCircuit>(&mut OsRng);
     write_params(
         &target_dir,
         "delegator_vote",
@@ -52,7 +54,7 @@ fn main() -> Result<()> {
         &delegator_vote_vk,
     )?;
     let (nullifier_derivation_pk, nullifier_derivation_vk) =
-        NullifierDerivationCircuit::generate_test_parameters();
+        generate_test_parameters::<NullifierDerivationCircuit>(&mut OsRng);
     write_params(
         &target_dir,
         "nullifier_derivation",

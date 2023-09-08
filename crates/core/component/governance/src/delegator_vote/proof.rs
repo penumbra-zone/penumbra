@@ -8,7 +8,7 @@ use decaf377::FieldExt;
 use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
 
 use ark_ff::ToConstraintField;
-use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey};
+use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey};
 use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
@@ -16,7 +16,6 @@ use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
-use rand_core::OsRng;
 use tct::r1cs::PositionVar;
 
 use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
@@ -24,7 +23,7 @@ use penumbra_keys::keys::{
     AuthorizationKeyVar, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
 };
-use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 use penumbra_sct::{Nullifier, NullifierVar};
 use penumbra_shielded_pool::{note, Note, Rseed};
 
@@ -184,8 +183,8 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
     }
 }
 
-impl ParameterSetup for DelegatorVoteCircuit {
-    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+impl DummyWitness for DelegatorVoteCircuit {
+    fn with_dummy_witness() -> Self {
         let seed_phrase = SeedPhrase::from_randomness(&[b'f'; 32]);
         let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
@@ -212,7 +211,7 @@ impl ParameterSetup for DelegatorVoteCircuit {
         let state_commitment_proof = sct.witness(note_commitment).unwrap();
         let start_position = state_commitment_proof.position();
 
-        let circuit = DelegatorVoteCircuit {
+        Self {
             state_commitment_proof,
             note,
             v_blinding,
@@ -224,11 +223,7 @@ impl ParameterSetup for DelegatorVoteCircuit {
             nullifier,
             rk,
             start_position,
-        };
-        let (pk, vk) =
-            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
-                .expect("can perform circuit specific setup");
-        (pk, vk)
+        }
     }
 }
 
@@ -364,8 +359,10 @@ mod tests {
     use decaf377::{Fq, Fr};
     use penumbra_asset::{asset, Value};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_proof_params::generate_prepared_test_parameters;
     use penumbra_sct::Nullifier;
     use proptest::prelude::*;
+    use rand_core::OsRng;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {
         any::<[u8; 32]>()
@@ -377,8 +374,8 @@ mod tests {
     #![proptest_config(ProptestConfig::with_cases(1))]
     #[test]
     fn delegator_vote_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 1..2000000000u64, num_commitments in 0..2000u64) {
-        let (pk, vk) = DelegatorVoteCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
+        let (pk, vk) = generate_prepared_test_parameters::<DelegatorVoteCircuit>(&mut rng);
 
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
         let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
@@ -448,8 +445,8 @@ mod tests {
     #[test]
     #[should_panic]
     fn delegator_vote_invalid_start_position(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 1..2000000000u64, num_commitments in 1000..2000u64) {
-        let (pk, vk) = DelegatorVoteCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
+        let (pk, vk) = generate_prepared_test_parameters::<DelegatorVoteCircuit>(&mut rng);
 
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
         let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
