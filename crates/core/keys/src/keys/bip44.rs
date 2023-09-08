@@ -16,13 +16,13 @@ const PENUMBRA_COIN_TYPE: u32 = 0x0001984;
 pub struct Bip44Path {
     coin_type: u32,
     account: u32,
-    change: bool,
+    change: u32,
     address_index: u32,
 }
 
 impl Bip44Path {
     /// Create a new BIP44 path for Penumbra.
-    pub fn new(account: u32, change: bool, address_index: u32) -> Self {
+    pub fn new(account: u32, change: u32, address_index: u32) -> Self {
         Self {
             coin_type: PENUMBRA_COIN_TYPE,
             account,
@@ -47,7 +47,7 @@ impl Bip44Path {
     }
 
     /// Change is set to 1 to denote change addresses.
-    pub fn change(&self) -> bool {
+    pub fn change(&self) -> u32 {
         self.change
     }
 
@@ -61,7 +61,7 @@ impl Bip44Path {
             "m/44'/{}'/{}'/{}/{}",
             self.coin_type(),
             self.account(),
-            if self.change() { 1 } else { 0 },
+            self.change(),
             self.address_index()
         )
     }
@@ -73,7 +73,7 @@ mod tests {
 
     #[test]
     fn test_bip44_path() {
-        let path = Bip44Path::new(0, false, 0);
+        let path = Bip44Path::new(0, 0, 0);
         assert_eq!(path.path(), "m/44'/6532'/0'/0/0");
     }
 }
