@@ -302,7 +302,7 @@ mod tests {
     use ark_snark::SNARK;
     use decaf377::Bls12_377;
     use penumbra_asset::asset;
-    use penumbra_proof_params::{DummyWitness, generate_test_parameters};
+    use penumbra_proof_params::{generate_test_parameters, DummyWitness};
     use rand_core::OsRng;
 
     use super::*;
