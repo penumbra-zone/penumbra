@@ -38,12 +38,12 @@ impl Bip44Path {
 
     /// Per BIP44, coin type is a constant set for each currency.
     pub fn coin_type(&self) -> u32 {
-        self.coin_type
+        self.coin_type | 0x80000000
     }
 
     /// Per BIP44, account splits the key space into independent user identities.
     pub fn account(&self) -> u32 {
-        self.account
+        self.account | 0x80000000
     }
 
     /// Change is set to 1 to denote change addresses.
