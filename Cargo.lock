@@ -1103,6 +1103,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bs58"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f5353f36341f7451062466f0b755b96ac3a9547e4d7f6b70d603fc721a7d7896"
+dependencies = [
+ "tinyvec",
+]
+
+[[package]]
 name = "bstr"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5000,6 +5009,7 @@ dependencies = [
  "base64 0.20.0",
  "bech32",
  "blake2b_simd 0.5.11",
+ "bs58",
  "bytes",
  "chacha20poly1305",
  "decaf377 0.5.0",

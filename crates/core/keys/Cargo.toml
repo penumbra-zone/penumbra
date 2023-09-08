@@ -62,6 +62,7 @@ proptest = "1"
 serde_json = "1"
 frost377 = { version = "0.2", default-features=false }
 num-traits = "0.2"
+bs58 = "0.5"
 
 [features]
 default = []
