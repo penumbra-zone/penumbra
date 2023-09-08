@@ -158,7 +158,6 @@ pub fn transition(
     domain.ifft_in_place(&mut extracting_poly);
     //extracting_poly.reverse();
     let lagrange_1 = extracting_poly;
-    dbg!(&lagrange_1);
 
     // 2. Do the same for [x]_2.
     let mut extracting_poly: Vec<_> = phase1
