@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod epoch;
@@ -33,11 +34,25 @@ pub mod test_keys {
     /// These addresses both correspond to the test wallet above.
     pub const ADDRESS_1_STR: &str = "penumbrav2t1gl609fq6xzjcqn3hz3crysw2s0nkt330lyhaq403ztmrm3yygsgdklt9uxfs0gedwp6sypp5k5ln9t62lvs9t0a990q832wnxak8r939g5u6uz5aessd8saxvv7ewlz4hhqnws";
 
-    pub static ADDRESS_0: Lazy<Address> = Lazy::new(|| ADDRESS_0_STR.parse().unwrap());
-    pub static ADDRESS_1: Lazy<Address> = Lazy::new(|| ADDRESS_1_STR.parse().unwrap());
+    pub static ADDRESS_0: Lazy<Address> = Lazy::new(|| {
+        ADDRESS_0_STR
+            .parse()
+            .expect("hardcoded test addresses should be valid")
+    });
+    pub static ADDRESS_1: Lazy<Address> = Lazy::new(|| {
+        ADDRESS_1_STR
+            .parse()
+            .expect("hardcoded test addresses should be valid")
+    });
 
-    pub static SPEND_KEY: Lazy<SpendKey> =
-        Lazy::new(|| SpendKey::from_seed_phrase(SEED_PHRASE.parse().unwrap(), 0));
+    pub static SPEND_KEY: Lazy<SpendKey> = Lazy::new(|| {
+        SpendKey::from_seed_phrase(
+            SEED_PHRASE
+                .parse()
+                .expect("hardcoded test seed phrase should be valid"),
+            0,
+        )
+    });
 
     pub static FULL_VIEWING_KEY: Lazy<FullViewingKey> =
         Lazy::new(|| SPEND_KEY.full_viewing_key().clone());
