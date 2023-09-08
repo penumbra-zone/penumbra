@@ -1,3 +1,4 @@
+use anyhow::Context;
 use penumbra_proto::{
     core::chain::v1alpha1 as pb, core::stake::v1alpha1 as pb_stake, DomainType, TypeUrl,
 };
@@ -27,23 +28,39 @@ impl Default for AppState {
             allocations: vec![
                 Allocation {
                     amount: 1000u128.into(),
-                    denom: "penumbra".parse().unwrap(),
-                    address: crate::test_keys::ADDRESS_0_STR.parse().unwrap(),
+                    denom: "penumbra"
+                        .parse()
+                        .expect("hardcoded \"penumbra\" denom should be parseable"),
+                    address: crate::test_keys::ADDRESS_0_STR
+                        .parse()
+                        .expect("hardcoded test address should be valid"),
                 },
                 Allocation {
                     amount: 100u128.into(),
-                    denom: "test_usd".parse().unwrap(),
-                    address: crate::test_keys::ADDRESS_0_STR.parse().unwrap(),
+                    denom: "test_usd"
+                        .parse()
+                        .expect("hardcoded \"test_usd\" denom should be parseable"),
+                    address: crate::test_keys::ADDRESS_0_STR
+                        .parse()
+                        .expect("hardcoded test address should be valid"),
                 },
                 Allocation {
                     amount: 100u128.into(),
-                    denom: "gm".parse().unwrap(),
-                    address: crate::test_keys::ADDRESS_1_STR.parse().unwrap(),
+                    denom: "gm"
+                        .parse()
+                        .expect("hardcoded \"gm\" denom should be parseable"),
+                    address: crate::test_keys::ADDRESS_1_STR
+                        .parse()
+                        .expect("hardcoded test address should be valid"),
                 },
                 Allocation {
                     amount: 100u128.into(),
-                    denom: "gn".parse().unwrap(),
-                    address: crate::test_keys::ADDRESS_1_STR.parse().unwrap(),
+                    denom: "gn"
+                        .parse()
+                        .expect("hardcoded \"gn\" denom should be parseable"),
+                    address: crate::test_keys::ADDRESS_1_STR
+                        .parse()
+                        .expect("hardcoded test address should be valid"),
                 },
             ],
         }
@@ -65,7 +82,10 @@ impl TryFrom<pb::GenesisAppState> for AppState {
 
     fn try_from(msg: pb::GenesisAppState) -> Result<Self, Self::Error> {
         Ok(AppState {
-            chain_params: msg.chain_params.unwrap().try_into()?,
+            chain_params: msg
+                .chain_params
+                .context("chain params not present in protobuf message")?
+                .try_into()?,
             validators: msg
                 .validators
                 .into_iter()

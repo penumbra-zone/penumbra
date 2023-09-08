@@ -71,7 +71,8 @@ pub trait StateReadExt: StateRead {
             .await?
             .ok_or_else(|| anyhow!("Missing block_timestamp"))?;
 
-        Ok(Time::from_str(&timestamp_string).unwrap())
+        Ok(Time::from_str(&timestamp_string)
+            .context("block_timestamp was an invalid RFC3339 time string")?)
     }
 
     /// Checks a provided chain_id against the chain state.
