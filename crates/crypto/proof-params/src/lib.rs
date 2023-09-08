@@ -8,7 +8,10 @@ pub const GROTH16_PROOF_LENGTH_BYTES: usize = 192;
 
 mod traits;
 
-pub use traits::{ParameterSetup, ProvingKeyExt, VerifyingKeyExt};
+pub use traits::{
+    generate_constraint_matrices, generate_prepared_test_parameters, generate_test_parameters,
+    DummyWitness, ProvingKeyExt, VerifyingKeyExt,
+};
 
 #[cfg(feature = "proving-keys")]
 mod proving_keys;

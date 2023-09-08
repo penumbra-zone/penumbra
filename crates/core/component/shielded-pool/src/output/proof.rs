@@ -10,14 +10,13 @@ use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 
 use ark_ff::ToConstraintField;
-use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey};
+use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey};
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
 use penumbra_keys::{keys::Diversifier, Address};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct::r1cs::StateCommitmentVar;
-use rand_core::OsRng;
 
 use crate::{note, Note, Rseed};
 use penumbra_asset::{
@@ -25,7 +24,7 @@ use penumbra_asset::{
     balance::{commitment::BalanceCommitmentVar, BalanceVar},
     Value,
 };
-use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 
 /// Public:
 /// * vcm (value commitment)
@@ -94,8 +93,8 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
     }
 }
 
-impl ParameterSetup for OutputCircuit {
-    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+impl DummyWitness for OutputCircuit {
+    fn with_dummy_witness() -> Self {
         let diversifier_bytes = [1u8; 16];
         let pk_d_bytes = decaf377::basepoint().vartime_compress().0;
         let clue_key_bytes = [1; 32];
@@ -113,16 +112,12 @@ impl ParameterSetup for OutputCircuit {
         )
         .expect("can make a note");
         let v_blinding = Fr::from(1);
-        let circuit = OutputCircuit {
+        OutputCircuit {
             note: note.clone(),
             note_commitment: note.commit(),
             v_blinding,
             balance_commitment: balance::Commitment(decaf377::basepoint()),
-        };
-        let (pk, vk) =
-            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
-                .expect("can perform circuit specific setup");
-        (pk, vk)
+        }
     }
 }
 
@@ -224,6 +219,7 @@ mod tests {
     use decaf377::{Fq, Fr};
     use penumbra_asset::{asset, Balance, Value};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_proof_params::generate_prepared_test_parameters;
     use proptest::prelude::*;
 
     use penumbra_proto::core::crypto::v1alpha1 as pb;
@@ -249,9 +245,9 @@ mod tests {
     #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
     fn output_proof_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), v_blinding in fr_strategy(), value_amount in 2..200u64) {
-            let (pk, vk) = OutputCircuit::generate_prepared_test_parameters();
-
             let mut rng = OsRng;
+            let (pk, vk) = generate_prepared_test_parameters::<OutputCircuit>(&mut rng);
+
 
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
@@ -293,8 +289,8 @@ mod tests {
     #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
     fn output_proof_verification_note_commitment_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), v_blinding in fr_strategy(), value_amount in 2..200u64, note_blinding in fq_strategy()) {
-        let (pk, vk) = OutputCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
+        let (pk, vk) = generate_prepared_test_parameters::<OutputCircuit>(&mut rng);
 
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
         let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
@@ -342,8 +338,8 @@ mod tests {
         #![proptest_config(ProptestConfig::with_cases(2))]
         #[test]
     fn output_proof_verification_balance_commitment_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), v_blinding in fr_strategy(), value_amount in 2..200u64, incorrect_v_blinding in fr_strategy()) {
-        let (pk, vk) = OutputCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
+        let (pk, vk) = generate_prepared_test_parameters::<OutputCircuit>(&mut rng);
 
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
         let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);

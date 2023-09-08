@@ -5085,6 +5085,7 @@ name = "penumbra-proof-params"
 version = "0.59.0"
 dependencies = [
  "anyhow",
+ "ark-ec",
  "ark-ff",
  "ark-groth16",
  "ark-r1cs-std",

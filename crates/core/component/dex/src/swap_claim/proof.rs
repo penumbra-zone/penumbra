@@ -1,6 +1,6 @@
 use ark_ff::ToConstraintField;
 use ark_groth16::{
-    r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey,
+    r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey,
 };
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
@@ -11,7 +11,6 @@ use penumbra_fee::Fee;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
-use rand_core::OsRng;
 
 use penumbra_asset::{
     asset::{self},
@@ -31,7 +30,7 @@ use crate::{
     BatchSwapOutputData, TradingPair,
 };
 
-use penumbra_proof_params::{ParameterSetup, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_proof_params::{DummyWitness, GROTH16_PROOF_LENGTH_BYTES};
 
 /// SwapClaim consumes an existing Swap NFT so they are most similar to Spend operations,
 /// however the note commitment proof needs to be for a specific block due to clearing prices
@@ -204,8 +203,8 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
     }
 }
 
-impl ParameterSetup for SwapClaimCircuit {
-    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+impl DummyWitness for SwapClaimCircuit {
+    fn with_dummy_witness() -> Self {
         let trading_pair = TradingPair {
             asset_1: asset::Cache::with_known_assets()
                 .get_unit("upenumbra")
@@ -264,7 +263,7 @@ impl ParameterSetup for SwapClaimCircuit {
         let note_commitment_2 = tct::StateCommitment(Fq::from(2));
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
-        let circuit = SwapClaimCircuit {
+        Self {
             swap_plaintext,
             state_commitment_proof,
             anchor,
@@ -278,11 +277,7 @@ impl ParameterSetup for SwapClaimCircuit {
             note_blinding_2,
             note_commitment_1,
             note_commitment_2,
-        };
-        let (pk, vk) =
-            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
-                .expect("can perform circuit specific setup");
-        (pk, vk)
+        }
     }
 }
 
@@ -406,15 +401,17 @@ mod tests {
     use ark_ff::UniformRand;
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
     use penumbra_num::Amount;
+    use penumbra_proof_params::generate_prepared_test_parameters;
     use proptest::prelude::*;
+    use rand_core::OsRng;
 
     proptest! {
     #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
     fn swap_claim_proof_happy_path_filled(seed_phrase_randomness in any::<[u8; 32]>(), value1_amount in 2..200u64) {
-        let (pk, vk) = SwapClaimCircuit::generate_prepared_test_parameters();
-
         let mut rng = OsRng;
+        let (pk, vk) = generate_prepared_test_parameters::<SwapClaimCircuit>(&mut rng);
+
 
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
         let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
@@ -500,9 +497,8 @@ mod tests {
 
     #[test]
     fn swap_claim_proof_happy_path_unfilled() {
-        let (pk, vk) = SwapClaimCircuit::generate_prepared_test_parameters();
-
         let mut rng = OsRng;
+        let (pk, vk) = generate_prepared_test_parameters::<SwapClaimCircuit>(&mut rng);
 
         let seed_phrase = SeedPhrase::generate(rng);
         let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
