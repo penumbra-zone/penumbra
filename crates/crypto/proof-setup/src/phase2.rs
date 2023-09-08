@@ -1,13 +1,9 @@
 //! This module is very similar to the one for phase1, so reading that one might be useful.
-use anyhow::{anyhow, Result};
 use ark_ec::Group;
 use ark_ff::{fields::Field, UniformRand, Zero};
-use ark_poly::domain::{EvaluationDomain, Radix2EvaluationDomain};
-use ark_relations::r1cs::ConstraintMatrices;
 use rand_core::{CryptoRngCore, OsRng};
 
 use crate::log::{ContributionHash, Hashable, Phase};
-use crate::phase1;
 use crate::{
     dlog,
     group::{BatchedPairingChecker11, GroupHasher, F, G1, G2},
