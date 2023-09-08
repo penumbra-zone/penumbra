@@ -146,30 +146,14 @@ pub fn transition(
     }
 
     // 1. Get the lagrange coefficients over [x].
-    // 1.1. Setup a polynomial that's 1/d * x^i at each coefficient.
-    let mut extracting_poly: Vec<_> = phase1
-        .raw
-        .x_1
-        .iter()
-        .copied()
-        .take(domain_size)
-        //.map(|x| x * d_inv)
-        .collect();
+    // 1.1. Setup a polynomial that's x^i at each coefficient.
+    let mut extracting_poly: Vec<_> = phase1.raw.x_1.iter().copied().take(domain_size).collect();
     domain.ifft_in_place(&mut extracting_poly);
-    //extracting_poly.reverse();
     let lagrange_1 = extracting_poly;
 
     // 2. Do the same for [x]_2.
-    let mut extracting_poly: Vec<_> = phase1
-        .raw
-        .x_2
-        .iter()
-        .copied()
-        .take(domain_size)
-        //.map(|x| x * d_inv)
-        .collect();
+    let mut extracting_poly: Vec<_> = phase1.raw.x_2.iter().copied().take(domain_size).collect();
     domain.ifft_in_place(&mut extracting_poly);
-    //extracting_poly.reverse();
     let lagrange_2 = extracting_poly;
 
     // 3. Do the same for [αx].
@@ -179,10 +163,8 @@ pub fn transition(
         .iter()
         .copied()
         .take(domain_size)
-        //.map(|x| x * d_inv)
         .collect();
     domain.ifft_in_place(&mut extracting_poly);
-    //extracting_poly.reverse();
     let alpha_lagrange_1 = extracting_poly;
 
     // 4. Do the same for [βx].
@@ -192,10 +174,8 @@ pub fn transition(
         .iter()
         .copied()
         .take(domain_size)
-        //.map(|x| x * d_inv)
         .collect();
     domain.ifft_in_place(&mut extracting_poly);
-    //extracting_poly.reverse();
     let beta_lagrange_1 = extracting_poly;
 
     // 5. Accumulate the p_i polynomials evaluated over [x].
