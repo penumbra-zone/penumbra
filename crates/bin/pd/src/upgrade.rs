@@ -1,11 +1,11 @@
-use std::{path::PathBuf, time::Duration};
+use std::path::PathBuf;
 
 use penumbra_chain::{
     component::{AppHash, StateReadExt},
     genesis::AppState,
 };
 use penumbra_stake::StateReadExt as _;
-use penumbra_storage::{StateDelta, StateRead, StateWrite, Storage};
+use penumbra_storage::{StateDelta, StateWrite, Storage};
 
 use crate::testnet::generate::TestnetConfig;
 
