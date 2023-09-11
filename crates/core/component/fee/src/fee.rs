@@ -1,3 +1,4 @@
+use anyhow::Context;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 
 use decaf377::Fr;
@@ -72,12 +73,21 @@ impl TryFrom<pb::Fee> for Fee {
     fn try_from(proto: pb::Fee) -> anyhow::Result<Self> {
         if proto.asset_id.is_some() {
             Ok(Fee(Value {
-                amount: proto.amount.unwrap().try_into()?,
-                asset_id: proto.asset_id.unwrap().try_into()?,
+                amount: proto
+                    .amount
+                    .context("missing protobuf contents for Fee Amount")?
+                    .try_into()?,
+                asset_id: proto
+                    .asset_id
+                    .context("missing protobuf contents for Fee Asset ID")?
+                    .try_into()?,
             }))
         } else {
             Ok(Fee(Value {
-                amount: proto.amount.unwrap().try_into()?,
+                amount: proto
+                    .amount
+                    .context("missing protobuf contents for Fee Amount")?
+                    .try_into()?,
                 asset_id: *STAKING_TOKEN_ASSET_ID,
             }))
         }
