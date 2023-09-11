@@ -17,13 +17,14 @@ use pd::testnet::{
     generate::TestnetConfig,
     join::testnet_join,
 };
-use penumbra_chain::component::{AppHash, StateReadExt};
+use pd::upgrade::{self, Upgrade};
+use penumbra_chain::component::AppHash;
 use penumbra_proto::client::v1alpha1::{
     oblivious_query_service_server::ObliviousQueryServiceServer,
     specific_query_service_server::SpecificQueryServiceServer,
     tendermint_proxy_service_server::TendermintProxyServiceServer,
 };
-use penumbra_storage::{StateDelta, Storage};
+use penumbra_storage::{StateDelta, StateRead, Storage};
 use penumbra_tendermint_proxy::TendermintProxy;
 use penumbra_tower_trace::remote_addr;
 use rand::Rng;
@@ -586,6 +587,7 @@ async fn main() -> anyhow::Result<()> {
                 ?export_path,
                 "copying from data dir to export dir",
             );
+            std::fs::create_dir_all(&export_path)?;
             fs_extra::copy_items(&from, export_path.as_path(), &copy_opts)?;
 
             tracing::info!("done copying");
@@ -609,67 +611,9 @@ async fn main() -> anyhow::Result<()> {
             export_path,
         } => {
             tracing::info!("upgrading state from {}", export_path.display());
-            // the actual migration step is a no-op and upgrade specific
-            tracing::info!("done upgrading, generating genesis");
-            let mut db_path = export_path.clone();
-            db_path.push("rocksdb");
-            let export_state = Storage::load(db_path).await?.latest_snapshot();
-            let root_hash = export_state.root_hash().await.expect("can get root hash");
-            let app_hash: AppHash = root_hash.into();
-            let height = export_state
-                .get_block_height()
+            let _ = upgrade::migrate(export_path.clone(), Upgrade::Testnet60)
                 .await
-                .expect("can get block height");
-            let next_height = height + 1;
-            let chain_id = export_state.get_chain_id().await.expect("can get chain id");
-            let chain_params = export_state
-                .get_chain_params()
-                .await
-                .expect("can get chain params");
-            let app_state = penumbra_chain::genesis::AppState {
-                allocations: vec![],
-                chain_params,
-                validators: vec![],
-            };
-            let default_consensus_params = tendermint::consensus::Params {
-                block: tendermint::block::Size {
-                    max_bytes: 22020096,
-                    max_gas: -1,
-                    // minimum time increment between consecutive blocks
-                    time_iota_ms: 500,
-                },
-                // TODO Should these correspond with values used within `pd` for penumbra epochs?
-                evidence: tendermint::evidence::Params {
-                    max_age_num_blocks: 100000,
-                    // 1 day
-                    max_age_duration: tendermint::evidence::Duration(Duration::new(86400, 0)),
-                    max_bytes: 1048576,
-                },
-                validator: tendermint::consensus::params::ValidatorParams {
-                    pub_key_types: vec![tendermint::public_key::Algorithm::Ed25519],
-                },
-                version: Some(tendermint::consensus::params::VersionParams { app: 0 }),
-            };
-
-            let genesis = tendermint::genesis::Genesis {
-                genesis_time: tendermint::time::Time::now(),
-                chain_id: chain_id.try_into().expect("valid chain id"),
-                initial_height: next_height as i64, // TODO(erwan): why is tm expecting an i64?
-                app_hash: app_hash
-                    .0
-                    .to_vec()
-                    .try_into()
-                    .expect("infaillible conversion"),
-                consensus_params: default_consensus_params,
-                app_state,
-                validators: vec![],
-            };
-
-            let genesis_json = serde_json::to_string(&genesis).expect("can serialize genesis");
-            tracing::info!("genesis: {}", genesis_json);
-            let mut genesis_path = export_path.clone();
-            genesis_path.push("genesis.json");
-            std::fs::write(genesis_path, genesis_json).expect("can write genesis");
+                .unwrap();
         }
     }
     Ok(())

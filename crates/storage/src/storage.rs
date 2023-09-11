@@ -156,10 +156,15 @@ impl Storage {
         self.0.snapshots.read().get(version)
     }
 
+    /// Commits the provided [`StateDelta`] to persistent storage as the latest
+    /// version of the chain state. If `write_to_snapshot_cache` is `false`, the
+    /// snapshot will not be written to the snapshot cache, and no subscribers
+    /// will be notified.
     async fn commit_inner(
         &self,
         cache: Cache,
         new_version: jmt::Version,
+        write_to_snapshot_cache: bool,
     ) -> Result<crate::RootHash> {
         let span = Span::current();
         let inner = self.0.clone();
@@ -237,6 +242,10 @@ impl Storage {
                         };
                     }
 
+                    if !write_to_snapshot_cache {
+                        return Ok(root_hash);
+                    }
+
                     let latest_snapshot = Snapshot::new(inner.db.clone(), new_version);
                     // Obtain a write lock to the snapshot cache, and push the latest snapshot
                     // available. The lock guard is implicitly dropped immediately.
@@ -271,7 +280,16 @@ impl Storage {
             anyhow::bail!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, snapshot.version());
         }
 
-        self.commit_inner(changes, new_version).await
+        self.commit_inner(changes, new_version, true).await
+    }
+
+    #[cfg(feature = "migration")]
+    /// Commits the provided [`StateDelta`] to persistent storage without increasing the version
+    /// of the chain state.
+    pub async fn commit_in_place(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
+        let (_, changes) = delta.flatten();
+        let old_version = self.latest_version();
+        self.commit_inner(changes, old_version, false).await
     }
 
     /// Returns the internal handle to RocksDB, this is useful to test adjacent storage crates.

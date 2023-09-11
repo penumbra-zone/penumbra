@@ -19,22 +19,28 @@ std = ["ibc-types/std"]
 
 [dependencies]
 # Workspace dependencies
-penumbra-proto            = { path = "../../proto" }
-penumbra-storage          = { path = "../../storage" }
-penumbra-asset           = { path = "../../core/asset" }
-penumbra-keys           = { path = "../../core/keys" }
-penumbra-shielded-pool    = { path = "../../core/component/shielded-pool", features = ["parallel"] }
-penumbra-stake            = { path = "../../core/component/stake", features = ["parallel"] }
-penumbra-sct              = { path = "../../core/component/sct" }
-penumbra-dex              = { path = "../../core/component/dex", features = ["parallel"] }
-penumbra-governance       = { path = "../../core/component/governance", features = ["parallel"]}
-penumbra-ibc              = { path = "../../core/component/ibc" }
-penumbra-compact-block    = { path = "../../core/component/compact-block" }
-penumbra-chain            = { path = "../../core/component/chain" }
-penumbra-transaction      = { path = "../../core/transaction" }
-penumbra-app              = { path = "../../core/app" }
-penumbra-wallet           = { path = "../../wallet" }
-penumbra-tower-trace      = { path = "../../util/tower-trace" }
+penumbra-proto = { path = "../../proto" }
+penumbra-storage = { path = "../../storage", features = ["migration"] }
+penumbra-asset = { path = "../../core/asset" }
+penumbra-keys = { path = "../../core/keys" }
+penumbra-shielded-pool = { path = "../../core/component/shielded-pool", features = [
+    "parallel",
+] }
+penumbra-stake = { path = "../../core/component/stake", features = [
+    "parallel",
+] }
+penumbra-sct = { path = "../../core/component/sct" }
+penumbra-dex = { path = "../../core/component/dex", features = ["parallel"] }
+penumbra-governance = { path = "../../core/component/governance", features = [
+    "parallel",
+] }
+penumbra-ibc = { path = "../../core/component/ibc" }
+penumbra-compact-block = { path = "../../core/component/compact-block" }
+penumbra-chain = { path = "../../core/component/chain" }
+penumbra-transaction = { path = "../../core/transaction" }
+penumbra-app = { path = "../../core/app" }
+penumbra-wallet = { path = "../../wallet" }
+penumbra-tower-trace = { path = "../../util/tower-trace" }
 penumbra-tendermint-proxy = { path = "../../util/tendermint-proxy" }
 
 # Penumbra dependencies
@@ -51,7 +57,9 @@ tendermint = "0.32.0"
 tendermint-light-client-verifier = "0.32.0"
 ibc-types = "0.3.0"
 
-ibc-proto = { version = "0.31.0", default-features = false, features = ["server"] }
+ibc-proto = { version = "0.31.0", default-features = false, features = [
+    "server",
+] }
 prost = "0.11"
 toml = "0.5"
 # We don't need this crate at all, but its upstream published a breaking change as
@@ -126,6 +134,6 @@ dist = true
 # Update the guide docs to use the most recent version, to reduce tedium.
 # Preview the changes with `cargo release replace`.
 pre-release-replacements = [
-    { file="../../../docs/guide/src/pcli/install.md", search="(cd penumbra && git fetch && git checkout) .*", replace="$1 {{tag_name}}", exactly=1 },
-    { file="../../../docs/guide/src/pcli/update.md", search="(cd penumbra && git fetch && git checkout) .*", replace="$1 {{tag_name}}", exactly=1 },
+    { file = "../../../docs/guide/src/pcli/install.md", search = "(cd penumbra && git fetch && git checkout) .*", replace = "$1 {{tag_name}}", exactly = 1 },
+    { file = "../../../docs/guide/src/pcli/update.md", search = "(cd penumbra && git fetch && git checkout) .*", replace = "$1 {{tag_name}}", exactly = 1 },
 ]
