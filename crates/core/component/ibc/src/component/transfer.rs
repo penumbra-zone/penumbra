@@ -84,7 +84,7 @@ pub trait Ics20TransferWriteExt: StateWrite {
                     &withdrawal.denom.id(),
                 ))
                 .await
-                .unwrap()
+                .expect("able to retrieve value balance in ics20 withdrawal! (execute)")
                 .unwrap_or_else(Amount::zero);
 
             let new_value_balance = existing_value_balance + withdrawal.amount;
@@ -279,7 +279,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
                 penumbra_chain::NoteSource::Ics20Transfer, // TODO
             )
             .await
-            .unwrap();
+            .context("unable to mint note when receiving ics20 transfer packet")?;
 
         // update the value balance
         let value_balance: Amount = state
@@ -291,7 +291,9 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             .unwrap_or_else(Amount::zero);
 
         // note: this arithmetic was checked above, but we do it again anyway.
-        let new_value_balance = value_balance.checked_sub(&receiver_amount).unwrap();
+        let new_value_balance = value_balance
+            .checked_sub(&receiver_amount)
+            .context("underflow subtracing value balance in ics20 transfer")?;
         state.put(
             state_key::ics20_value_balance(&msg.packet.chan_on_b, &denom.id()),
             new_value_balance,
@@ -309,8 +311,14 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             msg.packet.port_on_b, msg.packet.chan_on_b, packet_data.denom
         );
 
-        let denom: asset::DenomMetadata = prefixed_denomination.as_str().try_into().unwrap();
-        state.register_denom(&denom).await.unwrap();
+        let denom: asset::DenomMetadata = prefixed_denomination
+            .as_str()
+            .try_into()
+            .context("unable to parse denom in ics20 transfer as DenomMetadata")?;
+        state
+            .register_denom(&denom)
+            .await
+            .context("unable to register denom in ics20 transfer")?;
 
         let value = Value {
             amount: receiver_amount,
@@ -381,7 +389,9 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
             .unwrap_or_else(Amount::zero);
 
         // note: this arithmetic was checked above, but we do it again anyway.
-        let new_value_balance = value_balance.checked_sub(&amount).unwrap();
+        let new_value_balance = value_balance
+            .checked_sub(&amount)
+            .context("underflow in ics20 timeout packet value balance subtraction")?;
         state.put(
             state_key::ics20_value_balance(&msg.packet.chan_on_a, &denom.id()),
             new_value_balance,
@@ -422,16 +432,14 @@ impl AppHandlerExecute for Ics20Transfer {
         state
             .write_acknowledgement(&msg.packet, &ack)
             .await
-            .context("critical: failed to write acknowledgement")
-            .unwrap();
+            .expect("able to write acknowledgement");
     }
 
     async fn timeout_packet_execute<S: StateWrite>(mut state: S, msg: &MsgTimeout) {
         // timeouts should never fail
         timeout_packet_inner(&mut state, msg)
             .await
-            .context("critical: failed to timeout packet")
-            .unwrap();
+            .expect("able to timeout packet");
     }
 
     async fn acknowledge_packet_execute<S: StateWrite>(_state: S, _msg: &MsgAcknowledgement) {}

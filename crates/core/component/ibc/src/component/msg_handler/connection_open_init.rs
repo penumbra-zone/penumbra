@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types::core::connection::{
     events, msgs::MsgConnectionOpenInit, ConnectionEnd, ConnectionId, Version,
@@ -29,7 +29,13 @@ impl MsgHandler for MsgConnectionOpenInit {
         state.get_client_state(&self.client_id_on_a).await?;
         state.get_client_type(&self.client_id_on_a).await?;
 
-        let connection_id = ConnectionId::new(state.get_connection_counter().await.unwrap().0);
+        let connection_id = ConnectionId::new(
+            state
+                .get_connection_counter()
+                .await
+                .context("unable to get connection counter")?
+                .0,
+        );
 
         let compatible_versions = vec![Version::default()];
 
@@ -45,7 +51,7 @@ impl MsgHandler for MsgConnectionOpenInit {
         state
             .put_new_connection(&connection_id, new_connection_end)
             .await
-            .unwrap();
+            .context("unable to put new connection")?;
 
         state.record(
             events::ConnectionOpenInit {

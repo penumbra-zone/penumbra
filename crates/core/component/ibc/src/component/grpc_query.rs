@@ -120,7 +120,10 @@ impl ConnectionQuery for IbcQuery {
                 .map_err(|e| {
                     tonic::Status::aborted(format!("couldn't get connection {conn_id}: {e}"))
                 })?
-                .unwrap();
+                .ok_or("unable to get connection")
+                .map_err(|e| {
+                    tonic::Status::aborted(format!("couldn't get connection {conn_id}: {e}"))
+                })?;
             let id_conn = IdentifiedConnectionEnd {
                 connection_id: conn_id,
                 connection_end: connection,
@@ -203,7 +206,10 @@ impl ConsensusQuery for IbcQuery {
                 .map_err(|e| {
                     tonic::Status::aborted(format!("couldn't get channel {chan_id}: {e}"))
                 })?
-                .unwrap();
+                .ok_or("unable to get channel")
+                .map_err(|e| {
+                    tonic::Status::aborted(format!("couldn't get channel {chan_id}: {e}"))
+                })?;
 
             let id_chan = IdentifiedChannelEnd {
                 channel_id: chan_id,
@@ -252,7 +258,10 @@ impl ConsensusQuery for IbcQuery {
                 .map_err(|e| {
                     tonic::Status::aborted(format!("couldn't get channel {chan_id}: {e}"))
                 })?
-                .unwrap();
+                .ok_or("unable to get channel")
+                .map_err(|e| {
+                    tonic::Status::aborted(format!("couldn't get channel {chan_id}: {e}"))
+                })?;
             if channel.connection_hops.contains(&connection_id) {
                 let id_chan = IdentifiedChannelEnd {
                     channel_id: chan_id,
@@ -332,7 +341,7 @@ impl ConsensusQuery for IbcQuery {
             if commitment.is_none() {
                 continue;
             }
-            let commitment = commitment.unwrap();
+            let commitment = commitment.expect("commitment existence was checked earlier");
 
             let commitment_state = PacketState {
                 port_id: request.port_id.clone(),

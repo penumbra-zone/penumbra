@@ -157,8 +157,8 @@ impl MsgHandler for MsgConnectionOpenAck {
         let mut connection = state
             .get_connection(&self.conn_id_on_a)
             .await
-            .unwrap()
-            .unwrap();
+            .context("should be able to get connection")?
+            .context("missing connection")?;
 
         // TODO(erwan): reviewer should check that CP is correct pls
         let prev_counterparty = connection.counterparty;
