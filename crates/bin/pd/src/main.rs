@@ -1,6 +1,5 @@
 #![allow(clippy::clone_on_copy)]
 #![recursion_limit = "512"]
-use std::time::Duration;
 use std::{net::SocketAddr, path::PathBuf};
 
 use console_subscriber::ConsoleLayer;
@@ -18,13 +17,12 @@ use pd::testnet::{
     join::testnet_join,
 };
 use pd::upgrade::{self, Upgrade};
-use penumbra_chain::component::AppHash;
 use penumbra_proto::client::v1alpha1::{
     oblivious_query_service_server::ObliviousQueryServiceServer,
     specific_query_service_server::SpecificQueryServiceServer,
     tendermint_proxy_service_server::TendermintProxyServiceServer,
 };
-use penumbra_storage::{StateDelta, StateRead, Storage};
+use penumbra_storage::{StateDelta, Storage};
 use penumbra_tendermint_proxy::TendermintProxy;
 use penumbra_tower_trace::remote_addr;
 use rand::Rng;
@@ -138,9 +136,6 @@ enum RootCommand {
     /// Run a migration on the exported storage state of the full node,
     /// and create a genesis file.
     Upgrade {
-        /// The data directory of the full node.
-        #[clap(long, env = "PENUMBRA_PD_HOME", display_order = 100)]
-        data_path: PathBuf,
         /// The directory containing the exported state.
         #[clap(long, display_order = 200)]
         export_path: PathBuf,
@@ -605,11 +600,7 @@ async fn main() -> anyhow::Result<()> {
             // - apply checks: root hash, size, etc.
             todo!()
         }
-        RootCommand::Upgrade {
-            // TODO(erwan): overwrite the data dir with the migrated state
-            data_path: _data_path,
-            export_path,
-        } => {
+        RootCommand::Upgrade { export_path } => {
             tracing::info!("upgrading state from {}", export_path.display());
             let _ = upgrade::migrate(export_path.clone(), Upgrade::Testnet60)
                 .await
