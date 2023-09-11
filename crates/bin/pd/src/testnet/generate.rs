@@ -200,7 +200,9 @@ impl TestnetConfig {
     }
 
     /// Build Tendermint genesis data, based on Penumbra initial application state.
-    fn make_genesis(app_state: genesis::AppState) -> anyhow::Result<Genesis<genesis::AppState>> {
+    pub(crate) fn make_genesis(
+        app_state: genesis::AppState,
+    ) -> anyhow::Result<Genesis<genesis::AppState>> {
         // Use now as genesis time
         let genesis_time = Time::from_unix_timestamp(
             SystemTime::now()
