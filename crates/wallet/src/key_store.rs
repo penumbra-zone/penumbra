@@ -1,5 +1,5 @@
 use anyhow::Context;
-use penumbra_keys::keys::{SeedPhrase, SpendKey};
+use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -47,6 +47,13 @@ impl KeyStore {
         // Currently we support a single spend authority per wallet. In the future,
         // we can derive multiple spend seeds from a single seed phrase.
         let spend_key = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+
+        Self { spend_key }
+    }
+
+    /// Create a new wallet using BIP44 derivation.
+    pub fn from_seed_phrase_bip44(seed_phrase: SeedPhrase, path: &Bip44Path) -> Self {
+        let spend_key = SpendKey::from_seed_phrase_bip44(seed_phrase, path);
 
         Self { spend_key }
     }
