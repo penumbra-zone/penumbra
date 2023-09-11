@@ -131,7 +131,10 @@ message TransactionPlannerRequest {
     // The memo for the requested TransactionPlan.
     // The memo must be unspecified unless `outputs` is nonempty.
     core.transaction.v1alpha1.MemoPlaintext memo = 3;
-    // Identifies the account group to query.
+    // If present, only spends funds from the given account.
+    core.crypto.v1alpha1.AddressIndex source = 4;
+
+    // Optionally identifies the account group to query.
     core.crypto.v1alpha1.AccountGroupId account_group_id = 14;
 
   // Request contents

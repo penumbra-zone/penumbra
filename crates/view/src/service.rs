@@ -570,8 +570,16 @@ impl ViewProtocolService for ViewService {
         })?;
         let mut client_of_self =
             ViewProtocolServiceClient::new(ViewProtocolServiceServer::new(self.clone()));
+
+        let source = prq
+            .source
+            // If the request specified a source of funds, pass it to the planner...
+            .map(|addr_index| addr_index.account)
+            // ... or just use the default account if not.
+            .unwrap_or(0u32);
+
         let plan = planner
-            .plan(&mut client_of_self, fvk.account_group_id(), 0u32.into())
+            .plan(&mut client_of_self, fvk.account_group_id(), source.into())
             .await
             .context("could not plan requested transaction")
             .map_err(|e| tonic::Status::invalid_argument(format!("{e:#}")))?;

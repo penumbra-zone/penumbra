@@ -4589,6 +4589,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         if self.memo.is_some() {
             len += 1;
         }
+        if self.source.is_some() {
+            len += 1;
+        }
         if self.account_group_id.is_some() {
             len += 1;
         }
@@ -4628,6 +4631,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         }
         if let Some(v) = self.memo.as_ref() {
             struct_ser.serialize_field("memo", v)?;
+        }
+        if let Some(v) = self.source.as_ref() {
+            struct_ser.serialize_field("source", v)?;
         }
         if let Some(v) = self.account_group_id.as_ref() {
             struct_ser.serialize_field("accountGroupId", v)?;
@@ -4673,6 +4679,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "expiryHeight",
             "fee",
             "memo",
+            "source",
             "account_group_id",
             "accountGroupId",
             "outputs",
@@ -4696,6 +4703,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             ExpiryHeight,
             Fee,
             Memo,
+            Source,
             AccountGroupId,
             Outputs,
             Swaps,
@@ -4730,6 +4738,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "expiryHeight" | "expiry_height" => Ok(GeneratedField::ExpiryHeight),
                             "fee" => Ok(GeneratedField::Fee),
                             "memo" => Ok(GeneratedField::Memo),
+                            "source" => Ok(GeneratedField::Source),
                             "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
                             "outputs" => Ok(GeneratedField::Outputs),
                             "swaps" => Ok(GeneratedField::Swaps),
@@ -4762,6 +4771,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut expiry_height__ = None;
                 let mut fee__ = None;
                 let mut memo__ = None;
+                let mut source__ = None;
                 let mut account_group_id__ = None;
                 let mut outputs__ = None;
                 let mut swaps__ = None;
@@ -4793,6 +4803,12 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                                 return Err(serde::de::Error::duplicate_field("memo"));
                             }
                             memo__ = map.next_value()?;
+                        }
+                        GeneratedField::Source => {
+                            if source__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("source"));
+                            }
+                            source__ = map.next_value()?;
                         }
                         GeneratedField::AccountGroupId => {
                             if account_group_id__.is_some() {
@@ -4860,6 +4876,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     expiry_height: expiry_height__.unwrap_or_default(),
                     fee: fee__,
                     memo: memo__,
+                    source: source__,
                     account_group_id: account_group_id__,
                     outputs: outputs__.unwrap_or_default(),
                     swaps: swaps__.unwrap_or_default(),
