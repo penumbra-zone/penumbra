@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types::core::channel::msgs::MsgChannelOpenInit;
 use ibc_types::core::channel::{
@@ -40,7 +40,10 @@ impl MsgHandler for MsgChannelOpenInit {
         } else {
             anyhow::bail!("invalid port id");
         }
-        let channel_id = state.next_channel_id().await.unwrap();
+        let channel_id = state
+            .next_channel_id()
+            .await
+            .context("unable to get next channel id")?;
         let new_channel = ChannelEnd {
             state: State::Init,
             ordering: self.ordering,

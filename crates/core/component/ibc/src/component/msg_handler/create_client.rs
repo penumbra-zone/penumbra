@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types::{
     core::client::{events::CreateClient, msgs::MsgCreateClient, ClientId},
@@ -53,7 +53,7 @@ impl MsgHandler for MsgCreateClient {
                 consensus_state,
             )
             .await
-            .unwrap();
+            .context("unable to put verified consensus state")?;
 
         // increment client counter
         let counter = state.client_counter().await.unwrap_or(ClientCounter(0));
