@@ -59,7 +59,12 @@ pub struct TransactionPlannerRequest {
     pub memo: ::core::option::Option<
         super::super::core::transaction::v1alpha1::MemoPlaintext,
     >,
-    /// Identifies the account group to query.
+    /// If present, only spends funds from the given account.
+    #[prost(message, optional, tag = "4")]
+    pub source: ::core::option::Option<
+        super::super::core::crypto::v1alpha1::AddressIndex,
+    >,
+    /// Optionally identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
         super::super::core::crypto::v1alpha1::AccountGroupId,
