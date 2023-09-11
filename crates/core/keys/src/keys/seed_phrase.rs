@@ -68,6 +68,7 @@ impl SeedPhraseType {
 }
 
 /// A mnemonic seed phrase. Used to generate [`SpendSeed`]s.
+#[derive(Clone, Debug)]
 pub struct SeedPhrase(pub Vec<String>);
 
 impl SeedPhrase {

@@ -1,3 +1,4 @@
+use bip32::XPrv;
 use std::convert::TryFrom;
 
 use hmac::Hmac;
@@ -11,7 +12,6 @@ use super::{
     FullViewingKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey,
 };
 use crate::{
-    keys::bip44::ckd_priv,
     prf,
     rdsa::{SigningKey, SpendAuth},
 };
@@ -109,54 +109,18 @@ impl SpendKey {
     }
 
     pub fn from_seed_phrase_bip44(seed_phrase: SeedPhrase, path: &Bip44Path) -> Self {
-        // First derive the HD wallet master node.
-        let password = format!("{seed_phrase}");
-        // The salt used for deriving the master key is defined in BIP32.
-        let salt = "Bitcoin seed";
-        let mut m_bytes = [0u8; 32];
-        pbkdf2::<Hmac<sha2::Sha512>>(
-            password.as_bytes(),
-            salt.as_bytes(),
-            NUM_PBKDF2_ROUNDS,
-            &mut m_bytes,
-        )
-        .expect("seed phrase hash always succeeds");
+        let seed_bytes = seed_phrase.randomness().expect("valid seed phrase");
 
         // Now we derive the child keys from the BIP44 path. There are five levels
         // in the BIP44 path: purpose, coin type, account, change, and address index.
+        let child_key = XPrv::derive_from_path(
+            &seed_bytes[..],
+            &path.path().parse().expect("valid BIP44 path"),
+        )
+        .expect("can derive child key");
+        let child_key_bytes = child_key.to_bytes();
 
-        // The first key is derived from the master key and the purpose constant.
-        // i is set to 2^31 to indicate that hardened derivation should be used
-        // for the first three levels.
-        let i = 2u32.pow(31);
-        let mut purpose_bytes = [0u8; 32];
-        purpose_bytes.copy_from_slice(&path.purpose().to_le_bytes());
-        let (k_1, _) = ckd_priv(m_bytes, purpose_bytes, i);
-
-        // The second key is derived from the first key and the coin type constant.
-        let mut coin_type_bytes = [0u8; 32];
-        coin_type_bytes.copy_from_slice(&path.coin_type().to_le_bytes());
-        let (k_2, _) = ckd_priv(k_1, coin_type_bytes, i);
-
-        // The third key is derived from the second key and the account constant.
-        let mut account_bytes = [0u8; 32];
-        account_bytes.copy_from_slice(&path.account().to_le_bytes());
-        let (k_3, _) = ckd_priv(k_2, account_bytes, i);
-
-        // The fourth key is derived from the third key and the change constant.
-        // Starting here, we set i=0 to indicate that public derivation should be used
-        // for the change and address index levels.
-        let i = 0;
-        let mut change_bytes = [0u8; 32];
-        change_bytes.copy_from_slice(&path.change().to_le_bytes());
-        let (k_4, _) = ckd_priv(k_3, change_bytes, i);
-
-        // The fifth key is derived from the fourth key and the address index.
-        let mut address_index_bytes = [0u8; 32];
-        address_index_bytes.copy_from_slice(&path.address_index().to_le_bytes());
-        let (k_5, _) = ckd_priv(k_4, address_index_bytes, i);
-
-        SpendKeyBytes(k_5).into()
+        SpendKeyBytes(child_key_bytes).into()
     }
 
     // XXX how many of these do we need? leave them for now
@@ -217,5 +181,28 @@ impl std::str::FromStr for SpendKey {
             inner: bech32str::decode(s, bech32str::spend_key::BECH32_PREFIX, bech32str::Bech32m)?,
         }
         .try_into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::*;
+
+    #[test]
+    fn bip44_test_ledger() {
+        let seed = SeedPhrase::from_str("comfort ten front cycle churn burger oak absent rice ice urge result art couple benefit cabbage frequent obscure hurry trick segment cool job debate").unwrap();
+
+        let expected_bytes =
+            hex::decode("1b8113fad04f5db00e6acf541949950f85eca3e02e70254838b750b42a2caa51")
+                .expect("valid");
+        let expected_spendkey = SpendKeyBytes(expected_bytes.try_into().expect("fits in 32 bytes"));
+
+        let derivation_path = Bip44Path::new(0, 0, 0);
+        dbg!(derivation_path.path());
+        let software_spendkey = SpendKey::from_seed_phrase_bip44(seed.clone(), &derivation_path);
+
+        assert_eq!(software_spendkey.to_bytes(), expected_spendkey);
     }
 }
