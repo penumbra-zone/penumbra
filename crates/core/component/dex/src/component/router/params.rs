@@ -17,31 +17,31 @@ impl Default for RoutingParams {
             fixed_candidates: Arc::new(vec![
                 asset::Cache::with_known_assets()
                     .get_unit("test_usd")
-                    .unwrap()
+                    .expect("hardcoded \"test_usd\" denom should be known")
                     .id(),
                 asset::Cache::with_known_assets()
                     .get_unit("penumbra")
-                    .unwrap()
+                    .expect("hardcoded \"penumbra\" denom should be known")
                     .id(),
                 asset::Cache::with_known_assets()
                     .get_unit("gm")
-                    .unwrap()
+                    .expect("hardcoded \"gm\" denom should be known")
                     .id(),
                 asset::Cache::with_known_assets()
                     .get_unit("gn")
-                    .unwrap()
+                    .expect("hardcoded \"gn\" denom should be known")
                     .id(),
                 asset::Cache::with_known_assets()
                     .get_unit("test_atom")
-                    .unwrap()
+                    .expect("hardcoded \"test_atom\" denom should be known")
                     .id(),
                 asset::Cache::with_known_assets()
                     .get_unit("test_osmo")
-                    .unwrap()
+                    .expect("hardcoded \"test_osmo\" denom should be known")
                     .id(),
                 asset::Cache::with_known_assets()
                     .get_unit("test_btc")
-                    .unwrap()
+                    .expect("hardcoded \"test_btc\" denom should be known")
                     .id(),
             ]),
             max_hops: 4,

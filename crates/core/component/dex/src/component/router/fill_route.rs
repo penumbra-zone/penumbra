@@ -320,13 +320,13 @@ impl FrontierTx {
         let input: U128x128 = self
             .trace
             .first()
-            .unwrap()
+            .expect("input amount is set in a complete trace")
             .expect("input amount is set in a complete trace")
             .into();
         let output: U128x128 = self
             .trace
             .last()
-            .unwrap()
+            .expect("output amount is set in a complete trace")
             .expect("output amount is set in a complete trace")
             .into();
 
@@ -364,7 +364,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             'next_position: loop {
                 let id = positions_by_price
                     .get_mut(pair)
-                    .unwrap()
+                    .expect("positions_by_price should have an entry for each pair")
                     .as_mut()
                     .next()
                     .await
@@ -435,8 +435,16 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         self.trace.push(trace);
 
         (
-            changes.trace.first().unwrap().unwrap(),
-            changes.trace.last().unwrap().unwrap(),
+            changes
+                .trace
+                .first()
+                .expect("first should be set for a trace")
+                .expect("input amount should be set for a trace"),
+            changes
+                .trace
+                .last()
+                .expect("last should be set for a trace")
+                .expect("output amount should be set for a trace"),
         )
     }
 
@@ -481,7 +489,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             let next_position_id = match self
                 .positions_by_price
                 .get_mut(pair)
-                .unwrap()
+                .expect("positions_by_price should have an entry for each pair")
                 .as_mut()
                 .next()
                 .await
@@ -585,7 +593,13 @@ impl<S: StateRead + StateWrite> Frontier<S> {
 
     #[instrument(skip(self, input), fields(input = ?input.amount))]
     fn fill_unconstrained(&self, input: Value) -> FrontierTx {
-        assert_eq!(input.asset_id, self.pairs.first().unwrap().start);
+        assert_eq!(
+            input.asset_id,
+            self.pairs
+                .first()
+                .expect("first should be set for a trace")
+                .start
+        );
 
         let mut tx = FrontierTx::new(&self);
         // We have to manually update the trace here, because fill_forward

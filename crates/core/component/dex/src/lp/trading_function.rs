@@ -329,7 +329,10 @@ impl BareTradingFunction {
             // Observe that for the case when `tentative_lambda_2` equals
             // `reserves.r1`, rounding it down does not change anything since
             // `reserves.r1` is integral. Therefore `reserves.r1 - lambda_2 >= 0`.
-            let lambda_2: Amount = tentative_lambda_2.round_down().try_into().unwrap();
+            let lambda_2: Amount = tentative_lambda_2
+                .round_down()
+                .try_into()
+                .expect("lambda_2 fits in an Amount");
             let new_reserves = Reserves {
                 r1: reserves.r1 + delta_1,
                 r2: reserves.r2 - lambda_2,
@@ -362,7 +365,7 @@ impl BareTradingFunction {
                 .round_up()
                 .expect("no overflow")
                 .try_into()
-                .unwrap();
+                .expect("fillable_delta_1 fits in an Amount");
 
             // How to show that: `unfilled_amount >= 0`:
             // In this branch, we have:
