@@ -1,10 +1,8 @@
 # systemd unit files for Penumbra
 
 Here are example unit files for running Penumbra (and the required Tendermint instance)
-via systemd. You'll need to customize the `User` declaration, and possibly the path
-to the home directory, as well, depending on your system. The paths to the binaries,
-in the `ExecStart` lines, assume that a symlink exists to the locally compiled versions,
-as described in the [install guide](https://guide.penumbra.zone/main/pd/build.html).
+via systemd. *You'll need to customize the the service files*, particularly the `User` declaration
+and binary fullpath in `ExecStart`, and possibly the path to the home directory, depending on your system.
 
 ## Installing
 Copy the service files to a system-wide location:

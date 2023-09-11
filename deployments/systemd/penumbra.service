@@ -7,7 +7,10 @@ ExecStart=/usr/local/bin/pd start --home $HOME/.penumbra/testnet_data/node0/pd
 Restart=on-failure
 RestartSec=5
 User=$USER
-Environment=RUST_LOG=info,pd=debug,penumbra=debug,jmt=debug
+# Raise filehandle limit for tower-abci.
+LimitNOFILE=65536
+# Consider configuring logrotate if using debug logs
+# Environment=RUST_LOG=info,pd=debug,penumbra=debug,jmt=debug
 
 [Install]
 WantedBy=default.target
