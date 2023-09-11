@@ -147,7 +147,7 @@ impl ConnectionQuery for IbcQuery {
         &self,
         _request: tonic::Request<QueryClientConnectionsRequest>,
     ) -> std::result::Result<tonic::Response<QueryClientConnectionsResponse>, tonic::Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// ConnectionClientState queries the client state associated with the
     /// connection.
@@ -156,7 +156,7 @@ impl ConnectionQuery for IbcQuery {
         _request: tonic::Request<QueryConnectionClientStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionClientStateResponse>, tonic::Status>
     {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// ConnectionConsensusState queries the consensus state associated with the
     /// connection.
@@ -165,7 +165,7 @@ impl ConnectionQuery for IbcQuery {
         _request: tonic::Request<QueryConnectionConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionConsensusStateResponse>, tonic::Status>
     {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 }
 
@@ -176,7 +176,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         _request: tonic::Request<QueryChannelRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelResponse>, tonic::Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// Channels queries all the IBC channels of a chain.
     async fn channels(
@@ -277,7 +277,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         _request: tonic::Request<QueryChannelClientStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelClientStateResponse>, tonic::Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// ChannelConsensusState queries for the consensus state for the channel
     /// associated with the provided channel identifiers.
@@ -286,14 +286,14 @@ impl ConsensusQuery for IbcQuery {
         _request: tonic::Request<QueryChannelConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelConsensusStateResponse>, tonic::Status>
     {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// PacketCommitment queries a stored packet commitment hash.
     async fn packet_commitment(
         &self,
         _request: tonic::Request<QueryPacketCommitmentRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketCommitmentResponse>, tonic::Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// PacketCommitments returns all the packet commitments hashes associated
     /// with a channel.
@@ -363,7 +363,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         _request: tonic::Request<QueryPacketReceiptRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketReceiptResponse>, tonic::Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// PacketAcknowledgement queries a stored packet acknowledgement hash.
     async fn packet_acknowledgement(
@@ -371,7 +371,7 @@ impl ConsensusQuery for IbcQuery {
         _request: tonic::Request<QueryPacketAcknowledgementRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketAcknowledgementResponse>, tonic::Status>
     {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// PacketAcknowledgements returns all the packet acknowledgements associated
     /// with a channel.
@@ -536,7 +536,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         _request: tonic::Request<QueryNextSequenceReceiveRequest>,
     ) -> std::result::Result<tonic::Response<QueryNextSequenceReceiveResponse>, tonic::Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 }
 
@@ -546,7 +546,7 @@ impl ClientQuery for IbcQuery {
         &self,
         _request: tonic::Request<QueryClientStateRequest>,
     ) -> std::result::Result<Response<QueryClientStateResponse>, Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// ClientStates queries all the IBC light clients of a chain.
     async fn client_states(
@@ -587,7 +587,7 @@ impl ClientQuery for IbcQuery {
         &self,
         _request: tonic::Request<QueryConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStateResponse>, tonic::Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// ConsensusStates queries all the consensus state associated with a given
     /// client.
@@ -595,7 +595,7 @@ impl ClientQuery for IbcQuery {
         &self,
         _request: tonic::Request<QueryConsensusStatesRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStatesResponse>, tonic::Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// ConsensusStateHeights queries the height of every consensus states associated with a given client.
     async fn consensus_state_heights(
@@ -603,28 +603,28 @@ impl ClientQuery for IbcQuery {
         _request: tonic::Request<QueryConsensusStateHeightsRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStateHeightsResponse>, tonic::Status>
     {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// Status queries the status of an IBC client.
     async fn client_status(
         &self,
         _request: tonic::Request<QueryClientStatusRequest>,
     ) -> std::result::Result<tonic::Response<QueryClientStatusResponse>, tonic::Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// ClientParams queries all parameters of the ibc client.
     async fn client_params(
         &self,
         _request: tonic::Request<QueryClientParamsRequest>,
     ) -> std::result::Result<tonic::Response<QueryClientParamsResponse>, tonic::Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// UpgradedClientState queries an Upgraded IBC light client.
     async fn upgraded_client_state(
         &self,
         _request: tonic::Request<QueryUpgradedClientStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryUpgradedClientStateResponse>, tonic::Status> {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
     /// UpgradedConsensusState queries an Upgraded IBC consensus state.
     async fn upgraded_consensus_state(
@@ -632,6 +632,6 @@ impl ClientQuery for IbcQuery {
         _request: tonic::Request<QueryUpgradedConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryUpgradedConsensusStateResponse>, tonic::Status>
     {
-        todo!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 }
