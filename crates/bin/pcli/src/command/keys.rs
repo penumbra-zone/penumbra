@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use directories::ProjectDirs;
-use penumbra_keys::keys::SeedPhrase;
+use penumbra_keys::keys::{Bip44Path, SeedPhrase};
 use rand_core::OsRng;
 use sha2::{Digest, Sha256};
 
@@ -83,7 +83,10 @@ impl KeysCmd {
                 println!("YOUR PRIVATE SEED PHRASE: {seed_phrase}\nDO NOT SHARE WITH ANYONE!");
 
                 if *bip44_derivation {
-                    unimplemented!();
+                    let path = Bip44Path::new(0, 0, 0);
+                    let wallet = KeyStore::from_seed_phrase_bip44(seed_phrase, &path);
+                    wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
+                    self.archive_wallet(&wallet)?;
                 } else {
                     let wallet = KeyStore::from_seed_phrase_bip39(seed_phrase);
                     wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
@@ -108,7 +111,13 @@ impl KeysCmd {
                 }
 
                 if *bip44_derivation {
-                    unimplemented!();
+                    let path = Bip44Path::new(0, 0, 0);
+                    let wallet = KeyStore::from_seed_phrase_bip44(
+                        SeedPhrase::from_str(&seed_phrase)?,
+                        &path,
+                    );
+                    wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
+                    self.archive_wallet(&wallet)?;
                 } else {
                     let wallet =
                         KeyStore::from_seed_phrase_bip39(SeedPhrase::from_str(&seed_phrase)?);
