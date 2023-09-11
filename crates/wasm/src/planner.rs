@@ -35,7 +35,6 @@ use penumbra_transaction::{
     plan::{ActionPlan, DelegatorVotePlan, MemoPlan, TransactionPlan},
     proposal,
 };
-use tracing::instrument;
 
 use crate::note_record::SpendableNoteRecord;
 
@@ -116,7 +115,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Set the expiry height for the transaction plan.
-    #[instrument(skip(self))]
     pub fn expiry_height(&mut self, expiry_height: u64) -> &mut Self {
         self.plan.expiry_height = expiry_height;
         self
@@ -125,7 +123,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Set a memo for this transaction plan.
     ///
     /// Errors if the memo is too long.
-    #[instrument(skip(self))]
     pub fn memo(&mut self, memo: MemoPlaintext) -> anyhow::Result<&mut Self> {
         self.plan.memo_plan = Some(MemoPlan::new(&mut self.rng, memo)?);
         Ok(self)
@@ -134,7 +131,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Add a fee to the transaction plan.
     ///
     /// This function should be called once.
-    #[instrument(skip(self))]
     pub fn fee(&mut self, fee: Fee) -> &mut Self {
         self.balance += fee.0;
         self.plan.fee = fee;
@@ -145,7 +141,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// If you don't use this method to specify spends, they will be filled in automatically from
     /// the view service when the plan is [`finish`](Planner::finish)ed.
-    #[instrument(skip(self))]
     pub fn spend(&mut self, note: Note, position: tct::Position) -> &mut Self {
         let spend = SpendPlan::new(&mut self.rng, note, position).into();
         self.action(spend);
@@ -153,21 +148,18 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Open a liquidity position in the order book.
-    #[instrument(skip(self))]
     pub fn position_open(&mut self, position: Position) -> &mut Self {
         self.action(ActionPlan::PositionOpen(PositionOpen { position }));
         self
     }
 
     /// Close a liquidity position in the order book.
-    #[instrument(skip(self))]
     pub fn position_close(&mut self, position_id: position::Id) -> &mut Self {
         self.action(ActionPlan::PositionClose(PositionClose { position_id }));
         self
     }
 
     /// Withdraw a liquidity position in the order book.
-    #[instrument(skip(self))]
     pub fn position_withdraw(
         &mut self,
         position_id: position::Id,
@@ -183,7 +175,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Perform a swap claim based on an input swap NFT with a pre-paid fee.
-    #[instrument(skip(self))]
     pub fn swap_claim(&mut self, plan: SwapClaimPlan) -> &mut Self {
         // Nothing needs to be spent, since the fee is pre-paid and the
         // swap NFT will be automatically consumed when the SwapClaim action
@@ -195,7 +186,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Perform a swap based on input notes in the transaction.
-    #[instrument(skip(self))]
     pub fn swap(
         &mut self,
         input_value: Value,
@@ -242,7 +232,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// Any unused output value will be redirected back to the originating address as change notes
     /// when the plan is [`finish`](Builder::finish)ed.
-    #[instrument(skip(self))]
     pub fn output(&mut self, value: Value, address: Address) -> &mut Self {
         let output = OutputPlan::new(&mut self.rng, value, address).into();
         self.action(output);
@@ -252,7 +241,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Add a delegation to this transaction.
     ///
     /// If you don't specify spends or outputs as well, they will be filled in automatically.
-    #[instrument(skip(self))]
     pub fn delegate(&mut self, unbonded_amount: u128, rate_data: RateData) -> &mut Self {
         let delegation = rate_data.build_delegate(unbonded_amount).into();
         self.action(delegation);
@@ -262,7 +250,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Add an undelegation to this transaction.
     ///
     /// TODO: can we put the chain parameters into the planner at the start, so we can compute end_epoch_index?
-    #[instrument(skip(self))]
     pub fn undelegate(&mut self, delegation_amount: Amount, rate_data: RateData) -> &mut Self {
         let undelegation = rate_data.build_undelegate(delegation_amount).into();
         self.action(undelegation);
@@ -270,21 +257,18 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Add an undelegate claim to this transaction.
-    #[instrument(skip(self))]
     pub fn undelegate_claim(&mut self, claim_plan: UndelegateClaimPlan) -> &mut Self {
         self.action(ActionPlan::UndelegateClaim(claim_plan));
         self
     }
 
     /// Upload a validator definition in this transaction.
-    #[instrument(skip(self))]
     pub fn validator_definition(&mut self, new_validator: validator::Definition) -> &mut Self {
         self.action(ActionPlan::ValidatorDefinition(new_validator.into()));
         self
     }
 
     /// Submit a new governance proposal in this transaction.
-    #[instrument(skip(self))]
     pub fn proposal_submit(&mut self, proposal: Proposal, deposit_amount: Amount) -> &mut Self {
         self.action(ActionPlan::ProposalSubmit(ProposalSubmit {
             proposal,
@@ -294,7 +278,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Withdraw a governance proposal in this transaction.
-    #[instrument(skip(self))]
     pub fn proposal_withdraw(&mut self, proposal: u64, reason: String) -> &mut Self {
         self.action(ActionPlan::ProposalWithdraw(ProposalWithdraw {
             proposal,
@@ -304,7 +287,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Claim a governance proposal deposit in this transaction.
-    #[instrument(skip(self))]
     pub fn proposal_deposit_claim(
         &mut self,
         proposal: u64,
@@ -320,7 +302,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Cast a validator vote in this transaction.
-    #[instrument(skip(self))]
     pub fn validator_vote(&mut self, vote: ValidatorVote) -> &mut Self {
         self.action(ActionPlan::ValidatorVote(vote));
         self
@@ -329,7 +310,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Vote with all possible vote weight on a given proposal.
     ///
     /// Voting twice on the same proposal in the same planner will overwrite the previous vote.
-    #[instrument(skip(self, start_position, start_rate_data))]
     pub fn delegator_vote(
         &mut self,
         proposal: u64,
@@ -355,7 +335,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// If you don't use this method to specify votes, they will be filled in automatically from the
     /// implied voting intent by [`vote`](Planner::vote) when the plan is
     /// [`finish`](Planner::finish)ed.
-    #[instrument(skip(self, start_position))]
     pub fn delegator_vote_precise(
         &mut self,
         proposal: u64,
@@ -388,34 +367,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
-    /// Add spends and change outputs as required to balance the transaction, using the view service
-    /// provided to supply the notes and other information.
-    ///
-    /// Clears the contents of the planner, which can be re-used.
-    // pub async fn plan(
-    //     &mut self,
-    //     account_group_id: AccountGroupId,
-    //     source: AddressIndex,
-    //     self_address: Address
-    // ) -> anyhow::Result<TransactionPlan> {
-    //     // Gather all the information needed from the view service
-    //     let chain_params: ChainParameters = Default::default();
-    //     let fmd_params: FmdParameters =  Default::default();
-    //     let mut spendable_notes = Vec::new();
-    //     let mut voting_notes = Vec::new();
-    //     // let (spendable_requests, voting_requests) = self.notes_requests(account_group_id, source);
-    //
-    //
-    //     // Plan the transaction using the gathered information
-    //
-    //     self.plan_with_spendable_and_votable_notes(
-    //         &chain_params,
-    //         &fmd_params,
-    //         spendable_notes,
-    //         voting_notes,
-    //         self_address,
-    //     )
-    // }
 
     /// Add spends and change outputs as required to balance the transaction, using the spendable
     /// notes provided. It is the caller's responsibility to ensure that the notes are the result of
@@ -423,14 +374,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// [`Planner::note_requests`].
     ///
     /// Clears the contents of the planner, which can be re-used.
-    #[instrument(skip(
-        self,
-        chain_params,
-        fmd_params,
-        self_address,
-        spendable_notes,
-        votable_notes,
-    ))]
     pub fn plan_with_spendable_and_votable_notes(
         &mut self,
         chain_params: &ChainParameters,
@@ -439,7 +382,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         votable_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
         self_address: Address,
     ) -> anyhow::Result<TransactionPlan> {
-        tracing::debug!(plan = ?self.plan, balance = ?self.balance, "finalizing transaction");
 
         // Fill in the chain id based on the view service
         self.plan.chain_id = chain_params.chain_id.clone();
@@ -544,8 +486,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         let precision_bits = fmd_params.precision_bits;
         self.plan
             .add_all_clue_plans(&mut self.rng, precision_bits.into());
-
-        tracing::debug!(plan = ?self.plan, "finished balancing transaction");
 
         // Clear the planner and pull out the plan to return
         self.balance = Balance::zero();

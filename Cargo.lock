@@ -5605,7 +5605,6 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "serde-wasm-bindgen",
- "tracing",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
