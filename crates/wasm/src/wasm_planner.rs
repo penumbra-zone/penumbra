@@ -16,9 +16,8 @@ use penumbra_proto::view::v1alpha1::NotesRequest;
 use penumbra_proto::DomainType;
 use rand_core::OsRng;
 use wasm_bindgen::prelude::wasm_bindgen;
-use wasm_bindgen::JsValue;
 use wasm_bindgen::JsError;
-
+use wasm_bindgen::JsValue;
 
 #[wasm_bindgen]
 pub struct WasmPlanner {

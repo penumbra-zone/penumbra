@@ -9,11 +9,10 @@ use penumbra_keys::keys::{SeedPhrase, SpendKey};
 use rand_core::OsRng;
 use wasm_bindgen::prelude::*;
 
-use penumbra_transaction::Transaction;
-use crate::utils;
-use serde_wasm_bindgen::Error;
 use crate::error::WasmResult;
-
+use crate::utils;
+use penumbra_transaction::Transaction;
+use serde_wasm_bindgen::Error;
 
 /// generate a spend key from a seed phrase
 /// Arguments:
@@ -26,7 +25,6 @@ pub fn generate_spend_key(seed_phrase: &str) -> Result<JsValue, Error> {
     Ok(JsValue::from_str(&result))
 }
 
-
 /// get full viewing key from spend key
 /// Arguments:
 ///     spend_key_str: `bech32 string`
@@ -36,7 +34,6 @@ pub fn get_full_viewing_key(spend_key: &str) -> Result<JsValue, Error> {
     let result = get_full_viewing_key_from_spend(spend_key)?;
     Ok(JsValue::from_str(&result))
 }
-
 
 /// get address by index using FVK
 /// Arguments:
@@ -48,7 +45,6 @@ pub fn get_address_by_index(full_viewing_key: &str, index: u32) -> Result<JsValu
     let result = address_by_index(full_viewing_key, index)?;
     serde_wasm_bindgen::to_value(&result)
 }
-
 
 /// get ephemeral (randomizer) address using FVK
 /// The derivation tree is like "spend key / address index / ephemeral address" so we must also pass index as an argument
@@ -62,7 +58,6 @@ pub fn get_ephemeral_address(full_viewing_key: &str, index: u32) -> Result<JsVal
     serde_wasm_bindgen::to_value(&result)
 }
 
-
 /// Check if the address is FVK controlled
 /// Arguments:
 ///     full_viewing_key: `bech32 String`
@@ -73,7 +68,6 @@ pub fn is_controlled_address(full_viewing_key: &str, address: &str) -> Result<Js
     let result = address_index(full_viewing_key, address)?;
     serde_wasm_bindgen::to_value(&result)
 }
-
 
 /// Get canonical short form address by index
 /// This feature is probably redundant and will be removed from wasm in the future
@@ -137,10 +131,14 @@ pub fn ephemeral_address(full_viewing_key: &str, index: u32) -> WasmResult<pb::A
     Ok(proto)
 }
 
-pub fn address_index(full_viewing_key: &str, address: &str) -> WasmResult<Option<pb::AddressIndex>> {
+pub fn address_index(
+    full_viewing_key: &str,
+    address: &str,
+) -> WasmResult<Option<pb::AddressIndex>> {
     let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())?;
 
-    let index = fvk.address_index(&Address::from_str(address.as_ref())?)
+    let index = fvk
+        .address_index(&Address::from_str(address.as_ref())?)
         .map(Into::into);
     Ok(index)
 }
@@ -152,5 +150,3 @@ pub fn short_address_by_index(full_viewing_key: &str, index: u32) -> WasmResult<
     let short_address = address.display_short_form();
     Ok(short_address)
 }
-
-

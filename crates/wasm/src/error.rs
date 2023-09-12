@@ -1,7 +1,6 @@
 use serde_wasm_bindgen::Error;
-use web_sys::DomException;
 use thiserror::Error;
-
+use web_sys::DomException;
 
 #[derive(Debug)]
 pub struct DomError(DomException);
@@ -22,7 +21,6 @@ impl From<DomException> for WasmError {
 // --------------- //
 
 pub type WasmResult<T> = Result<T, WasmError>;
-
 
 #[derive(Error, Debug)]
 pub enum WasmError {
