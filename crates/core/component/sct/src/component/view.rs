@@ -31,9 +31,11 @@ pub trait StateReadExt: StateRead {
         match self
             .nonverifiable_get_raw(state_key::state_commitment_tree().as_bytes())
             .await
-            .unwrap()
+            .expect("able to retrieve state commitment tree from nonverifiable storage")
         {
-            Some(bytes) => bincode::deserialize(&bytes).unwrap(),
+            Some(bytes) => bincode::deserialize(&bytes).expect(
+                "able to deserialize stored state commitment tree from nonverifiable storage",
+            ),
             None => tct::Tree::new(),
         }
     }
@@ -135,7 +137,8 @@ trait StateWriteExt: StateWrite {
         // If the cached tree is dirty, flush it to storage
         if let Some(tree) = self.object_get::<tct::Tree>(state_key::cached_state_commitment_tree())
         {
-            let bytes = bincode::serialize(&tree).unwrap();
+            let bytes = bincode::serialize(&tree)
+                .expect("able to serialize state commitment tree to bincode");
             self.nonverifiable_put_raw(
                 state_key::state_commitment_tree().as_bytes().to_vec(),
                 bytes,
