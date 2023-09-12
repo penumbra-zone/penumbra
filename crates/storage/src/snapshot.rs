@@ -12,10 +12,12 @@ use tokio::sync::mpsc;
 use tracing::Span;
 
 use crate::{
-    metrics,
     storage::{DbNodeKey, VersionedKeyHash},
     utils, StateRead,
 };
+
+#[cfg(feature = "metrics")]
+use crate::metrics;
 
 mod rocks_wrapper;
 use rocks_wrapper::RocksDbSnapshot;
@@ -159,9 +161,10 @@ impl StateRead for Snapshot {
                 .name("Snapshot::get_raw")
                 .spawn_blocking(move || {
                     span.in_scope(|| {
-                        let start = std::time::Instant::now();
+                        let _start = std::time::Instant::now();
                         let rsp = self2.get_jmt(key_hash);
-                        metrics::histogram!(metrics::STORAGE_GET_RAW_DURATION, start.elapsed());
+                        #[cfg(feature = "metrics")]
+                        metrics::histogram!(metrics::STORAGE_GET_RAW_DURATION, _start.elapsed());
                         rsp
                     })
                 })
@@ -178,7 +181,7 @@ impl StateRead for Snapshot {
                 .name("Snapshot::nonverifiable_get_raw")
                 .spawn_blocking(move || {
                     span.in_scope(|| {
-                        let start = std::time::Instant::now();
+                        let _start = std::time::Instant::now();
                         let nonverifiable_cf = inner
                             .db
                             .cf_handle("nonverifiable")
@@ -187,9 +190,10 @@ impl StateRead for Snapshot {
                             .snapshot
                             .get_cf(nonverifiable_cf, key)
                             .map_err(Into::into);
+                        #[cfg(feature = "metrics")]
                         metrics::histogram!(
                             metrics::STORAGE_NONCONSENSUS_GET_RAW_DURATION,
-                            start.elapsed()
+                            _start.elapsed()
                         );
                         rsp
                     })

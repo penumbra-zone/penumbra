@@ -1,3 +1,4 @@
+#![cfg(feature = "metrics")]
 //! Crate-specific metrics functionality.
 //!
 //! This module re-exports the contents of the `metrics` crate.  This is

@@ -49,6 +49,7 @@ mod tests;
 mod utils;
 mod write;
 
+#[cfg(feature = "metrics")]
 pub use crate::metrics::register_metrics;
 pub use cache::Cache;
 pub use delta::{ArcStateDeltaExt, StateDelta};
