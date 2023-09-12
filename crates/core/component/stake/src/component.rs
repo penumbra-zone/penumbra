@@ -652,7 +652,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         let did_address_vote = last_commit_info
             .votes
             .iter()
-            .map(|vote| (vote.validator.address, vote.signed_last_block))
+            .map(|vote| (vote.validator.address, vote.sig_info.is_signed()))
             .collect::<BTreeMap<[u8; 20], bool>>();
 
         // Since we don't have a lookup from "addresses" to identity keys,

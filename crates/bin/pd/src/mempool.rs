@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use penumbra_storage::{Snapshot, Storage};
 
-use tendermint::abci::{
+use tendermint::v0_34::abci::{
     request::CheckTx as CheckTxReq, request::CheckTxKind, response::CheckTx as CheckTxRsp,
     MempoolRequest as Request, MempoolResponse as Response,
 };

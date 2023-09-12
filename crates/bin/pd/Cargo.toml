@@ -46,20 +46,18 @@ penumbra-tendermint-proxy = { path = "../../util/tendermint-proxy" }
 # Penumbra dependencies
 decaf377 = { version = "0.5", features = ["parallel"] }
 decaf377-rdsa = { version = "0.7" }
-tower-abci = "0.8.0"
+tower-abci = "0.9.0"
 jmt = "0.6"
 tower-actor = "0.1.0"
 
 # External dependencies
-tendermint-config = "0.32.0"
-tendermint-proto = "0.32.0"
-tendermint = "0.32.0"
-tendermint-light-client-verifier = "0.32.0"
-ibc-types = "0.3.0"
+tendermint-config = "0.33.0"
+tendermint-proto = "0.33.0"
+tendermint = "0.33.0"
+tendermint-light-client-verifier = "0.33.0"
+ibc-types = "0.6.0"
 
-ibc-proto = { version = "0.31.0", default-features = false, features = [
-    "server",
-] }
+ibc-proto = { version = "0.33.0", default-features = false, features = ["server"] }
 prost = "0.11"
 toml = "0.5"
 # We don't need this crate at all, but its upstream published a breaking change as
@@ -110,7 +108,7 @@ http = "0.2"
 ed25519-consensus = "2"
 
 async-trait = "0.1.52"
-tendermint-rpc = { version = "0.32.0", features = ["http-client"] }
+tendermint-rpc = { version = "0.33.0", features = ["http-client"] }
 once_cell = "1.7.2"
 rocksdb = "0.21.0"
 tempfile = "3.3.0"

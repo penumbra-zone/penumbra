@@ -16,8 +16,8 @@ penumbra-num = { path = "../../../core/num", default-features = false  }
 # Penumbra dependencies
 decaf377 = "0.5"
 
-tendermint = "0.32.0"
-ibc-types = { version = "0.3.0", default-features = false }
+tendermint = "0.33.0"
+ibc-types = { version = "0.6.0", default-features = false }
 ics23 = "0.10.1"
 
 # Crates.io deps

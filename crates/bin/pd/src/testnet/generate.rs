@@ -19,6 +19,7 @@ use std::{
     str::FromStr,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
+use tendermint::consensus::params::AbciParams;
 use tendermint::{node, public_key::Algorithm, Genesis, Time};
 use tendermint_config::net::Address as TendermintAddress;
 
@@ -223,6 +224,7 @@ impl TestnetConfig {
                 .context("failed to parseto create chain ID")?,
             initial_height: 0,
             consensus_params: tendermint::consensus::Params {
+                abci: AbciParams::default(),
                 block: tendermint::block::Size {
                     max_bytes: 22020096,
                     max_gas: -1,

@@ -24,10 +24,10 @@ penumbra-asset = { path = "../asset", default-features = false }
 penumbra-keys = { path = "../keys", default-features = false }
 
 # Git deps
-ibc-types = { version = "0.3.0", default-features = false }
+ibc-types = { version = "0.6.0", default-features = false }
 
 # Crates.io deps
-ibc-proto = { version = "0.31.0", default-features = false }
+ibc-proto = { version = "0.33.0", default-features = false }
 decaf377 = "0.5"
 decaf377-rdsa = { version = "0.7" }
 poseidon377 = { version = "0.6", features = ["r1cs"] }

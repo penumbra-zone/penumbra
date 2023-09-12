@@ -3,7 +3,8 @@ use std::{future::Future, pin::Pin, task::Context};
 use anyhow::Result;
 use futures::FutureExt;
 use regex::RegexSet;
-use tendermint::abci::{ConsensusRequest as Request, ConsensusResponse as Response, Event};
+use tendermint::abci::Event;
+use tendermint::v0_34::abci::{ConsensusRequest as Request, ConsensusResponse as Response};
 use tower::{Layer, Service};
 
 #[derive(Debug, Clone)]
@@ -100,8 +101,6 @@ where
             match rsp {
                 // No events.
                 Response::InitChain(_) => {}
-                Response::PrepareProposal(_) => {}
-                Response::ProcessProposal(_) => {}
                 Response::Commit(_) => {}
                 // These responses have events.
                 Response::BeginBlock(ref mut msg) => config.adjust_events(&mut msg.events),

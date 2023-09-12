@@ -33,11 +33,15 @@ use penumbra_ibc::component::ConnectionStateReadExt as _;
 use penumbra_storage::Storage;
 use prost::Message;
 use std::str::FromStr;
-use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
+use tendermint::v0_34::abci::{
+    request,
+    response::{self, Echo},
+    InfoRequest, InfoResponse,
+};
 use tower_abci::BoxError;
 use tracing::Instrument;
 
-use penumbra_tower_trace::RequestExt;
+use penumbra_tower_trace::v034::RequestExt;
 
 mod oblivious;
 mod specific;
@@ -61,7 +65,7 @@ impl Info {
         Self { storage }
     }
 
-    async fn info(&self, info: abci::request::Info) -> anyhow::Result<abci::response::Info> {
+    async fn info(&self, info: request::Info) -> anyhow::Result<response::Info> {
         let state = self.storage.latest_snapshot();
         tracing::info!(?info, version = ?state.version());
 
@@ -76,7 +80,7 @@ impl Info {
 
         let last_block_app_hash = state.app_hash().await?.0.to_vec().try_into()?;
 
-        Ok(abci::response::Info {
+        Ok(response::Info {
             data: "penumbra".to_string(),
             version: ABCI_INFO_VERSION.to_string(),
             app_version: APP_VERSION,
@@ -118,7 +122,7 @@ impl Info {
         }
     }
 
-    async fn query(&self, query: abci::request::Query) -> anyhow::Result<abci::response::Query> {
+    async fn query(&self, query: request::Query) -> anyhow::Result<response::Query> {
         tracing::info!(?query);
 
         match query.path.as_str() {
@@ -134,7 +138,7 @@ impl Info {
                     anyhow::bail!("key not found")
                 };
 
-                Ok(abci::response::Query {
+                Ok(response::Query {
                     code: 0.into(),
                     key: query.data,
                     log: "".to_string(),
@@ -175,7 +179,7 @@ impl Info {
                 }
                 .encode_to_vec();
 
-                Ok(abci::response::Query {
+                Ok(response::Query {
                     code: 0.into(),
                     key: query.data,
                     log: "".to_string(),
@@ -220,7 +224,7 @@ impl Info {
                 }
                 .encode_to_vec();
 
-                Ok(abci::response::Query {
+                Ok(response::Query {
                     code: 0.into(),
                     key: query.data,
                     log: "".to_string(),
@@ -270,7 +274,7 @@ impl Info {
                 }
                 .encode_to_vec();
 
-                Ok(abci::response::Query {
+                Ok(response::Query {
                     code: 0.into(),
                     key: query.data,
                     log: "".to_string(),
@@ -312,7 +316,7 @@ impl Info {
                 }
                 .encode_to_vec();
 
-                Ok(abci::response::Query {
+                Ok(response::Query {
                     code: 0.into(),
                     key: query.data,
                     log: "".to_string(),
@@ -367,7 +371,7 @@ impl Info {
                 }
                 .encode_to_vec();
 
-                Ok(abci::response::Query {
+                Ok(response::Query {
                     code: 0.into(),
                     key: query.data,
                     log: "".to_string(),
@@ -418,7 +422,7 @@ impl Info {
                 }
                 .encode_to_vec();
 
-                Ok(abci::response::Query {
+                Ok(response::Query {
                     code: 0.into(),
                     key: query.data,
                     log: "".to_string(),
@@ -483,7 +487,7 @@ impl Info {
                 }
                 .encode_to_vec();
 
-                Ok(abci::response::Query {
+                Ok(response::Query {
                     code: 0.into(),
                     key: query.data,
                     log: "".to_string(),
@@ -531,7 +535,7 @@ impl Info {
                 }
                 .encode_to_vec();
 
-                Ok(abci::response::Query {
+                Ok(response::Query {
                     code: 0.into(),
                     key: query.data,
                     log: "".to_string(),
@@ -574,7 +578,7 @@ impl tower_service::Service<InfoRequest> for Info {
                     .map_err(Into::into),
                 InfoRequest::Query(query) => match self2.query(query).await {
                     Ok(rsp) => Ok(InfoResponse::Query(rsp)),
-                    Err(e) => Ok(InfoResponse::Query(abci::response::Query {
+                    Err(e) => Ok(InfoResponse::Query(response::Query {
                         code: 1.into(),
                         log: e.to_string(),
                         ..Default::default()

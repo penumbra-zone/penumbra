@@ -1,9 +1,11 @@
 use sha2::{Digest, Sha256};
-use tendermint::abci::request::{PrepareProposal, ProcessProposal};
-use tendermint::abci::{ConsensusRequest, InfoRequest, MempoolRequest, SnapshotRequest};
-use tendermint::v0_34::abci::request::{
+use tendermint::v0_37::abci::request::{
     BeginBlock, CheckTx, DeliverTx, EndBlock, InitChain, Query, Request,
 };
+use tendermint::v0_37::abci::request::{
+    ConsensusRequest, InfoRequest, MempoolRequest, SnapshotRequest,
+};
+use tendermint::v0_37::abci::request::{PrepareProposal, ProcessProposal};
 use tracing::error_span;
 
 pub trait RequestExt {
@@ -67,7 +69,6 @@ impl RequestExt for InfoRequest {
                 error_span!(parent: &p, "Query", ?path, ?height, prove)
             }
             InfoRequest::Echo(_) => error_span!(parent: &p, "Echo"),
-            InfoRequest::SetOption(_) => todo!("not implemented"),
         }
     }
 }
@@ -119,7 +120,8 @@ impl RequestExt for Request {
             Request::OfferSnapshot(_) => error_span!(parent: &p, "OfferSnapshot"),
             Request::LoadSnapshotChunk(_) => error_span!(parent: &p, "LoadSnapshotChunk"),
             Request::ApplySnapshotChunk(_) => error_span!(parent: &p, "ApplySnapshotChunk"),
-            Request::SetOption(_) => todo!("not implemented"),
+            Request::PrepareProposal(_) => error_span!(parent: &p, "PrepareProposal"),
+            Request::ProcessProposal(_) => error_span!(parent: &p, "ProcessProposal"),
         }
     }
 }

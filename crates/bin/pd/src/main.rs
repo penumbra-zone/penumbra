@@ -30,12 +30,14 @@ use penumbra_tendermint_proxy::TendermintProxy;
 use penumbra_tower_trace::remote_addr;
 use rand::Rng;
 use rand_core::OsRng;
-use tendermint::abci::{ConsensusRequest, MempoolRequest};
 use tendermint_config::net::Address as TendermintAddress;
 use tokio::{net::TcpListener, runtime};
 use tonic::transport::Server;
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
+
+use penumbra_tower_trace::v034::RequestExt;
+use tendermint::v0_34::abci::{ConsensusRequest, MempoolRequest};
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -287,7 +289,6 @@ async fn main() -> anyhow::Result<()> {
                 .context("Unable to initialize RocksDB storage")?;
 
             use penumbra_tower_trace::trace::request_span;
-            use penumbra_tower_trace::RequestExt;
 
             let consensus = tower::ServiceBuilder::new()
                 .layer(request_span::layer(|req: &ConsensusRequest| {
