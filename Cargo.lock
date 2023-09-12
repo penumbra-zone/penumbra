@@ -2905,9 +2905,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.31.0"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc198998f950ed48ffcd405a6b147e2a4ee7fc25ed9531857774d170e1562ea1"
+checksum = "59d0bc49ee5fc8e5d0e668765d470cb201fd0cdee4166f49c6cbcf3100466137"
 dependencies = [
  "base64 0.21.2",
  "bytes",
@@ -2922,9 +2922,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types"
-version = "0.3.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a36c2a1835c820277281cc0d93bcd43591c0854c1739c507b7cd3f4170981bd"
+checksum = "979db56ee6755592e22db6c751125ae51eaf3426fa191180e3e1da6d0adbeea4"
 dependencies = [
  "ibc-types-core-channel",
  "ibc-types-core-client",
@@ -2940,9 +2940,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-core-channel"
-version = "0.3.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63198ba14656ec0182a683ab15bcc823738d295c855489ba7396769fc30223b1"
+checksum = "cb6bd404499b39f38539cae1cbc94a789b3eb16b421c6a44abf69dd64dcd68ac"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2972,9 +2972,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-core-client"
-version = "0.3.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68fff89eba5126a8b1337b6be9e51dfad7130e23335f410db5d80261a4c5d5d2"
+checksum = "1f7aed14d5b639dda8b5de59c1c83712cf48a06707648b93f7a0e62f06698efb"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2999,9 +2999,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-core-commitment"
-version = "0.3.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be9217cdfacc9cb58a5e9ec46ed7445d347772d8a90bbacd824868b30e513c94"
+checksum = "67d7ddb4fe5bd5ced5d1abe1e24d28f243c7dd41e4e5992c58b5753d5c554f0d"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3033,9 +3033,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-core-connection"
-version = "0.3.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf4571b3ff025b41d1095185ceb059dd185ab5dadcc1d8fd36a58a6ef3c3dc1e"
+checksum = "4df9e5b7f233a646dfcb30e709d1553f9132ed7d90c1a6e17d53cfab35d1e25c"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3063,9 +3063,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-domain-type"
-version = "0.3.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "922dd53d1eb471552735732580c5a8a03c7d42e3e41763dea76ec9f9c2121f84"
+checksum = "b2ea02aed632666da6d160ffb2de154b6de5651a438e4d287fc0c99c6af36003"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3074,19 +3074,20 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-identifier"
-version = "0.3.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b113c4e965f34392d7bd0b50e8215f54e8c343c47110cf4525da269f224d165"
+checksum = "a74dc9b9fbc7db3932e55c6cd3da62d27ccc3fa2de88b240df324079699f7ecc"
 dependencies = [
  "displaydoc",
  "serde",
+ "serde_derive",
 ]
 
 [[package]]
 name = "ibc-types-lightclients-tendermint"
-version = "0.3.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d53e9f3f5a7d9005f01930f7af94b4409c07f4178b724b9defae5b13e99ddb27"
+checksum = "dd977cf8b6f904badd2941afd541293096d980f6d07939b81424475dc559c2ce"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3121,9 +3122,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-path"
-version = "0.3.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "671f7970711a3eaa25d95fa4613491fe7c680c526251b1e62ce4ca23ce418c32"
+checksum = "595325e314affdc36545ef488e94290812bce8be119bc472b223cc0944b2f283"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3134,6 +3135,7 @@ dependencies = [
  "num-traits",
  "prost",
  "serde",
+ "serde_derive",
  "serde_json",
  "subtle-encoding",
  "tendermint",
@@ -3143,15 +3145,16 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-timestamp"
-version = "0.3.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b8a10964b6684614d092f524861a5eae7c5bd69af6949582d7ed00c89dd1e83"
+checksum = "5114a94bdc8cc5d80a7fc35312abf00185b3d789255337bee8da876a3f699ffc"
 dependencies = [
  "bytes",
  "displaydoc",
  "num-traits",
  "prost",
  "serde",
+ "serde_derive",
  "serde_json",
  "subtle-encoding",
  "tendermint",
@@ -3161,12 +3164,13 @@ dependencies = [
 
 [[package]]
 name = "ibc-types-transfer"
-version = "0.3.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51ae4dec259191735de7c7d0fed2d66ca2a0d392ed253eae47bb8770cc19d43e"
+checksum = "b8eeb17544d819223d5e186730db60dbcb785ed0f77d9d37fc6718a9fbdb9160"
 dependencies = [
  "displaydoc",
  "serde",
+ "serde_derive",
 ]
 
 [[package]]
@@ -7439,9 +7443,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.32.2"
+version = "0.33.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f0a7d05cf78524782337f8edd55cbc578d159a16ad4affe2135c92f7dbac7f0"
+checksum = "c293cdbb6e13bad728bce26584a3a89d7cb5ea0b4b9db796fded10bae4a0b06b"
 dependencies = [
  "bytes",
  "digest 0.10.7",
@@ -7468,9 +7472,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-config"
-version = "0.32.2"
+version = "0.33.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71a72dbbea6dde12045d261f2c70c0de039125675e8a026c8d5ad34522756372"
+checksum = "007da10d992c93039bde6a962ec0ab12e3520695cebb9542d5c9011de29341e3"
 dependencies = [
  "flex-error",
  "serde",
@@ -7482,9 +7486,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-light-client-verifier"
-version = "0.32.2"
+version = "0.33.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9875dce5c1b08201152eb0860f8fb1dce96c53e37532c310ffc4956d20f90def"
+checksum = "ed904fdd9048b1465035c717b1b71d1fd6bdd8c3845ecd0f2588bb53e616dd53"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -7495,9 +7499,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.32.2"
+version = "0.33.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0cec054567d16d85e8c3f6a3139963d1a66d9d3051ed545d31562550e9bcc3d"
+checksum = "03dcd29922e5670af2307f3d8e58c9720ec94b15b92ef85fe9ed0f4b25fbde44"
 dependencies = [
  "bytes",
  "flex-error",
@@ -7513,9 +7517,9 @@ dependencies = [
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.32.2"
+version = "0.33.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d119d83a130537fc4a98c3c9eb6899ebe857fea4860400a61675bfb5f0b35129"
+checksum = "2055a3cbc98af82de5c693a8bc58f799f46ac45a6099619be29bda196e6baa6c"
 dependencies = [
  "async-trait",
  "bytes",
@@ -7965,9 +7969,9 @@ dependencies = [
 
 [[package]]
 name = "tower-abci"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e1ae4967b2fa1d153c226dd9ca5d42b36749a35c6b57f0fe03e342390664d82"
+checksum = "42c629f4e6844d9c506d4b3b7894821015c72c818fc4e7e66275d34e5e0b43a2"
 dependencies = [
  "bytes",
  "futures",

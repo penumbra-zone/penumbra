@@ -98,6 +98,14 @@ impl ConnectionQuery for IbcQuery {
 
         Ok(tonic::Response::new(res))
     }
+
+    async fn connection_params(
+        &self,
+        _request: tonic::Request<ibc_proto::ibc::core::connection::v1::QueryConnectionParamsRequest>,
+    ) -> std::result::Result<tonic::Response<ibc_proto::ibc::core::connection::v1::QueryConnectionParamsResponse>, tonic::Status> {
+        Err(tonic::Status::unimplemented("not implemented"))
+    }
+
     /// Connections queries all the IBC connections of a chain.
     async fn connections(
         &self,
@@ -540,6 +548,7 @@ impl ConsensusQuery for IbcQuery {
 
         Ok(tonic::Response::new(res))
     }
+
     /// NextSequenceReceive returns the next receive sequence for a given channel.
     async fn next_sequence_receive(
         &self,
