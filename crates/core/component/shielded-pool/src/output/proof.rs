@@ -170,8 +170,22 @@ impl OutputProof {
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
-        public_inputs.extend(note_commitment.0.to_field_elements().unwrap());
-        public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
+        public_inputs.extend(
+            note_commitment
+                .0
+                .to_field_elements()
+                .ok_or(anyhow::anyhow!(
+                    "note commitment is not a valid field element"
+                ))?,
+        );
+        public_inputs.extend(
+            balance_commitment
+                .0
+                .to_field_elements()
+                .ok_or(anyhow::anyhow!(
+                    "balance commitment is not a valid field element"
+                ))?,
+        );
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();

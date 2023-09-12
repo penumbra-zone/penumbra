@@ -192,8 +192,11 @@ impl DummyWitness for SpendCircuit {
         let mut sct = tct::Tree::new();
         let anchor: tct::Root = sct.root();
         let note_commitment = note.commit();
-        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let state_commitment_proof = sct.witness(note_commitment).unwrap();
+        sct.insert(tct::Witness::Keep, note_commitment)
+            .expect("able to insert note commitment into SCT");
+        let state_commitment_proof = sct
+            .witness(note_commitment)
+            .expect("able to witness just-inserted note commitment");
 
         Self {
             state_commitment_proof,
@@ -270,12 +273,26 @@ impl SpendProof {
 
         let mut public_inputs = Vec::new();
         public_inputs.extend([Fq::from(anchor.0)]);
-        public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
-        public_inputs.extend(nullifier.0.to_field_elements().unwrap());
+        public_inputs.extend(
+            balance_commitment
+                .0
+                .to_field_elements()
+                .ok_or(anyhow::anyhow!("balance commitment is not a valid element"))?,
+        );
+        public_inputs.extend(
+            nullifier
+                .0
+                .to_field_elements()
+                .ok_or(anyhow::anyhow!("nullifier is not a valid element"))?,
+        );
         let element_rk = decaf377::Encoding(rk.to_bytes())
             .vartime_decompress()
             .expect("expect only valid element points");
-        public_inputs.extend(element_rk.to_field_elements().unwrap());
+        public_inputs.extend(
+            element_rk
+                .to_field_elements()
+                .ok_or(anyhow::anyhow!("rk is not a valid element"))?,
+        );
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
@@ -835,9 +852,12 @@ mod tests {
             .expect("can make a note");
             let mut sct = tct::Tree::new();
             let note_commitment = note.commit();
-            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            sct.insert(tct::Witness::Keep, note_commitment)
+                .expect("able to insert note commitment into SCT");
             let anchor = sct.root();
-            let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let state_commitment_proof = sct
+                .witness(note_commitment)
+                .expect("able to witness just-inserted note commitment");
             let position = state_commitment_proof.position();
             let epoch = Fq::from(position.epoch());
             let block = Fq::from(position.block());

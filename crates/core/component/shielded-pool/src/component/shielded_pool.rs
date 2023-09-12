@@ -10,6 +10,7 @@ use penumbra_sct::Nullifier;
 use penumbra_storage::StateRead;
 use penumbra_storage::StateWrite;
 use tendermint::v0_34::abci;
+use tracing::instrument;
 
 use crate::state_key;
 
@@ -21,7 +22,7 @@ pub struct ShieldedPool {}
 impl Component for ShieldedPool {
     type AppState = genesis::AppState;
 
-    // #[instrument(name = "shielded_pool", skip(state, app_state))]
+    #[instrument(name = "shielded_pool", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
         // Register a denom for each asset in the genesis state
         for allocation in &app_state.allocations {
@@ -35,7 +36,10 @@ impl Component for ShieldedPool {
 
             let unit = asset::REGISTRY.parse_unit(&allocation.denom);
 
-            state.register_denom(&unit.base()).await.unwrap();
+            state
+                .register_denom(&unit.base())
+                .await
+                .expect("able to register denom for genesis allocation");
             state
                 .mint_note(
                     Value {
@@ -48,18 +52,18 @@ impl Component for ShieldedPool {
                     NoteSource::Genesis,
                 )
                 .await
-                .unwrap();
+                .expect("able to mint note for genesis allocation");
         }
     }
 
-    // #[instrument(name = "shielded_pool", skip(_state, _begin_block))]
+    #[instrument(name = "shielded_pool", skip(_state, _begin_block))]
     async fn begin_block<S: StateWrite + 'static>(
         _state: &mut Arc<S>,
         _begin_block: &abci::request::BeginBlock,
     ) {
     }
 
-    // #[instrument(name = "shielded_pool", skip(state, _end_block))]
+    #[instrument(name = "shielded_pool", skip(_state, _end_block))]
     async fn end_block<S: StateWrite + 'static>(
         _state: &mut Arc<S>,
         _end_block: &abci::request::EndBlock,
