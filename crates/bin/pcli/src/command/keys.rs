@@ -83,7 +83,7 @@ impl KeysCmd {
                 println!("YOUR PRIVATE SEED PHRASE: {seed_phrase}\nDO NOT SHARE WITH ANYONE!");
 
                 if *bip44_derivation {
-                    let path = Bip44Path::new(0, 0, 0);
+                    let path = Bip44Path::new(0, Some(0), Some(0));
                     let wallet = KeyStore::from_seed_phrase_bip44(seed_phrase, &path);
                     wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                     self.archive_wallet(&wallet)?;
@@ -111,7 +111,7 @@ impl KeysCmd {
                 }
 
                 if *bip44_derivation {
-                    let path = Bip44Path::new(0, 0, 0);
+                    let path = Bip44Path::new(0, Some(0), Some(0));
                     let wallet = KeyStore::from_seed_phrase_bip44(
                         SeedPhrase::from_str(&seed_phrase)?,
                         &path,

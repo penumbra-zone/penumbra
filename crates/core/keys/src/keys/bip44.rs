@@ -12,13 +12,13 @@ pub struct Bip44Path {
     purpose: u32,
     coin_type: u32,
     account: u32,
-    change: u32,
-    address_index: u32,
+    change: Option<u32>,
+    address_index: Option<u32>,
 }
 
 impl Bip44Path {
     /// Create a new BIP44 path for Penumbra.
-    pub fn new(account: u32, change: u32, address_index: u32) -> Self {
+    pub fn new(account: u32, change: Option<u32>, address_index: Option<u32>) -> Self {
         Self {
             purpose: 44,
             coin_type: PENUMBRA_COIN_TYPE,
@@ -33,8 +33,8 @@ impl Bip44Path {
         purpose: u32,
         coin_type: u32,
         account: u32,
-        change: u32,
-        address_index: u32,
+        change: Option<u32>,
+        address_index: Option<u32>,
     ) -> Self {
         Self {
             purpose,
@@ -60,24 +60,25 @@ impl Bip44Path {
         self.account
     }
 
-    /// Change is set to 1 to denote change addresses.
-    pub fn change(&self) -> u32 {
+    /// Change is set to 1 to denote change addresses. None if unset.
+    pub fn change(&self) -> Option<u32> {
         self.change
     }
 
-    /// Addresses are numbered starting from index 0.
-    pub fn address_index(&self) -> u32 {
+    /// Addresses are numbered starting from index 0. None if unset.
+    pub fn address_index(&self) -> Option<u32> {
         self.address_index
     }
 
     pub fn path(&self) -> String {
-        format!(
-            "m/44'/{}'/{}'/{}/{}",
-            self.coin_type(),
-            self.account(),
-            self.change(),
-            self.address_index()
-        )
+        let mut path = format!("m/44'/{}'/{}'", self.coin_type(), self.account());
+        if self.change().is_some() {
+            path = format!("{}/{}'", path, self.change().unwrap());
+        }
+        if self.address_index().is_some() {
+            path = format!("{}/{}", path, self.address_index().unwrap());
+        }
+        path
     }
 }
 
@@ -87,7 +88,7 @@ mod tests {
 
     #[test]
     fn test_bip44_path() {
-        let path = Bip44Path::new(0, 0, 0);
+        let path = Bip44Path::new(0, Some(0), Some(0));
         assert_eq!(path.path(), "m/44'/6532'/0'/0/0");
     }
 }
