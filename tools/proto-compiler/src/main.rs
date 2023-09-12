@@ -72,6 +72,7 @@ fn main() -> anyhow::Result<()> {
             "../../proto/penumbra/penumbra/core/dex/v1alpha1/dex.proto",
             "../../proto/penumbra/penumbra/core/transparent_proofs/v1alpha1/transparent_proofs.proto",
             "../../proto/penumbra/penumbra/core/governance/v1alpha1/governance.proto",
+            "../../proto/penumbra/penumbra/tools/summoning/v1alpha1/summoning.proto",
             "../../proto/rust-vendored/tendermint/types/validator.proto",
             "../../proto/rust-vendored/tendermint/p2p/types.proto",
         ],
@@ -87,6 +88,14 @@ fn main() -> anyhow::Result<()> {
         .client_mod_attribute("penumbra.view.v1alpha1", "#[cfg(feature = \"rpc\")]")
         .server_mod_attribute("penumbra.custody.v1alpha1", "#[cfg(feature = \"rpc\")]")
         .client_mod_attribute("penumbra.custody.v1alpha1", "#[cfg(feature = \"rpc\")]")
+        .server_mod_attribute(
+            "penumbra.tools.summoning.v1alpha1",
+            "#[cfg(feature = \"rpc\")]",
+        )
+        .client_mod_attribute(
+            "penumbra.tools.summoning.v1alpha1",
+            "#[cfg(feature = \"rpc\")]",
+        )
         .server_mod_attribute(
             "penumbra.narsil.ledger.v1alpha1",
             "#[cfg(feature = \"rpc\")]",
@@ -110,6 +119,7 @@ fn main() -> anyhow::Result<()> {
                 "../../proto/penumbra/penumbra/narsil/ledger/v1alpha1/ledger.proto",
                 "../../proto/penumbra/penumbra/view/v1alpha1/view.proto",
                 "../../proto/penumbra/penumbra/custody/v1alpha1/custody.proto",
+                "../../proto/penumbra/penumbra/tools/summoning/v1alpha1/summoning.proto",
                 "../../proto/rust-vendored/tendermint/types/validator.proto",
                 "../../proto/rust-vendored/tendermint/p2p/types.proto",
             ],

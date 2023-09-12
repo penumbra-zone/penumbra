@@ -256,6 +256,15 @@ pub mod penumbra {
             include!("gen/penumbra.custody.v1alpha1.serde.rs");
         }
     }
+
+    pub mod tools {
+        pub mod summoning {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.tools.summoning.v1alpha1.rs");
+                include!("gen/penumbra.tools.summoning.v1alpha1.serde.rs");
+            }
+        }
+    }
 }
 
 pub mod tendermint {
