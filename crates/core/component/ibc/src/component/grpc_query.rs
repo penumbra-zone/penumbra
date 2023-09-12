@@ -101,8 +101,13 @@ impl ConnectionQuery for IbcQuery {
 
     async fn connection_params(
         &self,
-        _request: tonic::Request<ibc_proto::ibc::core::connection::v1::QueryConnectionParamsRequest>,
-    ) -> std::result::Result<tonic::Response<ibc_proto::ibc::core::connection::v1::QueryConnectionParamsResponse>, tonic::Status> {
+        _request: tonic::Request<
+            ibc_proto::ibc::core::connection::v1::QueryConnectionParamsRequest,
+        >,
+    ) -> std::result::Result<
+        tonic::Response<ibc_proto::ibc::core::connection::v1::QueryConnectionParamsResponse>,
+        tonic::Status,
+    > {
         Err(tonic::Status::unimplemented("not implemented"))
     }
 
