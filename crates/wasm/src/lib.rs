@@ -3,6 +3,7 @@ extern crate core;
 
 mod note_record;
 mod planner;
+mod storage;
 mod swap_record;
 mod tx;
 mod utils;
