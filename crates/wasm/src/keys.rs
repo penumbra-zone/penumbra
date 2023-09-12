@@ -1,18 +1,11 @@
-use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType};
-
-use penumbra_keys::{Address, FullViewingKey};
-use std::convert::TryFrom;
-use std::str::FromStr;
-
-use anyhow::Context;
-use penumbra_keys::keys::{SeedPhrase, SpendKey};
-use rand_core::OsRng;
-use wasm_bindgen::prelude::*;
-
 use crate::error::WasmResult;
-use crate::utils;
-use penumbra_transaction::Transaction;
+use penumbra_keys::keys::{SeedPhrase, SpendKey};
+use penumbra_keys::{Address, FullViewingKey};
+use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType};
+use rand_core::OsRng;
 use serde_wasm_bindgen::Error;
+use std::str::FromStr;
+use wasm_bindgen::prelude::*;
 
 /// generate a spend key from a seed phrase
 /// Arguments:

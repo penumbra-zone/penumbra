@@ -1,4 +1,3 @@
-use crate::note_record::SpendableNoteRecord;
 use crate::planner::Planner;
 use crate::storage::IndexedDBStorage;
 use crate::swap_record::SwapRecord;
@@ -12,7 +11,6 @@ use penumbra_dex::swap_claim::SwapClaimPlan;
 use penumbra_proto::core::chain::v1alpha1::{ChainParameters, FmdParameters};
 use penumbra_proto::core::crypto::v1alpha1::{Address, DenomMetadata, Fee, StateCommitment, Value};
 use penumbra_proto::core::transaction::v1alpha1::{MemoPlaintext, TransactionPlan};
-use penumbra_proto::view::v1alpha1::NotesRequest;
 use penumbra_proto::DomainType;
 use rand_core::OsRng;
 use wasm_bindgen::prelude::wasm_bindgen;
