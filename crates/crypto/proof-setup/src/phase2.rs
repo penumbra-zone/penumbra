@@ -101,7 +101,11 @@ pub struct RawContribution {
 impl RawContribution {
     /// Check the internal integrity of this contribution, potentially producing
     /// a valid one.
-    fn validate<R: CryptoRngCore>(self, rng: &mut R, root: &CRSElements) -> Option<Contribution> {
+    pub fn validate<R: CryptoRngCore>(
+        self,
+        rng: &mut R,
+        root: &CRSElements,
+    ) -> Option<Contribution> {
         self.new_elements
             .validate(rng, root)
             .map(|new_elements| Contribution {
