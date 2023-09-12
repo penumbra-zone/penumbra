@@ -199,7 +199,7 @@ mod tests {
                 .expect("valid");
         let expected_spendkey = SpendKeyBytes(expected_bytes.try_into().expect("fits in 32 bytes"));
 
-        let derivation_path = Bip44Path::new(0, 0, 0);
+        let derivation_path = Bip44Path::new(0, None, None);
         dbg!(derivation_path.path());
         let software_spendkey = SpendKey::from_seed_phrase_bip44(seed.clone(), &derivation_path);
 
