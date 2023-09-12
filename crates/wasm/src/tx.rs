@@ -76,6 +76,14 @@ pub fn encode_tx(transaction: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
+pub fn decode_transaction(tx_bytes: &str) -> JsValue {
+    let tx_vec: Vec<u8> =
+        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, tx_bytes).unwrap();
+    let transaction: Transaction = Transaction::try_from(tx_vec).unwrap();
+    return serde_wasm_bindgen::to_value(&transaction).unwrap();
+}
+
+#[wasm_bindgen]
 pub fn build_tx(
     spend_key_str: &str,
     full_viewing_key: &str,

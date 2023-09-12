@@ -34,7 +34,7 @@ impl IndexedDBStorage {
         Ok(IndexedDBStorage { db })
     }
 
-    pub async fn get_notes(&mut self, request: NotesRequest) -> Result<Vec<SpendableNoteRecord>> {
+    pub async fn get_notes(&self, request: NotesRequest) -> Result<Vec<SpendableNoteRecord>> {
         let idb_tx = self
             .db
             .transaction_on_one(Store::SpendableNotesStore.as_str())

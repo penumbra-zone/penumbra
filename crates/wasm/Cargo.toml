@@ -41,6 +41,10 @@ wasm-bindgen-futures     = "0.4.37"
 web-sys                  = { version = "0.3.64", features = ["console"] }
 ark-ff = { version = "0.4", features = ["std"] }
 decaf377 = { version = "0.5", features = ["r1cs"] }
+thiserror = "1.0"
+wasm-bindgen-test = "0.3.0"
+
+
 
 
 [dev-dependencies]

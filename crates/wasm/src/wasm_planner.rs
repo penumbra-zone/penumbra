@@ -1,7 +1,9 @@
 use crate::note_record::SpendableNoteRecord;
 use crate::planner::Planner;
+use crate::storage::IndexedDBStorage;
 use crate::swap_record::SwapRecord;
 use crate::utils;
+use anyhow::Result;
 use ark_ff::UniformRand;
 use decaf377::Fq;
 use indexed_db_futures::prelude::OpenDbRequest;
@@ -15,6 +17,8 @@ use penumbra_proto::DomainType;
 use rand_core::OsRng;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
+use wasm_bindgen::JsError;
+
 
 #[wasm_bindgen]
 pub struct WasmPlanner {
@@ -109,10 +113,11 @@ impl WasmPlanner {
         Ok(())
     }
 
-    pub async fn plan(&mut self, self_address: JsValue) -> Result<JsValue, JsValue> {
+    pub async fn plan(&mut self, self_address: JsValue) -> anyhow::Result<JsValue, JsError> {
         utils::set_panic_hook();
 
-        let self_address_proto: Address = serde_wasm_bindgen::from_value(self_address)?;
+        let self_address_proto: Address = serde_wasm_bindgen::from_value(self_address)
+            .map_err(|err| JsError::new(&err.to_string()))?;
 
         let chain_params_proto: ChainParameters = get_chain_parameters().await.unwrap();
         let fmd_params_proto: FmdParameters = get_fmd_parameters().await.unwrap();
@@ -121,8 +126,11 @@ impl WasmPlanner {
 
         let (spendable_requests, _) = self.planner.notes_requests();
 
+        let idb_storage = IndexedDBStorage::new()
+            .await
+            .map_err(|err| JsError::new(&err.to_string()))?;
         for request in spendable_requests {
-            let notes = get_notes(request);
+            let notes = idb_storage.get_notes(request);
             spendable_notes.extend(notes.await.unwrap());
         }
 
@@ -191,35 +199,4 @@ pub async fn get_swap_by_commitment(swap_commitment: StateCommitment) -> Option<
         .ok()?;
 
     serde_wasm_bindgen::from_value(value?).ok()?
-}
-
-pub async fn get_notes(requset: NotesRequest) -> Option<Vec<SpendableNoteRecord>> {
-    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok()?;
-
-    let db: IdbDatabase = db_req.into_future().await.ok()?;
-
-    let tx = db.transaction_on_one("spendable_notes").ok()?;
-    let store = tx.object_store("spendable_notes").ok()?;
-
-    let asset_id = requset.asset_id.unwrap();
-
-    let values = store.get_all().ok()?.await.ok()?;
-
-    let notes: Vec<SpendableNoteRecord> = values
-        .into_iter()
-        .map(|js_value| serde_wasm_bindgen::from_value(js_value).ok())
-        .filter_map(|note_option| {
-            note_option.and_then(|note: SpendableNoteRecord| {
-                if note.note.asset_id() == asset_id.clone().try_into().unwrap()
-                    && note.height_spent == None
-                {
-                    Some(note)
-                } else {
-                    None
-                }
-            })
-        })
-        .collect();
-
-    Some(notes)
 }

@@ -572,3 +572,11 @@ pub async fn read_advice(commitment: note::StateCommitment) -> Option<Note> {
 
     serde_wasm_bindgen::from_value(value?).ok()?
 }
+
+#[wasm_bindgen]
+pub fn decode_nct_root(tx_bytes: &str) -> JsValue {
+    utils::set_panic_hook();
+    let tx_vec: Vec<u8> = hex::decode(tx_bytes).unwrap();
+    let root = penumbra_tct::Root::decode(tx_vec.as_slice()).unwrap();
+    return serde_wasm_bindgen::to_value(&root).unwrap();
+}
