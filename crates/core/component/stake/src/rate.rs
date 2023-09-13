@@ -94,7 +94,7 @@ impl RateData {
         // upconvert to u128 intermediates and panic if the result is too large (unlikely)
         ((unbonded_amount as u128 * 1_0000_0000) / self.validator_exchange_rate as u128)
             .try_into()
-            .unwrap()
+            .expect("delegation amount should fit in u128")
     }
 
     pub fn slash(&self, penalty: Penalty) -> Self {
@@ -107,7 +107,7 @@ impl RateData {
                 u64::try_from(
                     (self.validator_exchange_rate as u128 * penalty.0 as u128) / 1_0000_0000,
                 )
-                .unwrap(),
+                .expect("penalty should fit in u64"),
             );
 
         slashed
@@ -140,7 +140,7 @@ impl RateData {
         ((total_delegation_tokens * self.validator_exchange_rate as u128)
             / base_rate_data.base_exchange_rate as u128)
             .try_into()
-            .unwrap()
+            .expect("voting power should fit in u64")
     }
 
     /// Uses this `RateData` to build a `Delegate` transaction action that

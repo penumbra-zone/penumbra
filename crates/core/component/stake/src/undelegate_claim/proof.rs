@@ -138,9 +138,20 @@ impl UndelegateClaimProof {
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
-        public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
-        public_inputs.extend(unbonding_id.0.to_field_elements().unwrap());
-        public_inputs.extend(penalty.to_field_elements().unwrap());
+        public_inputs.extend(
+            balance_commitment
+                .0
+                .to_field_elements()
+                .ok_or(anyhow::anyhow!(
+                    "could not convert balance commitment to field elements"
+                ))?,
+        );
+        public_inputs.extend(unbonding_id.0.to_field_elements().ok_or(anyhow::anyhow!(
+            "could not convert unbonding id to field elements"
+        ))?);
+        public_inputs.extend(penalty.to_field_elements().ok_or(anyhow::anyhow!(
+            "could not convert penalty to field elements"
+        ))?);
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
