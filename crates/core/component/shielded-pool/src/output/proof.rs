@@ -174,17 +174,12 @@ impl OutputProof {
             note_commitment
                 .0
                 .to_field_elements()
-                .ok_or(anyhow::anyhow!(
-                    "note commitment is not a valid field element"
-                ))?,
+                .ok_or_else(|| anyhow::anyhow!("note commitment is not a valid field element"))?,
         );
         public_inputs.extend(
-            balance_commitment
-                .0
-                .to_field_elements()
-                .ok_or(anyhow::anyhow!(
-                    "balance commitment is not a valid field element"
-                ))?,
+            balance_commitment.0.to_field_elements().ok_or_else(|| {
+                anyhow::anyhow!("balance commitment is not a valid field element")
+            })?,
         );
 
         tracing::trace!(?public_inputs);

@@ -44,7 +44,7 @@ pub struct ExtraTransitionInformation {
 pub fn circuit_degree(circuit: &ConstraintMatrices<F>) -> Result<usize> {
     let circuit_size = circuit.num_constraints + circuit.num_instance_variables;
     Radix2EvaluationDomain::<group::F>::compute_size_of_domain(circuit_size)
-        .ok_or(anyhow!("Circuit of size {} is too large", circuit_size))
+        .ok_or_else(|| anyhow!("Circuit of size {} is too large", circuit_size))
 }
 
 /// Transition between phase1 and phase2, using the circuit.
@@ -131,10 +131,12 @@ pub fn transition(
     // Ok, that was the explanation, now onto the code.
     let circuit_size = circuit.num_constraints + circuit.num_instance_variables;
     let domain: Radix2EvaluationDomain<F> =
-        Radix2EvaluationDomain::new(circuit_size).ok_or(anyhow!(
-            "Failed to create evaluation domain size (at least) {}",
-            circuit_size
-        ))?;
+        Radix2EvaluationDomain::new(circuit_size).ok_or_else(|| {
+            anyhow!(
+                "Failed to create evaluation domain size (at least) {}",
+                circuit_size
+            )
+        })?;
     let domain_size = domain.size();
     // 0. Check that the phase1 degree is large enough.
     if phase1.degree < domain_size {
@@ -329,7 +331,7 @@ mod test {
 
         let matrices = cs
             .to_matrices()
-            .ok_or(anyhow!("Failed to generate constraint matrices."))?;
+            .ok_or_else(|| anyhow!("Failed to generate constraint matrices."))?;
 
         let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1776);
 
