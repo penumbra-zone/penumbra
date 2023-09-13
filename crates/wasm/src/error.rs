@@ -1,4 +1,6 @@
+use base64::DecodeError;
 use serde_wasm_bindgen::Error;
+use std::convert::Infallible;
 use thiserror::Error;
 use web_sys::DomException;
 
@@ -29,6 +31,15 @@ pub enum WasmError {
 
     #[error("{0}")]
     Dom(#[from] DomError),
+
+    #[error("{0}")]
+    Wasm(#[from] serde_wasm_bindgen::Error),
+
+    #[error("{0}")]
+    Infallible(#[from] Infallible),
+
+    #[error("{0}")]
+    DecodeError(#[from] DecodeError),
 }
 
 impl From<WasmError> for serde_wasm_bindgen::Error {

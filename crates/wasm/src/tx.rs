@@ -1,86 +1,39 @@
+use anyhow::Context;
 use std::convert::TryInto;
 use std::str::FromStr;
 
-use anyhow::Context;
-use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_keys::{Address, FullViewingKey};
-
-use penumbra_keys::keys::{AddressIndex, SpendKey};
+use penumbra_keys::keys::SpendKey;
+use penumbra_keys::FullViewingKey;
 use penumbra_tct::{Proof, StateCommitment, Tree};
 use penumbra_transaction::plan::TransactionPlan;
 use penumbra_transaction::{AuthorizationData, Transaction, WitnessData};
 use rand_core::OsRng;
-use serde::{Deserialize, Serialize};
+
+use crate::error::WasmResult;
+use crate::utils;
+use crate::view_server::{load_tree, StoredTree};
+use serde_wasm_bindgen::Error;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
-use crate::note_record::SpendableNoteRecord;
-use crate::planner::Planner;
-use crate::utils;
-use crate::view_server::{load_tree, StoredTree};
-use web_sys::console as web_console;
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct SendTx {
-    notes: Vec<SpendableNoteRecord>,
-    chain_parameters: penumbra_proto::core::chain::v1alpha1::ChainParameters,
-    fmd_parameters: penumbra_proto::core::chain::v1alpha1::FmdParameters,
+/// encode transaction to bytes
+/// Arguments:
+///     transaction: `penumbra_transaction::Transaction`
+/// Returns: `<Vec<u8>`
+#[wasm_bindgen(js_name = encodeTx)]
+pub fn encode_tx(transaction: JsValue) -> Result<JsValue, Error> {
+    let result = encode_transaction(transaction)?;
+    serde_wasm_bindgen::to_value(&result)
 }
 
-#[wasm_bindgen]
-pub fn send_plan(
-    full_viewing_key: &str,
-    value_js: JsValue,
-    dest_address: &str,
-    view_service_data: JsValue,
-) -> JsValue {
-    utils::set_panic_hook();
-    web_console::log_1(&value_js);
-
-    let value: penumbra_proto::core::crypto::v1alpha1::Value =
-        serde_wasm_bindgen::from_value(value_js).unwrap();
-
-    let address = Address::from_str(dest_address).unwrap();
-    let mut planner = Planner::new(OsRng);
-    planner.fee(Default::default());
-    planner.output(value.try_into().unwrap(), address);
-
-    let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())
-        .context("The provided string is not a valid FullViewingKey")
-        .unwrap();
-
-    let send_tx: SendTx = serde_wasm_bindgen::from_value(view_service_data).unwrap();
-
-    let chain_params: ChainParameters = send_tx.chain_parameters.try_into().unwrap();
-    let fmd_params: FmdParameters = send_tx.fmd_parameters.try_into().unwrap();
-
-    let plan = planner
-        .plan_with_spendable_and_votable_notes(
-            &chain_params,
-            &fmd_params,
-            send_tx.notes.try_into().unwrap(),
-            Default::default(),
-            fvk.incoming().payment_address(AddressIndex::new(0)).0,
-        )
-        .unwrap();
-
-    return serde_wasm_bindgen::to_value(&plan).unwrap();
-}
-
-#[wasm_bindgen]
-pub fn encode_tx(transaction: JsValue) -> JsValue {
-    utils::set_panic_hook();
-    let tx: Transaction = serde_wasm_bindgen::from_value(transaction).unwrap();
-    let tx_encoding: Vec<u8> = tx.try_into().unwrap();
-    return serde_wasm_bindgen::to_value(&tx_encoding).unwrap();
-}
-
-#[wasm_bindgen]
-pub fn decode_transaction(tx_bytes: &str) -> JsValue {
-    let tx_vec: Vec<u8> =
-        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, tx_bytes).unwrap();
-    let transaction: Transaction = Transaction::try_from(tx_vec).unwrap();
-    return serde_wasm_bindgen::to_value(&transaction).unwrap();
+/// decode base64 bytes to transaction
+/// Arguments:
+///     tx_bytes: `base64 String`
+/// Returns: `penumbra_transaction::Transaction`
+#[wasm_bindgen(js_name = decodeTx)]
+pub fn decode_tx(tx_bytes: &str) -> Result<JsValue, Error> {
+    let result = decode_transaction(tx_bytes)?;
+    serde_wasm_bindgen::to_value(&result)
 }
 
 #[wasm_bindgen]
@@ -171,4 +124,17 @@ fn witness(nct: Tree, plan: TransactionPlan) -> WitnessData {
         witness_data.add_proof(nc, Proof::dummy(&mut OsRng, nc));
     }
     return witness_data;
+}
+
+pub fn encode_transaction(transaction: JsValue) -> WasmResult<Vec<u8>> {
+    let tx: Transaction = serde_wasm_bindgen::from_value(transaction)?;
+    let tx_encoding: Vec<u8> = tx.try_into()?;
+    Ok(tx_encoding)
+}
+
+pub fn decode_transaction(tx_bytes: &str) -> WasmResult<Transaction> {
+    let tx_vec: Vec<u8> =
+        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, tx_bytes)?;
+    let transaction: Transaction = Transaction::try_from(tx_vec)?;
+    Ok(transaction)
 }

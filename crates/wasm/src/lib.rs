@@ -1,3 +1,4 @@
+#![feature(try_trait_v2)]
 #![allow(dead_code)]
 extern crate core;
 
@@ -12,5 +13,4 @@ mod utils;
 mod view_server;
 mod wasm_planner;
 
-pub use tx::send_plan;
 pub use view_server::ViewServer;
