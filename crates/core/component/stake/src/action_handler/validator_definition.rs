@@ -93,16 +93,21 @@ impl ActionHandler for validator::Definition {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let v = self;
 
-        let cur_epoch = state.get_current_epoch().await.unwrap();
+        let cur_epoch = state
+            .get_current_epoch()
+            .await
+            .context("should be able to get current epoch during validator definition execution")?;
 
         if state
             .validator(&v.validator.identity_key)
             .await
-            .unwrap()
+            .context("should be able to fetch validator during validator definition execution")?
             .is_some()
         {
             // This is an existing validator definition.
-            state.update_validator(v.validator.clone()).await.unwrap();
+            state.update_validator(v.validator.clone()).await.context(
+                "should be able to update validator during validator definition execution",
+            )?;
         } else {
             // This is a new validator definition.
             // Set the default rates and state.
@@ -127,7 +132,7 @@ impl ActionHandler for validator::Definition {
             state
                 .add_validator(v.validator.clone(), cur_rate_data, next_rate_data)
                 .await
-                .unwrap();
+                .context("should be able to add validator during validator definition execution")?;
         }
 
         Ok(())

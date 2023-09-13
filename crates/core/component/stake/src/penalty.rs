@@ -37,9 +37,13 @@ impl Penalty {
 
     /// Apply this `Penalty` to an `Amount` of unbonding tokens.
     pub fn apply_to(&self, amount: Amount) -> Amount {
-        let penalized_amount =
-            (u128::try_from(amount).unwrap()) * (1_0000_0000 - self.0 as u128) / 1_0000_0000;
-        Amount::try_from(u64::try_from(penalized_amount).unwrap()).unwrap()
+        let penalized_amount = (u128::try_from(amount).expect("amount should be a valid u128"))
+            * (1_0000_0000 - self.0 as u128)
+            / 1_0000_0000;
+        Amount::try_from(
+            u64::try_from(penalized_amount).expect("penalized amount should fit in u64"),
+        )
+        .expect("all u64 values should be valid Amounts")
     }
 
     /// Helper method to compute the effect of an UndelegateClaim on the

@@ -1,4 +1,5 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![deny(clippy::unwrap_used)]
 #![allow(clippy::clone_on_copy)]
 
 mod changes;
