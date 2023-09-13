@@ -1,4 +1,3 @@
-#![feature(try_trait_v2)]
 #![allow(dead_code)]
 extern crate core;
 
