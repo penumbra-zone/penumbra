@@ -5,7 +5,7 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::ensure;
+use anyhow::{ensure, Context};
 use ark_ff::fields::PrimeField;
 use decaf377::Fq;
 use penumbra_num::Amount;
@@ -460,7 +460,9 @@ impl Unit {
             }
 
             let v2_power_of_ten = 10u128.pow((self.exponent() - right.len() as u8).into());
-            v2 = v2.checked_mul(v2_power_of_ten).unwrap();
+            v2 = v2
+                .checked_mul(v2_power_of_ten)
+                .context("multiplication overflowed when applying right hand side exponent")?;
 
             let v = v1
                 .checked_mul(v1_power_of_ten)
