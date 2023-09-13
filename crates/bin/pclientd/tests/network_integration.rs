@@ -27,6 +27,20 @@ use std::process::Command as StdCommand;
 use tempfile::tempdir;
 use tokio::process::Command as TokioCommand;
 
+fn generate_config() -> anyhow::Result<PclientdConfig> {
+    Ok(PclientdConfig {
+        full_viewing_key: test_keys::FULL_VIEWING_KEY.clone(),
+        grpc_url: std::env::var("PENUMBRA_NODE_PD_URL")
+            .unwrap_or_else(|_| "http://127.0.0.1:8080".to_owned())
+            .parse()?,
+        bind_addr: "127.0.0.1:8081".parse()?,
+        kms_config: Some(soft_kms::Config {
+            spend_key: test_keys::SPEND_KEY.clone(),
+            auth_policy: Vec::new(),
+        }),
+    })
+}
+
 #[ignore]
 #[tokio::test]
 async fn transaction_send_flow() -> anyhow::Result<()> {
@@ -35,13 +49,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     let data_dir = tempdir().unwrap();
 
     // 1. Construct a config for the `pclientd` instance:
-    let config = PclientdConfig {
-        fvk: test_keys::FULL_VIEWING_KEY.clone(),
-        kms_config: Some(soft_kms::Config {
-            spend_key: test_keys::SPEND_KEY.clone(),
-            auth_policy: Vec::new(),
-        }),
-    };
+    let config = generate_config()?;
 
     let mut config_file_path = data_dir.path().to_owned();
     config_file_path.push("config.toml");
@@ -178,13 +186,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
     let data_dir = tempdir().unwrap();
 
     // 1. Construct a config for the `pclientd` instance:
-    let config = PclientdConfig {
-        fvk: test_keys::FULL_VIEWING_KEY.clone(),
-        kms_config: Some(soft_kms::Config {
-            spend_key: test_keys::SPEND_KEY.clone(),
-            auth_policy: Vec::new(),
-        }),
-    };
+    let config = generate_config()?;
 
     let mut config_file_path = data_dir.path().to_owned();
     config_file_path.push("config.toml");

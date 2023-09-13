@@ -5,6 +5,7 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use camino::Utf8PathBuf;
 use clap::Parser;
+use directories::ProjectDirs;
 use penumbra_custody::policy::{AuthPolicy, PreAuthorizationPolicy};
 use penumbra_custody::soft_kms::{self, SoftKms};
 use penumbra_keys::keys::{SeedPhrase, SpendKey};
@@ -34,7 +35,11 @@ pub use proxy::{ObliviousQueryProxy, SpecificQueryProxy, TendermintProxyProxy};
 pub struct PclientdConfig {
     /// FVK for both view and custody modes
     #[serde_as(as = "DisplayFromStr")]
-    pub fvk: FullViewingKey,
+    pub full_viewing_key: FullViewingKey,
+    /// The URL of the gRPC endpoint used to talk to pd.
+    pub grpc_url: Url,
+    /// The address to bind to serve gRPC.
+    pub bind_addr: SocketAddr,
     /// Optional KMS config for custody mode
     pub kms_config: Option<soft_kms::Config>,
 }
@@ -52,6 +57,14 @@ impl PclientdConfig {
     }
 }
 
+fn default_home() -> Utf8PathBuf {
+    let path = ProjectDirs::from("zone", "penumbra", "pclientd")
+        .expect("Failed to get platform data dir")
+        .data_dir()
+        .to_path_buf();
+    Utf8PathBuf::from_path_buf(path).expect("Platform default data dir was not UTF-8")
+}
+
 #[derive(Debug, Parser)]
 #[clap(
     name = "pclientd",
@@ -63,34 +76,36 @@ pub struct Opt {
     #[clap(subcommand)]
     pub cmd: Command,
     /// The path used to store pclientd state and config files.
-    #[clap(long, env = "PENUMBRA_PCLIENTD_HOME")]
+    #[clap(long, default_value_t = default_home(), env = "PENUMBRA_PCLIENTD_HOME")]
     pub home: Utf8PathBuf,
-    /// The URL of the gRPC endpoint for pd.
-    #[clap(
-        short,
-        long,
-        default_value = "https://grpc.testnet.penumbra.zone",
-        env = "PENUMBRA_NODE_PD_URL"
-    )]
-    pub node: Url,
 }
 
 #[derive(Debug, clap::Subcommand)]
 pub enum Command {
-    /// Initialize pclientd with the provided full viewing key (and optional seed phrase in custody mode)
+    /// Generate configs for `pclientd` in view or custody mode.
     Init {
-        /// The full viewing key to initialize the view service with.
-        full_viewing_key: String,
-        // If true, initialize in custody mode with the seed phrase provided to stdin
-        #[clap(short, long)]
-        custody: bool,
-    },
-    /// Start the view service.
-    Start {
-        /// Bind the view service to this socket.
-        #[clap(long, env = "PENUMBRA_PCLIENTD_BIND", default_value = "127.0.0.1:8081")]
+        /// If provided, initialize in view mode with the given full viewing key.
+        #[clap(long, display_order = 100)]
+        view: Option<String>,
+        /// If provided, initialize in custody mode with the given seed phrase.
+        ///
+        /// If the value '-' is provided, the seed phrase will be read from stdin.
+        #[clap(long, display_order = 200)]
+        custody: Option<String>,
+        /// Sets the URL of the gRPC endpoint used to talk to pd.
+        #[clap(
+            long,
+            display_order = 900,
+            default_value = "https://grpc.testnet.penumbra.zone",
+            parse(try_from_str = Url::parse)
+        )]
+        grpc_url: Url,
+        /// Sets the address to bind to to serve gRPC.
+        #[clap(long, display_order = 900, default_value = "127.0.0.1:8081")]
         bind_addr: SocketAddr,
     },
+    /// Start running `pclientd`.
+    Start {},
 }
 
 impl Opt {
@@ -106,9 +121,28 @@ impl Opt {
         path
     }
 
-    async fn init_sqlite(&self, fvk: &FullViewingKey) -> Result<Storage> {
+    fn check_home_nonempty(&self) -> Result<()> {
+        if self.home.exists() {
+            if !self.home.is_dir() {
+                return Err(anyhow::anyhow!(
+                    "The home directory {:?} is not a directory.",
+                    self.home
+                ));
+            }
+            let mut entries = fs::read_dir(&self.home)?.peekable();
+            if entries.peek().is_some() {
+                return Err(anyhow::anyhow!(
+                    "The home directory {:?} is not empty, refusing to overwrite it",
+                    self.home
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    async fn init_sqlite(&self, fvk: &FullViewingKey, grpc_url: &Url) -> Result<Storage> {
         // Initialize client and storage
-        let mut client = ObliviousQueryServiceClient::connect(self.node.to_string()).await?;
+        let mut client = ObliviousQueryServiceClient::connect(grpc_url.to_string()).await?;
 
         let params = client
             .chain_parameters(tonic::Request::new(ChainParametersRequest {
@@ -123,11 +157,11 @@ impl Opt {
         Storage::initialize(Some(self.sqlite_path()), fvk.clone(), params).await
     }
 
-    async fn load_or_init_sqlite(&self, fvk: &FullViewingKey) -> Result<Storage> {
+    async fn load_or_init_sqlite(&self, fvk: &FullViewingKey, grpc_url: &Url) -> Result<Storage> {
         if self.sqlite_path().exists() {
             Ok(Storage::load(self.sqlite_path()).await?)
         } else {
-            self.init_sqlite(fvk).await
+            self.init_sqlite(fvk, grpc_url).await
         }
     }
 
@@ -135,74 +169,96 @@ impl Opt {
         let opt = self;
         match &opt.cmd {
             Command::Init {
-                full_viewing_key,
+                view,
                 custody,
+                grpc_url,
+                bind_addr,
             } => {
-                let fvk = full_viewing_key.parse()?;
-                opt.init_sqlite(&fvk).await?;
-
-                println!(
-                    "Initializing storage and configuration at: {:?}",
-                    fs::canonicalize(&opt.home)?
-                );
-
-                // Read seed phrase from std_in if custody = true
+                // Check that the home directory is empty.
+                opt.check_home_nonempty()?;
 
                 let seed_phrase = match custody {
-                    false => None,
-                    true => {
-                        println!("Enter your seed phrase to enable pclientd custody mode: ");
+                    None => None,
+                    Some(seed_phrase) => {
+                        // Read seed phrase from std_in if '-' is supplied
+                        if seed_phrase == "-" {
+                            println!("Enter your seed phrase to enable pclientd custody mode: ");
 
-                        let stdin = io::stdin();
-                        let line = stdin
-                            .lock()
-                            .lines()
-                            .next()
-                            .expect("There was no next line.")
-                            .expect("The line could not be read.");
+                            let stdin = io::stdin();
+                            let line = stdin
+                                .lock()
+                                .lines()
+                                .next()
+                                .expect("There was no next line.")
+                                .expect("The line could not be read.");
 
-                        Some(line)
+                            Some(line)
+                        } else {
+                            Some(seed_phrase.clone())
+                        }
                     }
                 };
 
-                // Create config file
-
-                let kms_config: Option<soft_kms::Config> = match seed_phrase {
-                    Some(seed_phrase) => {
+                let (spend_key, full_viewing_key) = match (seed_phrase, view) {
+                    (Some(seed_phrase), None) => {
                         let spend_key = SpendKey::from_seed_phrase(
                             SeedPhrase::from_str(seed_phrase.as_str())?,
                             0,
                         );
-
-                        let pak = ed25519_consensus::SigningKey::new(rand_core::OsRng);
-                        let pvk = pak.verification_key();
-
-                        let auth_policy = vec![
-                            AuthPolicy::OnlyIbcRelay,
-                            AuthPolicy::DestinationAllowList {
-                                allowed_destination_addresses: vec![
-                                    spend_key
-                                        .incoming_viewing_key()
-                                        .payment_address(Default::default())
-                                        .0,
-                                ],
-                            },
-                            AuthPolicy::PreAuthorization(PreAuthorizationPolicy::Ed25519 {
-                                required_signatures: 1,
-                                allowed_signers: vec![pvk],
-                            }),
-                        ];
-                        Some(soft_kms::Config {
-                            spend_key,
-                            auth_policy,
-                        })
+                        let full_viewing_key = spend_key.full_viewing_key().clone();
+                        (Some(spend_key), full_viewing_key)
                     }
-                    None => None,
+                    (None, Some(view)) => (None, view.parse()?),
+                    (None, None) => {
+                        return Err(anyhow::anyhow!(
+                            "Must provide either a seed phrase or a full viewing key."
+                        ))
+                    }
+                    (Some(_), Some(_)) => {
+                        return Err(anyhow::anyhow!(
+                            "Cannot provide both a seed phrase and a full viewing key."
+                        ))
+                    }
                 };
+
+                println!(
+                    "Initializing configuration at: {:?}",
+                    fs::canonicalize(&opt.home)?
+                );
+
+                // Create config file with example authorization policy.
+                let kms_config: Option<soft_kms::Config> = spend_key.map(|spend_key| {
+                    // It's important that we throw away the signing key here, so that
+                    // by default the config is "cannot spend funds" without manual editing.
+                    let pak = ed25519_consensus::SigningKey::new(rand_core::OsRng);
+                    let pvk = pak.verification_key();
+
+                    let auth_policy = vec![
+                        AuthPolicy::DestinationAllowList {
+                            allowed_destination_addresses: vec![
+                                spend_key
+                                    .incoming_viewing_key()
+                                    .payment_address(Default::default())
+                                    .0,
+                            ],
+                        },
+                        AuthPolicy::OnlyIbcRelay,
+                        AuthPolicy::PreAuthorization(PreAuthorizationPolicy::Ed25519 {
+                            required_signatures: 1,
+                            allowed_signers: vec![pvk],
+                        }),
+                    ];
+                    soft_kms::Config {
+                        spend_key,
+                        auth_policy,
+                    }
+                });
 
                 let client_config = PclientdConfig {
                     kms_config,
-                    fvk: FullViewingKey::from_str(full_viewing_key.as_ref())?,
+                    full_viewing_key,
+                    grpc_url: grpc_url.clone(),
+                    bind_addr: bind_addr.clone(),
                 };
 
                 let encoded = toml::to_string_pretty(&client_config).unwrap();
@@ -217,24 +273,29 @@ impl Opt {
 
                 Ok(())
             }
-            Command::Start { bind_addr } => {
-                tracing::info!(?opt.home, ?bind_addr, ?opt.node, "starting pclientd");
+            Command::Start {} => {
                 let config = PclientdConfig::load(opt.config_path()).context(
                     "Failed to load pclientd config file. Have you run `pclientd init` with a FVK?",
                 )?;
-                let storage = opt.load_or_init_sqlite(&config.fvk).await?;
 
-                let proxy_channel = tonic::transport::Channel::from_shared(opt.node.to_string())
-                    .expect("this is a valid address")
-                    .connect()
+                tracing::info!(?opt.home, ?config.bind_addr, ?config.grpc_url, "starting pclientd");
+                let storage = opt
+                    .load_or_init_sqlite(&config.full_viewing_key, &config.grpc_url)
                     .await?;
+
+                let proxy_channel =
+                    tonic::transport::Channel::from_shared(config.grpc_url.to_string())
+                        .expect("this is a valid address")
+                        .connect()
+                        .await?;
 
                 let oblivious_query_proxy = ObliviousQueryProxy(proxy_channel.clone());
                 let specific_query_proxy = SpecificQueryProxy(proxy_channel.clone());
                 let tendermint_proxy_proxy = TendermintProxyProxy(proxy_channel.clone());
 
-                let view_service =
-                    ViewProtocolServiceServer::new(ViewService::new(storage, opt.node).await?);
+                let view_service = ViewProtocolServiceServer::new(
+                    ViewService::new(storage, config.grpc_url).await?,
+                );
                 let custody_service = config.kms_config.as_ref().map(|kms_config| {
                     CustodyProtocolServiceServer::new(SoftKms::new(
                         kms_config.spend_key.clone().into(),
@@ -256,7 +317,7 @@ impl Opt {
                             .build()
                             .with_context(|| "could not configure grpc reflection service")?,
                     ))
-                    .serve(bind_addr.clone());
+                    .serve(config.bind_addr.clone());
 
                 tokio::spawn(server).await??;
 

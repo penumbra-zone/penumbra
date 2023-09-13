@@ -25,6 +25,7 @@ pub enum AuthPolicy {
     /// Only allow transactions whose outputs are controlled by one of the
     /// allowed destination addresses.
     DestinationAllowList {
+        #[serde(with = "address_as_string")]
         allowed_destination_addresses: Vec<Address>,
     },
     /// Intended for relayers, only allows `Spend`, `Output`, and `IbcAction`
@@ -55,6 +56,37 @@ pub enum PreAuthorizationPolicy {
         #[serde(with = "ed25519_vec_base64")]
         allowed_signers: Vec<ed25519_consensus::VerificationKey>,
     },
+}
+
+mod address_as_string {
+    use std::str::FromStr;
+
+    use penumbra_keys::Address;
+
+    pub fn serialize<S: serde::Serializer>(
+        addresses: &[Address],
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        use serde::Serialize;
+        let mut string_addresses = Vec::with_capacity(addresses.len());
+        for address in addresses {
+            string_addresses.push(address.to_string());
+        }
+        string_addresses.serialize(serializer)
+    }
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Address>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde::Deserialize;
+        let string_addresses: Vec<String> = Vec::deserialize(deserializer)?;
+        let mut addresses = Vec::with_capacity(string_addresses.len());
+        for string_address in string_addresses {
+            let address = Address::from_str(&string_address).map_err(serde::de::Error::custom)?;
+            addresses.push(address);
+        }
+        Ok(addresses)
+    }
 }
 
 /// A serde helper to serialize pre-authorization keys as base64-encoded data.
