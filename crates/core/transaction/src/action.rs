@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_asset::balance;
@@ -245,7 +246,10 @@ impl TryFrom<pb::Action> for Action {
         if proto.action.is_none() {
             anyhow::bail!("missing action content");
         }
-        match proto.action.unwrap() {
+        match proto
+            .action
+            .ok_or_else(|| anyhow!("missing action in Action protobuf"))?
+        {
             pb::action::Action::Output(inner) => Ok(Action::Output(inner.try_into()?)),
             pb::action::Action::Spend(inner) => Ok(Action::Spend(inner.try_into()?)),
             pb::action::Action::Delegate(inner) => Ok(Action::Delegate(inner.try_into()?)),

@@ -12,6 +12,7 @@
 //! [`TransactionPerspective`] (e.g., the sender or receiver) of the cleartext
 //! contents of a shielded transaction after it has been created.
 
+#![deny(clippy::unwrap_used)]
 #![allow(clippy::clone_on_copy)]
 
 mod auth_data;

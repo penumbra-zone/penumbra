@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use penumbra_asset::Balance;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_dex::{
@@ -296,7 +297,10 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             anyhow::bail!("missing action content");
         }
 
-        match proto.action.unwrap() {
+        match proto
+            .action
+            .ok_or_else(|| anyhow!("missing action in ActionPlan proto"))?
+        {
             pb_t::action_plan::Action::Output(inner) => Ok(ActionPlan::Output(inner.try_into()?)),
             pb_t::action_plan::Action::Spend(inner) => Ok(ActionPlan::Spend(inner.try_into()?)),
             pb_t::action_plan::Action::Delegate(inner) => {
