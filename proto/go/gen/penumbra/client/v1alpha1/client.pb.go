@@ -7,7 +7,7 @@
 package clientv1alpha1
 
 import (
-	types "github.com/cosmos/ibc-go/v7/modules/core/23-commitment/types"
+	types "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
 	v1alpha1 "github.com/penumbra-zone/penumbra/proto/go/gen/penumbra/core/chain/v1alpha1"
 	v1alpha12 "github.com/penumbra-zone/penumbra/proto/go/gen/penumbra/core/crypto/v1alpha1"
 	v1alpha13 "github.com/penumbra-zone/penumbra/proto/go/gen/penumbra/core/dex/v1alpha1"
