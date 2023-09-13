@@ -1,6 +1,6 @@
 use crate::{
     box_grpc_svc::{self, BoxGrpcService},
-    legacy, App, Command,
+    App, Command,
 };
 use anyhow::Result;
 use camino::Utf8PathBuf;
@@ -41,26 +41,23 @@ pub struct Opt {
     node: Url,
     #[clap(subcommand)]
     pub cmd: Command,
-    /// The directory to store the wallet and view data in.
-    #[clap(short, long, default_value_t = default_data_dir(), env = "PENUMBRA_DATA_PATH")]
-    pub data_path: Utf8PathBuf,
-    /// The path to the wallet file itself (overrides `--data-path` if it is set).
-    #[clap(long, env = "PENUMBRA_CUSTODY_PATH")]
-    pub custody_path: Option<Utf8PathBuf>,
+    /// The home directory used to store configuration and data.
+    #[clap(long, default_value_t = default_home(), env = "PENUMBRA_PCLI_HOME")]
+    pub home: Utf8PathBuf,
     /// If set, use a remote view service instead of local synchronization.
     /// Should be specified as a URL, e.g. http://127.0.0.1:8081.
     #[clap(short, long, env = "PENUMBRA_VIEW_ADDRESS")]
     view_address: Option<Url>,
     /// The filter for `pcli`'s log messages.
     #[clap( long, default_value_t = EnvFilter::new("warn"), env = "RUST_LOG")]
-    trace_filter: EnvFilter,
+    tracing_filter: EnvFilter,
 }
 
 impl Opt {
     pub fn init_tracing(&mut self) {
         tracing_subscriber::fmt()
             .with_env_filter(
-                std::mem::take(&mut self.trace_filter)
+                std::mem::take(&mut self.tracing_filter)
                     // Without explicitly disabling the `r1cs` target, the ZK proof implementations
                     // will spend an enormous amount of CPU and memory building useless tracing output.
                     .add_directive("r1cs=off".parse().unwrap()),
@@ -70,19 +67,8 @@ impl Opt {
     }
 
     pub async fn into_app(self) -> Result<(App, Command)> {
-        let data_path = self.data_path.clone();
-        let custody_path = self
-            .custody_path
-            .clone()
-            .unwrap_or_else(|| data_path.join(crate::CUSTODY_FILE_NAME));
-        let legacy_wallet_path = self.data_path.join(legacy::WALLET_FILE_NAME);
-
-        // Try to auto-migrate the legacy wallet file to the new location, if:
-        // - the legacy wallet file exists
-        // - the new wallet file does not exist
-        if legacy_wallet_path.exists() && !custody_path.exists() {
-            legacy::migrate(&legacy_wallet_path, custody_path.as_path())?;
-        }
+        let home = self.home.clone();
+        let custody_path = home.join(crate::CUSTODY_FILE_NAME);
 
         // Build the custody service...
         let wallet = KeyStore::load(custody_path)?;
@@ -124,7 +110,7 @@ impl Opt {
             box_grpc_svc::connect(ep).await?
         } else {
             // Use an in-memory view service.
-            let path = self.data_path.join(crate::VIEW_FILE_NAME);
+            let path = self.home.join(crate::VIEW_FILE_NAME);
             tracing::info!(%path, "using local view service");
 
             let svc = ViewService::load_or_initialize(Some(path), fvk, self.node.clone()).await?;
@@ -138,7 +124,7 @@ impl Opt {
     }
 }
 
-fn default_data_dir() -> Utf8PathBuf {
+fn default_home() -> Utf8PathBuf {
     let path = ProjectDirs::from("zone", "penumbra", "pcli")
         .expect("Failed to get platform data dir")
         .data_dir()
