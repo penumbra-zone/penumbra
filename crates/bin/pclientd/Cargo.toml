@@ -34,7 +34,7 @@ serde = { version = "1", features = ["derive"] }
 serde_with = { version = "1.11", features = ["hex"] }
 tracing = "0.1"
 tracing-subscriber = "0.2"
-url = "2"
+url = { version = "2", features = ["serde"] }
 http = "0.2.9"
 http-body = "0.4.5"
 tower = "0.4.0"
@@ -56,6 +56,7 @@ sha2 = "0.10.1"
 toml = "0.5"
 ed25519-consensus = "2.1"
 atty = "0.2"
+directories = "4.0.1"
 
 [dev-dependencies]
 tempfile = "3.3.0"

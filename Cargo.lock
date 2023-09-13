@@ -4376,6 +4376,7 @@ dependencies = [
  "bytes",
  "camino",
  "clap 3.2.25",
+ "directories",
  "ed25519-consensus",
  "futures",
  "hex",
