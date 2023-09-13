@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use penumbra_asset::asset;
 use penumbra_keys::{AddressView, PayloadKey};
 use penumbra_proto::core::transaction::v1alpha1::{
@@ -124,16 +125,24 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
         for pk in msg.payload_keys {
             if pk.commitment.is_some() {
                 payload_keys.insert(
-                    pk.commitment.unwrap().try_into()?,
-                    pk.payload_key.unwrap().try_into()?,
+                    pk.commitment
+                        .ok_or_else(|| anyhow!("missing commitment in payload key"))?
+                        .try_into()?,
+                    pk.payload_key
+                        .ok_or_else(|| anyhow!("missing payload key"))?
+                        .try_into()?,
                 );
             };
         }
 
         for nwn in msg.spend_nullifiers {
             spend_nullifiers.insert(
-                nwn.nullifier.unwrap().try_into()?,
-                nwn.note.unwrap().try_into()?,
+                nwn.nullifier
+                    .ok_or_else(|| anyhow!("missing nullifier in spend nullifier"))?
+                    .try_into()?,
+                nwn.note
+                    .ok_or_else(|| anyhow!("missing note in spend nullifier"))?
+                    .try_into()?,
             );
         }
 
@@ -148,7 +157,11 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
 
         for denom in msg.denoms {
             denoms.insert(
-                denom.penumbra_asset_id.clone().unwrap().try_into()?,
+                denom
+                    .penumbra_asset_id
+                    .clone()
+                    .ok_or_else(|| anyhow!("missing penumbra asset ID in denom"))?
+                    .try_into()?,
                 denom.try_into()?,
             );
         }

@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa as rdsa;
@@ -33,7 +33,10 @@ impl TransactionPlan {
         let mut memo: Option<MemoCiphertext> = None;
         let mut memo_key: Option<PayloadKey> = None;
         if self.memo_plan.is_some() {
-            let memo_plan = self.memo_plan.clone().unwrap();
+            let memo_plan = self
+                .memo_plan
+                .clone()
+                .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
             memo = memo_plan.memo().ok();
             memo_key = Some(memo_plan.key);
         }
@@ -212,7 +215,10 @@ impl TransactionPlan {
         let mut memo: Option<MemoCiphertext> = None;
         let mut memo_key: Option<PayloadKey> = None;
         if self.memo_plan.is_some() {
-            let memo_plan = self.memo_plan.clone().unwrap();
+            let memo_plan = self
+                .memo_plan
+                .clone()
+                .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
             memo = memo_plan.memo().ok();
             memo_key = Some(memo_plan.key);
         }

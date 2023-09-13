@@ -117,7 +117,10 @@ impl TransactionPlan {
         // Hash the memo and save the memo key for use with outputs later.
         let mut memo_key: Option<PayloadKey> = None;
         if self.memo_plan.is_some() {
-            let memo_plan = self.memo_plan.clone().unwrap();
+            let memo_plan = self
+                .memo_plan
+                .clone()
+                .expect("memo_plan must be present in TransactionPlan");
             let memo_ciphertext = memo_plan.memo().expect("can compute ciphertext");
             state.update(memo_ciphertext.effect_hash().as_bytes());
             memo_key = Some(memo_plan.key);
