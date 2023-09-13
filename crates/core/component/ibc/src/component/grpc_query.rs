@@ -432,7 +432,7 @@ impl ConsensusQuery for IbcQuery {
                         "couldn't get packet acknowledgement for channel {chan_id} and port {port_id} at index {ack_idx}: {e}"
                     ))
                 })?
-                .ok_or(anyhow::anyhow!("couldn't find ack")).map_err(|e| {
+                .ok_or_else(|| anyhow::anyhow!("couldn't find ack")).map_err(|e| {
                     tonic::Status::aborted(format!(
                         "couldn't get packet acknowledgement for channel {chan_id} and port {port_id} at index {ack_idx}: {e}"
                     ))

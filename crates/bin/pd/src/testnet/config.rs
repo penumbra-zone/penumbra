@@ -216,9 +216,9 @@ impl ValidatorKeys {
         let priv_key = tendermint::PrivateKey::Ed25519(
             self.validator_cons_sk
                 .ed25519_signing_key()
-                .ok_or(anyhow::anyhow!(
-                    "Failed during loop of signing key for TestnetValidator"
-                ))?
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Failed during loop of signing key for TestnetValidator")
+                })?
                 .clone(),
         );
         let priv_validator_key = PrivValidatorKey {

@@ -403,7 +403,7 @@ impl Info {
                     let ack = snapshot
                         .get_packet_acknowledgement(&port_id, &chan_id, ack_idx)
                         .await?
-                        .ok_or(anyhow::anyhow!("couldn't find ack"))?;
+                        .ok_or_else(|| anyhow::anyhow!("couldn't find ack"))?;
 
                     let ack_state = PacketState {
                         port_id: request.port_id.clone(),

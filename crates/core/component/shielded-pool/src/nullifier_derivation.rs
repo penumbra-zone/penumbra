@@ -145,20 +145,20 @@ impl NullifierDerivationProof {
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
-        public_inputs.extend(nullifier.0.to_field_elements().ok_or(anyhow::anyhow!(
-            "could not convert nullifier to field elements"
-        ))?);
         public_inputs.extend(
-            note_commitment
+            nullifier
                 .0
                 .to_field_elements()
-                .ok_or(anyhow::anyhow!(
-                    "could not convert note commitment to field elements"
-                ))?,
+                .ok_or_else(|| anyhow::anyhow!("could not convert nullifier to field elements"))?,
         );
-        public_inputs.extend(position.to_field_elements().ok_or(anyhow::anyhow!(
-            "could not convert position to field elements"
-        ))?);
+        public_inputs.extend(note_commitment.0.to_field_elements().ok_or_else(|| {
+            anyhow::anyhow!("could not convert note commitment to field elements")
+        })?);
+        public_inputs.extend(
+            position
+                .to_field_elements()
+                .ok_or_else(|| anyhow::anyhow!("could not convert position to field elements"))?,
+        );
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();

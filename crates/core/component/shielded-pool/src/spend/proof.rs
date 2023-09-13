@@ -277,13 +277,13 @@ impl SpendProof {
             balance_commitment
                 .0
                 .to_field_elements()
-                .ok_or(anyhow::anyhow!("balance commitment is not a valid element"))?,
+                .ok_or_else(|| anyhow::anyhow!("balance commitment is not a valid element"))?,
         );
         public_inputs.extend(
             nullifier
                 .0
                 .to_field_elements()
-                .ok_or(anyhow::anyhow!("nullifier is not a valid element"))?,
+                .ok_or_else(|| anyhow::anyhow!("nullifier is not a valid element"))?,
         );
         let element_rk = decaf377::Encoding(rk.to_bytes())
             .vartime_decompress()
@@ -291,7 +291,7 @@ impl SpendProof {
         public_inputs.extend(
             element_rk
                 .to_field_elements()
-                .ok_or(anyhow::anyhow!("rk is not a valid element"))?,
+                .ok_or_else(|| anyhow::anyhow!("rk is not a valid element"))?,
         );
 
         tracing::trace!(?public_inputs);
