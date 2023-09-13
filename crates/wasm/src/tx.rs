@@ -36,6 +36,11 @@ pub fn decode_tx(tx_bytes: &str) -> Result<JsValue, Error> {
     serde_wasm_bindgen::to_value(&result)
 }
 
+/// deprecated
+/// In the future, this function will be split into separate functions
+/// - sign the transaction
+/// - build transaction
+/// - get wittness
 #[wasm_bindgen]
 pub fn build_tx(
     spend_key_str: &str,

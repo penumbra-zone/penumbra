@@ -1,3 +1,7 @@
+use crate::error::WasmResult;
+use crate::note_record::SpendableNoteRecord;
+use crate::swap_record::SwapRecord;
+use crate::utils;
 use anyhow::Context;
 use indexed_db_futures::prelude::OpenDbRequest;
 use indexed_db_futures::{IdbDatabase, IdbQuerySource};
@@ -14,6 +18,7 @@ use penumbra_tct as tct;
 use penumbra_tct::Witness::*;
 use penumbra_transaction::Transaction;
 use serde::{Deserialize, Serialize};
+use serde_wasm_bindgen::Error;
 use std::collections::BTreeSet;
 use std::convert::TryInto;
 use std::{collections::BTreeMap, str::FromStr};
@@ -22,10 +27,6 @@ use tct::{Forgotten, Tree};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 use web_sys::console as web_console;
-
-use crate::note_record::SpendableNoteRecord;
-use crate::swap_record::SwapRecord;
-use crate::utils;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StoredTree {
@@ -86,17 +87,15 @@ pub struct ViewServer {
 #[wasm_bindgen]
 impl ViewServer {
     #[wasm_bindgen(constructor)]
-    pub fn new(full_viewing_key: &str, epoch_duration: u64, stored_tree: JsValue) -> ViewServer {
-        utils::set_panic_hook();
-        let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())
-            .context("The provided string is not a valid FullViewingKey")
-            .unwrap();
-
-        let stored_tree: StoredTree = serde_wasm_bindgen::from_value(stored_tree).unwrap();
-
+    pub fn new(
+        full_viewing_key: &str,
+        epoch_duration: u64,
+        stored_tree: JsValue,
+    ) -> Result<ViewServer, Error> {
+        let fvk = string_to_fvk(full_viewing_key)?;
+        let stored_tree: StoredTree = serde_wasm_bindgen::from_value(stored_tree)?;
         let tree = load_tree(stored_tree);
-
-        Self {
+        let view_server = Self {
             latest_height: u64::MAX,
             fvk,
             epoch_duration,
@@ -105,13 +104,16 @@ impl ViewServer {
             denoms: Default::default(),
             nct: tree,
             swaps: Default::default(),
-        }
+        };
+        Ok(view_server)
     }
 
+    /// Scans block for notes, swaps
+    /// Arguments:
+    ///     compact_block: `v1alpha1::CompactBlock`
+    /// Returns: `ScanBlockResult`
     #[wasm_bindgen]
-    pub async fn scan_block(&mut self, compact_block: JsValue) -> JsValue {
-        utils::set_panic_hook();
-
+    pub async fn scan_block(&mut self, compact_block: JsValue) -> Result<JsValue, Error> {
         let block_proto: penumbra_proto::core::chain::v1alpha1::CompactBlock =
             serde_wasm_bindgen::from_value(compact_block).unwrap();
 
@@ -272,7 +274,7 @@ impl ViewServer {
             new_swaps,
         };
 
-        return serde_wasm_bindgen::to_value(&result).unwrap();
+        serde_wasm_bindgen::to_value(&result)
     }
 
     pub fn get_updates(&mut self, last_position: JsValue, last_forgotten: JsValue) -> JsValue {
@@ -579,4 +581,9 @@ pub fn decode_nct_root(tx_bytes: &str) -> JsValue {
     let tx_vec: Vec<u8> = hex::decode(tx_bytes).unwrap();
     let root = penumbra_tct::Root::decode(tx_vec.as_slice()).unwrap();
     return serde_wasm_bindgen::to_value(&root).unwrap();
+}
+
+pub fn string_to_fvk(full_viewing_key_str: &str) -> WasmResult<FullViewingKey> {
+    let fvk = FullViewingKey::from_str(full_viewing_key_str.as_ref())?;
+    Ok(fvk)
 }
