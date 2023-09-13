@@ -1,0 +1,61 @@
+{{ $count := (.Values.nodes | len | int) }}
+{{ range $i,$e := until $count }}
+{{ $fn_name := printf "%s-fn-%d" $.Release.Name $i }}
+{{ $p2p_svc_name := printf "%s-p2p" $fn_name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fn_name }}
+  labels:
+    app.kubernetes.io/component: rpc
+    {{- include "penumbra-node.labels" $ | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: pd-grpc
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+    - name: pd-metrics
+      port: 9000
+      targetPort: 9000
+      protocol: TCP
+    - name: tm-rpc
+      port: 26657
+      targetPort: 26657
+      protocol: TCP
+    - name: tm-metrics
+      port: 26660
+      targetPort: 26660
+      protocol: TCP
+  selector:
+    app: {{ $fn_name }}
+    {{- include "penumbra-node.selectorLabels" $ | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  # P2P service is a LoadBalancer with externalTrafficPolicy=Local by default,
+  # because no other networking setup makes sense. We need the source IP preserved
+  # for TM P2P to work.
+  name: {{ $p2p_svc_name }}
+  {{- if $.Values.preserve_lb_svc }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
+  labels:
+    app.kubernetes.io/component: p2p
+    {{- include "penumbra-node.labels" $ | nindent 4 }}
+spec:
+  externalTrafficPolicy: Local
+  ports:
+  - name: tm-p2p
+    port: 26656
+    protocol: TCP
+    targetPort: 26656
+  selector:
+    app: {{ $fn_name }}
+    {{- include "penumbra-node.selectorLabels" $ | nindent 4 }}
+  type: LoadBalancer
+{{ end }}

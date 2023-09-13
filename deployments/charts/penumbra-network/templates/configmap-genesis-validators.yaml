@@ -1,0 +1,12 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "penumbra-network.fullname" . }}-genesis-validators
+  annotations:
+    # Use a pre-install hook, so the configmap is created early enough for the
+    # generation job to use it.
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "5"
+data:
+  validators.json: {{ .Files.Get (printf "files/validators.json") | quote }}

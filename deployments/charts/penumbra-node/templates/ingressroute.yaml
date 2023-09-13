@@ -1,0 +1,38 @@
+{{- if .Values.ingressRoute.enabled -}}
+{{ $count := (.Values.nodes | len | int) }}
+{{- $fullName := $.Release.Name -}}
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ $fullName }}-https
+  labels:
+    {{- include "penumbra-node.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`{{ .Values.ingressRoute.hosts.pd }}`)
+    services:
+{{- range $i,$e := until $count }}
+{{ $fn_name := printf "%s-fn-%d" $.Release.Name $i }}
+    - name: {{ $fn_name }}
+      port: 8080
+      scheme: h2c
+{{- end }}
+  - kind: Rule
+    match: Host(`{{ .Values.ingressRoute.hosts.tm }}`)
+    services:
+{{- range $i,$e := until $count }}
+{{ $fn_name := printf "%s-fn-%d" $.Release.Name $i }}
+    - name: {{ $fn_name }}
+      port: 26657
+{{- end }}
+  tls:
+    domains:
+    - main: {{ .Values.ingressRoute.hosts.pd }}
+      sans:
+        - {{ .Values.ingressRoute.hosts.tm }}
+    secretName: {{ .Values.ingressRoute.secretName }}
+{{- end }}

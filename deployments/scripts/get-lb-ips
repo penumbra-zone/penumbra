@@ -1,0 +1,51 @@
+#!/bin/bash
+# Utility script to scrape LoadBalancer IPs from k8s Service objects,
+# polling for ready state, so that the deployment can be re-run
+# with IP information as input values, optionally version-controlled.
+set -euo pipefail
+
+if [[ $# -lt 1 ]] ; then
+    >&2 echo "ERROR: found no Helm release to target"
+    >&2 echo "Run 'helm list' to see available options"
+    >&2 echo "Usage: $0 <helm_release>"
+    exit 1
+fi
+
+HELM_RELEASE="${1:-}"
+shift 1
+vars_file="${PWD}/helmfile.d/vars/${HELM_RELEASE}-ips.yml"
+
+if [[ ! -e "$vars_file" ]] ; then
+    touch "$vars_file"
+fi
+
+# Poll k8s API for loadbalancer IPs, for a specific helm deployment.
+function get_ips() {
+    if ! kubectl get svc \
+        -l "app.kubernetes.io/instance=${HELM_RELEASE},app.kubernetes.io/component=p2p" \
+        -o json | jq '.items[].status.loadBalancer.ingress[].ip' -r 2>/dev/null ; then
+    # if the scrape failed, emit an empty string, so caller can wait.
+    echo "";
+    fi
+}
+
+ip_info="$(get_ips)"
+printf "Waiting for LoadBalancer IPs for Helm release '%s'" "$HELM_RELEASE"
+while [[ -z "$ip_info" ]] ; do
+    printf '.'
+    sleep 5
+    ip_info="$(get_ips)"
+done
+printf ' done!\n'
+
+# Write out a YAML file suitable for using as input values in a Helm chart.
+# This format is very specific to values format required by the given Helm chart.
+function generate_yaml_penumbra_nodes() {
+    printf 'nodes:\n'
+    while read -r i ; do
+        printf '  - external_address: %s:26656\n' "$i"
+    done <<< "$ip_info"
+}
+
+generate_yaml_penumbra_nodes > "$vars_file"
+echo "IP info written to $vars_file for $HELM_RELEASE"
