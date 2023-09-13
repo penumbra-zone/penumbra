@@ -109,9 +109,18 @@ impl SpendKey {
     }
 
     pub fn from_seed_phrase_bip44(seed_phrase: SeedPhrase, path: &Bip44Path) -> Self {
-        let seed_bytes = seed_phrase.randomness().expect("valid seed phrase");
+        let password = format!("{seed_phrase}");
+        let salt = "mnemonic";
+        let mut seed_bytes = [0u8; 64];
+        pbkdf2::<Hmac<sha2::Sha512>>(
+            password.as_bytes(),
+            salt.as_bytes(),
+            NUM_PBKDF2_ROUNDS,
+            &mut seed_bytes,
+        )
+        .expect("seed phrase hash always succeeds");
 
-        // Now we derive the child keys from the BIP44 path. There are five levels
+        // Now we derive the child keys from the BIP44 path. There are up five levels
         // in the BIP44 path: purpose, coin type, account, change, and address index.
         let child_key = XPrv::derive_from_path(
             &seed_bytes[..],
@@ -192,6 +201,7 @@ mod tests {
 
     #[test]
     fn bip44_test_ledger() {
+        // Test account
         let seed = SeedPhrase::from_str("comfort ten front cycle churn burger oak absent rice ice urge result art couple benefit cabbage frequent obscure hurry trick segment cool job debate").unwrap();
 
         let expected_bytes =
@@ -199,9 +209,8 @@ mod tests {
                 .expect("valid");
         let expected_spendkey = SpendKeyBytes(expected_bytes.try_into().expect("fits in 32 bytes"));
 
-        let derivation_path = Bip44Path::new(0, None, None);
-        dbg!(derivation_path.path());
-        let software_spendkey = SpendKey::from_seed_phrase_bip44(seed.clone(), &derivation_path);
+        let derivation_path = Bip44Path::new(0);
+        let software_spendkey = SpendKey::from_seed_phrase_bip44(seed, &derivation_path);
 
         assert_eq!(software_spendkey.to_bytes(), expected_spendkey);
     }
