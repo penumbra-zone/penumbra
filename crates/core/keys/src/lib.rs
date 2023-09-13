@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 use decaf377_rdsa as rdsa;
