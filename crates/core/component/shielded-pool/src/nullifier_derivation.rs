@@ -89,8 +89,11 @@ impl DummyWitness for NullifierDerivationCircuit {
         let nullifier = Nullifier(Fq::from(1));
         let mut sct = tct::Tree::new();
         let note_commitment = note.commit();
-        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let state_commitment_proof = sct.witness(note_commitment).unwrap();
+        sct.insert(tct::Witness::Keep, note_commitment)
+            .expect("able to insert note commitment into SCT");
+        let state_commitment_proof = sct
+            .witness(note_commitment)
+            .expect("able to witness just-inserted note commitment");
         let position = state_commitment_proof.position();
 
         Self {
@@ -142,9 +145,20 @@ impl NullifierDerivationProof {
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
-        public_inputs.extend(nullifier.0.to_field_elements().unwrap());
-        public_inputs.extend(note_commitment.0.to_field_elements().unwrap());
-        public_inputs.extend(position.to_field_elements().unwrap());
+        public_inputs.extend(nullifier.0.to_field_elements().ok_or(anyhow::anyhow!(
+            "could not convert nullifier to field elements"
+        ))?);
+        public_inputs.extend(
+            note_commitment
+                .0
+                .to_field_elements()
+                .ok_or(anyhow::anyhow!(
+                    "could not convert note commitment to field elements"
+                ))?,
+        );
+        public_inputs.extend(position.to_field_elements().ok_or(anyhow::anyhow!(
+            "could not convert position to field elements"
+        ))?);
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
