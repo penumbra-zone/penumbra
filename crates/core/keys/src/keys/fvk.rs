@@ -159,8 +159,8 @@ impl TryFrom<pb::FullViewingKey> for FullViewingKey {
             );
         }
 
-        let ak_bytes: [u8; 32] = value.inner[0..32].try_into().unwrap();
-        let nk_bytes: [u8; 32] = value.inner[32..64].try_into().unwrap();
+        let ak_bytes: [u8; 32] = value.inner[0..32].try_into().context("fvk wrong length")?;
+        let nk_bytes: [u8; 32] = value.inner[32..64].try_into().context("fvk wrong length")?;
 
         let ak = ak_bytes.try_into()?;
         let nk = NullifierKey(
