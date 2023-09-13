@@ -1,0 +1,11 @@
+Penumbra metrics dashabords have been deployed.
+{{- if .Values.ingressRoute.enabled }}
+You can access the Grafana dashboard here:
+
+  https://{{.Values.ingressRoute.hosts.grafana }}
+
+You can view Prometheus dashboard by using `kubectl port-forward`.
+{{- else }}
+You have not enabled an ingress (via `ingressRoute.enabled=true`),
+so you'll need to forward ports via kubectl to access Grafana.
+{{- end }}

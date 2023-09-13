@@ -16,7 +16,7 @@ The networks are completely separate.
 ```
 .
 ├── ci.sh # runner script for executing a deploy against k8s
-├── charts/ # helm charts used to configure full-node/validator layout
+├── charts/ # helm charts used to configure genesis, nodes, and metrics
 ├── networks/ # logic specific to network, e.g. "testnet" or "testnet-preview"
 │  └── testnet/
 └── terraform/ # server and cluster provisioning logic
@@ -65,6 +65,25 @@ kubectl get svc -n infra traefik --output jsonpath='{.status.loadBalancer.ingres
 
 The Traefik reverse proxy is used for fronting pd's grpc service, because Traefik supports h2c.
 See for details: https://github.com/penumbra-zone/penumbra/issues/2341
+
+## Generating and storing public IPs for P2P connections
+
+There's a chicken-or-egg problem when creating a new network: the deployment will trigger the creation
+of LoadBalancer objects with public IPv4 addresses. Those public IP addresses are needed at genesis
+creation time, so that the validator configs are generated with an external address field
+in the Tendermint configs. To resolve, there's a special var `only_lb_svc=true` that will
+deploy just the P2P LBs. You can then poll the IPs, store them as additional vars, and rerun
+with `only_lb_svc=false`.
+
+```
+helmfile sync -f helmfile.d/penumbra-devnet.yaml --args --set=only_lb_svc=true
+./scripts/get-lb-ips penumbra-devnet
+helmfile sync -f helmfile.d/penumbra-devnet.yaml
+```
+
+This two-step process is only required the *first* time a given network is deployed.
+Thereafter, resource retention policies will preserve the LBs, so that the IPs remain reserved,
+and can be reused on subsequent deployments of that network.
 
 ## Dude, where's my logs?
 

@@ -1,0 +1,181 @@
+# Default values for penumbra-network helm chart.
+
+replicaCount: 1
+
+image:
+  # repository: harbor.ruin.dev/library/penumbra
+  repository: ghcr.io/penumbra-zone/penumbra
+  pullPolicy: Always
+  # "latest" tag means most recently deployed testnet tag.
+  # Use "main" for tracking preview.
+  tag: latest
+
+# Overrides for the generated network. Basically a simple
+# translation layer between the YAML and the CLI flags
+# on `pd testnet generate`.
+network:
+  # If chain_id is empty, a random one should be generated,
+  # so that the PV can contain its name as well as the name be
+  # passed to pd on cli.
+  chain_id:
+  # Whether to use the chain id exactly as specified, rather than
+  # the default behavior of appending a random suffix.
+  preserve_chain_id: false
+  # WARNING: only SocketAddrs are supported, due to bug in `pd testnet join`.
+  # It'd be grand to have a DNS hostname in here, e.g. `veil.petrichor.guru:31888`.
+  # external_addresses: veil.petrichor.guru:31888
+  external_addresses: ""
+
+  # How many validators are present at genesis. This number must
+  # match the count in the JSON file used to define the validators.
+  num_validators: 2
+
+# Whether to preserve the LB service, in effect reserving the same IP
+# for subsequent deploys. This costs money! But sure is convenient.
+preserve_lb_svc: false
+
+# Whether to configure *only* the LoadBalancer Services, in order to provision
+# the public IPs prior to application deployment. This allows polling the IPs
+# and using them as config inputs, via values.
+only_lb_svc: false
+
+# The container run commands are used for the validators' pd instances,
+# after testnet config has been generated.
+containerCmd:
+  - /usr/bin/pd
+containerArgs:
+  - start
+  - --grpc-bind
+  - 0.0.0.0:8080
+  - --home
+  # store state in emptyDir for now
+  - /penumbra-config/testnet_data/node0/pd
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Custom label for aggregating network, nodes, and metrics into a cohesive deployment.
+# Maps to the 'app.kubernetes.io/part-of' label. Defaults to .Release.Name in helpers.
+part_of: ""
+
+service:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  port: 26656
+
+# configure PVCs for disk data
+persistence:
+  enabled: false
+  storageClassName:
+  accessModes:
+    - ReadWriteOnce
+  size: 10G
+
+# Container image for CometBFT
+cometbft:
+  image:
+    repository: cometbft/cometbft
+    pullPolicy: IfNotPresent
+    # https://github.com/cometbft/cometbft#supported-versions
+    # https://github.com/cometbft/cometbft/blob/main/UPGRADING.md#v03427
+    tag: "v0.34.27"
+  containerArgs:
+    - start
+    - --proxy_app=tcp://127.0.0.1:26658
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+cometbft:
+  image:
+    repository: cometbft/cometbft
+    pullPolicy: IfNotPresent
+    # https://github.com/cometbft/cometbft#supported-versions
+    # https://github.com/cometbft/cometbft/blob/main/UPGRADING.md#v03427
+    tag: "v0.34.27"
+  containerArgs:
+    - start
+    - --proxy_app=tcp://127.0.0.1:26658
+
+tendermint:
+  image:
+    repository: tendermint/tendermint
+    pullPolicy: IfNotPresent
+    # WARNING: other versions of tendermint will fail!
+    tag: "v0.34.23"
+  containerArgs:
+    - start
+    - --proxy_app=tcp://127.0.0.1:26658
+# N.B. Only `IngressRoute`, a custom CRD specific to Traefik ingress controller
+# is supported. This is because a traditional Ingress object doesn't allow us
+# to force a backend scheme of h2c, which is required for pd's gRPC service.
+ingressRoute:
+  enabled: false
+  hosts:
+    grpc: grpc.chart-example.local
+    rpc: ""
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

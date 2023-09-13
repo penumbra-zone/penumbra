@@ -1,0 +1,69 @@
+---
+releases:
+  - name: penumbra-devnet
+    chart: ../charts/penumbra-network
+    values:
+      - persistence:
+          enabled: true
+          size: 10G
+      - preserve_lb_svc: true
+      - only_lb_svc: false
+      - image:
+          tag: main
+      - network:
+          external_addresses: "104.198.226.117:26656,34.134.110.25:26656"
+      - part_of: penumbra-devnet
+      # Sidecar vars file for storing external ips. The "penumbra-network" chart
+      # doesn't read these vars, but the "get-lb-ips" script writes them there,
+      # and they've been manually duplicated above in the values.network.external_addresses field.
+      - vars/penumbra-devnet-ips.yml
+
+  - name: penumbra-devnet-nodes
+    needs:
+      - penumbra-devnet
+    chart: ../charts/penumbra-node
+    values:
+      - ingressRoute:
+          enabled: true
+          hosts:
+            pd: grpc.devnet.penumbra.zone
+            tm: rpc.devnet.penumbra.zone
+          secretName: penumbra-devnet-wildcard
+      - preserve_lb_svc: true
+      - only_lb_svc: false
+      - image:
+          tag: main
+      # Communicate intra-cluster to the private validator rpc address.
+      - penumbra_bootstrap_node_tendermint_rpc_url: "http://penumbra-devnet-val-0:26657"
+      - nodes:
+          # We intentionally exclude external IPs in this declaration, but include them
+          # in the external vars/ file, which is generated via `./scripts/get-lb-ips penumbra-devnet`.
+          - moniker: phobos
+          - moniker: deimos
+      - persistence:
+          enabled: true
+          size: 10G
+      - part_of: penumbra-devnet
+      # empty vars file for storing external ips
+      - vars/penumbra-devnet-nodes-ips.yml
+
+  - name: penumbra-devnet-metrics
+    chart: ../charts/penumbra-metrics
+    values:
+      - ingressRoute:
+          enabled: true
+          hosts:
+            grafana: grafana.devnet.penumbra.zone
+          secretName: penumbra-devnet-wildcard
+      - image:
+          tag: main
+      - scrape_configs:
+          # Must match settings from "penumbra-node" chart
+          numFullNodes: 2
+          fmtFullNodeSvc: "penumbra-devnet-nodes-fn-%d"
+          # Must match settings from "penumbra-network" chart
+          numValidators: 2
+          fmtValidatorSvc: "penumbra-devnet-val-%d"
+      - persistence:
+          enabled: true
+          size: 1G

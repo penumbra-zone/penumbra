@@ -1,0 +1,7 @@
+apiVersion: v2
+name: penumbra-node
+description: Run Penumbra nodes and/or validators
+
+type: application
+version: 0.1.0
+appVersion: "1.16.0"

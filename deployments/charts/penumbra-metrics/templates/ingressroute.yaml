@@ -1,0 +1,29 @@
+{{- if .Values.ingressRoute.enabled -}}
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "penumbra-metrics.fullname" . }}-grafana-https
+  labels:
+    {{- include "penumbra-metrics.labels" . | nindent 4 }}
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`{{ .Values.ingressRoute.hosts.grafana }}`)
+    services:
+    - name: {{ include "penumbra-metrics.fullname" . }}
+      port: 3000
+  - kind: Rule
+    match: Host(`{{ .Values.ingressRoute.hosts.prometheus }}`)
+    services:
+    - name: {{ include "penumbra-metrics.fullname" . }}
+      port: 9090
+  tls:
+    domains:
+    - main: {{ .Values.ingressRoute.hosts.grafana }}
+      sans:
+       - {{ .Values.ingressRoute.hosts.prometheus }}
+    secretName: {{ .Values.ingressRoute.secretName }}
+{{- end }}

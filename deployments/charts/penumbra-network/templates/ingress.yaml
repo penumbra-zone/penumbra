@@ -1,0 +1,43 @@
+{{- if .Values.ingress.enabled }}
+{{ $rpc_svc_name := printf "%s-rpc" (include "penumbra-network.fullname" $) }}
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "penumbra-network.fullname" . }}-https
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`{{ .Values.ingress.fqdn }}`) && PathPrefix(`/pd/`)
+    middlewares:
+      - name: strip-prefix-{{ .Release.Name }}
+        namespace: {{ .Release.Namespace }}
+    services:
+      - name: {{ $rpc_svc_name }}
+        port: 8080
+        scheme: h2c
+  - kind: Rule
+    match: Host(`{{ .Values.ingress.fqdn }}`) && PathPrefix(`/tm/`)
+    middlewares:
+      - name: strip-prefix-{{ .Release.Name }}
+        namespace: {{ .Release.Namespace }}
+    services:
+      - name: {{ $rpc_svc_name }}
+        port: 26657
+  tls:
+    domains:
+    - main: {{ .Values.ingress.fqdn }}
+    secretName: {{ .Values.ingress.secretName }}
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: strip-prefix-{{ .Release.Name }}
+spec:
+  stripPrefix:
+    prefixes:
+      - /tm/
+      - /pd/
+{{- end }}
