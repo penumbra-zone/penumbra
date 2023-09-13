@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 use once_cell::sync::Lazy;
 
 pub mod asset;
@@ -10,7 +11,7 @@ pub use value::{Value, ValueVar, ValueView};
 pub static STAKING_TOKEN_DENOM: Lazy<asset::DenomMetadata> = Lazy::new(|| {
     asset::Cache::with_known_assets()
         .get_unit("upenumbra")
-        .unwrap()
+        .expect("unable to get upenumbra denom, which should be hardcoded")
         .base()
 });
 pub static STAKING_TOKEN_ASSET_ID: Lazy<asset::Id> = Lazy::new(|| STAKING_TOKEN_DENOM.id());

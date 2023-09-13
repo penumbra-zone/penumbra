@@ -10,6 +10,7 @@ use std::{
     str::FromStr,
 };
 
+use anyhow::Context;
 use penumbra_num::{Amount, AmountVar};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use regex::Regex;
@@ -297,23 +298,40 @@ impl FromStr for Value {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let asset_id_re = Regex::new(r"^([0-9.]+)(passet[0-9].*)$").unwrap();
-        let denom_re = Regex::new(r"^([0-9.]+)([^0-9.].*)$").unwrap();
+        let asset_id_re =
+            Regex::new(r"^([0-9.]+)(passet[0-9].*)$").context("unable to parse asset ID regex")?;
+        let denom_re =
+            Regex::new(r"^([0-9.]+)([^0-9.].*)$").context("unable to parse denom regex")?;
 
         if let Some(captures) = asset_id_re.captures(s) {
-            let numeric_str = captures.get(1).expect("matched regex").as_str();
-            let asset_id_str = captures.get(2).expect("matched regex").as_str();
+            let numeric_str = captures
+                .get(1)
+                .context("string value should have numeric part")?
+                .as_str();
+            let asset_id_str = captures
+                .get(2)
+                .context("string value should have asset ID part")?
+                .as_str();
 
-            let asset_id = Id::from_str(asset_id_str).expect("able to parse asset ID");
-            let amount = numeric_str.parse::<u64>().unwrap();
+            let asset_id =
+                Id::from_str(asset_id_str).context("unable to parse string value's asset ID")?;
+            let amount = numeric_str
+                .parse::<u64>()
+                .context("unable to parse string value's numeric amount")?;
 
             Ok(Value {
                 amount: amount.into(),
                 asset_id,
             })
         } else if let Some(captures) = denom_re.captures(s) {
-            let numeric_str = captures.get(1).expect("matched regex").as_str();
-            let denom_str = captures.get(2).expect("matched regex").as_str();
+            let numeric_str = captures
+                .get(1)
+                .context("string value should have numeric part")?
+                .as_str();
+            let denom_str = captures
+                .get(2)
+                .context("string value should have denom part")?
+                .as_str();
 
             let display_denom = REGISTRY.parse_unit(denom_str);
             let amount = display_denom.parse_value(numeric_str)?;
