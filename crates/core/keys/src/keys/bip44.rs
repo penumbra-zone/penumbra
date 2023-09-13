@@ -17,14 +17,14 @@ pub struct Bip44Path {
 }
 
 impl Bip44Path {
-    /// Create a new BIP44 path for Penumbra.
-    pub fn new(account: u32, change: Option<u32>, address_index: Option<u32>) -> Self {
+    /// Create a new BIP44 path for a Penumbra account group.
+    pub fn new(account: u32) -> Self {
         Self {
             purpose: 44,
             coin_type: PENUMBRA_COIN_TYPE,
             account,
-            change,
-            address_index,
+            change: None,
+            address_index: None,
         }
     }
 
@@ -73,10 +73,14 @@ impl Bip44Path {
     pub fn path(&self) -> String {
         let mut path = format!("m/44'/{}'/{}'", self.coin_type(), self.account());
         if self.change().is_some() {
-            path = format!("{}/{}'", path, self.change().unwrap());
+            path = format!("{}/{}", path, self.change().expect("change will exist"));
         }
         if self.address_index().is_some() {
-            path = format!("{}/{}", path, self.address_index().unwrap());
+            path = format!(
+                "{}/{}",
+                path,
+                self.address_index().expect("address index will exist")
+            );
         }
         path
     }
@@ -87,8 +91,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_bip44_path() {
-        let path = Bip44Path::new(0, Some(0), Some(0));
+    fn test_bip44_path_full() {
+        let path = Bip44Path::new_generic(44, 6532, 0, Some(0), Some(0));
         assert_eq!(path.path(), "m/44'/6532'/0'/0/0");
+    }
+
+    #[test]
+    fn test_bip44_path_account_level() {
+        let path = Bip44Path::new(0);
+        assert_eq!(path.path(), "m/44'/6532'/0'");
     }
 }
