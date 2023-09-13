@@ -15,6 +15,12 @@ jobs:
         uses: taiki-e/install-action@nextest
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
+      - name: Run cargo check, failing on warnings
+        run: cargo check --release
+        env:
+          # The `-D warnings` option causes an error on warnings;
+          # we must duplicate the rustflags from `.cargo/config.toml`.
+          RUSTFLAGS: "-D warnings --cfg tokio_unstable"
       - name: Run tests with nextest
         run: cargo nextest run --release
         env:
@@ -44,13 +50,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
-      - name: Run cargo check, failing on warnings
-        run: cargo check --release
-        env:
-          # The `-D warnings` option causes an error on warnings;
-          # we must duplicate the rustflags from `.cargo/config.toml`.
-          RUSTFLAGS: "-D warnings --cfg tokio_unstable"
-
   docs:
     # We use a custom script to generate the index page for https://rustdoc.penumbra.zone,
     # and refactors to rust deps can break that generation. Let's ensure this script exits 0
