@@ -262,28 +262,53 @@ impl App {
         let mut state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
 
-        let current_height = state_tx.get_block_height().await.unwrap();
-        let current_epoch = state_tx.epoch().await.unwrap();
+        let current_height = state_tx
+            .get_block_height()
+            .await
+            .expect("able to get block height in end_block");
+        let current_epoch = state_tx
+            .epoch()
+            .await
+            .expect("able to get current epoch in end_block");
 
-        let is_end_epoch = current_epoch
-            .is_scheduled_epoch_end(current_height, state_tx.get_epoch_duration().await.unwrap())
-            || state_tx.epoch_ending_early();
+        let is_end_epoch = current_epoch.is_scheduled_epoch_end(
+            current_height,
+            state_tx
+                .get_epoch_duration()
+                .await
+                .expect("able to get epoch duration in end_block"),
+        ) || state_tx.epoch_ending_early();
 
         // If a chain upgrade is scheduled for this block, we trigger an early epoch change
         // so that the upgraded chain starts at a clean epoch boundary.
-        let is_chain_upgrade = state_tx.is_upgrade_height().await.unwrap();
+        let is_chain_upgrade = state_tx
+            .is_upgrade_height()
+            .await
+            .expect("able to detect upgrade heights");
 
         if is_end_epoch || is_chain_upgrade {
             tracing::info!(?current_height, "ending epoch");
 
             let mut arc_state_tx = Arc::new(state_tx);
 
-            Distributions::end_epoch(&mut arc_state_tx).await.unwrap();
-            Staking::end_epoch(&mut arc_state_tx).await.unwrap();
-            IBCComponent::end_epoch(&mut arc_state_tx).await.unwrap();
-            Dex::end_epoch(&mut arc_state_tx).await.unwrap();
-            Governance::end_epoch(&mut arc_state_tx).await.unwrap();
-            ShieldedPool::end_epoch(&mut arc_state_tx).await.unwrap();
+            Distributions::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on Distributions component");
+            Staking::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on Staking component");
+            IBCComponent::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on IBC component");
+            Dex::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on dex component");
+            Governance::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on Governance component");
+            ShieldedPool::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on shielded pool component");
 
             let mut state_tx = Arc::try_unwrap(arc_state_tx)
                 .expect("components did not retain copies of shared state");
@@ -331,13 +356,23 @@ impl App {
         // Check to see if the chain parameters have changed, and include them in the compact block
         // if they have (this is signaled by `penumbra_chain::StateWriteExt::put_chain_params`):
         let chain_parameters = if state.chain_params_changed() || height == 0 {
-            Some(state.get_chain_params().await.unwrap())
+            Some(
+                state
+                    .get_chain_params()
+                    .await
+                    .expect("able to get chain params"),
+            )
         } else {
             None
         };
 
         let fmd_parameters = if height == 0 {
-            Some(state.get_current_fmd_parameters().await.unwrap())
+            Some(
+                state
+                    .get_current_fmd_parameters()
+                    .await
+                    .expect("able to get fuzzy message detection parameters"),
+            )
         } else {
             None
         };

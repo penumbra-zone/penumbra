@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 mod action_handler;
 mod mock_client;
 mod temp_storage_ext;
