@@ -89,10 +89,12 @@ mod test {
     async fn create_storage_instance() -> Storage {
         use tempfile::tempdir;
         // create a storage backend for testing
-        let dir = tempdir().unwrap();
+        let dir = tempdir().expect("unable to create tempdir");
         let file_path = dir.path().join("snapshot-cache-testing.db");
 
-        Storage::load(file_path).await.unwrap()
+        Storage::load(file_path)
+            .await
+            .expect("unable to load storage")
     }
 
     #[tokio::test]
@@ -106,7 +108,9 @@ mod test {
         // Check that the cache has a capacity at least 1
         assert!(cache.get(u64::MAX).is_some());
         let new_snapshot = Snapshot::new(db, 0);
-        cache.try_push(new_snapshot).unwrap();
+        cache
+            .try_push(new_snapshot)
+            .expect("should not fail to insert a new entry");
 
         // Check that the cache has a capacity of exactly 1
         assert!(cache.get(u64::MAX).is_none());
@@ -152,7 +156,9 @@ mod test {
         // Fill the entire cache by inserting 9 more entries.
         for i in 0..9 {
             let snapshot = Snapshot::new(db_handle.clone(), i);
-            cache.try_push(snapshot).unwrap();
+            cache
+                .try_push(snapshot)
+                .expect("should not fail to insert a new entry");
         }
 
         // The cache is full, check that the oldest entry is still in the cache.
@@ -161,7 +167,9 @@ mod test {
         // Push another snapshot in the cache, this should cause eviction of the oldest entry
         // alone.
         let new_snapshot = Snapshot::new(db_handle, 9);
-        cache.try_push(new_snapshot).unwrap();
+        cache
+            .try_push(new_snapshot)
+            .expect("should not fail to insert a new entry");
 
         // Check that the pre-genesis entry has been evicted!
         assert!(cache.get(u64::MAX).is_none());
@@ -185,7 +193,9 @@ mod test {
         // Saturate the cache by inserting 9 more entries.
         for i in 1..10 {
             let snapshot = Snapshot::new(db_handle.clone(), i);
-            cache.try_push(snapshot).unwrap()
+            cache
+                .try_push(snapshot)
+                .expect("should be able to insert new entries")
         }
 
         // Check that the oldest value is still present:
@@ -193,7 +203,9 @@ mod test {
 
         // Insert a new value that should overflow the cache.
         let snapshot = Snapshot::new(db_handle, 10);
-        cache.try_push(snapshot).unwrap();
+        cache
+            .try_push(snapshot)
+            .expect("should be able to insert a new entry");
 
         // Check that the oldest value has been dropped.
         assert!(cache.get(0).is_none());
