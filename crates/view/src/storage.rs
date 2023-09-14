@@ -1352,20 +1352,14 @@ impl Storage {
                     // which must be saved to allow voting on proposals that might or might not be
                     // open presently
 
-                    if DelegationToken::from_str(&spent_denom).is_ok() {
+                    if DelegationToken::from_str(&spent_denom).is_err() {
                         new_sct.forget(spent_commitment);
                     }
                 };
 
                 // Mark spent swaps as spent
                 if let Some(spent_swap_commitment) = swap_commitment {
-                    // Forget spent swap commitments from the SCT unless they are delegation tokens,
-                    // which must be saved to allow voting on proposals that might or might not be open
-                    // presently
-
-                    if DelegationToken::from_str(&spent_denom).is_ok() {
-                        new_sct.forget(spent_swap_commitment);
-                    }
+                    new_sct.forget(spent_swap_commitment);
                 };
             }
 
