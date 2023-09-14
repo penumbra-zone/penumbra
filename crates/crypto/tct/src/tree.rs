@@ -401,13 +401,17 @@ impl Tree {
                 if epoch.is_full() {
                     // The current epoch would be full when we tried to insert into it
                     return Some(Err(InsertBlockError::EpochFull(block::Finalized {
-                        inner: inner.take().unwrap().finalize_owned().map(Into::into),
-                        index: index.take().unwrap(),
+                        inner: inner
+                            .take()
+                            .expect("inner option should be Some")
+                            .finalize_owned()
+                            .map(Into::into),
+                        index: index.take().expect("index option should be Some"),
                     })));
                 }
 
                 // Get the inner thing from the `Option` storage
-                let inner = inner.take().unwrap();
+                let inner = inner.take().expect("inner option should be Some");
 
                 // Calculate the block root
                 let block_root = block::Root(inner.hash());
@@ -422,13 +426,17 @@ impl Tree {
             .unwrap_or_else(|| {
                 if self.inner.is_full() {
                     return Err(InsertBlockError::Full(block::Finalized {
-                        inner: inner.take().unwrap().finalize_owned().map(Into::into),
-                        index: index.take().unwrap(),
+                        inner: inner
+                            .take()
+                            .expect("inner option should be Some")
+                            .finalize_owned()
+                            .map(Into::into),
+                        index: index.take().expect("index option should be Some"),
                     }));
                 }
 
                 // Get the inner thing from the `Option` storage
-                let inner = inner.take().unwrap();
+                let inner = inner.take().expect("inner option should be Some");
 
                 // Calculate the block root
                 let block_root = block::Root(inner.hash());
@@ -448,7 +456,9 @@ impl Tree {
             .into();
 
         // Add the index of all commitments in the block to the global index
-        for (c, index::within::Block { commitment }) in index.take().unwrap() {
+        for (c, index::within::Block { commitment }) in
+            index.take().expect("index option should be Some")
+        {
             // If any commitment is repeated, forget the previous one within the tree, since it is
             // now inaccessible
             if let Some(replaced) = self.index.insert(

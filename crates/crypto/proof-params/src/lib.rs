@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 use ark_groth16::{PreparedVerifyingKey, ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalDeserialize;
 use decaf377::Bls12_377;

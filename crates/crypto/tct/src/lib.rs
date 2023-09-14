@@ -33,6 +33,7 @@
 //!                                       = Note Commitment
 //! ```
 
+#![deny(clippy::unwrap_used)]
 #![warn(missing_docs, rustdoc::broken_intra_doc_links)]
 
 #[macro_use]

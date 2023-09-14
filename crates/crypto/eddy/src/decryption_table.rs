@@ -119,7 +119,10 @@ mod tests {
         let now = Instant::now();
 
         let table = MockDecryptionTable::default();
-        table.initialize(bitsize).await.unwrap();
+        table
+            .initialize(bitsize)
+            .await
+            .expect("unable to initialize test table");
 
         let elapsed = now.elapsed();
 

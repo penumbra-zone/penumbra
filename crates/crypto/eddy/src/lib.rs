@@ -11,6 +11,7 @@
 //! - [ ] Encryption Proofs
 //!
 //! [protocol-batching]: https://protocol.penumbra.zone/main/concepts/batching_flows.html
+#![deny(clippy::unwrap_used)]
 
 mod ciphertext;
 mod decryption_share;
