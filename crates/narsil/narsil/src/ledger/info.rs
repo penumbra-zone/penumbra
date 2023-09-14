@@ -41,8 +41,7 @@ impl Info {
             u64::MAX => 0,
             v => v,
         }
-        .try_into()
-        .unwrap();
+        .try_into()?;
 
         let last_block_app_hash = state.app_hash().await?.0.to_vec().try_into()?;
 

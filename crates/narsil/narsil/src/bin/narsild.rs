@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 #![allow(clippy::clone_on_copy)]
 #![recursion_limit = "512"]
 use std::{net::SocketAddr, path::PathBuf};
@@ -103,9 +104,7 @@ async fn main() -> anyhow::Result<()> {
         .with_ansi(atty::is(atty::Stream::Stdout))
         .with_target(true);
     // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
-    let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info"))
-        .unwrap();
+    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
 
     let opt = Opt::parse();
 
@@ -166,7 +165,7 @@ async fn main() -> anyhow::Result<()> {
                         .mempool(mempool)
                         .info(info.clone())
                         .finish()
-                        .unwrap()
+                        .ok_or_else(|| anyhow::anyhow!("failed to build abci server"))?
                         .listen(abci_bind),
                 )
                 .expect("failed to spawn abci server");

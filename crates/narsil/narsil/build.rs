@@ -1,6 +1,6 @@
 use vergen::{vergen, Config};
 
 fn main() -> anyhow::Result<()> {
-    vergen(Config::default()).unwrap();
+    vergen(Config::default())?;
     Ok(())
 }
