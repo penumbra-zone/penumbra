@@ -80,7 +80,13 @@ impl<S: StateRead> StateDelta<S> {
         //
         // Doing this only when the leaf cache is dirty means that we don't
         // add empty layers in repeated fork() calls without intervening writes.
-        if self.leaf_cache.read().as_ref().unwrap().is_dirty() {
+        if self
+            .leaf_cache
+            .read()
+            .as_ref()
+            .expect("unable to get ref to leaf cache, storage not initialized?")
+            .is_dirty()
+        {
             let new_layer = std::mem::replace(
                 &mut self.leaf_cache,
                 Arc::new(RwLock::new(Some(Cache::default()))),
@@ -122,7 +128,12 @@ impl<S: StateRead> StateDelta<S> {
             changes.merge(cache);
         }
         // Last, apply the changes in the leaf cache.
-        changes.merge(self.leaf_cache.write().take().unwrap());
+        changes.merge(
+            self.leaf_cache
+                .write()
+                .take()
+                .expect("unable to take leaf cache, was it already applied?"),
+        );
 
         (state, changes)
     }
@@ -176,7 +187,7 @@ impl<S: StateRead> StateRead for StateDelta<S> {
             .leaf_cache
             .read()
             .as_ref()
-            .unwrap()
+            .expect("delta must not have been applied")
             .unwritten_changes
             .get(key)
         {
@@ -212,7 +223,7 @@ impl<S: StateRead> StateRead for StateDelta<S> {
             .leaf_cache
             .read()
             .as_ref()
-            .unwrap()
+            .expect("delta must not have been applied")
             .nonverifiable_changes
             .get(key)
         {
@@ -405,7 +416,7 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
         self.leaf_cache
             .write()
             .as_mut()
-            .unwrap()
+            .expect("delta must not have been applied")
             .unwritten_changes
             .insert(key, Some(value));
     }
@@ -414,7 +425,7 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
         self.leaf_cache
             .write()
             .as_mut()
-            .unwrap()
+            .expect("delta must not have been applied")
             .unwritten_changes
             .insert(key, None);
     }
@@ -424,7 +435,7 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
         self.leaf_cache
             .write()
             .as_mut()
-            .unwrap()
+            .expect("delta must not have been applied")
             .nonverifiable_changes
             .insert(key, None);
     }
@@ -434,7 +445,7 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
         self.leaf_cache
             .write()
             .as_mut()
-            .unwrap()
+            .expect("delta must not have been applied")
             .nonverifiable_changes
             .insert(key, Some(value));
     }
@@ -451,7 +462,7 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
         self.leaf_cache
             .write()
             .as_mut()
-            .unwrap()
+            .expect("delta must not have been applied")
             .ephemeral_objects
             .insert(key, Some(Box::new(value)));
     }
@@ -460,7 +471,7 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
         self.leaf_cache
             .write()
             .as_mut()
-            .unwrap()
+            .expect("delta must not have been applied")
             .ephemeral_objects
             .insert(key, None);
     }
@@ -472,13 +483,18 @@ impl<S: StateRead> StateWrite for StateDelta<S> {
         self.leaf_cache
             .write()
             .as_mut()
-            .unwrap()
+            .expect("delta must not have been applied")
             .ephemeral_objects
             .extend(objects);
     }
 
     fn record(&mut self, event: abci::Event) {
-        self.leaf_cache.write().as_mut().unwrap().events.push(event)
+        self.leaf_cache
+            .write()
+            .as_mut()
+            .expect("delta must not have been applied")
+            .events
+            .push(event)
     }
 }
 

@@ -355,8 +355,9 @@ fn get_rightmost_leaf(db: &DB) -> Result<Option<(NodeKey, LeafNode)>> {
     iter.seek_to_last();
 
     if iter.valid() {
-        let node_key = DbNodeKey::decode(iter.key().unwrap())?.into_inner();
-        let node = Node::try_from_slice(iter.value().unwrap())?;
+        let node_key =
+            DbNodeKey::decode(iter.key().expect("all DB entries should have a key"))?.into_inner();
+        let node = Node::try_from_slice(iter.value().expect("all DB entries should have a value"))?;
 
         if let Node::Leaf(leaf_node) = node {
             ret = Some((node_key, leaf_node));
