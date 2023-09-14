@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 /// A vendored copy of the unpublished `tracing-tower` crate.
 pub mod trace;
 
