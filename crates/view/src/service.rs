@@ -135,12 +135,33 @@ impl ViewService {
     async fn check_worker(&self) -> Result<(), tonic::Status> {
         // If the shared error slot is set, then an error has occurred in the worker
         // that we should bubble up.
-        if self.error_slot.lock().unwrap().is_some() {
+        if self
+            .error_slot
+            .lock()
+            .map_err(|e| {
+                tonic::Status::unavailable(format!("unable to lock worker error slot {:#}", e))
+            })?
+            .is_some()
+        {
             return Err(tonic::Status::new(
                 tonic::Code::Internal,
                 format!(
                     "Worker failed: {}",
-                    self.error_slot.lock().unwrap().as_ref().unwrap()
+                    self.error_slot
+                        .lock()
+                        .map_err(|e| {
+                            tonic::Status::unavailable(format!(
+                                "unable to lock worker error slot {:#}",
+                                e
+                            ))
+                        })?
+                        .as_ref()
+                        .map_err(|e| {
+                            tonic::Status::unavailable(format!(
+                                "unable to get ref to worker error slot {:#}",
+                                e
+                            ))
+                        })?
                 ),
             ));
         }
@@ -682,12 +703,31 @@ impl ViewProtocolService for ViewService {
 
         let maybe_tx = self
             .storage
-            .transaction_by_hash(&request.id.clone().unwrap().hash)
+            .transaction_by_hash(
+                &request
+                    .id
+                    .clone()
+                    .map_err(|_| {
+                        tonic::Status::invalid_argument(
+                            "missing transaction ID in TransactionInfoByHashRequest",
+                        )
+                    })?
+                    .hash,
+            )
             .await
             .map_err(|_| {
                 tonic::Status::failed_precondition(format!(
                     "Error retrieving transaction by hash {}",
-                    hex::encode(&request.id.unwrap().hash)
+                    hex::encode(
+                        &request
+                            .id
+                            .map_err(|_| {
+                                tonic::Status::invalid_argument(
+                                    "missing transaction ID in TransactionInfoByHashRequest",
+                                )
+                            })?
+                            .hash
+                    )
                 ))
             })?;
 
