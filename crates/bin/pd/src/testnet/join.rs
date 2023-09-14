@@ -23,7 +23,7 @@ pub async fn testnet_join(
     let mut node_dir = output_dir;
     node_dir.push("node0");
     let genesis_url = node.join("genesis")?;
-    tracing::info!(?genesis_url, "fetching genesis");
+    tracing::info!(%genesis_url, "fetching genesis");
     // We need to download the genesis data and the node ID from the remote node.
     // TODO: replace with TendermintProxyServiceClient
     let client = reqwest::Client::new();
@@ -114,7 +114,7 @@ pub async fn fetch_listen_address(tm_url: &Url) -> Option<TendermintAddress> {
 
     let listen_addr_url = Url::parse(&format!("{}", &listen_addr)).ok()?;
     tracing::info!(
-        ?listen_addr_url,
+        %listen_addr_url,
         "fetched listener address for bootstrap node"
     );
     parse_tm_address(Some(&node_id), &listen_addr_url).ok()
