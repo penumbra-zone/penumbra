@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 use std::convert::{TryFrom, TryInto};
 
 use ark_ff::UniformRand;

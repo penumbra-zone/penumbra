@@ -74,11 +74,13 @@ pub trait VerifyingKeyExt {
 impl VerifyingKeyExt for VerifyingKey<Bls12_377> {
     fn debug_id(&self) -> String {
         let mut buf = Vec::new();
-        self.serialize_compressed(&mut buf).unwrap();
+        self.serialize_compressed(&mut buf)
+            .expect("can serialize vk");
         use sha2::Digest;
         let hash = sha2::Sha256::digest(&buf);
         use bech32::ToBase32;
-        bech32::encode("groth16vk", hash.to_base32(), bech32::Variant::Bech32m).unwrap()
+        bech32::encode("groth16vk", hash.to_base32(), bech32::Variant::Bech32m)
+            .expect("can encode vk as bech32")
     }
 }
 
@@ -95,10 +97,12 @@ pub trait ProvingKeyExt {
 impl ProvingKeyExt for ProvingKey<Bls12_377> {
     fn debug_id(&self) -> String {
         let mut buf = Vec::new();
-        self.serialize_compressed(&mut buf).unwrap();
+        self.serialize_compressed(&mut buf)
+            .expect("can serialize pk");
         use sha2::Digest;
         let hash = sha2::Sha256::digest(&buf);
         use bech32::ToBase32;
-        bech32::encode("groth16pk", hash.to_base32(), bech32::Variant::Bech32m).unwrap()
+        bech32::encode("groth16pk", hash.to_base32(), bech32::Variant::Bech32m)
+            .expect("can encode pk as bech32")
     }
 }

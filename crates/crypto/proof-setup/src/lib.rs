@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 // Todo: prune public interface once we know exactly what's needed.
 mod dlog;
 mod group;

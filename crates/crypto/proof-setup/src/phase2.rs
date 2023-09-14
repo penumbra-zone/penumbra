@@ -166,8 +166,8 @@ impl Contribution {
         old: &CRSElements,
     ) -> Self {
         let delta = F::rand(rng);
-        // e.w. negligible probability this will not panic
-        let delta_inv = delta.inverse().unwrap();
+        // e.w. negligible probability this will panic (1 / 2^256)
+        let delta_inv = delta.inverse().expect("unable to inverse delta");
 
         let mut new = old.clone();
         new.raw.delta_1 *= delta;
@@ -294,7 +294,7 @@ mod test {
     fn non_trivial_crs() -> (CRSElements, RawCRSElements) {
         let delta = F::rand(&mut OsRng);
         // Won't panic e.w. negligible probability
-        let delta_inv = delta.inverse().unwrap();
+        let delta_inv = delta.inverse().expect("unable to inverse delta");
 
         make_crs(delta, delta_inv)
     }
@@ -344,7 +344,9 @@ mod test {
     #[test]
     fn test_contribution_produces_valid_crs() {
         let (root, start) = non_trivial_crs();
-        let start = start.validate(&mut OsRng, &root).unwrap();
+        let start = start
+            .validate(&mut OsRng, &root)
+            .expect("unable to validate start");
         let contribution = Contribution::make(
             &mut OsRng,
             ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
@@ -360,7 +362,9 @@ mod test {
     #[test]
     fn test_can_calculate_contribution_hash() {
         let (root, start) = non_trivial_crs();
-        let start = start.validate(&mut OsRng, &root).unwrap();
+        let start = start
+            .validate(&mut OsRng, &root)
+            .expect("unable to validate start");
         let contribution = Contribution::make(
             &mut OsRng,
             ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
@@ -372,7 +376,9 @@ mod test {
     #[test]
     fn test_contribution_is_linked_to_parent() {
         let (root, start) = non_trivial_crs();
-        let start = start.validate(&mut OsRng, &root).unwrap();
+        let start = start
+            .validate(&mut OsRng, &root)
+            .expect("unable to validate start");
         let contribution = Contribution::make(
             &mut OsRng,
             ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
@@ -384,7 +390,9 @@ mod test {
     #[test]
     fn test_contribution_is_not_linked_to_itself() {
         let (root, start) = non_trivial_crs();
-        let start = start.validate(&mut OsRng, &root).unwrap();
+        let start = start
+            .validate(&mut OsRng, &root)
+            .expect("unable to validate start");
         let contribution = Contribution::make(
             &mut OsRng,
             ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),

@@ -22,7 +22,8 @@ fn check_phase1(contribution: &Phase1RawContribution, parent: &Phase1CRSElements
     if validated_contribution.is_none() {
         return false;
     }
-    let validated_contribution = validated_contribution.unwrap();
+    let validated_contribution =
+        validated_contribution.expect("validated contribution must be set");
     validated_contribution.is_linked_to(parent)
 }
 
@@ -46,7 +47,8 @@ fn check_phase2(
     if validated_contribution.is_none() {
         return false;
     }
-    let validated_contribution = validated_contribution.unwrap();
+    let validated_contribution =
+        validated_contribution.expect("validated contribution must be set");
     validated_contribution.is_linked_to(parent)
 }
 

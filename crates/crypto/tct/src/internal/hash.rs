@@ -186,7 +186,9 @@ impl Hash {
                 hashes.push((below, hash_node(height, below, below, below, below)));
             }
 
-            hashes.try_into().unwrap()
+            hashes
+                .try_into()
+                .expect("precomputed hashes should be the right length")
         });
 
         // If the height is in the range of the precomputed hashes, check if all the inputs are
