@@ -78,12 +78,12 @@ impl App {
         events
     }
 
-    pub async fn init_chain(&mut self, app_state_general: &genesis::GenesisAppState) {
+    pub async fn init_chain(&mut self, app_state_general: &genesis::AppState) {
         let app_state = match app_state_general {
-            genesis::GenesisAppState::Checkpoint(_) => {
+            genesis::AppState::Checkpoint(_) => {
                 unimplemented!("adding support with init handshake pr")
             }
-            genesis::GenesisAppState::Content(state) => state,
+            genesis::AppState::Content(state) => state,
         };
         let mut state_tx = self
             .state

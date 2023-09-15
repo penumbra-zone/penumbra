@@ -29,7 +29,7 @@ pub struct TestnetConfig {
     /// The name of the network
     pub name: String,
     /// The Tendermint genesis for initial chain state.
-    pub genesis: Genesis<genesis::GenesisContent>,
+    pub genesis: Genesis<genesis::Content>,
     /// Path to local directory where config files will be written to
     pub testnet_dir: PathBuf,
     /// Set of validators at genesis. Uses the convenient wrapper type
@@ -180,10 +180,10 @@ impl TestnetConfig {
         active_validator_limit: Option<u64>,
         epoch_duration: Option<u64>,
         unbonding_epochs: Option<u64>,
-    ) -> anyhow::Result<genesis::GenesisContent> {
+    ) -> anyhow::Result<genesis::Content> {
         // Look up default chain params, so we can fill in defaults.
         let default_params = ChainParameters::default();
-        let app_state = genesis::GenesisContent {
+        let app_state = genesis::Content {
             allocations: allocations.clone(),
             chain_params: ChainParameters {
                 chain_id: chain_id.to_string(),
@@ -202,8 +202,8 @@ impl TestnetConfig {
 
     /// Build Tendermint genesis data, based on Penumbra initial application state.
     pub(crate) fn make_genesis(
-        app_state: genesis::GenesisContent,
-    ) -> anyhow::Result<Genesis<genesis::GenesisContent>> {
+        app_state: genesis::Content,
+    ) -> anyhow::Result<Genesis<genesis::Content>> {
         // Use now as genesis time
         let genesis_time = Time::from_unix_timestamp(
             SystemTime::now()

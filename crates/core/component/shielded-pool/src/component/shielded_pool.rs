@@ -20,15 +20,15 @@ pub struct ShieldedPool {}
 
 #[async_trait]
 impl Component for ShieldedPool {
-    type AppState = genesis::GenesisAppState;
+    type AppState = genesis::AppState;
 
     #[instrument(name = "shielded_pool", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::GenesisAppState) {
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
         let app_state = match app_state {
-            genesis::GenesisAppState::Checkpoint(_) => {
+            genesis::AppState::Checkpoint(_) => {
                 unimplemented!("adding support with init handshake pr")
             }
-            genesis::GenesisAppState::Content(app_state) => app_state,
+            genesis::AppState::Content(app_state) => app_state,
         };
 
         // Register a denom for each asset in the genesis state

@@ -24,7 +24,7 @@ impl App {
         }
     }
 
-    pub async fn init_chain(&mut self, _app_state: &genesis::GenesisAppState) {
+    pub async fn init_chain(&mut self, _app_state: &genesis::AppState) {
         let state_tx = self
             .state
             .try_begin_transaction()

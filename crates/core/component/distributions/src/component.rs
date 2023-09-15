@@ -16,7 +16,7 @@ pub struct Distributions {}
 
 #[async_trait]
 impl Component for Distributions {
-    type AppState = genesis::GenesisAppState;
+    type AppState = genesis::AppState;
 
     async fn init_chain<S: StateWrite>(_state: S, _app_state: &Self::AppState) {}
 
