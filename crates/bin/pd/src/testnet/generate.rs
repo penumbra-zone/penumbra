@@ -82,7 +82,7 @@ impl TestnetConfig {
             testnet_validators.iter().map(|v| v.try_into()).collect();
         let validators = validators?;
 
-        let app_state = Self::makei_genesis_content(
+        let app_state = Self::make_genesis_content(
             chain_id,
             allocations,
             validators.to_vec(),
@@ -172,8 +172,9 @@ impl TestnetConfig {
         }
     }
 
-    /// Build initial state for Penumbra application, for inclusion in Tendermint genesis.
-    fn makei_genesis_content(
+    /// Create a full genesis configuration for inclusion in the tendermint
+    /// genesis config.
+    fn make_genesis_content(
         chain_id: &str,
         allocations: Vec<Allocation>,
         validators: Vec<Validator>,
