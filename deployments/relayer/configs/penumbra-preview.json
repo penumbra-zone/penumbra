@@ -2,7 +2,7 @@
   "type": "penumbra",
   "value": {
     "key": "default",
-    "chain-id": "penumbra-testnet-mimas-9c37890f",
+    "chain-id": "penumbra-testnet-tethys-cc6f18f4",
     "rpc-addr": "https://rpc.testnet-preview.penumbra.zone:443",
     "account-prefix": "penumbrav2t",
     "keyring-backend": "test",

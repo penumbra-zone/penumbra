@@ -8,13 +8,18 @@ testnet-preview and a local devnet on the same or similar commit.
 ## Running a local devnet
 To create a path between the public testnet-preview chain and a local devnet:
 
+0. Download the `rly` binary from [cosmos/relayer](https://github.com/cosmos/relayer/releases) and stick it in your `$PATH`.
 1. Run `./deployments/scripts/relayer-local-devnet` to bootstrap the local chain.
 2. Wait until the message "OK, devnet is up and running" is printed.
 3. In another terminal, `cd deployments/relayer` and  `./build-path`.
+4. Finally, run `rly --debug start` to run a local instance of the relayer.
 
 The `pd` logs visible from the `relayer-local-devnet` are intentionally verbose,
 to aid in debugging the creation of clients, connections, and channels. You may
 wish to add more tracing statements to your local copy of `pd`.
+
+See the [docs on IBC withdrawal transactions](https://guide.penumbra.zone/main/pcli/transaction.html#ibc-withdrawals)
+and adapt the node arguments to match local devnet and preview.
 
 ## Building a path between testnet & preview
 Inside this directory, run:
@@ -33,21 +38,6 @@ that aren't yet known to work.
 Given the rapid pace of development, it's possible that proto definitions
 are out of sync between testnet & preview, in which case there may be errors.
 To debug, consider running a local devnet and linking it with preview.
-
-## Verifying IBC functionality between chains
-
-There are three key stages to working IBC: clients, channels, and connections.
-Use the commands below to evaluate whether each step is correctly configured:
-
-```
-pcli -n http://localhost:8080 q ibc client 07-tendermint-0
-pcli -n http://localhost:8080 q ibc channel transfer channel-0
-pcli -n http://localhost:8080 q ibc connection connection-0
-```
-
-Remember to check the same on the corresponding counterparty chain, e.g. testnet-preview.
-The `client` values may not be the same between chains, so try incrementing the values
-until no results are found as a surrogate for querying via pcli.
 
 ## Updating proto definitions in relayer
 Sometimes the protos between preview & testnet get out of sync. When this happens,
