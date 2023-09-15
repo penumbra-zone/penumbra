@@ -996,12 +996,12 @@ impl serde::Serialize for GenesisCheckpoint {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.app_hash.is_empty() {
+        if !self.checkpoint.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.chain.v1alpha1.GenesisCheckpoint", len)?;
-        if !self.app_hash.is_empty() {
-            struct_ser.serialize_field("appHash", pbjson::private::base64::encode(&self.app_hash).as_str())?;
+        if !self.checkpoint.is_empty() {
+            struct_ser.serialize_field("checkpoint", pbjson::private::base64::encode(&self.checkpoint).as_str())?;
         }
         struct_ser.end()
     }
@@ -1013,13 +1013,12 @@ impl<'de> serde::Deserialize<'de> for GenesisCheckpoint {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "app_hash",
-            "appHash",
+            "checkpoint",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            AppHash,
+            Checkpoint,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -1041,7 +1040,7 @@ impl<'de> serde::Deserialize<'de> for GenesisCheckpoint {
                         E: serde::de::Error,
                     {
                         match value {
-                            "appHash" | "app_hash" => Ok(GeneratedField::AppHash),
+                            "checkpoint" => Ok(GeneratedField::Checkpoint),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -1061,21 +1060,21 @@ impl<'de> serde::Deserialize<'de> for GenesisCheckpoint {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut app_hash__ = None;
+                let mut checkpoint__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::AppHash => {
-                            if app_hash__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("appHash"));
+                        GeneratedField::Checkpoint => {
+                            if checkpoint__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("checkpoint"));
                             }
-                            app_hash__ = 
+                            checkpoint__ = 
                                 Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
                 }
                 Ok(GenesisCheckpoint {
-                    app_hash: app_hash__.unwrap_or_default(),
+                    checkpoint: checkpoint__.unwrap_or_default(),
                 })
             }
         }

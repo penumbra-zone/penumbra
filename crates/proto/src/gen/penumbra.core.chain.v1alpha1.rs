@@ -203,8 +203,10 @@ pub mod genesis_app_state {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisCheckpoint {
+    /// A free-form description of the genesis checkpoint, this could be a hash of the genesis
+    /// file, a commit reference, or an app hash.
     #[prost(bytes = "vec", tag = "1")]
-    pub app_hash: ::prost::alloc::vec::Vec<u8>,
+    pub checkpoint: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
