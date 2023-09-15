@@ -1,7 +1,7 @@
 use anyhow::Context;
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
 use directories::UserDirs;
-use penumbra_chain::genesis::Content;
+use penumbra_chain::genesis::AppState;
 use penumbra_keys::keys::{SpendKey, SpendKeyBytes};
 use penumbra_wallet::KeyStore;
 use rand::Rng;
@@ -71,7 +71,7 @@ impl TestnetTendermintConfig {
         &self,
         node_dir: PathBuf,
         v: &TestnetValidator,
-        genesis: &Genesis<Content>,
+        genesis: &Genesis<AppState>,
     ) -> anyhow::Result<()> {
         // We'll also create the pd state directory here, since it's convenient.
         let pd_dir = node_dir.clone().join("pd");

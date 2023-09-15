@@ -92,9 +92,8 @@ impl Consensus {
     /// the database.
     async fn init_chain(&mut self, init_chain: request::InitChain) -> Result<response::InitChain> {
         // Note that errors cannot be handled in InitChain, the application must crash.
-        let app_state: genesis::AppState =
-            serde_json::from_slice(&init_chain.app_state_bytes)
-                .expect("can parse app_state in genesis file");
+        let app_state: genesis::AppState = serde_json::from_slice(&init_chain.app_state_bytes)
+            .expect("can parse app_state in genesis file");
 
         // Check that we haven't got a duplicated InitChain message for some reason:
         if self.storage.latest_version() != u64::MAX {

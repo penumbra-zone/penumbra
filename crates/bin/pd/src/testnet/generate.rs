@@ -29,7 +29,7 @@ pub struct TestnetConfig {
     /// The name of the network
     pub name: String,
     /// The Tendermint genesis for initial chain state.
-    pub genesis: Genesis<genesis::Content>,
+    pub genesis: Genesis<genesis::AppState>,
     /// Path to local directory where config files will be written to
     pub testnet_dir: PathBuf,
     /// Set of validators at genesis. Uses the convenient wrapper type
@@ -203,7 +203,7 @@ impl TestnetConfig {
     /// Build Tendermint genesis data, based on Penumbra initial application state.
     pub(crate) fn make_genesis(
         app_state: genesis::Content,
-    ) -> anyhow::Result<Genesis<genesis::Content>> {
+    ) -> anyhow::Result<Genesis<genesis::AppState>> {
         // Use now as genesis time
         let genesis_time = Time::from_unix_timestamp(
             SystemTime::now()
@@ -245,7 +245,7 @@ impl TestnetConfig {
             },
             // always empty in genesis json
             app_hash: tendermint::AppHash::default(),
-            app_state,
+            app_state: genesis::AppState::Content(app_state),
             // Set empty validator set for Tendermint config, which falls back to reading
             // validators from the AppState, via ResponseInitChain:
             // https://docs.tendermint.com/v0.32/tendermint-core/using-tendermint.html
@@ -627,7 +627,10 @@ mod tests {
         assert_eq!(testnet_config.name, "test-chain-1234");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
         // No external address template was given, so only 1 validator will be present.
-        assert_eq!(testnet_config.genesis.app_state.validators.len(), 1);
+        let genesis::AppState::Content(app_state) = testnet_config.genesis.app_state else {
+            unimplemented!("TODO: support checkpointed app state")
+        };
+        assert_eq!(app_state.validators.len(), 1);
         Ok(())
     }
 
@@ -650,7 +653,10 @@ mod tests {
         )?;
         assert_eq!(testnet_config.name, "test-chain-4567");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
-        assert_eq!(testnet_config.genesis.app_state.validators.len(), 2);
+        let genesis::AppState::Content(app_state) = testnet_config.genesis.app_state else {
+            unimplemented!("TODO: support checkpointed app state")
+        };
+        assert_eq!(app_state.validators.len(), 2);
         Ok(())
     }
 
