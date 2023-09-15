@@ -29,7 +29,7 @@ pub struct TestnetConfig {
     /// The name of the network
     pub name: String,
     /// The Tendermint genesis for initial chain state.
-    pub genesis: Genesis<genesis::AppState>,
+    pub genesis: Genesis<genesis::GenesisContent>,
     /// Path to local directory where config files will be written to
     pub testnet_dir: PathBuf,
     /// Set of validators at genesis. Uses the convenient wrapper type
@@ -82,7 +82,7 @@ impl TestnetConfig {
             testnet_validators.iter().map(|v| v.try_into()).collect();
         let validators = validators?;
 
-        let app_state = Self::make_appstate(
+        let app_state = Self::makei_genesis_content(
             chain_id,
             allocations,
             validators.to_vec(),
@@ -173,17 +173,17 @@ impl TestnetConfig {
     }
 
     /// Build initial state for Penumbra application, for inclusion in Tendermint genesis.
-    fn make_appstate(
+    fn makei_genesis_content(
         chain_id: &str,
         allocations: Vec<Allocation>,
         validators: Vec<Validator>,
         active_validator_limit: Option<u64>,
         epoch_duration: Option<u64>,
         unbonding_epochs: Option<u64>,
-    ) -> anyhow::Result<genesis::AppState> {
+    ) -> anyhow::Result<genesis::GenesisContent> {
         // Look up default chain params, so we can fill in defaults.
         let default_params = ChainParameters::default();
-        let app_state = genesis::AppState {
+        let app_state = genesis::GenesisContent {
             allocations: allocations.clone(),
             chain_params: ChainParameters {
                 chain_id: chain_id.to_string(),
@@ -202,8 +202,8 @@ impl TestnetConfig {
 
     /// Build Tendermint genesis data, based on Penumbra initial application state.
     pub(crate) fn make_genesis(
-        app_state: genesis::AppState,
-    ) -> anyhow::Result<Genesis<genesis::AppState>> {
+        app_state: genesis::GenesisContent,
+    ) -> anyhow::Result<Genesis<genesis::GenesisContent>> {
         // Use now as genesis time
         let genesis_time = Time::from_unix_timestamp(
             SystemTime::now()

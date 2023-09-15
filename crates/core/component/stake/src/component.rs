@@ -889,10 +889,17 @@ impl<T: StateWrite + StateWriteExt + ?Sized> StakingImpl for T {}
 
 #[async_trait]
 impl Component for Staking {
-    type AppState = genesis::AppState;
+    type AppState = genesis::GenesisAppState;
 
     #[instrument(name = "staking", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::GenesisAppState) {
+        let app_state = match app_state {
+            genesis::GenesisAppState::Checkpoint(_) => {
+                unimplemented!("adding support with init handshake pr")
+            }
+            genesis::GenesisAppState::Content(state) => state,
+        };
+
         let starting_height = state
             .get_block_height()
             .await

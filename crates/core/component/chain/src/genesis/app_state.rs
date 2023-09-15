@@ -5,12 +5,21 @@ use penumbra_proto::{
 use serde::{Deserialize, Serialize};
 
 use super::Allocation;
-use crate::params::ChainParameters;
+use crate::{component::AppHash, params::ChainParameters};
 
 /// The application state at genesis.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(try_from = "pb::GenesisAppState", into = "pb::GenesisAppState")]
-pub struct AppState {
+pub enum GenesisAppState {
+    /// The application state at genesis.
+    Content(GenesisContent),
+    /// The checkpointed application state at genesis.
+    Checkpoint(AppHash),
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(try_from = "pb::GenesisContent", into = "pb::GenesisContent")]
+pub struct GenesisContent {
     /// Global configuration for the chain, such as chain ID and epoch duration.
     pub chain_params: ChainParameters,
     /// The initial validator set.
@@ -19,7 +28,13 @@ pub struct AppState {
     pub allocations: Vec<Allocation>,
 }
 
-impl Default for AppState {
+impl Default for GenesisAppState {
+    fn default() -> Self {
+        Self::Content(Default::default())
+    }
+}
+
+impl Default for GenesisContent {
     fn default() -> Self {
         Self {
             chain_params: Default::default(),
@@ -67,21 +82,81 @@ impl Default for AppState {
     }
 }
 
-impl From<AppState> for pb::GenesisAppState {
-    fn from(a: AppState) -> Self {
+impl From<GenesisAppState> for pb::GenesisAppState {
+    fn from(a: GenesisAppState) -> Self {
+        let genesis_state = match a {
+            GenesisAppState::Content(c) => {
+                pb::genesis_app_state::GenesisAppState::GenesisContent(c.into())
+            }
+            GenesisAppState::Checkpoint(h) => {
+                pb::genesis_app_state::GenesisAppState::GenesisCheckpoint(h.into())
+            }
+        };
+
         pb::GenesisAppState {
-            validators: a.validators.into_iter().map(Into::into).collect(),
-            allocations: a.allocations.into_iter().map(Into::into).collect(),
-            chain_params: Some(a.chain_params.into()),
+            genesis_app_state: Some(genesis_state),
         }
     }
 }
 
-impl TryFrom<pb::GenesisAppState> for AppState {
+impl From<GenesisContent> for pb::GenesisContent {
+    fn from(value: GenesisContent) -> Self {
+        pb::GenesisContent {
+            chain_params: Some(value.chain_params.into()),
+            validators: value.validators.into_iter().map(Into::into).collect(),
+            allocations: value.allocations.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl TryFrom<pb::GenesisAppState> for GenesisAppState {
     type Error = anyhow::Error;
 
     fn try_from(msg: pb::GenesisAppState) -> Result<Self, Self::Error> {
-        Ok(AppState {
+        let state = msg
+            .genesis_app_state
+            .ok_or_else(|| anyhow::anyhow!("missing genesis_app_state field in proto"))?;
+        match state {
+            pb::genesis_app_state::GenesisAppState::GenesisContent(c) => {
+                Ok(GenesisAppState::Content(c.try_into()?))
+            }
+            pb::genesis_app_state::GenesisAppState::GenesisCheckpoint(h) => {
+                Ok(GenesisAppState::Checkpoint(h.try_into()?))
+            }
+        }
+    }
+}
+
+impl TryFrom<pb::GenesisCheckpoint> for AppHash {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::GenesisCheckpoint) -> Result<Self, Self::Error> {
+        let msg = msg.app_hash;
+        if msg.len() != 32 {
+            return Err(anyhow::anyhow!(
+                "app hash must be 32 bytes, got {}",
+                msg.len()
+            ));
+        }
+
+        let h: [u8; 32] = msg.try_into().expect("array is 32 bytes");
+        Ok(AppHash(h))
+    }
+}
+
+impl From<AppHash> for pb::GenesisCheckpoint {
+    fn from(h: AppHash) -> Self {
+        pb::GenesisCheckpoint {
+            app_hash: h.0.into(),
+        }
+    }
+}
+
+impl TryFrom<pb::GenesisContent> for GenesisContent {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::GenesisContent) -> Result<Self, Self::Error> {
+        Ok(GenesisContent {
             chain_params: msg
                 .chain_params
                 .context("chain params not present in protobuf message")?
@@ -101,24 +176,24 @@ impl TryFrom<pb::GenesisAppState> for AppState {
     }
 }
 
-impl TypeUrl for AppState {
+impl TypeUrl for GenesisAppState {
     const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.GenesisAppState";
 }
 
-impl DomainType for AppState {
+impl DomainType for GenesisAppState {
     type Proto = pb::GenesisAppState;
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-    /// Check that the default implementation of AppState contains zero validators,
+    /// Check that the default implementation of contains zero validators,
     /// requiring validators to be passed in out of band. N.B. there's also a
     /// `validators` field in the [`tendermint::Genesis`] struct, which we don't use,
     /// preferring the AppState definition instead.
     #[test]
     fn check_validator_defaults() -> anyhow::Result<()> {
-        let a = AppState {
+        let a = GenesisContent {
             ..Default::default()
         };
         assert!(a.validators.len() == 0);
