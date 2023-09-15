@@ -269,7 +269,7 @@ async fn main() -> anyhow::Result<()> {
                 ?grpc_bind,
                 ?grpc_auto_https,
                 ?metrics_bind,
-                ?tendermint_addr,
+                %tendermint_addr,
                 "starting pd"
             );
 
