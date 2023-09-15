@@ -198,7 +198,7 @@ while read -r i ; do
         echo "Most recently active channel is: $(( i - 1))" ;
         break ;
     fi ;
-done <<< "$(seq 0 10)"
+done <<< "$(seq 0 100)"
 ```
 
 You should see output like "Most recently active channel is: 0". Make note of that number,
