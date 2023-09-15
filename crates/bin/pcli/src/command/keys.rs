@@ -82,16 +82,14 @@ impl KeysCmd {
                 // shared by users accidentally in log output.
                 println!("YOUR PRIVATE SEED PHRASE: {seed_phrase}\nDO NOT SHARE WITH ANYONE!");
 
-                if *bip44_derivation {
+                let wallet = if *bip44_derivation {
                     let path = Bip44Path::new(0);
-                    let wallet = KeyStore::from_seed_phrase_bip44(seed_phrase, &path);
-                    wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
-                    self.archive_wallet(&wallet)?;
+                    KeyStore::from_seed_phrase_bip44(seed_phrase, &path)
                 } else {
-                    let wallet = KeyStore::from_seed_phrase_bip39(seed_phrase);
-                    wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
-                    self.archive_wallet(&wallet)?;
-                }
+                    KeyStore::from_seed_phrase_bip39(seed_phrase)
+                };
+                wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
+                self.archive_wallet(&wallet)?;
             }
             KeysCmd::Import(ImportCmd::Phrase { bip44_derivation }) => {
                 let mut seed_phrase = String::new();
@@ -110,20 +108,15 @@ impl KeysCmd {
                     }
                 }
 
-                if *bip44_derivation {
+                let seed_phrase = SeedPhrase::from_str(&seed_phrase)?;
+                let wallet = if *bip44_derivation {
                     let path = Bip44Path::new(0);
-                    let wallet = KeyStore::from_seed_phrase_bip44(
-                        SeedPhrase::from_str(&seed_phrase)?,
-                        &path,
-                    );
-                    wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
-                    self.archive_wallet(&wallet)?;
+                    KeyStore::from_seed_phrase_bip44(seed_phrase, &path)
                 } else {
-                    let wallet =
-                        KeyStore::from_seed_phrase_bip39(SeedPhrase::from_str(&seed_phrase)?);
-                    wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
-                    self.archive_wallet(&wallet)?;
-                }
+                    KeyStore::from_seed_phrase_bip39(seed_phrase)
+                };
+                wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
+                self.archive_wallet(&wallet)?;
             }
             KeysCmd::Export(ExportCmd::FullViewingKey) => {
                 let wallet = KeyStore::load(data_dir.join(crate::CUSTODY_FILE_NAME))?;
