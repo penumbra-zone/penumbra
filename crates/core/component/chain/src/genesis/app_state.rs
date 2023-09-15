@@ -88,11 +88,7 @@ impl From<AppState> for pb::GenesisAppState {
             AppState::Content(c) => {
                 pb::genesis_app_state::GenesisAppState::GenesisContent(c.into())
             }
-            AppState::Checkpoint(h) => {
-                pb::genesis_app_state::GenesisAppState::GenesisCheckpoint(pb::GenesisCheckpoint {
-                    checkpoint: h,
-                })
-            }
+            AppState::Checkpoint(h) => pb::genesis_app_state::GenesisAppState::GenesisCheckpoint(h),
         };
 
         pb::GenesisAppState {
@@ -125,31 +121,6 @@ impl TryFrom<pb::GenesisAppState> for AppState {
             pb::genesis_app_state::GenesisAppState::GenesisCheckpoint(h) => {
                 Ok(AppState::Checkpoint(h.try_into()?))
             }
-        }
-    }
-}
-
-impl TryFrom<pb::GenesisCheckpoint> for AppHash {
-    type Error = anyhow::Error;
-
-    fn try_from(msg: pb::GenesisCheckpoint) -> Result<Self, Self::Error> {
-        let msg = msg.app_hash;
-        if msg.len() != 32 {
-            return Err(anyhow::anyhow!(
-                "app hash must be 32 bytes, got {}",
-                msg.len()
-            ));
-        }
-
-        let h: [u8; 32] = msg.try_into().expect("array is 32 bytes");
-        Ok(AppHash(h))
-    }
-}
-
-impl From<AppHash> for pb::GenesisCheckpoint {
-    fn from(h: AppHash) -> Self {
-        pb::GenesisCheckpoint {
-            checkpoint: h.0.into(),
         }
     }
 }
