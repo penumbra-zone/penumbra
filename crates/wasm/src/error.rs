@@ -1,4 +1,5 @@
 use base64::DecodeError;
+use penumbra_tct::error::{InsertBlockError, InsertEpochError, InsertError};
 use serde_wasm_bindgen::Error;
 use std::convert::Infallible;
 use thiserror::Error;
@@ -40,6 +41,15 @@ pub enum WasmError {
 
     #[error("{0}")]
     DecodeError(#[from] DecodeError),
+
+    #[error("{0}")]
+    InsertError(#[from] InsertError),
+
+    #[error("{0}")]
+    InsertEpochError(#[from] InsertEpochError),
+
+    #[error("{0}")]
+    InsertBlockError(#[from] InsertBlockError),
 }
 
 impl From<WasmError> for serde_wasm_bindgen::Error {

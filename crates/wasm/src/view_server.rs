@@ -1,32 +1,24 @@
 use crate::error::WasmResult;
 use crate::note_record::SpendableNoteRecord;
+use crate::storage::IndexedDBStorage;
 use crate::swap_record::SwapRecord;
-use crate::utils;
-use anyhow::Context;
-use indexed_db_futures::prelude::OpenDbRequest;
-use indexed_db_futures::{IdbDatabase, IdbQuerySource};
 use penumbra_asset::asset::{DenomMetadata, Id};
 use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_dex::lp::position::Position;
 use penumbra_dex::lp::LpNft;
 use penumbra_keys::FullViewingKey;
-use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
-use penumbra_proto::DomainType;
 use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{note, Note};
+use penumbra_shielded_pool::note;
 use penumbra_tct as tct;
 use penumbra_tct::Witness::*;
-use penumbra_transaction::Transaction;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::Error;
-use std::collections::BTreeSet;
 use std::convert::TryInto;
 use std::{collections::BTreeMap, str::FromStr};
 use tct::storage::{StoreCommitment, StoreHash, StoredPosition, Updates};
 use tct::{Forgotten, Tree};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
-use web_sys::console as web_console;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StoredTree {
@@ -60,18 +52,6 @@ impl ScanBlockResult {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TxInfoResponse {
-    txp: TransactionPerspective,
-    txv: TransactionView,
-}
-
-impl TxInfoResponse {
-    pub fn new(txp: TransactionPerspective, txv: TransactionView) -> TxInfoResponse {
-        Self { txp, txv }
-    }
-}
-
 #[wasm_bindgen]
 pub struct ViewServer {
     latest_height: u64,
@@ -82,12 +62,13 @@ pub struct ViewServer {
     swaps: BTreeMap<tct::StateCommitment, SwapRecord>,
     denoms: BTreeMap<Id, DenomMetadata>,
     nct: penumbra_tct::Tree,
+    storage: IndexedDBStorage,
 }
 
 #[wasm_bindgen]
 impl ViewServer {
     #[wasm_bindgen(constructor)]
-    pub fn new(
+    pub async fn new(
         full_viewing_key: &str,
         epoch_duration: u64,
         stored_tree: JsValue,
@@ -104,20 +85,100 @@ impl ViewServer {
             denoms: Default::default(),
             nct: tree,
             swaps: Default::default(),
+            storage: IndexedDBStorage::new().await?,
         };
         Ok(view_server)
     }
 
     /// Scans block for notes, swaps
+    /// This method does not return SCT updates (nct_updates).
+    /// Although we can make it do if we want to save SCT updates after each blob is processed
     /// Arguments:
     ///     compact_block: `v1alpha1::CompactBlock`
     /// Returns: `ScanBlockResult`
-    #[wasm_bindgen]
+    #[wasm_bindgen(js_name = scanBlock)]
     pub async fn scan_block(&mut self, compact_block: JsValue) -> Result<JsValue, Error> {
-        let block_proto: penumbra_proto::core::chain::v1alpha1::CompactBlock =
-            serde_wasm_bindgen::from_value(compact_block).unwrap();
+        let result = self.scan_block_inner(compact_block).await?;
+        serde_wasm_bindgen::to_value(&result)
+    }
 
-        let block: CompactBlock = block_proto.try_into().unwrap();
+    /// get SCT state updates
+    /// This method is necessary because we save SCT updates to indexedDB once every 1000 blocks
+    /// rather than after each block
+    /// Arguments:
+    ///     last_position: `Option<StoredPosition>`
+    ///     last_forgotten: `Option<Forgotten>`
+    /// Returns: `ScanBlockResult`
+    pub fn get_updates(
+        &mut self,
+        last_position: JsValue,
+        last_forgotten: JsValue,
+    ) -> Result<JsValue, Error> {
+        let result = self.get_updates_inner(last_position, last_forgotten)?;
+        Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+    }
+
+    /// get SCT root
+    /// SCT root can be compared with the root obtained by GRPC and verify that there is no divergence
+    /// Returns: `Root`
+    pub fn get_nct_root(&mut self) -> Result<JsValue, Error> {
+        let root = self.nct.root();
+        serde_wasm_bindgen::to_value(&root)
+    }
+
+    /// get LP NFT asset
+    /// Arguments:
+    ///     position_value: `lp::position::Position`
+    ///     position_state_value: `lp::position::State`
+    /// Returns: `DenomMetadata`
+    pub fn get_lpnft_asset(
+        &mut self,
+        position_value: JsValue,
+        position_state_value: JsValue,
+    ) -> Result<JsValue, Error> {
+        let position: Position = serde_wasm_bindgen::from_value(position_value)?;
+        let position_state = serde_wasm_bindgen::from_value(position_state_value)?;
+        let lp_nft = LpNft::new(position.id(), position_state);
+        let denom = lp_nft.denom();
+        serde_wasm_bindgen::to_value(&denom)
+    }
+}
+
+impl ViewServer {
+    pub fn get_updates_inner(
+        &mut self,
+        last_position: JsValue,
+        last_forgotten: JsValue,
+    ) -> WasmResult<ScanBlockResult> {
+        let stored_position: Option<StoredPosition> =
+            serde_wasm_bindgen::from_value(last_position)?;
+        let stored_forgotten: Option<Forgotten> = serde_wasm_bindgen::from_value(last_forgotten)?;
+
+        let nct_updates: Updates = self
+            .nct
+            .updates(
+                stored_position.unwrap_or_default(),
+                stored_forgotten.unwrap_or_default(),
+            )
+            .collect::<Updates>();
+
+        let result = ScanBlockResult {
+            height: self.latest_height,
+            nct_updates,
+            new_notes: self.notes.clone().into_values().collect(),
+            new_swaps: self.swaps.clone().into_values().collect(),
+        };
+        Ok(result)
+    }
+
+    pub async fn scan_block_inner(
+        &mut self,
+        compact_block: JsValue,
+    ) -> WasmResult<ScanBlockResult> {
+        let block_proto: penumbra_proto::core::chain::v1alpha1::CompactBlock =
+            serde_wasm_bindgen::from_value(compact_block)?;
+
+        let block: CompactBlock = block_proto.try_into()?;
 
         // Newly detected spendable notes.
         let mut new_notes = Vec::new();
@@ -131,8 +192,7 @@ impl ViewServer {
                 StatePayload::Note { note: payload, .. } => {
                     match payload.trial_decrypt(&self.fvk) {
                         Some(note) => {
-                            let note_position =
-                                self.nct.insert(Keep, payload.note_commitment).unwrap();
+                            let note_position = self.nct.insert(Keep, payload.note_commitment)?;
 
                             let source = clone_payload.source().cloned().unwrap_or_default();
                             let nullifier = Nullifier::derive(
@@ -144,8 +204,6 @@ impl ViewServer {
                                 .fvk
                                 .incoming()
                                 .index_for_diversifier(note.diversifier());
-
-                            web_console::log_1(&"Found new notes".into());
 
                             let note_record = SpendableNoteRecord {
                                 note_commitment: clone_payload.commitment().clone(),
@@ -164,14 +222,14 @@ impl ViewServer {
                                 .insert(nullifier, note_record.clone());
                         }
                         None => {
-                            self.nct.insert(Forget, payload.note_commitment).unwrap();
+                            self.nct.insert(Forget, payload.note_commitment)?;
                         }
                     }
                 }
                 StatePayload::Swap { swap: payload, .. } => {
                     match payload.trial_decrypt(&self.fvk) {
                         Some(swap) => {
-                            let swap_position = self.nct.insert(Keep, payload.commitment).unwrap();
+                            let swap_position = self.nct.insert(Keep, payload.commitment)?;
                             let batch_data = block
                                 .swap_outputs
                                 .get(&swap.trading_pair)
@@ -197,32 +255,33 @@ impl ViewServer {
                             new_swaps.push(swap_record.clone());
                             self.swaps.insert(payload.commitment, swap_record);
 
-                            let batch_data = block
-                                .swap_outputs
-                                .get(&swap.trading_pair)
-                                .ok_or_else(|| anyhow::anyhow!("server gave invalid compact block"))
-                                .unwrap();
+                            let batch_data =
+                                block.swap_outputs.get(&swap.trading_pair).ok_or_else(|| {
+                                    anyhow::anyhow!("server gave invalid compact block")
+                                })?;
 
                             let (output_1, output_2) = swap.output_notes(batch_data);
 
-                            store_advice(output_1).await;
-                            store_advice(output_2).await;
+                            self.storage.store_advice(output_1).await?;
+                            self.storage.store_advice(output_2).await?;
                         }
                         None => {
-                            self.nct.insert(Forget, payload.commitment).unwrap();
+                            self.nct.insert(Forget, payload.commitment)?;
                         }
                     }
                 }
                 StatePayload::RolledUp(commitment) => {
-                    if self.notes.contains_key(&commitment) {
+                    if let std::collections::btree_map::Entry::Occupied(mut e) =
+                        self.notes.entry(commitment)
+                    {
                         // This is a note we anticipated, so retain its auth path.
 
-                        let advice_result = read_advice(commitment).await;
+                        let advice_result = self.storage.read_advice(commitment).await?;
 
                         match advice_result {
                             None => {}
                             Some(note) => {
-                                let position = self.nct.insert(Keep, commitment).unwrap();
+                                let position = self.nct.insert(Keep, commitment)?;
 
                                 let address_index_1 = self
                                     .fvk
@@ -248,21 +307,21 @@ impl ViewServer {
                                     source,
                                 };
 
-                                self.notes.insert(commitment, spendable_note.clone());
+                                e.insert(spendable_note.clone());
                                 new_notes.push(spendable_note.clone());
                             }
                         }
                     } else {
                         // This is someone else's note.
-                        self.nct.insert(Forget, commitment).unwrap();
+                        self.nct.insert(Forget, commitment)?;
                     }
                 }
             }
         }
 
-        self.nct.end_block().unwrap();
+        self.nct.end_block()?;
         if block.epoch_root.is_some() {
-            self.nct.end_epoch().unwrap();
+            self.nct.end_epoch()?;
         }
 
         self.latest_height = block.height;
@@ -273,248 +332,8 @@ impl ViewServer {
             new_notes,
             new_swaps,
         };
-
-        serde_wasm_bindgen::to_value(&result)
+        Ok(result)
     }
-
-    pub fn get_updates(&mut self, last_position: JsValue, last_forgotten: JsValue) -> JsValue {
-        let stored_position: Option<StoredPosition> =
-            serde_wasm_bindgen::from_value(last_position).unwrap();
-        let stored_forgotten: Option<Forgotten> =
-            serde_wasm_bindgen::from_value(last_forgotten).unwrap();
-
-        let nct_updates: Updates = self
-            .nct
-            .updates(
-                stored_position.unwrap_or_default(),
-                stored_forgotten.unwrap_or_default(),
-            )
-            .collect::<Updates>();
-
-        let result = ScanBlockResult {
-            height: self.latest_height,
-            nct_updates,
-            new_notes: self.notes.clone().into_values().collect(),
-            new_swaps: self.swaps.clone().into_values().collect(),
-        };
-        return serde_wasm_bindgen::to_value(&result).unwrap();
-    }
-
-    pub fn get_nct_root(&mut self) -> JsValue {
-        let root = self.nct.root();
-        return serde_wasm_bindgen::to_value(&root).unwrap();
-    }
-
-    pub fn get_lpnft_asset(
-        &mut self,
-        position_value: JsValue,
-        position_state_value: JsValue,
-    ) -> JsValue {
-        let position: Position = serde_wasm_bindgen::from_value(position_value).unwrap();
-        let position_state = serde_wasm_bindgen::from_value(position_state_value).unwrap();
-
-        let lp_nft = LpNft::new(position.id(), position_state);
-
-        let denom = lp_nft.denom();
-
-        serde_wasm_bindgen::to_value(&denom).unwrap()
-    }
-}
-
-#[wasm_bindgen]
-pub async fn transaction_info(full_viewing_key: &str, tx: JsValue) -> JsValue {
-    let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())
-        .context("The provided string is not a valid FullViewingKey")
-        .unwrap();
-
-    let transaction = serde_wasm_bindgen::from_value(tx).unwrap();
-    let (txp, txv) = transaction_info_inner(fvk, transaction).await;
-
-    let txp_proto = TransactionPerspective::try_from(txp).unwrap();
-    let txv_proto = TransactionView::try_from(txv).unwrap();
-
-    let response = TxInfoResponse {
-        txp: txp_proto,
-        txv: txv_proto,
-    };
-    serde_wasm_bindgen::to_value(&response).unwrap()
-}
-
-pub async fn transaction_info_inner(
-    fvk: FullViewingKey,
-    tx: Transaction,
-) -> (
-    penumbra_transaction::TransactionPerspective,
-    penumbra_transaction::TransactionView,
-) {
-    utils::set_panic_hook();
-
-    // First, create a TxP with the payload keys visible to our FVK and no other data.
-
-    let mut txp = penumbra_transaction::TransactionPerspective {
-        payload_keys: tx
-            .payload_keys(&fvk)
-            .expect("Error generating payload keys"),
-        ..Default::default()
-    };
-
-    // Next, extend the TxP with the openings of commitments known to our view server
-    // but not included in the transaction body, for instance spent notes or swap claim outputs.
-    for action in tx.actions() {
-        use penumbra_transaction::Action;
-        match action {
-            Action::Spend(spend) => {
-                let nullifier = spend.body.nullifier;
-                // An error here indicates we don't know the nullifier, so we omit it from the Perspective.
-                if let Some(spendable_note_record) = get_note_by_nullifier(&nullifier).await {
-                    txp.spend_nullifiers
-                        .insert(nullifier, spendable_note_record.note.clone());
-                }
-            }
-            Action::SwapClaim(claim) => {
-                let output_1_record = get_note(&claim.body.output_1_commitment)
-                    .await
-                    .expect("Error generating TxP: SwapClaim output 1 commitment not found");
-
-                let output_2_record = get_note(&claim.body.output_2_commitment)
-                    .await
-                    .expect("Error generating TxP: SwapClaim output 2 commitment not found");
-
-                txp.advice_notes
-                    .insert(claim.body.output_1_commitment, output_1_record.note.clone());
-                txp.advice_notes
-                    .insert(claim.body.output_2_commitment, output_2_record.note.clone());
-            }
-            _ => {}
-        }
-    }
-
-    // Now, generate a stub TxV from our minimal TxP, and inspect it to see what data we should
-    // augment the minimal TxP with to provide additional context (e.g., filling in denoms for
-    // visible asset IDs).
-    let min_view = tx.view_from_perspective(&txp);
-    let mut address_views = BTreeMap::new();
-    let mut asset_ids = BTreeSet::new();
-    for action_view in min_view.action_views() {
-        use penumbra_dex::{swap::SwapView, swap_claim::SwapClaimView};
-        use penumbra_transaction::view::action_view::{
-            ActionView, DelegatorVoteView, OutputView, SpendView,
-        };
-        match action_view {
-            ActionView::Spend(SpendView::Visible { note, .. }) => {
-                let address = note.address();
-                address_views.insert(address, fvk.view_address(address));
-                asset_ids.insert(note.asset_id());
-            }
-            ActionView::Output(OutputView::Visible { note, .. }) => {
-                let address = note.address();
-                address_views.insert(address, fvk.view_address(address));
-                asset_ids.insert(note.asset_id());
-            }
-            ActionView::Swap(SwapView::Visible { swap_plaintext, .. }) => {
-                let address = swap_plaintext.claim_address;
-                address_views.insert(address, fvk.view_address(address));
-                asset_ids.insert(swap_plaintext.trading_pair.asset_1());
-                asset_ids.insert(swap_plaintext.trading_pair.asset_2());
-            }
-            ActionView::SwapClaim(SwapClaimView::Visible {
-                output_1, output_2, ..
-            }) => {
-                // Both will be sent to the same address so this only needs to be added once
-                let address = output_1.address();
-                address_views.insert(address, fvk.view_address(address));
-                asset_ids.insert(output_1.asset_id());
-                asset_ids.insert(output_2.asset_id());
-            }
-            ActionView::DelegatorVote(DelegatorVoteView::Visible { note, .. }) => {
-                let address = note.address();
-                address_views.insert(address, fvk.view_address(address));
-                asset_ids.insert(note.asset_id());
-            }
-            _ => {}
-        }
-    }
-
-    // Now, extend the TxP with information helpful to understand the data it can view:
-
-    let mut denoms = Vec::new();
-
-    for id in asset_ids {
-        if let Some(denom) = get_asset(&id).await {
-            denoms.push(denom.clone());
-        }
-    }
-
-    txp.denoms.extend(denoms.into_iter());
-
-    txp.address_views = address_views.into_values().collect();
-
-    // Finally, compute the full TxV from the full TxP:
-    let txv = tx.view_from_perspective(&txp);
-
-    (txp, txv)
-}
-
-pub async fn get_asset(id: &Id) -> Option<DenomMetadata> {
-    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok()?;
-
-    let db: IdbDatabase = db_req.into_future().await.ok()?;
-
-    let tx = db.transaction_on_one("assets").ok()?;
-    let store = tx.object_store("assets").ok()?;
-
-    let value: Option<JsValue> = store
-        .get_owned(base64::Engine::encode(
-            &base64::engine::general_purpose::STANDARD,
-            id.to_proto().inner,
-        ))
-        .ok()?
-        .await
-        .ok()?;
-
-    serde_wasm_bindgen::from_value(value?).ok()?
-}
-
-pub async fn get_note(commitment: &note::StateCommitment) -> Option<SpendableNoteRecord> {
-    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok()?;
-
-    let db: IdbDatabase = db_req.into_future().await.ok()?;
-
-    let tx = db.transaction_on_one("spendable_notes").ok()?;
-    let store = tx.object_store("spendable_notes").ok()?;
-
-    let value: Option<JsValue> = store
-        .get_owned(base64::Engine::encode(
-            &base64::engine::general_purpose::STANDARD,
-            commitment.to_proto().inner,
-        ))
-        .ok()?
-        .await
-        .ok()?;
-
-    serde_wasm_bindgen::from_value(value?).ok()?
-}
-
-pub async fn get_note_by_nullifier(nullifier: &Nullifier) -> Option<SpendableNoteRecord> {
-    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok()?;
-
-    let db: IdbDatabase = db_req.into_future().await.ok()?;
-
-    let tx = db.transaction_on_one("spendable_notes").ok()?;
-    let store = tx.object_store("spendable_notes").ok()?;
-
-    let value: Option<JsValue> = store
-        .index("nullifier")
-        .ok()?
-        .get_owned(&base64::Engine::encode(
-            &base64::engine::general_purpose::STANDARD,
-            nullifier.to_proto().inner,
-        ))
-        .ok()?
-        .await
-        .ok()?;
-
-    serde_wasm_bindgen::from_value(value?).ok()?
 }
 
 pub fn load_tree(stored_tree: StoredTree) -> Tree {
@@ -536,54 +355,7 @@ pub fn load_tree(stored_tree: StoredTree) -> Tree {
     return tree;
 }
 
-pub async fn store_advice(note: Note) {
-    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok().unwrap();
-
-    let db: IdbDatabase = db_req.into_future().await.ok().unwrap();
-
-    let tx = db.transaction_on_one("notes").ok().unwrap();
-    let store = tx.object_store("notes").ok().unwrap();
-
-    let note_proto: penumbra_proto::core::crypto::v1alpha1::Note = note.clone().try_into().unwrap();
-    let note_js = serde_wasm_bindgen::to_value(&note_proto).ok().unwrap();
-
-    let commitment_proto = note.commit().to_proto();
-
-    let commitment_js = serde_wasm_bindgen::to_value(&commitment_proto)
-        .ok()
-        .unwrap();
-
-    store.put_key_val_owned(commitment_js, &note_js).unwrap();
-}
-
-pub async fn read_advice(commitment: note::StateCommitment) -> Option<Note> {
-    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok().unwrap();
-
-    let db: IdbDatabase = db_req.into_future().await.ok().unwrap();
-
-    let tx = db.transaction_on_one("notes").ok().unwrap();
-    let store = tx.object_store("notes").ok().unwrap();
-
-    let commitment_proto = commitment.to_proto();
-
-    let commitment_js = serde_wasm_bindgen::to_value(&commitment_proto)
-        .ok()
-        .unwrap();
-
-    let value: Option<JsValue> = store.get_owned(commitment_js).ok()?.await.ok()?;
-
-    serde_wasm_bindgen::from_value(value?).ok()?
-}
-
-#[wasm_bindgen]
-pub fn decode_nct_root(tx_bytes: &str) -> JsValue {
-    utils::set_panic_hook();
-    let tx_vec: Vec<u8> = hex::decode(tx_bytes).unwrap();
-    let root = penumbra_tct::Root::decode(tx_vec.as_slice()).unwrap();
-    return serde_wasm_bindgen::to_value(&root).unwrap();
-}
-
 pub fn string_to_fvk(full_viewing_key_str: &str) -> WasmResult<FullViewingKey> {
-    let fvk = FullViewingKey::from_str(full_viewing_key_str.as_ref())?;
+    let fvk = FullViewingKey::from_str(full_viewing_key_str)?;
     Ok(fvk)
 }
