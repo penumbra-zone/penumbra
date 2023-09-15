@@ -62,7 +62,7 @@ fn apphash_spec() -> ics23::ProofSpec {
         }),
         min_depth: 0,
         max_depth: 1,
-        prehash_key_before_comparison: true,
+        prehash_key_before_comparison: false,
     }
 }
 
