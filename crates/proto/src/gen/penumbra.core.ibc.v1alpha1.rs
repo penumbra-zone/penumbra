@@ -60,13 +60,12 @@ pub struct Ics20Withdrawal {
     /// this should be an ephemeral address
     #[prost(message, optional, tag = "4")]
     pub return_address: ::core::option::Option<super::super::crypto::v1alpha1::Address>,
-    /// the height (on Penumbra) at which this transfer expires (and funds are sent
-    /// back to the sender address?). NOTE: if funds are sent back to the sender,
-    /// we MUST verify a nonexistence proof before accepting the timeout, to
-    /// prevent relayer censorship attacks. The core IBC implementation does this
-    /// in its handling of validation of timeouts.
-    #[prost(uint64, tag = "5")]
-    pub timeout_height: u64,
+    /// The height on the counterparty chain at which this transfer expires, and
+    /// funds are sent back to the return address.
+    #[prost(message, optional, tag = "5")]
+    pub timeout_height: ::core::option::Option<
+        ::ibc_proto::ibc::core::client::v1::Height,
+    >,
     /// the timestamp at which this transfer expires.
     #[prost(uint64, tag = "6")]
     pub timeout_time: u64,

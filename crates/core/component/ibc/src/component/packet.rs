@@ -61,8 +61,7 @@ impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
         Self {
             source_port: PortId::transfer(),
             source_channel: withdrawal.source_channel.clone(),
-            timeout_height: Height::new(0, withdrawal.timeout_height)
-                .expect("revision_height should not be 0"),
+            timeout_height: withdrawal.timeout_height,
             timeout_timestamp: withdrawal.timeout_time,
             data: withdrawal.packet_data(),
 
@@ -116,7 +115,7 @@ pub trait SendPacketRead: StateRead {
             anyhow::bail!(
                 "timeout height {} is less than the latest height {}",
                 packet.timeout_height,
-                latest_height.revision_height()
+                latest_height,
             );
         }
 
