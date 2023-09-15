@@ -196,8 +196,8 @@ pub mod genesis_app_state {
     pub enum GenesisAppState {
         #[prost(message, tag = "1")]
         GenesisContent(super::GenesisContent),
-        #[prost(message, tag = "2")]
-        GenesisCheckpoint(super::GenesisCheckpoint),
+        #[prost(bytes, tag = "2")]
+        GenesisCheckpoint(::prost::alloc::vec::Vec<u8>),
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]

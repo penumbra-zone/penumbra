@@ -895,7 +895,7 @@ impl serde::Serialize for GenesisAppState {
                     struct_ser.serialize_field("genesisContent", v)?;
                 }
                 genesis_app_state::GenesisAppState::GenesisCheckpoint(v) => {
-                    struct_ser.serialize_field("genesisCheckpoint", v)?;
+                    struct_ser.serialize_field("genesisCheckpoint", pbjson::private::base64::encode(&v).as_str())?;
                 }
             }
         }
@@ -975,8 +975,7 @@ impl<'de> serde::Deserialize<'de> for GenesisAppState {
                             if genesis_app_state__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("genesisCheckpoint"));
                             }
-                            genesis_app_state__ = map.next_value::<::std::option::Option<_>>()?.map(genesis_app_state::GenesisAppState::GenesisCheckpoint)
-;
+                            genesis_app_state__ = map.next_value::<::std::option::Option<::pbjson::private::BytesDeserialize<_>>>()?.map(|x| genesis_app_state::GenesisAppState::GenesisCheckpoint(x.0));
                         }
                     }
                 }

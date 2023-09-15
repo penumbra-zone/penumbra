@@ -89,7 +89,9 @@ impl From<AppState> for pb::GenesisAppState {
                 pb::genesis_app_state::GenesisAppState::GenesisContent(c.into())
             }
             AppState::Checkpoint(h) => {
-                pb::genesis_app_state::GenesisAppState::GenesisCheckpoint(h.into())
+                pb::genesis_app_state::GenesisAppState::GenesisCheckpoint(pb::GenesisCheckpoint {
+                    checkpoint: h,
+                })
             }
         };
 
@@ -147,7 +149,7 @@ impl TryFrom<pb::GenesisCheckpoint> for AppHash {
 impl From<AppHash> for pb::GenesisCheckpoint {
     fn from(h: AppHash) -> Self {
         pb::GenesisCheckpoint {
-            app_hash: h.0.into(),
+            checkpoint: h.0.into(),
         }
     }
 }
