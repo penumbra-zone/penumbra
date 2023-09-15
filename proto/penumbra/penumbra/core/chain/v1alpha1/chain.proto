@@ -124,14 +124,8 @@ message SpendInfo {
 message GenesisAppState {
   oneof genesis_app_state {
     GenesisContent genesis_content = 1;
-    GenesisCheckpoint genesis_checkpoint = 2;
+    bytes genesis_checkpoint = 2;
   }
-}
-
-message GenesisCheckpoint {
-  // A free-form description of the genesis checkpoint, this could be a hash of the genesis
-  // file, a commit reference, or an app hash.
-  bytes checkpoint = 1;
 }
 
 message GenesisContent {
