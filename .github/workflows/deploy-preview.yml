@@ -69,6 +69,7 @@ jobs:
 
       - name: deploy
         run: |-
+          export PATH="$HOME/bin:$PATH"
           cd deployments/
           export PENUMBRA_VERSION='main'
           export HELM_RELEASE='penumbra-testnet-preview'
