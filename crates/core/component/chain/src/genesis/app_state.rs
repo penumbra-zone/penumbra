@@ -10,7 +10,16 @@ use crate::params::ChainParameters;
 /// The application state at genesis.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(try_from = "pb::GenesisAppState", into = "pb::GenesisAppState")]
-pub struct AppState {
+pub enum AppState {
+    /// The application state at genesis.
+    Content(Content),
+    /// The checkpointed application state at genesis, contains a free-form hash.
+    Checkpoint(Vec<u8>),
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(try_from = "pb::GenesisContent", into = "pb::GenesisContent")]
+pub struct Content {
     /// Global configuration for the chain, such as chain ID and epoch duration.
     pub chain_params: ChainParameters,
     /// The initial validator set.
@@ -20,6 +29,12 @@ pub struct AppState {
 }
 
 impl Default for AppState {
+    fn default() -> Self {
+        Self::Content(Default::default())
+    }
+}
+
+impl Default for Content {
     fn default() -> Self {
         Self {
             chain_params: Default::default(),
@@ -69,10 +84,25 @@ impl Default for AppState {
 
 impl From<AppState> for pb::GenesisAppState {
     fn from(a: AppState) -> Self {
+        let genesis_state = match a {
+            AppState::Content(c) => {
+                pb::genesis_app_state::GenesisAppState::GenesisContent(c.into())
+            }
+            AppState::Checkpoint(h) => pb::genesis_app_state::GenesisAppState::GenesisCheckpoint(h),
+        };
+
         pb::GenesisAppState {
-            validators: a.validators.into_iter().map(Into::into).collect(),
-            allocations: a.allocations.into_iter().map(Into::into).collect(),
-            chain_params: Some(a.chain_params.into()),
+            genesis_app_state: Some(genesis_state),
+        }
+    }
+}
+
+impl From<Content> for pb::GenesisContent {
+    fn from(value: Content) -> Self {
+        pb::GenesisContent {
+            chain_params: Some(value.chain_params.into()),
+            validators: value.validators.into_iter().map(Into::into).collect(),
+            allocations: value.allocations.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -81,7 +111,25 @@ impl TryFrom<pb::GenesisAppState> for AppState {
     type Error = anyhow::Error;
 
     fn try_from(msg: pb::GenesisAppState) -> Result<Self, Self::Error> {
-        Ok(AppState {
+        let state = msg
+            .genesis_app_state
+            .ok_or_else(|| anyhow::anyhow!("missing genesis_app_state field in proto"))?;
+        match state {
+            pb::genesis_app_state::GenesisAppState::GenesisContent(c) => {
+                Ok(AppState::Content(c.try_into()?))
+            }
+            pb::genesis_app_state::GenesisAppState::GenesisCheckpoint(h) => {
+                Ok(AppState::Checkpoint(h.try_into()?))
+            }
+        }
+    }
+}
+
+impl TryFrom<pb::GenesisContent> for Content {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::GenesisContent) -> Result<Self, Self::Error> {
+        Ok(Content {
             chain_params: msg
                 .chain_params
                 .context("chain params not present in protobuf message")?
@@ -112,13 +160,13 @@ impl DomainType for AppState {
 #[cfg(test)]
 mod test {
     use super::*;
-    /// Check that the default implementation of AppState contains zero validators,
+    /// Check that the default implementation of contains zero validators,
     /// requiring validators to be passed in out of band. N.B. there's also a
     /// `validators` field in the [`tendermint::Genesis`] struct, which we don't use,
     /// preferring the AppState definition instead.
     #[test]
     fn check_validator_defaults() -> anyhow::Result<()> {
-        let a = AppState {
+        let a = Content {
             ..Default::default()
         };
         assert!(a.validators.len() == 0);

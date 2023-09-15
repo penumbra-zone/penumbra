@@ -24,6 +24,13 @@ impl Component for ShieldedPool {
 
     #[instrument(name = "shielded_pool", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
+        let app_state = match app_state {
+            genesis::AppState::Checkpoint(_) => {
+                unimplemented!("adding support with init handshake pr")
+            }
+            genesis::AppState::Content(app_state) => app_state,
+        };
+
         // Register a denom for each asset in the genesis state
         for allocation in &app_state.allocations {
             tracing::debug!(?allocation, "processing allocation");

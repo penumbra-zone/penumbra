@@ -885,6 +885,116 @@ impl serde::Serialize for GenesisAppState {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
+        if self.genesis_app_state.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.chain.v1alpha1.GenesisAppState", len)?;
+        if let Some(v) = self.genesis_app_state.as_ref() {
+            match v {
+                genesis_app_state::GenesisAppState::GenesisContent(v) => {
+                    struct_ser.serialize_field("genesisContent", v)?;
+                }
+                genesis_app_state::GenesisAppState::GenesisCheckpoint(v) => {
+                    struct_ser.serialize_field("genesisCheckpoint", pbjson::private::base64::encode(&v).as_str())?;
+                }
+            }
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for GenesisAppState {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "genesis_content",
+            "genesisContent",
+            "genesis_checkpoint",
+            "genesisCheckpoint",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            GenesisContent,
+            GenesisCheckpoint,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "genesisContent" | "genesis_content" => Ok(GeneratedField::GenesisContent),
+                            "genesisCheckpoint" | "genesis_checkpoint" => Ok(GeneratedField::GenesisCheckpoint),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = GenesisAppState;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.chain.v1alpha1.GenesisAppState")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<GenesisAppState, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut genesis_app_state__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::GenesisContent => {
+                            if genesis_app_state__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("genesisContent"));
+                            }
+                            genesis_app_state__ = map.next_value::<::std::option::Option<_>>()?.map(genesis_app_state::GenesisAppState::GenesisContent)
+;
+                        }
+                        GeneratedField::GenesisCheckpoint => {
+                            if genesis_app_state__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("genesisCheckpoint"));
+                            }
+                            genesis_app_state__ = map.next_value::<::std::option::Option<::pbjson::private::BytesDeserialize<_>>>()?.map(|x| genesis_app_state::GenesisAppState::GenesisCheckpoint(x.0));
+                        }
+                    }
+                }
+                Ok(GenesisAppState {
+                    genesis_app_state: genesis_app_state__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.chain.v1alpha1.GenesisAppState", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for GenesisContent {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
         if self.chain_params.is_some() {
             len += 1;
         }
@@ -894,7 +1004,7 @@ impl serde::Serialize for GenesisAppState {
         if !self.allocations.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.chain.v1alpha1.GenesisAppState", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.chain.v1alpha1.GenesisContent", len)?;
         if let Some(v) = self.chain_params.as_ref() {
             struct_ser.serialize_field("chainParams", v)?;
         }
@@ -907,7 +1017,7 @@ impl serde::Serialize for GenesisAppState {
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for GenesisAppState {
+impl<'de> serde::Deserialize<'de> for GenesisContent {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -958,13 +1068,13 @@ impl<'de> serde::Deserialize<'de> for GenesisAppState {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = GenesisAppState;
+            type Value = GenesisContent;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.chain.v1alpha1.GenesisAppState")
+                formatter.write_str("struct penumbra.core.chain.v1alpha1.GenesisContent")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<GenesisAppState, V::Error>
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<GenesisContent, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -993,17 +1103,17 @@ impl<'de> serde::Deserialize<'de> for GenesisAppState {
                         }
                     }
                 }
-                Ok(GenesisAppState {
+                Ok(GenesisContent {
                     chain_params: chain_params__,
                     validators: validators__.unwrap_or_default(),
                     allocations: allocations__.unwrap_or_default(),
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.chain.v1alpha1.GenesisAppState", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.chain.v1alpha1.GenesisContent", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for genesis_app_state::Allocation {
+impl serde::Serialize for genesis_content::Allocation {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -1020,7 +1130,7 @@ impl serde::Serialize for genesis_app_state::Allocation {
         if self.address.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.chain.v1alpha1.GenesisAppState.Allocation", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.chain.v1alpha1.GenesisContent.Allocation", len)?;
         if let Some(v) = self.amount.as_ref() {
             struct_ser.serialize_field("amount", v)?;
         }
@@ -1033,7 +1143,7 @@ impl serde::Serialize for genesis_app_state::Allocation {
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for genesis_app_state::Allocation {
+impl<'de> serde::Deserialize<'de> for genesis_content::Allocation {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -1083,13 +1193,13 @@ impl<'de> serde::Deserialize<'de> for genesis_app_state::Allocation {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = genesis_app_state::Allocation;
+            type Value = genesis_content::Allocation;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.chain.v1alpha1.GenesisAppState.Allocation")
+                formatter.write_str("struct penumbra.core.chain.v1alpha1.GenesisContent.Allocation")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<genesis_app_state::Allocation, V::Error>
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<genesis_content::Allocation, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -1118,14 +1228,14 @@ impl<'de> serde::Deserialize<'de> for genesis_app_state::Allocation {
                         }
                     }
                 }
-                Ok(genesis_app_state::Allocation {
+                Ok(genesis_content::Allocation {
                     amount: amount__,
                     denom: denom__.unwrap_or_default(),
                     address: address__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.chain.v1alpha1.GenesisAppState.Allocation", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.chain.v1alpha1.GenesisContent.Allocation", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for KnownAssets {

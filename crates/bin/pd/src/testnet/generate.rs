@@ -82,7 +82,7 @@ impl TestnetConfig {
             testnet_validators.iter().map(|v| v.try_into()).collect();
         let validators = validators?;
 
-        let app_state = Self::make_appstate(
+        let app_state = Self::make_genesis_content(
             chain_id,
             allocations,
             validators.to_vec(),
@@ -172,18 +172,19 @@ impl TestnetConfig {
         }
     }
 
-    /// Build initial state for Penumbra application, for inclusion in Tendermint genesis.
-    fn make_appstate(
+    /// Create a full genesis configuration for inclusion in the tendermint
+    /// genesis config.
+    fn make_genesis_content(
         chain_id: &str,
         allocations: Vec<Allocation>,
         validators: Vec<Validator>,
         active_validator_limit: Option<u64>,
         epoch_duration: Option<u64>,
         unbonding_epochs: Option<u64>,
-    ) -> anyhow::Result<genesis::AppState> {
+    ) -> anyhow::Result<genesis::Content> {
         // Look up default chain params, so we can fill in defaults.
         let default_params = ChainParameters::default();
-        let app_state = genesis::AppState {
+        let app_state = genesis::Content {
             allocations: allocations.clone(),
             chain_params: ChainParameters {
                 chain_id: chain_id.to_string(),
@@ -202,7 +203,7 @@ impl TestnetConfig {
 
     /// Build Tendermint genesis data, based on Penumbra initial application state.
     pub(crate) fn make_genesis(
-        app_state: genesis::AppState,
+        app_state: genesis::Content,
     ) -> anyhow::Result<Genesis<genesis::AppState>> {
         // Use now as genesis time
         let genesis_time = Time::from_unix_timestamp(
@@ -245,7 +246,7 @@ impl TestnetConfig {
             },
             // always empty in genesis json
             app_hash: tendermint::AppHash::default(),
-            app_state,
+            app_state: genesis::AppState::Content(app_state),
             // Set empty validator set for Tendermint config, which falls back to reading
             // validators from the AppState, via ResponseInitChain:
             // https://docs.tendermint.com/v0.32/tendermint-core/using-tendermint.html
@@ -627,7 +628,10 @@ mod tests {
         assert_eq!(testnet_config.name, "test-chain-1234");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
         // No external address template was given, so only 1 validator will be present.
-        assert_eq!(testnet_config.genesis.app_state.validators.len(), 1);
+        let genesis::AppState::Content(app_state) = testnet_config.genesis.app_state else {
+            unimplemented!("TODO: support checkpointed app state")
+        };
+        assert_eq!(app_state.validators.len(), 1);
         Ok(())
     }
 
@@ -650,7 +654,10 @@ mod tests {
         )?;
         assert_eq!(testnet_config.name, "test-chain-4567");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
-        assert_eq!(testnet_config.genesis.app_state.validators.len(), 2);
+        let genesis::AppState::Content(app_state) = testnet_config.genesis.app_state else {
+            unimplemented!("TODO: support checkpointed app state")
+        };
+        assert_eq!(app_state.validators.len(), 2);
         Ok(())
     }
 

@@ -186,15 +186,32 @@ pub struct SpendInfo {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisAppState {
+    #[prost(oneof = "genesis_app_state::GenesisAppState", tags = "1, 2")]
+    pub genesis_app_state: ::core::option::Option<genesis_app_state::GenesisAppState>,
+}
+/// Nested message and enum types in `GenesisAppState`.
+pub mod genesis_app_state {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum GenesisAppState {
+        #[prost(message, tag = "1")]
+        GenesisContent(super::GenesisContent),
+        #[prost(bytes, tag = "2")]
+        GenesisCheckpoint(::prost::alloc::vec::Vec<u8>),
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContent {
     #[prost(message, optional, tag = "1")]
     pub chain_params: ::core::option::Option<ChainParameters>,
     #[prost(message, repeated, tag = "2")]
     pub validators: ::prost::alloc::vec::Vec<super::super::stake::v1alpha1::Validator>,
     #[prost(message, repeated, tag = "3")]
-    pub allocations: ::prost::alloc::vec::Vec<genesis_app_state::Allocation>,
+    pub allocations: ::prost::alloc::vec::Vec<genesis_content::Allocation>,
 }
-/// Nested message and enum types in `GenesisAppState`.
-pub mod genesis_app_state {
+/// Nested message and enum types in `GenesisContent`.
+pub mod genesis_content {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Allocation {
