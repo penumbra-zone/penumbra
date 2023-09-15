@@ -3,8 +3,8 @@ syntax = "proto3";
 package penumbra.core.chain.v1alpha1;
 
 import "penumbra/core/crypto/v1alpha1/crypto.proto";
-import "penumbra/core/stake/v1alpha1/stake.proto";
 import "penumbra/core/dex/v1alpha1/dex.proto";
+import "penumbra/core/stake/v1alpha1/stake.proto";
 
 // Global chain configuration data, such as chain ID, epoch duration, etc.
 message ChainParameters {
@@ -122,18 +122,29 @@ message SpendInfo {
 }
 
 message GenesisAppState {
-    message Allocation {
-        crypto.v1alpha1.Amount amount = 1;
-        string denom = 2;
-        crypto.v1alpha1.Address address = 3;
-    }
+  oneof genesis_app_state {
+    GenesisContent genesis_content = 1;
+    GenesisCheckpoint genesis_checkpoint = 2;
+  }
+}
 
-    ChainParameters chain_params = 1;
-    repeated stake.v1alpha1.Validator validators = 2;
-    repeated Allocation allocations = 3;
+message GenesisCheckpoint {
+  bytes app_hash = 1;
+}
+
+message GenesisContent {
+  message Allocation {
+    crypto.v1alpha1.Amount amount = 1;
+    string denom = 2;
+    crypto.v1alpha1.Address address = 3;
+  }
+
+  ChainParameters chain_params = 1;
+  repeated stake.v1alpha1.Validator validators = 2;
+  repeated Allocation allocations = 3;
 }
 
 message Epoch {
-    uint64 index = 1;
-    uint64 start_height = 2;
+  uint64 index = 1;
+  uint64 start_height = 2;
 }
