@@ -19,8 +19,8 @@ pub enum KeysCmd {
     Export(ExportCmd),
     /// Generate a new seed phrase and import its corresponding key.
     Generate {
-        /// If true, will use experimental BIP44 derivation.
-        #[clap(long, default_missing_value = "true", default_value = "false")]
+        /// If set, will use experimental BIP44 derivation.
+        #[clap(long, action)]
         bip44_derivation: bool,
     },
     /// Delete the entire wallet permanently.
@@ -32,8 +32,8 @@ pub enum ImportCmd {
     /// Import wallet from an existing 24-word seed phrase. Will prompt for input interactively.
     /// Also accepts input from stdin, for use with pipes.
     Phrase {
-        /// If true, will use experimental BIP44 derivation.
-        #[clap(long, default_missing_value = "true", default_value = "false")]
+        /// If set, will use experimental BIP44 derivation.
+        #[clap(long, action)]
         bip44_derivation: bool,
     },
 }
