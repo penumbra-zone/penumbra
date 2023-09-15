@@ -278,7 +278,7 @@ impl Opt {
                     "Failed to load pclientd config file. Have you run `pclientd init` with a FVK?",
                 )?;
 
-                tracing::info!(?opt.home, ?config.bind_addr, ?config.grpc_url, "starting pclientd");
+                tracing::info!(?opt.home, ?config.bind_addr, %config.grpc_url, "starting pclientd");
                 let storage = opt
                     .load_or_init_sqlite(&config.full_viewing_key, &config.grpc_url)
                     .await?;
