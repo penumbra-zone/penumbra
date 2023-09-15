@@ -59,12 +59,9 @@ message Ics20Withdrawal {
   // this should be an ephemeral address
   crypto.v1alpha1.Address return_address = 4;
 
-  // the height (on Penumbra) at which this transfer expires (and funds are sent
-  // back to the sender address?). NOTE: if funds are sent back to the sender,
-  // we MUST verify a nonexistence proof before accepting the timeout, to
-  // prevent relayer censorship attacks. The core IBC implementation does this
-  // in its handling of validation of timeouts.
-  uint64 timeout_height = 5;
+  // The height on the counterparty chain at which this transfer expires, and
+  // funds are sent back to the return address.
+  .ibc.core.client.v1.Height timeout_height = 5;
 
   // the timestamp at which this transfer expires.
   uint64 timeout_time = 6;

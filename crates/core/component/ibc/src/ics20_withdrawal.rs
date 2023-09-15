@@ -1,4 +1,4 @@
-use ibc_types::core::channel::ChannelId;
+use ibc_types::core::{channel::ChannelId, client::Height as IbcHeight};
 use penumbra_asset::{
     asset::{self, DenomMetadata},
     Balance, Value,
@@ -28,7 +28,7 @@ pub struct Ics20Withdrawal {
     // we MUST verify a nonexistence proof before accepting the timeout, to
     // prevent relayer censorship attacks. The core IBC implementation does this
     // in its handling of validation of timeouts.
-    pub timeout_height: u64,
+    pub timeout_height: IbcHeight,
     // the timestamp at which this transfer expires.
     pub timeout_time: u64,
     // the source channel used for the withdrawal
@@ -54,9 +54,6 @@ impl Ics20Withdrawal {
 
     // stateless validation of an Ics20 withdrawal action.
     pub fn validate(&self) -> anyhow::Result<()> {
-        if self.timeout_height == 0 {
-            anyhow::bail!("timeout height must be non-zero");
-        }
         if self.timeout_time == 0 {
             anyhow::bail!("timeout time must be non-zero");
         }
@@ -83,7 +80,7 @@ impl From<Ics20Withdrawal> for pb::Ics20Withdrawal {
             denom: Some(w.denom.base_denom().into()),
             destination_chain_address: w.destination_chain_address,
             return_address: Some(w.return_address.into()),
-            timeout_height: w.timeout_height,
+            timeout_height: Some(w.timeout_height.into()),
             timeout_time: w.timeout_time,
             source_channel: w.source_channel.to_string(),
         }
@@ -109,7 +106,10 @@ impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
                 .return_address
                 .ok_or_else(|| anyhow::anyhow!("missing sender"))?
                 .try_into()?,
-            timeout_height: s.timeout_height,
+            timeout_height: s
+                .timeout_height
+                .ok_or_else(|| anyhow::anyhow!("missing timeout height"))?
+                .try_into()?,
             timeout_time: s.timeout_time,
             source_channel: ChannelId::from_str(&s.source_channel)?,
         })

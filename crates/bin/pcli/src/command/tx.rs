@@ -9,7 +9,7 @@ use std::{
 use anyhow::{Context, Result};
 use ark_ff::UniformRand;
 use decaf377::{Fq, Fr};
-use ibc_types::core::channel::ChannelId;
+use ibc_types::core::{channel::ChannelId, client::Height as IbcHeight};
 use penumbra_asset::{asset, asset::DenomMetadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_fee::Fee;
@@ -185,8 +185,8 @@ pub enum TxCmd {
 
         /// Block height on the current chain, after which the withdrawal will be considered
         /// invalid if not already relayed.
-        #[clap(long, default_value = "0", display_order = 100)]
-        timeout_height: u64,
+        #[clap(long, default_value = "0-0", display_order = 100)]
+        timeout_height: IbcHeight,
         /// Timestamp, specified in epoch time, after which the withdrawal will be considered
         /// invalid if not already relayed.
         #[clap(long, default_value = "0", display_order = 150)]
@@ -864,10 +864,6 @@ impl TxCmd {
                     .as_nanos() as u64;
 
                 let mut timeout_height = *timeout_height;
-                if timeout_height == 0u64 {
-                    // add two days to height, assuming 6 blocks per minute
-                    timeout_height = current_height + 28800u64;
-                }
                 let mut timeout_timestamp = *timeout_timestamp;
                 if timeout_timestamp == 0u64 {
                     // add 2 days to current time

@@ -769,7 +769,7 @@ impl serde::Serialize for Ics20Withdrawal {
         if self.return_address.is_some() {
             len += 1;
         }
-        if self.timeout_height != 0 {
+        if self.timeout_height.is_some() {
             len += 1;
         }
         if self.timeout_time != 0 {
@@ -791,8 +791,8 @@ impl serde::Serialize for Ics20Withdrawal {
         if let Some(v) = self.return_address.as_ref() {
             struct_ser.serialize_field("returnAddress", v)?;
         }
-        if self.timeout_height != 0 {
-            struct_ser.serialize_field("timeoutHeight", ToString::to_string(&self.timeout_height).as_str())?;
+        if let Some(v) = self.timeout_height.as_ref() {
+            struct_ser.serialize_field("timeoutHeight", v)?;
         }
         if self.timeout_time != 0 {
             struct_ser.serialize_field("timeoutTime", ToString::to_string(&self.timeout_time).as_str())?;
@@ -917,9 +917,7 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                             if timeout_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("timeoutHeight"));
                             }
-                            timeout_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            timeout_height__ = map.next_value()?;
                         }
                         GeneratedField::TimeoutTime => {
                             if timeout_time__.is_some() {
@@ -942,7 +940,7 @@ impl<'de> serde::Deserialize<'de> for Ics20Withdrawal {
                     denom: denom__,
                     destination_chain_address: destination_chain_address__.unwrap_or_default(),
                     return_address: return_address__,
-                    timeout_height: timeout_height__.unwrap_or_default(),
+                    timeout_height: timeout_height__,
                     timeout_time: timeout_time__.unwrap_or_default(),
                     source_channel: source_channel__.unwrap_or_default(),
                 })
