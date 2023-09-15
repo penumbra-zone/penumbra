@@ -48,6 +48,19 @@ jobs:
           project_id: penumbra-sl-testnet
           location: us-central1
 
+      - name: install helmfile
+        run: |
+          helmfile_version="0.157.0"
+          helmfile_url="https://github.com/helmfile/helmfile/releases/download/v${helmfile_version}/helmfile_${helmfile_version}_linux_amd64.tar.gz"
+          mkdir -p /tmp/helmfile-download
+          cd /tmp/helmfile-download || exit 1
+          curl -SfL -O "$helmfile_url"
+          tar -xzf helmfile*.tar.gz
+          mkdir -p "$HOME/bin"
+          cp helmfile "$HOME/bin/"
+          export PATH="$HOME/bin:$PATH"
+          which helmfile
+
       - name: deploy
         run: |-
           cd deployments/
