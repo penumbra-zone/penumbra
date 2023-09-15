@@ -5,7 +5,7 @@ use penumbra_proto::{
 use serde::{Deserialize, Serialize};
 
 use super::Allocation;
-use crate::{component::AppHash, params::ChainParameters};
+use crate::params::ChainParameters;
 
 /// The application state at genesis.
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -13,8 +13,8 @@ use crate::{component::AppHash, params::ChainParameters};
 pub enum AppState {
     /// The application state at genesis.
     Content(Content),
-    /// The checkpointed application state at genesis.
-    Checkpoint(AppHash),
+    /// The checkpointed application state at genesis, contains a free-form hash.
+    Checkpoint(Vec<u8>),
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
