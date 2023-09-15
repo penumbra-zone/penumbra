@@ -7,7 +7,7 @@ use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
     core::ibc::v1alpha1::{self as pb, FungibleTokenPacketData},
-    DomainType, Message, TypeUrl,
+    DomainType, TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -49,7 +49,8 @@ impl Ics20Withdrawal {
     pub fn packet_data(&self) -> Vec<u8> {
         let ftpd: FungibleTokenPacketData = self.clone().into();
 
-        ftpd.encode_to_vec()
+        // In violation of the ICS20 spec, ibc-go encodes transfer packets as JSON.
+        serde_json::to_vec(&ftpd).expect("can serialize FungibleTokenPacketData as JSON")
     }
 
     // stateless validation of an Ics20 withdrawal action.
