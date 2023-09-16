@@ -1,15 +1,12 @@
 use crate::{DomainType, Message};
 
 use anyhow::Result;
-use std::{fmt::Debug, pin::Pin};
-
-use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use penumbra_storage::StateRead;
+use std::{fmt::Debug, pin::Pin};
 
 use super::future::{DomainFuture, ProtoFuture};
 
-#[async_trait]
 pub trait StateReadProto: StateRead + Send + Sync {
     /// Gets a value from the verifiable key-value store as a domain type.
     ///
