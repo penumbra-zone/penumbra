@@ -425,27 +425,26 @@ impl ConsensusQuery for IbcQuery {
 
         let mut acks = vec![];
         for ack_idx in 0..ack_counter {
-            let ack = snapshot
+            let maybe_ack = snapshot
                 .get_packet_acknowledgement(&port_id, &chan_id, ack_idx)
                 .await.map_err(|e| {
                     tonic::Status::aborted(format!(
                         "couldn't get packet acknowledgement for channel {chan_id} and port {port_id} at index {ack_idx}: {e}"
                     ))
-                })?
-                .ok_or_else(|| anyhow::anyhow!("couldn't find ack")).map_err(|e| {
-                    tonic::Status::aborted(format!(
-                        "couldn't get packet acknowledgement for channel {chan_id} and port {port_id} at index {ack_idx}: {e}"
-                    ))
                 })?;
 
-            let ack_state = PacketState {
-                port_id: request.port_id.clone(),
-                channel_id: request.channel_id.clone(),
-                sequence: ack_idx,
-                data: ack.clone(),
-            };
+            // Only include the ack if it was found; otherwise, signal lack of
+            // by omitting it from the response.
+            if let Some(ack) = maybe_ack {
+                let ack_state = PacketState {
+                    port_id: request.port_id.clone(),
+                    channel_id: request.channel_id.clone(),
+                    sequence: ack_idx,
+                    data: ack.clone(),
+                };
 
-            acks.push(ack_state);
+                acks.push(ack_state);
+            }
         }
 
         let res = QueryPacketAcknowledgementsResponse {
