@@ -67,7 +67,7 @@ impl Info {
 
     async fn info(&self, info: request::Info) -> anyhow::Result<response::Info> {
         let state = self.storage.latest_snapshot();
-        tracing::info!(?info, version = ?state.version());
+        tracing::debug!(?info, version = ?state.version());
 
         let last_block_height = match state.version() {
             // When the state is uninitialized, state.version() will return -1 (u64::MAX),
