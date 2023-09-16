@@ -133,8 +133,14 @@ impl Info {
 
                 let key = hex::decode(&query.data).unwrap_or_else(|_| query.data.to_vec());
 
-                let Some((value, proof_ops)) = snapshot.get_with_proof_to_apphash_tm(key).await?
-                else {
+                let rsp = snapshot
+                    .get_with_proof_to_apphash_tm(key.clone())
+                    .await
+                    .with_context(|| {
+                        format!("failed to get key {}", String::from_utf8_lossy(&key))
+                    })?;
+
+                let Some((value, proof_ops)) = rsp else {
                     anyhow::bail!("key not found")
                 };
 
@@ -583,7 +589,7 @@ impl tower_service::Service<InfoRequest> for Info {
                     Ok(rsp) => Ok(InfoResponse::Query(rsp)),
                     Err(e) => Ok(InfoResponse::Query(response::Query {
                         code: 1.into(),
-                        log: e.to_string(),
+                        log: format!("{:#}", e),
                         ..Default::default()
                     })),
                 },
