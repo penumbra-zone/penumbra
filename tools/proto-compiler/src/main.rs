@@ -12,7 +12,9 @@ fn main() -> anyhow::Result<()> {
         .join("gen");
     println!("{}", target_dir.display());
 
-    let descriptor_path = target_dir.join("proto_descriptor.bin");
+    // https://github.com/penumbra-zone/penumbra/issues/3038#issuecomment-1722534133
+    // Using the "no_lfs" suffix prevents matching a catch-all LFS rule.
+    let descriptor_path = target_dir.join("proto_descriptor.bin.no_lfs");
 
     let mut config = prost_build::Config::new();
     config.out_dir(&target_dir);

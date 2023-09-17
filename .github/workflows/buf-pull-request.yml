@@ -77,7 +77,8 @@ jobs:
         shell: bash
         run: |
           ./deployments/scripts/protobuf-codegen
-          git checkout crates/proto/src/gen/proto_descriptor.bin
+          # https://github.com/penumbra-zone/penumbra/issues/3038#issuecomment-1722534133
+          # git checkout crates/proto/src/gen/proto_descriptor.bin
           s="$(git status --porcelain)"
           if [[ -n "$s" ]]; then
               echo "ERROR: protobuf files must be regenerated and committed."
