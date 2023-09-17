@@ -98,6 +98,11 @@ fn verify_merkle_proof(
     value: Vec<u8>,
 ) -> anyhow::Result<()> {
     let merkle_path = prefix.apply(vec![path.into().to_string()]);
+    tracing::debug!(
+        ?root,
+        ?merkle_path,
+        value = ?hex::encode(&value),
+    );
     proof.verify_membership(proof_specs, root.clone().into(), merkle_path, value, 0)?;
 
     Ok(())
@@ -243,6 +248,29 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
         };
 
         let commitment_bytes = commit_packet(&msg.packet).encode_to_vec();
+        tracing::debug!(
+            commit_packet = ?hex::encode(commit_packet(&msg.packet)),
+            commitment_bytes = ?hex::encode(&commitment_bytes),
+        );
+
+        tracing::debug!(
+            verify_with_commit_packet = ?verify_merkle_proof(
+                &trusted_client_state.proof_specs,
+                &connection.counterparty.prefix.clone().into(),
+                &msg.proof_commitment_on_a,
+                &trusted_consensus_state.root,
+                commitment_path.clone(),
+                commit_packet(&msg.packet),
+            ),
+            verify_with_commitment_bytes = ?verify_merkle_proof(
+                &trusted_client_state.proof_specs,
+                &connection.counterparty.prefix.clone().into(),
+                &msg.proof_commitment_on_a,
+                &trusted_consensus_state.root,
+                commitment_path.clone(),
+                commitment_bytes.clone(),
+            ),
+        );
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
