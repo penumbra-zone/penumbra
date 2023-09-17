@@ -1,12 +1,17 @@
-use anyhow::Context;
-use std::io::Read;
+//use anyhow::Context;
+//use std::io::Read;
 
 fn main() -> anyhow::Result<()> {
+    // Disabled until (if) we re-enable LFS for the proto descriptor file.
+    // https://github.com/penumbra-zone/penumbra/issues/3038#issuecomment-1722534133
+    /*
     let f = "src/gen/proto_descriptor.bin";
     check_file_is_not_lfs_pointer(f)?;
+     */
     Ok(())
 }
 
+/*
 // Support for gRPC server reflection requires that we load
 // a `proto_descriptor.bin` file at build time. We store that file
 // in git-lfs, so if git-lfs isn't installed, it'll be a plaintext pointer
@@ -38,3 +43,4 @@ and retry the build."
     }
     return Ok(());
 }
+ */
