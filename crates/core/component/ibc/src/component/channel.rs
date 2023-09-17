@@ -55,6 +55,8 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
             CommitmentPath::new(&packet.port_on_a, &packet.chan_on_a, packet.sequence).to_string();
         let packet_hash = commit_packet(packet);
 
+        // TODO: this is wrong, it's important this is _RAW BYTES_, not a proto encoding.
+        // need to audit the other state writes here
         self.put_proto::<Vec<u8>>(commitment_key, packet_hash);
     }
 
