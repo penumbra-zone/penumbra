@@ -247,30 +247,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             sequence: msg.packet.sequence,
         };
 
-        let commitment_bytes = commit_packet(&msg.packet).encode_to_vec();
-        tracing::debug!(
-            commit_packet = ?hex::encode(commit_packet(&msg.packet)),
-            commitment_bytes = ?hex::encode(&commitment_bytes),
-        );
-
-        tracing::debug!(
-            verify_with_commit_packet = ?verify_merkle_proof(
-                &trusted_client_state.proof_specs,
-                &connection.counterparty.prefix.clone().into(),
-                &msg.proof_commitment_on_a,
-                &trusted_consensus_state.root,
-                commitment_path.clone(),
-                commit_packet(&msg.packet),
-            ),
-            verify_with_commitment_bytes = ?verify_merkle_proof(
-                &trusted_client_state.proof_specs,
-                &connection.counterparty.prefix.clone().into(),
-                &msg.proof_commitment_on_a,
-                &trusted_consensus_state.root,
-                commitment_path.clone(),
-                commitment_bytes.clone(),
-            ),
-        );
+        let commitment_bytes = commit_packet(&msg.packet);
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
