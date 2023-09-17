@@ -123,7 +123,8 @@ impl Info {
     }
 
     async fn query(&self, query: request::Query) -> anyhow::Result<response::Query> {
-        tracing::info!(?query);
+        // The other query params are already in the span, so we just need to emit an event.
+        tracing::debug!("got query");
 
         match query.path.as_str() {
             "state/key" => {
@@ -586,12 +587,18 @@ impl tower_service::Service<InfoRequest> for Info {
                     .map(InfoResponse::Info)
                     .map_err(Into::into),
                 InfoRequest::Query(query) => match self2.query(query).await {
-                    Ok(rsp) => Ok(InfoResponse::Query(rsp)),
-                    Err(e) => Ok(InfoResponse::Query(response::Query {
-                        code: 1.into(),
-                        log: format!("{:#}", e),
-                        ..Default::default()
-                    })),
+                    Ok(rsp) => {
+                        tracing::debug!(value = ?rsp.value);
+                        Ok(InfoResponse::Query(rsp))
+                    }
+                    Err(e) => {
+                        tracing::debug!(error = ?e);
+                        Ok(InfoResponse::Query(response::Query {
+                            code: 1.into(),
+                            log: format!("{:#}", e),
+                            ..Default::default()
+                        }))
+                    }
                 },
                 InfoRequest::Echo(echo) => Ok(InfoResponse::Echo(Echo {
                     message: echo.message,
