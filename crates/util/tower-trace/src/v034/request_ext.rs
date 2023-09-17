@@ -57,9 +57,10 @@ impl RequestExt for InfoRequest {
                 path,
                 height,
                 prove,
+                data,
                 ..
             }) => {
-                error_span!(parent: &p, "Query", ?path, ?height, prove)
+                error_span!(parent: &p, "Query", ?path, ?data, ?height, prove)
             }
             InfoRequest::Echo(_) => error_span!(parent: &p, "Echo"),
             // dropped since 0.35
