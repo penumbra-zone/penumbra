@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types::core::{
     channel::{
@@ -32,6 +32,7 @@ impl MsgHandler for MsgRecvPacket {
 
     async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
+        tracing::debug!(data = ?String::from_utf8_lossy(&self.packet.data));
         let channel = state
             .get_channel(&self.packet.chan_on_b, &self.packet.port_on_b)
             .await?
@@ -70,17 +71,25 @@ impl MsgHandler for MsgRecvPacket {
             anyhow::bail!("packet has timed out");
         }
 
-        let packet_timeout = self
-            .packet
-            .timeout_timestamp_on_b
-            .into_tm_time()
-            .ok_or_else(|| anyhow::anyhow!("invalid timestamp"))?;
+        let packet_timeout = self.packet.timeout_timestamp_on_b.into_tm_time();
 
-        if state.get_block_timestamp().await? >= packet_timeout {
-            anyhow::bail!("packet has timed out");
+        // TODO: is this correct logic?
+        // If the packet has no timeout timestamp, what do we do?
+        if let Some(packet_timeout) = packet_timeout {
+            let block_time = state.get_block_timestamp().await?;
+            if block_time >= packet_timeout {
+                anyhow::bail!(
+                    "packet has timed out: block time {:?} >= packet timeout {:?}",
+                    block_time,
+                    packet_timeout
+                );
+            }
         }
 
-        state.verify_packet_recv_proof(&connection, self).await?;
+        state
+            .verify_packet_recv_proof(&connection, self)
+            .await
+            .with_context(|| format!("packet {:?} failed to verify", self.packet))?;
 
         if channel.ordering == ChannelOrder::Ordered {
             let next_sequence_recv = state
