@@ -1,7 +1,6 @@
 use std::convert::TryInto;
 use std::str::FromStr;
 
-use anyhow::Context;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_keys::{Address, FullViewingKey};
 
@@ -38,21 +37,31 @@ pub fn send_plan(
     web_console::log_1(&value_js);
 
     let value: penumbra_proto::core::crypto::v1alpha1::Value =
-        serde_wasm_bindgen::from_value(value_js).unwrap();
+        serde_wasm_bindgen::from_value(value_js).expect("able to parse send plan's Value from JS");
 
-    let address = Address::from_str(dest_address).unwrap();
+    let address =
+        Address::from_str(dest_address).expect("send plan's destination address is valid");
     let mut planner = Planner::new(OsRng);
     planner.fee(Default::default());
-    planner.output(value.try_into().unwrap(), address);
+    planner.output(
+        value.try_into().expect("encoded protobuf Value is valid"),
+        address,
+    );
 
-    let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())
-        .context("The provided string is not a valid FullViewingKey")
-        .unwrap();
+    let fvk = FullViewingKey::from_str(full_viewing_key)
+        .expect("the provided string is a valid FullViewingKey");
 
-    let send_tx: SendTx = serde_wasm_bindgen::from_value(view_service_data).unwrap();
+    let send_tx: SendTx = serde_wasm_bindgen::from_value(view_service_data)
+        .expect("able to parse send plan's SendTx from JS");
 
-    let chain_params: ChainParameters = send_tx.chain_parameters.try_into().unwrap();
-    let fmd_params: FmdParameters = send_tx.fmd_parameters.try_into().unwrap();
+    let chain_params: ChainParameters = send_tx
+        .chain_parameters
+        .try_into()
+        .expect("encoded protobuf ChainParameters is valid");
+    let fmd_params: FmdParameters = send_tx
+        .fmd_parameters
+        .try_into()
+        .expect("encoded protobuf FmdParameters is valid");
 
     let plan = planner
         .plan_with_spendable_and_votable_notes(
@@ -60,20 +69,22 @@ pub fn send_plan(
             &fmd_params,
             &fvk,
             AddressIndex::from(0u32),
-            send_tx.notes.try_into().unwrap(),
+            send_tx.notes,
             Default::default(),
         )
-        .unwrap();
+        .expect("valid send transaction parameters were provided");
 
-    return serde_wasm_bindgen::to_value(&plan).unwrap();
+    serde_wasm_bindgen::to_value(&plan).expect("able to serialize send plan to JS")
 }
 
 #[wasm_bindgen]
 pub fn encode_tx(transaction: JsValue) -> JsValue {
     utils::set_panic_hook();
-    let tx: Transaction = serde_wasm_bindgen::from_value(transaction).unwrap();
-    let tx_encoding: Vec<u8> = tx.try_into().unwrap();
-    return serde_wasm_bindgen::to_value(&tx_encoding).unwrap();
+    let tx: Transaction = serde_wasm_bindgen::from_value(transaction)
+        .expect("able to deserialize transaction from JS");
+    let tx_encoding: Vec<u8> = tx.try_into().expect("able to encode transaction to bytes");
+    serde_wasm_bindgen::to_value(&tx_encoding)
+        .expect("able to serialize transaction encoding to JS")
 }
 
 #[wasm_bindgen]
@@ -84,15 +95,16 @@ pub fn build_tx(
     stored_tree: JsValue,
 ) -> JsValue {
     utils::set_panic_hook();
-    let plan: TransactionPlan = serde_wasm_bindgen::from_value(transaction_plan).unwrap();
+    let plan: TransactionPlan = serde_wasm_bindgen::from_value(transaction_plan)
+        .expect("able to deserialize transaction plan from JS");
 
-    let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())
-        .context("The provided string is not a valid FullViewingKey")
-        .unwrap();
+    let fvk = FullViewingKey::from_str(full_viewing_key)
+        .expect("the provided string is a valid FullViewingKey");
 
     let auth_data = sign_plan(spend_key_str, plan.clone());
 
-    let stored_tree: StoredTree = serde_wasm_bindgen::from_value(stored_tree).unwrap();
+    let stored_tree: StoredTree = serde_wasm_bindgen::from_value(stored_tree)
+        .expect("able to deserialize stored tree from JS");
 
     let nct = load_tree(stored_tree);
 
@@ -100,14 +112,13 @@ pub fn build_tx(
 
     let tx = build_transaction(&fvk, plan.clone(), auth_data, witness_data);
 
-    return serde_wasm_bindgen::to_value(&tx).unwrap();
+    serde_wasm_bindgen::to_value(&tx).expect("able to serialize transaction to JS")
 }
 
 pub fn sign_plan(spend_key_str: &str, transaction_plan: TransactionPlan) -> AuthorizationData {
-    let spend_key = SpendKey::from_str(spend_key_str).unwrap();
+    let spend_key = SpendKey::from_str(spend_key_str).expect("spend key is valid");
 
-    let authorization_data = transaction_plan.authorize(OsRng, &spend_key);
-    return authorization_data;
+    transaction_plan.authorize(OsRng, &spend_key)
 }
 
 pub fn build_transaction(
@@ -116,11 +127,10 @@ pub fn build_transaction(
     auth_data: AuthorizationData,
     witness_data: WitnessData,
 ) -> Transaction {
-    return plan
-        .build(fvk, witness_data)
-        .unwrap()
+    plan.build(fvk, witness_data)
+        .expect("valid transaction plan was provided")
         .authorize(&mut OsRng, &auth_data)
-        .unwrap();
+        .expect("valid authorization data was provided")
 }
 
 fn witness(nct: Tree, plan: TransactionPlan) -> WitnessData {
@@ -140,7 +150,7 @@ fn witness(nct: Tree, plan: TransactionPlan) -> WitnessData {
 
     let auth_paths: Vec<Proof> = note_commitments
         .iter()
-        .map(|nc| nct.witness(*nc).unwrap())
+        .map(|nc| nct.witness(*nc).expect("note commitment is in the NCT"))
         .collect::<Vec<Proof>>();
 
     // Release the read lock on the NCT
@@ -163,5 +173,5 @@ fn witness(nct: Tree, plan: TransactionPlan) -> WitnessData {
     {
         witness_data.add_proof(nc, Proof::dummy(&mut OsRng, nc));
     }
-    return witness_data;
+    witness_data
 }

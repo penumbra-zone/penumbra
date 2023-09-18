@@ -34,10 +34,7 @@ impl From<SwapRecord> for pb::SwapRecord {
             position: msg.position.into(),
             nullifier: Some(msg.nullifier.into()),
             output_data: Some(msg.output_data.into()),
-            height_claimed: match msg.height_claimed {
-                Some(h) => h,
-                None => 0,
-            },
+            height_claimed: msg.height_claimed.unwrap_or(0),
             source: Some(msg.source.into()),
         }
     }
