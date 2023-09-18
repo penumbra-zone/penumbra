@@ -280,7 +280,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             sequence: msg.packet.sequence,
         };
 
-        let ack_bytes = commit_acknowledgement(&msg.acknowledgement).encode_to_vec();
+        let ack_bytes = commit_acknowledgement(&msg.acknowledgement);
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
@@ -307,11 +307,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
             )
             .await?;
 
-        let mut seq_bytes = Vec::new();
-        u64::from(msg.next_seq_recv_on_b)
-            .encode(&mut seq_bytes)
-            .expect("buffer size too small");
-
+        let seq_bytes = msg.next_seq_recv_on_b.0.to_be_bytes().to_vec();
         let seq_path = SeqRecvPath(msg.packet.port_on_b.clone(), msg.packet.chan_on_b.clone());
 
         verify_merkle_proof(
