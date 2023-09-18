@@ -33,7 +33,7 @@ impl App {
         let start = std::time::Instant::now();
         let tx = penumbra_wallet::build_transaction(
             &self.fvk,
-            self.view.as_mut().unwrap(),
+            self.view.as_mut().expect("view service initialized"),
             &mut self.custody,
             OsRng,
             plan,

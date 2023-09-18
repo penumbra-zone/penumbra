@@ -142,8 +142,8 @@ impl DebugInfo {
 
         // Walk archive directory and collect all "custody.json" files.
         let mut archived_files = Vec::<String>::new();
-        for entry in WalkDir::new(dd.to_str().unwrap()) {
-            let entry = entry.unwrap();
+        for entry in WalkDir::new(dd.to_str().expect("can convert data dir to string")) {
+            let entry = entry.expect("have permissions to read directory from WalkDir");
             if let Some(f) = entry.path().file_name() {
                 if f.to_str().unwrap_or("") == "custody.json" {
                     archived_files.push(format!("{}", entry.path().display()));

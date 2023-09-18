@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 #![allow(clippy::clone_on_copy)]
 use std::fs;
 
@@ -42,13 +43,15 @@ pub struct App {
 
 impl App {
     pub fn view(&mut self) -> &mut impl ViewClient {
-        self.view.as_mut().unwrap()
+        self.view.as_mut().expect("view service initialized")
     }
 
     async fn sync(&mut self) -> Result<()> {
-        let mut status_stream =
-            ViewClient::status_stream(self.view.as_mut().unwrap(), self.fvk.account_group_id())
-                .await?;
+        let mut status_stream = ViewClient::status_stream(
+            self.view.as_mut().expect("view service initialized"),
+            self.fvk.account_group_id(),
+        )
+        .await?;
 
         // Pull out the first message from the stream, which has the current state, and use
         // it to set up a progress bar.

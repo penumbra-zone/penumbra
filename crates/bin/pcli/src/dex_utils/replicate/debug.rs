@@ -34,21 +34,28 @@ pub struct PayoffPosition {
 
 impl PayoffPosition {
     pub fn from_position(pair: DirectedUnitPair, position: Position) -> PayoffPosition {
-        let oriented_phi = position.phi.orient_end(pair.end.id()).unwrap();
+        let oriented_phi = position
+            .phi
+            .orient_end(pair.end.id())
+            .expect("end is part of the position");
         let p = U128x128::ratio(oriented_phi.p.value(), pair.end.unit_amount().value())
-            .unwrap()
+            .expect("p is positive")
             .into();
         let q = U128x128::ratio(oriented_phi.q.value(), pair.start.unit_amount().value())
-            .unwrap()
+            .expect("q is positive")
             .into();
 
-        let r1 = position.reserves_for(pair.start.id()).unwrap();
-        let r2 = position.reserves_for(pair.end.id()).unwrap();
+        let r1 = position
+            .reserves_for(pair.start.id())
+            .expect("start is part of the position");
+        let r2 = position
+            .reserves_for(pair.end.id())
+            .expect("end is part of the position");
         let r1 = U128x128::ratio(r1.value(), pair.start.unit_amount().value())
-            .unwrap()
+            .expect("r1 is positive")
             .into();
         let r2 = U128x128::ratio(r2.value(), pair.end.unit_amount().value())
-            .unwrap()
+            .expect("r2 is positive")
             .into();
         let k = p * r1 + q * r2;
         let k = k / p;
