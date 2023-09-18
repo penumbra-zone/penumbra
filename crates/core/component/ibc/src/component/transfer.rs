@@ -221,7 +221,9 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
     //
     // https://github.com/cosmos/ibc/tree/main/spec/app/ics-020-fungible-token-transfer (onRecvPacket)
     //
-    let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
+    // NOTE: spec says proto but thsi is actualy JSON according to the ibc-go implementation
+    let packet_data: FungibleTokenPacketData = serde_json::from_slice(msg.packet.data.as_slice())
+        .with_context(|| "failed to decode FTPD packet")?;
     let denom: asset::DenomMetadata = packet_data
         .denom
         .as_str()
@@ -423,7 +425,7 @@ impl AppHandlerExecute for Ics20Transfer {
                 TokenTransferAcknowledgement::success().into()
             }
             Err(e) => {
-                tracing::debug!("couldnt execute transfer: {}", e);
+                tracing::debug!("couldnt execute transfer: {:#}", e);
                 // record packet acknowledgement with error
                 TokenTransferAcknowledgement::Error(e.to_string()).into()
             }
