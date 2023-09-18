@@ -1,5 +1,6 @@
 //! Source code for the Penumbra node software.
 #![allow(clippy::clone_on_copy)]
+#![deny(clippy::unwrap_used)]
 #![recursion_limit = "512"]
 
 mod consensus;
