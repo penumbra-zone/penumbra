@@ -8,15 +8,15 @@ pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position
     table.set_header(vec!["ID", "State", "Fee", "Sell Price", "Reserves"]);
     table
         .get_column_mut(2)
-        .unwrap()
+        .expect("column 2 exists")
         .set_cell_alignment(comfy_table::CellAlignment::Right);
     table
         .get_column_mut(3)
-        .unwrap()
+        .expect("column 3 exists")
         .set_cell_alignment(comfy_table::CellAlignment::Right);
     table
         .get_column_mut(4)
-        .unwrap()
+        .expect("column 4 exists")
         .set_cell_alignment(comfy_table::CellAlignment::Right);
 
     for position in positions {

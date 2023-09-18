@@ -1,4 +1,5 @@
 use crate::dex_utils::replicate::math_utils;
+use anyhow::Context;
 use ndarray::Array;
 use penumbra_asset::Value;
 use penumbra_dex::{
@@ -33,8 +34,8 @@ pub fn replicate(
     let fp_raw_r1 = U128x128::from(raw_r1.amount.value());
     let r1_scaling_factor = U128x128::from(pair.start.unit_amount());
 
-    let fp_r1 = (fp_raw_r1 / r1_scaling_factor).unwrap();
-    let fp_r2 = (current_price * fp_r1).unwrap();
+    let fp_r1 = (fp_raw_r1 / r1_scaling_factor).context("scaling factor can't be 0")?;
+    let fp_r2 = (current_price * fp_r1).context("should not overflow when multiplying by price")?;
 
     tracing::debug!(
         %fp_r1,
@@ -92,8 +93,10 @@ pub fn replicate(
             // to create a one-sided position with price `alpha_i`
             // that provisions `asset_1`.
             // \phi(R) = alpha_i * (R_1 = k_i) + 1 * (R_2 = 0) = alpha_i * k_i
-            let approx_p: U128x128 = alpha_i.try_into().unwrap();
-            let scaled_p = (approx_p * unit_end).unwrap();
+            let approx_p: U128x128 = alpha_i
+                .try_into()
+                .expect("able to convert alpha_i to U128x128");
+            let scaled_p = (approx_p * unit_end).expect("no overflow when scaling p");
             let p: Amount = scaled_p
                 .round_down()
                 .try_into()
@@ -106,7 +109,7 @@ pub fn replicate(
                 let r1: Amount = Amount::from(0u64);
                 let approx_r2: U128x128 = (*k_i * pair.end.unit_amount().value() as f64 * alpha_i)
                     .try_into()
-                    .unwrap();
+                    .expect("able to convert k_i * alpha_i to U128x128");
                 let r2: Amount = approx_r2
                     .round_down()
                     .try_into()
@@ -136,7 +139,7 @@ pub fn replicate(
             } else {
                 let approx_r1: U128x128 = (*k_i * pair.start.unit_amount().value() as f64)
                     .try_into()
-                    .unwrap();
+                    .expect("able to convert k_i * alpha_i to U128x128");
                 let r1: Amount = approx_r1
                     .round_down()
                     .try_into()

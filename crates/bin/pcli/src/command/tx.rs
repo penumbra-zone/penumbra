@@ -280,7 +280,7 @@ impl TxCmd {
 
                 let plan = plan::send(
                     app.fvk.account_group_id(),
-                    app.view.as_mut().unwrap(),
+                    app.view.as_mut().context("view service initialized")?,
                     OsRng,
                     &values,
                     fee,
@@ -309,7 +309,9 @@ impl TxCmd {
                 }
                 let plan = planner
                     .plan(
-                        app.view.as_mut().unwrap(),
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
                         app.fvk.account_group_id(),
                         AddressIndex::new(*source),
                     )
@@ -320,7 +322,9 @@ impl TxCmd {
                 let specific_client = app.specific_client().await?;
                 let plans = plan::sweep(
                     app.fvk.account_group_id(),
-                    app.view.as_mut().unwrap(),
+                    app.view
+                        .as_mut()
+                        .context("view service must be initialized")?,
                     OsRng,
                     specific_client,
                 )
@@ -410,7 +414,12 @@ impl TxCmd {
                     .format(&asset_cache),
                 );
 
-                let params = app.view.as_mut().unwrap().chain_params().await?;
+                let params = app
+                    .view
+                    .as_mut()
+                    .context("view service must be initialized")?
+                    .chain_params()
+                    .await?;
 
                 let account_group_id = app.fvk.account_group_id();
 
@@ -459,7 +468,9 @@ impl TxCmd {
 
                 let plan = plan::delegate(
                     app.fvk.account_group_id(),
-                    app.view.as_mut().unwrap(),
+                    app.view
+                        .as_mut()
+                        .context("view service must be initialized")?,
                     OsRng,
                     rate_data,
                     // TODO: fix and also delete plan::delegate entirely!
@@ -508,7 +519,9 @@ impl TxCmd {
                     .fee(fee)
                     .undelegate(delegation_value.amount, rate_data)
                     .plan(
-                        app.view.as_mut().unwrap(),
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
                         app.fvk.account_group_id(),
                         AddressIndex::new(*source),
                     )
@@ -524,7 +537,10 @@ impl TxCmd {
 
                 let mut specific_client = app.specific_client().await?;
                 let mut oblivious_client = app.oblivious_client().await?;
-                let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
+                let view: &mut dyn ViewClient = app
+                    .view
+                    .as_mut()
+                    .context("view service must be initialized")?;
 
                 let params = view.chain_params().await?;
                 let current_height = view.status(account_group_id).await?.sync_height;
@@ -535,7 +551,7 @@ impl TxCmd {
                     .await?
                     .into_inner()
                     .epoch
-                    .unwrap();
+                    .context("unable to get epoch for current height")?;
                 let asset_cache = view.assets().await?;
 
                 // Query the view client for the list of undelegations that are ready to be claimed.
@@ -548,7 +564,10 @@ impl TxCmd {
                     for (token, notes) in
                         notes_by_asset.into_iter().filter_map(|(asset_id, notes)| {
                             // Filter for notes that are unbonding tokens.
-                            let denom = asset_cache.get(&asset_id).unwrap().clone();
+                            let denom = asset_cache
+                                .get(&asset_id)
+                                .expect("asset ID should exist in asset cache")
+                                .clone();
                             match UnbondingToken::try_from(denom) {
                                 Ok(token) => Some((token, notes)),
                                 Err(_) => None,
@@ -596,7 +615,9 @@ impl TxCmd {
                             })
                             .fee(fee.clone())
                             .plan(
-                                app.view.as_mut().unwrap(),
+                                app.view
+                                    .as_mut()
+                                    .context("view service must be initialized")?,
                                 app.fvk.account_group_id(),
                                 address_index,
                             )
@@ -619,7 +640,9 @@ impl TxCmd {
                 let fee = Fee::from_staking_token_amount((*fee).into());
                 let plan = plan::proposal_submit(
                     app.fvk.account_group_id(),
-                    app.view.as_mut().unwrap(),
+                    app.view
+                        .as_mut()
+                        .context("view service must be initialized")?,
                     OsRng,
                     proposal,
                     fee,
@@ -637,7 +660,9 @@ impl TxCmd {
                 let fee = Fee::from_staking_token_amount((*fee).into());
                 let plan = plan::proposal_withdraw(
                     app.fvk.account_group_id(),
-                    app.view.as_mut().unwrap(),
+                    app.view
+                        .as_mut()
+                        .context("view service must be initialized")?,
                     OsRng,
                     *proposal_id,
                     reason.clone(),
@@ -716,7 +741,9 @@ impl TxCmd {
                     .proposal_deposit_claim(*proposal_id, deposit_amount, outcome)
                     .fee(fee)
                     .plan(
-                        app.view.as_mut().unwrap(),
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
                         app.fvk.account_group_id(),
                         AddressIndex::new(*source),
                     )
@@ -781,7 +808,9 @@ impl TxCmd {
                     )
                     .fee(fee)
                     .plan(
-                        app.view.as_mut().unwrap(),
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
                         app.fvk.account_group_id(),
                         AddressIndex::new(*source),
                     )
@@ -802,7 +831,9 @@ impl TxCmd {
                     .position_open(position)
                     .fee(fee)
                     .plan(
-                        app.view.as_mut().unwrap(),
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
                         app.fvk.account_group_id(),
                         source,
                     )
@@ -846,7 +877,7 @@ impl TxCmd {
                 fn parse_denom_and_amount(
                     value_str: &str,
                 ) -> anyhow::Result<(Amount, DenomMetadata)> {
-                    let denom_re = Regex::new(r"^([0-9.]+)(.+)$").unwrap();
+                    let denom_re = Regex::new(r"^([0-9.]+)(.+)$").context("denom regex invalid")?;
                     if let Some(captures) = denom_re.captures(value_str) {
                         let numeric_str = captures.get(1).expect("matched regex").as_str();
                         let denom_str = captures.get(2).expect("matched regex").as_str();
@@ -878,7 +909,9 @@ impl TxCmd {
                     .ics20_withdrawal(withdrawal)
                     .fee(fee)
                     .plan(
-                        app.view.as_mut().unwrap(),
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
                         app.fvk.account_group_id(),
                         AddressIndex::new(*source),
                     )
@@ -896,7 +929,9 @@ impl TxCmd {
                     .position_close(*position_id)
                     .fee(fee)
                     .plan(
-                        app.view.as_mut().unwrap(),
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
                         app.fvk.account_group_id(),
                         AddressIndex::new(*source),
                     )
@@ -908,7 +943,10 @@ impl TxCmd {
                 source,
                 trading_pair,
             }) => {
-                let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
+                let view: &mut dyn ViewClient = app
+                    .view
+                    .as_mut()
+                    .context("view service must be initialized")?;
 
                 let owned_position_ids = view
                     .owned_position_ids(Some(position::State::Opened), *trading_pair)
@@ -931,7 +969,9 @@ impl TxCmd {
                 let final_plan = plan
                     .fee(fee)
                     .plan(
-                        app.view.as_mut().unwrap(),
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
                         app.fvk.account_group_id(),
                         AddressIndex::new(*source),
                     )
@@ -943,7 +983,10 @@ impl TxCmd {
                 source,
                 trading_pair,
             }) => {
-                let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
+                let view: &mut dyn ViewClient = app
+                    .view
+                    .as_mut()
+                    .context("view service must be initialized")?;
 
                 let owned_position_ids = view
                     .owned_position_ids(Some(position::State::Closed), *trading_pair)
@@ -960,7 +1003,10 @@ impl TxCmd {
 
                 let mut specific_client = app.specific_client().await?;
 
-                let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
+                let view: &mut dyn ViewClient = app
+                    .view
+                    .as_mut()
+                    .context("view service must be initialized")?;
                 let params = view.chain_params().await?;
                 for position_id in owned_position_ids {
                     // Withdraw the position
@@ -997,7 +1043,9 @@ impl TxCmd {
                 let final_plan = plan
                     .fee(fee)
                     .plan(
-                        app.view.as_mut().unwrap(),
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
                         app.fvk.account_group_id(),
                         AddressIndex::new(*source),
                     )
@@ -1011,7 +1059,10 @@ impl TxCmd {
             }) => {
                 let mut specific_client = app.specific_client().await?;
 
-                let view: &mut dyn ViewClient = app.view.as_mut().unwrap();
+                let view: &mut dyn ViewClient = app
+                    .view
+                    .as_mut()
+                    .context("view service must be initialized")?;
                 let params = view.chain_params().await?;
 
                 // Fetch the information regarding the position from the view service.
@@ -1043,7 +1094,9 @@ impl TxCmd {
                     .position_withdraw(*position_id, reserves.try_into()?, pair.try_into()?)
                     .fee(fee)
                     .plan(
-                        app.view.as_mut().unwrap(),
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
                         app.fvk.account_group_id(),
                         AddressIndex::new(*source),
                     )

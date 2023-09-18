@@ -54,7 +54,7 @@ impl StakedCmd {
         table.set_header(vec!["Name", "Value", "Exch. Rate", "Tokens"]);
         table
             .get_column_mut(1)
-            .unwrap()
+            .expect("column 1 exists")
             .set_cell_alignment(comfy_table::CellAlignment::Right);
 
         for (asset_id, notes_by_address) in notes.iter() {
@@ -70,7 +70,7 @@ impl StakedCmd {
             let info = validators
                 .iter()
                 .find(|v| v.validator.identity_key == dt.validator())
-                .unwrap();
+                .expect("validator info exists in returned data");
 
             let delegation = Value {
                 amount: notes_by_address
