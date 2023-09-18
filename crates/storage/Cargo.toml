@@ -10,7 +10,7 @@ migration = []
 default = ["metrics"]
 
 [dependencies]
-jmt = "0.6"
+jmt = "0.7"
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 tokio-stream = { version = "0.1.11" }
 tempfile = "3.3.0"
