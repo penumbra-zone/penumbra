@@ -1,13 +1,10 @@
-use ark_ff::Zero;
 use serde::{Deserialize, Serialize};
 
-use decaf377::Fr;
-use penumbra_asset::{balance, Balance, Value};
-use penumbra_governance::ProposalNft;
+use penumbra_asset::{Balance, Value};
 use penumbra_num::Amount;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
-use crate::{ActionView, IsAction, TransactionPerspective};
+use crate::ProposalNft;
 
 /// A withdrawal of a proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,16 +14,6 @@ pub struct ProposalWithdraw {
     pub proposal: u64,
     // The reason the proposal was withdrawn.
     pub reason: String,
-}
-
-impl IsAction for ProposalWithdraw {
-    fn balance_commitment(&self) -> balance::Commitment {
-        self.balance().commit(Fr::zero())
-    }
-
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::ProposalWithdraw(self.to_owned())
-    }
 }
 
 impl From<ProposalWithdraw> for pb::ProposalWithdraw {

@@ -10,10 +10,6 @@ use penumbra_transaction::Action;
 use super::ActionHandler;
 use penumbra_component::ActionHandler as _;
 
-mod delegator_vote;
-mod proposal;
-mod validator_vote;
-
 #[async_trait]
 impl ActionHandler for Action {
     type CheckStatelessContext = TransactionContext;

@@ -1,19 +1,15 @@
-use ark_ff::Zero;
 use serde::{Deserialize, Serialize};
 
-use decaf377::Fr;
 use penumbra_asset::{
     asset::{self, DenomMetadata},
-    balance, Balance, Value, STAKING_TOKEN_ASSET_ID,
+    Balance, Value, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_governance::ProposalNft;
 use penumbra_num::Amount;
 use penumbra_proto::{core::governance::v1alpha1 as pb, TypeUrl};
 
-use crate::{
-    proposal::{Outcome, Withdrawn},
-    ActionView, IsAction, TransactionPerspective,
-};
+use crate::proposal_state::{Outcome, Withdrawn};
+
+use crate::ProposalNft;
 
 /// A claim for the initial submission deposit for a proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,16 +56,6 @@ impl TryFrom<pb::ProposalDepositClaim> for ProposalDepositClaim {
 
 impl TypeUrl for ProposalDepositClaim {
     const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ProposalDepositClaim";
-}
-
-impl IsAction for ProposalDepositClaim {
-    fn balance_commitment(&self) -> balance::Commitment {
-        self.balance().commit(Fr::zero())
-    }
-
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::ProposalDepositClaim(self.clone())
-    }
 }
 
 impl ProposalDepositClaim {

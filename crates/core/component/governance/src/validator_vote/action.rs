@@ -1,10 +1,9 @@
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_asset::balance;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_stake::{GovernanceKey, IdentityKey};
 use serde::{Deserialize, Serialize};
 
-use crate::{vote::Vote, ActionView, IsAction, TransactionPerspective};
+use crate::vote::Vote;
 
 /// A vote by a validator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -14,16 +13,6 @@ pub struct ValidatorVote {
     pub body: ValidatorVoteBody,
     /// The signature authorizing the vote (signed with governance key over the body).
     pub auth_sig: Signature<SpendAuth>,
-}
-
-impl IsAction for ValidatorVote {
-    fn balance_commitment(&self) -> balance::Commitment {
-        Default::default()
-    }
-
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::ValidatorVote(self.to_owned())
-    }
 }
 
 impl From<ValidatorVote> for pb::ValidatorVote {

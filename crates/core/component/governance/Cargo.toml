@@ -11,7 +11,9 @@ component = [
     "penumbra-storage",
     "penumbra-proto/penumbra-storage",
     "penumbra-chain/component",
-    "penumbra-sct/component"
+    "penumbra-sct/component",
+    "penumbra-stake/component",
+    "tokio",
 ]
 proving-keys = ["penumbra-proof-params/proving-keys"]
 default = ["std", "component", "proving-keys"]
@@ -28,9 +30,11 @@ penumbra-proof-params = { path = "../../../crypto/proof-params", default-feature
 penumbra-sct = { path = "../sct", default-features = false }
 penumbra-component = { path = "../component", optional = true }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false  }
+penumbra-stake = { path = "../stake", default-features = false }
 penumbra-chain = { path = "../chain", default-features = false }
 penumbra-asset = { path = "../../../core/asset", default-features = false  } 
 penumbra-keys = { path = "../../../core/keys", default-features = false  } 
+penumbra-num = { path = "../../../core/num", default-features = false  } 
 
 # Penumbra dependencies
 decaf377-rdsa = { version = "0.7" }
@@ -56,6 +60,9 @@ rand_core = { version = "0.6.3", features = ["getrandom"] }
 rand = "0.8"
 im = "15.1"
 regex = "1.5"
+futures = "0.3"
+tokio = { version = "1.21.1", features = ["full", "tracing"], optional = true }
 
 [dev-dependencies]
 proptest = "1"
+proptest-derive = "0.3"
