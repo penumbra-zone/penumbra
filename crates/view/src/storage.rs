@@ -1069,7 +1069,7 @@ impl Storage {
             );
         }
 
-        *self.uncommitted_height.lock() = Some(height.try_into().unwrap());
+        *self.uncommitted_height.lock() = Some(height.try_into()?);
         Ok(())
     }
 
@@ -1400,7 +1400,7 @@ impl Storage {
             // Update FMD parameters if they've changed.
             if filtered_block.fmd_parameters.is_some() {
                 let fmd_parameters_bytes =
-                    &FmdParameters::encode_to_vec(&filtered_block.fmd_parameters.unwrap())[..];
+                    &FmdParameters::encode_to_vec(&filtered_block.fmd_parameters.ok_or_else(|| anyhow::anyhow!("missing fmd parameters in filtered block"))?)[..];
 
                 dbtx.execute("INSERT INTO fmd_parameters (bytes) VALUES (?1)", [&fmd_parameters_bytes])?;
             }

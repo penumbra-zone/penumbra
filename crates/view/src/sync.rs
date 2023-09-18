@@ -100,13 +100,19 @@ pub async fn scan_block(
     // Having started trial decryption in the background, ask the Storage for scanning advice:
     let mut note_advice = storage.scan_advice(unknown_commitments).await?;
     for decryption in note_decryptions {
-        if let Some(note) = decryption.await.unwrap() {
+        if let Some(note) = decryption
+            .await
+            .expect("able to join tokio note decryption handle")
+        {
             note_advice.insert(note.commit(), note);
         }
     }
     let mut swap_advice = BTreeMap::new();
     for decryption in swap_decryptions {
-        if let Some(swap) = decryption.await.unwrap() {
+        if let Some(swap) = decryption
+            .await
+            .expect("able to join tokio swap decryption handle")
+        {
             swap_advice.insert(swap.swap_commitment(), swap);
         }
     }
