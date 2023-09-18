@@ -75,24 +75,24 @@ impl TestnetTendermintConfig {
     ) -> anyhow::Result<()> {
         // We'll also create the pd state directory here, since it's convenient.
         let pd_dir = node_dir.clone().join("pd");
-        let tm_data_dir = node_dir.clone().join("tendermint").join("data");
-        let tm_config_dir = node_dir.clone().join("tendermint").join("config");
+        let cb_data_dir = node_dir.clone().join("cometbft").join("data");
+        let cb_config_dir = node_dir.clone().join("cometbft").join("config");
 
         tracing::info!(config_dir = %node_dir.display(), "Writing validator configs to");
 
         fs::create_dir_all(pd_dir)?;
-        fs::create_dir_all(&tm_data_dir)?;
-        fs::create_dir_all(&tm_config_dir)?;
+        fs::create_dir_all(&cb_data_dir)?;
+        fs::create_dir_all(&cb_config_dir)?;
 
-        let genesis_file_path = tm_config_dir.clone().join("genesis.json");
+        let genesis_file_path = cb_config_dir.clone().join("genesis.json");
         tracing::debug!(genesis_file_path = %genesis_file_path.display(), "writing genesis");
         let mut genesis_file = File::create(genesis_file_path)?;
         genesis_file.write_all(serde_json::to_string_pretty(&genesis)?.as_bytes())?;
 
-        let tm_config_filepath = tm_config_dir.clone().join("config.toml");
-        tracing::debug!(tendermint_config = %tm_config_filepath.display(), "writing tendermint config.toml");
-        let mut tm_config_file = File::create(tm_config_filepath)?;
-        tm_config_file.write_all(toml::to_string(&self.0)?.as_bytes())?;
+        let cb_config_filepath = cb_config_dir.clone().join("config.toml");
+        tracing::debug!(cometbft_config = %cb_config_filepath.display(), "writing cometbft config.toml");
+        let mut cb_config_file = File::create(cb_config_filepath)?;
+        cb_config_file.write_all(toml::to_string(&self.0)?.as_bytes())?;
 
         // Write this node's node_key.json
         // the underlying type doesn't implement Copy or Clone (for the best)
@@ -105,13 +105,13 @@ impl TestnetTendermintConfig {
         );
 
         let node_key = NodeKey { priv_key };
-        let tm_node_key_filepath = tm_config_dir.clone().join("node_key.json");
-        tracing::debug!(tm_node_key_filepath = %tm_node_key_filepath.display(), "writing node key file");
-        let mut tm_node_key_file = File::create(tm_node_key_filepath)?;
-        tm_node_key_file.write_all(serde_json::to_string_pretty(&node_key)?.as_bytes())?;
+        let cb_node_key_filepath = cb_config_dir.clone().join("node_key.json");
+        tracing::debug!(cb_node_key_filepath = %cb_node_key_filepath.display(), "writing node key file");
+        let mut cb_node_key_file = File::create(cb_node_key_filepath)?;
+        cb_node_key_file.write_all(serde_json::to_string_pretty(&node_key)?.as_bytes())?;
 
         // Write this node's priv_validator_key.json
-        let priv_validator_key_filepath = tm_config_dir.clone().join("priv_validator_key.json");
+        let priv_validator_key_filepath = cb_config_dir.clone().join("priv_validator_key.json");
         tracing::debug!(priv_validator_key_filepath = %priv_validator_key_filepath.display(), "writing validator private key");
         let mut priv_validator_key_file = File::create(priv_validator_key_filepath)?;
         let priv_validator_key: PrivValidatorKey = v.keys.priv_validator_key()?;
@@ -119,13 +119,13 @@ impl TestnetTendermintConfig {
             .write_all(serde_json::to_string_pretty(&priv_validator_key)?.as_bytes())?;
 
         // Write the initial validator state:
-        let priv_validator_state_filepath = tm_data_dir.clone().join("priv_validator_state.json");
+        let priv_validator_state_filepath = cb_data_dir.clone().join("priv_validator_state.json");
         tracing::debug!(priv_validator_state_filepath = %priv_validator_state_filepath.display(), "writing validator state");
         let mut priv_validator_state_file = File::create(priv_validator_state_filepath)?;
         priv_validator_state_file.write_all(TestnetValidator::initial_state().as_bytes())?;
 
         // Write the validator's spend key:
-        let validator_spend_key_filepath = tm_config_dir.clone().join("validator_custody.json");
+        let validator_spend_key_filepath = cb_config_dir.clone().join("validator_custody.json");
         tracing::debug!(validator_spend_key_filepath = %validator_spend_key_filepath.display(), "writing validator custody file");
         let mut validator_spend_key_file = File::create(validator_spend_key_filepath)?;
         let validator_wallet = KeyStore {

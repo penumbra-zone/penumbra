@@ -31,19 +31,19 @@ services:
       - "26658:26658"
       - "8080:8080"
 
-  # The Tendermint node
+  # The CometBFT node
   tendermint-node0:
-    image: "docker.io/tendermint/tendermint:v0.34.23"
+    image: "docker.io/cometbft/cometbft:v0.34.27"
     user: "${UID:-1000}"
     ports:
       - "26656:26656"
       - "26657:26657"
     volumes:
-      - ~/.penumbra/testnet_data/node0/tendermint:/tendermint
+      - ~/.penumbra/testnet_data/node0/cometbft:/cometbft
     entrypoint: tendermint
     command: start --proxy_app=tcp://pd-node0:26658
     environment:
       - ID=0
-      - LOG=${LOG:-tendermint.log}
+      - LOG=${LOG:-cometbft.log}
     depends_on:
       - pd-node0

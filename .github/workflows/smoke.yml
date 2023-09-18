@@ -23,28 +23,16 @@ jobs:
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
 
-      - name: Install tendermint binary
+      - name: Install cometbft binary
         run: |
-          curl -L -O "https://github.com/tendermint/tendermint/releases/download/v0.34.24/tendermint_0.34.24_linux_amd64.tar.gz"
-          tar xzf tendermint_0.34.24_linux_amd64.tar.gz tendermint
+          curl -L -O "https://github.com/cometbft/cometbft/releases/download/v0.34.27/cometbft_0.34.27_linux_amd64.tar.gz"
+          tar -xzf "cometbft_0.34.27_linux_amd64.tar.gz" cometbft
           mkdir -p $HOME/bin
-          cp tendermint $HOME/bin
+          cp cometbft $HOME/bin
           echo $PATH
           export PATH=$HOME/bin:$PATH
-          which tendermint
+          which cometbft
 
-      # The point of these was to do compilation upfront, doesn't seem to be effective
-      #- name: Build `pd`
-      #  uses: actions-rs/cargo@v1
-      #  with:
-      #    command: build
-      #    args: --release --package pd
-      #- name: Build `pcli` tests
-      #  uses: actions-rs/cargo@v1
-      #  with:
-      #    command: test
-      #    args: --release --features sct-divergence-check --package pcli --no-run
-        
       - name: Run the smoke test suite
         run: |
           export PATH=$HOME/bin:$PATH

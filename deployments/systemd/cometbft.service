@@ -1,0 +1,11 @@
+[Unit]
+Description=CometBFT for Penumbra
+
+[Service]
+ExecStart=/usr/local/bin/cometbft start --home $HOME/.penumbra/testnet_data/node0/cometbft
+Restart=on-failure
+RestartSec=5
+User=$USER
+
+[Install]
+WantedBy=default.target

@@ -21,6 +21,12 @@ if [[ -d ~/.penumbra/testnet_data ]] ; then
     exit 1
 fi
 
+if ! hash cometbft > /dev/null 2>&1 ; then
+    >&2 echo "ERROR: cometbft not found in PATH"
+    >&2 echo "See install guide: https://guide.penumbra.zone/main/pd/build.html"
+    exit 1
+fi
+
 export RUST_LOG="pclientd=info,pcli=info,pd=info,penumbra=info"
 
 # Duration that the network will be left running before script exits.
@@ -33,15 +39,15 @@ EPOCH_DURATION="${EPOCH_DURATION:-100}"
 cargo run --quiet --release --bin pd -- testnet generate --epoch-duration "$EPOCH_DURATION" --timeout-commit 500ms
 
 echo "Starting Tendermint..."
-tendermint start --log_level=error --home "${HOME}/.penumbra/testnet_data/node0/tendermint" &
-tendermint_pid="$!"
+cometbft start --log_level=error --home "${HOME}/.penumbra/testnet_data/node0/cometbft" &
+cometbft_pid="$!"
 
 echo "Starting pd..."
 cargo run --quiet --release --bin pd -- start --home "${HOME}/.penumbra/testnet_data/node0/pd" &
 pd_pid="$!"
 
 # Ensure processes are cleaned up after script exits, regardless of status.
-trap 'kill -9 "$tendermint_pid" "$pd_pid"' EXIT
+trap 'kill -9 "$cometbft_pid" "$pd_pid"' EXIT
 
 echo "Waiting $TESTNET_BOOTTIME seconds for network to boot..."
 sleep "$TESTNET_BOOTTIME"
@@ -61,7 +67,7 @@ sleep "$TESTNET_RUNTIME"
 # `kill -0` checks existence of pid, i.e. whether the process is still running.
 # It doesn't inspect errors, but the only reason the process would be stopped
 # is if it failed, so it's good enough for our needs.
-if ! kill -0 "$tendermint_pid" || ! kill -0 "$pd_pid" ; then
+if ! kill -0 "$cometbft_pid" || ! kill -0 "$pd_pid" ; then
     >&2 echo "ERROR: smoke test process exited early"
     exit 1
 else

@@ -100,21 +100,23 @@ enum RootCommand {
             display_order = 300
         )]
         metrics_bind: SocketAddr,
-        /// The JSON-RPC address of the Tendermint node driving this `pd`
+        /// The JSON-RPC address of the CometBFT node driving this `pd`
         /// instance.
         ///
-        /// This is used to proxy requests from the gRPC server to Tendermint,
+        /// This is used to proxy requests from the gRPC server to CometBFT,
         /// so clients only need to connect to one endpoint and don't need to
-        /// worry about the peculiarities of Tendermint's JSON-RPC encoding
+        /// worry about the peculiarities of CometBFT's JSON-RPC encoding
         /// format.
         #[clap(
             short,
             long,
-            env = "PENUMBRA_PD_TM_PROXY_URL",
+            env = "PENUMBRA_PD_COMETBFT_PROXY_URL",
             default_value = "http://127.0.0.1:26657",
-            display_order = 401
+            display_order = 401,
+            // Support old arg name for a while, as we migrate Tendermint -> CometBFT.
+            alias = "tendermint-addr",
         )]
-        tendermint_addr: Url,
+        cometbft_addr: Url,
     },
     /// Generate, join, or reset a testnet.
     Testnet {
@@ -263,22 +265,22 @@ async fn main() -> anyhow::Result<()> {
             grpc_bind,
             grpc_auto_https,
             metrics_bind,
-            tendermint_addr,
+            cometbft_addr,
         } => {
             tracing::info!(
                 ?abci_bind,
                 ?grpc_bind,
                 ?grpc_auto_https,
                 ?metrics_bind,
-                %tendermint_addr,
+                %cometbft_addr,
                 "starting pd"
             );
 
             // Ensure we have all necessary parts in the URL
-            if !url_has_necessary_parts(&tendermint_addr) {
+            if !url_has_necessary_parts(&cometbft_addr) {
                 anyhow::bail!(
-                    "Failed to parse '--tendermint-addr' as URL: {}",
-                    tendermint_addr
+                    "Failed to parse '--cometbft-addr' as URL: {}",
+                    cometbft_addr
                 )
             }
 
@@ -314,7 +316,7 @@ async fn main() -> anyhow::Result<()> {
                     async move { pd::Mempool::new(storage.clone(), queue).await?.run().await }
                 }));
             let info = pd::Info::new(storage.clone());
-            let tm_proxy = TendermintProxy::new(tendermint_addr);
+            let tm_proxy = TendermintProxy::new(cometbft_addr);
             let snapshot = pd::Snapshot {};
 
             let abci_server = tokio::task::Builder::new()
