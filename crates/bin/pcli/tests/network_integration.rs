@@ -940,7 +940,7 @@ fn mismatched_consensus_key_update_fails() {
         ".penumbra",
         "testnet_data",
         "node0",
-        "tendermint",
+        "cometbft",
         "config",
         "priv_validator_key.json",
     ]
