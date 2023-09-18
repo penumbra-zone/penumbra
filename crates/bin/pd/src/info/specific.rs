@@ -604,26 +604,23 @@ impl SpecificQueryService for Info {
         let trading_pair = request_inner.trading_pair;
 
         // Convert to domain type ahead of time if necessary
-        let trading_pair: Option<DirectedTradingPair> = if let Some(trading_pair) = trading_pair {
-            Some(trading_pair.try_into().expect("invalid trading pair"))
-        } else {
-            None
-        };
+        let trading_pair: Option<DirectedTradingPair> =
+            trading_pair.map(|trading_pair| trading_pair.try_into().expect("invalid trading pair"));
 
         use penumbra_dex::state_key;
 
-        let s = state.prefix(&state_key::swap_executions());
+        let s = state.prefix(state_key::swap_executions());
         Ok(tonic::Response::new(
             s.filter_map(move |i: anyhow::Result<(String, SwapExecution)>| {
                 async move {
                     if i.is_err() {
                         return Some(Err(tonic::Status::unavailable(format!(
                             "error getting prefix value from storage: {}",
-                            i.err().unwrap()
+                            i.expect_err("i is_err")
                         ))));
                     }
 
-                    let (key, swap_execution) = i.unwrap();
+                    let (key, swap_execution) = i.expect("i is Ok");
                     let parts = key.split('/').collect::<Vec<_>>();
                     let height = parts[2].parse().expect("height is not a number");
                     let asset_1: asset::Id =
@@ -650,7 +647,7 @@ impl SpecificQueryService for Info {
                     } else {
                         Some(Ok(SwapExecutionsResponse {
                             swap_execution: Some(swap_execution.into()),
-                            height: height,
+                            height,
                             trading_pair: Some(swap_trading_pair.into()),
                         }))
                     }
@@ -802,8 +799,8 @@ impl SpecificQueryService for Info {
                         .into_iter()
                         .map(|p| {
                             let mut encoded = Vec::new();
-                            prost::Message::encode(&p, &mut encoded).unwrap();
-                            prost::Message::decode(&*encoded).unwrap()
+                            prost::Message::encode(&p, &mut encoded).expect("able to encode proof");
+                            prost::Message::decode(&*encoded).expect("able to decode proof")
                         })
                         .collect(),
                 })
@@ -901,11 +898,11 @@ impl SpecificQueryService for Info {
                     if i.is_err() {
                         return Some(Err(tonic::Status::unavailable(format!(
                             "error getting prefix value from storage: {}",
-                            i.err().unwrap()
+                            i.expect_err("i is_err")
                         ))));
                     }
 
-                    let (key, arb_execution) = i.unwrap();
+                    let (key, arb_execution) = i.expect("i is Ok");
                     let height = key
                         .split('/')
                         .last()

@@ -27,7 +27,7 @@ impl EventIndexLayer {
     /// Convenience constructor to force every event attribute to be indexed.
     pub fn index_all() -> Self {
         Self {
-            index: RegexSet::new([""]).unwrap(),
+            index: RegexSet::new([""]).expect("empty regex should always parse"),
             no_index: RegexSet::empty(),
         }
     }
@@ -36,7 +36,7 @@ impl EventIndexLayer {
     pub fn index_none() -> Self {
         Self {
             index: RegexSet::empty(),
-            no_index: RegexSet::new([""]).unwrap(),
+            no_index: RegexSet::new([""]).expect("empty regex should always parse"),
         }
     }
 
