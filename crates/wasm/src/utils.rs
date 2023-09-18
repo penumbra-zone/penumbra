@@ -21,7 +21,7 @@ pub fn decode_nct_root(tx_bytes: &str) -> Result<JsValue, Error> {
 }
 
 pub fn decode_nct_root_inner(tx_bytes: &str) -> WasmResult<Root> {
-    let tx_vec: Vec<u8> = hex::decode(tx_bytes).unwrap();
-    let root = penumbra_tct::Root::decode(tx_vec.as_slice()).unwrap();
+    let tx_vec: Vec<u8> = hex::decode(tx_bytes)?;
+    let root = penumbra_tct::Root::decode(tx_vec.as_slice())?;
     Ok(root)
 }

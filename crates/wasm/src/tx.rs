@@ -1,22 +1,20 @@
-use anyhow::Context;
-use std::collections::{BTreeMap, BTreeSet};
-use std::convert::TryInto;
-use std::str::FromStr;
-
-use penumbra_keys::keys::SpendKey;
-use penumbra_keys::FullViewingKey;
-use penumbra_tct::{Proof, StateCommitment, Tree};
-use penumbra_transaction::plan::TransactionPlan;
-use rand_core::OsRng;
-use serde::{Deserialize, Serialize};
-
 use crate::error::WasmResult;
 use crate::storage::IndexedDBStorage;
 use crate::utils;
 use crate::view_server::{load_tree, string_to_fvk, StoredTree};
+use anyhow::Context;
+use penumbra_keys::keys::SpendKey;
+use penumbra_keys::FullViewingKey;
 use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
+use penumbra_tct::{Proof, StateCommitment, Tree};
+use penumbra_transaction::plan::TransactionPlan;
 use penumbra_transaction::{AuthorizationData, Transaction, WitnessData};
+use rand_core::OsRng;
+use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::Error;
+use std::collections::{BTreeMap, BTreeSet};
+use std::convert::TryInto;
+use std::str::FromStr;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
@@ -99,6 +97,7 @@ pub async fn transaction_info(full_viewing_key: &str, tx: JsValue) -> Result<JsV
     serde_wasm_bindgen::to_value(&response)
 }
 
+/// deprecated
 pub async fn transaction_info_inner(
     fvk: FullViewingKey,
     tx: Transaction,
@@ -222,12 +221,14 @@ pub async fn transaction_info_inner(
     Ok(response)
 }
 
+/// deprecated
 pub fn sign_plan(spend_key_str: &str, transaction_plan: TransactionPlan) -> AuthorizationData {
     let spend_key = SpendKey::from_str(spend_key_str).unwrap();
 
     transaction_plan.authorize(OsRng, &spend_key)
 }
 
+/// deprecated
 pub fn build_transaction(
     fvk: &FullViewingKey,
     plan: TransactionPlan,
@@ -240,6 +241,7 @@ pub fn build_transaction(
         .unwrap()
 }
 
+/// deprecated
 fn witness(nct: Tree, plan: TransactionPlan) -> WitnessData {
     let note_commitments: Vec<StateCommitment> = plan
         .spend_plans()

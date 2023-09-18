@@ -264,7 +264,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
     /// Upload a validator definition in this transaction.
     pub fn validator_definition(&mut self, new_validator: validator::Definition) -> &mut Self {
-        self.action(ActionPlan::ValidatorDefinition(new_validator.into()));
+        self.action(ActionPlan::ValidatorDefinition(new_validator));
         self
     }
 

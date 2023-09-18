@@ -61,7 +61,7 @@ pub struct ViewServer {
     notes_by_nullifier: BTreeMap<Nullifier, SpendableNoteRecord>,
     swaps: BTreeMap<tct::StateCommitment, SwapRecord>,
     denoms: BTreeMap<Id, DenomMetadata>,
-    nct: penumbra_tct::Tree,
+    nct: Tree,
     storage: IndexedDBStorage,
 }
 
@@ -115,7 +115,7 @@ impl ViewServer {
         last_forgotten: JsValue,
     ) -> Result<JsValue, Error> {
         let result = self.get_updates_inner(last_position, last_forgotten)?;
-        Ok(serde_wasm_bindgen::to_value(&result).unwrap())
+        serde_wasm_bindgen::to_value(&result)
     }
 
     /// get SCT root
@@ -206,7 +206,7 @@ impl ViewServer {
                                 .index_for_diversifier(note.diversifier());
 
                             let note_record = SpendableNoteRecord {
-                                note_commitment: clone_payload.commitment().clone(),
+                                note_commitment: *clone_payload.commitment(),
                                 height_spent: None,
                                 height_created: block.height,
                                 note: note.clone(),
@@ -230,11 +230,10 @@ impl ViewServer {
                     match payload.trial_decrypt(&self.fvk) {
                         Some(swap) => {
                             let swap_position = self.nct.insert(Keep, payload.commitment)?;
-                            let batch_data = block
-                                .swap_outputs
-                                .get(&swap.trading_pair)
-                                .ok_or_else(|| anyhow::anyhow!("server gave invalid compact block"))
-                                .unwrap();
+                            let batch_data =
+                                block.swap_outputs.get(&swap.trading_pair).ok_or_else(|| {
+                                    anyhow::anyhow!("server gave invalid compact block")
+                                })?;
 
                             let source = clone_payload.source().cloned().unwrap_or_default();
                             let nullifier = Nullifier::derive(
@@ -244,12 +243,12 @@ impl ViewServer {
                             );
 
                             let swap_record = SwapRecord {
-                                swap_commitment: clone_payload.commitment().clone(),
+                                swap_commitment: *clone_payload.commitment(),
                                 swap: swap.clone(),
                                 position: swap_position,
                                 nullifier,
                                 source,
-                                output_data: batch_data.clone(),
+                                output_data: *batch_data,
                                 height_claimed: None,
                             };
                             new_swaps.push(swap_record.clone());
@@ -303,7 +302,7 @@ impl ViewServer {
                                     note: note.clone(),
                                     address_index: address_index_1,
                                     nullifier,
-                                    position: position,
+                                    position,
                                     source,
                                 };
 
@@ -351,8 +350,7 @@ pub fn load_tree(stored_tree: StoredTree) -> Tree {
     for stored_hash in &stored_tree.hashes {
         add_hashes.insert(stored_hash.position, stored_hash.height, stored_hash.hash);
     }
-    let tree = add_hashes.finish();
-    return tree;
+    add_hashes.finish()
 }
 
 pub fn string_to_fvk(full_viewing_key_str: &str) -> WasmResult<FullViewingKey> {

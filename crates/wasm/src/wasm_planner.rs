@@ -1,43 +1,35 @@
+use crate::error::WasmResult;
 use crate::planner::Planner;
 use crate::storage::IndexedDBStorage;
 use crate::swap_record::SwapRecord;
-use crate::utils;
 use anyhow::Result;
 use ark_ff::UniformRand;
 use decaf377::Fq;
-use indexed_db_futures::prelude::OpenDbRequest;
-use indexed_db_futures::{IdbDatabase, IdbQuerySource};
 use penumbra_dex::swap_claim::SwapClaimPlan;
 use penumbra_proto::core::chain::v1alpha1::{ChainParameters, FmdParameters};
 use penumbra_proto::core::crypto::v1alpha1::{Address, DenomMetadata, Fee, StateCommitment, Value};
 use penumbra_proto::core::transaction::v1alpha1::{MemoPlaintext, TransactionPlan};
 use penumbra_proto::DomainType;
 use rand_core::OsRng;
+use serde_wasm_bindgen::Error;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
-use serde_wasm_bindgen::Error;
-use crate::error::WasmResult;
-
 
 #[wasm_bindgen]
 pub struct WasmPlanner {
     planner: Planner<OsRng>,
-}
-
-
-impl Default for WasmPlanner {
-    fn default() -> Self {
-        WasmPlanner::new()
-    }
+    storage: IndexedDBStorage,
 }
 
 #[wasm_bindgen]
 impl WasmPlanner {
     #[wasm_bindgen(constructor)]
-    pub fn new() -> WasmPlanner {
-        WasmPlanner {
+    pub async fn new() -> Result<WasmPlanner, Error> {
+        let planner = WasmPlanner {
             planner: Planner::new(OsRng),
-        }
+            storage: IndexedDBStorage::new().await?,
+        };
+        Ok(planner)
     }
 
     /// Add expiry height to plan
@@ -49,12 +41,11 @@ impl WasmPlanner {
         Ok(())
     }
 
-
     /// Add memo to plan
     /// Arguments:
     ///     memo: `MemoPlaintext`
     pub fn memo(&mut self, memo: JsValue) -> Result<(), Error> {
-        let _ = self.memo_inner(memo)?;
+        self.memo_inner(memo)?;
         Ok(())
     }
 
@@ -62,8 +53,7 @@ impl WasmPlanner {
     /// Arguments:
     ///     fee: `Fee`
     pub fn fee(&mut self, fee: JsValue) -> Result<(), Error> {
-        let _ = self.fee_inner(fee)?;
-
+        self.fee_inner(fee)?;
         Ok(())
     }
 
@@ -72,7 +62,7 @@ impl WasmPlanner {
     ///     value: `Value`
     ///     address: `Address`
     pub fn output(&mut self, value: JsValue, address: JsValue) -> Result<(), Error> {
-        let _ = self.output_inner(value, address)?;
+        self.output_inner(value, address)?;
         Ok(())
     }
 
@@ -80,7 +70,7 @@ impl WasmPlanner {
     /// Arguments:
     ///     swap_commitment: `StateCommitment`
     pub async fn swap_claim(&mut self, swap_commitment: JsValue) -> Result<(), Error> {
-        let _ = self.swap_claim_inner(swap_commitment).await?;
+        self.swap_claim_inner(swap_commitment).await?;
         Ok(())
     }
 
@@ -97,7 +87,7 @@ impl WasmPlanner {
         swap_claim_fee: JsValue,
         claim_address: JsValue,
     ) -> Result<(), Error> {
-        let _ = self.swap_inner(input_value, into_denom, swap_claim_fee, claim_address)?;
+        self.swap_inner(input_value, into_denom, swap_claim_fee, claim_address)?;
         Ok(())
     }
 
@@ -105,9 +95,8 @@ impl WasmPlanner {
     /// Arguments:
     ///     self_address: `Address`
     /// Returns: `TransactionPlan`
-    pub async fn plan(&mut self, self_address: JsValue) -> anyhow::Result<JsValue, Error> {
+    pub async fn plan(&mut self, self_address: JsValue) -> Result<JsValue, Error> {
         let plan = self.plan_inner(self_address).await?;
-
         serde_wasm_bindgen::to_value(&plan)
     }
 }
@@ -122,7 +111,7 @@ impl WasmPlanner {
     pub fn fee_inner(&mut self, fee: JsValue) -> WasmResult<()> {
         let fee_proto: Fee = serde_wasm_bindgen::from_value(fee)?;
 
-        self.planner.fee(fee_proto.try_into().unwrap());
+        self.planner.fee(fee_proto.try_into()?);
 
         Ok(())
     }
@@ -131,10 +120,8 @@ impl WasmPlanner {
         let value_proto: Value = serde_wasm_bindgen::from_value(value)?;
         let address_proto: Address = serde_wasm_bindgen::from_value(address)?;
 
-        self.planner.output(
-            value_proto.try_into().unwrap(),
-            address_proto.try_into().unwrap(),
-        );
+        self.planner
+            .output(value_proto.try_into()?, address_proto.try_into()?);
 
         Ok(())
     }
@@ -143,8 +130,17 @@ impl WasmPlanner {
         let swap_commitment_proto: StateCommitment =
             serde_wasm_bindgen::from_value(swap_commitment)?;
 
-        let swap_record = get_swap_by_commitment(swap_commitment_proto).await.unwrap();
-        let chain_params_proto: ChainParameters = get_chain_parameters().await.unwrap();
+        let swap_record: SwapRecord = self
+            .storage
+            .get_swap_by_commitment(swap_commitment_proto)
+            .await?
+            .expect("Swap record not found")
+            .try_into()?;
+        let chain_params_proto: ChainParameters = self
+            .storage
+            .get_chain_parameters()
+            .await?
+            .expect("Chain params not found");
 
         let swap_claim_plan = SwapClaimPlan {
             swap_plaintext: swap_record.swap,
@@ -172,10 +168,10 @@ impl WasmPlanner {
         let claim_address_proto: Address = serde_wasm_bindgen::from_value(claim_address)?;
 
         let _ = self.planner.swap(
-            input_value_proto.try_into().unwrap(),
-            into_denom_proto.try_into().unwrap(),
-            swap_claim_fee_proto.try_into().unwrap(),
-            claim_address_proto.try_into().unwrap(),
+            input_value_proto.try_into()?,
+            into_denom_proto.try_into()?,
+            swap_claim_fee_proto.try_into()?,
+            claim_address_proto.try_into()?,
         );
 
         Ok(())
@@ -184,8 +180,16 @@ impl WasmPlanner {
     pub async fn plan_inner(&mut self, self_address: JsValue) -> WasmResult<TransactionPlan> {
         let self_address_proto: Address = serde_wasm_bindgen::from_value(self_address)?;
 
-        let chain_params_proto: ChainParameters = get_chain_parameters().await.unwrap();
-        let fmd_params_proto: FmdParameters = get_fmd_parameters().await.unwrap();
+        let chain_params_proto: ChainParameters = self
+            .storage
+            .get_chain_parameters()
+            .await?
+            .expect("No found chain params");
+        let fmd_params_proto: FmdParameters = self
+            .storage
+            .get_fmd_parameters()
+            .await?
+            .expect("No found fmd");
 
         let mut spendable_notes = Vec::new();
 
@@ -194,72 +198,22 @@ impl WasmPlanner {
         let idb_storage = IndexedDBStorage::new().await?;
         for request in spendable_requests {
             let notes = idb_storage.get_notes(request);
-            spendable_notes.extend(notes.await.unwrap());
+            spendable_notes.extend(notes.await?);
         }
 
         // Plan the transaction using the gathered information
 
-        let plan: penumbra_transaction::plan::TransactionPlan = self
-            .planner
-            .plan_with_spendable_and_votable_notes(
-                &chain_params_proto.try_into().unwrap(),
-                &fmd_params_proto.try_into().unwrap(),
+        let plan: penumbra_transaction::plan::TransactionPlan =
+            self.planner.plan_with_spendable_and_votable_notes(
+                &chain_params_proto.try_into()?,
+                &fmd_params_proto.try_into()?,
                 spendable_notes,
                 Vec::new(),
-                self_address_proto.try_into().unwrap(),
-            )
-            .unwrap();
+                self_address_proto.try_into()?,
+            )?;
 
         let plan_proto: TransactionPlan = plan.to_proto();
 
         Ok(plan_proto)
     }
-}
-
-pub async fn get_chain_parameters() -> Option<ChainParameters> {
-    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok()?;
-
-    let db: IdbDatabase = db_req.into_future().await.ok()?;
-
-    let tx = db.transaction_on_one("chain_parameters").ok()?;
-    let store = tx.object_store("chain_parameters").ok()?;
-
-    let value: Option<JsValue> = store.get_owned("chain_parameters").ok()?.await.ok()?;
-
-    serde_wasm_bindgen::from_value(value?).ok()?
-}
-
-pub async fn get_fmd_parameters() -> Option<FmdParameters> {
-    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok()?;
-
-    let db: IdbDatabase = db_req.into_future().await.ok()?;
-
-    let tx = db.transaction_on_one("fmd_parameters").ok()?;
-    let store = tx.object_store("fmd_parameters").ok()?;
-
-    let value: Option<JsValue> = store.get_owned("fmd").ok()?.await.ok()?;
-
-    serde_wasm_bindgen::from_value(value?).ok()?
-}
-
-pub async fn get_swap_by_commitment(swap_commitment: StateCommitment) -> Option<SwapRecord> {
-    utils::set_panic_hook();
-
-    let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12).ok()?;
-
-    let db: IdbDatabase = db_req.into_future().await.ok()?;
-
-    let tx = db.transaction_on_one("swaps").ok()?;
-    let store = tx.object_store("swaps").ok()?;
-
-    let value: Option<JsValue> = store
-        .get_owned(base64::Engine::encode(
-            &base64::engine::general_purpose::STANDARD,
-            swap_commitment.inner,
-        ))
-        .ok()?
-        .await
-        .ok()?;
-
-    serde_wasm_bindgen::from_value(value?).ok()?
 }

@@ -101,11 +101,11 @@ pub fn get_full_viewing_key_from_spend(spend_key_bech32: &str) -> WasmResult<Str
         bech32str::full_viewing_key::BECH32_PREFIX,
         bech32str::Bech32m,
     );
-    return Ok(fvk_bech32);
+    Ok(fvk_bech32)
 }
 
 pub fn address_by_index(full_viewing_key: &str, index: u32) -> WasmResult<pb::Address> {
-    let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())?;
+    let fvk = FullViewingKey::from_str(full_viewing_key)?;
 
     let (address, _dtk) = fvk.incoming().payment_address(index.into());
 
@@ -115,7 +115,7 @@ pub fn address_by_index(full_viewing_key: &str, index: u32) -> WasmResult<pb::Ad
 }
 
 pub fn ephemeral_address(full_viewing_key: &str, index: u32) -> WasmResult<pb::Address> {
-    let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())?;
+    let fvk = FullViewingKey::from_str(full_viewing_key)?;
 
     let (address, _dtk) = fvk.ephemeral_address(OsRng, index.into());
 
@@ -128,16 +128,16 @@ pub fn address_index(
     full_viewing_key: &str,
     address: &str,
 ) -> WasmResult<Option<pb::AddressIndex>> {
-    let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())?;
+    let fvk = FullViewingKey::from_str(full_viewing_key)?;
 
     let index = fvk
-        .address_index(&Address::from_str(address.as_ref())?)
+        .address_index(&Address::from_str(address)?)
         .map(Into::into);
     Ok(index)
 }
 
 pub fn short_address_by_index(full_viewing_key: &str, index: u32) -> WasmResult<String> {
-    let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())?;
+    let fvk = FullViewingKey::from_str(full_viewing_key)?;
 
     let (address, _dtk) = fvk.incoming().payment_address(index.into());
     let short_address = address.display_short_form();

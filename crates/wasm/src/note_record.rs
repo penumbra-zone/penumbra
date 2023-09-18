@@ -36,10 +36,7 @@ impl From<SpendableNoteRecord> for pb::SpendableNoteRecord {
             address_index: Some(v.address_index.into()),
             nullifier: Some(v.nullifier.into()),
             height_created: v.height_created,
-            height_spent: match v.height_spent {
-                Some(h) => h,
-                None => 0,
-            },
+            height_spent: v.height_spent.unwrap_or(0),
             position: v.position.into(),
             source: Some(v.source.into()),
         }

@@ -3,23 +3,12 @@ use crate::note_record::SpendableNoteRecord;
 use indexed_db_futures::prelude::OpenDbRequest;
 use indexed_db_futures::{IdbDatabase, IdbQuerySource};
 use penumbra_asset::asset::{DenomMetadata, Id};
-use penumbra_proto::view::v1alpha1::NotesRequest;
+use penumbra_proto::core::chain::v1alpha1::{ChainParameters, FmdParameters};
+use penumbra_proto::core::crypto::v1alpha1::StateCommitment;
+use penumbra_proto::view::v1alpha1::{NotesRequest, SwapRecord};
 use penumbra_proto::DomainType;
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note};
-
-enum Store {
-    SpendableNotesStore,
-}
-
-impl Store {
-    fn as_str(&self) -> &'static str {
-        match *self {
-            // *self has type Direction
-            Store::SpendableNotesStore => "spendable_notes",
-        }
-    }
-}
 
 pub struct IndexedDBStorage {
     db: IdbDatabase,
@@ -46,8 +35,8 @@ impl IndexedDBStorage {
             .filter_map(|note_option| {
                 note_option.and_then(|note: SpendableNoteRecord| match request.asset_id.clone() {
                     Some(asset_id) => {
-                        if note.note.asset_id() == asset_id.clone().try_into().unwrap()
-                            && note.height_spent == None
+                        if note.note.asset_id() == asset_id.try_into().expect("Invalid asset id")
+                            && note.height_spent.is_none()
                         {
                             Some(note)
                         } else {
@@ -69,15 +58,15 @@ impl IndexedDBStorage {
         let tx = db.transaction_on_one("assets")?;
         let store = tx.object_store("assets")?;
 
-        Ok(store
+        store
             .get_owned(base64::Engine::encode(
                 &base64::engine::general_purpose::STANDARD,
                 id.to_proto().inner,
             ))?
             .await?
-            .map(|js_value| serde_wasm_bindgen::from_value(js_value))
+            .map(serde_wasm_bindgen::from_value)
             .transpose()
-            .map_err(WasmError::from)?)
+            .map_err(WasmError::from)
     }
 
     pub async fn get_note(
@@ -91,15 +80,15 @@ impl IndexedDBStorage {
         let tx = db.transaction_on_one("spendable_notes")?;
         let store = tx.object_store("spendable_notes")?;
 
-        Ok(store
+        store
             .get_owned(base64::Engine::encode(
                 &base64::engine::general_purpose::STANDARD,
                 commitment.to_proto().inner,
             ))?
             .await?
-            .map(|js_value| serde_wasm_bindgen::from_value(js_value))
+            .map(serde_wasm_bindgen::from_value)
             .transpose()
-            .map_err(WasmError::from)?)
+            .map_err(WasmError::from)
     }
 
     pub async fn get_note_by_nullifier(
@@ -113,16 +102,16 @@ impl IndexedDBStorage {
         let tx = db.transaction_on_one("spendable_notes")?;
         let store = tx.object_store("spendable_notes")?;
 
-        Ok(store
+        store
             .index("nullifier")?
             .get_owned(&base64::Engine::encode(
                 &base64::engine::general_purpose::STANDARD,
                 nullifier.to_proto().inner,
             ))?
             .await?
-            .map(|js_value| serde_wasm_bindgen::from_value(js_value))
+            .map(serde_wasm_bindgen::from_value)
             .transpose()
-            .map_err(WasmError::from)?)
+            .map_err(WasmError::from)
     }
 
     pub async fn store_advice(&self, note: Note) -> WasmResult<()> {
@@ -157,11 +146,65 @@ impl IndexedDBStorage {
 
         let commitment_js = serde_wasm_bindgen::to_value(&commitment_proto)?;
 
-        Ok(store
+        store
             .get_owned(commitment_js)?
             .await?
-            .map(|js_value| serde_wasm_bindgen::from_value(js_value))
+            .map(serde_wasm_bindgen::from_value)
             .transpose()
-            .map_err(WasmError::from)?)
+            .map_err(WasmError::from)
+    }
+
+    pub async fn get_chain_parameters(&self) -> WasmResult<Option<ChainParameters>> {
+        let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12)?;
+
+        let db: IdbDatabase = db_req.into_future().await?;
+
+        let tx = db.transaction_on_one("chain_parameters")?;
+        let store = tx.object_store("chain_parameters")?;
+
+        store
+            .get_owned("chain_parameters")?
+            .await?
+            .map(serde_wasm_bindgen::from_value)
+            .transpose()
+            .map_err(WasmError::from)
+    }
+
+    pub async fn get_fmd_parameters(&self) -> WasmResult<Option<FmdParameters>> {
+        let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12)?;
+
+        let db: IdbDatabase = db_req.into_future().await?;
+
+        let tx = db.transaction_on_one("fmd_parameters")?;
+        let store = tx.object_store("fmd_parameters")?;
+
+        store
+            .get_owned("fmd")?
+            .await?
+            .map(serde_wasm_bindgen::from_value)
+            .transpose()
+            .map_err(WasmError::from)
+    }
+
+    pub async fn get_swap_by_commitment(
+        &self,
+        swap_commitment: StateCommitment,
+    ) -> WasmResult<Option<SwapRecord>> {
+        let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12)?;
+
+        let db: IdbDatabase = db_req.into_future().await?;
+
+        let tx = db.transaction_on_one("swaps")?;
+        let store = tx.object_store("swaps")?;
+
+        store
+            .get_owned(base64::Engine::encode(
+                &base64::engine::general_purpose::STANDARD,
+                swap_commitment.inner,
+            ))?
+            .await?
+            .map(serde_wasm_bindgen::from_value)
+            .transpose()
+            .map_err(WasmError::from)
     }
 }
