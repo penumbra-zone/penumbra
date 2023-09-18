@@ -1,4 +1,3 @@
-use anyhow::Context;
 use indexed_db_futures::prelude::OpenDbRequest;
 use indexed_db_futures::{IdbDatabase, IdbQuerySource};
 use penumbra_asset::asset::{DenomMetadata, Id};
@@ -88,11 +87,11 @@ impl ViewServer {
     #[wasm_bindgen(constructor)]
     pub fn new(full_viewing_key: &str, epoch_duration: u64, stored_tree: JsValue) -> ViewServer {
         utils::set_panic_hook();
-        let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())
-            .context("The provided string is not a valid FullViewingKey")
-            .unwrap();
+        let fvk = FullViewingKey::from_str(full_viewing_key)
+            .expect("the provided string is a valid FullViewingKey");
 
-        let stored_tree: StoredTree = serde_wasm_bindgen::from_value(stored_tree).unwrap();
+        let stored_tree: StoredTree = serde_wasm_bindgen::from_value(stored_tree)
+            .expect("able to deserialize stored tree from JS");
 
         let tree = load_tree(stored_tree);
 
@@ -117,15 +116,18 @@ impl ViewServer {
     ) -> JsValue {
         utils::set_panic_hook();
 
-        let stored_position: Option<StoredPosition> =
-            serde_wasm_bindgen::from_value(last_position).unwrap();
-        let stored_forgotten: Option<Forgotten> =
-            serde_wasm_bindgen::from_value(last_forgotten).unwrap();
+        let stored_position: Option<StoredPosition> = serde_wasm_bindgen::from_value(last_position)
+            .expect("able to deserialize stored position from JS");
+        let stored_forgotten: Option<Forgotten> = serde_wasm_bindgen::from_value(last_forgotten)
+            .expect("able to deserialize stored forgotten from JS");
 
         let block_proto: penumbra_proto::core::chain::v1alpha1::CompactBlock =
-            serde_wasm_bindgen::from_value(compact_block).unwrap();
+            serde_wasm_bindgen::from_value(compact_block)
+                .expect("able to deserialize block from JS");
 
-        let block: CompactBlock = block_proto.try_into().unwrap();
+        let block: CompactBlock = block_proto
+            .try_into()
+            .expect("able to convert block to CompactBlock");
 
         let mut new_notes = Vec::new();
         let mut new_swaps: Vec<SwapRecord> = Vec::new();
@@ -137,8 +139,10 @@ impl ViewServer {
                 StatePayload::Note { note: payload, .. } => {
                     match payload.trial_decrypt(&self.fvk) {
                         Some(note) => {
-                            let note_position =
-                                self.nct.insert(Keep, payload.note_commitment).unwrap();
+                            let note_position = self
+                                .nct
+                                .insert(Keep, payload.note_commitment)
+                                .expect("able to insert note commitment into tree");
 
                             let source = clone_payload.source().cloned().unwrap_or_default();
                             let nullifier = Nullifier::derive(
@@ -154,7 +158,7 @@ impl ViewServer {
                             web_console::log_1(&"Found new notes".into());
 
                             let note_record = SpendableNoteRecord {
-                                note_commitment: clone_payload.commitment().clone(),
+                                note_commitment: *clone_payload.commitment(),
                                 height_spent: None,
                                 height_created: block.height,
                                 note: note.clone(),
@@ -170,20 +174,25 @@ impl ViewServer {
                                 .insert(nullifier, note_record.clone());
                         }
                         None => {
-                            self.nct.insert(Forget, payload.note_commitment).unwrap();
+                            self.nct
+                                .insert(Forget, payload.note_commitment)
+                                .expect("able to insert note commitment into tree");
                         }
                     }
                 }
                 StatePayload::Swap { swap: payload, .. } => {
                     match payload.trial_decrypt(&self.fvk) {
                         Some(swap) => {
-                            let swap_position = self.nct.insert(Keep, payload.commitment).unwrap();
+                            let swap_position = self
+                                .nct
+                                .insert(Keep, payload.commitment)
+                                .expect("able to insert swap commitment into tree");
 
                             let batch_data = block
                                 .swap_outputs
                                 .get(&swap.trading_pair)
                                 .ok_or_else(|| anyhow::anyhow!("server gave invalid compact block"))
-                                .unwrap();
+                                .expect("able to get swap output from compact block");
 
                             let source = clone_payload.source().cloned().unwrap_or_default();
                             let nullifier = Nullifier::derive(
@@ -193,37 +202,43 @@ impl ViewServer {
                             );
 
                             let swap_record = SwapRecord {
-                                swap_commitment: clone_payload.commitment().clone(),
+                                swap_commitment: *clone_payload.commitment(),
                                 swap: swap.clone(),
                                 position: swap_position,
                                 nullifier,
                                 source,
-                                output_data: batch_data.clone(),
+                                output_data: *batch_data,
                                 height_claimed: None,
                             };
                             new_swaps.push(swap_record.clone());
                             self.swaps.insert(payload.commitment, swap_record);
                         }
                         None => {
-                            self.nct.insert(Forget, payload.commitment).unwrap();
+                            self.nct
+                                .insert(Forget, payload.commitment)
+                                .expect("able to insert swap commitment into tree");
                         }
                     }
                 }
                 StatePayload::RolledUp(commitment) => {
                     if self.notes.contains_key(&commitment) {
                         // This is a note we anticipated, so retain its auth path.
-                        self.nct.insert(Keep, commitment).unwrap();
+                        self.nct
+                            .insert(Keep, commitment)
+                            .expect("able to insert our note commitment into tree");
                     } else {
                         // This is someone else's note.
-                        self.nct.insert(Forget, commitment).unwrap();
+                        self.nct
+                            .insert(Forget, commitment)
+                            .expect("able to insert someone else's note commitment into tree");
                     }
                 }
             }
         }
 
-        self.nct.end_block().unwrap();
+        self.nct.end_block().expect("able to end block");
         if block.epoch_root.is_some() {
-            self.nct.end_epoch().unwrap();
+            self.nct.end_epoch().expect("able to end epoch");
         }
 
         self.latest_height = block.height;
@@ -243,7 +258,7 @@ impl ViewServer {
             new_swaps,
         };
 
-        return serde_wasm_bindgen::to_value(&result).unwrap();
+        serde_wasm_bindgen::to_value(&result).expect("able to serialize ScanBlockResult to JS")
     }
 
     #[wasm_bindgen]
@@ -251,9 +266,12 @@ impl ViewServer {
         utils::set_panic_hook();
 
         let block_proto: penumbra_proto::core::chain::v1alpha1::CompactBlock =
-            serde_wasm_bindgen::from_value(compact_block).unwrap();
+            serde_wasm_bindgen::from_value(compact_block)
+                .expect("able to deserialize block from JS");
 
-        let block: CompactBlock = block_proto.try_into().unwrap();
+        let block: CompactBlock = block_proto
+            .try_into()
+            .expect("able to convert block to CompactBlock");
 
         // Newly detected spendable notes.
         let mut new_notes = Vec::new();
@@ -267,8 +285,10 @@ impl ViewServer {
                 StatePayload::Note { note: payload, .. } => {
                     match payload.trial_decrypt(&self.fvk) {
                         Some(note) => {
-                            let note_position =
-                                self.nct.insert(Keep, payload.note_commitment).unwrap();
+                            let note_position = self
+                                .nct
+                                .insert(Keep, payload.note_commitment)
+                                .expect("able to insert note commitment into tree");
 
                             let source = clone_payload.source().cloned().unwrap_or_default();
                             let nullifier = Nullifier::derive(
@@ -284,7 +304,7 @@ impl ViewServer {
                             web_console::log_1(&"Found new notes".into());
 
                             let note_record = SpendableNoteRecord {
-                                note_commitment: clone_payload.commitment().clone(),
+                                note_commitment: *clone_payload.commitment(),
                                 height_spent: None,
                                 height_created: block.height,
                                 note: note.clone(),
@@ -300,19 +320,24 @@ impl ViewServer {
                                 .insert(nullifier, note_record.clone());
                         }
                         None => {
-                            self.nct.insert(Forget, payload.note_commitment).unwrap();
+                            self.nct
+                                .insert(Forget, payload.note_commitment)
+                                .expect("able to insert note commitment into tree");
                         }
                     }
                 }
                 StatePayload::Swap { swap: payload, .. } => {
                     match payload.trial_decrypt(&self.fvk) {
                         Some(swap) => {
-                            let swap_position = self.nct.insert(Keep, payload.commitment).unwrap();
+                            let swap_position = self
+                                .nct
+                                .insert(Keep, payload.commitment)
+                                .expect("able to insert swap commitment into tree");
                             let batch_data = block
                                 .swap_outputs
                                 .get(&swap.trading_pair)
                                 .ok_or_else(|| anyhow::anyhow!("server gave invalid compact block"))
-                                .unwrap();
+                                .expect("able to get swap output from compact block");
 
                             let source = clone_payload.source().cloned().unwrap_or_default();
                             let nullifier = Nullifier::derive(
@@ -322,37 +347,43 @@ impl ViewServer {
                             );
 
                             let swap_record = SwapRecord {
-                                swap_commitment: clone_payload.commitment().clone(),
+                                swap_commitment: *clone_payload.commitment(),
                                 swap: swap.clone(),
                                 position: swap_position,
                                 nullifier,
                                 source,
-                                output_data: batch_data.clone(),
+                                output_data: *batch_data,
                                 height_claimed: None,
                             };
                             new_swaps.push(swap_record.clone());
                             self.swaps.insert(payload.commitment, swap_record);
                         }
                         None => {
-                            self.nct.insert(Forget, payload.commitment).unwrap();
+                            self.nct
+                                .insert(Forget, payload.commitment)
+                                .expect("able to insert swap commitment into tree");
                         }
                     }
                 }
                 StatePayload::RolledUp(commitment) => {
                     if self.notes.contains_key(&commitment) {
                         // This is a note we anticipated, so retain its auth path.
-                        self.nct.insert(Keep, commitment).unwrap();
+                        self.nct
+                            .insert(Keep, commitment)
+                            .expect("able to insert our note commitment into tree");
                     } else {
                         // This is someone else's note.
-                        self.nct.insert(Forget, commitment).unwrap();
+                        self.nct
+                            .insert(Forget, commitment)
+                            .expect("able to insert someone else's note commitment into tree");
                     }
                 }
             }
         }
 
-        self.nct.end_block().unwrap();
+        self.nct.end_block().expect("able to end block");
         if block.epoch_root.is_some() {
-            self.nct.end_epoch().unwrap();
+            self.nct.end_epoch().expect("able to end epoch");
         }
 
         self.latest_height = block.height;
@@ -364,14 +395,14 @@ impl ViewServer {
             new_swaps,
         };
 
-        return serde_wasm_bindgen::to_value(&result).unwrap();
+        serde_wasm_bindgen::to_value(&result).expect("able to serialize ScanBlockResult to JS")
     }
 
     pub fn get_updates(&mut self, last_position: JsValue, last_forgotten: JsValue) -> JsValue {
-        let stored_position: Option<StoredPosition> =
-            serde_wasm_bindgen::from_value(last_position).unwrap();
-        let stored_forgotten: Option<Forgotten> =
-            serde_wasm_bindgen::from_value(last_forgotten).unwrap();
+        let stored_position: Option<StoredPosition> = serde_wasm_bindgen::from_value(last_position)
+            .expect("able to deserialize stored position from JS");
+        let stored_forgotten: Option<Forgotten> = serde_wasm_bindgen::from_value(last_forgotten)
+            .expect("able to deserialize stored forgotten from JS");
 
         let nct_updates: Updates = self
             .nct
@@ -387,12 +418,12 @@ impl ViewServer {
             new_notes: self.notes.clone().into_values().collect(),
             new_swaps: self.swaps.clone().into_values().collect(),
         };
-        return serde_wasm_bindgen::to_value(&result).unwrap();
+        serde_wasm_bindgen::to_value(&result).expect("able to serialize ScanBlockResult to JS")
     }
 
     pub fn get_nct_root(&mut self) -> JsValue {
         let root = self.nct.root();
-        return serde_wasm_bindgen::to_value(&root).unwrap();
+        serde_wasm_bindgen::to_value(&root).expect("able to serialize root to JS")
     }
 
     pub fn get_lpnft_asset(
@@ -400,34 +431,35 @@ impl ViewServer {
         position_value: JsValue,
         position_state_value: JsValue,
     ) -> JsValue {
-        let position: Position = serde_wasm_bindgen::from_value(position_value).unwrap();
-        let position_state = serde_wasm_bindgen::from_value(position_state_value).unwrap();
+        let position: Position = serde_wasm_bindgen::from_value(position_value)
+            .expect("able to deserialize position from JS");
+        let position_state = serde_wasm_bindgen::from_value(position_state_value)
+            .expect("able to deserialize position state from JS");
 
         let lp_nft = LpNft::new(position.id(), position_state);
 
         let denom = lp_nft.denom();
 
-        serde_wasm_bindgen::to_value(&denom).unwrap()
+        serde_wasm_bindgen::to_value(&denom).expect("able to serialize denom to JS")
     }
 }
 
 #[wasm_bindgen]
 pub async fn transaction_info(full_viewing_key: &str, tx: JsValue) -> JsValue {
-    let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())
-        .context("The provided string is not a valid FullViewingKey")
-        .unwrap();
+    let fvk = FullViewingKey::from_str(full_viewing_key)
+        .expect("the provided string is a valid FullViewingKey");
 
-    let transaction = serde_wasm_bindgen::from_value(tx).unwrap();
+    let transaction = serde_wasm_bindgen::from_value(tx).expect("able to deserialize tx from JS");
     let (txp, txv) = transaction_info_inner(fvk, transaction).await;
 
-    let txp_proto = TransactionPerspective::try_from(txp).unwrap();
-    let txv_proto = TransactionView::try_from(txv).unwrap();
+    let txp_proto = TransactionPerspective::try_from(txp).expect("able to convert to proto");
+    let txv_proto = TransactionView::try_from(txv).expect("able to convert to proto");
 
     let response = TxInfoResponse {
         txp: txp_proto,
         txv: txv_proto,
     };
-    serde_wasm_bindgen::to_value(&response).unwrap()
+    serde_wasm_bindgen::to_value(&response).expect("able to serialize TxInfoResponse to JS")
 }
 
 pub async fn transaction_info_inner(
@@ -623,5 +655,5 @@ pub fn load_tree(stored_tree: StoredTree) -> Tree {
         add_hashes.insert(stored_hash.position, stored_hash.height, stored_hash.hash);
     }
     let tree = add_hashes.finish();
-    return tree;
+    tree
 }
