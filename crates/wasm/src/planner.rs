@@ -123,7 +123,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Set a memo for this transaction plan.
     ///
     /// Errors if the memo is too long.
-    pub fn memo(&mut self, memo: MemoPlaintext) -> anyhow::Result<&mut Self> {
+    pub fn memo(&mut self, memo: MemoPlaintext) -> Result<&mut Self> {
         self.plan.memo_plan = Some(MemoPlan::new(&mut self.rng, memo)?);
         Ok(self)
     }
