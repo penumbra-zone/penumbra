@@ -261,7 +261,8 @@ impl Opt {
                     bind_addr: bind_addr.clone(),
                 };
 
-                let encoded = toml::to_string_pretty(&client_config).unwrap();
+                let encoded = toml::to_string_pretty(&client_config)
+                    .expect("able to convert client config to toml string");
 
                 // Write config to directory
 
