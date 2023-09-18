@@ -52,10 +52,7 @@ impl IndexedDBStorage {
     }
 
     pub async fn get_asset(&self, id: &Id) -> WasmResult<Option<DenomMetadata>> {
-        let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12)?;
-        let db: IdbDatabase = db_req.into_future().await?;
-
-        let tx = db.transaction_on_one("assets")?;
+        let tx = self.db.transaction_on_one("assets")?;
         let store = tx.object_store("assets")?;
 
         store
@@ -73,11 +70,7 @@ impl IndexedDBStorage {
         &self,
         commitment: &note::StateCommitment,
     ) -> WasmResult<Option<SpendableNoteRecord>> {
-        let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12)?;
-
-        let db: IdbDatabase = db_req.into_future().await?;
-
-        let tx = db.transaction_on_one("spendable_notes")?;
+        let tx = self.db.transaction_on_one("spendable_notes")?;
         let store = tx.object_store("spendable_notes")?;
 
         store
@@ -95,11 +88,7 @@ impl IndexedDBStorage {
         &self,
         nullifier: &Nullifier,
     ) -> WasmResult<Option<SpendableNoteRecord>> {
-        let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12)?;
-
-        let db: IdbDatabase = db_req.into_future().await?;
-
-        let tx = db.transaction_on_one("spendable_notes")?;
+        let tx = self.db.transaction_on_one("spendable_notes")?;
         let store = tx.object_store("spendable_notes")?;
 
         store
@@ -115,11 +104,7 @@ impl IndexedDBStorage {
     }
 
     pub async fn store_advice(&self, note: Note) -> WasmResult<()> {
-        let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12)?;
-
-        let db: IdbDatabase = db_req.into_future().await?;
-
-        let tx = db.transaction_on_one("notes")?;
+        let tx = self.db.transaction_on_one("notes")?;
         let store = tx.object_store("notes")?;
 
         let note_proto: penumbra_proto::core::crypto::v1alpha1::Note = note.clone().try_into()?;
@@ -135,11 +120,7 @@ impl IndexedDBStorage {
     }
 
     pub async fn read_advice(&self, commitment: note::StateCommitment) -> WasmResult<Option<Note>> {
-        let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12)?;
-
-        let db: IdbDatabase = db_req.into_future().await?;
-
-        let tx = db.transaction_on_one("notes")?;
+        let tx = self.db.transaction_on_one("notes")?;
         let store = tx.object_store("notes")?;
 
         let commitment_proto = commitment.to_proto();
@@ -155,11 +136,7 @@ impl IndexedDBStorage {
     }
 
     pub async fn get_chain_parameters(&self) -> WasmResult<Option<ChainParameters>> {
-        let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12)?;
-
-        let db: IdbDatabase = db_req.into_future().await?;
-
-        let tx = db.transaction_on_one("chain_parameters")?;
+        let tx = self.db.transaction_on_one("chain_parameters")?;
         let store = tx.object_store("chain_parameters")?;
 
         store
@@ -171,11 +148,7 @@ impl IndexedDBStorage {
     }
 
     pub async fn get_fmd_parameters(&self) -> WasmResult<Option<FmdParameters>> {
-        let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12)?;
-
-        let db: IdbDatabase = db_req.into_future().await?;
-
-        let tx = db.transaction_on_one("fmd_parameters")?;
+        let tx = self.db.transaction_on_one("fmd_parameters")?;
         let store = tx.object_store("fmd_parameters")?;
 
         store
@@ -190,11 +163,7 @@ impl IndexedDBStorage {
         &self,
         swap_commitment: StateCommitment,
     ) -> WasmResult<Option<SwapRecord>> {
-        let db_req: OpenDbRequest = IdbDatabase::open_u32("penumbra", 12)?;
-
-        let db: IdbDatabase = db_req.into_future().await?;
-
-        let tx = db.transaction_on_one("swaps")?;
+        let tx = self.db.transaction_on_one("swaps")?;
         let store = tx.object_store("swaps")?;
 
         store
