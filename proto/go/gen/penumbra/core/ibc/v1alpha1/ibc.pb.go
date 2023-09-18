@@ -7,7 +7,7 @@
 package ibcv1alpha1
 
 import (
-	types "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	types "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	v1alpha1 "github.com/penumbra-zone/penumbra/proto/go/gen/penumbra/core/crypto/v1alpha1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

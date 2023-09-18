@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-keys"
-version = "0.59.0"
+version = "0.60.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -21,6 +21,7 @@ f4jumble = { git = "https://github.com/zcash/librustzcash", rev = "2425a0869098e
 
 # Crates.io deps
 base64 = "0.20"
+bip32 = "0.5"
 ark-ff = { version = "0.4", default_features = false }
 ark-std = { version = "0.4", default_features = false }
 ark-serialize = "0.4"

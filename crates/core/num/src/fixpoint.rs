@@ -81,8 +81,8 @@ impl U128x128 {
     /// Decode this number from a 32-byte array.
     pub fn from_bytes(bytes: [u8; 32]) -> Self {
         // See above.
-        let hi = u128::from_be_bytes(bytes[0..16].try_into().unwrap());
-        let lo = u128::from_be_bytes(bytes[16..32].try_into().unwrap());
+        let hi = u128::from_be_bytes(bytes[0..16].try_into().expect("slice is 16 bytes"));
+        let lo = u128::from_be_bytes(bytes[16..32].try_into().expect("slice is 16 bytes"));
         Self(U256::from_words(hi, lo))
     }
 
@@ -204,10 +204,10 @@ impl AllocVar<U128x128, Fq> for U128x128Var {
         // Now construct the bit constraints out of thin air ...
         let bytes = inner.to_bytes();
         // The U128x128 type uses a big-endian encoding
-        let limb_3 = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
-        let limb_2 = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
-        let limb_1 = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
-        let limb_0 = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
+        let limb_3 = u64::from_be_bytes(bytes[0..8].try_into().expect("slice is 8 bytes"));
+        let limb_2 = u64::from_be_bytes(bytes[8..16].try_into().expect("slice is 8 bytes"));
+        let limb_1 = u64::from_be_bytes(bytes[16..24].try_into().expect("slice is 8 bytes"));
+        let limb_0 = u64::from_be_bytes(bytes[24..32].try_into().expect("slice is 8 bytes"));
 
         let limb_0_var = UInt64::new_variable(cs.clone(), || Ok(limb_0), AllocationMode::Witness)?;
         let limb_1_var = UInt64::new_variable(cs.clone(), || Ok(limb_1), AllocationMode::Witness)?;

@@ -9,6 +9,9 @@ use metrics_util::layers::Stack;
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 use futures::stream::TryStreamExt;
+use ibc_proto::ibc::core::channel::v1::query_server::QueryServer as ChannelQueryServer;
+use ibc_proto::ibc::core::client::v1::query_server::QueryServer as ClientQueryServer;
+use ibc_proto::ibc::core::connection::v1::query_server::QueryServer as ConnectionQueryServer;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::events::EventIndexLayer;
 use pd::testnet::{
@@ -16,22 +19,25 @@ use pd::testnet::{
     generate::TestnetConfig,
     join::testnet_join,
 };
+use pd::upgrade::{self, Upgrade};
 use penumbra_proto::client::v1alpha1::{
     oblivious_query_service_server::ObliviousQueryServiceServer,
     specific_query_service_server::SpecificQueryServiceServer,
     tendermint_proxy_service_server::TendermintProxyServiceServer,
 };
-use penumbra_storage::Storage;
+use penumbra_storage::{StateDelta, Storage};
 use penumbra_tendermint_proxy::TendermintProxy;
 use penumbra_tower_trace::remote_addr;
 use rand::Rng;
 use rand_core::OsRng;
-use tendermint::abci::{ConsensusRequest, MempoolRequest};
 use tendermint_config::net::Address as TendermintAddress;
 use tokio::{net::TcpListener, runtime};
 use tonic::transport::Server;
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
+
+use penumbra_tower_trace::v034::RequestExt;
+use tendermint::v0_34::abci::{ConsensusRequest, MempoolRequest};
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -118,6 +124,26 @@ enum RootCommand {
 
         #[clap(subcommand)]
         tn_cmd: TestnetCommand,
+    },
+
+    /// Export the storage state the full node.
+    Export {
+        /// The data directory of the full node.
+        #[clap(long, env = "PENUMBRA_PD_HOME", display_order = 100)]
+        data_path: PathBuf,
+        /// The directory that the exported state will be written to.
+        #[clap(long, display_order = 200)]
+        export_path: PathBuf,
+        /// Whether to prune the JMT tree.
+        #[clap(long, display_order = 300)]
+        prune: bool,
+    },
+    /// Run a migration on the exported storage state of the full node,
+    /// and create a genesis file.
+    Upgrade {
+        /// The directory containing the exported state.
+        #[clap(long, display_order = 200)]
+        export_path: PathBuf,
     },
 }
 
@@ -243,7 +269,7 @@ async fn main() -> anyhow::Result<()> {
                 ?grpc_bind,
                 ?grpc_auto_https,
                 ?metrics_bind,
-                ?tendermint_addr,
+                %tendermint_addr,
                 "starting pd"
             );
 
@@ -263,7 +289,6 @@ async fn main() -> anyhow::Result<()> {
                 .context("Unable to initialize RocksDB storage")?;
 
             use penumbra_tower_trace::trace::request_span;
-            use penumbra_tower_trace::RequestExt;
 
             let consensus = tower::ServiceBuilder::new()
                 .layer(request_span::layer(|req: &ConsensusRequest| {
@@ -305,6 +330,8 @@ async fn main() -> anyhow::Result<()> {
                 )
                 .expect("failed to spawn abci server");
 
+            let ibc = penumbra_ibc::component::IbcQuery::new(storage.clone());
+
             let grpc_server = Server::builder()
                 .trace_fn(|req| match remote_addr(req) {
                     Some(remote_addr) => {
@@ -328,6 +355,9 @@ async fn main() -> anyhow::Result<()> {
                 .add_service(tonic_web::enable(SpecificQueryServiceServer::new(
                     info.clone(),
                 )))
+                .add_service(tonic_web::enable(ClientQueryServer::new(ibc.clone())))
+                .add_service(tonic_web::enable(ChannelQueryServer::new(ibc.clone())))
+                .add_service(tonic_web::enable(ConnectionQueryServer::new(ibc.clone())))
                 .add_service(tonic_web::enable(TendermintProxyServiceServer::new(
                     tm_proxy.clone(),
                 )))
@@ -544,6 +574,46 @@ async fn main() -> anyhow::Result<()> {
                 "Writing config files for network"
             );
             t.write_configs()?;
+        }
+        RootCommand::Export {
+            mut data_path,
+            mut export_path,
+            prune,
+        } => {
+            use fs_extra;
+
+            tracing::info!("exporting state to {}", export_path.display());
+            let copy_opts = fs_extra::dir::CopyOptions::new();
+            data_path.push("rocksdb");
+            let from = [data_path.as_path()];
+            tracing::info!(
+                ?data_path,
+                ?export_path,
+                "copying from data dir to export dir",
+            );
+            std::fs::create_dir_all(&export_path)?;
+            fs_extra::copy_items(&from, export_path.as_path(), &copy_opts)?;
+
+            tracing::info!("done copying");
+            if !prune {
+                return Ok(());
+            }
+
+            tracing::info!("pruning JMT tree");
+            export_path.push("rocksdb");
+            let export = Storage::load(export_path).await?;
+            let _ = StateDelta::new(export.latest_snapshot());
+            // TODO:
+            // - add utilities in `penumbra_storage` to prune a tree
+            // - apply the delta to the exported storage
+            // - apply checks: root hash, size, etc.
+            todo!()
+        }
+        RootCommand::Upgrade { export_path } => {
+            tracing::info!("upgrading state from {}", export_path.display());
+            let _ = upgrade::migrate(export_path.clone(), Upgrade::Testnet60)
+                .await
+                .unwrap();
         }
     }
     Ok(())

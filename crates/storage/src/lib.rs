@@ -35,6 +35,7 @@
 //! [`StateWrite`] traits have provided methods that use the
 //! [`penumbra_proto::Protobuf`] trait to automatically (de)serialize into proto
 //! or domain types, allowing its use as an object store.
+#![deny(clippy::unwrap_used)]
 
 mod cache;
 mod delta;
@@ -49,6 +50,7 @@ mod tests;
 mod utils;
 mod write;
 
+#[cfg(feature = "metrics")]
 pub use crate::metrics::register_metrics;
 pub use cache::Cache;
 pub use delta::{ArcStateDeltaExt, StateDelta};

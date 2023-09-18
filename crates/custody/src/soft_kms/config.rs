@@ -47,7 +47,7 @@ mod tests {
     #[test]
     fn toml_config_round_trip() {
         let seed_phrase = SeedPhrase::generate(rand_core::OsRng);
-        let spend_key = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let spend_key = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
 
         let pak = ed25519_consensus::SigningKey::new(rand_core::OsRng);
         let pvk = pak.verification_key();

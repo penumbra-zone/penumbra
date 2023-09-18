@@ -7,11 +7,10 @@ use std::{
 use futures::FutureExt;
 use penumbra_chain::component::AppHashRead;
 use penumbra_storage::Storage;
-use tendermint::abci::{self, response::Echo, InfoRequest, InfoResponse};
+use penumbra_tower_trace::v034::RequestExt;
+use tendermint::v0_34::abci::{self, response::Echo, InfoRequest, InfoResponse};
 use tower_abci::BoxError;
 use tracing::Instrument;
-
-use penumbra_tower_trace::RequestExt;
 
 // const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 const ABCI_INFO_VERSION: &str = "wut";
@@ -42,8 +41,7 @@ impl Info {
             u64::MAX => 0,
             v => v,
         }
-        .try_into()
-        .unwrap();
+        .try_into()?;
 
         let last_block_app_hash = state.app_hash().await?.0.to_vec().try_into()?;
 

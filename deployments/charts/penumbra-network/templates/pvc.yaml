@@ -1,0 +1,57 @@
+---
+{{- if .Values.persistence.enabled }}
+# Shared volume for generating network data. Per-validator configs
+# will be copied out of this shared volume, into separate PVCs.
+{{ $pvc_name := printf "%s-shared-config" (include "penumbra-network.fullname" .) }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $pvc_name }}
+  labels:
+    app.kubernetes.io/component: genesis-generator
+    {{- include "penumbra-network.labels" . | nindent 4 }}
+  annotations:
+    # Use a pre-install hook, to ensure volumes exist for genesis creation job.
+    "helm.sh/hook": pre-install
+    # Ensure the genesis data is protected from accidental deletion.
+    "helm.sh/resource-policy": keep
+    "helm.sh/hook-weight": "5"
+spec:
+  accessModes: {{ .Values.persistence.accessModes }}
+  resources:
+    requests:
+      # We hardcode 1G for the genesis creation volume, using the custom storage
+      # size on the per-validator PVCs below.
+      storage: 1G
+  {{- if .Values.persistence.storageClassName }}
+  storageClassName: {{ .Values.persistence.storageClassName }}
+  {{- end }}
+
+# Per-validator config for state.
+{{ $count := (.Values.network.num_validators | int) }}
+{{ range $i,$e := until $count }}
+{{ $val_name := printf "%s-val-%d" (include "penumbra-network.fullname" $) $i }}
+{{ $pvc_name := printf "%s-config" $val_name }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $pvc_name }}
+  labels:
+    app.kubernetes.io/component: genesis-validator
+    {{- include "penumbra-network.labels" $ | nindent 4 }}
+  annotations:
+    # Use a pre-install hook, to ensure volumes exist for genesis creation job.
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "5"
+spec:
+  accessModes: {{ $.Values.persistence.accessModes }}
+  resources:
+    requests:
+      storage: {{ $.Values.persistence.size }}
+  {{- if $.Values.persistence.storageClassName }}
+  storageClassName: {{ $.Values.persistence.storageClassName }}
+  {{- end }}
+{{- end }}
+{{- end }}

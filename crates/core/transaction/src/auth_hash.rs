@@ -41,7 +41,7 @@ impl AuthorizingData for TransactionBody {
                 .hash(&self.encode_to_vec())
                 .as_bytes()[0..32]
                 .try_into()
-                .unwrap(),
+                .expect("blake2b output is always 32 bytes long"),
         )
     }
 }

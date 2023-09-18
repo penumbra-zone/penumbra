@@ -420,7 +420,7 @@ mod tests {
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::generate(rng);
-        let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let sk = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
         let ovk = fvk.outgoing();

@@ -8,7 +8,7 @@ use decaf377::FieldExt;
 use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
 
 use ark_ff::ToConstraintField;
-use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey};
+use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey};
 use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
@@ -16,7 +16,6 @@ use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
-use rand_core::OsRng;
 use tct::r1cs::PositionVar;
 
 use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
@@ -24,7 +23,7 @@ use penumbra_keys::keys::{
     AuthorizationKeyVar, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
 };
-use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 use penumbra_sct::{Nullifier, NullifierVar};
 use penumbra_shielded_pool::{note, Note, Rseed};
 
@@ -184,10 +183,10 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
     }
 }
 
-impl ParameterSetup for DelegatorVoteCircuit {
-    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
-        let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);
-        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+impl DummyWitness for DelegatorVoteCircuit {
+    fn with_dummy_witness() -> Self {
+        let seed_phrase = SeedPhrase::from_randomness(&[b'f'; 32]);
+        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -207,12 +206,15 @@ impl ParameterSetup for DelegatorVoteCircuit {
         let nullifier = Nullifier(Fq::from(1));
         let mut sct = tct::Tree::new();
         let note_commitment = note.commit();
-        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+        sct.insert(tct::Witness::Keep, note_commitment)
+            .expect("able to insert note commitment into SCT");
         let anchor = sct.root();
-        let state_commitment_proof = sct.witness(note_commitment).unwrap();
+        let state_commitment_proof = sct
+            .witness(note_commitment)
+            .expect("able to witness just-inserted note commitment");
         let start_position = state_commitment_proof.position();
 
-        let circuit = DelegatorVoteCircuit {
+        Self {
             state_commitment_proof,
             note,
             v_blinding,
@@ -224,11 +226,7 @@ impl ParameterSetup for DelegatorVoteCircuit {
             nullifier,
             rk,
             start_position,
-        };
-        let (pk, vk) =
-            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
-                .expect("can perform circuit specific setup");
-        (pk, vk)
+        }
     }
 }
 
@@ -255,6 +253,19 @@ impl DelegatorVoteProof {
         // The blinding factor for the value commitment is zero since it
         // is not blinded.
         let zero_blinding = Fr::from(0);
+        tracing::debug!(
+            ?state_commitment_proof,
+            ?note,
+            ?spend_auth_randomizer,
+            ?ak,
+            ?nk,
+            ?anchor,
+            ?balance_commitment,
+            ?nullifier,
+            ?rk,
+            ?start_position,
+            "generating delegator vote proof"
+        );
         let circuit = DelegatorVoteCircuit {
             state_commitment_proof,
             note,
@@ -294,14 +305,32 @@ impl DelegatorVoteProof {
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
-        public_inputs.extend(Fq::from(anchor.0).to_field_elements().unwrap());
-        public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
-        public_inputs.extend(nullifier.0.to_field_elements().unwrap());
+        public_inputs.extend(
+            Fq::from(anchor.0)
+                .to_field_elements()
+                .expect("valid field element"),
+        );
+        public_inputs.extend(
+            balance_commitment
+                .0
+                .to_field_elements()
+                .expect("valid field element"),
+        );
+        public_inputs.extend(
+            nullifier
+                .0
+                .to_field_elements()
+                .expect("valid field element"),
+        );
         let element_rk = decaf377::Encoding(rk.to_bytes())
             .vartime_decompress()
             .expect("expect only valid element points");
-        public_inputs.extend(element_rk.to_field_elements().unwrap());
-        public_inputs.extend(start_position.to_field_elements().unwrap());
+        public_inputs.extend(element_rk.to_field_elements().expect("valid field element"));
+        public_inputs.extend(
+            start_position
+                .to_field_elements()
+                .expect("valid field element"),
+        );
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
@@ -351,8 +380,10 @@ mod tests {
     use decaf377::{Fq, Fr};
     use penumbra_asset::{asset, Value};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_proof_params::generate_prepared_test_parameters;
     use penumbra_sct::Nullifier;
     use proptest::prelude::*;
+    use rand_core::OsRng;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {
         any::<[u8; 32]>()
@@ -364,11 +395,11 @@ mod tests {
     #![proptest_config(ProptestConfig::with_cases(1))]
     #[test]
     fn delegator_vote_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 1..2000000000u64, num_commitments in 0..2000u64) {
-        let (pk, vk) = DelegatorVoteCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
+        let (pk, vk) = generate_prepared_test_parameters::<DelegatorVoteCircuit>(&mut rng);
 
-        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
-        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -435,11 +466,11 @@ mod tests {
     #[test]
     #[should_panic]
     fn delegator_vote_invalid_start_position(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 1..2000000000u64, num_commitments in 1000..2000u64) {
-        let (pk, vk) = DelegatorVoteCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
+        let (pk, vk) = generate_prepared_test_parameters::<DelegatorVoteCircuit>(&mut rng);
 
-        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
-        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());

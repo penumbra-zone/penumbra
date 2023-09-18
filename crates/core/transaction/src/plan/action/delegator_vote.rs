@@ -1,4 +1,5 @@
 use ark_ff::UniformRand;
+use ark_ff::Zero;
 use decaf377::{FieldExt, Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_asset::{Balance, Value};
@@ -111,7 +112,7 @@ impl DelegatorVotePlan {
             *fvk.spend_verification_key(),
             *fvk.nullifier_key(),
             state_commitment_proof.root(),
-            self.balance().commit(Fr::from(0u64)),
+            self.staked_note.value().commit(Fr::zero()),
             self.nullifier(fvk),
             self.rk(fvk),
             self.start_position,

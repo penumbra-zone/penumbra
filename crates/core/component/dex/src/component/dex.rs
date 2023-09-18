@@ -41,7 +41,7 @@ impl Component for Dex {
         state: &mut Arc<S>,
         end_block: &abci::request::EndBlock,
     ) {
-        let current_epoch = state.epoch().await.unwrap();
+        let current_epoch = state.epoch().await.expect("epoch is set");
 
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
         for (trading_pair, swap_flows) in state.swap_flows() {
@@ -77,27 +77,27 @@ impl Component for Dex {
                     *STAKING_TOKEN_ASSET_ID,
                     asset::Cache::with_known_assets()
                         .get_unit("gm")
-                        .unwrap()
+                        .expect("gm is a known asset")
                         .id(),
                     asset::Cache::with_known_assets()
                         .get_unit("gn")
-                        .unwrap()
+                        .expect("gn is a known asset")
                         .id(),
                     asset::Cache::with_known_assets()
                         .get_unit("test_usd")
-                        .unwrap()
+                        .expect("test_usd is a known asset")
                         .id(),
                     asset::Cache::with_known_assets()
                         .get_unit("test_btc")
-                        .unwrap()
+                        .expect("test_btc is a known asset")
                         .id(),
                     asset::Cache::with_known_assets()
                         .get_unit("test_atom")
-                        .unwrap()
+                        .expect("test_atom is a known asset")
                         .id(),
                     asset::Cache::with_known_assets()
                         .get_unit("test_osmo")
-                        .unwrap()
+                        .expect("test_osmo is a known asset")
                         .id(),
                 ],
             )
@@ -108,7 +108,7 @@ impl Component for Dex {
             // TODO: hack to avoid needing an asset cache for nice debug output
             let unit = asset::Cache::with_known_assets()
                 .get_unit("penumbra")
-                .unwrap();
+                .expect("penumbra is a known asset");
             let burn = format!("{}{}", unit.format_value(arb_burn.amount), unit);
             tracing::info!(%burn, "executed arbitrage opportunity");
         }

@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use directories::ProjectDirs;
-use penumbra_keys::keys::SeedPhrase;
+use penumbra_keys::keys::{Bip44Path, SeedPhrase};
 use rand_core::OsRng;
 use sha2::{Digest, Sha256};
 
@@ -18,7 +18,11 @@ pub enum KeysCmd {
     #[clap(subcommand)]
     Export(ExportCmd),
     /// Generate a new seed phrase and import its corresponding key.
-    Generate,
+    Generate {
+        /// If set, will use experimental BIP44 derivation.
+        #[clap(long, action)]
+        bip44_derivation: bool,
+    },
     /// Delete the entire wallet permanently.
     Delete,
 }
@@ -27,7 +31,11 @@ pub enum KeysCmd {
 pub enum ImportCmd {
     /// Import wallet from an existing 24-word seed phrase. Will prompt for input interactively.
     /// Also accepts input from stdin, for use with pipes.
-    Phrase,
+    Phrase {
+        /// If set, will use experimental BIP44 derivation.
+        #[clap(long, action)]
+        bip44_derivation: bool,
+    },
 }
 
 #[derive(Debug, clap::Subcommand)]
@@ -67,18 +75,23 @@ impl KeysCmd {
     pub fn exec(&self, data_dir: impl AsRef<camino::Utf8Path>) -> Result<()> {
         let data_dir = data_dir.as_ref();
         match self {
-            KeysCmd::Generate => {
-                let seed_phrase = SeedPhrase::generate(OsRng);
+            KeysCmd::Generate { bip44_derivation } => {
+                let seed_phrase: SeedPhrase = SeedPhrase::generate(OsRng);
 
                 // xxx: Something better should be done here, this is in danger of being
                 // shared by users accidentally in log output.
                 println!("YOUR PRIVATE SEED PHRASE: {seed_phrase}\nDO NOT SHARE WITH ANYONE!");
 
-                let wallet = KeyStore::from_seed_phrase(seed_phrase);
+                let wallet = if *bip44_derivation {
+                    let path = Bip44Path::new(0);
+                    KeyStore::from_seed_phrase_bip44(seed_phrase, &path)
+                } else {
+                    KeyStore::from_seed_phrase_bip39(seed_phrase)
+                };
                 wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                 self.archive_wallet(&wallet)?;
             }
-            KeysCmd::Import(ImportCmd::Phrase) => {
+            KeysCmd::Import(ImportCmd::Phrase { bip44_derivation }) => {
                 let mut seed_phrase = String::new();
                 // The `rpassword` crate doesn't support reading from stdin, so we check
                 // for an interactive session. We must support non-interactive use cases,
@@ -94,7 +107,14 @@ impl KeysCmd {
                         seed_phrase = seed_phrase.trim().to_string();
                     }
                 }
-                let wallet = KeyStore::from_seed_phrase(SeedPhrase::from_str(&seed_phrase)?);
+
+                let seed_phrase = SeedPhrase::from_str(&seed_phrase)?;
+                let wallet = if *bip44_derivation {
+                    let path = Bip44Path::new(0);
+                    KeyStore::from_seed_phrase_bip44(seed_phrase, &path)
+                } else {
+                    KeyStore::from_seed_phrase_bip39(seed_phrase)
+                };
                 wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                 self.archive_wallet(&wallet)?;
             }

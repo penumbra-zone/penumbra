@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 /// A (transparent) genesis allocation.
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(
-    try_from = "pb::genesis_app_state::Allocation",
-    into = "pb::genesis_app_state::Allocation"
+    try_from = "pb::genesis_content::Allocation",
+    into = "pb::genesis_content::Allocation"
 )]
 pub struct Allocation {
     pub amount: Amount,
@@ -15,9 +15,9 @@ pub struct Allocation {
     pub address: Address,
 }
 
-impl From<Allocation> for pb::genesis_app_state::Allocation {
+impl From<Allocation> for pb::genesis_content::Allocation {
     fn from(a: Allocation) -> Self {
-        pb::genesis_app_state::Allocation {
+        pb::genesis_content::Allocation {
             amount: Some(a.amount.into()),
             denom: a.denom,
             address: Some(a.address.into()),
@@ -25,10 +25,10 @@ impl From<Allocation> for pb::genesis_app_state::Allocation {
     }
 }
 
-impl TryFrom<pb::genesis_app_state::Allocation> for Allocation {
+impl TryFrom<pb::genesis_content::Allocation> for Allocation {
     type Error = anyhow::Error;
 
-    fn try_from(msg: pb::genesis_app_state::Allocation) -> Result<Self, Self::Error> {
+    fn try_from(msg: pb::genesis_content::Allocation) -> Result<Self, Self::Error> {
         Ok(Allocation {
             amount: msg
                 .amount
@@ -61,5 +61,5 @@ impl TypeUrl for Allocation {
 }
 
 impl DomainType for Allocation {
-    type Proto = pb::genesis_app_state::Allocation;
+    type Proto = pb::genesis_content::Allocation;
 }

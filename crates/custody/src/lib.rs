@@ -4,6 +4,7 @@
 //! software key management system that can perform basic policy-based
 //! authorization or blind signing.
 
+#![deny(clippy::unwrap_used)]
 #[macro_use]
 extern crate serde_with;
 

@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 mod delegator_vote;
 pub use delegator_vote::proof::{DelegatorVoteCircuit, DelegatorVoteProof};
 

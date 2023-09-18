@@ -1,3 +1,4 @@
+use bip32::XPrv;
 use std::convert::TryFrom;
 
 use hmac::Hmac;
@@ -6,6 +7,7 @@ use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use super::{
+    bip44::Bip44Path,
     seed_phrase::{SeedPhrase, NUM_PBKDF2_ROUNDS},
     FullViewingKey, IncomingViewingKey, NullifierKey, OutgoingViewingKey,
 };
@@ -92,7 +94,7 @@ impl SpendKey {
     /// authorities from a single seed phrase.
     ///
     /// [`BIP39`]: https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
-    pub fn from_seed_phrase(seed_phrase: SeedPhrase, index: u64) -> Self {
+    pub fn from_seed_phrase_bip39(seed_phrase: SeedPhrase, index: u64) -> Self {
         let password = format!("{seed_phrase}");
         let salt = format!("mnemonic{index}");
         let mut spend_seed_bytes = [0u8; 32];
@@ -104,6 +106,30 @@ impl SpendKey {
         )
         .expect("seed phrase hash always succeeds");
         SpendKeyBytes(spend_seed_bytes).into()
+    }
+
+    pub fn from_seed_phrase_bip44(seed_phrase: SeedPhrase, path: &Bip44Path) -> Self {
+        let password = format!("{seed_phrase}");
+        let salt = "mnemonic";
+        let mut seed_bytes = [0u8; 64];
+        pbkdf2::<Hmac<sha2::Sha512>>(
+            password.as_bytes(),
+            salt.as_bytes(),
+            NUM_PBKDF2_ROUNDS,
+            &mut seed_bytes,
+        )
+        .expect("seed phrase hash always succeeds");
+
+        // Now we derive the child keys from the BIP44 path. There are up five levels
+        // in the BIP44 path: purpose, coin type, account, change, and address index.
+        let child_key = XPrv::derive_from_path(
+            &seed_bytes[..],
+            &path.path().parse().expect("valid BIP44 path"),
+        )
+        .expect("can derive child key");
+        let child_key_bytes = child_key.to_bytes();
+
+        SpendKeyBytes(child_key_bytes).into()
     }
 
     // XXX how many of these do we need? leave them for now
@@ -164,5 +190,28 @@ impl std::str::FromStr for SpendKey {
             inner: bech32str::decode(s, bech32str::spend_key::BECH32_PREFIX, bech32str::Bech32m)?,
         }
         .try_into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::*;
+
+    #[test]
+    fn bip44_test_ledger() {
+        // Test account
+        let seed = SeedPhrase::from_str("comfort ten front cycle churn burger oak absent rice ice urge result art couple benefit cabbage frequent obscure hurry trick segment cool job debate").unwrap();
+
+        let expected_bytes =
+            hex::decode("1b8113fad04f5db00e6acf541949950f85eca3e02e70254838b750b42a2caa51")
+                .expect("valid");
+        let expected_spendkey = SpendKeyBytes(expected_bytes.try_into().expect("fits in 32 bytes"));
+
+        let derivation_path = Bip44Path::new(0);
+        let software_spendkey = SpendKey::from_seed_phrase_bip44(seed, &derivation_path);
+
+        assert_eq!(software_spendkey.to_bytes(), expected_spendkey);
     }
 }

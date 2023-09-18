@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types::{
     core::{
@@ -90,7 +90,7 @@ impl MsgHandler for MsgConnectionOpenConfirm {
             .get_connection(&self.conn_id_on_b)
             .await?
             .ok_or_else(|| anyhow::anyhow!("no connection with the given ID"))
-            .unwrap();
+            .context("unable to get connection")?;
 
         connection.state = State::Open;
 

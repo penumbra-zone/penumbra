@@ -34,7 +34,7 @@ fn spend_proof_parameters_vs_current_spend_circuit() {
     let vk = &*SPEND_PROOF_VERIFICATION_KEY;
 
     let seed_phrase = SeedPhrase::generate(OsRng);
-    let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+    let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
     let fvk_sender = sk_sender.full_viewing_key();
     let ivk_sender = fvk_sender.incoming();
     let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -92,7 +92,7 @@ fn delegator_vote_proof_parameters_vs_current_delegator_vote_circuit() {
     let vk = &*DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
 
     let seed_phrase = SeedPhrase::generate(OsRng);
-    let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+    let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
     let fvk_sender = sk_sender.full_viewing_key();
     let ivk_sender = fvk_sender.incoming();
     let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -159,7 +159,7 @@ fn swap_proof_parameters_vs_current_swap_circuit() {
     let mut rng = OsRng;
 
     let seed_phrase = SeedPhrase::generate(OsRng);
-    let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+    let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
     let fvk_recipient = sk_recipient.full_viewing_key();
     let ivk_recipient = fvk_recipient.incoming();
     let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
@@ -224,7 +224,7 @@ fn swap_claim_parameters_vs_current_swap_claim_circuit() {
     let mut rng = OsRng;
 
     let seed_phrase = SeedPhrase::generate(OsRng);
-    let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+    let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
     let fvk_recipient = sk_recipient.full_viewing_key();
     let ivk_recipient = fvk_recipient.incoming();
     let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
@@ -320,7 +320,7 @@ fn output_proof_parameters_vs_current_output_circuit() {
     let mut rng = OsRng;
 
     let seed_phrase = SeedPhrase::generate(OsRng);
-    let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+    let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
     let fvk_recipient = sk_recipient.full_viewing_key();
     let ivk_recipient = fvk_recipient.incoming();
     let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
@@ -364,7 +364,7 @@ fn nullifier_derivation_parameters_vs_current_nullifier_derivation_circuit() {
     let mut rng = OsRng;
 
     let seed_phrase = SeedPhrase::generate(OsRng);
-    let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+    let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
     let fvk_sender = sk_sender.full_viewing_key();
     let ivk_sender = fvk_sender.incoming();
     let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());

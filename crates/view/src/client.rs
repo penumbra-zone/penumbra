@@ -267,6 +267,11 @@ pub trait ViewClient {
         &mut self,
         address_index: AddressIndex,
     ) -> Pin<Box<dyn Future<Output = Result<Address>> + Send + 'static>>;
+
+    /// Queries for unclaimed Swaps.
+    fn unclaimed_swaps(
+        &mut self,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<SwapRecord>>> + Send + 'static>>;
 }
 
 // We need to tell `async_trait` not to add a `Send` bound to the boxed
@@ -869,6 +874,36 @@ where
                 .try_into()?;
 
             Ok(tx)
+        }
+        .boxed()
+    }
+
+    fn unclaimed_swaps(
+        &mut self,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<SwapRecord>>> + Send + 'static>> {
+        let mut self2 = self.clone();
+        async move {
+            let swaps_response = ViewProtocolServiceClient::unclaimed_swaps(
+                &mut self2,
+                tonic::Request::new(pb::UnclaimedSwapsRequest {
+                    ..Default::default()
+                }),
+            );
+            let pb_swaps: Vec<_> = swaps_response.await?.into_inner().try_collect().await?;
+
+            pb_swaps
+                .into_iter()
+                .map(|swap_rsp| {
+                    let swap_record = swap_rsp
+                        .swap
+                        .ok_or_else(|| anyhow::anyhow!("empty UnclaimedSwapsResponse message"));
+
+                    match swap_record {
+                        Ok(swap) => swap.try_into(),
+                        Err(e) => Err(e),
+                    }
+                })
+                .collect()
         }
         .boxed()
     }

@@ -1,19 +1,28 @@
 [package]
 name = "penumbra-proof-setup"
-version = "0.59.0"
+version = "0.60.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0"
 ark-ec = "0.4.2"
 ark-ff = "0.4.2"
+ark-groth16 = "0.4.0"
+ark-poly = "0.4.2"
+ark-relations = "0.4"
 ark-serialize = "0.4.2"
 blake2b_simd = "0.5"
 rand_core = { version = "0.6", features = ["getrandom"] }
 decaf377 = "0.5"
 
 [dev-dependencies]
+ark-r1cs-std = "0.4.0"
+ark-snark = "0.4.0"
 criterion = { version = "0.4", features = ["html_reports"] }
+penumbra-dex = { path = "../../core/component/dex/" }
+penumbra-proof-params = { path = "../proof-params" }
+rand_chacha = "0.3.1"
 
 [[bench]]
-name = "phase1"
+name = "all"
 harness = false

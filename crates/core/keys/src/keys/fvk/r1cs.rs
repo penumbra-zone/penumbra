@@ -27,7 +27,7 @@ impl AllocVar<VerificationKey<SpendAuth>, Fq> for RandomizedVerificationKey {
             AllocationMode::Input => {
                 let point = decaf377::Encoding(*inner.as_ref())
                     .vartime_decompress()
-                    .unwrap();
+                    .map_err(|_| SynthesisError::MalformedVerifyingKey)?;
                 let element_var: ElementVar = AllocVar::new_input(cs, || Ok(point))?;
                 Ok(Self { inner: element_var })
             }
@@ -87,7 +87,7 @@ impl AllocVar<VerificationKey<SpendAuth>, Fq> for AuthorizationKeyVar {
             AllocationMode::Witness => {
                 let ak_point = decaf377::Encoding(*inner.as_ref())
                     .vartime_decompress()
-                    .unwrap();
+                    .map_err(|_| SynthesisError::MalformedVerifyingKey)?;
                 let ak_element_var: ElementVar =
                     AllocVar::<Element, Fq>::new_witness(cs, || Ok(ak_point))?;
                 Ok(Self {

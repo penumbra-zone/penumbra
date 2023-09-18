@@ -1,5 +1,8 @@
 [workspace]
 
+# Set virtual workspace's resolver to v1, to support the "rust-docs" script.
+resolver = "1"
+
 exclude = [
     "tools/proto-compiler",
     "tools/parameter-setup",

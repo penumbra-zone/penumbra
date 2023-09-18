@@ -1,0 +1,8 @@
+{{ $val_name := printf "%s-val-0" (include "penumbra-network.fullname" .) }}
+Deployed a Penumbra network, with {{ .Values.network.num_validators }} validators.
+The network can be joined *within the cluster* like so:
+
+  pd testnet join http://{{ $val_name }}:26657
+
+Consider joining fullnodes to the network, and exposing the RPC services
+for those fullnodes via ingress.

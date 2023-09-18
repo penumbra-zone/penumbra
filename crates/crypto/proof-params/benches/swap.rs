@@ -42,7 +42,7 @@ fn prove(
 
 fn swap_proving_time(c: &mut Criterion) {
     let seed_phrase = SeedPhrase::generate(OsRng);
-    let sk_recipient = SpendKey::from_seed_phrase(seed_phrase, 0);
+    let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
     let fvk_recipient = sk_recipient.full_viewing_key();
     let ivk_recipient = fvk_recipient.incoming();
     let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());

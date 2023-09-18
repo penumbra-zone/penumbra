@@ -28,7 +28,9 @@ impl Future for SnapshotFuture {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
         match this.0.poll(cx) {
-            Poll::Ready(result) => Poll::Ready(result.unwrap()),
+            Poll::Ready(result) => {
+                Poll::Ready(result.expect("unrecoverable join error from tokio task"))
+            }
             Poll::Pending => Poll::Pending,
         }
     }
@@ -161,7 +163,7 @@ where
                 // Find this layer's leftmost key-value pair in the search range.
                 let found_pair = layer
                     .as_ref()
-                    .unwrap()
+                    .expect("layer must not have been applied")
                     .nonverifiable_changes
                     .range::<Vec<u8>, _>(search_range)
                     .take_while(|(k, _v)| k.starts_with(this.prefix))
@@ -329,7 +331,7 @@ where
                 // Find this layer's leftmost key-value pair in the search range.
                 let found_pair = layer
                     .as_ref()
-                    .unwrap()
+                    .expect("layer must not have been applied")
                     .unwritten_changes
                     .range::<String, _>(search_range)
                     .take_while(|(k, _v)| k.starts_with(this.prefix.as_str()))
@@ -495,7 +497,7 @@ where
                 // Find this layer's leftmost key-value pair in the search range.
                 let found_pair = layer
                     .as_ref()
-                    .unwrap()
+                    .expect("layer must not have been applied")
                     .unwritten_changes
                     .range::<String, _>(search_range)
                     .take_while(|(k, _v)| k.starts_with(this.prefix.as_str()))
@@ -683,7 +685,7 @@ where
                 // Find this layer's leftmost key-value pair in the search range.
                 let found_pair = layer
                     .as_ref()
-                    .unwrap()
+                    .expect("layer must not have been applied")
                     .nonverifiable_changes
                     .range::<Vec<u8>, _>(search_range)
                     .take_while(|(k, v)| {

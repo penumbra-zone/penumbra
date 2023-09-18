@@ -112,10 +112,10 @@ make_batched_pairing_checker!(
 );
 
 /// The size of the hash we use.
-pub const HASH_SIZE: usize = 32;
+pub(crate) const HASH_SIZE: usize = 32;
 
 /// The hash output we use when we need bytes.
-pub type Hash = [u8; 32];
+pub(crate) type Hash = [u8; 32];
 
 /// A utility struct for hashing group elements and producing fields.
 ///
@@ -126,7 +126,7 @@ pub type Hash = [u8; 32];
 /// of this elements. One place where you still need manual effort on the user's end
 /// is when you're hashing a variable number of elements.
 #[derive(Clone)]
-pub struct GroupHasher {
+pub(crate) struct GroupHasher {
     state: blake2b_simd::State,
 }
 

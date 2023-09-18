@@ -10,6 +10,9 @@ pub use seed_phrase::SeedPhrase;
 mod spend;
 pub use spend::{SpendKey, SpendKeyBytes, SPENDKEY_LEN_BYTES};
 
+mod bip44;
+pub use bip44::Bip44Path;
+
 mod fvk;
 mod ivk;
 mod ovk;

@@ -6,6 +6,7 @@ publish = false
 
 [dependencies]
 penumbra-proof-params = { path = "../../crates/crypto/proof-params" }
+penumbra-proof-setup = { path = "../../crates/crypto/proof-setup" }
 penumbra-dex = { path = "../../crates/core/component/dex/" }
 penumbra-dao = { path = "../../crates/core/component/dao/", features = ["component"] }
 penumbra-governance = { path = "../../crates/core/component/governance/" }
@@ -14,3 +15,4 @@ penumbra-stake = { path = "../../crates/core/component/stake/", features = ["com
 ark-groth16 = "0.4"
 ark-serialize = "0.4"
 decaf377 = { version = "0.5", features = ["r1cs"] }
+rand_core = "0.6.4"

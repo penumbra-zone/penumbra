@@ -61,7 +61,8 @@ impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
         Self {
             source_port: PortId::transfer(),
             source_channel: withdrawal.source_channel.clone(),
-            timeout_height: Height::new(0, withdrawal.timeout_height).unwrap(),
+            timeout_height: Height::new(0, withdrawal.timeout_height)
+                .expect("revision_height should not be 0"),
             timeout_timestamp: withdrawal.timeout_time,
             data: withdrawal.packet_data(),
 
@@ -144,7 +145,7 @@ pub trait SendPacketWrite: StateWrite {
         let sequence = self
             .get_send_sequence(&packet.source_channel, &packet.source_port)
             .await
-            .unwrap();
+            .expect("able to get send sequence while executing send packet");
         self.put_send_sequence(&packet.source_channel, &packet.source_port, sequence + 1);
 
         let channel = self
@@ -177,7 +178,7 @@ pub trait SendPacketWrite: StateWrite {
             timeout_timestamp_on_b: ibc_types::timestamp::Timestamp::from_nanoseconds(
                 packet.timeout_timestamp,
             )
-            .unwrap(),
+            .expect("able to parse timeout timestamp from nanoseconds"),
 
             data: packet.data,
         };

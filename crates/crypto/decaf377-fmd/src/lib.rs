@@ -1,6 +1,7 @@
 //! An implementation of [Fuzzy Message Detection][fmd].
 //!
 //! [fmd]: https://protocol.penumbra.zone/main/crypto/fmd.html
+#![deny(clippy::unwrap_used)]
 
 mod clue;
 mod clue_key;

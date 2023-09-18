@@ -114,7 +114,10 @@ impl MsgHandler for MsgUpdateClient {
             let trusted_header = untrusted_header;
 
             // get the latest client state
-            let client_state = state.get_client_state(&self.client_id).await.unwrap();
+            let client_state = state
+                .get_client_state(&self.client_id)
+                .await
+                .context("unable to get client state")?;
 
             let (next_tm_client_state, next_tm_consensus_state) = state
                 .next_tendermint_state(

@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-shielded-pool"
-version = "0.59.0"
+version = "0.60.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -54,7 +54,7 @@ serde = { version = "1", features = ["derive"] }
 tracing = "0.1"
 anyhow = "1"
 async-trait = "0.1.52"
-tendermint = "0.32.0"
+tendermint = "0.33.0"
 blake2b_simd = "0.5"
 bytes = "1"
 rand_core = { version = "0.6.3", features = ["getrandom"] }

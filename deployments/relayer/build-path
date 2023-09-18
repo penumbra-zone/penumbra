@@ -27,6 +27,6 @@ visible_log "These commands should all yield results:"
 
 cat <<EOF
   * pcli -n http://localhost:8080 q ibc client 07-tendermint-0
-  * pcli -n http://localhost:8080 q ibc channel transfer channel-0
+  * pcli -n http://localhost:8080 q ibc channel --channel-id 0
   * pcli -n http://localhost:8080 q ibc connection connection-0
 EOF

@@ -87,8 +87,8 @@ mod tests {
         fn limb_value_addition_roundtrip(value1: u64, value2: u64) {
             let value = Value::from(value1);
             let value2 = Value::from(value2);
-            let limbs = value.to_limbs().unwrap();
-            let limbs2 = value2.to_limbs().unwrap();
+            let limbs = value.to_limbs().expect("unable to convert to limbs");
+            let limbs2 = value2.to_limbs().expect("unable to convert to limbs");
             let limbs3 = [
                 limbs[0].0 + limbs2[0].0,
                 limbs[1].0 + limbs2[1].0,
@@ -102,7 +102,7 @@ mod tests {
         #[test]
         fn limb_value_roundtrip(value: u64) {
             let value = Value::from(value);
-            let limbs = value.to_limbs().unwrap();
+            let limbs = value.to_limbs().expect("unable to convert to limbs");
             let value2 = Value::from_limbs(limbs[0], limbs[1], limbs[2], limbs[3]);
             assert_eq!(value.0, value2.0);
         }
@@ -114,7 +114,7 @@ mod tests {
             let value = Value::from(value);
             let (ciphertext, proof) = value
                 .transparent_encrypt(&encryption_key, &mut rng)
-                .unwrap();
+                .expect("unable to encrypt");
 
             assert!(proof.verify(&ciphertext, &encryption_key).is_ok());
         }

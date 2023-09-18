@@ -9,13 +9,19 @@ fn detect_clues(dk: &fmd::DetectionKey, clues: &[fmd::Clue]) -> usize {
 
 fn create_clues(ck: &fmd::ExpandedClueKey, precision: usize) -> Vec<fmd::Clue> {
     (0..1024)
-        .map(|_| ck.create_clue(precision, OsRng).unwrap())
+        .map(|_| {
+            ck.create_clue(precision, OsRng)
+                .expect("precision must not be too large")
+        })
         .collect::<Vec<_>>()
 }
 
 fn bench(c: &mut Criterion) {
     let dk = fmd::DetectionKey::new(OsRng);
-    let ck = dk.clue_key().expand().unwrap();
+    let ck = dk
+        .clue_key()
+        .expand()
+        .expect("clue key bytes must be valid");
 
     let clues = vec![
         (4, create_clues(&ck, 4)),

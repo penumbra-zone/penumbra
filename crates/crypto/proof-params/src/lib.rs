@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 use ark_groth16::{PreparedVerifyingKey, ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalDeserialize;
 use decaf377::Bls12_377;
@@ -8,7 +9,10 @@ pub const GROTH16_PROOF_LENGTH_BYTES: usize = 192;
 
 mod traits;
 
-pub use traits::{ParameterSetup, ProvingKeyExt, VerifyingKeyExt};
+pub use traits::{
+    generate_constraint_matrices, generate_prepared_test_parameters, generate_test_parameters,
+    DummyWitness, ProvingKeyExt, VerifyingKeyExt,
+};
 
 #[cfg(feature = "proving-keys")]
 mod proving_keys;

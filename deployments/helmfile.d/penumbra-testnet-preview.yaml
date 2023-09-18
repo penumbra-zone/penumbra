@@ -1,0 +1,69 @@
+---
+releases:
+  - name: penumbra-testnet-preview
+    chart: ../charts/penumbra-network
+    values:
+      - persistence:
+          enabled: true
+          size: 50G
+      - preserve_lb_svc: true
+      - only_lb_svc: false
+      - image:
+          tag: main
+      - network:
+          external_addresses: "35.192.203.35:26656,34.28.180.178:26656"
+      - part_of: penumbra-testnet-preview
+      # Sidecar vars file for storing external ips. The "penumbra-network" chart
+      # doesn't read these vars, but the "get-lb-ips" script writes them there,
+      # and they've been manually duplicated above in the values.network.external_addresses field.
+      - vars/penumbra-testnet-preview-ips.yml
+
+  - name: penumbra-testnet-preview-nodes
+    chart: ../charts/penumbra-node
+    needs:
+      - penumbra-testnet-preview
+    values:
+      - ingressRoute:
+          enabled: true
+          hosts:
+            pd: grpc.testnet-preview.penumbra.zone
+            tm: rpc.testnet-preview.penumbra.zone
+          secretName: penumbra-testnet-preview-wildcard
+      - preserve_lb_svc: true
+      - only_lb_svc: false
+      - image:
+          tag: main
+      # Communicate intra-cluster to the private validator rpc address.
+      - penumbra_bootstrap_node_tendermint_rpc_url: "http://penumbra-testnet-preview-val-0:26657"
+      - nodes:
+          # We intentionally exclude external IPs in this declaration, but include them
+          # in the external vars/ file, which is generated via `./scripts/get-lb-ips penumbra-devnet`.
+          - moniker: phobos
+          - moniker: deimos
+      - persistence:
+          enabled: true
+          size: 50G
+      - part_of: penumbra-testnet-preview
+      # empty vars file for storing external ips
+      - vars/penumbra-testnet-preview-nodes-ips.yml
+
+  - name: penumbra-testnet-preview-metrics
+    chart: ../charts/penumbra-metrics
+    values:
+      - ingressRoute:
+          enabled: true
+          hosts:
+            grafana: grafana.testnet-preview.penumbra.zone
+          secretName: penumbra-testnet-preview-wildcard
+      - scrape_configs:
+          # Must match settings from "penumbra-node" chart
+          numFullNodes: 2
+          fmtFullNodeSvc: "penumbra-testnet-preview-nodes-fn-%d"
+          # Must match settings from "penumbra-network" chart
+          numValidators: 2
+          fmtValidatorSvc: "penumbra-testnet-preview-val-%d"
+      - image:
+          tag: main
+      - persistence:
+          enabled: true
+          size: 10G

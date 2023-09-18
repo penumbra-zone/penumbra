@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 012a287e1f34e2196d0936bf83eebf318ed7e32b5770ca09fbf3c5a42532a7d9 # shrinks to seed_phrase_randomness = [0, 147, 120, 164, 112, 216, 214, 148, 86, 42, 58, 15, 58, 68, 159, 66, 185, 30, 143, 239, 67, 91, 135, 64, 3, 229, 245, 127, 95, 253, 45, 222], incorrect_seed_phrase_randomness = [2, 213, 138, 24, 182, 233, 46, 0, 14, 87, 160, 137, 130, 75, 91, 220, 38, 17, 219, 177, 185, 25, 15, 48, 127, 232, 65, 170, 107, 241, 10, 238], spend_auth_randomizer = BigInt([11157411907499961512, 3695312772271047997, 1336443116240752099, 89537063999159638]), value_amount = 57, v_blinding = BigInt([4043089063310689772, 3831438451173389786, 16670315344678707725, 206829689043777334])

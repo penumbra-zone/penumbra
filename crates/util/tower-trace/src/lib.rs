@@ -1,8 +1,6 @@
+#![deny(clippy::unwrap_used)]
 /// A vendored copy of the unpublished `tracing-tower` crate.
 pub mod trace;
-
-mod request_ext;
-pub use request_ext::RequestExt;
 
 use std::net::SocketAddr;
 
@@ -17,4 +15,14 @@ pub fn remote_addr(req: &http::Request<()>) -> Option<SocketAddr> {
     req.extensions()
         .get::<TcpConnectInfo>()
         .and_then(|i| i.remote_addr())
+}
+
+pub mod v034 {
+    mod request_ext;
+    pub use request_ext::RequestExt;
+}
+
+pub mod v037 {
+    mod request_ext;
+    pub use request_ext::RequestExt;
 }

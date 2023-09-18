@@ -146,15 +146,21 @@ impl Builder {
             for _d in displays.iter() {
                 display_to_base.push(base_index);
             }
-            display_regexes.push(displays.iter().map(|d| Regex::new(d).unwrap()).collect());
+            display_regexes.push(
+                displays
+                    .iter()
+                    .map(|d| Regex::new(d).expect("unable to parse display regex"))
+                    .collect(),
+            );
         }
 
         Registry {
-            base_set: RegexSet::new(self.base_regexes.iter()).unwrap(),
+            base_set: RegexSet::new(self.base_regexes.iter())
+                .expect("unable to parse base regexes"),
             base_regexes: self
                 .base_regexes
                 .iter()
-                .map(|r| Regex::new(r).unwrap())
+                .map(|r| Regex::new(r).expect("unable to parse base regex"))
                 .collect(),
             constructors: self.constructors,
             display_set: RegexSet::new(
@@ -162,7 +168,7 @@ impl Builder {
                     .iter()
                     .flat_map(|displays| displays.iter()),
             )
-            .unwrap(),
+            .expect("unable to parse display regexes"),
             display_to_base,
             display_regexes,
         }

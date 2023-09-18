@@ -52,7 +52,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
                 return (
                     trusted_client_state
                         .with_header(verified_header.clone())
-                        .unwrap()
+                        .expect("able to add header to client state")
                         .with_frozen_height(verified_header.height()),
                     verified_consensus_state,
                 );
@@ -66,11 +66,11 @@ pub(crate) trait Ics2ClientExt: StateWrite {
         let next_consensus_state = self
             .next_verified_consensus_state(&client_id, verified_header.height())
             .await
-            .unwrap();
+            .expect("able to get next verified consensus state");
         let prev_consensus_state = self
             .prev_verified_consensus_state(&client_id, verified_header.height())
             .await
-            .unwrap();
+            .expect("able to get previous verified consensus state");
 
         // case 1: if we have a verified consensus state previous to this header, verify that this
         // header's timestamp is greater than or equal to the stored consensus state's timestamp
@@ -79,7 +79,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
                 return (
                     trusted_client_state
                         .with_header(verified_header.clone())
-                        .unwrap()
+                        .expect("able to add header to client state")
                         .with_frozen_height(verified_header.height()),
                     verified_consensus_state,
                 );
@@ -92,7 +92,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
                 return (
                     trusted_client_state
                         .with_header(verified_header.clone())
-                        .unwrap()
+                        .expect("able to add header to client state")
                         .with_frozen_height(verified_header.height()),
                     verified_consensus_state,
                 );
@@ -102,7 +102,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
         (
             trusted_client_state
                 .with_header(verified_header.clone())
-                .unwrap(),
+                .expect("able to add header to client state"),
             verified_consensus_state,
         )
     }

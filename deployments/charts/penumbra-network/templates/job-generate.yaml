@@ -1,0 +1,119 @@
+{{ $count := (.Values.network.num_validators | int) }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "penumbra-network.fullname" . }}-pd-testnet-generate
+  labels:
+    app.kubernetes.io/component: genesis-generator
+    {{- include "penumbra-network.labels" . | nindent 4 }}
+  annotations:
+    # Use a pre-install hook, to create genesis before validators are deployed.
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "helm.sh/hook-weight": "40"
+spec:
+  template:
+    metadata:
+      name: {{ include "penumbra-network.fullname" . }}-pd-testnet-generate
+      labels:
+        app.kubernetes.io/component: genesis-generator
+        {{- include "penumbra-network.labels" . | nindent 4 }}
+    spec:
+      restartPolicy: Never
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: shared-config
+          persistentVolumeClaim:
+            claimName: {{ include "penumbra-network.fullname" . }}-shared-config
+
+      # Prepare config volumes for each validator, so we can copy per-val dirs
+      # to each PV after network generation.
+      {{ range $i,$e := until $count }}
+      {{ $val_name := printf "%s-val-%d" (include "penumbra-network.fullname" $) $i }}
+      {{ $pvc_name := printf "%s-config" $val_name }}
+        - name: {{ $val_name }}-config
+      {{- if $.Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ $pvc_name }}
+      {{- else }}
+          emptyDir: {}
+      {{- end }}
+      {{- end }}
+
+        # Use custom `--validators-input-file` JSON.
+        - name: shared-config-vals
+          configMap:
+            name: {{ include "penumbra-network.fullname" . }}-genesis-validators
+            items:
+              - key: "validators.json"
+                path: "validators.json"
+
+      containers:
+        - name: pd
+          securityContext:
+            # Run as root during init, so we can chown to penumbra & cometbft uids.
+            # The application itself will run as a normal user.
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: true
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              set -eux
+              find /penumbra-config/ | sort
+              pd testnet --testnet-dir /penumbra-config/testnet_data generate \
+                {{- if .Values.network.chain_id }}
+                --chain-id {{ .Values.network.chain_id }} \
+                {{- end }}
+                {{- if .Values.network.preserve_chain_id }}
+                --preserve-chain-id \
+                {{- end }}
+                --validators-input-file /penumbra/validators.json \
+                --external-addresses {{ .Values.network.external_addresses }}
+
+              echo "Looks like we're dealing with '{{ $count }}' vals"
+              # copy validator configs to volume mounts
+              {{ range $i,$e := until $count }}
+              {{ $val_name := printf "%s-val-%d" (include "penumbra-network.fullname" $) $i }}
+
+              cp -av /penumbra-config/testnet_data/node{{ $i }}/ /penumbra-config/{{ $val_name }}/
+
+              # set ownership for pd user
+              chown -R 1000:1000 /penumbra-config/{{ $val_name }}
+
+              # set ownership for tendermint configs to match tendermint container "tmuser" uid/gid
+              chown -R 100:1000 /penumbra-config/{{ $val_name }}/node{{ $i }}/tendermint
+
+              ls -lsR /penumbra-config
+              {{ end }}
+
+              echo "Network config generated, exiting"
+              exit 0
+
+          volumeMounts:
+            - name: shared-config
+              mountPath: /penumbra-config
+            - name: shared-config-vals
+              mountPath: /penumbra
+              readOnly: true
+            {{ range $i,$e := until $count }}
+            {{ $val_name := printf "%s-val-%d" (include "penumbra-network.fullname" $) $i }}
+            - name: {{ $val_name }}-config
+              mountPath: /penumbra-config/{{ $val_name }}
+            {{ end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

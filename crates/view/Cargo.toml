@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-view"
-version = "0.59.0"
+version = "0.60.0"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"
 description = "The view RPC library for the Penumbra Zone"
@@ -39,7 +39,7 @@ penumbra-compact-block = { path = "../core/component/compact-block", default-fea
 penumbra-app = { path = "../core/app" }
 penumbra-transaction = { path = "../core/transaction" }
 
-ibc-types = { version = "0.3.0", default-features = false }
+ibc-types = { version = "0.6.0", default-features = false }
 
 ark-std = { version = "0.4", default-features = false }
 decaf377 = { version = "0.5", features = ["r1cs"] }
@@ -52,7 +52,7 @@ serde_json = "1"
 serde = { version = "1", features = ["derive"] }
 tracing = "0.1"
 tracing-subscriber = "0.2"
-tonic = "0.8.1"
+tonic = "0.9"
 url = "2"
 bytes = { version = "1", features = ["serde"] }
 prost = "0.11"
@@ -64,7 +64,7 @@ parking_lot = "0.12"
 clap = { version = "3", features = ["derive"] }
 camino = "1"
 async-trait = "0.1"
-tendermint = "0.32.0"
+tendermint = "0.33.0"
 sha2 = "0.10.1"
 ed25519-consensus = "2.1"
 r2d2 = "0.8"

@@ -1,9 +1,13 @@
 [package]
 name = "penumbra-storage"
-version = "0.59.0"
+version = "0.60.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+migration = []
+default = ["metrics"]
 
 [dependencies]
 jmt = "0.6"
@@ -16,14 +20,14 @@ tracing = "0.1"
 rocksdb = "0.21.0"
 futures = "0.3"
 hex = "0.4"
-metrics = "0.19.0"
+metrics = { version = "0.19.0", optional = true }
 parking_lot = "0.12"
 pin-project = "1.0.12"
-smallvec = { version = "1.10" , features = ["union" , "const_generics"] }
+smallvec = { version = "1.10", features = ["union", "const_generics"] }
 
 # Tendermint/IBC crates 
 ics23 = "0.10.1"
-tendermint = { version = "0.32.0", default-features = false }
+tendermint = { version = "0.33.0", default-features = false }
 borsh = "0.10.3"
 sha2 = "0.10.6"
 

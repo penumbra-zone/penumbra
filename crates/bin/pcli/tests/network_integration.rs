@@ -53,7 +53,7 @@ fn load_wallet_into_tmpdir() -> TempDir {
     let mut setup_cmd = Command::cargo_bin("pcli").unwrap();
     setup_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "keys",
             "import",
@@ -68,16 +68,18 @@ fn load_wallet_into_tmpdir() -> TempDir {
     tmpdir
 }
 
+fn load_string_to_file(content: String, tmpdir: &TempDir) -> NamedTempFile {
+    let mut file = NamedTempFile::new_in(tmpdir.path()).unwrap();
+    use std::io::Write;
+    write!(file, "{}", content).unwrap();
+    file
+}
+
 /// Sync the wallet.
 fn sync(tmpdir: &TempDir) {
     let mut sync_cmd = Command::cargo_bin("pcli").unwrap();
     sync_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "view",
-            "sync",
-        ])
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "sync"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     sync_cmd.assert().success();
 }
@@ -88,7 +90,7 @@ fn get_validator(tmpdir: &TempDir) -> String {
     let mut validator_cmd = Command::cargo_bin("pcli").unwrap();
     validator_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "query",
             "validator",
@@ -120,7 +122,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
     let mut send_cmd = Command::cargo_bin("pcli").unwrap();
     send_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "send",
@@ -142,7 +144,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
     let mut view_cmd = Command::cargo_bin("pcli").unwrap();
     view_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "view",
             "tx",
@@ -189,12 +191,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
     // Now we inspect our wallet balance to ensure the funds were transferred correctly.
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "view",
-            "balance",
-        ])
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     // The 1 is the index of the address which should be separated from the
     // test_asset only by whitespace.
@@ -207,7 +204,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
     let mut send_cmd = Command::cargo_bin("pcli").unwrap();
     send_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "send",
@@ -225,12 +222,7 @@ fn transaction_sweep() {
 
     let mut sweep_cmd = Command::cargo_bin("pcli").unwrap();
     sweep_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "tx",
-            "sweep",
-        ])
+        .args(["--home", tmpdir.path().to_str().unwrap(), "tx", "sweep"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     sweep_cmd.assert().success();
 }
@@ -253,7 +245,7 @@ fn delegate_and_undelegate() {
         let mut delegate_cmd = Command::cargo_bin("pcli").unwrap();
         delegate_cmd
             .args([
-                "--data-path",
+                "--home",
                 tmpdir.path().to_str().unwrap(),
                 "tx",
                 "delegate",
@@ -278,12 +270,7 @@ fn delegate_and_undelegate() {
     // Check we have some of the delegation token for that validator now.
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "view",
-            "balance",
-        ])
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     balance_cmd
         .assert()
@@ -297,7 +284,7 @@ fn delegate_and_undelegate() {
         let mut undelegate_cmd = Command::cargo_bin("pcli").unwrap();
         undelegate_cmd
             .args([
-                "--data-path",
+                "--home",
                 tmpdir.path().to_str().unwrap(),
                 "tx",
                 "undelegate",
@@ -322,7 +309,7 @@ fn delegate_and_undelegate() {
     let mut undelegate_claim_cmd = Command::cargo_bin("pcli").unwrap();
     undelegate_claim_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "undelegate-claim",
@@ -341,7 +328,7 @@ fn lp_management() {
     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
     sell_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -354,12 +341,7 @@ fn lp_management() {
 
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "view",
-            "balance",
-        ])
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
     let o = balance_cmd
@@ -385,7 +367,7 @@ fn lp_management() {
     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
     close_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -397,12 +379,7 @@ fn lp_management() {
 
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "view",
-            "balance",
-        ])
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
     let o = balance_cmd
@@ -428,7 +405,7 @@ fn lp_management() {
     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
     close_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -442,7 +419,7 @@ fn lp_management() {
     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
     sell_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -455,7 +432,7 @@ fn lp_management() {
     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
     sell_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -468,7 +445,7 @@ fn lp_management() {
     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
     sell_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -482,12 +459,7 @@ fn lp_management() {
     // Validate there are three opened position NFTs
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "view",
-            "balance",
-        ])
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
     let o = balance_cmd
@@ -502,7 +474,7 @@ fn lp_management() {
     let mut closeall_cmd = Command::cargo_bin("pcli").unwrap();
     closeall_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -514,12 +486,7 @@ fn lp_management() {
     // Validate there are no longer any opened position NFTs
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "view",
-            "balance",
-        ])
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
     let o = balance_cmd
@@ -537,7 +504,7 @@ fn lp_management() {
     let mut withdrawall_cmd = Command::cargo_bin("pcli").unwrap();
     withdrawall_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -549,12 +516,7 @@ fn lp_management() {
     // Validate there are no longer any closed position NFTs
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "view",
-            "balance",
-        ])
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
     let o = balance_cmd
@@ -584,12 +546,7 @@ fn swap() {
 
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "view",
-            "balance",
-        ])
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
     balance_cmd
@@ -611,7 +568,7 @@ fn swap() {
     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
     sell_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -643,7 +600,7 @@ fn swap() {
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
     swap_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "swap",
@@ -660,12 +617,7 @@ fn swap() {
     thread::sleep(*UNBONDING_DURATION);
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "view",
-            "balance",
-        ])
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
     balance_cmd
@@ -687,7 +639,7 @@ fn swap() {
     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
     close_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -703,7 +655,7 @@ fn swap() {
     let mut withdraw_cmd = Command::cargo_bin("pcli").unwrap();
     withdraw_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -717,12 +669,7 @@ fn swap() {
     thread::sleep(*UNBONDING_DURATION);
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
-        .args([
-            "--data-path",
-            tmpdir.path().to_str().unwrap(),
-            "view",
-            "balance",
-        ])
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
     balance_cmd
@@ -751,7 +698,7 @@ fn swap() {
 //     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
 //     sell_cmd
 //         .args([
-//             "--data-path",
+//             "--home",
 //             tmpdir.path().to_str().unwrap(),
 //             "tx",
 //             "position",
@@ -765,7 +712,7 @@ fn swap() {
 //     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
 //     balance_cmd
 //         .args([
-//             "--data-path",
+//             "--home",
 //             tmpdir.path().to_str().unwrap(),
 //             "view",
 //             "balance",
@@ -795,7 +742,7 @@ fn swap() {
 //     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
 //     swap_cmd
 //         .args([
-//             "--data-path",
+//             "--home",
 //             tmpdir.path().to_str().unwrap(),
 //             "tx",
 //             "swap",
@@ -813,7 +760,7 @@ fn swap() {
 //     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
 //     balance_cmd
 //         .args([
-//             "--data-path",
+//             "--home",
 //             tmpdir.path().to_str().unwrap(),
 //             "view",
 //             "balance",
@@ -843,7 +790,7 @@ fn governance_submit_proposal() {
     let mut template_cmd = Command::cargo_bin("pcli").unwrap();
     template_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "proposal",
@@ -859,7 +806,7 @@ fn governance_submit_proposal() {
     let mut submit_cmd = Command::cargo_bin("pcli").unwrap();
     submit_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "proposal",
@@ -874,7 +821,7 @@ fn governance_submit_proposal() {
     let mut proposals_cmd = Command::cargo_bin("pcli").unwrap();
     proposals_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "query",
             "governance",
@@ -893,7 +840,7 @@ fn duplicate_consensus_key_forbidden() {
     let mut query_cmd = Command::cargo_bin("pcli").unwrap();
     query_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "query",
             "validator",
@@ -911,7 +858,7 @@ fn duplicate_consensus_key_forbidden() {
     let mut template_cmd = Command::cargo_bin("pcli").unwrap();
     template_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "validator",
             "definition",
@@ -941,7 +888,7 @@ fn duplicate_consensus_key_forbidden() {
     let mut submit_cmd = Command::cargo_bin("pcli").unwrap();
     submit_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "validator",
             "definition",
@@ -964,7 +911,7 @@ fn mismatched_consensus_key_update_fails() {
     let mut template_cmd = Command::cargo_bin("pcli").unwrap();
     template_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "validator",
             "definition",
@@ -1032,7 +979,7 @@ fn mismatched_consensus_key_update_fails() {
     let mut resubmit_cmd = Command::cargo_bin("pcli").unwrap();
     resubmit_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "validator",
             "definition",
@@ -1054,7 +1001,7 @@ fn test_orders() {
     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
     close_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -1065,7 +1012,7 @@ fn test_orders() {
     let mut withdraw_cmd = Command::cargo_bin("pcli").unwrap();
     withdraw_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -1078,7 +1025,7 @@ fn test_orders() {
     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
     sell_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -1094,7 +1041,7 @@ fn test_orders() {
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
     swap_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "swap",
@@ -1120,7 +1067,7 @@ fn test_orders() {
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
     swap_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "swap",
@@ -1143,7 +1090,7 @@ fn test_orders() {
     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
     close_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -1154,7 +1101,7 @@ fn test_orders() {
     let mut withdraw_cmd = Command::cargo_bin("pcli").unwrap();
     withdraw_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -1167,7 +1114,7 @@ fn test_orders() {
     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
     sell_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -1183,7 +1130,7 @@ fn test_orders() {
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
     swap_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "swap",
@@ -1208,7 +1155,7 @@ fn test_orders() {
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
     swap_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "swap",
@@ -1231,7 +1178,7 @@ fn test_orders() {
     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
     close_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -1242,7 +1189,7 @@ fn test_orders() {
     let mut withdraw_cmd = Command::cargo_bin("pcli").unwrap();
     withdraw_cmd
         .args([
-            "--data-path",
+            "--home",
             tmpdir.path().to_str().unwrap(),
             "tx",
             "position",
@@ -1250,4 +1197,118 @@ fn test_orders() {
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     withdraw_cmd.assert().success();
+}
+
+#[ignore]
+#[test]
+fn delegate_submit_proposal_and_vote() {
+    let tmpdir = load_wallet_into_tmpdir();
+
+    // Get a validator from the testnet.
+    let validator = get_validator(&tmpdir);
+
+    // Now undelegate. We attempt `max_attempts` times in case an epoch boundary passes
+    // while we prepare the delegation. See issues #1522, #2047.
+    let max_attempts = 5;
+
+    let mut num_attempts = 0;
+    loop {
+        // Delegate a tiny bit of penumbra to the validator.
+        let mut delegate_cmd = Command::cargo_bin("pcli").unwrap();
+        delegate_cmd
+            .args([
+                "--home",
+                tmpdir.path().to_str().unwrap(),
+                "tx",
+                "delegate",
+                "1penumbra",
+                "--to",
+                validator.as_str(),
+            ])
+            .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+        let delegation_result = delegate_cmd.assert().try_success();
+
+        // If the undelegation command succeeded, we can exit this loop.
+        if delegation_result.is_ok() {
+            break;
+        } else {
+            num_attempts += 1;
+            if num_attempts >= max_attempts {
+                panic!("Exceeded max attempts for fallible command");
+            }
+        }
+    }
+
+    // Check we have some of the delegation token for that validator now.
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    balance_cmd
+        .assert()
+        .stdout(predicate::str::is_match(validator.as_str()).unwrap());
+
+    let mut proposal_template_cmd = Command::cargo_bin("pcli").unwrap();
+    let template = proposal_template_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "proposal",
+            "template",
+            "signaling",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS))
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let template_str = String::from_utf8(template).unwrap();
+    let template_file = load_string_to_file(template_str, &tmpdir);
+    let template_path = template_file.path().to_str().unwrap();
+
+    let mut submit_proposal_cmd = Command::cargo_bin("pcli").unwrap();
+    submit_proposal_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "proposal",
+            "submit",
+            "--file",
+            template_path,
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    submit_proposal_cmd.assert().success();
+    sync(&tmpdir);
+
+    let mut proposals_cmd = Command::cargo_bin("pcli").unwrap();
+    proposals_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "query",
+            "governance",
+            "list-proposals",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS))
+        .assert()
+        .success()
+        .stdout(predicate::str::is_match("A short title").unwrap());
+
+    let mut vote_cmd = Command::cargo_bin("pcli").unwrap();
+    vote_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "vote",
+            "yes",
+            "--on",
+            "0",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS))
+        .assert()
+        .success();
 }

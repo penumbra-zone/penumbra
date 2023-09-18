@@ -88,18 +88,50 @@ impl ToConstraintField<Fq> for BatchSwapOutputData {
     fn to_field_elements(&self) -> Option<Vec<Fq>> {
         let mut public_inputs = Vec::new();
         let delta_1 = U128x128::from(self.delta_1);
-        public_inputs.extend(delta_1.to_field_elements().unwrap());
-        public_inputs.extend(U128x128::from(self.delta_2).to_field_elements().unwrap());
-        public_inputs.extend(U128x128::from(self.lambda_1).to_field_elements().unwrap());
-        public_inputs.extend(U128x128::from(self.lambda_2).to_field_elements().unwrap());
-        public_inputs.extend(U128x128::from(self.unfilled_1).to_field_elements().unwrap());
-        public_inputs.extend(U128x128::from(self.unfilled_2).to_field_elements().unwrap());
-        public_inputs.extend(Fq::from(self.height).to_field_elements().unwrap());
-        public_inputs.extend(self.trading_pair.to_field_elements().unwrap());
+        public_inputs.extend(
+            delta_1
+                .to_field_elements()
+                .expect("delta_1 is a Bls12-377 field member"),
+        );
+        public_inputs.extend(
+            U128x128::from(self.delta_2)
+                .to_field_elements()
+                .expect("U128x128 types are Bls12-377 field members"),
+        );
+        public_inputs.extend(
+            U128x128::from(self.lambda_1)
+                .to_field_elements()
+                .expect("U128x128 types are Bls12-377 field members"),
+        );
+        public_inputs.extend(
+            U128x128::from(self.lambda_2)
+                .to_field_elements()
+                .expect("U128x128 types are Bls12-377 field members"),
+        );
+        public_inputs.extend(
+            U128x128::from(self.unfilled_1)
+                .to_field_elements()
+                .expect("U128x128 types are Bls12-377 field members"),
+        );
+        public_inputs.extend(
+            U128x128::from(self.unfilled_2)
+                .to_field_elements()
+                .expect("U128x128 types are Bls12-377 field members"),
+        );
+        public_inputs.extend(
+            Fq::from(self.height)
+                .to_field_elements()
+                .expect("Fq types are Bls12-377 field members"),
+        );
+        public_inputs.extend(
+            self.trading_pair
+                .to_field_elements()
+                .expect("trading_pair is a Bls12-377 field member"),
+        );
         public_inputs.extend(
             Fq::from(self.epoch_starting_height)
                 .to_field_elements()
-                .unwrap(),
+                .expect("Fq types are Bls12-377 field members"),
         );
         Some(public_inputs)
     }
@@ -297,12 +329,12 @@ impl TryFrom<BatchSwapOutputDataResponse> for BatchSwapOutputData {
 
 #[cfg(test)]
 mod tests {
-    use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16, ProvingKey, VerifyingKey};
+    use ark_groth16::{r1cs_to_qap::LibsnarkReduction, Groth16};
     use ark_relations::r1cs::ConstraintSynthesizer;
     use ark_snark::SNARK;
     use decaf377::Bls12_377;
     use penumbra_asset::asset;
-    use penumbra_proof_params::ParameterSetup;
+    use penumbra_proof_params::{generate_test_parameters, DummyWitness};
     use rand_core::OsRng;
 
     use super::*;
@@ -371,19 +403,19 @@ mod tests {
         }
     }
 
-    impl ParameterSetup for ProRataOutputCircuit {
-        fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+    impl DummyWitness for ProRataOutputCircuit {
+        fn with_dummy_witness() -> Self {
             let trading_pair = TradingPair {
                 asset_1: asset::Cache::with_known_assets()
                     .get_unit("upenumbra")
-                    .unwrap()
+                    .expect("upenumbra denom should always be known by the asset registry")
                     .id(),
                 asset_2: asset::Cache::with_known_assets()
                     .get_unit("nala")
-                    .unwrap()
+                    .expect("nala denom should always be known by the asset registry")
                     .id(),
             };
-            let circuit = ProRataOutputCircuit {
+            Self {
                 delta_1_i: Amount::from(1u32),
                 delta_2_i: Amount::from(1u32),
                 lambda_1_i: Amount::from(1u32),
@@ -399,12 +431,7 @@ mod tests {
                     trading_pair,
                     epoch_starting_height: 1,
                 },
-            };
-            let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
-                circuit, &mut OsRng,
-            )
-            .expect("can perform circuit specific setup");
-            (pk, vk)
+            }
         }
     }
 
@@ -441,8 +468,8 @@ mod tests {
             bsod,
         };
 
-        let (pk, vk) = ProRataOutputCircuit::generate_test_parameters();
         let mut rng = OsRng;
+        let (pk, vk) = generate_test_parameters::<ProRataOutputCircuit>(&mut rng);
 
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
             .expect("should be able to form proof");

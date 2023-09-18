@@ -29,7 +29,7 @@ fn prove(position: tct::Position, note: Note, nk: NullifierKey, nullifier: Nulli
 
 fn nullifier_derivation_proving_time(c: &mut Criterion) {
     let seed_phrase = SeedPhrase::generate(OsRng);
-    let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+    let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
     let fvk_sender = sk_sender.full_viewing_key();
     let ivk_sender = fvk_sender.incoming();
     let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());

@@ -6,20 +6,19 @@ use decaf377::{Bls12_377, Fq};
 
 use ark_ff::ToConstraintField;
 use ark_groth16::{
-    r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey,
+    r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey,
 };
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
-use rand_core::OsRng;
 use tct::StateCommitment;
 
 use crate::{Note, Rseed};
 use penumbra_asset::Value;
 use penumbra_keys::keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
-use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 use penumbra_sct::{Nullifier, NullifierVar};
 
 /// Groth16 proof for correct nullifier derivation.
@@ -28,7 +27,6 @@ pub struct NullifierDerivationCircuit {
     // Witnesses
     /// The nullifier deriving key.
     nk: NullifierKey,
-
     // Public inputs
     /// the position of the spent note.
     pub position: tct::Position,
@@ -73,10 +71,10 @@ impl ConstraintSynthesizer<Fq> for NullifierDerivationCircuit {
     }
 }
 
-impl ParameterSetup for NullifierDerivationCircuit {
-    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
-        let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);
-        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+impl DummyWitness for NullifierDerivationCircuit {
+    fn with_dummy_witness() -> Self {
+        let seed_phrase = SeedPhrase::from_randomness(&[b'f'; 32]);
+        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -91,20 +89,19 @@ impl ParameterSetup for NullifierDerivationCircuit {
         let nullifier = Nullifier(Fq::from(1));
         let mut sct = tct::Tree::new();
         let note_commitment = note.commit();
-        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let state_commitment_proof = sct.witness(note_commitment).unwrap();
+        sct.insert(tct::Witness::Keep, note_commitment)
+            .expect("able to insert note commitment into SCT");
+        let state_commitment_proof = sct
+            .witness(note_commitment)
+            .expect("able to witness just-inserted note commitment");
         let position = state_commitment_proof.position();
 
-        let circuit = NullifierDerivationCircuit {
+        Self {
             note_commitment,
             nk,
             nullifier,
             position,
-        };
-        let (pk, vk) =
-            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
-                .expect("can perform circuit specific setup");
-        (pk, vk)
+        }
     }
 }
 
@@ -148,9 +145,20 @@ impl NullifierDerivationProof {
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
-        public_inputs.extend(nullifier.0.to_field_elements().unwrap());
-        public_inputs.extend(note_commitment.0.to_field_elements().unwrap());
-        public_inputs.extend(position.to_field_elements().unwrap());
+        public_inputs.extend(
+            nullifier
+                .0
+                .to_field_elements()
+                .ok_or_else(|| anyhow::anyhow!("could not convert nullifier to field elements"))?,
+        );
+        public_inputs.extend(note_commitment.0.to_field_elements().ok_or_else(|| {
+            anyhow::anyhow!("could not convert note commitment to field elements")
+        })?);
+        public_inputs.extend(
+            position
+                .to_field_elements()
+                .ok_or_else(|| anyhow::anyhow!("could not convert position to field elements"))?,
+        );
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
@@ -196,6 +204,7 @@ mod tests {
     use super::*;
     use penumbra_asset::{asset, Value};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_proof_params::generate_prepared_test_parameters;
     use penumbra_sct::Nullifier;
     use penumbra_tct as tct;
     use proptest::prelude::*;
@@ -207,12 +216,12 @@ mod tests {
     #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
     fn nullifier_derivation_proof_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), value_amount in 2..200u64) {
-            let (pk, vk) = NullifierDerivationCircuit::generate_prepared_test_parameters();
-
             let mut rng = OsRng;
+            let (pk, vk) = generate_prepared_test_parameters::<NullifierDerivationCircuit>(&mut rng);
 
-            let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
-            let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
             let fvk_sender = sk_sender.full_viewing_key();
             let ivk_sender = fvk_sender.incoming();
             let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());

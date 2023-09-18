@@ -117,7 +117,10 @@ impl TransactionPlan {
         // Hash the memo and save the memo key for use with outputs later.
         let mut memo_key: Option<PayloadKey> = None;
         if self.memo_plan.is_some() {
-            let memo_plan = self.memo_plan.clone().unwrap();
+            let memo_plan = self
+                .memo_plan
+                .clone()
+                .expect("memo_plan must be present in TransactionPlan");
             let memo_ciphertext = memo_plan.memo().expect("can compute ciphertext");
             state.update(memo_ciphertext.effect_hash().as_bytes());
             memo_key = Some(memo_plan.key);
@@ -486,15 +489,8 @@ impl EffectingData for PositionRewardClaim {
 
 impl EffectingData for DetectionData {
     fn effect_hash(&self) -> EffectHash {
-        let mut state = create_personalized_state(DetectionData::TYPE_URL);
-
-        let num_clues = self.fmd_clues.len() as u32;
-        state.update(&num_clues.to_le_bytes());
-        for fmd_clue in &self.fmd_clues {
-            state.update(fmd_clue.effect_hash().as_bytes());
-        }
-
-        EffectHash(state.finalize().as_array().clone())
+        let effecting_data: pbt::DetectionData = self.clone().into();
+        hash_proto_effecting_data(DetectionData::TYPE_URL, &effecting_data)
     }
 }
 
@@ -555,7 +551,7 @@ mod tests {
     fn plan_effect_hash_matches_transaction_effect_hash() {
         let rng = OsRng;
         let seed_phrase = SeedPhrase::generate(rng);
-        let sk = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let sk = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk = sk.full_viewing_key();
         let (addr, _dtk) = fvk.incoming().payment_address(0u32.into());
 

@@ -42,7 +42,9 @@ impl TendermintProxyService for TendermintProxy {
         &self,
         req: tonic::Request<GetTxRequest>,
     ) -> Result<tonic::Response<GetTxResponse>, Status> {
-        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
+        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).map_err(|e| {
+            tonic::Status::unavailable(format!("error creating tendermint http client: {e:#?}"))
+        })?;
 
         let req = req.into_inner();
         let hash = req.hash;
@@ -94,7 +96,9 @@ impl TendermintProxyService for TendermintProxy {
         &self,
         req: tonic::Request<BroadcastTxAsyncRequest>,
     ) -> Result<tonic::Response<BroadcastTxAsyncResponse>, Status> {
-        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
+        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).map_err(|e| {
+            tonic::Status::unavailable(format!("error creating tendermint http client: {e:#?}"))
+        })?;
 
         let params = req.into_inner().params;
 
@@ -115,7 +119,9 @@ impl TendermintProxyService for TendermintProxy {
         &self,
         req: tonic::Request<BroadcastTxSyncRequest>,
     ) -> Result<tonic::Response<BroadcastTxSyncResponse>, Status> {
-        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
+        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).map_err(|e| {
+            tonic::Status::unavailable(format!("error creating tendermint http client: {e:#?}"))
+        })?;
 
         let res = client
             .broadcast_tx_sync(req.into_inner().params)
@@ -137,7 +143,9 @@ impl TendermintProxyService for TendermintProxy {
     ) -> Result<tonic::Response<GetStatusResponse>, Status> {
         // generic bounds on HttpClient::new are not well-constructed, so we have to
         // render the URL as a String, then borrow it, then re-parse the borrowed &str
-        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
+        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).map_err(|e| {
+            tonic::Status::unavailable(format!("error creating tendermint http client: {e:#?}"))
+        })?;
 
         let res = client
             .status()
@@ -220,7 +228,9 @@ impl TendermintProxyService for TendermintProxy {
     ) -> Result<tonic::Response<AbciQueryResponse>, Status> {
         // generic bounds on HttpClient::new are not well-constructed, so we have to
         // render the URL as a String, then borrow it, then re-parse the borrowed &str
-        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
+        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).map_err(|e| {
+            tonic::Status::unavailable(format!("error creating tendermint http client: {e:#?}"))
+        })?;
 
         // TODO: how does path validation work on tendermint-rs@29
         let path = req.get_ref().path.clone();
@@ -274,7 +284,9 @@ impl TendermintProxyService for TendermintProxy {
     ) -> Result<tonic::Response<GetBlockByHeightResponse>, Status> {
         // generic bounds on HttpClient::new are not well-constructed, so we have to
         // render the URL as a String, then borrow it, then re-parse the borrowed &str
-        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).unwrap();
+        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).map_err(|e| {
+            tonic::Status::unavailable(format!("error creating tendermint http client: {e:#?}"))
+        })?;
 
         let res = client
             .block(

@@ -1,6 +1,6 @@
 [package]
 name = "pclientd"
-version = "0.59.0"
+version = "0.60.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -34,13 +34,13 @@ serde = { version = "1", features = ["derive"] }
 serde_with = { version = "1.11", features = ["hex"] }
 tracing = "0.1"
 tracing-subscriber = "0.2"
-url = "2"
+url = { version = "2", features = ["serde"] }
 http = "0.2.9"
 http-body = "0.4.5"
 tower = "0.4.0"
-tonic = "0.8.1"
-tonic-web = "0.4.0"
-tonic-reflection = "0.6"
+tonic = "0.9"
+tonic-web = "0.9.0"
+tonic-reflection = "0.9.0"
 bytes = { version = "1", features = ["serde"] }
 prost = "0.11"
 futures = "0.3"
@@ -51,19 +51,19 @@ parking_lot = "0.12"
 clap = { version = "3", features = ["derive", "env"] }
 camino = "1"
 async-trait = "0.1"
-tendermint = "0.32.0"
+tendermint = "0.33.0"
 sha2 = "0.10.1"
 toml = "0.5"
 ed25519-consensus = "2.1"
 atty = "0.2"
+directories = "4.0.1"
 
 [dev-dependencies]
 tempfile = "3.3.0"
 assert_cmd = "2.0"
 base64 = "0.20"
-ibc-types = "0.3.0"
-
-ibc-proto = "0.31.0"
+ibc-types = "0.6.0"
+ibc-proto = { version = "0.33.0", default-features = false, features = ["server"] }
 
 [build-dependencies]
 vergen = "5"

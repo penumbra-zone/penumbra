@@ -1,0 +1,21 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "penumbra-metrics.fullname" . }}
+  labels:
+    app: {{ include "penumbra-metrics.fullname" . }}
+    {{- include "penumbra-metrics.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: grafana-http
+      protocol: TCP
+      name: grafana-http
+    - port: 9090
+      targetPort: prometheus-http
+      protocol: TCP
+      name: prometheus-http
+  selector:
+    {{- include "penumbra-metrics.selectorLabels" . | nindent 4 }}

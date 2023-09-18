@@ -9,9 +9,54 @@ use ark_serialize::CanonicalSerialize;
 use decaf377::Bls12_377;
 use penumbra_dex::{swap::proof::SwapCircuit, swap_claim::proof::SwapClaimCircuit};
 use penumbra_governance::DelegatorVoteCircuit;
-use penumbra_proof_params::{ParameterSetup, ProvingKeyExt, VerifyingKeyExt};
+use penumbra_proof_params::{
+    generate_constraint_matrices, DummyWitness, ProvingKeyExt, VerifyingKeyExt,
+};
+use penumbra_proof_setup::{
+    circuit_degree, combine, log::Hashable, transition, Phase1CRSElements, Phase1Contribution,
+    Phase2Contribution,
+};
 use penumbra_shielded_pool::{NullifierDerivationCircuit, OutputCircuit, SpendCircuit};
 use penumbra_stake::UndelegateClaimCircuit;
+use rand_core::OsRng;
+
+fn generate_parameters<D: DummyWitness>() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+    let matrices = generate_constraint_matrices::<D>();
+
+    let mut rng = OsRng;
+
+    let degree = circuit_degree(&matrices).expect("failed to calculate degree of circuit");
+    let phase1root = Phase1CRSElements::root(degree);
+
+    // Doing two contributions to make sure there's not some weird bug there
+    let phase1contribution = Phase1Contribution::make(&mut rng, phase1root.hash(), &phase1root);
+    let phase1contribution = Phase1Contribution::make(
+        &mut rng,
+        phase1contribution.hash(),
+        &phase1contribution.new_elements,
+    );
+
+    let (extra, phase2root) = transition(&phase1contribution.new_elements, &matrices)
+        .expect("failed to transition between setup phases");
+
+    let phase2contribution = Phase2Contribution::make(&mut rng, phase2root.hash(), &phase2root);
+    let phase2contribution = Phase2Contribution::make(
+        &mut rng,
+        phase2contribution.hash(),
+        &phase2contribution.new_elements,
+    );
+
+    let pk = combine(
+        &matrices,
+        &phase1contribution.new_elements,
+        &phase2contribution.new_elements,
+        &extra,
+    );
+
+    let vk = pk.vk.clone();
+
+    (pk, vk)
+}
 
 fn main() -> Result<()> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -28,23 +73,22 @@ fn main() -> Result<()> {
 
     // Generate the parameters for the current proofs and serialize them
     // to files in the target directory.
-    let (spend_pk, spend_vk) = SpendCircuit::generate_test_parameters();
+    let (spend_pk, spend_vk) = generate_parameters::<SpendCircuit>();
     write_params(&target_dir, "spend", &spend_pk, &spend_vk)?;
-    let (output_pk, output_vk) = OutputCircuit::generate_test_parameters();
+    let (output_pk, output_vk) = generate_parameters::<OutputCircuit>();
     write_params(&target_dir, "output", &output_pk, &output_vk)?;
-    let (swap_pk, swap_vk) = SwapCircuit::generate_test_parameters();
+    let (swap_pk, swap_vk) = generate_parameters::<SwapCircuit>();
     write_params(&target_dir, "swap", &swap_pk, &swap_vk)?;
-    let (swapclaim_pk, swapclaim_vk) = SwapClaimCircuit::generate_test_parameters();
+    let (swapclaim_pk, swapclaim_vk) = generate_parameters::<SwapClaimCircuit>();
     write_params(&target_dir, "swapclaim", &swapclaim_pk, &swapclaim_vk)?;
-    let (undelegateclaim_pk, undelegateclaim_vk) =
-        UndelegateClaimCircuit::generate_test_parameters();
+    let (undelegateclaim_pk, undelegateclaim_vk) = generate_parameters::<UndelegateClaimCircuit>();
     write_params(
         &target_dir,
         "undelegateclaim",
         &undelegateclaim_pk,
         &undelegateclaim_vk,
     )?;
-    let (delegator_vote_pk, delegator_vote_vk) = DelegatorVoteCircuit::generate_test_parameters();
+    let (delegator_vote_pk, delegator_vote_vk) = generate_parameters::<DelegatorVoteCircuit>();
     write_params(
         &target_dir,
         "delegator_vote",
@@ -52,7 +96,7 @@ fn main() -> Result<()> {
         &delegator_vote_vk,
     )?;
     let (nullifier_derivation_pk, nullifier_derivation_vk) =
-        NullifierDerivationCircuit::generate_test_parameters();
+        generate_parameters::<NullifierDerivationCircuit>();
     write_params(
         &target_dir,
         "nullifier_derivation",

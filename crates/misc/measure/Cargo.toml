@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-measure"
-version = "0.59.0"
+version = "0.60.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -11,7 +11,7 @@ penumbra-chain = { path = "../../core/component/chain" }
 penumbra-compact-block = { path = "../../core/component/compact-block", default-features = false }
 
 tokio = { version = "1.21.1", features = ["full"] }
-tonic = "0.8.1"
+tonic = "0.9"
 anyhow = "1"
 clap = { version = "3", features = ["derive", "env"] }
 tracing = "0.1"

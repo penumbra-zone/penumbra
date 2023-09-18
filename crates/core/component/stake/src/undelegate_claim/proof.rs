@@ -4,12 +4,11 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use decaf377::Bls12_377;
 
 use ark_ff::ToConstraintField;
-use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey};
+use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey};
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
-use rand_core::OsRng;
 
 use decaf377::{FieldExt, Fq, Fr};
 use penumbra_asset::{
@@ -17,7 +16,7 @@ use penumbra_asset::{
     STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_num::{Amount, AmountVar};
-use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 
 use crate::{Penalty, PenaltyVar};
 
@@ -71,8 +70,8 @@ impl ConstraintSynthesizer<Fq> for UndelegateClaimCircuit {
     }
 }
 
-impl ParameterSetup for UndelegateClaimCircuit {
-    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+impl DummyWitness for UndelegateClaimCircuit {
+    fn with_dummy_witness() -> Self {
         let penalty = Penalty(1);
         let balance_blinding = Fr::from(1);
         let unbonding_amount = Amount::from(1u64);
@@ -83,17 +82,13 @@ impl ParameterSetup for UndelegateClaimCircuit {
         })
         .commit(balance_blinding);
 
-        let circuit = UndelegateClaimCircuit {
+        Self {
             penalty,
             unbonding_amount,
             balance_blinding,
             balance_commitment,
             unbonding_id,
-        };
-        let (pk, vk) =
-            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
-                .expect("can perform circuit specific setup");
-        (pk, vk)
+        }
     }
 }
 
@@ -143,9 +138,19 @@ impl UndelegateClaimProof {
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
-        public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
-        public_inputs.extend(unbonding_id.0.to_field_elements().unwrap());
-        public_inputs.extend(penalty.to_field_elements().unwrap());
+        public_inputs.extend(balance_commitment.0.to_field_elements().ok_or_else(|| {
+            anyhow::anyhow!("could not convert balance commitment to field elements")
+        })?);
+        public_inputs.extend(
+            unbonding_id.0.to_field_elements().ok_or_else(|| {
+                anyhow::anyhow!("could not convert unbonding id to field elements")
+            })?,
+        );
+        public_inputs.extend(
+            penalty
+                .to_field_elements()
+                .ok_or_else(|| anyhow::anyhow!("could not convert penalty to field elements"))?,
+        );
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
@@ -193,6 +198,7 @@ mod tests {
     use decaf377::{Fq, Fr};
     use decaf377_rdsa as rdsa;
     use penumbra_num::Amount;
+    use penumbra_proof_params::generate_prepared_test_parameters;
     use proptest::prelude::*;
     use rand_core::OsRng;
 
@@ -208,7 +214,8 @@ mod tests {
     #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
     fn undelegate_claim_proof_happy_path(validator_randomness in fr_strategy(), balance_blinding in fr_strategy(), value1_amount in 2..200u64, penalty_amount in 0..200u64) {
-            let (pk, vk) = UndelegateClaimCircuit::generate_prepared_test_parameters();
+            let mut rng = OsRng;
+            let (pk, vk) = generate_prepared_test_parameters::<UndelegateClaimCircuit>(&mut rng);
 
             let sk = rdsa::SigningKey::new_from_field(validator_randomness);
             let validator_identity = IdentityKey((&sk).into());
@@ -221,8 +228,8 @@ mod tests {
             let balance = penalty.balance_for_claim(unbonding_id, unbonding_amount);
             let balance_commitment = balance.commit(balance_blinding);
 
-            let blinding_r = Fq::rand(&mut OsRng);
-            let blinding_s = Fq::rand(&mut OsRng);
+            let blinding_r = Fq::rand(&mut rng);
+            let blinding_s = Fq::rand(&mut rng);
             let proof = UndelegateClaimProof::prove(
                 blinding_r,
                 blinding_s,

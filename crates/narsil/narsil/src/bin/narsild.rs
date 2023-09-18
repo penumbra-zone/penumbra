@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 #![allow(clippy::clone_on_copy)]
 #![recursion_limit = "512"]
 use std::{net::SocketAddr, path::PathBuf};
@@ -6,7 +7,8 @@ use console_subscriber::ConsoleLayer;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
 use metrics_util::layers::Stack;
 use penumbra_tendermint_proxy::TendermintProxy;
-use tendermint::abci::{ConsensusRequest, MempoolRequest};
+use penumbra_tower_trace::v034::RequestExt;
+use tendermint::v0_34::abci::{ConsensusRequest, MempoolRequest};
 
 use narsil::{
     ledger::{consensus::Consensus, mempool::Mempool, snapshot::Snapshot, Info},
@@ -102,9 +104,7 @@ async fn main() -> anyhow::Result<()> {
         .with_ansi(atty::is(atty::Stream::Stdout))
         .with_target(true);
     // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
-    let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info"))
-        .unwrap();
+    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
 
     let opt = Opt::parse();
 
@@ -137,7 +137,6 @@ async fn main() -> anyhow::Result<()> {
                 .context("Unable to initialize RocksDB storage")?;
 
             use penumbra_tower_trace::trace::request_span;
-            use penumbra_tower_trace::RequestExt;
 
             let info = Info::new(storage.clone());
             let consensus = tower::ServiceBuilder::new()
@@ -166,7 +165,7 @@ async fn main() -> anyhow::Result<()> {
                         .mempool(mempool)
                         .info(info.clone())
                         .finish()
-                        .unwrap()
+                        .ok_or_else(|| anyhow::anyhow!("failed to build abci server"))?
                         .listen(abci_bind),
                 )
                 .expect("failed to spawn abci server");

@@ -1,0 +1,134 @@
+# Default values for penumbra-node.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  # repository: harbor.ruin.dev/library/penumbra
+  repository: ghcr.io/penumbra-zone/penumbra
+  pullPolicy: Always
+  # "latest" tag means most recently deployed testnet tag.
+  # Use "main" for tracking preview.
+  tag: latest
+
+# Penumbra node from which to bootstrap connection. Defaults to testnet.
+# Consider using "preview" for bleeding edge, but make sure container tags match.
+penumbra_bootstrap_node_tendermint_rpc_url: "https://rpc.testnet.penumbra.zone"
+
+# Whether to preserve the LB service, in effect reserving the same IP
+# for subsequent deploys. This costs money! But sure is convenient.
+preserve_lb_svc: false
+
+# Whether to configure *only* the LoadBalancer Services, in order to provision
+# the public IPs prior to application deployment. This allows polling the IPs
+# and using them as config inputs, via values.
+only_lb_svc: false
+
+# Configure PVCs for chain data. If disabled, an emptydir will be used,
+# which means a fresh node will be created on every pod restart.
+persistence:
+  enabled: false
+  storageClassName:
+  accessModes:
+    - ReadWriteOnce
+  size: 10G
+
+# settings for cometbft sidecar
+cometbft:
+  image:
+    repository: cometbft/cometbft
+    pullPolicy: IfNotPresent
+    # https://github.com/cometbft/cometbft#supported-versions
+    # https://github.com/cometbft/cometbft/blob/main/UPGRADING.md#v03427
+    tag: "v0.34.27"
+
+# Configure nodes. By default, only one is created.
+# Extend this list to add more. Valid node attributes are:
+#
+#   - moniker
+#   - external_address
+#
+nodes:
+  - moniker: ididntedittheconfig
+    external_address: ""
+
+# Custom label for aggregating network, nodes, and metrics into a cohesive deployment.
+# Maps to the 'app.kubernetes.io/part-of' label.
+part_of: ""
+
+# N.B. Only `IngressRoute`, a custom CRD specific to Traefik ingress controller
+# is supported. This is because a traditional Ingress object doesn't allow us
+# to force a backend scheme of h2c, which is required for pd's gRPC service.
+ingressRoute:
+  enabled: false
+  hosts:
+    # consider using DNS wildcards, e.g. *.devnet.chart-example.local
+    pd: pd.chart-example.local
+    tm: tm.chart-example.local
+  # Secret object containing TLS info
+  secretName: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# N.B. Ingress is not used. In order to have HTTPS support
+# for pd's gRPC support, you'll need to configure support for h2c.
+# Or, you can add an LB service for pd and enable the auto https setting.
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

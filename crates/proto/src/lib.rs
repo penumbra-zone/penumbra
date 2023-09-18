@@ -256,6 +256,15 @@ pub mod penumbra {
             include!("gen/penumbra.custody.v1alpha1.serde.rs");
         }
     }
+
+    pub mod tools {
+        pub mod summoning {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.tools.summoning.v1alpha1.rs");
+                include!("gen/penumbra.tools.summoning.v1alpha1.serde.rs");
+            }
+        }
+    }
 }
 
 pub mod tendermint {
@@ -278,4 +287,5 @@ pub mod tendermint {
 }
 
 #[cfg(feature = "rpc")]
-pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("gen/proto_descriptor.bin");
+// https://github.com/penumbra-zone/penumbra/issues/3038#issuecomment-1722534133
+pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("gen/proto_descriptor.bin.no_lfs");

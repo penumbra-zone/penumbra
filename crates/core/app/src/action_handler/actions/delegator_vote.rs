@@ -25,13 +25,13 @@ impl ActionHandler for DelegatorVote {
             body:
                 DelegatorVoteBody {
                     start_position,
-                    value,
                     nullifier,
                     rk,
+                    value,
                     // Unused in stateless checks:
-                    vote: _,            // Only used when executing the vote
-                    proposal: _,        // Checked against the current open proposals statefully
-                    unbonded_amount: _, // Also checked against the proposal's snapshot exchange rate statefully
+                    unbonded_amount: _,
+                    vote: _,     // Only used when executing the vote
+                    proposal: _, // Checked against the current open proposals statefully
                 },
         } = self;
 

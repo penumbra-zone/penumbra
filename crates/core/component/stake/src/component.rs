@@ -7,7 +7,7 @@ use std::{
 };
 
 use ::metrics::{decrement_gauge, gauge, increment_gauge};
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
 use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
@@ -57,7 +57,7 @@ fn validator_address(ck: &PublicKey) -> [u8; 20] {
     let ck_bytes = ck.to_bytes();
     let addr: [u8; 20] = Sha256::digest(&ck_bytes).as_slice()[0..20]
         .try_into()
-        .unwrap();
+        .expect("Sha256 digest should be 20-bytes long");
 
     addr
 }
@@ -298,7 +298,13 @@ pub(crate) trait StakingImpl: StateWriteExt {
         let end_height = self.get_block_height().await?;
 
         for height in epoch_to_end.start_height..=end_height {
-            let changes = self.delegation_changes(height.try_into().unwrap()).await?;
+            let changes = self
+                .delegation_changes(
+                    height
+                        .try_into()
+                        .context("should be able to convert u64 into block height")?,
+                )
+                .await?;
             for d in changes.delegations {
                 delegations_by_validator
                     .entry(d.validator_identity.clone())
@@ -495,8 +501,14 @@ pub(crate) trait StakingImpl: StateWriteExt {
         let mut zero_power = Vec::new();
 
         for v in self.validator_identity_list().await? {
-            let state = self.validator_state(&v).await?.unwrap();
-            let power = self.validator_power(&v).await?.unwrap();
+            let state = self
+                .validator_state(&v)
+                .await?
+                .context("should be able to fetch validator state")?;
+            let power = self
+                .validator_power(&v)
+                .await?
+                .context("should be able to fetch validator power")?;
             if matches!(state, validator::State::Active | validator::State::Inactive) {
                 if power == 0 {
                     zero_power.push((v, power));
@@ -536,7 +548,10 @@ pub(crate) trait StakingImpl: StateWriteExt {
         let current_epoch = self.get_current_epoch().await?;
 
         for v in self.validator_identity_list().await? {
-            let state = self.validator_bonding_state(&v).await?.unwrap();
+            let state = self
+                .validator_bonding_state(&v)
+                .await?
+                .context("should be able to fetch validator bonding state")?;
             if let validator::BondingState::Unbonding { unbonding_epoch } = state {
                 if unbonding_epoch <= current_epoch.index {
                     self.set_validator_bonding_state(&v, validator::BondingState::Unbonded)
@@ -617,11 +632,15 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // Save the validator updates to send to Tendermint.
         let tendermint_validator_updates = voting_power_by_consensus_key
             .iter()
-            .map(|(ck, power)| Update {
-                pub_key: *ck,
-                power: (*power).try_into().unwrap(),
+            .map(|(ck, power)| {
+                Ok(Update {
+                    pub_key: *ck,
+                    power: (*power)
+                        .try_into()
+                        .context("should be able to convert u64 into validator Power")?,
+                })
             })
-            .collect();
+            .collect::<Result<Vec<_>>>()?;
         self.put_tendermint_validator_updates(tendermint_validator_updates);
 
         // Record the new consensus keys we will have told tendermint about.
@@ -652,7 +671,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         let did_address_vote = last_commit_info
             .votes
             .iter()
-            .map(|vote| (vote.validator.address, vote.signed_last_block))
+            .map(|vote| (vote.validator.address, vote.sig_info.is_signed()))
             .collect::<BTreeMap<[u8; 20], bool>>();
 
         // Since we don't have a lookup from "addresses" to identity keys,
@@ -694,9 +713,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
         while let Some(data) = js.join_next().await.transpose()? {
             if let Some((identity_key, consensus_key, mut uptime)) = data? {
                 // for some reason last_commit_info has truncated sha256 hashes
-                let addr: [u8; 20] = Sha256::digest(&consensus_key.to_bytes()).as_slice()[0..20]
-                    .try_into()
-                    .unwrap();
+                let addr: [u8; 20] =
+                    Sha256::digest(&consensus_key.to_bytes()).as_slice()[0..20].try_into()?;
 
                 let voted = did_address_vote
                     .get(&addr)
@@ -715,7 +733,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 );
                 gauge!(metrics::MISSED_BLOCKS, uptime.num_missed_blocks() as f64, "identity_key" => identity_key.to_string());
 
-                uptime.mark_height_as_signed(height, voted).unwrap();
+                uptime.mark_height_as_signed(height, voted)?;
                 if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
                     self.set_validator_state(&identity_key, validator::State::Jailed)
                         .await?;
@@ -875,8 +893,21 @@ impl Component for Staking {
 
     #[instrument(name = "staking", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
-        let starting_height = state.get_block_height().await.unwrap();
-        let starting_epoch = state.epoch_by_height(starting_height).await.unwrap();
+        let app_state = match app_state {
+            genesis::AppState::Checkpoint(_) => {
+                unimplemented!("adding support with init handshake pr")
+            }
+            genesis::AppState::Content(state) => state,
+        };
+
+        let starting_height = state
+            .get_block_height()
+            .await
+            .expect("should be able to get initial block height");
+        let starting_epoch = state
+            .epoch_by_height(starting_height)
+            .await
+            .expect("should be able to get initial epoch");
         let epoch_index = starting_epoch.index;
 
         // Delegations require knowing the rates for the next epoch, so
@@ -909,18 +940,24 @@ impl Component for Staking {
         // and there is a separate key containing the list of all validator keys.
         for validator in &app_state.validators {
             // Parse the proto into a domain type.
-            let validator = Validator::try_from(validator.clone()).unwrap();
+            let validator = Validator::try_from(validator.clone())
+                .expect("should be able to parse genesis validator");
 
             state
                 .add_genesis_validator(&genesis_allocations, &genesis_base_rate, validator)
                 .await
-                .unwrap();
+                .expect("should be able to add genesis validator to state");
         }
 
         // Finally, record that there were no delegations in this block, so the data
         // isn't missing when we process the first epoch transition.
         state
-            .set_delegation_changes(starting_height.try_into().unwrap(), Default::default())
+            .set_delegation_changes(
+                starting_height
+                    .try_into()
+                    .expect("should be able to convert u64 into block height"),
+                Default::default(),
+            )
             .await;
 
         // Build the initial validator set update.
@@ -929,7 +966,10 @@ impl Component for Staking {
             state_key::current_consensus_keys().to_owned(),
             CurrentConsensusKeys::default(),
         );
-        state.build_tendermint_validator_updates().await.unwrap();
+        state
+            .build_tendermint_validator_updates()
+            .await
+            .expect("should be able to build initial tendermint validator updates");
     }
 
     #[instrument(name = "staking", skip(state, begin_block))]
@@ -941,13 +981,16 @@ impl Component for Staking {
         // For each validator identified as byzantine by tendermint, update its
         // state to be slashed
         for evidence in begin_block.byzantine_validators.iter() {
-            state.process_evidence(evidence).await.unwrap();
+            state
+                .process_evidence(evidence)
+                .await
+                .expect("should be able to process tendermint ABCI evidence");
         }
 
         state
             .track_uptime(&begin_block.last_commit_info)
             .await
-            .unwrap();
+            .expect("should be able to track uptime");
     }
 
     #[instrument(name = "staking", skip(state, end_block))]
@@ -959,7 +1002,10 @@ impl Component for Staking {
         // Write the delegation changes for this block.
         state
             .set_delegation_changes(
-                end_block.height.try_into().unwrap(),
+                end_block
+                    .height
+                    .try_into()
+                    .expect("should be able to convert i64 into block height"),
                 state.stub_delegation_changes().clone(),
             )
             .await;
@@ -967,12 +1013,18 @@ impl Component for Staking {
 
     #[instrument(name = "staking", skip(state))]
     async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> anyhow::Result<()> {
-        let state = Arc::get_mut(state).expect("state should be unique");
-        let cur_epoch = state.get_current_epoch().await.unwrap();
+        let state = Arc::get_mut(state).context("state should be unique")?;
+        let cur_epoch = state
+            .get_current_epoch()
+            .await
+            .context("should be able to get current epoch during end_epoch")?;
         state.end_epoch(cur_epoch).await?;
         // Since we only update the validator set at epoch boundaries,
         // we only need to build the validator set updates here in end_epoch.
-        state.build_tendermint_validator_updates().await.unwrap();
+        state
+            .build_tendermint_validator_updates()
+            .await
+            .context("should be able to build tendermint validator updates")?;
         Ok(())
     }
 }

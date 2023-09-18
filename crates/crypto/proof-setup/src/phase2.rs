@@ -1,5 +1,4 @@
 //! This module is very similar to the one for phase1, so reading that one might be useful.
-
 use ark_ec::Group;
 use ark_ff::{fields::Field, UniformRand, Zero};
 use rand_core::{CryptoRngCore, OsRng};
@@ -82,7 +81,7 @@ impl Hashable for RawCRSElements {
 /// When combined with the elements of phase 1, the entire CRS will be present.
 #[derive(Clone, Debug)]
 pub struct CRSElements {
-    raw: RawCRSElements,
+    pub(crate) raw: RawCRSElements,
 }
 
 impl Hashable for CRSElements {
@@ -91,7 +90,7 @@ impl Hashable for CRSElements {
     }
 }
 
-/// Represents a raw, unvalidated contribution.
+/// Represents a raw, unvalidatedontribution.
 #[derive(Clone, Debug)]
 pub struct RawContribution {
     pub parent: ContributionHash,
@@ -102,7 +101,11 @@ pub struct RawContribution {
 impl RawContribution {
     /// Check the internal integrity of this contribution, potentially producing
     /// a valid one.
-    fn validate<R: CryptoRngCore>(self, rng: &mut R, root: &CRSElements) -> Option<Contribution> {
+    pub fn validate<R: CryptoRngCore>(
+        self,
+        rng: &mut R,
+        root: &CRSElements,
+    ) -> Option<Contribution> {
         self.new_elements
             .validate(rng, root)
             .map(|new_elements| Contribution {
@@ -163,8 +166,8 @@ impl Contribution {
         old: &CRSElements,
     ) -> Self {
         let delta = F::rand(rng);
-        // e.w. negligible probability this will not panic
-        let delta_inv = delta.inverse().unwrap();
+        // e.w. negligible probability this will panic (1 / 2^256)
+        let delta_inv = delta.inverse().expect("unable to inverse delta");
 
         let mut new = old.clone();
         new.raw.delta_1 *= delta;
@@ -291,7 +294,7 @@ mod test {
     fn non_trivial_crs() -> (CRSElements, RawCRSElements) {
         let delta = F::rand(&mut OsRng);
         // Won't panic e.w. negligible probability
-        let delta_inv = delta.inverse().unwrap();
+        let delta_inv = delta.inverse().expect("unable to inverse delta");
 
         make_crs(delta, delta_inv)
     }
@@ -341,7 +344,9 @@ mod test {
     #[test]
     fn test_contribution_produces_valid_crs() {
         let (root, start) = non_trivial_crs();
-        let start = start.validate(&mut OsRng, &root).unwrap();
+        let start = start
+            .validate(&mut OsRng, &root)
+            .expect("unable to validate start");
         let contribution = Contribution::make(
             &mut OsRng,
             ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
@@ -357,7 +362,9 @@ mod test {
     #[test]
     fn test_can_calculate_contribution_hash() {
         let (root, start) = non_trivial_crs();
-        let start = start.validate(&mut OsRng, &root).unwrap();
+        let start = start
+            .validate(&mut OsRng, &root)
+            .expect("unable to validate start");
         let contribution = Contribution::make(
             &mut OsRng,
             ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
@@ -369,7 +376,9 @@ mod test {
     #[test]
     fn test_contribution_is_linked_to_parent() {
         let (root, start) = non_trivial_crs();
-        let start = start.validate(&mut OsRng, &root).unwrap();
+        let start = start
+            .validate(&mut OsRng, &root)
+            .expect("unable to validate start");
         let contribution = Contribution::make(
             &mut OsRng,
             ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
@@ -381,7 +390,9 @@ mod test {
     #[test]
     fn test_contribution_is_not_linked_to_itself() {
         let (root, start) = non_trivial_crs();
-        let start = start.validate(&mut OsRng, &root).unwrap();
+        let start = start
+            .validate(&mut OsRng, &root)
+            .expect("unable to validate start");
         let contribution = Contribution::make(
             &mut OsRng,
             ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),

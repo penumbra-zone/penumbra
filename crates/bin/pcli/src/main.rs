@@ -15,7 +15,6 @@ use url::Url;
 mod box_grpc_svc;
 mod command;
 mod dex_utils;
-mod legacy;
 mod network;
 mod opt;
 mod warning;
@@ -98,26 +97,26 @@ async fn main() -> Result<()> {
     opt.init_tracing();
 
     //Ensure that the data_path exists, in case this is a cold start
-    fs::create_dir_all(&opt.data_path)
-        .with_context(|| format!("Failed to create data directory {}", opt.data_path))?;
+    fs::create_dir_all(&opt.home)
+        .with_context(|| format!("Failed to create home directory {}", opt.home))?;
 
-    // The keys command takes the data dir directly, since it may need to
+    // The keys command takes the home dir directly, since it may need to
     // create the client state, so handle it specially here so that we can have
     // common code for the other subcommands.
     if let Command::Keys(keys_cmd) = &opt.cmd {
-        keys_cmd.exec(opt.data_path.as_path())?;
+        keys_cmd.exec(opt.home.as_path())?;
         return Ok(());
     }
 
-    // The view reset command takes the data dir directly, and should not be invoked when there's a
+    // The view reset command takes the home dir directly, and should not be invoked when there's a
     // view service running.
     if let Command::View(ViewCmd::Reset(reset)) = &opt.cmd {
-        reset.exec(opt.data_path.as_path())?;
+        reset.exec(opt.home.as_path())?;
         return Ok(());
     }
-    // The debug command takes the data_path directly
+    // The debug command takes the home dir directly
     if let Command::Debug(debug_cmd) = &opt.cmd {
-        let dd = opt.data_path.into_std_path_buf();
+        let dd = opt.home.into_std_path_buf();
         debug_cmd.exec(dd)?;
         return Ok(());
     }

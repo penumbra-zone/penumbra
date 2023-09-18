@@ -11,7 +11,7 @@ use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
 
 use ark_ff::ToConstraintField;
 use ark_groth16::{
-    r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey, VerifyingKey,
+    r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey,
 };
 use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
@@ -20,7 +20,6 @@ use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
-use rand_core::OsRng;
 
 use crate::{note, Note, Rseed};
 use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
@@ -28,7 +27,7 @@ use penumbra_keys::keys::{
     AuthorizationKeyVar, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
 };
-use penumbra_proof_params::{ParameterSetup, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 use penumbra_sct::{Nullifier, NullifierVar};
 
 /// Groth16 proof for spending existing notes.
@@ -169,10 +168,10 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
     }
 }
 
-impl ParameterSetup for SpendCircuit {
-    fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
-        let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);
-        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+impl DummyWitness for SpendCircuit {
+    fn with_dummy_witness() -> Self {
+        let seed_phrase = SeedPhrase::from_randomness(&[b'f'; 32]);
+        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -193,10 +192,13 @@ impl ParameterSetup for SpendCircuit {
         let mut sct = tct::Tree::new();
         let anchor: tct::Root = sct.root();
         let note_commitment = note.commit();
-        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let state_commitment_proof = sct.witness(note_commitment).unwrap();
+        sct.insert(tct::Witness::Keep, note_commitment)
+            .expect("able to insert note commitment into SCT");
+        let state_commitment_proof = sct
+            .witness(note_commitment)
+            .expect("able to witness just-inserted note commitment");
 
-        let circuit = SpendCircuit {
+        Self {
             state_commitment_proof,
             note,
             v_blinding,
@@ -207,11 +209,7 @@ impl ParameterSetup for SpendCircuit {
             balance_commitment: balance::Commitment(decaf377::basepoint()),
             nullifier,
             rk,
-        };
-        let (pk, vk) =
-            Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(circuit, &mut OsRng)
-                .expect("can perform circuit specific setup");
-        (pk, vk)
+        }
     }
 }
 
@@ -275,12 +273,26 @@ impl SpendProof {
 
         let mut public_inputs = Vec::new();
         public_inputs.extend([Fq::from(anchor.0)]);
-        public_inputs.extend(balance_commitment.0.to_field_elements().unwrap());
-        public_inputs.extend(nullifier.0.to_field_elements().unwrap());
+        public_inputs.extend(
+            balance_commitment
+                .0
+                .to_field_elements()
+                .ok_or_else(|| anyhow::anyhow!("balance commitment is not a valid element"))?,
+        );
+        public_inputs.extend(
+            nullifier
+                .0
+                .to_field_elements()
+                .ok_or_else(|| anyhow::anyhow!("nullifier is not a valid element"))?,
+        );
         let element_rk = decaf377::Encoding(rk.to_bytes())
             .vartime_decompress()
             .expect("expect only valid element points");
-        public_inputs.extend(element_rk.to_field_elements().unwrap());
+        public_inputs.extend(
+            element_rk
+                .to_field_elements()
+                .ok_or_else(|| anyhow::anyhow!("rk is not a valid element"))?,
+        );
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
@@ -332,6 +344,7 @@ mod tests {
         keys::{SeedPhrase, SpendKey},
         Address,
     };
+    use penumbra_proof_params::generate_prepared_test_parameters;
     use penumbra_sct::Nullifier;
     use penumbra_tct::StateCommitment;
     use proptest::prelude::*;
@@ -355,11 +368,11 @@ mod tests {
     #[test]
     /// Check that the `SpendProof` verification succeeds.
     fn spend_proof_verification_success(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..2000000000u64, num_commitments in 1..2000u64, v_blinding in fr_strategy()) {
-        let (pk, vk) = SpendCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
+        let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
 
-        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
-        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -420,11 +433,11 @@ mod tests {
     /// Check that the `SpendProof` verification fails when using an incorrect
     /// TCT root (`anchor`).
     fn spend_proof_verification_merkle_path_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy()) {
-        let (pk, vk) = SpendCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
+        let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
 
-        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
-        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -478,14 +491,14 @@ mod tests {
         #[test]
         /// Check that the `SpendProof` verification fails when the diversified address is wrong.
         fn spend_proof_verification_diversified_address_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), incorrect_seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy()) {
-            let (pk, vk) = SpendCircuit::generate_prepared_test_parameters();
             let mut rng = OsRng;
+            let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
 
-            let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
-            let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
 
-            let wrong_seed_phrase = SeedPhrase::from_randomness(incorrect_seed_phrase_randomness);
-            let wrong_sk_sender = SpendKey::from_seed_phrase(wrong_seed_phrase, 0);
+            let wrong_seed_phrase = SeedPhrase::from_randomness(&incorrect_seed_phrase_randomness);
+            let wrong_sk_sender = SpendKey::from_seed_phrase_bip39(wrong_seed_phrase, 0);
             let wrong_fvk_sender = wrong_sk_sender.full_viewing_key();
             let wrong_ivk_sender = wrong_fvk_sender.incoming();
             let (wrong_sender, _dtk_d) = wrong_ivk_sender.payment_address(1u32.into());
@@ -540,11 +553,11 @@ mod tests {
         /// Check that the `SpendProof` verification fails, when using an
         /// incorrect nullifier.
         fn spend_proof_verification_nullifier_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy()) {
-            let (pk, vk) = SpendCircuit::generate_prepared_test_parameters();
             let mut rng = OsRng;
+            let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
 
-            let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
-            let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
             let fvk_sender = sk_sender.full_viewing_key();
             let ivk_sender = fvk_sender.incoming();
             let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -599,11 +612,11 @@ mod tests {
     /// Check that the `SpendProof` verification fails when using balance
     /// commitments with different blinding factors.
     fn spend_proof_verification_balance_commitment_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy(), incorrect_blinding_factor in fr_strategy()) {
-        let (pk, vk) = SpendCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
+        let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
 
-        let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
-        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -657,11 +670,11 @@ mod tests {
         #[test]
         /// Check that the `SpendProof` verification fails when the incorrect randomizable verification key is used.
         fn spend_proof_verification_fails_rk_integrity(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy(), incorrect_spend_auth_randomizer in fr_strategy()) {
-            let (pk, vk) = SpendCircuit::generate_prepared_test_parameters();
             let mut rng = OsRng;
+            let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
 
-            let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
-            let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
             let fvk_sender = sk_sender.full_viewing_key();
             let ivk_sender = fvk_sender.incoming();
             let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -718,11 +731,11 @@ mod tests {
         #[test]
         /// Check that the `SpendProof` verification always suceeds for dummy (zero value) spends.
         fn spend_proof_dummy_verification_suceeds(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), v_blinding in fr_strategy()) {
-            let (pk, vk) = SpendCircuit::generate_prepared_test_parameters();
             let mut rng = OsRng;
+            let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
 
-            let seed_phrase = SeedPhrase::from_randomness(seed_phrase_randomness);
-            let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
             let fvk_sender = sk_sender.full_viewing_key();
             let ivk_sender = fvk_sender.incoming();
             let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -823,10 +836,10 @@ mod tests {
         }
     }
 
-    impl ParameterSetup for MerkleProofCircuit {
-        fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
-            let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);
-            let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+    impl DummyWitness for MerkleProofCircuit {
+        fn with_dummy_witness() -> Self {
+            let seed_phrase = SeedPhrase::from_randomness(&[b'f'; 32]);
+            let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
             let fvk_sender = sk_sender.full_viewing_key();
             let ivk_sender = fvk_sender.incoming();
             let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -839,25 +852,24 @@ mod tests {
             .expect("can make a note");
             let mut sct = tct::Tree::new();
             let note_commitment = note.commit();
-            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            sct.insert(tct::Witness::Keep, note_commitment)
+                .expect("able to insert note commitment into SCT");
             let anchor = sct.root();
-            let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let state_commitment_proof = sct
+                .witness(note_commitment)
+                .expect("able to witness just-inserted note commitment");
             let position = state_commitment_proof.position();
             let epoch = Fq::from(position.epoch());
             let block = Fq::from(position.block());
             let commitment_index = Fq::from(position.commitment());
-            let circuit = MerkleProofCircuit {
+
+            Self {
                 state_commitment_proof,
                 anchor,
                 epoch,
                 block,
                 commitment_index,
-            };
-            let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
-                circuit, &mut OsRng,
-            )
-            .expect("can perform circuit specific setup");
-            (pk, vk)
+            }
         }
     }
 
@@ -873,11 +885,11 @@ mod tests {
 
     #[test]
     fn merkle_proof_verification_succeeds() {
-        let (pk, vk) = MerkleProofCircuit::generate_prepared_test_parameters();
         let mut rng = OsRng;
+        let (pk, vk) = generate_prepared_test_parameters::<MerkleProofCircuit>(&mut rng);
 
-        let seed_phrase = SeedPhrase::from_randomness([b'f'; 32]);
-        let sk_sender = SpendKey::from_seed_phrase(seed_phrase, 0);
+        let seed_phrase = SeedPhrase::from_randomness(&[b'f'; 32]);
+        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());

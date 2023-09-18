@@ -186,7 +186,7 @@ mod arbitrary {
             let rng = runner.rng();
             Ok(if !self.0.is_empty() {
                 proptest::strategy::Just(
-                    *rng.sample(rand::distributions::Slice::new(&self.0).unwrap()),
+                    *rng.sample(rand::distributions::Slice::new(&self.0).expect("empty vector")),
                 )
             } else {
                 let parts = [

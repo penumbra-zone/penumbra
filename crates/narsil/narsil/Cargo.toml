@@ -2,7 +2,7 @@
 name = "narsil"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 description = "The software for the Narsil sharded custody implementation"
-version = "0.59.0"
+version = "0.60.0"
 edition = "2021"
 repository = "https://github.com/penumbra-zone/penumbra/"
 homepage = "https://penumbra.zone"
@@ -21,7 +21,7 @@ penumbra-tendermint-proxy = { path = "../../util/tendermint-proxy" }
 penumbra-chain            = { path = "../../core/component/chain" , features = ["component"] }
 
 # Penumbra dependencies
-tower-abci = "0.8.0"
+tower-abci = "0.9.0"
 tower-actor = "0.1.0"
 
 # External dependencies
@@ -40,15 +40,15 @@ metrics-tracing-context = "0.11.0"
 metrics-util = "0.13"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tendermint-config = "0.32.0"
-tendermint-proto = "0.32.0"
-tendermint = "0.32.0"
-tendermint-light-client-verifier = "0.32.0"
+tendermint-config = "0.33.0"
+tendermint-proto = "0.33.0"
+tendermint = "0.33.0"
+tendermint-light-client-verifier = "0.33.0"
 tokio = { version = "1.22", features = ["full"] }
 tokio-stream = "0.1"
 tokio-util = "0.7"
-tonic = "0.8.1"
-tonic-web = "0.4.0"
+tonic = "0.9"
+tonic-web = "0.9.0"
 tower = { version = "0.4", features = ["full"] }
 tower-service = "0.3.2"
 tracing = "0.1"

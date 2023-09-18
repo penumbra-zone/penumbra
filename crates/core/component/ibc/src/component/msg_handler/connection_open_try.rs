@@ -173,12 +173,18 @@ impl MsgHandler for MsgConnectionOpenTry {
             &self.versions_on_a.clone(),
         )?];
 
-        let new_connection_id = ConnectionId::new(state.get_connection_counter().await.unwrap().0);
+        let new_connection_id = ConnectionId::new(
+            state
+                .get_connection_counter()
+                .await
+                .context("unable to get connection counter")?
+                .0,
+        );
 
         state
             .put_new_connection(&new_connection_id, new_conn)
             .await
-            .unwrap();
+            .context("unable to put new connection")?;
 
         state.record(
             events::ConnectionOpenTry {

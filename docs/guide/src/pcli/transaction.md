@@ -198,19 +198,19 @@ while read -r i ; do
         echo "Most recently active channel is: $(( i - 1))" ;
         break ;
     fi ;
-done <<< "$(seq 0 10)"
+done <<< "$(seq 0 100)"
 ```
 
 You should see output like "Most recently active channel is: 0". Make note of that number,
 as we'll need it for the withdrawal command. Next, create a second wallet identity:
 
 ```bash
-cargo run --release --bin pcli -- --data-path /tmp/pcli-ibc-test keys generate
-cargo run --release --bin pcli -- --data-path /tmp/pcli-ibc-test view address
+cargo run --release --bin pcli -- --home /tmp/pcli-ibc-test keys generate
+cargo run --release --bin pcli -- --home /tmp/pcli-ibc-test view address
 ```
 
 Make note of that address, as we'll also need that information. Now we're ready to initiate
-an IBC withdrawal. Using the primary wallet identity (by not overriding `--data-path`, as done above):
+an IBC withdrawal. Using the primary wallet identity (by not overriding `--home`, as done above):
 
 ```bash
 cargo run --release --bin pcli -- tx withdraw --to <PENUMBRA_ADDRESS> 10penumbra --channel <CHANNEL_ID>
@@ -219,7 +219,7 @@ cargo run --release --bin pcli -- tx withdraw --to <PENUMBRA_ADDRESS> 10penumbra
 Wait a moment, then check for receipt of the withdrawal on the counterparty chain:
 
 ```bash
-cargo run --release --bin pcli -- --data-path /tmp/pcli-ibc-test --node https://grpc.testnet-preview.penumbra.zone view balance
+cargo run --release --bin pcli -- --home /tmp/pcli-ibc-test --node https://grpc.testnet-preview.penumbra.zone view balance
 ```
 
 You should see output in the format of:
