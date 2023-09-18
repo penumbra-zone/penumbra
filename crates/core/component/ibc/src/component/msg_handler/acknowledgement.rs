@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types::core::{
     channel::channel::Order as ChannelOrder, channel::channel::State as ChannelState,
@@ -57,7 +57,10 @@ impl MsgHandler for MsgAcknowledgement {
             anyhow::bail!("packet commitment does not match");
         }
 
-        state.verify_packet_ack_proof(&connection, self).await?;
+        state
+            .verify_packet_ack_proof(&connection, self)
+            .await
+            .with_context(|| "packet ack proof verification failed")?;
 
         if channel.ordering == ChannelOrder::Ordered {
             let next_sequence_ack = state
