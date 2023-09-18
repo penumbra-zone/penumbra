@@ -1,13 +1,12 @@
-use ark_ff::Zero;
 use serde::{Deserialize, Serialize};
 
-use decaf377::Fr;
-use penumbra_asset::{balance, Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_governance::ProposalNft;
+use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_num::Amount;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
-use crate::{proposal::Proposal, ActionView, IsAction, TransactionPerspective};
+use crate::proposal::Proposal;
+
+use crate::ProposalNft;
 
 /// A proposal submission describes the proposal to propose, and the (transparent, ephemeral) refund
 /// address for the proposal deposit, along with a key to be used to verify the signature for a
@@ -19,16 +18,6 @@ pub struct ProposalSubmit {
     pub proposal: Proposal,
     /// The amount deposited for the proposal.
     pub deposit_amount: Amount,
-}
-
-impl IsAction for ProposalSubmit {
-    fn balance_commitment(&self) -> balance::Commitment {
-        self.balance().commit(Fr::zero())
-    }
-
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::ProposalSubmit(self.to_owned())
-    }
 }
 
 impl ProposalSubmit {

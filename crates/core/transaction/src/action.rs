@@ -4,21 +4,10 @@ use std::convert::{TryFrom, TryInto};
 use penumbra_asset::balance;
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 
-mod delegator_vote;
-mod proposal_deposit_claim;
-mod proposal_submit;
-mod proposal_withdraw;
-mod validator_vote;
-
 use crate::{ActionView, IsAction, TransactionPerspective};
 
 pub use crate::proposal::{Proposal, ProposalKind, ProposalPayload};
 pub use crate::vote::Vote;
-pub use delegator_vote::{DelegatorVote, DelegatorVoteBody};
-pub use proposal_deposit_claim::ProposalDepositClaim;
-pub use proposal_submit::ProposalSubmit;
-pub use proposal_withdraw::ProposalWithdraw;
-pub use validator_vote::{ValidatorVote, ValidatorVoteBody};
 
 /// An action performed by a Penumbra transaction.
 #[derive(Clone, Debug)]

@@ -1,48 +1,18 @@
 use anyhow::Context;
-use ark_ff::Zero;
-use decaf377::Fr;
+
+use crate::{vote::Vote, DelegatorVoteProof};
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
-use penumbra_asset::{balance, Value};
-use penumbra_governance::{DelegatorVoteProof, VotingReceiptToken};
+use penumbra_asset::Value;
 use penumbra_num::Amount;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
-
-use crate::{
-    view::action_view::DelegatorVoteView, vote::Vote, Action, ActionView, IsAction,
-    TransactionPerspective,
-};
 
 #[derive(Debug, Clone)]
 pub struct DelegatorVote {
     pub body: DelegatorVoteBody,
     pub auth_sig: Signature<SpendAuth>,
     pub proof: DelegatorVoteProof,
-}
-
-impl IsAction for DelegatorVote {
-    fn balance_commitment(&self) -> balance::Commitment {
-        Value {
-            amount: self.body.unbonded_amount,
-            asset_id: VotingReceiptToken::new(self.body.proposal).id(),
-        }
-        .commit(Fr::zero())
-    }
-
-    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
-        let delegator_vote_view = match txp.spend_nullifiers.get(&self.body.nullifier) {
-            Some(note) => DelegatorVoteView::Visible {
-                delegator_vote: self.to_owned(),
-                note: txp.view_note(note.to_owned()),
-            },
-            None => DelegatorVoteView::Opaque {
-                delegator_vote: self.to_owned(),
-            },
-        };
-
-        ActionView::DelegatorVote(delegator_vote_view)
-    }
 }
 
 /// The body of a delegator vote.
@@ -153,11 +123,5 @@ impl TryFrom<pb::DelegatorVote> for DelegatorVote {
                 .try_into()
                 .context("delegator vote proof malformed")?,
         })
-    }
-}
-
-impl From<DelegatorVote> for Action {
-    fn from(value: DelegatorVote) -> Self {
-        Action::DelegatorVote(value)
     }
 }

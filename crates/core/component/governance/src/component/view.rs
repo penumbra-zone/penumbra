@@ -18,17 +18,17 @@ use penumbra_shielded_pool::component::{StateReadExt as _, SupplyRead};
 use penumbra_stake::{DelegationToken, GovernanceKey, IdentityKey};
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
-use penumbra_transaction::{
-    action::Vote,
-    proposal::{self, Proposal, ProposalPayload},
-    Transaction,
-};
 use tokio::task::JoinSet;
 use tracing::instrument;
 
 use penumbra_stake::{rate::RateData, validator, StateReadExt as _};
 
-use super::{state_key, tally::Tally};
+use crate::{
+    proposal::{Proposal, ProposalPayload},
+    proposal_state::State as ProposalState,
+    vote::Vote,
+};
+use crate::{state_key, tally::Tally};
 
 #[async_trait]
 pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
@@ -55,9 +55,9 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     }
 
     /// Get the state of a proposal.
-    async fn proposal_state(&self, proposal_id: u64) -> Result<Option<proposal::State>> {
+    async fn proposal_state(&self, proposal_id: u64) -> Result<Option<ProposalState>> {
         Ok(self
-            .get::<proposal::State>(&state_key::proposal_state(proposal_id))
+            .get::<ProposalState>(&state_key::proposal_state(proposal_id))
             .await?)
     }
 
@@ -161,7 +161,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     /// Throw an error if the proposal is not votable.
     async fn check_proposal_votable(&self, proposal_id: u64) -> Result<()> {
         if let Some(proposal_state) = self.proposal_state(proposal_id).await? {
-            use proposal::State::*;
+            use crate::proposal_state::State::*;
             match proposal_state {
                 Voting => {
                     // This is when you can vote on a proposal
@@ -332,21 +332,20 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     /// Check that a deposit claim could be made on the proposal.
     async fn check_proposal_claimable(&self, proposal_id: u64) -> Result<()> {
         if let Some(proposal_state) = self.proposal_state(proposal_id).await? {
-            use proposal::State::*;
             match proposal_state {
                 Voting => {
                     anyhow::bail!("proposal {} is still voting", proposal_id)
                 }
-                Withdrawn { .. } => {
+                ProposalState::Withdrawn { .. } => {
                     anyhow::bail!(
                         "proposal {} has been withdrawn but voting has not concluded",
                         proposal_id
                     )
                 }
-                Finished { .. } => {
+                ProposalState::Finished { .. } => {
                     // This is when you can claim a proposal
                 }
-                Claimed { .. } => {
+                ProposalState::Claimed { .. } => {
                     anyhow::bail!(
                         "the deposit for proposal {} has already been claimed",
                         proposal_id
@@ -656,17 +655,17 @@ pub trait StateWriteExt: StateWrite {
     }
 
     /// Set the state of a proposal.
-    fn put_proposal_state(&mut self, proposal_id: u64, state: proposal::State) {
+    fn put_proposal_state(&mut self, proposal_id: u64, state: ProposalState) {
         // Set the state of the proposal
         self.put(state_key::proposal_state(proposal_id), state.clone());
 
         match &state {
-            proposal::State::Voting | proposal::State::Withdrawn { .. } => {
+            ProposalState::Voting | ProposalState::Withdrawn { .. } => {
                 // If we're setting the proposal to a non-finished state, track it in our list of
                 // proposals that are not finished
                 self.put_proto(state_key::unfinished_proposal(proposal_id), ());
             }
-            proposal::State::Finished { .. } | proposal::State::Claimed { .. } => {
+            ProposalState::Finished { .. } | ProposalState::Claimed { .. } => {
                 // If we're setting the proposal to a finished or claimed state, remove it from our list of
                 // proposals that are not finished
                 self.delete(state_key::unfinished_proposal(proposal_id));

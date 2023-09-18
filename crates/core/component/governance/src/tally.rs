@@ -4,9 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use penumbra_chain::params::{ChainParameters, Ratio};
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
-use penumbra_transaction::{
-    action::Vote,
-    proposal::{self, Withdrawn},
+
+use crate::{
+    proposal_state::{Outcome as StateOutcome, Withdrawn},
+    vote::Vote,
 };
 
 #[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
@@ -122,7 +123,7 @@ impl Outcome {
     }
 }
 
-impl<T> From<Outcome> for proposal::Outcome<T> {
+impl<T> From<Outcome> for StateOutcome<T> {
     fn from(outcome: Outcome) -> Self {
         match outcome {
             Outcome::Pass => Self::Passed,

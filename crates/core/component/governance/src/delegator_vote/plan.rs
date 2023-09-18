@@ -3,7 +3,6 @@ use ark_ff::Zero;
 use decaf377::{FieldExt, Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_asset::{Balance, Value};
-use penumbra_governance::{DelegatorVoteProof, VotingReceiptToken};
 use penumbra_keys::FullViewingKey;
 use penumbra_num::Amount;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
@@ -14,7 +13,9 @@ use penumbra_tct as tct;
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use crate::action::{DelegatorVote, DelegatorVoteBody, Vote};
+use crate::delegator_vote::action::{DelegatorVote, DelegatorVoteBody};
+use crate::delegator_vote::proof::DelegatorVoteProof;
+use crate::{vote::Vote, VotingReceiptToken};
 
 /// A plan to vote as a delegator.
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,15 +1,24 @@
 use std::sync::Arc;
 
+mod view;
+
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_chain::component::StateReadExt;
 use penumbra_storage::StateWrite;
-use penumbra_transaction::proposal;
 use tendermint::v0_34::abci;
 use tracing::instrument;
 
-use super::{tally, StateReadExt as _, StateWriteExt as _};
 use penumbra_component::Component;
+
+use crate::{
+    proposal_state::{
+        Outcome as ProposalOutcome, State as ProposalState, Withdrawn as ProposalWithdrawn,
+    },
+    tally,
+};
+
+use self::view::{StateReadExt as _, StateWriteExt};
+pub use penumbra_chain::component::StateReadExt;
 
 pub struct Governance {}
 
@@ -84,7 +93,7 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
             .context("proposal has id")?;
 
         let outcome = match current_state {
-            proposal::State::Voting => {
+            ProposalState::Voting => {
                 // If the proposal is still in the voting state, tally and conclude it (this will
                 // automatically remove it from the list of unfinished proposals)
                 let outcome = state.current_tally(proposal_id).await?.outcome(
@@ -126,22 +135,22 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
 
                 outcome.into()
             }
-            proposal::State::Withdrawn { reason } => {
+            ProposalState::Withdrawn { reason } => {
                 tracing::info!(proposal = %proposal_id, reason = ?reason, "proposal concluded after being withdrawn");
-                proposal::Outcome::Failed {
-                    withdrawn: proposal::Withdrawn::WithReason { reason },
+                ProposalOutcome::Failed {
+                    withdrawn: ProposalWithdrawn::WithReason { reason },
                 }
             }
-            proposal::State::Finished { outcome: _ } => {
+            ProposalState::Finished { outcome: _ } => {
                 anyhow::bail!("proposal {proposal_id} is already finished, and should have been removed from the active set");
             }
-            proposal::State::Claimed { outcome: _ } => {
+            ProposalState::Claimed { outcome: _ } => {
                 anyhow::bail!("proposal {proposal_id} is already claimed, and should have been removed from the active set");
             }
         };
 
         // Update the proposal state to reflect the outcome
-        state.put_proposal_state(proposal_id, proposal::State::Finished { outcome });
+        state.put_proposal_state(proposal_id, ProposalState::Finished { outcome });
     }
 
     Ok(())

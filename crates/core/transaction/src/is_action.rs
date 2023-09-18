@@ -27,6 +27,76 @@ pub trait IsAction {
 
 // foreign types
 
+impl From<DelegatorVote> for Action {
+    fn from(value: DelegatorVote) -> Self {
+        Action::DelegatorVote(value)
+    }
+}
+
+impl IsAction for DelegatorVote {
+    fn balance_commitment(&self) -> balance::Commitment {
+        Value {
+            amount: self.body.unbonded_amount,
+            asset_id: VotingReceiptToken::new(self.body.proposal).id(),
+        }
+        .commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
+        let delegator_vote_view = match txp.spend_nullifiers.get(&self.body.nullifier) {
+            Some(note) => DelegatorVoteView::Visible {
+                delegator_vote: self.to_owned(),
+                note: txp.view_note(note.to_owned()),
+            },
+            None => DelegatorVoteView::Opaque {
+                delegator_vote: self.to_owned(),
+            },
+        };
+
+        ActionView::DelegatorVote(delegator_vote_view)
+    }
+}
+
+impl IsAction for ProposalDepositClaim {
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::ProposalDepositClaim(self.clone())
+    }
+}
+
+impl IsAction for ProposalSubmit {
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::ProposalSubmit(self.to_owned())
+    }
+}
+
+impl IsAction for ProposalWithdraw {
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::ProposalWithdraw(self.to_owned())
+    }
+}
+
+impl IsAction for ValidatorVote {
+    fn balance_commitment(&self) -> balance::Commitment {
+        Default::default()
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        ActionView::ValidatorVote(self.to_owned())
+    }
+}
+
 impl IsAction for Output {
     fn balance_commitment(&self) -> balance::Commitment {
         self.body.balance_commitment
