@@ -854,8 +854,6 @@ impl TxCmd {
                 let (ephemeral_return_address, _) = app
                     .fvk
                     .ephemeral_address(OsRng, AddressIndex::from(*source));
-                let account_group_id = app.fvk.account_group_id();
-                let current_height = app.view().status(account_group_id).await?.sync_height;
 
                 // get the current time on the local machine
                 let current_time_u64_ms = SystemTime::now()
@@ -863,7 +861,7 @@ impl TxCmd {
                     .expect("Time went backwards")
                     .as_nanos() as u64;
 
-                let mut timeout_height = *timeout_height;
+                let timeout_height = *timeout_height;
                 let mut timeout_timestamp = *timeout_timestamp;
                 if timeout_timestamp == 0u64 {
                     // add 2 days to current time
