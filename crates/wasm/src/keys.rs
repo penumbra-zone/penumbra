@@ -76,7 +76,7 @@ pub fn get_short_address_by_index(full_viewing_key: &str, index: u32) -> Result<
 
 pub fn spend_key_from_seed(seed_phrase: &str) -> WasmResult<String> {
     let seed = SeedPhrase::from_str(seed_phrase)?;
-    let spend_key = SpendKey::from_seed_phrase(seed, 0);
+    let spend_key = SpendKey::from_seed_phrase_bip39(seed, 0);
 
     let proto = spend_key.to_proto();
 
