@@ -1,4 +1,4 @@
-use crate::error::{WasmError, WasmResult};
+use crate::error::WasmResult;
 use crate::note_record::SpendableNoteRecord;
 use indexed_db_futures::prelude::OpenDbRequest;
 use indexed_db_futures::{IdbDatabase, IdbQuerySource};
