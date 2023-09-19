@@ -74,7 +74,7 @@ pub fn get_short_address_by_index(full_viewing_key: &str, index: u32) -> Result<
     Ok(JsValue::from_str(&result))
 }
 
-pub fn spend_key_from_seed(seed_phrase: &str) -> WasmResult<String> {
+fn spend_key_from_seed(seed_phrase: &str) -> WasmResult<String> {
     let seed = SeedPhrase::from_str(seed_phrase)?;
     let spend_key = SpendKey::from_seed_phrase_bip39(seed, 0);
 
@@ -89,7 +89,7 @@ pub fn spend_key_from_seed(seed_phrase: &str) -> WasmResult<String> {
     Ok(spend_key_str)
 }
 
-pub fn get_full_viewing_key_from_spend(spend_key_bech32: &str) -> WasmResult<String> {
+fn get_full_viewing_key_from_spend(spend_key_bech32: &str) -> WasmResult<String> {
     let spend_key = SpendKey::from_str(spend_key_bech32)?;
 
     let fvk: &FullViewingKey = spend_key.full_viewing_key();
@@ -104,7 +104,7 @@ pub fn get_full_viewing_key_from_spend(spend_key_bech32: &str) -> WasmResult<Str
     Ok(fvk_bech32)
 }
 
-pub fn address_by_index(full_viewing_key: &str, index: u32) -> WasmResult<pb::Address> {
+fn address_by_index(full_viewing_key: &str, index: u32) -> WasmResult<pb::Address> {
     let fvk = FullViewingKey::from_str(full_viewing_key)?;
 
     let (address, _dtk) = fvk.incoming().payment_address(index.into());
@@ -114,7 +114,7 @@ pub fn address_by_index(full_viewing_key: &str, index: u32) -> WasmResult<pb::Ad
     Ok(proto)
 }
 
-pub fn ephemeral_address(full_viewing_key: &str, index: u32) -> WasmResult<pb::Address> {
+fn ephemeral_address(full_viewing_key: &str, index: u32) -> WasmResult<pb::Address> {
     let fvk = FullViewingKey::from_str(full_viewing_key)?;
 
     let (address, _dtk) = fvk.ephemeral_address(OsRng, index.into());
@@ -124,10 +124,7 @@ pub fn ephemeral_address(full_viewing_key: &str, index: u32) -> WasmResult<pb::A
     Ok(proto)
 }
 
-pub fn address_index(
-    full_viewing_key: &str,
-    address: &str,
-) -> WasmResult<Option<pb::AddressIndex>> {
+fn address_index(full_viewing_key: &str, address: &str) -> WasmResult<Option<pb::AddressIndex>> {
     let fvk = FullViewingKey::from_str(full_viewing_key)?;
 
     let index = fvk
@@ -136,7 +133,7 @@ pub fn address_index(
     Ok(index)
 }
 
-pub fn short_address_by_index(full_viewing_key: &str, index: u32) -> WasmResult<String> {
+fn short_address_by_index(full_viewing_key: &str, index: u32) -> WasmResult<String> {
     let fvk = FullViewingKey::from_str(full_viewing_key)?;
 
     let (address, _dtk) = fvk.incoming().payment_address(index.into());

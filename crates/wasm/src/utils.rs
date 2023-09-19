@@ -20,7 +20,7 @@ pub fn decode_nct_root(tx_bytes: &str) -> Result<JsValue, Error> {
     serde_wasm_bindgen::to_value(&root)
 }
 
-pub fn decode_nct_root_inner(tx_bytes: &str) -> WasmResult<Root> {
+fn decode_nct_root_inner(tx_bytes: &str) -> WasmResult<Root> {
     let tx_vec: Vec<u8> = hex::decode(tx_bytes)?;
     let root = penumbra_tct::Root::decode(tx_vec.as_slice())?;
     Ok(root)

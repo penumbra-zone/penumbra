@@ -104,13 +104,13 @@ impl WasmPlanner {
 }
 
 impl WasmPlanner {
-    pub fn memo_inner(&mut self, memo: JsValue) -> WasmResult<()> {
+    fn memo_inner(&mut self, memo: JsValue) -> WasmResult<()> {
         let memo_proto: MemoPlaintext = serde_wasm_bindgen::from_value(memo)?;
         let _ = self.planner.memo(memo_proto.try_into()?);
         Ok(())
     }
 
-    pub fn fee_inner(&mut self, fee: JsValue) -> WasmResult<()> {
+    fn fee_inner(&mut self, fee: JsValue) -> WasmResult<()> {
         let fee_proto: Fee = serde_wasm_bindgen::from_value(fee)?;
 
         self.planner.fee(fee_proto.try_into()?);
@@ -118,7 +118,7 @@ impl WasmPlanner {
         Ok(())
     }
 
-    pub fn output_inner(&mut self, value: JsValue, address: JsValue) -> WasmResult<()> {
+    fn output_inner(&mut self, value: JsValue, address: JsValue) -> WasmResult<()> {
         let value_proto: Value = serde_wasm_bindgen::from_value(value)?;
         let address_proto: Address = serde_wasm_bindgen::from_value(address)?;
 
@@ -128,7 +128,7 @@ impl WasmPlanner {
         Ok(())
     }
 
-    pub async fn swap_claim_inner(&mut self, swap_commitment: JsValue) -> WasmResult<()> {
+    async fn swap_claim_inner(&mut self, swap_commitment: JsValue) -> WasmResult<()> {
         let swap_commitment_proto: StateCommitment =
             serde_wasm_bindgen::from_value(swap_commitment)?;
 
@@ -157,7 +157,7 @@ impl WasmPlanner {
         Ok(())
     }
 
-    pub fn swap_inner(
+    fn swap_inner(
         &mut self,
         input_value: JsValue,
         into_denom: JsValue,
@@ -179,7 +179,7 @@ impl WasmPlanner {
         Ok(())
     }
 
-    pub async fn plan_inner(&mut self, self_address: JsValue) -> WasmResult<TransactionPlan> {
+    async fn plan_inner(&mut self, self_address: JsValue) -> WasmResult<TransactionPlan> {
         let self_address_proto: Address = serde_wasm_bindgen::from_value(self_address)?;
 
         let chain_params_proto: ChainParameters = self

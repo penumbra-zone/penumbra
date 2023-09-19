@@ -219,7 +219,7 @@ pub async fn transaction_info_inner(
 }
 
 /// deprecated
-pub fn sign_plan(
+fn sign_plan(
     spend_key_str: &str,
     transaction_plan: TransactionPlan,
 ) -> WasmResult<AuthorizationData> {
@@ -229,7 +229,7 @@ pub fn sign_plan(
 }
 
 /// deprecated
-pub fn build_transaction(
+fn build_transaction(
     fvk: &FullViewingKey,
     plan: TransactionPlan,
     auth_data: AuthorizationData,
@@ -286,13 +286,13 @@ fn witness(nct: Tree, plan: TransactionPlan) -> WasmResult<WitnessData> {
     Ok(witness_data)
 }
 
-pub fn encode_transaction(transaction: JsValue) -> WasmResult<Vec<u8>> {
+fn encode_transaction(transaction: JsValue) -> WasmResult<Vec<u8>> {
     let tx: Transaction = serde_wasm_bindgen::from_value(transaction)?;
     let tx_encoding: Vec<u8> = tx.try_into()?;
     Ok(tx_encoding)
 }
 
-pub fn decode_transaction(tx_bytes: &str) -> WasmResult<Transaction> {
+fn decode_transaction(tx_bytes: &str) -> WasmResult<Transaction> {
     let tx_vec: Vec<u8> =
         base64::Engine::decode(&base64::engine::general_purpose::STANDARD, tx_bytes)?;
     let transaction: Transaction = Transaction::try_from(tx_vec)?;
