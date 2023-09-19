@@ -95,11 +95,21 @@ impl Consensus {
         let app_state: genesis::AppState = serde_json::from_slice(&init_chain.app_state_bytes)
             .expect("can parse app_state in genesis file");
 
-        // Check that we haven't got a duplicated InitChain message for some reason:
-        if self.storage.latest_version() != u64::MAX {
-            anyhow::bail!("database already initialized");
+        match &app_state {
+            genesis::AppState::Checkpoint(h) => {
+                println!("checkpoint: {h:?}");
+                /* fast-forward to commit */
+            }
+            genesis::AppState::Content(_) => {
+                /* run application init_chain */
+
+                // Check that we haven't got a duplicated InitChain message for some reason:
+                if self.storage.latest_version() != u64::MAX {
+                    anyhow::bail!("database already initialized");
+                }
+                self.app.init_chain(&app_state).await;
+            }
         }
-        self.app.init_chain(&app_state).await;
 
         // Extract the Tendermint validators from the app state
         //
