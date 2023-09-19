@@ -1,8 +1,6 @@
 use crate::error::WasmResult;
 use crate::storage::IndexedDBStorage;
-use crate::utils;
 use crate::view_server::{load_tree, string_to_fvk, StoredTree};
-use anyhow::Context;
 use penumbra_keys::keys::SpendKey;
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
@@ -61,25 +59,24 @@ pub fn build_tx(
     full_viewing_key: &str,
     transaction_plan: JsValue,
     stored_tree: JsValue,
-) -> JsValue {
-    utils::set_panic_hook();
-    let plan: TransactionPlan = serde_wasm_bindgen::from_value(transaction_plan).unwrap();
+) -> Result<JsValue, Error> {
+    let plan: TransactionPlan = serde_wasm_bindgen::from_value(transaction_plan)?;
 
     let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())
-        .context("The provided string is not a valid FullViewingKey")
-        .unwrap();
+        .expect("The provided string is not a valid FullViewingKey");
 
-    let auth_data = sign_plan(spend_key_str, plan.clone());
+    let auth_data = sign_plan(spend_key_str, plan.clone())?;
 
-    let stored_tree: StoredTree = serde_wasm_bindgen::from_value(stored_tree).unwrap();
+    let stored_tree: StoredTree =
+        serde_wasm_bindgen::from_value(stored_tree).expect("able to parse StoredTree from JS");
 
     let nct = load_tree(stored_tree);
 
-    let witness_data = witness(nct, plan.clone());
+    let witness_data = witness(nct, plan.clone())?;
 
-    let tx = build_transaction(&fvk, plan.clone(), auth_data, witness_data);
+    let tx = build_transaction(&fvk, plan.clone(), auth_data, witness_data)?;
 
-    return serde_wasm_bindgen::to_value(&tx).unwrap();
+    serde_wasm_bindgen::to_value(&tx)
 }
 
 /// Get transaction view, transaction perspective
@@ -222,10 +219,13 @@ pub async fn transaction_info_inner(
 }
 
 /// deprecated
-pub fn sign_plan(spend_key_str: &str, transaction_plan: TransactionPlan) -> AuthorizationData {
-    let spend_key = SpendKey::from_str(spend_key_str).unwrap();
-
-    transaction_plan.authorize(OsRng, &spend_key)
+pub fn sign_plan(
+    spend_key_str: &str,
+    transaction_plan: TransactionPlan,
+) -> WasmResult<AuthorizationData> {
+    let spend_key = SpendKey::from_str(spend_key_str)?;
+    let auth_data = transaction_plan.authorize(OsRng, &spend_key);
+    Ok(auth_data)
 }
 
 /// deprecated
@@ -234,15 +234,16 @@ pub fn build_transaction(
     plan: TransactionPlan,
     auth_data: AuthorizationData,
     witness_data: WitnessData,
-) -> Transaction {
-    plan.build(fvk, witness_data)
-        .unwrap()
-        .authorize(&mut OsRng, &auth_data)
-        .unwrap()
+) -> WasmResult<Transaction> {
+    let tx = plan
+        .build(fvk, witness_data)?
+        .authorize(&mut OsRng, &auth_data)?;
+
+    Ok(tx)
 }
 
 /// deprecated
-fn witness(nct: Tree, plan: TransactionPlan) -> WitnessData {
+fn witness(nct: Tree, plan: TransactionPlan) -> WasmResult<WitnessData> {
     let note_commitments: Vec<StateCommitment> = plan
         .spend_plans()
         .filter(|plan| plan.note.amount() != 0u64.into())
@@ -259,7 +260,7 @@ fn witness(nct: Tree, plan: TransactionPlan) -> WitnessData {
 
     let auth_paths: Vec<Proof> = note_commitments
         .iter()
-        .map(|nc| nct.witness(*nc).unwrap())
+        .map(|nc| nct.witness(*nc).expect("note commitment is in the NCT"))
         .collect::<Vec<Proof>>();
 
     // Release the read lock on the NCT
@@ -282,7 +283,7 @@ fn witness(nct: Tree, plan: TransactionPlan) -> WitnessData {
     {
         witness_data.add_proof(nc, Proof::dummy(&mut OsRng, nc));
     }
-    witness_data
+    Ok(witness_data)
 }
 
 pub fn encode_transaction(transaction: JsValue) -> WasmResult<Vec<u8>> {
