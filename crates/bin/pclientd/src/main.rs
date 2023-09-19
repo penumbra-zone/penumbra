@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 use anyhow::Result;
 use clap::Parser;
 use tracing_subscriber::{prelude::*, EnvFilter};

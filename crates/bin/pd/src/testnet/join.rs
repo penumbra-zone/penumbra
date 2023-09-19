@@ -212,7 +212,9 @@ fn address_could_be_external(address: &str) -> bool {
 /// It may be possible for a node [Id] to proceed the `@`.
 pub fn parse_tm_address_listener(s: &str) -> Option<TendermintAddress> {
     let re = regex::Regex::new(r"Listener\(.*@(tcp://)?(.*)\)").ok()?;
-    let groups = re.captures(s).unwrap();
+    let groups = re
+        .captures(s)
+        .expect("tendermint listener address from net_info endpoint is valid");
     let r: Option<String> = groups.get(2).map(|m| m.as_str().to_string());
     match r {
         Some(t) => {

@@ -1,4 +1,5 @@
 #![allow(clippy::clone_on_copy)]
+#![deny(clippy::unwrap_used)]
 #![recursion_limit = "512"]
 use std::{net::SocketAddr, path::PathBuf};
 
@@ -325,7 +326,7 @@ async fn main() -> anyhow::Result<()> {
                         .mempool(mempool)
                         .info(info.clone())
                         .finish()
-                        .unwrap()
+                        .context("failed to build abci server")?
                         .listen(abci_bind),
                 )
                 .expect("failed to spawn abci server");
@@ -377,7 +378,11 @@ async fn main() -> anyhow::Result<()> {
                 let mut acme_cache = home.clone();
                 acme_cache.push("rustls_acme_cache");
 
-                let grpc_bind = grpc_bind.unwrap_or("0.0.0.0:443".parse().unwrap());
+                let grpc_bind = grpc_bind.unwrap_or(
+                    "0.0.0.0:443"
+                        .parse()
+                        .context("failed to parse grpc_bind address")?,
+                );
                 let listener = TcpListenerStream::new(TcpListener::bind(grpc_bind).await?);
                 // Configure HTTP2 support for the TLS negotiation; we also permit HTTP1.1
                 // for backwards-compatibility, specifically for grpc-web.
@@ -395,7 +400,11 @@ async fn main() -> anyhow::Result<()> {
                     .spawn(grpc_server.serve_with_incoming(tls_incoming))
                     .expect("failed to spawn grpc server")
             } else {
-                let grpc_bind = grpc_bind.unwrap_or("127.0.0.1:8080".parse().unwrap());
+                let grpc_bind = grpc_bind.unwrap_or(
+                    "127.0.0.1:8080"
+                        .parse()
+                        .context("failed to parse grpc_bind address")?,
+                );
                 tokio::task::Builder::new()
                     .name("grpc_server")
                     .spawn(grpc_server.serve(grpc_bind))
@@ -613,7 +622,7 @@ async fn main() -> anyhow::Result<()> {
             tracing::info!("upgrading state from {}", export_path.display());
             let _ = upgrade::migrate(export_path.clone(), Upgrade::Testnet60)
                 .await
-                .unwrap();
+                .context("failed to upgrade state")?;
         }
     }
     Ok(())

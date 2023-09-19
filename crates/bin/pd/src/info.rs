@@ -76,7 +76,7 @@ impl Info {
             v => v,
         }
         .try_into()
-        .unwrap();
+        .context("failed to convert height")?;
 
         let last_block_app_hash = state.app_hash().await?.0.to_vec().try_into()?;
 
@@ -144,7 +144,7 @@ impl Info {
                     log: "".to_string(),
                     value: value.into(),
                     proof: Some(proof_ops),
-                    height: height.try_into().unwrap(),
+                    height: height.try_into().context("failed to convert height")?,
                     codespace: "".to_string(),
                     info: "".to_string(),
                     index: 0,
@@ -164,7 +164,10 @@ impl Info {
                 let mut connections = vec![];
                 for conn_idx in 0..connection_counter.0 {
                     let conn_id = ConnectionId(format!("connection-{}", conn_idx));
-                    let connection = snapshot.get_connection(&conn_id).await?.unwrap();
+                    let connection = snapshot
+                        .get_connection(&conn_id)
+                        .await?
+                        .context("couldn't find connection")?;
                     let id_conn = IdentifiedConnectionEnd {
                         connection_id: conn_id,
                         connection_end: connection,
@@ -185,7 +188,7 @@ impl Info {
                     log: "".to_string(),
                     value: res_value.into(),
                     proof: None,
-                    height: height.try_into().unwrap(),
+                    height: height.try_into().context("failed to convert height")?,
                     codespace: "".to_string(),
                     info: "".to_string(),
                     index: 0,
@@ -208,7 +211,7 @@ impl Info {
                     let channel = snapshot
                         .get_channel(&chan_id, &PortId::transfer())
                         .await?
-                        .unwrap();
+                        .context("couldn't find channel")?;
                     let id_chan = IdentifiedChannelEnd {
                         channel_id: chan_id,
                         port_id: PortId::transfer(),
@@ -230,7 +233,7 @@ impl Info {
                     log: "".to_string(),
                     value: res_value.into(),
                     proof: None,
-                    height: height.try_into().unwrap(),
+                    height: height.try_into().context("failed to convert height")?,
                     codespace: "".to_string(),
                     info: "".to_string(),
                     index: 0,
@@ -256,7 +259,7 @@ impl Info {
                     let channel = snapshot
                         .get_channel(&chan_id, &PortId::transfer())
                         .await?
-                        .unwrap();
+                        .context("couldn't find channel")?;
                     if channel.connection_hops.contains(&connection_id) {
                         let id_chan = IdentifiedChannelEnd {
                             channel_id: chan_id,
@@ -280,7 +283,7 @@ impl Info {
                     log: "".to_string(),
                     value: res_value.into(),
                     proof: None,
-                    height: height.try_into().unwrap(),
+                    height: height.try_into().context("failed to convert height")?,
                     codespace: "".to_string(),
                     info: "".to_string(),
                     index: 0,
@@ -322,7 +325,7 @@ impl Info {
                     log: "".to_string(),
                     value: res_value.into(),
                     proof: None,
-                    height: height.try_into().unwrap(),
+                    height: height.try_into().context("failed to convert height")?,
                     codespace: "".to_string(),
                     info: "".to_string(),
                     index: 0,
@@ -352,7 +355,7 @@ impl Info {
                     if commitment.is_none() {
                         continue;
                     }
-                    let commitment = commitment.unwrap();
+                    let commitment = commitment.expect("commitment is Some");
 
                     let commitment_state = PacketState {
                         port_id: request.port_id.clone(),
@@ -377,7 +380,7 @@ impl Info {
                     log: "".to_string(),
                     value: res_value.into(),
                     proof: None,
-                    height: height.try_into().unwrap(),
+                    height: height.try_into().context("failed to convert height")?,
                     codespace: "".to_string(),
                     info: "".to_string(),
                     index: 0,
@@ -428,7 +431,7 @@ impl Info {
                     log: "".to_string(),
                     value: res_value.into(),
                     proof: None,
-                    height: height.try_into().unwrap(),
+                    height: height.try_into().context("failed to convert height")?,
                     codespace: "".to_string(),
                     info: "".to_string(),
                     index: 0,
@@ -493,7 +496,7 @@ impl Info {
                     log: "".to_string(),
                     value: res_value.into(),
                     proof: None,
-                    height: height.try_into().unwrap(),
+                    height: height.try_into().context("failed to convert height")?,
                     codespace: "".to_string(),
                     info: "".to_string(),
                     index: 0,
@@ -541,7 +544,7 @@ impl Info {
                     log: "".to_string(),
                     value: res_value.into(),
                     proof: None,
-                    height: height.try_into().unwrap(),
+                    height: height.try_into().context("failed to convert height")?,
                     codespace: "".to_string(),
                     info: "".to_string(),
                     index: 0,

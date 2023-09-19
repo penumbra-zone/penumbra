@@ -60,7 +60,11 @@ impl Opt {
                 std::mem::take(&mut self.tracing_filter)
                     // Without explicitly disabling the `r1cs` target, the ZK proof implementations
                     // will spend an enormous amount of CPU and memory building useless tracing output.
-                    .add_directive("r1cs=off".parse().unwrap()),
+                    .add_directive(
+                        "r1cs=off"
+                            .parse()
+                            .expect("rics=off is a valid filter directive"),
+                    ),
             )
             .with_writer(std::io::stderr)
             .init();

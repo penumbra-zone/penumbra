@@ -145,7 +145,9 @@ impl ValidatorCmd {
                 let account_group_id = app.fvk.account_group_id();
                 let plan = plan::validator_definition(
                     account_group_id,
-                    app.view.as_mut().unwrap(),
+                    app.view
+                        .as_mut()
+                        .context("view service must be initialized")?,
                     OsRng,
                     vd,
                     fee,
@@ -190,7 +192,9 @@ impl ValidatorCmd {
 
                 let plan = plan::validator_vote(
                     account_group_id,
-                    app.view.as_mut().unwrap(),
+                    app.view
+                        .as_mut()
+                        .context("view service must be initialized")?,
                     OsRng,
                     vote,
                     fee,

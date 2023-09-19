@@ -97,7 +97,11 @@ impl TestnetTendermintConfig {
         // Write this node's node_key.json
         // the underlying type doesn't implement Copy or Clone (for the best)
         let priv_key = tendermint::PrivateKey::Ed25519(
-            v.keys.node_key_sk.ed25519_signing_key().unwrap().clone(),
+            v.keys
+                .node_key_sk
+                .ed25519_signing_key()
+                .expect("node key has ed25519 signing key")
+                .clone(),
         );
 
         let node_key = NodeKey { priv_key };
@@ -187,7 +191,11 @@ impl ValidatorKeys {
 
         // generate consensus key for tendermint.
         let validator_cons_sk = tendermint::PrivateKey::Ed25519(
-            validator_cons_sk.as_bytes().as_slice().try_into().unwrap(),
+            validator_cons_sk
+                .as_bytes()
+                .as_slice()
+                .try_into()
+                .expect("32 bytes"),
         );
         let validator_cons_pk = validator_cons_sk.public_key();
 
@@ -196,7 +204,8 @@ impl ValidatorKeys {
         let signing_key_bytes = node_key_sk.as_bytes().as_slice();
 
         // generate consensus key for tendermint.
-        let node_key_sk = tendermint::PrivateKey::Ed25519(signing_key_bytes.try_into().unwrap());
+        let node_key_sk =
+            tendermint::PrivateKey::Ed25519(signing_key_bytes.try_into().expect("32 bytes"));
         let node_key_pk = node_key_sk.public_key();
 
         ValidatorKeys {
@@ -252,7 +261,7 @@ pub struct TendermintPrivKey {
 /// Expand tildes in a path.
 /// Modified from `<https://stackoverflow.com/a/68233480>`
 pub fn canonicalize_path(input: &str) -> PathBuf {
-    let tilde = Regex::new(r"^~(/|$)").unwrap();
+    let tilde = Regex::new(r"^~(/|$)").expect("tilde regex is valid");
     if input.starts_with('/') {
         // if the input starts with a `/`, we use it as is
         input.into()
@@ -267,7 +276,13 @@ pub fn canonicalize_path(input: &str) -> PathBuf {
             }
         }))
     } else {
-        PathBuf::from(format!("{}/{}", current_dir().unwrap().display(), input))
+        PathBuf::from(format!(
+            "{}/{}",
+            current_dir()
+                .expect("current working dir is valid")
+                .display(),
+            input
+        ))
     }
 }
 

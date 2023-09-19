@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use crate::dex_utils;
 use crate::dex_utils::replicate::debug;
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use dialoguer::Confirm;
 use penumbra_asset::Value;
 use penumbra_dex::{lp::position::Position, DirectedUnitPair};
@@ -77,8 +77,14 @@ impl ConstantProduct {
                 .iter()
                 .fold((Amount::zero(), Amount::zero()), |acc, pos| {
                     (
-                        acc.0 + pos.reserves_for(pair.start.id()).unwrap(),
-                        acc.1 + pos.reserves_for(pair.end.id()).unwrap(),
+                        acc.0
+                            + pos
+                                .reserves_for(pair.start.id())
+                                .expect("start is part of position"),
+                        acc.1
+                            + pos
+                                .reserves_for(pair.end.id())
+                                .expect("end is part of position"),
                     )
                 });
         let amount_start = pair.start.format_value(amount_start);
@@ -149,7 +155,9 @@ impl ConstantProduct {
 
         let plan = planner
             .plan(
-                app.view.as_mut().unwrap(),
+                app.view
+                    .as_mut()
+                    .context("view service must be initialized")?,
                 app.fvk.account_group_id(),
                 AddressIndex::new(self.source),
             )
@@ -168,7 +176,9 @@ impl ConstantProduct {
             anyhow::bail!("the quantity of liquidity supplied must be non-zero.",)
         } else if self.fee_bps > 5000 {
             anyhow::bail!("the maximum fee is 5000bps (50%)")
-        } else if self.current_price.is_some() && self.current_price.unwrap() <= 0.0 {
+        } else if self.current_price.is_some()
+            && self.current_price.expect("current price is Some") <= 0.0
+        {
             anyhow::bail!("the supplied current price must be positive")
         } else {
             Ok(())
@@ -228,7 +238,7 @@ impl ConstantProduct {
         {
             let raw_r1 = input.amount.value();
             let denom_unit = pair.start.unit_amount().value();
-            let fp_r1 = U128x128::ratio(raw_r1, denom_unit).unwrap();
+            let fp_r1 = U128x128::ratio(raw_r1, denom_unit).expect("denom unit is not 0");
             r1 = fp_r1.into();
         }
 

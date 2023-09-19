@@ -268,7 +268,11 @@ impl TestnetConfig {
                 .testnet_validators
                 .iter()
                 .map(|v| v.peering_address())
-                .filter(|a| *a.as_ref().unwrap() != v.peering_address().unwrap())
+                .filter(|a| {
+                    *a.as_ref().expect("able to get address ref")
+                        != v.peering_address()
+                            .expect("able to get peering address ref")
+                })
                 .collect();
             let ips_minus_mine = ips_minus_mine?;
             tracing::debug!(?ips_minus_mine, "Found these peer ips");
@@ -432,7 +436,7 @@ impl TestnetValidator {
     /// If an `external_address` was set, use that. Next, check for a `peer_address_template`.
     /// Finally, fall back to localhost.
     pub fn peering_address(&self) -> anyhow::Result<TendermintAddress> {
-        let tm_node_id = node::Id::from(self.keys.node_key_pk.ed25519().unwrap());
+        let tm_node_id = node::Id::from(self.keys.node_key_pk.ed25519().expect("ed25519 key"));
         tracing::debug!(?self.name, ?self.external_address, ?self.peer_address_template, "Looking up peering_address");
         let r: TendermintAddress = match &self.external_address {
             // The `external_address` is a TendermintAddress, so unpack as enum to retrieve

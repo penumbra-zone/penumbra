@@ -1,3 +1,4 @@
+#![deny(clippy::unwrap_used)]
 #![recursion_limit = "256"]
 mod client;
 mod metrics;

@@ -261,7 +261,7 @@ impl DexCmd {
                     asset_id: output.asset_id,
                     amount: cache
                         .get(&output.asset_id)
-                        .unwrap()
+                        .expect("asset ID should exist in the cache")
                         .default_unit()
                         .unit_amount(),
                 }
@@ -276,9 +276,16 @@ impl DexCmd {
                 row[1 + i] = format!("{} =>", trace[i].format(&cache));
             }
             // Right-align the last elemnent of the trace, in case subtraces have different lengths
-            row[column_count - 2] = format!("{}", trace.last().unwrap().format(&cache));
+            row[column_count - 2] = trace
+                .last()
+                .context("trace should have elements")?
+                .format(&cache)
+                .to_string();
             // Print the price in the last column.
-            row[column_count - 1] = price_string(*trace.first().unwrap(), *trace.last().unwrap());
+            row[column_count - 1] = price_string(
+                *trace.first().context("trace should have elements")?,
+                *trace.last().context("trace should have elements")?,
+            );
 
             table.add_row(row);
         }
@@ -310,7 +317,7 @@ impl DexCmd {
             .await?
             .into_inner()
             .denom_metadata
-            .unwrap()
+            .context("denom metadata for asset 1 not found")?
             .try_into()?;
         let asset_2: DenomMetadata = client
             .denom_metadata_by_id(DenomMetadataByIdRequest {
@@ -320,7 +327,7 @@ impl DexCmd {
             .await?
             .into_inner()
             .denom_metadata
-            .unwrap()
+            .context("denom metadata for asset 2 not found")?
             .try_into()?;
 
         let unit_1 = asset_1.default_unit();

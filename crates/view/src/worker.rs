@@ -123,8 +123,7 @@ impl Worker {
         for tx_bytes in block.data.as_ref().expect("block data").txs.iter() {
             let tx_id: [u8; 32] = sha2::Sha256::digest(tx_bytes.as_slice())
                 .as_slice()
-                .try_into()
-                .unwrap();
+                .try_into()?;
 
             let transaction = Transaction::decode(tx_bytes.as_slice())?;
 
@@ -196,7 +195,7 @@ impl Worker {
             if !block.requires_scanning() {
                 // Optimization: if the block is empty, seal the in-memory SCT,
                 // and skip touching the database:
-                sct_guard.end_block().unwrap();
+                sct_guard.end_block()?;
                 // We also need to end the epoch, since if there are no funding streams, then an
                 // epoch boundary won't necessarily require scanning:
                 if block.epoch_root.is_some() {
@@ -345,7 +344,10 @@ impl Worker {
     pub async fn run(mut self) -> anyhow::Result<()> {
         self.run_inner().await.map_err(|e| {
             tracing::info!(?e, "view worker error");
-            self.error_slot.lock().unwrap().replace(e);
+            self.error_slot
+                .lock()
+                .expect("no race conditions on worker error slot lock")
+                .replace(e);
             anyhow::anyhow!("view worker error")
         })
     }

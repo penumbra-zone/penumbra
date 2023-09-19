@@ -56,7 +56,8 @@ pub async fn migrate(path_to_export: PathBuf, upgrade: Upgrade) -> anyhow::Resul
             let mut app_state = Content::default();
             app_state.chain_params = chain_params;
             app_state.validators = validators.into_iter().map(Into::into).collect();
-            let mut genesis = TestnetConfig::make_genesis(app_state.clone()).unwrap();
+            let mut genesis =
+                TestnetConfig::make_genesis(app_state.clone()).expect("can make genesis");
             genesis.app_hash = app_hash
                 .0
                 .to_vec()

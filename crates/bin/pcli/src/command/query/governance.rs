@@ -75,8 +75,10 @@ impl GovernanceCmd {
                     while let Some(PrefixValueResponse { key, .. }) =
                         unfinished.next().await.transpose()?
                     {
-                        let proposal_id = u64::from_str(key.rsplit('/').next().unwrap())
-                            .context("proposal id was not a valid u64")?;
+                        let proposal_id = u64::from_str(
+                            key.rsplit('/').next().context("key must contain a slash")?,
+                        )
+                        .context("proposal id was not a valid u64")?;
                         unfinished_proposals.push(proposal_id);
                     }
                     unfinished_proposals
