@@ -29,7 +29,7 @@ penumbra-tct           = { path = "../crypto/tct" }
 penumbra-transaction   = { path = "../core/transaction", default-features = false }
 
 anyhow                   = "1.0.75"
-ark-ff                   = { version = "0.4", features = ["std"] }
+ark-ff                   = { version = "0.4.2", features = ["std"] }
 base64                   = "0.21.2"
 console_error_panic_hook = { version = "0.1.7", optional = true }
 decaf377                 = { version = "0.5", features = ["r1cs"] }
