@@ -55,15 +55,14 @@ impl IndexedDBStorage {
         let tx = self.db.transaction_on_one("assets")?;
         let store = tx.object_store("assets")?;
 
-        store
+        Ok(store
             .get_owned(base64::Engine::encode(
                 &base64::engine::general_purpose::STANDARD,
                 id.to_proto().inner,
             ))?
             .await?
             .map(serde_wasm_bindgen::from_value)
-            .transpose()
-            .map_err(WasmError::from)
+            .transpose()?)
     }
 
     pub async fn get_note(
@@ -73,15 +72,14 @@ impl IndexedDBStorage {
         let tx = self.db.transaction_on_one("spendable_notes")?;
         let store = tx.object_store("spendable_notes")?;
 
-        store
+        Ok(store
             .get_owned(base64::Engine::encode(
                 &base64::engine::general_purpose::STANDARD,
                 commitment.to_proto().inner,
             ))?
             .await?
             .map(serde_wasm_bindgen::from_value)
-            .transpose()
-            .map_err(WasmError::from)
+            .transpose()?)
     }
 
     pub async fn get_note_by_nullifier(
@@ -91,7 +89,7 @@ impl IndexedDBStorage {
         let tx = self.db.transaction_on_one("spendable_notes")?;
         let store = tx.object_store("spendable_notes")?;
 
-        store
+        Ok(store
             .index("nullifier")?
             .get_owned(&base64::Engine::encode(
                 &base64::engine::general_purpose::STANDARD,
@@ -99,8 +97,7 @@ impl IndexedDBStorage {
             ))?
             .await?
             .map(serde_wasm_bindgen::from_value)
-            .transpose()
-            .map_err(WasmError::from)
+            .transpose()?)
     }
 
     pub async fn store_advice(&self, note: Note) -> WasmResult<()> {
@@ -127,36 +124,33 @@ impl IndexedDBStorage {
 
         let commitment_js = serde_wasm_bindgen::to_value(&commitment_proto)?;
 
-        store
+        Ok(store
             .get_owned(commitment_js)?
             .await?
             .map(serde_wasm_bindgen::from_value)
-            .transpose()
-            .map_err(WasmError::from)
+            .transpose()?)
     }
 
     pub async fn get_chain_parameters(&self) -> WasmResult<Option<ChainParameters>> {
         let tx = self.db.transaction_on_one("chain_parameters")?;
         let store = tx.object_store("chain_parameters")?;
 
-        store
+        Ok(store
             .get_owned("chain_parameters")?
             .await?
             .map(serde_wasm_bindgen::from_value)
-            .transpose()
-            .map_err(WasmError::from)
+            .transpose()?)
     }
 
     pub async fn get_fmd_parameters(&self) -> WasmResult<Option<FmdParameters>> {
         let tx = self.db.transaction_on_one("fmd_parameters")?;
         let store = tx.object_store("fmd_parameters")?;
 
-        store
+        Ok(store
             .get_owned("fmd")?
             .await?
             .map(serde_wasm_bindgen::from_value)
-            .transpose()
-            .map_err(WasmError::from)
+            .transpose()?)
     }
 
     pub async fn get_swap_by_commitment(
@@ -166,14 +160,13 @@ impl IndexedDBStorage {
         let tx = self.db.transaction_on_one("swaps")?;
         let store = tx.object_store("swaps")?;
 
-        store
+        Ok(store
             .get_owned(base64::Engine::encode(
                 &base64::engine::general_purpose::STANDARD,
                 swap_commitment.inner,
             ))?
             .await?
             .map(serde_wasm_bindgen::from_value)
-            .transpose()
-            .map_err(WasmError::from)
+            .transpose()?)
     }
 }
