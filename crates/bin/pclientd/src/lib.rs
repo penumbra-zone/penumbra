@@ -106,6 +106,8 @@ pub enum Command {
     },
     /// Start running `pclientd`.
     Start {},
+    /// Delete `pclientd` storage to reset local state.
+    Reset {},
 }
 
 impl Opt {
@@ -136,6 +138,8 @@ impl Opt {
                     self.home
                 ));
             }
+        } else {
+            fs::create_dir_all(&self.home)?;
         }
         Ok(())
     }
@@ -152,8 +156,6 @@ impl Opt {
             .into_inner()
             .try_into()?;
 
-        fs::create_dir_all(&self.home)?;
-
         Storage::initialize(Some(self.sqlite_path()), fvk.clone(), params).await
     }
 
@@ -168,6 +170,16 @@ impl Opt {
     pub async fn exec(self) -> Result<()> {
         let opt = self;
         match &opt.cmd {
+            Command::Reset {} => {
+                if opt.sqlite_path().exists() {
+                    fs::remove_file(opt.sqlite_path())?;
+                    println!("Deleted local storage at: {:?}", opt.sqlite_path());
+                } else {
+                    println!("No local storage at: {:?} (have you started pclientd, so it would have data to store?)", opt.sqlite_path());
+                }
+
+                Ok(())
+            }
             Command::Init {
                 view,
                 custody,
