@@ -48,7 +48,7 @@ pub fn decode_tx(tx_bytes: &str) -> Result<JsValue, Error> {
     serde_wasm_bindgen::to_value(&result)
 }
 
-/// deprecated
+/// TODO: Deprecated. Still used in `penumbra-zone/wallet`, remove when migration is complete.
 /// In the future, this function will be split into separate functions
 /// - sign the transaction
 /// - build transaction
@@ -218,7 +218,7 @@ pub async fn transaction_info_inner(
     Ok(response)
 }
 
-/// deprecated
+
 fn sign_plan(
     spend_key_str: &str,
     transaction_plan: TransactionPlan,
@@ -228,7 +228,7 @@ fn sign_plan(
     Ok(auth_data)
 }
 
-/// deprecated
+
 fn build_transaction(
     fvk: &FullViewingKey,
     plan: TransactionPlan,
@@ -242,7 +242,6 @@ fn build_transaction(
     Ok(tx)
 }
 
-/// deprecated
 fn witness(nct: Tree, plan: TransactionPlan) -> WasmResult<WitnessData> {
     let note_commitments: Vec<StateCommitment> = plan
         .spend_plans()
