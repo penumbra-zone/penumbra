@@ -1,0 +1,19 @@
+{
+  "name": "penumbra-wasm",
+  "description": "wasm-pack generated bundles",
+  "author": "Gabe R. <gabe@penumbralabs.xyz>",
+  "license": "ISC",
+  "scripts": {
+    "format": "prettier --write .",
+    "publish-wasm": "tsc && node build/publish-wasm.js"
+  },
+  "dependencies": {
+    "wasm-pack": "^0.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.5.6",
+    "tsx": "^3.12.7",
+    "typescript": "^5.2.2",
+    "prettier": "^3.0.2"
+  }
+}
