@@ -55,9 +55,9 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     }
 
     fn put_packet_receipt(&mut self, packet: &Packet) {
-        self.put_proto::<String>(
+        self.put_raw(
             ReceiptPath::new(&packet.port_on_b, &packet.chan_on_b, packet.sequence).to_string(),
-            "1".to_string(),
+            "1".into(),
         );
     }
 
