@@ -14,28 +14,28 @@ pub enum WasmError {
     Anyhow(#[from] anyhow::Error),
 
     #[error("{0}")]
+    DecodeError(#[from] DecodeError),
+
+    #[error("{0}")]
     Dom(#[from] DomError),
 
     #[error("{0}")]
-    Wasm(#[from] serde_wasm_bindgen::Error),
+    FromHexError(#[from] FromHexError),
 
     #[error("{0}")]
     Infallible(#[from] Infallible),
 
     #[error("{0}")]
-    DecodeError(#[from] DecodeError),
-
-    #[error("{0}")]
-    InsertError(#[from] InsertError),
+    InsertBlockError(#[from] InsertBlockError),
 
     #[error("{0}")]
     InsertEpochError(#[from] InsertEpochError),
 
     #[error("{0}")]
-    InsertBlockError(#[from] InsertBlockError),
+    InsertError(#[from] InsertError),
 
     #[error("{0}")]
-    FromHexError(#[from] FromHexError),
+    Wasm(#[from] serde_wasm_bindgen::Error),
 }
 
 impl From<WasmError> for serde_wasm_bindgen::Error {
