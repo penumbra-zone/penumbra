@@ -44,6 +44,5 @@ wasm-bindgen-futures     = "0.4.37"
 wasm-bindgen-test        = "0.3.0"
 web-sys                  = { version = "0.3.64", features = ["console"] }
 
-
 [dev-dependencies]
 wasm-bindgen-test = "0.3.37"
