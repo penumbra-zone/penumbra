@@ -14,7 +14,6 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn generate_spend_key(seed_phrase: &str) -> Result<JsValue, Error> {
     let result = spend_key_from_seed(seed_phrase)?;
-
     Ok(JsValue::from_str(&result))
 }
 

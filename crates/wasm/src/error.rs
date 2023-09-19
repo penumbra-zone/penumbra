@@ -4,6 +4,7 @@ use penumbra_tct::error::{InsertBlockError, InsertEpochError, InsertError};
 use serde_wasm_bindgen::Error;
 use std::convert::Infallible;
 use thiserror::Error;
+use wasm_bindgen::{JsError, JsValue};
 use web_sys::DomException;
 
 pub type WasmResult<T> = Result<T, WasmError>;
@@ -41,6 +42,12 @@ pub enum WasmError {
 impl From<WasmError> for serde_wasm_bindgen::Error {
     fn from(wasm_err: WasmError) -> Self {
         Error::new(wasm_err.to_string())
+    }
+}
+
+impl From<WasmError> for JsValue {
+    fn from(error: WasmError) -> Self {
+        JsError::from(error).into()
     }
 }
 

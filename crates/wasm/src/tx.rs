@@ -1,6 +1,6 @@
 use crate::error::WasmResult;
 use crate::storage::IndexedDBStorage;
-use crate::view_server::{load_tree, string_to_fvk, StoredTree};
+use crate::view_server::{load_tree, StoredTree};
 use penumbra_keys::keys::SpendKey;
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
@@ -33,9 +33,11 @@ impl TxInfoResponse {
 ///     transaction: `penumbra_transaction::Transaction`
 /// Returns: `<Vec<u8>`
 #[wasm_bindgen]
-pub fn encode_tx(transaction: JsValue) -> Result<JsValue, Error> {
-    let result = encode_transaction(transaction)?;
-    serde_wasm_bindgen::to_value(&result)
+pub fn encode_tx(transaction: JsValue) -> WasmResult<JsValue> {
+    let tx: Transaction = serde_wasm_bindgen::from_value(transaction)?;
+    let tx_encoding: Vec<u8> = tx.try_into()?;
+    let result = serde_wasm_bindgen::to_value(&tx_encoding)?;
+    Ok(result)
 }
 
 /// decode base64 bytes to transaction
@@ -43,9 +45,12 @@ pub fn encode_tx(transaction: JsValue) -> Result<JsValue, Error> {
 ///     tx_bytes: `base64 String`
 /// Returns: `penumbra_transaction::Transaction`
 #[wasm_bindgen]
-pub fn decode_tx(tx_bytes: &str) -> Result<JsValue, Error> {
-    let result = decode_transaction(tx_bytes)?;
-    serde_wasm_bindgen::to_value(&result)
+pub fn decode_tx(tx_bytes: &str) -> WasmResult<JsValue> {
+    let tx_vec: Vec<u8> =
+        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, tx_bytes)?;
+    let transaction: Transaction = Transaction::try_from(tx_vec)?;
+    let result = serde_wasm_bindgen::to_value(&transaction)?;
+    Ok(result)
 }
 
 /// TODO: Deprecated. Still used in `penumbra-zone/wallet`, remove when migration is complete.
@@ -86,23 +91,22 @@ pub fn build_tx(
 /// Returns: `TxInfoResponse`
 #[wasm_bindgen]
 pub async fn transaction_info(full_viewing_key: &str, tx: JsValue) -> Result<JsValue, Error> {
-    let fvk = string_to_fvk(full_viewing_key)?;
-
     let transaction = serde_wasm_bindgen::from_value(tx)?;
-    let response = transaction_info_inner(fvk, transaction).await?;
+    let response = transaction_info_inner(full_viewing_key, transaction).await?;
 
     serde_wasm_bindgen::to_value(&response)
 }
 
 /// deprecated
 pub async fn transaction_info_inner(
-    fvk: FullViewingKey,
+    full_viewing_key: &str,
     tx: Transaction,
 ) -> WasmResult<TxInfoResponse> {
     let storage = IndexedDBStorage::new().await?;
 
-    // First, create a TxP with the payload keys visible to our FVK and no other data.
+    let fvk = FullViewingKey::from_str(full_viewing_key)?;
 
+    // First, create a TxP with the payload keys visible to our FVK and no other data.
     let mut txp = penumbra_transaction::TransactionPerspective {
         payload_keys: tx
             .payload_keys(&fvk)
@@ -218,7 +222,6 @@ pub async fn transaction_info_inner(
     Ok(response)
 }
 
-
 fn sign_plan(
     spend_key_str: &str,
     transaction_plan: TransactionPlan,
@@ -227,7 +230,6 @@ fn sign_plan(
     let auth_data = transaction_plan.authorize(OsRng, &spend_key);
     Ok(auth_data)
 }
-
 
 fn build_transaction(
     fvk: &FullViewingKey,
@@ -283,17 +285,4 @@ fn witness(nct: Tree, plan: TransactionPlan) -> WasmResult<WitnessData> {
         witness_data.add_proof(nc, Proof::dummy(&mut OsRng, nc));
     }
     Ok(witness_data)
-}
-
-fn encode_transaction(transaction: JsValue) -> WasmResult<Vec<u8>> {
-    let tx: Transaction = serde_wasm_bindgen::from_value(transaction)?;
-    let tx_encoding: Vec<u8> = tx.try_into()?;
-    Ok(tx_encoding)
-}
-
-fn decode_transaction(tx_bytes: &str) -> WasmResult<Transaction> {
-    let tx_vec: Vec<u8> =
-        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, tx_bytes)?;
-    let transaction: Transaction = Transaction::try_from(tx_vec)?;
-    Ok(transaction)
 }

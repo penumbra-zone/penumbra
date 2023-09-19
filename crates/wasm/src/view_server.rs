@@ -72,8 +72,8 @@ impl ViewServer {
         full_viewing_key: &str,
         epoch_duration: u64,
         stored_tree: JsValue,
-    ) -> Result<ViewServer, Error> {
-        let fvk = string_to_fvk(full_viewing_key)?;
+    ) -> WasmResult<ViewServer> {
+        let fvk = FullViewingKey::from_str(full_viewing_key)?;
         let stored_tree: StoredTree = serde_wasm_bindgen::from_value(stored_tree)?;
         let tree = load_tree(stored_tree);
         let view_server = Self {
@@ -354,9 +354,4 @@ pub fn load_tree(stored_tree: StoredTree) -> Tree {
         add_hashes.insert(stored_hash.position, stored_hash.height, stored_hash.hash);
     }
     add_hashes.finish()
-}
-
-pub fn string_to_fvk(full_viewing_key_str: &str) -> WasmResult<FullViewingKey> {
-    let fvk = FullViewingKey::from_str(full_viewing_key_str)?;
-    Ok(fvk)
 }
