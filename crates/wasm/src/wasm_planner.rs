@@ -35,7 +35,7 @@ impl WasmPlanner {
     /// Add expiry height to plan
     /// Arguments:
     ///     expiry_height: `u64`
-    #[wasm_bindgen(js_name = expiryHeight)]
+    #[wasm_bindgen]
     pub fn expiry_height(&mut self, expiry_height: JsValue) -> Result<(), Error> {
         self.planner
             .expiry_height(serde_wasm_bindgen::from_value(expiry_height)?);
@@ -70,7 +70,7 @@ impl WasmPlanner {
     /// Add swap claim to plan
     /// Arguments:
     ///     swap_commitment: `StateCommitment`
-    #[wasm_bindgen(js_name = swapClaim)]
+    #[wasm_bindgen]
     pub async fn swap_claim(&mut self, swap_commitment: JsValue) -> Result<(), Error> {
         self.swap_claim_inner(swap_commitment).await?;
         Ok(())

@@ -96,7 +96,7 @@ impl ViewServer {
     /// Arguments:
     ///     compact_block: `v1alpha1::CompactBlock`
     /// Returns: `ScanBlockResult`
-    #[wasm_bindgen(js_name = scanBlock)]
+    #[wasm_bindgen]
     pub async fn scan_block(&mut self, compact_block: JsValue) -> Result<JsValue, Error> {
         let result = self.scan_block_inner(compact_block).await?;
         serde_wasm_bindgen::to_value(&result)
@@ -109,7 +109,7 @@ impl ViewServer {
     ///     last_position: `Option<StoredPosition>`
     ///     last_forgotten: `Option<Forgotten>`
     /// Returns: `ScanBlockResult`
-    #[wasm_bindgen(js_name = getUpdates)]
+    #[wasm_bindgen]
     pub fn get_updates(
         &mut self,
         last_position: JsValue,
@@ -122,7 +122,7 @@ impl ViewServer {
     /// get SCT root
     /// SCT root can be compared with the root obtained by GRPC and verify that there is no divergence
     /// Returns: `Root`
-    #[wasm_bindgen(js_name = getNctRoot)]
+    #[wasm_bindgen]
     pub fn get_nct_root(&mut self) -> Result<JsValue, Error> {
         let root = self.nct.root();
         serde_wasm_bindgen::to_value(&root)
@@ -133,7 +133,7 @@ impl ViewServer {
     ///     position_value: `lp::position::Position`
     ///     position_state_value: `lp::position::State`
     /// Returns: `DenomMetadata`
-    #[wasm_bindgen(js_name = getLpnftAsset)]
+    #[wasm_bindgen]
     pub fn get_lpnft_asset(
         &mut self,
         position_value: JsValue,

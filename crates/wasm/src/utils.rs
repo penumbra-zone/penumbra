@@ -14,7 +14,7 @@ pub fn set_panic_hook() {
 /// Arguments:
 ///     tx_bytes: `HEX string`
 /// Returns: `penumbra_tct::Root`
-#[wasm_bindgen(js_name = decodeNctRoot)]
+#[wasm_bindgen]
 pub fn decode_nct_root(tx_bytes: &str) -> Result<JsValue, Error> {
     let root = decode_nct_root_inner(tx_bytes)?;
     serde_wasm_bindgen::to_value(&root)

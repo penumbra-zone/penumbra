@@ -11,7 +11,7 @@ use wasm_bindgen::prelude::*;
 /// Arguments:
 ///     seed_phrase: `string`
 /// Returns: `bech32 string`
-#[wasm_bindgen(js_name = generateSpendKey)]
+#[wasm_bindgen]
 pub fn generate_spend_key(seed_phrase: &str) -> Result<JsValue, Error> {
     let result = spend_key_from_seed(seed_phrase)?;
 
@@ -22,7 +22,7 @@ pub fn generate_spend_key(seed_phrase: &str) -> Result<JsValue, Error> {
 /// Arguments:
 ///     spend_key_str: `bech32 string`
 /// Returns: `bech32 string`
-#[wasm_bindgen(js_name = getFullViewingKey)]
+#[wasm_bindgen]
 pub fn get_full_viewing_key(spend_key: &str) -> Result<JsValue, Error> {
     let result = get_full_viewing_key_from_spend(spend_key)?;
     Ok(JsValue::from_str(&result))
@@ -33,7 +33,7 @@ pub fn get_full_viewing_key(spend_key: &str) -> Result<JsValue, Error> {
 ///     full_viewing_key: `bech32 string`
 ///     index: `u32`
 /// Returns: `pb::Address`
-#[wasm_bindgen(js_name = getAddressByIndex)]
+#[wasm_bindgen]
 pub fn get_address_by_index(full_viewing_key: &str, index: u32) -> Result<JsValue, Error> {
     let result = address_by_index(full_viewing_key, index)?;
     serde_wasm_bindgen::to_value(&result)
@@ -45,7 +45,7 @@ pub fn get_address_by_index(full_viewing_key: &str, index: u32) -> Result<JsValu
 ///     full_viewing_key: `bech32 string`
 ///     index: `u32`
 /// Returns: `pb::Address`
-#[wasm_bindgen(js_name = getEphemeralAddress)]
+#[wasm_bindgen]
 pub fn get_ephemeral_address(full_viewing_key: &str, index: u32) -> Result<JsValue, Error> {
     let result = ephemeral_address(full_viewing_key, index)?;
     serde_wasm_bindgen::to_value(&result)
@@ -56,7 +56,7 @@ pub fn get_ephemeral_address(full_viewing_key: &str, index: u32) -> Result<JsVal
 ///     full_viewing_key: `bech32 String`
 ///     address: `bech32 String`
 /// Returns: `Option<pb::AddressIndex>`
-#[wasm_bindgen(js_name = isControlledAddress)]
+#[wasm_bindgen]
 pub fn is_controlled_address(full_viewing_key: &str, address: &str) -> Result<JsValue, Error> {
     let result = address_index(full_viewing_key, address)?;
     serde_wasm_bindgen::to_value(&result)
@@ -68,7 +68,7 @@ pub fn is_controlled_address(full_viewing_key: &str, address: &str) -> Result<Js
 ///     full_viewing_key: `bech32 string`
 ///     index: `u32`
 /// Returns: `String`
-#[wasm_bindgen(js_name = getShortAddressByIndex)]
+#[wasm_bindgen]
 pub fn get_short_address_by_index(full_viewing_key: &str, index: u32) -> Result<JsValue, Error> {
     let result = short_address_by_index(full_viewing_key, index)?;
     Ok(JsValue::from_str(&result))

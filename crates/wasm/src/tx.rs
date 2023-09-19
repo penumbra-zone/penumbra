@@ -32,7 +32,7 @@ impl TxInfoResponse {
 /// Arguments:
 ///     transaction: `penumbra_transaction::Transaction`
 /// Returns: `<Vec<u8>`
-#[wasm_bindgen(js_name = encodeTx)]
+#[wasm_bindgen]
 pub fn encode_tx(transaction: JsValue) -> Result<JsValue, Error> {
     let result = encode_transaction(transaction)?;
     serde_wasm_bindgen::to_value(&result)
@@ -42,7 +42,7 @@ pub fn encode_tx(transaction: JsValue) -> Result<JsValue, Error> {
 /// Arguments:
 ///     tx_bytes: `base64 String`
 /// Returns: `penumbra_transaction::Transaction`
-#[wasm_bindgen(js_name = decodeTx)]
+#[wasm_bindgen]
 pub fn decode_tx(tx_bytes: &str) -> Result<JsValue, Error> {
     let result = decode_transaction(tx_bytes)?;
     serde_wasm_bindgen::to_value(&result)
