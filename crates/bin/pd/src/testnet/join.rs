@@ -1,6 +1,8 @@
 //! Logic for onboarding a new `pd` node onto an existing testnet.
 //! Handles generation of config files for `pd` and `tendermint`.
 use anyhow::Context;
+use rand::seq::SliceRandom;
+use rand_core::OsRng;
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 use tendermint_config::net::Address as TendermintAddress;
@@ -127,7 +129,7 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
     let client = reqwest::Client::new();
     let net_info_url = tm_url.join("net_info")?;
     tracing::debug!(%net_info_url, "Fetching peers of bootstrap node");
-    let net_info_peers = client
+    let mut net_info_peers = client
         .get(net_info_url)
         .send()
         .await?
@@ -142,9 +144,19 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
     if net_info_peers.len() == 0 {
         tracing::warn!(
             ?net_info_peers,
-            "Bootstrap node reported 0 peers; we'll have no way to get blocks"
+            "bootstrap node reported 0 peers; we'll have no way to get blocks"
         );
     }
+
+    // Randomize the ordering of the peer candidates, so that different nodes
+    // joining are more likely to get different peers, as we select a subset.
+    net_info_peers.shuffle(&mut OsRng);
+
+    // We'll look for a handful of peers and use those in our config.
+    // We don't want to naively add all of the bootstrap node's peers,
+    // instead trusting gossip to find peers dynamically over time.
+    let threshold = 5;
+
     let mut peers = Vec::new();
     for raw_peer in net_info_peers {
         tracing::debug!(?raw_peer, "Analyzing whether to include candidate peer");
@@ -183,6 +195,16 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
         ))?;
         let peer_tm_address = parse_tm_address(Some(&node_id), &listen_url)?;
         peers.push(peer_tm_address);
+        if peers.len() >= threshold {
+            tracing::debug!(?threshold, "Found desired number of initial peers");
+            break;
+        }
+    }
+    if peers.len() < threshold {
+        tracing::warn!(
+            "bootstrap node reported only {} peers; we may have trouble peering",
+            peers.len(),
+        );
     }
     Ok(peers)
 }
