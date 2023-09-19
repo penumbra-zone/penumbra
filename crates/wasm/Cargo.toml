@@ -29,22 +29,20 @@ penumbra-tct           = { path = "../crypto/tct" }
 penumbra-transaction   = { path = "../core/transaction", default-features = false }
 
 anyhow                   = "1.0.75"
+ark-ff                   = { version = "0.4", features = ["std"] }
 base64                   = "0.21.2"
 console_error_panic_hook = { version = "0.1.7", optional = true }
+decaf377                 = { version = "0.5", features = ["r1cs"] }
 hex                      = "0.4.3"
 indexed_db_futures       = "0.3.0"
 rand_core                = { version = "0.6.4", features = ["getrandom"] }
 serde                    = { version = "1.0.186", features = ["derive"] }
 serde-wasm-bindgen       = "0.5.0"
+thiserror                = "1.0"
 wasm-bindgen             = "0.2.87"
 wasm-bindgen-futures     = "0.4.37"
+wasm-bindgen-test        = "0.3.0"
 web-sys                  = { version = "0.3.64", features = ["console"] }
-ark-ff = { version = "0.4", features = ["std"] }
-decaf377 = { version = "0.5", features = ["r1cs"] }
-thiserror = "1.0"
-wasm-bindgen-test = "0.3.0"
-
-
 
 
 [dev-dependencies]
