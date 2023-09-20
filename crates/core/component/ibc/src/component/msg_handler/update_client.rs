@@ -119,6 +119,7 @@ impl MsgHandler for MsgUpdateClient {
                 .await
                 .context("unable to get client state")?;
 
+            // NOTE: next_tendermint_state will freeze the client on equivocation.
             let (next_tm_client_state, next_tm_consensus_state) = state
                 .next_tendermint_state(
                     self.client_id.clone(),
@@ -253,7 +254,7 @@ fn header_height_is_consistent(untrusted_header: &TendermintHeader) -> anyhow::R
     }
 }
 
-fn verify_header_validator_set<'h>(
+pub fn verify_header_validator_set<'h>(
     untrusted_header: &'h TendermintHeader,
     last_trusted_consensus_state: &TendermintConsensusState,
 ) -> anyhow::Result<&'h validator::Set> {

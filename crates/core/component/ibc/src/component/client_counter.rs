@@ -114,6 +114,9 @@ pub(crate) mod ics02_validation {
     use ibc_types::lightclients::tendermint::header::{
         Header as TendermintHeader, TENDERMINT_HEADER_TYPE_URL,
     };
+    use ibc_types::lightclients::tendermint::misbehaviour::{
+        Misbehaviour as TendermintMisbehavior, TENDERMINT_MISBEHAVIOUR_TYPE_URL,
+    };
 
     pub fn is_tendermint_header_state(header: &Any) -> bool {
         header.type_url.as_str() == TENDERMINT_HEADER_TYPE_URL
@@ -123,6 +126,21 @@ pub(crate) mod ics02_validation {
     }
     pub fn is_tendermint_client_state(client_state: &Any) -> bool {
         client_state.type_url.as_str() == TENDERMINT_CLIENT_STATE_TYPE_URL
+    }
+    pub fn is_tendermint_misbehavior(misbehavior: &Any) -> bool {
+        misbehavior.type_url.as_str() == TENDERMINT_MISBEHAVIOUR_TYPE_URL
+    }
+
+    pub fn get_tendermint_misbehavior(misbehavior: Any) -> Result<TendermintMisbehavior> {
+        if is_tendermint_misbehavior(&misbehavior) {
+            TendermintMisbehavior::try_from(misbehavior)
+                .map_err(|e| anyhow!(format!("failed to deserialize tendermint misbehavior: {e}")))
+        } else {
+            anyhow::bail!(format!(
+                "expected a tendermint light client misbehavior, got: {}",
+                misbehavior.type_url.as_str()
+            ))
+        }
     }
 
     pub fn get_tendermint_header(header: Any) -> Result<TendermintHeader> {
