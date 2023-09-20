@@ -323,7 +323,7 @@ impl TendermintProxyService for TendermintProxy {
                     height: res.block.header.height.into(),
                     time: Some(pbjson_types::Timestamp {
                         seconds: header_time.timestamp(),
-                        nanos: header_time.timestamp_nanos() as i32,
+                        nanos: header_time.timestamp_nanos_opt().unwrap() as i32,
                     }),
                     last_block_id: res.block.header.last_block_id.map(|id| {
                         penumbra_proto::tendermint::types::BlockId {
@@ -396,7 +396,7 @@ impl TendermintProxyService for TendermintProxy {
                                         }),
                                         timestamp: Some(pbjson_types::Timestamp{
                                             seconds: DateTime::parse_from_rfc3339(&e.votes().0.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
-                                            nanos: DateTime::parse_from_rfc3339(&e.votes().0.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos() as i32,
+                                            nanos: DateTime::parse_from_rfc3339(&e.votes().0.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos_opt().unwrap() as i32,
                                         }),
                                         validator_address: e.votes().0.validator_address.into(),
                                         validator_index: e.votes().0.validator_index.into(),
@@ -418,7 +418,7 @@ impl TendermintProxyService for TendermintProxy {
                                         }),
                                         timestamp: Some(pbjson_types::Timestamp{
                                             seconds: DateTime::parse_from_rfc3339(&e.votes().1.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
-                                            nanos: DateTime::parse_from_rfc3339(&e.votes().1.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos() as i32,
+                                            nanos: DateTime::parse_from_rfc3339(&e.votes().1.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos_opt().unwrap() as i32,
                                         }),
                                         validator_address: e.votes().1.validator_address.into(),
                                         validator_index: e.votes().1.validator_index.into(),
@@ -470,7 +470,7 @@ impl TendermintProxyService for TendermintProxy {
                                         validator_address: validator_address.into(),
                                         timestamp: Some(pbjson_types::Timestamp{
                                             seconds: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
-                                            nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos() as i32,
+                                            nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos_opt().unwrap() as i32,
                                         }),
                                         signature: signature.expect("signature").into(),
                                     },
@@ -479,7 +479,7 @@ impl TendermintProxyService for TendermintProxy {
                                         validator_address: validator_address.into(),
                                         timestamp: Some(pbjson_types::Timestamp{
                                             seconds: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
-                                            nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos() as i32,
+                                            nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos_opt().unwrap() as i32,
                                         }),
                                         signature: signature.expect("signature").into(),
                                     },
