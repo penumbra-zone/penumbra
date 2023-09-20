@@ -29,7 +29,6 @@ use async_trait::async_trait;
 use num_traits::float::FloatCore;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_storage::StateRead;
-use prost::Message;
 use sha2::{Digest, Sha256};
 
 // NOTE: this is underspecified.
