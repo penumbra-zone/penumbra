@@ -439,3 +439,14 @@ message OutputPlan {
     // The second blinding factor to use for the ZK output proof.
     bytes proof_blinding_s = 6;
 }
+
+message GasPrices {
+    // The price per unit block space in terms of the staking token.
+    uint64 block_space_price = 1;
+    // The price per unit compact block space in terms of the staking token.
+    uint64 compact_block_space_price = 2;
+    // The price per unit verification cost in terms of the staking token.
+    uint64 verification_price = 3;
+    // The price per unit execution cost in terms of the staking token.
+    uint64 execution_price = 4;
+}

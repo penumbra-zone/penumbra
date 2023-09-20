@@ -3178,6 +3178,81 @@ func (x *OutputPlan) GetProofBlindingS() []byte {
 	return nil
 }
 
+type GasPrices struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The price per unit block space in terms of the staking token.
+	BlockSpacePrice uint64 `protobuf:"varint,1,opt,name=block_space_price,json=blockSpacePrice,proto3" json:"block_space_price,omitempty"`
+	// The price per unit compact block space in terms of the staking token.
+	CompactBlockSpacePrice uint64 `protobuf:"varint,2,opt,name=compact_block_space_price,json=compactBlockSpacePrice,proto3" json:"compact_block_space_price,omitempty"`
+	// The price per unit verification cost in terms of the staking token.
+	VerificationPrice uint64 `protobuf:"varint,3,opt,name=verification_price,json=verificationPrice,proto3" json:"verification_price,omitempty"`
+	// The price per unit execution cost in terms of the staking token.
+	ExecutionPrice uint64 `protobuf:"varint,4,opt,name=execution_price,json=executionPrice,proto3" json:"execution_price,omitempty"`
+}
+
+func (x *GasPrices) Reset() {
+	*x = GasPrices{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[33]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GasPrices) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GasPrices) ProtoMessage() {}
+
+func (x *GasPrices) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[33]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GasPrices.ProtoReflect.Descriptor instead.
+func (*GasPrices) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_transaction_v1alpha1_transaction_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *GasPrices) GetBlockSpacePrice() uint64 {
+	if x != nil {
+		return x.BlockSpacePrice
+	}
+	return 0
+}
+
+func (x *GasPrices) GetCompactBlockSpacePrice() uint64 {
+	if x != nil {
+		return x.CompactBlockSpacePrice
+	}
+	return 0
+}
+
+func (x *GasPrices) GetVerificationPrice() uint64 {
+	if x != nil {
+		return x.VerificationPrice
+	}
+	return 0
+}
+
+func (x *GasPrices) GetExecutionPrice() uint64 {
+	if x != nil {
+		return x.ExecutionPrice
+	}
+	return 0
+}
+
 type SpendView_Visible struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3190,7 +3265,7 @@ type SpendView_Visible struct {
 func (x *SpendView_Visible) Reset() {
 	*x = SpendView_Visible{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[33]
+		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[34]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3203,7 +3278,7 @@ func (x *SpendView_Visible) String() string {
 func (*SpendView_Visible) ProtoMessage() {}
 
 func (x *SpendView_Visible) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[33]
+	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[34]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3244,7 +3319,7 @@ type SpendView_Opaque struct {
 func (x *SpendView_Opaque) Reset() {
 	*x = SpendView_Opaque{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[34]
+		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[35]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3257,7 +3332,7 @@ func (x *SpendView_Opaque) String() string {
 func (*SpendView_Opaque) ProtoMessage() {}
 
 func (x *SpendView_Opaque) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[34]
+	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[35]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3292,7 +3367,7 @@ type DelegatorVoteView_Visible struct {
 func (x *DelegatorVoteView_Visible) Reset() {
 	*x = DelegatorVoteView_Visible{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[35]
+		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[36]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3305,7 +3380,7 @@ func (x *DelegatorVoteView_Visible) String() string {
 func (*DelegatorVoteView_Visible) ProtoMessage() {}
 
 func (x *DelegatorVoteView_Visible) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[35]
+	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[36]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3346,7 +3421,7 @@ type DelegatorVoteView_Opaque struct {
 func (x *DelegatorVoteView_Opaque) Reset() {
 	*x = DelegatorVoteView_Opaque{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[36]
+		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[37]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3359,7 +3434,7 @@ func (x *DelegatorVoteView_Opaque) String() string {
 func (*DelegatorVoteView_Opaque) ProtoMessage() {}
 
 func (x *DelegatorVoteView_Opaque) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[36]
+	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[37]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3395,7 +3470,7 @@ type OutputView_Visible struct {
 func (x *OutputView_Visible) Reset() {
 	*x = OutputView_Visible{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[37]
+		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[38]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3408,7 +3483,7 @@ func (x *OutputView_Visible) String() string {
 func (*OutputView_Visible) ProtoMessage() {}
 
 func (x *OutputView_Visible) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[37]
+	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[38]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3456,7 +3531,7 @@ type OutputView_Opaque struct {
 func (x *OutputView_Opaque) Reset() {
 	*x = OutputView_Opaque{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[38]
+		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[39]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3469,7 +3544,7 @@ func (x *OutputView_Opaque) String() string {
 func (*OutputView_Opaque) ProtoMessage() {}
 
 func (x *OutputView_Opaque) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[38]
+	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[39]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3504,7 +3579,7 @@ type MemoView_Visible struct {
 func (x *MemoView_Visible) Reset() {
 	*x = MemoView_Visible{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[39]
+		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[40]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3517,7 +3592,7 @@ func (x *MemoView_Visible) String() string {
 func (*MemoView_Visible) ProtoMessage() {}
 
 func (x *MemoView_Visible) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[39]
+	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[40]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3558,7 +3633,7 @@ type MemoView_Opaque struct {
 func (x *MemoView_Opaque) Reset() {
 	*x = MemoView_Opaque{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[40]
+		mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[41]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3571,7 +3646,7 @@ func (x *MemoView_Opaque) String() string {
 func (*MemoView_Opaque) ProtoMessage() {}
 
 func (x *MemoView_Opaque) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[40]
+	mi := &file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[41]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4400,28 +4475,41 @@ var file_penumbra_core_transaction_v1alpha1_transaction_proto_rawDesc = []byte{
 	0x66, 0x42, 0x6c, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x52, 0x12, 0x28, 0x0a, 0x10, 0x70, 0x72,
 	0x6f, 0x6f, 0x66, 0x5f, 0x62, 0x6c, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x5f, 0x73, 0x18, 0x06,
 	0x20, 0x01, 0x28, 0x0c, 0x52, 0x0e, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x42, 0x6c, 0x69, 0x6e, 0x64,
-	0x69, 0x6e, 0x67, 0x53, 0x42, 0xcc, 0x02, 0x0a, 0x26, 0x63, 0x6f, 0x6d, 0x2e, 0x70, 0x65, 0x6e,
-	0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73,
-	0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x42,
-	0x10, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x72, 0x6f, 0x74,
-	0x6f, 0x50, 0x01, 0x5a, 0x65, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
-	0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2d, 0x7a, 0x6f, 0x6e, 0x65, 0x2f, 0x70, 0x65,
-	0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x2f,
-	0x67, 0x65, 0x6e, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x63, 0x6f, 0x72,
-	0x65, 0x2f, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2f, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x3b, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xa2, 0x02, 0x03, 0x50, 0x43, 0x54,
-	0xaa, 0x02, 0x22, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x43, 0x6f, 0x72, 0x65,
-	0x2e, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x56, 0x31, 0x61,
-	0x6c, 0x70, 0x68, 0x61, 0x31, 0xca, 0x02, 0x22, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61,
-	0x5c, 0x43, 0x6f, 0x72, 0x65, 0x5c, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f,
-	0x6e, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xe2, 0x02, 0x2e, 0x50, 0x65, 0x6e,
-	0x75, 0x6d, 0x62, 0x72, 0x61, 0x5c, 0x43, 0x6f, 0x72, 0x65, 0x5c, 0x54, 0x72, 0x61, 0x6e, 0x73,
-	0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x5c,
-	0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x25, 0x50, 0x65,
-	0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x3a, 0x3a, 0x43, 0x6f, 0x72, 0x65, 0x3a, 0x3a, 0x54, 0x72,
-	0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x3a, 0x3a, 0x56, 0x31, 0x61, 0x6c, 0x70,
-	0x68, 0x61, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x69, 0x6e, 0x67, 0x53, 0x22, 0xca, 0x01, 0x0a, 0x09, 0x47, 0x61, 0x73, 0x50, 0x72, 0x69, 0x63,
+	0x65, 0x73, 0x12, 0x2a, 0x0a, 0x11, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x73, 0x70, 0x61, 0x63,
+	0x65, 0x5f, 0x70, 0x72, 0x69, 0x63, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0f, 0x62,
+	0x6c, 0x6f, 0x63, 0x6b, 0x53, 0x70, 0x61, 0x63, 0x65, 0x50, 0x72, 0x69, 0x63, 0x65, 0x12, 0x39,
+	0x0a, 0x19, 0x63, 0x6f, 0x6d, 0x70, 0x61, 0x63, 0x74, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f,
+	0x73, 0x70, 0x61, 0x63, 0x65, 0x5f, 0x70, 0x72, 0x69, 0x63, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x04, 0x52, 0x16, 0x63, 0x6f, 0x6d, 0x70, 0x61, 0x63, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x53,
+	0x70, 0x61, 0x63, 0x65, 0x50, 0x72, 0x69, 0x63, 0x65, 0x12, 0x2d, 0x0a, 0x12, 0x76, 0x65, 0x72,
+	0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x70, 0x72, 0x69, 0x63, 0x65, 0x18,
+	0x03, 0x20, 0x01, 0x28, 0x04, 0x52, 0x11, 0x76, 0x65, 0x72, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74,
+	0x69, 0x6f, 0x6e, 0x50, 0x72, 0x69, 0x63, 0x65, 0x12, 0x27, 0x0a, 0x0f, 0x65, 0x78, 0x65, 0x63,
+	0x75, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x70, 0x72, 0x69, 0x63, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28,
+	0x04, 0x52, 0x0e, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x72, 0x69, 0x63,
+	0x65, 0x42, 0xcc, 0x02, 0x0a, 0x26, 0x63, 0x6f, 0x6d, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62,
+	0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74,
+	0x69, 0x6f, 0x6e, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x42, 0x10, 0x54, 0x72,
+	0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01,
+	0x5a, 0x65, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x65, 0x6e,
+	0x75, 0x6d, 0x62, 0x72, 0x61, 0x2d, 0x7a, 0x6f, 0x6e, 0x65, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d,
+	0x62, 0x72, 0x61, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x2f, 0x67, 0x65, 0x6e,
+	0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x74,
+	0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70,
+	0x68, 0x61, 0x31, 0x3b, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x76,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xa2, 0x02, 0x03, 0x50, 0x43, 0x54, 0xaa, 0x02, 0x22,
+	0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x43, 0x6f, 0x72, 0x65, 0x2e, 0x54, 0x72,
+	0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68,
+	0x61, 0x31, 0xca, 0x02, 0x22, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x5c, 0x43, 0x6f,
+	0x72, 0x65, 0x5c, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x5c, 0x56,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xe2, 0x02, 0x2e, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62,
+	0x72, 0x61, 0x5c, 0x43, 0x6f, 0x72, 0x65, 0x5c, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74,
+	0x69, 0x6f, 0x6e, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x5c, 0x47, 0x50, 0x42,
+	0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x25, 0x50, 0x65, 0x6e, 0x75, 0x6d,
+	0x62, 0x72, 0x61, 0x3a, 0x3a, 0x43, 0x6f, 0x72, 0x65, 0x3a, 0x3a, 0x54, 0x72, 0x61, 0x6e, 0x73,
+	0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x3a, 0x3a, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -4436,7 +4524,7 @@ func file_penumbra_core_transaction_v1alpha1_transaction_proto_rawDescGZIP() []b
 	return file_penumbra_core_transaction_v1alpha1_transaction_proto_rawDescData
 }
 
-var file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes = make([]protoimpl.MessageInfo, 41)
+var file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
 var file_penumbra_core_transaction_v1alpha1_transaction_proto_goTypes = []interface{}{
 	(*Transaction)(nil),                       // 0: penumbra.core.transaction.v1alpha1.Transaction
 	(*Id)(nil),                                // 1: penumbra.core.transaction.v1alpha1.Id
@@ -4471,192 +4559,193 @@ var file_penumbra_core_transaction_v1alpha1_transaction_proto_goTypes = []interf
 	(*MemoView)(nil),                          // 30: penumbra.core.transaction.v1alpha1.MemoView
 	(*SpendPlan)(nil),                         // 31: penumbra.core.transaction.v1alpha1.SpendPlan
 	(*OutputPlan)(nil),                        // 32: penumbra.core.transaction.v1alpha1.OutputPlan
-	(*SpendView_Visible)(nil),                 // 33: penumbra.core.transaction.v1alpha1.SpendView.Visible
-	(*SpendView_Opaque)(nil),                  // 34: penumbra.core.transaction.v1alpha1.SpendView.Opaque
-	(*DelegatorVoteView_Visible)(nil),         // 35: penumbra.core.transaction.v1alpha1.DelegatorVoteView.Visible
-	(*DelegatorVoteView_Opaque)(nil),          // 36: penumbra.core.transaction.v1alpha1.DelegatorVoteView.Opaque
-	(*OutputView_Visible)(nil),                // 37: penumbra.core.transaction.v1alpha1.OutputView.Visible
-	(*OutputView_Opaque)(nil),                 // 38: penumbra.core.transaction.v1alpha1.OutputView.Opaque
-	(*MemoView_Visible)(nil),                  // 39: penumbra.core.transaction.v1alpha1.MemoView.Visible
-	(*MemoView_Opaque)(nil),                   // 40: penumbra.core.transaction.v1alpha1.MemoView.Opaque
-	(*v1alpha1.MerkleRoot)(nil),               // 41: penumbra.core.crypto.v1alpha1.MerkleRoot
-	(*v1alpha1.Fee)(nil),                      // 42: penumbra.core.crypto.v1alpha1.Fee
-	(*v1alpha1.Clue)(nil),                     // 43: penumbra.core.crypto.v1alpha1.Clue
-	(*v1alpha11.Swap)(nil),                    // 44: penumbra.core.dex.v1alpha1.Swap
-	(*v1alpha11.SwapClaim)(nil),               // 45: penumbra.core.dex.v1alpha1.SwapClaim
-	(*v1alpha12.ValidatorDefinition)(nil),     // 46: penumbra.core.stake.v1alpha1.ValidatorDefinition
-	(*v1alpha13.IbcAction)(nil),               // 47: penumbra.core.ibc.v1alpha1.IbcAction
-	(*v1alpha14.ProposalSubmit)(nil),          // 48: penumbra.core.governance.v1alpha1.ProposalSubmit
-	(*v1alpha14.ProposalWithdraw)(nil),        // 49: penumbra.core.governance.v1alpha1.ProposalWithdraw
-	(*v1alpha14.ValidatorVote)(nil),           // 50: penumbra.core.governance.v1alpha1.ValidatorVote
-	(*v1alpha14.DelegatorVote)(nil),           // 51: penumbra.core.governance.v1alpha1.DelegatorVote
-	(*v1alpha14.ProposalDepositClaim)(nil),    // 52: penumbra.core.governance.v1alpha1.ProposalDepositClaim
-	(*v1alpha11.PositionOpen)(nil),            // 53: penumbra.core.dex.v1alpha1.PositionOpen
-	(*v1alpha11.PositionClose)(nil),           // 54: penumbra.core.dex.v1alpha1.PositionClose
-	(*v1alpha11.PositionWithdraw)(nil),        // 55: penumbra.core.dex.v1alpha1.PositionWithdraw
-	(*v1alpha11.PositionRewardClaim)(nil),     // 56: penumbra.core.dex.v1alpha1.PositionRewardClaim
-	(*v1alpha12.Delegate)(nil),                // 57: penumbra.core.stake.v1alpha1.Delegate
-	(*v1alpha12.Undelegate)(nil),              // 58: penumbra.core.stake.v1alpha1.Undelegate
-	(*v1alpha12.UndelegateClaim)(nil),         // 59: penumbra.core.stake.v1alpha1.UndelegateClaim
-	(*v1alpha14.DaoSpend)(nil),                // 60: penumbra.core.governance.v1alpha1.DaoSpend
-	(*v1alpha14.DaoOutput)(nil),               // 61: penumbra.core.governance.v1alpha1.DaoOutput
-	(*v1alpha14.DaoDeposit)(nil),              // 62: penumbra.core.governance.v1alpha1.DaoDeposit
-	(*v1alpha13.Ics20Withdrawal)(nil),         // 63: penumbra.core.ibc.v1alpha1.Ics20Withdrawal
-	(*v1alpha1.Note)(nil),                     // 64: penumbra.core.crypto.v1alpha1.Note
-	(*v1alpha1.AddressView)(nil),              // 65: penumbra.core.crypto.v1alpha1.AddressView
-	(*v1alpha1.DenomMetadata)(nil),            // 66: penumbra.core.crypto.v1alpha1.DenomMetadata
-	(*v1alpha1.StateCommitment)(nil),          // 67: penumbra.core.crypto.v1alpha1.StateCommitment
-	(*v1alpha1.Nullifier)(nil),                // 68: penumbra.core.crypto.v1alpha1.Nullifier
-	(*v1alpha11.SwapView)(nil),                // 69: penumbra.core.dex.v1alpha1.SwapView
-	(*v1alpha11.SwapClaimView)(nil),           // 70: penumbra.core.dex.v1alpha1.SwapClaimView
-	(*v1alpha1.SpendAuthSignature)(nil),       // 71: penumbra.core.crypto.v1alpha1.SpendAuthSignature
-	(*v1alpha1.ZKSpendProof)(nil),             // 72: penumbra.core.crypto.v1alpha1.ZKSpendProof
-	(*v1alpha1.BalanceCommitment)(nil),        // 73: penumbra.core.crypto.v1alpha1.BalanceCommitment
-	(*v1alpha1.ZKOutputProof)(nil),            // 74: penumbra.core.crypto.v1alpha1.ZKOutputProof
-	(*v1alpha1.NotePayload)(nil),              // 75: penumbra.core.crypto.v1alpha1.NotePayload
-	(*v1alpha1.EffectHash)(nil),               // 76: penumbra.core.crypto.v1alpha1.EffectHash
-	(*v1alpha1.StateCommitmentProof)(nil),     // 77: penumbra.core.crypto.v1alpha1.StateCommitmentProof
-	(*v1alpha11.SwapPlan)(nil),                // 78: penumbra.core.dex.v1alpha1.SwapPlan
-	(*v1alpha11.SwapClaimPlan)(nil),           // 79: penumbra.core.dex.v1alpha1.SwapClaimPlan
-	(*v1alpha14.DelegatorVotePlan)(nil),       // 80: penumbra.core.governance.v1alpha1.DelegatorVotePlan
-	(*v1alpha11.PositionWithdrawPlan)(nil),    // 81: penumbra.core.dex.v1alpha1.PositionWithdrawPlan
-	(*v1alpha11.PositionRewardClaimPlan)(nil), // 82: penumbra.core.dex.v1alpha1.PositionRewardClaimPlan
-	(*v1alpha12.UndelegateClaimPlan)(nil),     // 83: penumbra.core.stake.v1alpha1.UndelegateClaimPlan
-	(*v1alpha1.Address)(nil),                  // 84: penumbra.core.crypto.v1alpha1.Address
-	(*v1alpha1.Value)(nil),                    // 85: penumbra.core.crypto.v1alpha1.Value
-	(*v1alpha1.NoteView)(nil),                 // 86: penumbra.core.crypto.v1alpha1.NoteView
+	(*GasPrices)(nil),                         // 33: penumbra.core.transaction.v1alpha1.GasPrices
+	(*SpendView_Visible)(nil),                 // 34: penumbra.core.transaction.v1alpha1.SpendView.Visible
+	(*SpendView_Opaque)(nil),                  // 35: penumbra.core.transaction.v1alpha1.SpendView.Opaque
+	(*DelegatorVoteView_Visible)(nil),         // 36: penumbra.core.transaction.v1alpha1.DelegatorVoteView.Visible
+	(*DelegatorVoteView_Opaque)(nil),          // 37: penumbra.core.transaction.v1alpha1.DelegatorVoteView.Opaque
+	(*OutputView_Visible)(nil),                // 38: penumbra.core.transaction.v1alpha1.OutputView.Visible
+	(*OutputView_Opaque)(nil),                 // 39: penumbra.core.transaction.v1alpha1.OutputView.Opaque
+	(*MemoView_Visible)(nil),                  // 40: penumbra.core.transaction.v1alpha1.MemoView.Visible
+	(*MemoView_Opaque)(nil),                   // 41: penumbra.core.transaction.v1alpha1.MemoView.Opaque
+	(*v1alpha1.MerkleRoot)(nil),               // 42: penumbra.core.crypto.v1alpha1.MerkleRoot
+	(*v1alpha1.Fee)(nil),                      // 43: penumbra.core.crypto.v1alpha1.Fee
+	(*v1alpha1.Clue)(nil),                     // 44: penumbra.core.crypto.v1alpha1.Clue
+	(*v1alpha11.Swap)(nil),                    // 45: penumbra.core.dex.v1alpha1.Swap
+	(*v1alpha11.SwapClaim)(nil),               // 46: penumbra.core.dex.v1alpha1.SwapClaim
+	(*v1alpha12.ValidatorDefinition)(nil),     // 47: penumbra.core.stake.v1alpha1.ValidatorDefinition
+	(*v1alpha13.IbcAction)(nil),               // 48: penumbra.core.ibc.v1alpha1.IbcAction
+	(*v1alpha14.ProposalSubmit)(nil),          // 49: penumbra.core.governance.v1alpha1.ProposalSubmit
+	(*v1alpha14.ProposalWithdraw)(nil),        // 50: penumbra.core.governance.v1alpha1.ProposalWithdraw
+	(*v1alpha14.ValidatorVote)(nil),           // 51: penumbra.core.governance.v1alpha1.ValidatorVote
+	(*v1alpha14.DelegatorVote)(nil),           // 52: penumbra.core.governance.v1alpha1.DelegatorVote
+	(*v1alpha14.ProposalDepositClaim)(nil),    // 53: penumbra.core.governance.v1alpha1.ProposalDepositClaim
+	(*v1alpha11.PositionOpen)(nil),            // 54: penumbra.core.dex.v1alpha1.PositionOpen
+	(*v1alpha11.PositionClose)(nil),           // 55: penumbra.core.dex.v1alpha1.PositionClose
+	(*v1alpha11.PositionWithdraw)(nil),        // 56: penumbra.core.dex.v1alpha1.PositionWithdraw
+	(*v1alpha11.PositionRewardClaim)(nil),     // 57: penumbra.core.dex.v1alpha1.PositionRewardClaim
+	(*v1alpha12.Delegate)(nil),                // 58: penumbra.core.stake.v1alpha1.Delegate
+	(*v1alpha12.Undelegate)(nil),              // 59: penumbra.core.stake.v1alpha1.Undelegate
+	(*v1alpha12.UndelegateClaim)(nil),         // 60: penumbra.core.stake.v1alpha1.UndelegateClaim
+	(*v1alpha14.DaoSpend)(nil),                // 61: penumbra.core.governance.v1alpha1.DaoSpend
+	(*v1alpha14.DaoOutput)(nil),               // 62: penumbra.core.governance.v1alpha1.DaoOutput
+	(*v1alpha14.DaoDeposit)(nil),              // 63: penumbra.core.governance.v1alpha1.DaoDeposit
+	(*v1alpha13.Ics20Withdrawal)(nil),         // 64: penumbra.core.ibc.v1alpha1.Ics20Withdrawal
+	(*v1alpha1.Note)(nil),                     // 65: penumbra.core.crypto.v1alpha1.Note
+	(*v1alpha1.AddressView)(nil),              // 66: penumbra.core.crypto.v1alpha1.AddressView
+	(*v1alpha1.DenomMetadata)(nil),            // 67: penumbra.core.crypto.v1alpha1.DenomMetadata
+	(*v1alpha1.StateCommitment)(nil),          // 68: penumbra.core.crypto.v1alpha1.StateCommitment
+	(*v1alpha1.Nullifier)(nil),                // 69: penumbra.core.crypto.v1alpha1.Nullifier
+	(*v1alpha11.SwapView)(nil),                // 70: penumbra.core.dex.v1alpha1.SwapView
+	(*v1alpha11.SwapClaimView)(nil),           // 71: penumbra.core.dex.v1alpha1.SwapClaimView
+	(*v1alpha1.SpendAuthSignature)(nil),       // 72: penumbra.core.crypto.v1alpha1.SpendAuthSignature
+	(*v1alpha1.ZKSpendProof)(nil),             // 73: penumbra.core.crypto.v1alpha1.ZKSpendProof
+	(*v1alpha1.BalanceCommitment)(nil),        // 74: penumbra.core.crypto.v1alpha1.BalanceCommitment
+	(*v1alpha1.ZKOutputProof)(nil),            // 75: penumbra.core.crypto.v1alpha1.ZKOutputProof
+	(*v1alpha1.NotePayload)(nil),              // 76: penumbra.core.crypto.v1alpha1.NotePayload
+	(*v1alpha1.EffectHash)(nil),               // 77: penumbra.core.crypto.v1alpha1.EffectHash
+	(*v1alpha1.StateCommitmentProof)(nil),     // 78: penumbra.core.crypto.v1alpha1.StateCommitmentProof
+	(*v1alpha11.SwapPlan)(nil),                // 79: penumbra.core.dex.v1alpha1.SwapPlan
+	(*v1alpha11.SwapClaimPlan)(nil),           // 80: penumbra.core.dex.v1alpha1.SwapClaimPlan
+	(*v1alpha14.DelegatorVotePlan)(nil),       // 81: penumbra.core.governance.v1alpha1.DelegatorVotePlan
+	(*v1alpha11.PositionWithdrawPlan)(nil),    // 82: penumbra.core.dex.v1alpha1.PositionWithdrawPlan
+	(*v1alpha11.PositionRewardClaimPlan)(nil), // 83: penumbra.core.dex.v1alpha1.PositionRewardClaimPlan
+	(*v1alpha12.UndelegateClaimPlan)(nil),     // 84: penumbra.core.stake.v1alpha1.UndelegateClaimPlan
+	(*v1alpha1.Address)(nil),                  // 85: penumbra.core.crypto.v1alpha1.Address
+	(*v1alpha1.Value)(nil),                    // 86: penumbra.core.crypto.v1alpha1.Value
+	(*v1alpha1.NoteView)(nil),                 // 87: penumbra.core.crypto.v1alpha1.NoteView
 }
 var file_penumbra_core_transaction_v1alpha1_transaction_proto_depIdxs = []int32{
 	3,   // 0: penumbra.core.transaction.v1alpha1.Transaction.body:type_name -> penumbra.core.transaction.v1alpha1.TransactionBody
-	41,  // 1: penumbra.core.transaction.v1alpha1.Transaction.anchor:type_name -> penumbra.core.crypto.v1alpha1.MerkleRoot
+	42,  // 1: penumbra.core.transaction.v1alpha1.Transaction.anchor:type_name -> penumbra.core.crypto.v1alpha1.MerkleRoot
 	7,   // 2: penumbra.core.transaction.v1alpha1.TransactionBody.actions:type_name -> penumbra.core.transaction.v1alpha1.Action
 	5,   // 3: penumbra.core.transaction.v1alpha1.TransactionBody.transaction_parameters:type_name -> penumbra.core.transaction.v1alpha1.TransactionParameters
-	42,  // 4: penumbra.core.transaction.v1alpha1.TransactionBody.fee:type_name -> penumbra.core.crypto.v1alpha1.Fee
+	43,  // 4: penumbra.core.transaction.v1alpha1.TransactionBody.fee:type_name -> penumbra.core.crypto.v1alpha1.Fee
 	6,   // 5: penumbra.core.transaction.v1alpha1.TransactionBody.detection_data:type_name -> penumbra.core.transaction.v1alpha1.DetectionData
 	4,   // 6: penumbra.core.transaction.v1alpha1.TransactionBody.memo_data:type_name -> penumbra.core.transaction.v1alpha1.MemoData
-	43,  // 7: penumbra.core.transaction.v1alpha1.DetectionData.fmd_clues:type_name -> penumbra.core.crypto.v1alpha1.Clue
+	44,  // 7: penumbra.core.transaction.v1alpha1.DetectionData.fmd_clues:type_name -> penumbra.core.crypto.v1alpha1.Clue
 	18,  // 8: penumbra.core.transaction.v1alpha1.Action.spend:type_name -> penumbra.core.transaction.v1alpha1.Spend
 	20,  // 9: penumbra.core.transaction.v1alpha1.Action.output:type_name -> penumbra.core.transaction.v1alpha1.Output
-	44,  // 10: penumbra.core.transaction.v1alpha1.Action.swap:type_name -> penumbra.core.dex.v1alpha1.Swap
-	45,  // 11: penumbra.core.transaction.v1alpha1.Action.swap_claim:type_name -> penumbra.core.dex.v1alpha1.SwapClaim
-	46,  // 12: penumbra.core.transaction.v1alpha1.Action.validator_definition:type_name -> penumbra.core.stake.v1alpha1.ValidatorDefinition
-	47,  // 13: penumbra.core.transaction.v1alpha1.Action.ibc_action:type_name -> penumbra.core.ibc.v1alpha1.IbcAction
-	48,  // 14: penumbra.core.transaction.v1alpha1.Action.proposal_submit:type_name -> penumbra.core.governance.v1alpha1.ProposalSubmit
-	49,  // 15: penumbra.core.transaction.v1alpha1.Action.proposal_withdraw:type_name -> penumbra.core.governance.v1alpha1.ProposalWithdraw
-	50,  // 16: penumbra.core.transaction.v1alpha1.Action.validator_vote:type_name -> penumbra.core.governance.v1alpha1.ValidatorVote
-	51,  // 17: penumbra.core.transaction.v1alpha1.Action.delegator_vote:type_name -> penumbra.core.governance.v1alpha1.DelegatorVote
-	52,  // 18: penumbra.core.transaction.v1alpha1.Action.proposal_deposit_claim:type_name -> penumbra.core.governance.v1alpha1.ProposalDepositClaim
-	53,  // 19: penumbra.core.transaction.v1alpha1.Action.position_open:type_name -> penumbra.core.dex.v1alpha1.PositionOpen
-	54,  // 20: penumbra.core.transaction.v1alpha1.Action.position_close:type_name -> penumbra.core.dex.v1alpha1.PositionClose
-	55,  // 21: penumbra.core.transaction.v1alpha1.Action.position_withdraw:type_name -> penumbra.core.dex.v1alpha1.PositionWithdraw
-	56,  // 22: penumbra.core.transaction.v1alpha1.Action.position_reward_claim:type_name -> penumbra.core.dex.v1alpha1.PositionRewardClaim
-	57,  // 23: penumbra.core.transaction.v1alpha1.Action.delegate:type_name -> penumbra.core.stake.v1alpha1.Delegate
-	58,  // 24: penumbra.core.transaction.v1alpha1.Action.undelegate:type_name -> penumbra.core.stake.v1alpha1.Undelegate
-	59,  // 25: penumbra.core.transaction.v1alpha1.Action.undelegate_claim:type_name -> penumbra.core.stake.v1alpha1.UndelegateClaim
-	60,  // 26: penumbra.core.transaction.v1alpha1.Action.dao_spend:type_name -> penumbra.core.governance.v1alpha1.DaoSpend
-	61,  // 27: penumbra.core.transaction.v1alpha1.Action.dao_output:type_name -> penumbra.core.governance.v1alpha1.DaoOutput
-	62,  // 28: penumbra.core.transaction.v1alpha1.Action.dao_deposit:type_name -> penumbra.core.governance.v1alpha1.DaoDeposit
-	63,  // 29: penumbra.core.transaction.v1alpha1.Action.ics20_withdrawal:type_name -> penumbra.core.ibc.v1alpha1.Ics20Withdrawal
+	45,  // 10: penumbra.core.transaction.v1alpha1.Action.swap:type_name -> penumbra.core.dex.v1alpha1.Swap
+	46,  // 11: penumbra.core.transaction.v1alpha1.Action.swap_claim:type_name -> penumbra.core.dex.v1alpha1.SwapClaim
+	47,  // 12: penumbra.core.transaction.v1alpha1.Action.validator_definition:type_name -> penumbra.core.stake.v1alpha1.ValidatorDefinition
+	48,  // 13: penumbra.core.transaction.v1alpha1.Action.ibc_action:type_name -> penumbra.core.ibc.v1alpha1.IbcAction
+	49,  // 14: penumbra.core.transaction.v1alpha1.Action.proposal_submit:type_name -> penumbra.core.governance.v1alpha1.ProposalSubmit
+	50,  // 15: penumbra.core.transaction.v1alpha1.Action.proposal_withdraw:type_name -> penumbra.core.governance.v1alpha1.ProposalWithdraw
+	51,  // 16: penumbra.core.transaction.v1alpha1.Action.validator_vote:type_name -> penumbra.core.governance.v1alpha1.ValidatorVote
+	52,  // 17: penumbra.core.transaction.v1alpha1.Action.delegator_vote:type_name -> penumbra.core.governance.v1alpha1.DelegatorVote
+	53,  // 18: penumbra.core.transaction.v1alpha1.Action.proposal_deposit_claim:type_name -> penumbra.core.governance.v1alpha1.ProposalDepositClaim
+	54,  // 19: penumbra.core.transaction.v1alpha1.Action.position_open:type_name -> penumbra.core.dex.v1alpha1.PositionOpen
+	55,  // 20: penumbra.core.transaction.v1alpha1.Action.position_close:type_name -> penumbra.core.dex.v1alpha1.PositionClose
+	56,  // 21: penumbra.core.transaction.v1alpha1.Action.position_withdraw:type_name -> penumbra.core.dex.v1alpha1.PositionWithdraw
+	57,  // 22: penumbra.core.transaction.v1alpha1.Action.position_reward_claim:type_name -> penumbra.core.dex.v1alpha1.PositionRewardClaim
+	58,  // 23: penumbra.core.transaction.v1alpha1.Action.delegate:type_name -> penumbra.core.stake.v1alpha1.Delegate
+	59,  // 24: penumbra.core.transaction.v1alpha1.Action.undelegate:type_name -> penumbra.core.stake.v1alpha1.Undelegate
+	60,  // 25: penumbra.core.transaction.v1alpha1.Action.undelegate_claim:type_name -> penumbra.core.stake.v1alpha1.UndelegateClaim
+	61,  // 26: penumbra.core.transaction.v1alpha1.Action.dao_spend:type_name -> penumbra.core.governance.v1alpha1.DaoSpend
+	62,  // 27: penumbra.core.transaction.v1alpha1.Action.dao_output:type_name -> penumbra.core.governance.v1alpha1.DaoOutput
+	63,  // 28: penumbra.core.transaction.v1alpha1.Action.dao_deposit:type_name -> penumbra.core.governance.v1alpha1.DaoDeposit
+	64,  // 29: penumbra.core.transaction.v1alpha1.Action.ics20_withdrawal:type_name -> penumbra.core.ibc.v1alpha1.Ics20Withdrawal
 	10,  // 30: penumbra.core.transaction.v1alpha1.TransactionPerspective.payload_keys:type_name -> penumbra.core.transaction.v1alpha1.PayloadKeyWithCommitment
 	11,  // 31: penumbra.core.transaction.v1alpha1.TransactionPerspective.spend_nullifiers:type_name -> penumbra.core.transaction.v1alpha1.NullifierWithNote
-	64,  // 32: penumbra.core.transaction.v1alpha1.TransactionPerspective.advice_notes:type_name -> penumbra.core.crypto.v1alpha1.Note
-	65,  // 33: penumbra.core.transaction.v1alpha1.TransactionPerspective.address_views:type_name -> penumbra.core.crypto.v1alpha1.AddressView
-	66,  // 34: penumbra.core.transaction.v1alpha1.TransactionPerspective.denoms:type_name -> penumbra.core.crypto.v1alpha1.DenomMetadata
+	65,  // 32: penumbra.core.transaction.v1alpha1.TransactionPerspective.advice_notes:type_name -> penumbra.core.crypto.v1alpha1.Note
+	66,  // 33: penumbra.core.transaction.v1alpha1.TransactionPerspective.address_views:type_name -> penumbra.core.crypto.v1alpha1.AddressView
+	67,  // 34: penumbra.core.transaction.v1alpha1.TransactionPerspective.denoms:type_name -> penumbra.core.crypto.v1alpha1.DenomMetadata
 	1,   // 35: penumbra.core.transaction.v1alpha1.TransactionPerspective.transaction_id:type_name -> penumbra.core.transaction.v1alpha1.Id
 	9,   // 36: penumbra.core.transaction.v1alpha1.PayloadKeyWithCommitment.payload_key:type_name -> penumbra.core.transaction.v1alpha1.PayloadKey
-	67,  // 37: penumbra.core.transaction.v1alpha1.PayloadKeyWithCommitment.commitment:type_name -> penumbra.core.crypto.v1alpha1.StateCommitment
-	68,  // 38: penumbra.core.transaction.v1alpha1.NullifierWithNote.nullifier:type_name -> penumbra.core.crypto.v1alpha1.Nullifier
-	64,  // 39: penumbra.core.transaction.v1alpha1.NullifierWithNote.note:type_name -> penumbra.core.crypto.v1alpha1.Note
+	68,  // 37: penumbra.core.transaction.v1alpha1.PayloadKeyWithCommitment.commitment:type_name -> penumbra.core.crypto.v1alpha1.StateCommitment
+	69,  // 38: penumbra.core.transaction.v1alpha1.NullifierWithNote.nullifier:type_name -> penumbra.core.crypto.v1alpha1.Nullifier
+	65,  // 39: penumbra.core.transaction.v1alpha1.NullifierWithNote.note:type_name -> penumbra.core.crypto.v1alpha1.Note
 	13,  // 40: penumbra.core.transaction.v1alpha1.TransactionView.body_view:type_name -> penumbra.core.transaction.v1alpha1.TransactionBodyView
-	41,  // 41: penumbra.core.transaction.v1alpha1.TransactionView.anchor:type_name -> penumbra.core.crypto.v1alpha1.MerkleRoot
+	42,  // 41: penumbra.core.transaction.v1alpha1.TransactionView.anchor:type_name -> penumbra.core.crypto.v1alpha1.MerkleRoot
 	14,  // 42: penumbra.core.transaction.v1alpha1.TransactionBodyView.action_views:type_name -> penumbra.core.transaction.v1alpha1.ActionView
 	5,   // 43: penumbra.core.transaction.v1alpha1.TransactionBodyView.transaction_parameters:type_name -> penumbra.core.transaction.v1alpha1.TransactionParameters
-	42,  // 44: penumbra.core.transaction.v1alpha1.TransactionBodyView.fee:type_name -> penumbra.core.crypto.v1alpha1.Fee
+	43,  // 44: penumbra.core.transaction.v1alpha1.TransactionBodyView.fee:type_name -> penumbra.core.crypto.v1alpha1.Fee
 	6,   // 45: penumbra.core.transaction.v1alpha1.TransactionBodyView.detection_data:type_name -> penumbra.core.transaction.v1alpha1.DetectionData
 	30,  // 46: penumbra.core.transaction.v1alpha1.TransactionBodyView.memo_view:type_name -> penumbra.core.transaction.v1alpha1.MemoView
 	15,  // 47: penumbra.core.transaction.v1alpha1.ActionView.spend:type_name -> penumbra.core.transaction.v1alpha1.SpendView
 	17,  // 48: penumbra.core.transaction.v1alpha1.ActionView.output:type_name -> penumbra.core.transaction.v1alpha1.OutputView
-	69,  // 49: penumbra.core.transaction.v1alpha1.ActionView.swap:type_name -> penumbra.core.dex.v1alpha1.SwapView
-	70,  // 50: penumbra.core.transaction.v1alpha1.ActionView.swap_claim:type_name -> penumbra.core.dex.v1alpha1.SwapClaimView
-	46,  // 51: penumbra.core.transaction.v1alpha1.ActionView.validator_definition:type_name -> penumbra.core.stake.v1alpha1.ValidatorDefinition
-	47,  // 52: penumbra.core.transaction.v1alpha1.ActionView.ibc_action:type_name -> penumbra.core.ibc.v1alpha1.IbcAction
-	48,  // 53: penumbra.core.transaction.v1alpha1.ActionView.proposal_submit:type_name -> penumbra.core.governance.v1alpha1.ProposalSubmit
-	49,  // 54: penumbra.core.transaction.v1alpha1.ActionView.proposal_withdraw:type_name -> penumbra.core.governance.v1alpha1.ProposalWithdraw
-	50,  // 55: penumbra.core.transaction.v1alpha1.ActionView.validator_vote:type_name -> penumbra.core.governance.v1alpha1.ValidatorVote
+	70,  // 49: penumbra.core.transaction.v1alpha1.ActionView.swap:type_name -> penumbra.core.dex.v1alpha1.SwapView
+	71,  // 50: penumbra.core.transaction.v1alpha1.ActionView.swap_claim:type_name -> penumbra.core.dex.v1alpha1.SwapClaimView
+	47,  // 51: penumbra.core.transaction.v1alpha1.ActionView.validator_definition:type_name -> penumbra.core.stake.v1alpha1.ValidatorDefinition
+	48,  // 52: penumbra.core.transaction.v1alpha1.ActionView.ibc_action:type_name -> penumbra.core.ibc.v1alpha1.IbcAction
+	49,  // 53: penumbra.core.transaction.v1alpha1.ActionView.proposal_submit:type_name -> penumbra.core.governance.v1alpha1.ProposalSubmit
+	50,  // 54: penumbra.core.transaction.v1alpha1.ActionView.proposal_withdraw:type_name -> penumbra.core.governance.v1alpha1.ProposalWithdraw
+	51,  // 55: penumbra.core.transaction.v1alpha1.ActionView.validator_vote:type_name -> penumbra.core.governance.v1alpha1.ValidatorVote
 	16,  // 56: penumbra.core.transaction.v1alpha1.ActionView.delegator_vote:type_name -> penumbra.core.transaction.v1alpha1.DelegatorVoteView
-	52,  // 57: penumbra.core.transaction.v1alpha1.ActionView.proposal_deposit_claim:type_name -> penumbra.core.governance.v1alpha1.ProposalDepositClaim
-	53,  // 58: penumbra.core.transaction.v1alpha1.ActionView.position_open:type_name -> penumbra.core.dex.v1alpha1.PositionOpen
-	54,  // 59: penumbra.core.transaction.v1alpha1.ActionView.position_close:type_name -> penumbra.core.dex.v1alpha1.PositionClose
-	55,  // 60: penumbra.core.transaction.v1alpha1.ActionView.position_withdraw:type_name -> penumbra.core.dex.v1alpha1.PositionWithdraw
-	56,  // 61: penumbra.core.transaction.v1alpha1.ActionView.position_reward_claim:type_name -> penumbra.core.dex.v1alpha1.PositionRewardClaim
-	57,  // 62: penumbra.core.transaction.v1alpha1.ActionView.delegate:type_name -> penumbra.core.stake.v1alpha1.Delegate
-	58,  // 63: penumbra.core.transaction.v1alpha1.ActionView.undelegate:type_name -> penumbra.core.stake.v1alpha1.Undelegate
-	60,  // 64: penumbra.core.transaction.v1alpha1.ActionView.dao_spend:type_name -> penumbra.core.governance.v1alpha1.DaoSpend
-	61,  // 65: penumbra.core.transaction.v1alpha1.ActionView.dao_output:type_name -> penumbra.core.governance.v1alpha1.DaoOutput
-	62,  // 66: penumbra.core.transaction.v1alpha1.ActionView.dao_deposit:type_name -> penumbra.core.governance.v1alpha1.DaoDeposit
-	59,  // 67: penumbra.core.transaction.v1alpha1.ActionView.undelegate_claim:type_name -> penumbra.core.stake.v1alpha1.UndelegateClaim
-	63,  // 68: penumbra.core.transaction.v1alpha1.ActionView.ics20_withdrawal:type_name -> penumbra.core.ibc.v1alpha1.Ics20Withdrawal
-	33,  // 69: penumbra.core.transaction.v1alpha1.SpendView.visible:type_name -> penumbra.core.transaction.v1alpha1.SpendView.Visible
-	34,  // 70: penumbra.core.transaction.v1alpha1.SpendView.opaque:type_name -> penumbra.core.transaction.v1alpha1.SpendView.Opaque
-	35,  // 71: penumbra.core.transaction.v1alpha1.DelegatorVoteView.visible:type_name -> penumbra.core.transaction.v1alpha1.DelegatorVoteView.Visible
-	36,  // 72: penumbra.core.transaction.v1alpha1.DelegatorVoteView.opaque:type_name -> penumbra.core.transaction.v1alpha1.DelegatorVoteView.Opaque
-	37,  // 73: penumbra.core.transaction.v1alpha1.OutputView.visible:type_name -> penumbra.core.transaction.v1alpha1.OutputView.Visible
-	38,  // 74: penumbra.core.transaction.v1alpha1.OutputView.opaque:type_name -> penumbra.core.transaction.v1alpha1.OutputView.Opaque
+	53,  // 57: penumbra.core.transaction.v1alpha1.ActionView.proposal_deposit_claim:type_name -> penumbra.core.governance.v1alpha1.ProposalDepositClaim
+	54,  // 58: penumbra.core.transaction.v1alpha1.ActionView.position_open:type_name -> penumbra.core.dex.v1alpha1.PositionOpen
+	55,  // 59: penumbra.core.transaction.v1alpha1.ActionView.position_close:type_name -> penumbra.core.dex.v1alpha1.PositionClose
+	56,  // 60: penumbra.core.transaction.v1alpha1.ActionView.position_withdraw:type_name -> penumbra.core.dex.v1alpha1.PositionWithdraw
+	57,  // 61: penumbra.core.transaction.v1alpha1.ActionView.position_reward_claim:type_name -> penumbra.core.dex.v1alpha1.PositionRewardClaim
+	58,  // 62: penumbra.core.transaction.v1alpha1.ActionView.delegate:type_name -> penumbra.core.stake.v1alpha1.Delegate
+	59,  // 63: penumbra.core.transaction.v1alpha1.ActionView.undelegate:type_name -> penumbra.core.stake.v1alpha1.Undelegate
+	61,  // 64: penumbra.core.transaction.v1alpha1.ActionView.dao_spend:type_name -> penumbra.core.governance.v1alpha1.DaoSpend
+	62,  // 65: penumbra.core.transaction.v1alpha1.ActionView.dao_output:type_name -> penumbra.core.governance.v1alpha1.DaoOutput
+	63,  // 66: penumbra.core.transaction.v1alpha1.ActionView.dao_deposit:type_name -> penumbra.core.governance.v1alpha1.DaoDeposit
+	60,  // 67: penumbra.core.transaction.v1alpha1.ActionView.undelegate_claim:type_name -> penumbra.core.stake.v1alpha1.UndelegateClaim
+	64,  // 68: penumbra.core.transaction.v1alpha1.ActionView.ics20_withdrawal:type_name -> penumbra.core.ibc.v1alpha1.Ics20Withdrawal
+	34,  // 69: penumbra.core.transaction.v1alpha1.SpendView.visible:type_name -> penumbra.core.transaction.v1alpha1.SpendView.Visible
+	35,  // 70: penumbra.core.transaction.v1alpha1.SpendView.opaque:type_name -> penumbra.core.transaction.v1alpha1.SpendView.Opaque
+	36,  // 71: penumbra.core.transaction.v1alpha1.DelegatorVoteView.visible:type_name -> penumbra.core.transaction.v1alpha1.DelegatorVoteView.Visible
+	37,  // 72: penumbra.core.transaction.v1alpha1.DelegatorVoteView.opaque:type_name -> penumbra.core.transaction.v1alpha1.DelegatorVoteView.Opaque
+	38,  // 73: penumbra.core.transaction.v1alpha1.OutputView.visible:type_name -> penumbra.core.transaction.v1alpha1.OutputView.Visible
+	39,  // 74: penumbra.core.transaction.v1alpha1.OutputView.opaque:type_name -> penumbra.core.transaction.v1alpha1.OutputView.Opaque
 	19,  // 75: penumbra.core.transaction.v1alpha1.Spend.body:type_name -> penumbra.core.transaction.v1alpha1.SpendBody
-	71,  // 76: penumbra.core.transaction.v1alpha1.Spend.auth_sig:type_name -> penumbra.core.crypto.v1alpha1.SpendAuthSignature
-	72,  // 77: penumbra.core.transaction.v1alpha1.Spend.proof:type_name -> penumbra.core.crypto.v1alpha1.ZKSpendProof
-	73,  // 78: penumbra.core.transaction.v1alpha1.SpendBody.balance_commitment:type_name -> penumbra.core.crypto.v1alpha1.BalanceCommitment
+	72,  // 76: penumbra.core.transaction.v1alpha1.Spend.auth_sig:type_name -> penumbra.core.crypto.v1alpha1.SpendAuthSignature
+	73,  // 77: penumbra.core.transaction.v1alpha1.Spend.proof:type_name -> penumbra.core.crypto.v1alpha1.ZKSpendProof
+	74,  // 78: penumbra.core.transaction.v1alpha1.SpendBody.balance_commitment:type_name -> penumbra.core.crypto.v1alpha1.BalanceCommitment
 	21,  // 79: penumbra.core.transaction.v1alpha1.Output.body:type_name -> penumbra.core.transaction.v1alpha1.OutputBody
-	74,  // 80: penumbra.core.transaction.v1alpha1.Output.proof:type_name -> penumbra.core.crypto.v1alpha1.ZKOutputProof
-	75,  // 81: penumbra.core.transaction.v1alpha1.OutputBody.note_payload:type_name -> penumbra.core.crypto.v1alpha1.NotePayload
-	73,  // 82: penumbra.core.transaction.v1alpha1.OutputBody.balance_commitment:type_name -> penumbra.core.crypto.v1alpha1.BalanceCommitment
-	76,  // 83: penumbra.core.transaction.v1alpha1.AuthorizationData.effect_hash:type_name -> penumbra.core.crypto.v1alpha1.EffectHash
-	71,  // 84: penumbra.core.transaction.v1alpha1.AuthorizationData.spend_auths:type_name -> penumbra.core.crypto.v1alpha1.SpendAuthSignature
-	71,  // 85: penumbra.core.transaction.v1alpha1.AuthorizationData.delegator_vote_auths:type_name -> penumbra.core.crypto.v1alpha1.SpendAuthSignature
-	41,  // 86: penumbra.core.transaction.v1alpha1.WitnessData.anchor:type_name -> penumbra.core.crypto.v1alpha1.MerkleRoot
-	77,  // 87: penumbra.core.transaction.v1alpha1.WitnessData.state_commitment_proofs:type_name -> penumbra.core.crypto.v1alpha1.StateCommitmentProof
+	75,  // 80: penumbra.core.transaction.v1alpha1.Output.proof:type_name -> penumbra.core.crypto.v1alpha1.ZKOutputProof
+	76,  // 81: penumbra.core.transaction.v1alpha1.OutputBody.note_payload:type_name -> penumbra.core.crypto.v1alpha1.NotePayload
+	74,  // 82: penumbra.core.transaction.v1alpha1.OutputBody.balance_commitment:type_name -> penumbra.core.crypto.v1alpha1.BalanceCommitment
+	77,  // 83: penumbra.core.transaction.v1alpha1.AuthorizationData.effect_hash:type_name -> penumbra.core.crypto.v1alpha1.EffectHash
+	72,  // 84: penumbra.core.transaction.v1alpha1.AuthorizationData.spend_auths:type_name -> penumbra.core.crypto.v1alpha1.SpendAuthSignature
+	72,  // 85: penumbra.core.transaction.v1alpha1.AuthorizationData.delegator_vote_auths:type_name -> penumbra.core.crypto.v1alpha1.SpendAuthSignature
+	42,  // 86: penumbra.core.transaction.v1alpha1.WitnessData.anchor:type_name -> penumbra.core.crypto.v1alpha1.MerkleRoot
+	78,  // 87: penumbra.core.transaction.v1alpha1.WitnessData.state_commitment_proofs:type_name -> penumbra.core.crypto.v1alpha1.StateCommitmentProof
 	25,  // 88: penumbra.core.transaction.v1alpha1.TransactionPlan.actions:type_name -> penumbra.core.transaction.v1alpha1.ActionPlan
-	42,  // 89: penumbra.core.transaction.v1alpha1.TransactionPlan.fee:type_name -> penumbra.core.crypto.v1alpha1.Fee
+	43,  // 89: penumbra.core.transaction.v1alpha1.TransactionPlan.fee:type_name -> penumbra.core.crypto.v1alpha1.Fee
 	26,  // 90: penumbra.core.transaction.v1alpha1.TransactionPlan.clue_plans:type_name -> penumbra.core.transaction.v1alpha1.CluePlan
 	27,  // 91: penumbra.core.transaction.v1alpha1.TransactionPlan.memo_plan:type_name -> penumbra.core.transaction.v1alpha1.MemoPlan
 	31,  // 92: penumbra.core.transaction.v1alpha1.ActionPlan.spend:type_name -> penumbra.core.transaction.v1alpha1.SpendPlan
 	32,  // 93: penumbra.core.transaction.v1alpha1.ActionPlan.output:type_name -> penumbra.core.transaction.v1alpha1.OutputPlan
-	78,  // 94: penumbra.core.transaction.v1alpha1.ActionPlan.swap:type_name -> penumbra.core.dex.v1alpha1.SwapPlan
-	79,  // 95: penumbra.core.transaction.v1alpha1.ActionPlan.swap_claim:type_name -> penumbra.core.dex.v1alpha1.SwapClaimPlan
-	46,  // 96: penumbra.core.transaction.v1alpha1.ActionPlan.validator_definition:type_name -> penumbra.core.stake.v1alpha1.ValidatorDefinition
-	47,  // 97: penumbra.core.transaction.v1alpha1.ActionPlan.ibc_action:type_name -> penumbra.core.ibc.v1alpha1.IbcAction
-	48,  // 98: penumbra.core.transaction.v1alpha1.ActionPlan.proposal_submit:type_name -> penumbra.core.governance.v1alpha1.ProposalSubmit
-	49,  // 99: penumbra.core.transaction.v1alpha1.ActionPlan.proposal_withdraw:type_name -> penumbra.core.governance.v1alpha1.ProposalWithdraw
-	50,  // 100: penumbra.core.transaction.v1alpha1.ActionPlan.validator_vote:type_name -> penumbra.core.governance.v1alpha1.ValidatorVote
-	80,  // 101: penumbra.core.transaction.v1alpha1.ActionPlan.delegator_vote:type_name -> penumbra.core.governance.v1alpha1.DelegatorVotePlan
-	52,  // 102: penumbra.core.transaction.v1alpha1.ActionPlan.proposal_deposit_claim:type_name -> penumbra.core.governance.v1alpha1.ProposalDepositClaim
-	63,  // 103: penumbra.core.transaction.v1alpha1.ActionPlan.withdrawal:type_name -> penumbra.core.ibc.v1alpha1.Ics20Withdrawal
-	53,  // 104: penumbra.core.transaction.v1alpha1.ActionPlan.position_open:type_name -> penumbra.core.dex.v1alpha1.PositionOpen
-	54,  // 105: penumbra.core.transaction.v1alpha1.ActionPlan.position_close:type_name -> penumbra.core.dex.v1alpha1.PositionClose
-	81,  // 106: penumbra.core.transaction.v1alpha1.ActionPlan.position_withdraw:type_name -> penumbra.core.dex.v1alpha1.PositionWithdrawPlan
-	82,  // 107: penumbra.core.transaction.v1alpha1.ActionPlan.position_reward_claim:type_name -> penumbra.core.dex.v1alpha1.PositionRewardClaimPlan
-	57,  // 108: penumbra.core.transaction.v1alpha1.ActionPlan.delegate:type_name -> penumbra.core.stake.v1alpha1.Delegate
-	58,  // 109: penumbra.core.transaction.v1alpha1.ActionPlan.undelegate:type_name -> penumbra.core.stake.v1alpha1.Undelegate
-	83,  // 110: penumbra.core.transaction.v1alpha1.ActionPlan.undelegate_claim:type_name -> penumbra.core.stake.v1alpha1.UndelegateClaimPlan
-	60,  // 111: penumbra.core.transaction.v1alpha1.ActionPlan.dao_spend:type_name -> penumbra.core.governance.v1alpha1.DaoSpend
-	61,  // 112: penumbra.core.transaction.v1alpha1.ActionPlan.dao_output:type_name -> penumbra.core.governance.v1alpha1.DaoOutput
-	62,  // 113: penumbra.core.transaction.v1alpha1.ActionPlan.dao_deposit:type_name -> penumbra.core.governance.v1alpha1.DaoDeposit
-	84,  // 114: penumbra.core.transaction.v1alpha1.CluePlan.address:type_name -> penumbra.core.crypto.v1alpha1.Address
+	79,  // 94: penumbra.core.transaction.v1alpha1.ActionPlan.swap:type_name -> penumbra.core.dex.v1alpha1.SwapPlan
+	80,  // 95: penumbra.core.transaction.v1alpha1.ActionPlan.swap_claim:type_name -> penumbra.core.dex.v1alpha1.SwapClaimPlan
+	47,  // 96: penumbra.core.transaction.v1alpha1.ActionPlan.validator_definition:type_name -> penumbra.core.stake.v1alpha1.ValidatorDefinition
+	48,  // 97: penumbra.core.transaction.v1alpha1.ActionPlan.ibc_action:type_name -> penumbra.core.ibc.v1alpha1.IbcAction
+	49,  // 98: penumbra.core.transaction.v1alpha1.ActionPlan.proposal_submit:type_name -> penumbra.core.governance.v1alpha1.ProposalSubmit
+	50,  // 99: penumbra.core.transaction.v1alpha1.ActionPlan.proposal_withdraw:type_name -> penumbra.core.governance.v1alpha1.ProposalWithdraw
+	51,  // 100: penumbra.core.transaction.v1alpha1.ActionPlan.validator_vote:type_name -> penumbra.core.governance.v1alpha1.ValidatorVote
+	81,  // 101: penumbra.core.transaction.v1alpha1.ActionPlan.delegator_vote:type_name -> penumbra.core.governance.v1alpha1.DelegatorVotePlan
+	53,  // 102: penumbra.core.transaction.v1alpha1.ActionPlan.proposal_deposit_claim:type_name -> penumbra.core.governance.v1alpha1.ProposalDepositClaim
+	64,  // 103: penumbra.core.transaction.v1alpha1.ActionPlan.withdrawal:type_name -> penumbra.core.ibc.v1alpha1.Ics20Withdrawal
+	54,  // 104: penumbra.core.transaction.v1alpha1.ActionPlan.position_open:type_name -> penumbra.core.dex.v1alpha1.PositionOpen
+	55,  // 105: penumbra.core.transaction.v1alpha1.ActionPlan.position_close:type_name -> penumbra.core.dex.v1alpha1.PositionClose
+	82,  // 106: penumbra.core.transaction.v1alpha1.ActionPlan.position_withdraw:type_name -> penumbra.core.dex.v1alpha1.PositionWithdrawPlan
+	83,  // 107: penumbra.core.transaction.v1alpha1.ActionPlan.position_reward_claim:type_name -> penumbra.core.dex.v1alpha1.PositionRewardClaimPlan
+	58,  // 108: penumbra.core.transaction.v1alpha1.ActionPlan.delegate:type_name -> penumbra.core.stake.v1alpha1.Delegate
+	59,  // 109: penumbra.core.transaction.v1alpha1.ActionPlan.undelegate:type_name -> penumbra.core.stake.v1alpha1.Undelegate
+	84,  // 110: penumbra.core.transaction.v1alpha1.ActionPlan.undelegate_claim:type_name -> penumbra.core.stake.v1alpha1.UndelegateClaimPlan
+	61,  // 111: penumbra.core.transaction.v1alpha1.ActionPlan.dao_spend:type_name -> penumbra.core.governance.v1alpha1.DaoSpend
+	62,  // 112: penumbra.core.transaction.v1alpha1.ActionPlan.dao_output:type_name -> penumbra.core.governance.v1alpha1.DaoOutput
+	63,  // 113: penumbra.core.transaction.v1alpha1.ActionPlan.dao_deposit:type_name -> penumbra.core.governance.v1alpha1.DaoDeposit
+	85,  // 114: penumbra.core.transaction.v1alpha1.CluePlan.address:type_name -> penumbra.core.crypto.v1alpha1.Address
 	29,  // 115: penumbra.core.transaction.v1alpha1.MemoPlan.plaintext:type_name -> penumbra.core.transaction.v1alpha1.MemoPlaintext
-	84,  // 116: penumbra.core.transaction.v1alpha1.MemoPlaintext.sender:type_name -> penumbra.core.crypto.v1alpha1.Address
-	39,  // 117: penumbra.core.transaction.v1alpha1.MemoView.visible:type_name -> penumbra.core.transaction.v1alpha1.MemoView.Visible
-	40,  // 118: penumbra.core.transaction.v1alpha1.MemoView.opaque:type_name -> penumbra.core.transaction.v1alpha1.MemoView.Opaque
-	64,  // 119: penumbra.core.transaction.v1alpha1.SpendPlan.note:type_name -> penumbra.core.crypto.v1alpha1.Note
-	85,  // 120: penumbra.core.transaction.v1alpha1.OutputPlan.value:type_name -> penumbra.core.crypto.v1alpha1.Value
-	84,  // 121: penumbra.core.transaction.v1alpha1.OutputPlan.dest_address:type_name -> penumbra.core.crypto.v1alpha1.Address
+	85,  // 116: penumbra.core.transaction.v1alpha1.MemoPlaintext.sender:type_name -> penumbra.core.crypto.v1alpha1.Address
+	40,  // 117: penumbra.core.transaction.v1alpha1.MemoView.visible:type_name -> penumbra.core.transaction.v1alpha1.MemoView.Visible
+	41,  // 118: penumbra.core.transaction.v1alpha1.MemoView.opaque:type_name -> penumbra.core.transaction.v1alpha1.MemoView.Opaque
+	65,  // 119: penumbra.core.transaction.v1alpha1.SpendPlan.note:type_name -> penumbra.core.crypto.v1alpha1.Note
+	86,  // 120: penumbra.core.transaction.v1alpha1.OutputPlan.value:type_name -> penumbra.core.crypto.v1alpha1.Value
+	85,  // 121: penumbra.core.transaction.v1alpha1.OutputPlan.dest_address:type_name -> penumbra.core.crypto.v1alpha1.Address
 	18,  // 122: penumbra.core.transaction.v1alpha1.SpendView.Visible.spend:type_name -> penumbra.core.transaction.v1alpha1.Spend
-	86,  // 123: penumbra.core.transaction.v1alpha1.SpendView.Visible.note:type_name -> penumbra.core.crypto.v1alpha1.NoteView
+	87,  // 123: penumbra.core.transaction.v1alpha1.SpendView.Visible.note:type_name -> penumbra.core.crypto.v1alpha1.NoteView
 	18,  // 124: penumbra.core.transaction.v1alpha1.SpendView.Opaque.spend:type_name -> penumbra.core.transaction.v1alpha1.Spend
-	51,  // 125: penumbra.core.transaction.v1alpha1.DelegatorVoteView.Visible.delegator_vote:type_name -> penumbra.core.governance.v1alpha1.DelegatorVote
-	86,  // 126: penumbra.core.transaction.v1alpha1.DelegatorVoteView.Visible.note:type_name -> penumbra.core.crypto.v1alpha1.NoteView
-	51,  // 127: penumbra.core.transaction.v1alpha1.DelegatorVoteView.Opaque.delegator_vote:type_name -> penumbra.core.governance.v1alpha1.DelegatorVote
+	52,  // 125: penumbra.core.transaction.v1alpha1.DelegatorVoteView.Visible.delegator_vote:type_name -> penumbra.core.governance.v1alpha1.DelegatorVote
+	87,  // 126: penumbra.core.transaction.v1alpha1.DelegatorVoteView.Visible.note:type_name -> penumbra.core.crypto.v1alpha1.NoteView
+	52,  // 127: penumbra.core.transaction.v1alpha1.DelegatorVoteView.Opaque.delegator_vote:type_name -> penumbra.core.governance.v1alpha1.DelegatorVote
 	20,  // 128: penumbra.core.transaction.v1alpha1.OutputView.Visible.output:type_name -> penumbra.core.transaction.v1alpha1.Output
-	86,  // 129: penumbra.core.transaction.v1alpha1.OutputView.Visible.note:type_name -> penumbra.core.crypto.v1alpha1.NoteView
+	87,  // 129: penumbra.core.transaction.v1alpha1.OutputView.Visible.note:type_name -> penumbra.core.crypto.v1alpha1.NoteView
 	9,   // 130: penumbra.core.transaction.v1alpha1.OutputView.Visible.payload_key:type_name -> penumbra.core.transaction.v1alpha1.PayloadKey
 	20,  // 131: penumbra.core.transaction.v1alpha1.OutputView.Opaque.output:type_name -> penumbra.core.transaction.v1alpha1.Output
 	28,  // 132: penumbra.core.transaction.v1alpha1.MemoView.Visible.ciphertext:type_name -> penumbra.core.transaction.v1alpha1.MemoCiphertext
@@ -5072,7 +5161,7 @@ func file_penumbra_core_transaction_v1alpha1_transaction_proto_init() {
 			}
 		}
 		file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[33].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SpendView_Visible); i {
+			switch v := v.(*GasPrices); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5084,7 +5173,7 @@ func file_penumbra_core_transaction_v1alpha1_transaction_proto_init() {
 			}
 		}
 		file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[34].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SpendView_Opaque); i {
+			switch v := v.(*SpendView_Visible); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5096,7 +5185,7 @@ func file_penumbra_core_transaction_v1alpha1_transaction_proto_init() {
 			}
 		}
 		file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[35].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DelegatorVoteView_Visible); i {
+			switch v := v.(*SpendView_Opaque); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5108,7 +5197,7 @@ func file_penumbra_core_transaction_v1alpha1_transaction_proto_init() {
 			}
 		}
 		file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[36].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DelegatorVoteView_Opaque); i {
+			switch v := v.(*DelegatorVoteView_Visible); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5120,7 +5209,7 @@ func file_penumbra_core_transaction_v1alpha1_transaction_proto_init() {
 			}
 		}
 		file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[37].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*OutputView_Visible); i {
+			switch v := v.(*DelegatorVoteView_Opaque); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5132,7 +5221,7 @@ func file_penumbra_core_transaction_v1alpha1_transaction_proto_init() {
 			}
 		}
 		file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[38].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*OutputView_Opaque); i {
+			switch v := v.(*OutputView_Visible); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5144,7 +5233,7 @@ func file_penumbra_core_transaction_v1alpha1_transaction_proto_init() {
 			}
 		}
 		file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[39].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MemoView_Visible); i {
+			switch v := v.(*OutputView_Opaque); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5156,6 +5245,18 @@ func file_penumbra_core_transaction_v1alpha1_transaction_proto_init() {
 			}
 		}
 		file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[40].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MemoView_Visible); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_transaction_v1alpha1_transaction_proto_msgTypes[41].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MemoView_Opaque); i {
 			case 0:
 				return &v.state
@@ -5262,7 +5363,7 @@ func file_penumbra_core_transaction_v1alpha1_transaction_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_penumbra_core_transaction_v1alpha1_transaction_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   41,
+			NumMessages:   42,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

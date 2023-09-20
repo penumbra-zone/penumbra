@@ -718,3 +718,19 @@ pub struct OutputPlan {
     #[prost(bytes = "bytes", tag = "6")]
     pub proof_blinding_s: ::prost::bytes::Bytes,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GasPrices {
+    /// The price per unit block space in terms of the staking token.
+    #[prost(uint64, tag = "1")]
+    pub block_space_price: u64,
+    /// The price per unit compact block space in terms of the staking token.
+    #[prost(uint64, tag = "2")]
+    pub compact_block_space_price: u64,
+    /// The price per unit verification cost in terms of the staking token.
+    #[prost(uint64, tag = "3")]
+    pub verification_price: u64,
+    /// The price per unit execution cost in terms of the staking token.
+    #[prost(uint64, tag = "4")]
+    pub execution_price: u64,
+}
