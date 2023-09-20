@@ -4,27 +4,39 @@ use std::{
     mem,
 };
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use rand_core::{CryptoRng, RngCore};
 
-use crate::note_record::SpendableNoteRecord;
 use penumbra_asset::{asset::DenomMetadata, Balance, Value};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_dex::{swap::SwapPlaintext, swap::SwapPlan, swap_claim::SwapClaimPlan, TradingPair};
+use penumbra_dex::{
+    lp::action::{PositionClose, PositionOpen},
+    lp::plan::PositionWithdrawPlan,
+    lp::position::{self, Position},
+    lp::Reserves,
+    swap::SwapPlaintext,
+    swap::SwapPlan,
+    swap_claim::SwapClaimPlan,
+    TradingPair,
+};
 use penumbra_fee::Fee;
-use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
+use penumbra_keys::Address;
 use penumbra_num::Amount;
+use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
+use penumbra_stake::{rate::RateData, validator};
 use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{
-    action::{Proposal, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote},
+    action::{
+        Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
+    },
     memo::MemoPlaintext,
     plan::{ActionPlan, DelegatorVotePlan, MemoPlan, TransactionPlan},
+    proposal,
 };
 
-// use penumbra_view::{SpendableNoteRecord, ViewClient};
-use rand_core::{CryptoRng, RngCore};
-// use tracing::instrument;
+use crate::note_record::SpendableNoteRecord;
 
 /// A planner for a [`TransactionPlan`] that can fill in the required spends and change outputs upon
 /// finalization to make a transaction balance.
@@ -40,7 +52,7 @@ pub struct Planner<R: RngCore + CryptoRng> {
 struct VoteIntent {
     start_block_height: u64,
     start_position: tct::Position,
-    // rate_data: BTreeMap<IdentityKey, RateData>,
+    rate_data: BTreeMap<IdentityKey, RateData>,
     vote: Vote,
 }
 
@@ -69,42 +81,38 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         &self.balance
     }
 
-    // /// Get all the note requests necessary to fulfill the current [`Balance`].
-    // pub fn notes_requests(
-    //     &self,
-    //     fvk: &FullViewingKey,
-    //     source: AddressIndex,
-    // ) -> (Vec<NotesRequest>, Vec<NotesForVotingRequest>) {
-    //     (
-    //         self.balance
-    //             .required()
-    //             .map(|Value { asset_id, amount }| NotesRequest {
-    //                 account_id: Some(fvk.hash().into()),
-    //                 asset_id: Some(asset_id.into()),
-    //                 address_index: Some(source.into()),
-    //                 amount_to_spend: amount.into(),
-    //                 include_spent: false,
-    //                 ..Default::default()
-    //             })
-    //             .collect(),
-    //         self.vote_intents
-    //             .iter()
-    //             .map(
-    //                 |(
-    //                      _proposal, // The request only cares about the start block height
-    //                      VoteIntent {
-    //                          start_block_height, ..
-    //                      },
-    //                  )| NotesForVotingRequest {
-    //                     account_id: Some(fvk.hash().into()),
-    //                     votable_at_height: *start_block_height,
-    //                     address_index: Some(source.into()),
-    //                     ..Default::default()
-    //                 },
-    //             )
-    //             .collect(),
-    //     )
-    // }
+    /// Get all the note requests necessary to fulfill the current [`Balance`].
+    pub fn notes_requests(&self) -> (Vec<NotesRequest>, Vec<NotesForVotingRequest>) {
+        (
+            self.balance
+                .required()
+                .map(|Value { asset_id, amount }| NotesRequest {
+                    account_group_id: None,
+                    asset_id: Some(asset_id.into()),
+                    address_index: None,
+                    amount_to_spend: Some(amount.into()),
+                    include_spent: false,
+                    ..Default::default()
+                })
+                .collect(),
+            self.vote_intents
+                .iter()
+                .map(
+                    |(
+                        _proposal, // The request only cares about the start block height
+                        VoteIntent {
+                            start_block_height, ..
+                        },
+                    )| NotesForVotingRequest {
+                        account_group_id: None,
+                        votable_at_height: *start_block_height,
+                        address_index: None,
+                        ..Default::default()
+                    },
+                )
+                .collect(),
+        )
+    }
 
     /// Set the expiry height for the transaction plan.
     pub fn expiry_height(&mut self, expiry_height: u64) -> &mut Self {
@@ -115,7 +123,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Set a memo for this transaction plan.
     ///
     /// Errors if the memo is too long.
-    pub fn memo(&mut self, memo: MemoPlaintext) -> anyhow::Result<&mut Self> {
+    pub fn memo(&mut self, memo: MemoPlaintext) -> Result<&mut Self> {
         self.plan.memo_plan = Some(MemoPlan::new(&mut self.rng, memo)?);
         Ok(self)
     }
@@ -136,6 +144,33 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub fn spend(&mut self, note: Note, position: tct::Position) -> &mut Self {
         let spend = SpendPlan::new(&mut self.rng, note, position).into();
         self.action(spend);
+        self
+    }
+
+    /// Open a liquidity position in the order book.
+    pub fn position_open(&mut self, position: Position) -> &mut Self {
+        self.action(ActionPlan::PositionOpen(PositionOpen { position }));
+        self
+    }
+
+    /// Close a liquidity position in the order book.
+    pub fn position_close(&mut self, position_id: position::Id) -> &mut Self {
+        self.action(ActionPlan::PositionClose(PositionClose { position_id }));
+        self
+    }
+
+    /// Withdraw a liquidity position in the order book.
+    pub fn position_withdraw(
+        &mut self,
+        position_id: position::Id,
+        reserves: Reserves,
+        pair: TradingPair,
+    ) -> &mut Self {
+        self.action(ActionPlan::PositionWithdraw(PositionWithdrawPlan::new(
+            reserves,
+            position_id,
+            pair,
+        )));
         self
     }
 
@@ -174,7 +209,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // If there is no input, then there is no swap.
         if delta_1 == Amount::zero() && delta_2 == Amount::zero() {
-            anyhow::bail!("No input value for swap");
+            return Err(anyhow!("No input value for swap"));
         }
 
         // Create the `SwapPlaintext` representing the swap to be performed:
@@ -203,30 +238,23 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
-    // /// Add a delegation to this transaction.
-    // ///
-    // /// If you don't specify spends or outputs as well, they will be filled in automatically.
-    // pub fn delegate(&mut self, unbonded_amount: u64, rate_data: RateData) -> &mut Self {
-    //     let delegation = rate_data.build_delegate(unbonded_amount).into();
-    //     self.action(delegation);
-    //     self
-    // }
+    /// Add a delegation to this transaction.
+    ///
+    /// If you don't specify spends or outputs as well, they will be filled in automatically.
+    pub fn delegate(&mut self, unbonded_amount: u128, rate_data: RateData) -> &mut Self {
+        let delegation = rate_data.build_delegate(unbonded_amount).into();
+        self.action(delegation);
+        self
+    }
 
-    // /// Add an undelegation to this transaction.
-    // ///
-    // /// TODO: can we put the chain parameters into the planner at the start, so we can compute end_epoch_index?
-    // pub fn undelegate(
-    //     &mut self,
-    //     delegation_amount: Amount,
-    //     rate_data: RateData,
-    //     end_epoch_index: u64,
-    // ) -> &mut Self {
-    //     let undelegation = rate_data
-    //         .build_undelegate(delegation_amount, end_epoch_index)
-    //         .into();
-    //     self.action(undelegation);
-    //     self
-    // }
+    /// Add an undelegation to this transaction.
+    ///
+    /// TODO: can we put the chain parameters into the planner at the start, so we can compute end_epoch_index?
+    pub fn undelegate(&mut self, delegation_amount: Amount, rate_data: RateData) -> &mut Self {
+        let undelegation = rate_data.build_undelegate(delegation_amount).into();
+        self.action(undelegation);
+        self
+    }
 
     /// Add an undelegate claim to this transaction.
     pub fn undelegate_claim(&mut self, claim_plan: UndelegateClaimPlan) -> &mut Self {
@@ -234,11 +262,11 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
-    // /// Upload a validator definition in this transaction.
-    // pub fn validator_definition(&mut self, new_validator: validator::Definition) -> &mut Self {
-    //     self.action(ActionPlan::ValidatorDefinition(new_validator.into()));
-    //     self
-    // }
+    /// Upload a validator definition in this transaction.
+    pub fn validator_definition(&mut self, new_validator: validator::Definition) -> &mut Self {
+        self.action(ActionPlan::ValidatorDefinition(new_validator));
+        self
+    }
 
     /// Submit a new governance proposal in this transaction.
     pub fn proposal_submit(&mut self, proposal: Proposal, deposit_amount: Amount) -> &mut Self {
@@ -259,19 +287,19 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Claim a governance proposal deposit in this transaction.
-    // pub fn proposal_deposit_claim(
-    //     &mut self,
-    //     proposal: u64,
-    //     deposit_amount: Amount,
-    //     outcome: Outcome<()>,
-    // ) -> &mut Self {
-    //     self.action(ActionPlan::ProposalDepositClaim(ProposalDepositClaim {
-    //         proposal,
-    //         deposit_amount,
-    //         outcome,
-    //     }));
-    //     self
-    // }
+    pub fn proposal_deposit_claim(
+        &mut self,
+        proposal: u64,
+        deposit_amount: Amount,
+        outcome: proposal::Outcome<()>,
+    ) -> &mut Self {
+        self.action(ActionPlan::ProposalDepositClaim(ProposalDepositClaim {
+            proposal,
+            deposit_amount,
+            outcome,
+        }));
+        self
+    }
 
     /// Cast a validator vote in this transaction.
     pub fn validator_vote(&mut self, vote: ValidatorVote) -> &mut Self {
@@ -279,26 +307,28 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
-    // /// Vote with all possible vote weight on a given proposal.
-    // pub fn delegator_vote(
-    //     &mut self,
-    //     proposal: u64,
-    //     start_block_height: u64,
-    //     start_position: tct::Position,
-    //     start_rate_data: BTreeMap<IdentityKey, RateData>,
-    //     vote: Vote,
-    // ) -> &mut Self {
-    //     self.vote_intents.insert(
-    //         proposal,
-    //         VoteIntent {
-    //             start_position,
-    //             start_block_height,
-    //             vote,
-    //             rate_data: start_rate_data,
-    //         },
-    //     );
-    //     self
-    // }
+    /// Vote with all possible vote weight on a given proposal.
+    ///
+    /// Voting twice on the same proposal in the same planner will overwrite the previous vote.
+    pub fn delegator_vote(
+        &mut self,
+        proposal: u64,
+        start_block_height: u64,
+        start_position: tct::Position,
+        start_rate_data: BTreeMap<IdentityKey, RateData>,
+        vote: Vote,
+    ) -> &mut Self {
+        self.vote_intents.insert(
+            proposal,
+            VoteIntent {
+                start_position,
+                start_block_height,
+                vote,
+                rate_data: start_rate_data,
+            },
+        );
+        self
+    }
 
     /// Vote with a specific positioned note in the transaction.
     ///
@@ -337,11 +367,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
-    /// Add spends and change outputs as required to balance the transaction, using the view service
-    /// provided to supply the notes and other information.
-    ///
-    /// Clears the contents of the planner, which can be re-used.
-
     /// Add spends and change outputs as required to balance the transaction, using the spendable
     /// notes provided. It is the caller's responsibility to ensure that the notes are the result of
     /// collected responses to the requests generated by an immediately preceding call to
@@ -352,10 +377,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         &mut self,
         chain_params: &ChainParameters,
         fmd_params: &FmdParameters,
-        fvk: &FullViewingKey,
-        source: AddressIndex,
         spendable_notes: Vec<SpendableNoteRecord>,
-        _votable_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
+        votable_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
+        self_address: Address,
     ) -> anyhow::Result<TransactionPlan> {
         // Fill in the chain id based on the view service
         self.plan.chain_id = chain_params.chain_id.clone();
@@ -366,65 +390,86 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
 
         // Add the required votes to the planner
-        // for (
-        //     records,
-        //     (
-        //         proposal,
-        //         VoteIntent {
-        //             start_position,
-        //             vote,
-        //             rate_data,
-        //             ..
-        //         },
-        //     ),
-        // ) in votable_notes
-        //     .into_iter()
-        //     .chain(std::iter::repeat(vec![])) // Chain with infinite repeating no notes, so the zip doesn't stop early
-        //     .zip(mem::take(&mut self.vote_intents).into_iter())
-        // {
-        //     if records.is_empty() {
-        //         // If there are no notes to vote with, return an error, because otherwise the user
-        //         // would compose a transaction that would not satisfy their intention, and would
-        //         // silently eat the fee.
-        //         anyhow::bail!(
-        //             "can't vote on proposal {} because no delegation notes were staked when voting started",
-        //             proposal
-        //         );
-        //     }
-        //
-        //     for (record, identity_key) in records {
-        //         // Vote with precisely this note on the proposal, computing the correct exchange
-        //         // rate for self-minted vote receipt tokens using the exchange rate of the validator
-        //         // at voting start time
-        //         let unbonded_amount = rate_data
-        //             .get(&identity_key)
-        //             .ok_or_else(|| anyhow!("missing rate data for note"))?
-        //             .unbonded_amount(record.note.amount().into())
-        //             .into();
-        //
-        //         // If the delegation token is unspent, "roll it over" by spending it (this will
-        //         // result in change sent back to us). This unlinks nullifiers used for voting on
-        //         // multiple non-overlapping proposals, increasing privacy.
-        //         if record.height_spent.is_none() {
-        //             self.spend(record.note.clone(), record.position);
-        //         }
-        //
-        //         self.delegator_vote_precise(
-        //             proposal,
-        //             start_position,
-        //             vote,
-        //             record.note,
-        //             record.position,
-        //             unbonded_amount,
-        //         );
-        //     }
-        // }
+        for (
+            records,
+            (
+                proposal,
+                VoteIntent {
+                    start_position,
+                    vote,
+                    rate_data,
+                    ..
+                },
+            ),
+        ) in votable_notes
+            .into_iter()
+            .chain(std::iter::repeat(vec![])) // Chain with infinite repeating no notes, so the zip doesn't stop early
+            .zip(mem::take(&mut self.vote_intents).into_iter())
+        {
+            // Keep track of whether we successfully could vote on this proposal
+            let mut voted = false;
+
+            for (record, identity_key) in records {
+                // Vote with precisely this note on the proposal, computing the correct exchange
+                // rate for self-minted vote receipt tokens using the exchange rate of the validator
+                // at voting start time. If the validator was not active at the start of the
+                // proposal, the vote will be rejected by stateful verification, so skip the note
+                // and continue to the next one.
+                let Some(rate_data) = rate_data.get(&identity_key) else {
+                    continue;
+                };
+                let unbonded_amount = rate_data
+                    .unbonded_amount(record.note.amount().value())
+                    .into();
+
+                // If the delegation token is unspent, "roll it over" by spending it (this will
+                // result in change sent back to us). This unlinks nullifiers used for voting on
+                // multiple non-overlapping proposals, increasing privacy.
+                if record.height_spent.is_none() {
+                    self.spend(record.note.clone(), record.position);
+                }
+
+                self.delegator_vote_precise(
+                    proposal,
+                    start_position,
+                    vote,
+                    record.note,
+                    record.position,
+                    unbonded_amount,
+                );
+
+                voted = true;
+            }
+
+            if !voted {
+                // If there are no notes to vote with, return an error, because otherwise the user
+                // would compose a transaction that would not satisfy their intention, and would
+                // silently eat the fee.
+                return Err(anyhow!(
+                    "can't vote on proposal {} because no delegation notes were staked to an active validator when voting started",
+                    proposal
+                ));
+            }
+        }
 
         // For any remaining provided balance, make a single change note for each
-        let self_address = fvk.incoming().payment_address(source).0;
 
         for value in self.balance.provided().collect::<Vec<_>>() {
             self.output(value, self_address);
+        }
+
+        // All actions have now been added, so check to make sure that you don't build and submit an
+        // empty transaction
+        if self.plan.actions.is_empty() {
+            anyhow::bail!("planned transaction would be empty, so should not be submitted");
+        }
+
+        // Now the transaction should be fully balanced, unless we didn't have enough to spend
+        if !self.balance.is_zero() {
+            anyhow::bail!(
+                "balance is non-zero after attempting to balance transaction: {:?}",
+                self.balance
+            );
         }
 
         // If there are outputs, we check that a memo has been added. If not, we add a default memo.
@@ -439,14 +484,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         let precision_bits = fmd_params.precision_bits;
         self.plan
             .add_all_clue_plans(&mut self.rng, precision_bits.into());
-
-        // Now the transaction should be fully balanced, unless we didn't have enough to spend
-        if !self.balance.is_zero() {
-            anyhow::bail!(
-                "balance is non-zero after attempting to balance transaction: {:?}",
-                self.balance
-            );
-        }
 
         // Clear the planner and pull out the plan to return
         self.balance = Balance::zero();
