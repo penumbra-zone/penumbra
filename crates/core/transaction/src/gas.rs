@@ -27,6 +27,12 @@ use crate::Action;
 /// for purposes of calculating multidimensional fees based on real
 /// transaction resource consumption.
 pub struct Gas {
+=======
+/// Represents the different resources that a transaction can consume,
+/// for purposes of calculating multidimensional fees based on real
+/// transaction resource consumption.
+struct Gas {
+>>>>>>> 8c998f595 (Add Gas structure to represent a multidimensional gas vector)
     pub block_space: u64,
     pub compact_block_space: u64,
     pub verification: u64,
@@ -45,6 +51,7 @@ impl Add for Gas {
         }
     }
 }
+<<<<<<< HEAD
 
 /// Allows [`Action`]s and [`Transaction`]s to statically indicate their relative resource consumption.
 /// Since the gas cost needs to be multiplied by a price, the values returned
