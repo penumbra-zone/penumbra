@@ -10,6 +10,7 @@ mod connection_open_confirm;
 mod connection_open_init;
 mod connection_open_try;
 mod create_client;
+mod misbehavior;
 mod recv_packet;
 mod timeout;
 mod update_client;

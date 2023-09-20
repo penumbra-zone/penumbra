@@ -3,7 +3,7 @@ use ibc_types::core::{
         MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
         MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket, MsgTimeout,
     },
-    client::msgs::{MsgCreateClient, MsgUpdateClient},
+    client::msgs::{MsgCreateClient, MsgSubmitMisbehaviour, MsgUpdateClient},
     connection::msgs::{
         MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry,
     },
@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 pub enum IbcAction {
     CreateClient(MsgCreateClient),
     UpdateClient(MsgUpdateClient),
+    SubmitMisbehavior(MsgSubmitMisbehaviour),
     ConnectionOpenInit(MsgConnectionOpenInit),
     ConnectionOpenTry(MsgConnectionOpenTry),
     ConnectionOpenAck(MsgConnectionOpenAck),
@@ -57,6 +58,9 @@ impl IbcAction {
             }
             IbcAction::UpdateClient(msg) => {
                 tracing::info_span!(parent: parent, "UpdateClient", client_id = %msg.client_id)
+            }
+            IbcAction::SubmitMisbehavior(msg) => {
+                tracing::info_span!(parent: parent, "SubmitMisbehavior", client_id = %msg.client_id)
             }
             IbcAction::ConnectionOpenInit(msg) => {
                 tracing::info_span!(parent: parent, "ConnectionOpenInit", client_id = %msg.client_id_on_a)
@@ -197,6 +201,10 @@ impl From<IbcAction> for pb::IbcAction {
             },
             IbcAction::UpdateClient(msg) => pbjson_types::Any {
                 type_url: MsgUpdateClient::TYPE_URL.to_string(),
+                value: msg.encode_to_vec().into(),
+            },
+            IbcAction::SubmitMisbehavior(msg) => pbjson_types::Any {
+                type_url: MsgSubmitMisbehaviour::TYPE_URL.to_string(),
                 value: msg.encode_to_vec().into(),
             },
             IbcAction::ConnectionOpenInit(msg) => pbjson_types::Any {
