@@ -2,7 +2,7 @@ use crate::component::client::StateReadExt;
 
 use core::time::Duration;
 use ibc_proto::protobuf::Protobuf;
-use ibc_types::path::ClientConsensusStatePath;
+use ibc_types::path::{ClientConsensusStatePath, ClientUpgradePath};
 use ibc_types::DomainType;
 use ibc_types::{
     core::{
@@ -105,6 +105,69 @@ fn verify_merkle_proof(
     proof.verify_membership(proof_specs, root.clone(), merkle_path, value, 0)?;
 
     Ok(())
+}
+
+#[async_trait]
+pub trait ClientUpgradeProofVerifier: StateReadExt {
+    async fn verify_client_upgrade_proof(
+        &self,
+        connection: &ConnectionEnd,
+        proof: &MerkleProof,
+        proof_height: &Height,
+        upgraded_tm_consensus_state: TendermintConsensusState,
+        upgraded_tm_client_state: TendermintClientState,
+    ) -> anyhow::Result<()> {
+        // get the stored client state for the counterparty
+        let trusted_client_state = self.get_client_state(&connection.client_id).await?;
+
+        // Check to see if the upgrade path is set
+        let mut upgrade_path = trusted_client_state.upgrade_path.clone();
+        if upgrade_path.pop().is_none() {
+            anyhow::bail!("upgrade path is not set");
+        };
+
+        let upgrade_path_prefix = MerklePrefix::try_from(upgrade_path[0].clone().into_bytes())
+            .map_err(|_| {
+                anyhow::anyhow!("couldnt create commitment prefix from client upgrade path")
+            })?;
+
+        // check if the client is frozen
+        // TODO: should we also check if the client is expired here?
+        if trusted_client_state.is_frozen() {
+            anyhow::bail!("client is frozen");
+        }
+
+        // get the stored consensus state for the counterparty
+        let trusted_consensus_state = self
+            .get_verified_consensus_state(*proof_height, connection.client_id.clone())
+            .await?;
+
+        trusted_client_state.verify_height(*proof_height)?;
+
+        verify_merkle_proof(
+            &trusted_client_state.proof_specs,
+            &upgrade_path_prefix,
+            proof,
+            &trusted_consensus_state.root,
+            ClientUpgradePath::UpgradedClientState(
+                trusted_client_state.latest_height().revision_height(),
+            ),
+            upgraded_tm_client_state.encode_to_vec(),
+        )?;
+
+        verify_merkle_proof(
+            &trusted_client_state.proof_specs,
+            &upgrade_path_prefix,
+            proof,
+            &trusted_consensus_state.root,
+            ClientUpgradePath::UpgradedClientConsensusState(
+                trusted_client_state.latest_height().revision_height(),
+            ),
+            upgraded_tm_consensus_state.encode_to_vec(),
+        )?;
+
+        Ok(())
+    }
 }
 
 #[async_trait]
