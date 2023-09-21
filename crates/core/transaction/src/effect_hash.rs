@@ -7,6 +7,10 @@ use penumbra_dex::{
     swap, swap_claim,
 };
 use penumbra_fee::Fee;
+use penumbra_governance::{
+    DelegatorVote, DelegatorVoteBody, Proposal, ProposalDepositClaim, ProposalSubmit,
+    ProposalWithdraw, ValidatorVote, ValidatorVoteBody, Vote,
+};
 use penumbra_ibc::Ics20Withdrawal;
 use penumbra_keys::{FullViewingKey, PayloadKey};
 use penumbra_proto::{
@@ -19,14 +23,8 @@ use penumbra_shielded_pool::{output, spend};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimBody};
 
 use crate::{
-    action::{
-        DelegatorVote, DelegatorVoteBody, Proposal, ProposalDepositClaim, ProposalSubmit,
-        ProposalWithdraw, ValidatorVote, ValidatorVoteBody, Vote,
-    },
-    memo::MemoCiphertext,
-    plan::TransactionPlan,
-    transaction::DetectionData,
-    Action, Transaction, TransactionBody, TransactionParameters,
+    memo::MemoCiphertext, plan::TransactionPlan, transaction::DetectionData, Action, Transaction,
+    TransactionBody, TransactionParameters,
 };
 
 // Note: temporarily duplicate of chain/EffectingData

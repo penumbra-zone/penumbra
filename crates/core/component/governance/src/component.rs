@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-mod view;
-
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_storage::StateWrite;
@@ -17,8 +15,13 @@ use crate::{
     tally,
 };
 
-use self::view::{StateReadExt as _, StateWriteExt};
-pub use penumbra_chain::component::StateReadExt;
+mod view;
+
+pub(crate) use self::view::StateWriteExt;
+pub use view::StateReadExt;
+//pub use penumbra_chain::component::StateReadExt;
+
+use penumbra_chain::component::StateReadExt as _;
 
 pub struct Governance {}
 

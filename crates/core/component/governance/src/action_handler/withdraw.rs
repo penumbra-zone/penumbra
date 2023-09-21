@@ -2,14 +2,14 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_governance::ProposalNft;
 use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{action::ProposalWithdraw, proposal};
 
 use crate::{
     action_handler::ActionHandler,
-    governance::{StateReadExt, StateWriteExt},
+    component::{StateReadExt as _, StateWriteExt},
+    proposal_state::State as ProposalState,
+    ProposalNft, ProposalWithdraw,
 };
 
 #[async_trait]
@@ -40,7 +40,7 @@ impl ActionHandler for ProposalWithdraw {
         // Update the proposal state to withdrawn
         state.put_proposal_state(
             *proposal,
-            proposal::State::Withdrawn {
+            ProposalState::Withdrawn {
                 reason: reason.clone(),
             },
         );

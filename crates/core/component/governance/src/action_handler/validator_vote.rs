@@ -5,14 +5,13 @@ use async_trait::async_trait;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::DomainType;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::{
-    action::{ValidatorVote, ValidatorVoteBody},
-    proposal,
-};
 
+use crate::component::StateWriteExt;
+use crate::{action_handler::ActionHandler, StateReadExt};
 use crate::{
-    action_handler::ActionHandler,
-    governance::{StateReadExt, StateWriteExt},
+    proposal_state::Outcome,
+    proposal_state::State as ProposalState,
+    {ValidatorVote, ValidatorVoteBody},
 };
 
 #[async_trait]
@@ -108,8 +107,8 @@ impl ActionHandler for ValidatorVote {
                 // because we got to this point)
                 state.put_proposal_state(
                     *proposal,
-                    proposal::State::Finished {
-                        outcome: proposal::Outcome::Passed,
+                    ProposalState::Finished {
+                        outcome: Outcome::Passed,
                     },
                 );
             }

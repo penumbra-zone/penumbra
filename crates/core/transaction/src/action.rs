@@ -6,9 +6,6 @@ use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 
 use crate::{ActionView, IsAction, TransactionPerspective};
 
-pub use crate::proposal::{Proposal, ProposalKind, ProposalPayload};
-pub use crate::vote::Vote;
-
 /// An action performed by a Penumbra transaction.
 #[derive(Clone, Debug)]
 #[allow(clippy::large_enum_variant)]
@@ -19,11 +16,11 @@ pub enum Action {
     IbcAction(penumbra_ibc::IbcAction),
     Swap(penumbra_dex::swap::Swap),
     SwapClaim(penumbra_dex::swap_claim::SwapClaim),
-    ProposalSubmit(ProposalSubmit),
-    ProposalWithdraw(ProposalWithdraw),
-    DelegatorVote(DelegatorVote),
-    ValidatorVote(ValidatorVote),
-    ProposalDepositClaim(ProposalDepositClaim),
+    ProposalSubmit(penumbra_governance::ProposalSubmit),
+    ProposalWithdraw(penumbra_governance::ProposalWithdraw),
+    DelegatorVote(penumbra_governance::DelegatorVote),
+    ValidatorVote(penumbra_governance::ValidatorVote),
+    ProposalDepositClaim(penumbra_governance::ProposalDepositClaim),
 
     PositionOpen(penumbra_dex::lp::action::PositionOpen),
     PositionClose(penumbra_dex::lp::action::PositionClose),
