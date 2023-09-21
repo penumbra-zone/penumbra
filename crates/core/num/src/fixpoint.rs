@@ -128,6 +128,7 @@ impl U128x128 {
             self.round_down()
         } else {
             self.round_up()
+                .expect("MERGEBLOCK(erwan): just trying to make the smoke test pass")
         }
     }
 
