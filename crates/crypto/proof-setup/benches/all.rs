@@ -6,7 +6,7 @@ use rand_core::OsRng;
 
 use penumbra_dex::swap_claim::proof::SwapClaimCircuit;
 use penumbra_proof_params::generate_constraint_matrices;
-use penumbra_proof_setup::{
+use penumbra_proof_setup::single::{
     circuit_degree,
     log::{ContributionHash, Hashable},
     transition, ExtraTransitionInformation, Phase2CRSElements, Phase2Contribution,
