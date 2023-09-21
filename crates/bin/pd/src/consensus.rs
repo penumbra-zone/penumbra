@@ -97,21 +97,18 @@ impl Consensus {
 
         match &app_state {
             genesis::AppState::Checkpoint(h) => {
-                println!("checkpoint: {h:?}");
-                // finalize a compact block
-                // start an epoch?
-                /* fast-forward to commit */
+                tracing::info!(?h, "genesis state is a checkpoint");
             }
-            genesis::AppState::Content(genesis_app_state) => {
-                /* run application init_chain */
-
+            genesis::AppState::Content(_) => {
+                tracing::info!("genesis state is a full configuration");
                 // Check that we haven't got a duplicated InitChain message for some reason:
                 if self.storage.latest_version() != u64::MAX {
                     anyhow::bail!("database already initialized");
                 }
-                self.app.init_chain(&genesis_app_state).await;
             }
         }
+
+        self.app.init_chain(&app_state).await;
 
         // Extract the Tendermint validators from the app state
         //
