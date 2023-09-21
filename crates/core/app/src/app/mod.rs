@@ -78,7 +78,7 @@ impl App {
         events
     }
 
-    pub async fn init_chain(&mut self, app_state: &genesis::AppState) {
+    pub async fn init_chain(&mut self, post_genesis_height: u64, app_state: &genesis::AppState) {
         let mut state_tx = self
             .state
             .try_begin_transaction()
@@ -119,7 +119,9 @@ impl App {
                 Governance::init_chain(&mut state_tx, &()).await;
                 ShieldedPool::init_chain(&mut state_tx, app_state).await;
             }
-            genesis::AppState::Checkpoint(_) => { /* no-op */ }
+            genesis::AppState::Checkpoint(_) => {
+                state_tx.put_block_height(post_genesis_height);
+            }
         };
 
         App::finish_block(&mut state_tx).await;
