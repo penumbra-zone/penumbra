@@ -1,5 +1,5 @@
+use base64::{engine::general_purpose, Engine as _};
 use std::str::FromStr;
-use base64::{Engine as _, engine::{general_purpose}};
 
 use ark_groth16::r1cs_to_qap::LibsnarkReduction;
 use ark_r1cs_std::{prelude::*, uint8::UInt8};
