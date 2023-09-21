@@ -4,9 +4,8 @@ use penumbra_proto::{view::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note};
 use penumbra_tct as tct;
-use std::convert::{TryFrom, TryInto};
-
 use serde::{Deserialize, Serialize};
+use std::convert::{TryFrom, TryInto};
 
 /// Corresponds to the SpendableNoteRecord proto
 #[derive(Serialize, Deserialize, Debug, Clone)]
