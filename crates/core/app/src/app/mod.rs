@@ -24,6 +24,7 @@ use tendermint::validator::Update;
 use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
+use crate::DaoStateReadExt;
 
 pub mod state_key;
 
