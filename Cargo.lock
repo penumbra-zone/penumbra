@@ -6295,6 +6295,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "psumcoordd"
+version = "0.60.0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "camino",
+ "clap 3.2.25",
+ "http-body",
+ "penumbra-keys",
+ "penumbra-proto",
+ "penumbra-view",
+ "tokio",
+ "tonic",
+ "tower",
+ "url",
+ "vergen",
+]
+
+[[package]]
 name = "quanta"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
