@@ -1,9 +1,11 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use ibc_types::core::client::{events, ClientType};
 use ibc_types::core::client::{msgs::MsgSubmitMisbehaviour, ClientId};
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::lightclients::tendermint::header::Header as TendermintHeader;
 use ibc_types::lightclients::tendermint::misbehaviour::Misbehaviour as TendermintMisbehavior;
+use ibc_types::lightclients::tendermint::TENDERMINT_CLIENT_TYPE;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_storage::{StateRead, StateWrite};
 use tendermint_light_client_verifier::{
@@ -31,6 +33,7 @@ impl MsgHandler for MsgSubmitMisbehaviour {
 
     async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
+
         let untrusted_misbehavior =
             ics02_validation::get_tendermint_misbehavior(self.misbehaviour.clone())?;
         misbehavior_has_same_height_but_different_block_hash(&untrusted_misbehavior)?;
@@ -60,10 +63,20 @@ impl MsgHandler for MsgSubmitMisbehaviour {
         )
         .await?;
 
+        tracing::info!(client_id = ?untrusted_misbehavior.client_id, "received valid misbehavior evidence! freezing client");
+
         // freeze the client
         let frozen_client =
             trusted_client_state.with_frozen_height(untrusted_misbehavior.header1.height());
         state.put_client(&self.client_id, frozen_client);
+
+        state.record(
+            events::ClientMisbehaviour {
+                client_id: self.client_id.clone(),
+                client_type: ClientType::new(TENDERMINT_CLIENT_TYPE.to_string()),
+            }
+            .into(),
+        );
 
         Ok(())
     }
