@@ -255,6 +255,19 @@ impl TestnetConfig {
         Ok(genesis)
     }
 
+    pub(crate) fn make_checkpoint(
+        genesis: Genesis<genesis::AppState>,
+        checkpoint: Option<Vec<u8>>,
+    ) -> Genesis<genesis::AppState> {
+        match checkpoint {
+            Some(checkpoint) => Genesis {
+                app_state: genesis::AppState::Checkpoint(checkpoint),
+                ..genesis
+            },
+            None => genesis,
+        }
+    }
+
     /// Generate and write to disk the Tendermint configs for each validator at genesis.
     pub fn write_configs(&self) -> anyhow::Result<()> {
         // Loop over each validator and write its config separately.
