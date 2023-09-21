@@ -2,11 +2,11 @@ use ark_ec::Group;
 use ark_ff::{One, UniformRand, Zero};
 use rand_core::{CryptoRngCore, OsRng};
 
-use crate::dlog;
-use crate::group::{
+use crate::single::dlog;
+use crate::single::group::{
     pairing, BatchedPairingChecker11, BatchedPairingChecker12, GroupHasher, F, G1, G2,
 };
-use crate::log::{ContributionHash, Hashable, Phase};
+use crate::single::log::{ContributionHash, Hashable, Phase};
 
 /// Check that a given degree is high enough.
 ///
@@ -446,8 +446,8 @@ mod test {
 
     use rand_core::OsRng;
 
-    use crate::group::F;
-    use crate::log::CONTRIBUTION_HASH_SIZE;
+    use crate::single::group::F;
+    use crate::single::log::CONTRIBUTION_HASH_SIZE;
 
     /// The degree we use for tests.
     ///

@@ -13,7 +13,7 @@ use penumbra_governance::DelegatorVoteCircuit;
 use penumbra_proof_params::{
     generate_constraint_matrices, DummyWitness, ProvingKeyExt, VerifyingKeyExt,
 };
-use penumbra_proof_setup::{
+use penumbra_proof_setup::single::{
     circuit_degree, combine, log::Hashable, transition, Phase1CRSElements, Phase1Contribution,
     Phase2Contribution,
 };

@@ -1,7 +1,7 @@
 use ark_ff::UniformRand;
 use rand_core::CryptoRngCore;
 
-use crate::group::{GroupHasher, Hash, F, G1};
+use crate::single::group::{GroupHasher, Hash, F, G1};
 
 // Note: one choice you could make for these structs is to have them take
 // references to their data, instead of copying them. However, operations like

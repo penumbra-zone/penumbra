@@ -3,8 +3,8 @@ use ark_ec::Group;
 use ark_ff::{fields::Field, UniformRand, Zero};
 use rand_core::{CryptoRngCore, OsRng};
 
-use crate::log::{ContributionHash, Hashable, Phase};
-use crate::{
+use crate::single::log::{ContributionHash, Hashable, Phase};
+use crate::single::{
     dlog,
     group::{BatchedPairingChecker11, GroupHasher, F, G1, G2},
 };
@@ -255,7 +255,7 @@ impl Phase for Phase2 {
 mod test {
     use super::*;
 
-    use crate::log::CONTRIBUTION_HASH_SIZE;
+    use crate::single::log::CONTRIBUTION_HASH_SIZE;
 
     use rand_core::OsRng;
 
