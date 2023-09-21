@@ -2,11 +2,11 @@
 
 Stores config generation scripts for use with the [relayer](https://github.com/cosmos/relayer),
 for IBC functionality. Prior to mainnet, we plan to use `relayer` to synchronize actions
-from testnet-preview to testnet. During 2023Q2, we're focusing on relaying between
-testnet-preview and a local devnet on the same or similar commit.
+from preview to testnet. During 2023Q2, we're focusing on relaying between
+preview and a local devnet on the same or similar commit.
 
 ## Running a local devnet
-To create a path between the public testnet-preview chain and a local devnet:
+To create a path between the public preview chain and a local devnet:
 
 0. Download the `rly` binary from [cosmos/relayer](https://github.com/cosmos/relayer/releases) and stick it in your `$PATH`.
 1. Run `./deployments/scripts/relayer-local-devnet` to bootstrap the local chain.

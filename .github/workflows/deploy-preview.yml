@@ -72,7 +72,7 @@ jobs:
           export PATH="$HOME/bin:$PATH"
           cd deployments/
           export PENUMBRA_VERSION='main'
-          export HELM_RELEASE='penumbra-testnet-preview'
+          export HELM_RELEASE='penumbra-preview'
           ./ci.sh
 
       - name: bounce grpcui
