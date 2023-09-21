@@ -26,7 +26,7 @@ use ibc_types::core::channel::{ChannelId, PortId};
 use ibc_types::core::client::ClientId;
 use ibc_types::core::connection::ConnectionId;
 use ibc_types::core::connection::IdentifiedConnectionEnd;
-use penumbra_chain::component::AppHashRead;
+use penumbra_chain::component::{AppHashRead, StateReadExt};
 use penumbra_ibc::component::ChannelStateReadExt as _;
 use penumbra_ibc::component::ClientStateReadExt as _;
 use penumbra_ibc::component::ConnectionStateReadExt as _;
@@ -67,16 +67,23 @@ impl Info {
 
     async fn info(&self, info: request::Info) -> anyhow::Result<response::Info> {
         let state = self.storage.latest_snapshot();
-        tracing::debug!(?info, version = ?state.version());
+        // Previously, we used the latest version of the JMT state to
+        // report the current block height. This worked well because
+        // the JMT version and the current height were always aligned.
+        // However, adding support for genesis migrations breaks this
+        // invariant because there is a pregenesis (aka. phantom)
+        // block that occurs immediately after an upgrade. This block
+        // has height 0. To support this case, we report back the height
+        // that is stored in the state store.
+        let last_block_height = state
+            .get_block_height()
+            .await
+            // if we can't get the block height, we're in pregenesis
+            // in that case we want to report 0 to cometbft.
+            .unwrap_or_default()
+            .try_into()?;
 
-        let last_block_height = match state.version() {
-            // When the state is uninitialized, state.version() will return -1 (u64::MAX),
-            // which could confuse Tendermint, so special-case this value to 0.
-            u64::MAX => 0,
-            v => v,
-        }
-        .try_into()
-        .context("failed to convert height")?;
+        tracing::info!(?info, state_version = ?state.version(), app_version = last_block_height, "reporting height in info query");
 
         let last_block_app_hash = state.app_hash().await?.0.to_vec().try_into()?;
 
