@@ -7,6 +7,8 @@ use penumbra_chain::TransactionContext;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Action;
 
+mod submit;
+
 use super::ActionHandler;
 use penumbra_component::ActionHandler as _;
 
