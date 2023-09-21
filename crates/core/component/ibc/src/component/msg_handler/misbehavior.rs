@@ -26,7 +26,14 @@ impl MsgHandler for MsgSubmitMisbehaviour {
         misbehavior_is_tendermint(self)?;
         let untrusted_misbehavior =
             ics02_validation::get_tendermint_misbehavior(self.misbehaviour.clone())?;
-        misbehavior_has_same_height_but_different_block_hash(&untrusted_misbehavior)?;
+        // misbehavior must either contain equivocation or timestamp monotonicity violation
+        if !misbehavior_equivocation_violation(&untrusted_misbehavior)
+            && !misbehavior_timestamp_monotonicity_violation(&untrusted_misbehavior)
+        {
+            anyhow::bail!(
+                "misbehavior must either contain equivocation or timestamp monotonicity violation"
+            );
+        }
 
         Ok(())
     }
@@ -36,7 +43,15 @@ impl MsgHandler for MsgSubmitMisbehaviour {
 
         let untrusted_misbehavior =
             ics02_validation::get_tendermint_misbehavior(self.misbehaviour.clone())?;
-        misbehavior_has_same_height_but_different_block_hash(&untrusted_misbehavior)?;
+
+        // misbehavior must either contain equivocation or timestamp monotonicity violation
+        if !misbehavior_equivocation_violation(&untrusted_misbehavior)
+            && !misbehavior_timestamp_monotonicity_violation(&untrusted_misbehavior)
+        {
+            anyhow::bail!(
+                "misbehavior must either contain equivocation or timestamp monotonicity violation"
+            );
+        }
 
         // verify that both headers verify for an update client on the last trusted header for
         // client_id
@@ -155,32 +170,16 @@ async fn verify_misbehavior_header<S: StateRead>(
     }
 }
 
-fn misbehavior_has_same_height_but_different_block_hash(
-    misbehavior: &TendermintMisbehavior,
-) -> Result<()> {
-    let header_1 = &misbehavior.header1;
-    let header_2 = &misbehavior.header2;
+fn misbehavior_equivocation_violation(misbehavior: &TendermintMisbehavior) -> bool {
+    misbehavior.header1.height() == misbehavior.header2.height()
+        && misbehavior.header1.signed_header.commit.block_id.hash
+            != misbehavior.header2.signed_header.commit.block_id.hash
+}
 
-    if header_1.height() == header_2.height() {
-        if header_1.signed_header.commit.block_id.hash
-            != header_2.signed_header.commit.block_id.hash
-        {
-            Ok(())
-        } else {
-            Err(anyhow::anyhow!(
-                "MsgSubmitMisbehaviour has same height but same block hash, no evidence of misbehaviour"
-            ))
-        }
-    } else {
-        // if the timestamps are not monotonic, we also consider this to be valid misbehavior
-        if header_1.signed_header.header.time <= header_2.signed_header.header.time {
-            Ok(())
-        } else {
-            Err(anyhow::anyhow!(
-                "MsgSubmitMisbehaviour has different heights, no evidence of misbehaviour"
-            ))
-        }
-    }
+fn misbehavior_timestamp_monotonicity_violation(misbehavior: &TendermintMisbehavior) -> bool {
+    misbehavior.header1.height() < misbehavior.header2.height()
+        && misbehavior.header1.signed_header.header.time
+            > misbehavior.header2.signed_header.header.time
 }
 
 fn misbehavior_is_tendermint(msg: &MsgSubmitMisbehaviour) -> Result<()> {
