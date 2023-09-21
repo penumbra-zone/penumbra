@@ -20,6 +20,10 @@ use penumbra_dex::{
     TradingPair,
 };
 use penumbra_fee::Fee;
+use penumbra_governance::{
+    proposal_state, DelegatorVotePlan, Proposal, ProposalDepositClaim, ProposalSubmit,
+    ProposalWithdraw, ValidatorVote, Vote,
+};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_keys::{
     keys::{AccountGroupId, AddressIndex},
@@ -32,12 +36,8 @@ use penumbra_stake::{rate::RateData, validator};
 use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{
-    action::{
-        Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
-    },
     memo::MemoPlaintext,
-    plan::{ActionPlan, DelegatorVotePlan, MemoPlan, TransactionPlan},
-    proposal,
+    plan::{ActionPlan, MemoPlan, TransactionPlan},
 };
 use rand::{CryptoRng, RngCore};
 use tracing::instrument;
@@ -320,7 +320,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         &mut self,
         proposal: u64,
         deposit_amount: Amount,
-        outcome: proposal::Outcome<()>,
+        outcome: proposal_state::Outcome<()>,
     ) -> &mut Self {
         self.action(ActionPlan::ProposalDepositClaim(ProposalDepositClaim {
             proposal,

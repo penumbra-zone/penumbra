@@ -6,13 +6,10 @@ use std::{
 
 use anyhow::{Context, Result};
 use futures::{StreamExt, TryStreamExt};
-use penumbra_app::governance::{self, state_key::*};
+use penumbra_governance::state_key::*;
+use penumbra_governance::{proposal_state::State as ProposalState, Proposal, Vote};
 use penumbra_proto::client::v1alpha1::{PrefixValueRequest, PrefixValueResponse};
 use penumbra_stake::IdentityKey;
-use penumbra_transaction::{
-    proposal::{self, Proposal},
-    vote::Vote,
-};
 use serde::Serialize;
 use serde_json::json;
 
@@ -93,7 +90,7 @@ impl GovernanceCmd {
 
                     let proposal_title = proposal.title;
 
-                    let proposal_state: proposal::State = client
+                    let proposal_state: ProposalState = client
                         .key_domain(proposal_state(proposal_id))
                         .await?
                         .context(format!("proposal state for {} not found", proposal_id))?;
@@ -116,7 +113,7 @@ impl GovernanceCmd {
                     toml(&proposal)?;
                 }
                 State => {
-                    let state: proposal::State = client
+                    let state: ProposalState = client
                         .key_domain(proposal_state(*proposal_id))
                         .await?
                         .context(format!(
@@ -171,24 +168,25 @@ impl GovernanceCmd {
                         validator_votes_and_power.insert(*identity_key, (*vote, power));
                     }
 
-                    let mut delegator_tallies: BTreeMap<IdentityKey, governance::Tally> = client
-                        .prefix_domain::<governance::Tally>(
-                            all_tallied_delegator_votes_for_proposal(*proposal_id),
-                        )
-                        .await?
-                        .and_then(|r| async move {
-                            Ok((
-                                IdentityKey::from_str(
-                                    r.0.rsplit('/').next().context("invalid key")?,
-                                )?,
-                                r.1,
-                            ))
-                        })
-                        .try_collect()
-                        .await?;
+                    let mut delegator_tallies: BTreeMap<IdentityKey, penumbra_governance::Tally> =
+                        client
+                            .prefix_domain::<penumbra_governance::Tally>(
+                                all_tallied_delegator_votes_for_proposal(*proposal_id),
+                            )
+                            .await?
+                            .and_then(|r| async move {
+                                Ok((
+                                    IdentityKey::from_str(
+                                        r.0.rsplit('/').next().context("invalid key")?,
+                                    )?,
+                                    r.1,
+                                ))
+                            })
+                            .try_collect()
+                            .await?;
 
                     // Combine the two mappings
-                    let mut total = governance::Tally::default();
+                    let mut total = penumbra_governance::Tally::default();
                     let mut all_votes_and_power: BTreeMap<String, serde_json::Value> =
                         BTreeMap::new();
                     for (identity_key, (vote, power)) in validator_votes_and_power.into_iter() {
@@ -209,9 +207,10 @@ impl GovernanceCmd {
                                 };
                             // Subtract delegator total from validator power, then add delegator
                             // tally in to get the total tally for this validator:
-                            let sub_total =
-                                governance::Tally::from((vote, power - delegator_tally.total()))
-                                    + delegator_tally;
+                            let sub_total = penumbra_governance::Tally::from((
+                                vote,
+                                power - delegator_tally.total(),
+                            )) + delegator_tally;
                             map.insert("sub_total".to_string(), json_tally(&sub_total));
                             total += sub_total;
                             map.into()
@@ -247,7 +246,7 @@ fn json<T: Serialize>(value: &T) -> Result<()> {
     Ok(())
 }
 
-fn json_tally(tally: &governance::Tally) -> serde_json::Value {
+fn json_tally(tally: &penumbra_governance::Tally) -> serde_json::Value {
     let mut map = serde_json::Map::new();
     if tally.yes() > 0 {
         map.insert("yes".to_string(), tally.yes().into());

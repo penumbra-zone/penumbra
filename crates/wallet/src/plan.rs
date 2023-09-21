@@ -11,6 +11,7 @@ use ark_std::UniformRand;
 use decaf377::Fq;
 use penumbra_asset::Value;
 use penumbra_fee::Fee;
+use penumbra_governance::{proposal_state, Proposal, ValidatorVote};
 use penumbra_keys::{
     keys::{AccountGroupId, AddressIndex},
     Address,
@@ -18,12 +19,7 @@ use penumbra_keys::{
 use penumbra_num::Amount;
 use penumbra_stake::rate::RateData;
 use penumbra_stake::validator;
-use penumbra_transaction::{
-    action::{Proposal, ValidatorVote},
-    memo::MemoPlaintext,
-    plan::TransactionPlan,
-    proposal,
-};
+use penumbra_transaction::{memo::MemoPlaintext, plan::TransactionPlan};
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
 use tracing::instrument;
@@ -328,7 +324,7 @@ pub async fn proposal_deposit_claim<V, R>(
     rng: R,
     proposal_id: u64,
     deposit_amount: Amount,
-    outcome: proposal::Outcome<()>,
+    outcome: proposal_state::Outcome<()>,
     fee: Fee,
     source_address: AddressIndex,
 ) -> Result<TransactionPlan>

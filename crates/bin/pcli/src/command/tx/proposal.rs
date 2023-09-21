@@ -1,10 +1,9 @@
 use anyhow::{Context, Result};
 
 use penumbra_chain::params::ChainParameters;
-use penumbra_transaction::{
-    plan::TransactionPlan,
-    proposal::{Proposal, ProposalPayload},
-};
+use penumbra_governance::{Proposal, ProposalPayload};
+use penumbra_proto::DomainType;
+use penumbra_transaction::plan::TransactionPlan;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ProposalCmd {
@@ -108,7 +107,7 @@ impl ProposalKindCmd {
                     }
                 } else {
                     ProposalPayload::DaoSpend {
-                        transaction_plan: TransactionPlan::default(),
+                        transaction_plan: TransactionPlan::default().encode_to_vec(),
                     }
                 }
             }
