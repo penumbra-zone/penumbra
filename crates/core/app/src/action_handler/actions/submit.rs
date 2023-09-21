@@ -20,6 +20,7 @@ use penumbra_transaction::Transaction;
 use penumbra_transaction::{AuthorizationData, WitnessData};
 
 use crate::action_handler::ActionHandler;
+use crate::dao_ext::DaoStateWriteExt;
 use penumbra_governance::{
     component::{StateReadExt as _, StateWriteExt as _},
     proposal::{Proposal, ProposalPayload},
