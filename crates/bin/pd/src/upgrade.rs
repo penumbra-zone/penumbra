@@ -66,6 +66,8 @@ pub async fn migrate(path_to_export: PathBuf, upgrade: Upgrade) -> anyhow::Resul
                 .expect("infaillible conversion");
             genesis.initial_height = post_ugprade_height as i64;
             genesis.genesis_time = tendermint::time::Time::now();
+            let checkpoint = [32u8; 32].to_vec();
+            let genesis = TestnetConfig::make_checkpoint(genesis, Some(checkpoint));
 
             let genesis_json = serde_json::to_string(&genesis).expect("can serialize genesis");
             tracing::info!("genesis: {}", genesis_json);
