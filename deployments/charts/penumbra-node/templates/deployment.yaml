@@ -97,7 +97,7 @@ spec:
                   {{- with $moniker }}
                   --moniker {{ . | quote }} \
                   {{- end }}
-                  {{ $.Values.penumbra_bootstrap_node_tendermint_rpc_url }}
+                  {{ $.Values.penumbra_bootstrap_node_cometbft_rpc_url }}
               fi
 
               # set ownership for pd user
@@ -106,14 +106,14 @@ spec:
               # apply external address. useful for a two-pass deploy, in which external ips
               # are created after first deploy.
               {{- with $external_address }}
-              sed -i -e 's/external_address.*/external_address = "{{ $external_address }}"/' /penumbra-config/testnet_data/node0/tendermint/config/config.toml
+              sed -i -e 's/external_address.*/external_address = "{{ $external_address }}"/' /penumbra-config/testnet_data/node0/cometbft/config/config.toml
               {{- end }}
               {{- with $moniker }}
-              sed -i -e 's/moniker.*/moniker = "{{ $moniker }}"/' /penumbra-config/testnet_data/node0/tendermint/config/config.toml
+              sed -i -e 's/moniker.*/moniker = "{{ $moniker }}"/' /penumbra-config/testnet_data/node0/cometbft/config/config.toml
               {{- end }}
 
-              # set ownership for tendermint configs to match tendermint container "tmuser" uid/gid
-              chown -R 100:1000 /penumbra-config/testnet_data/node0/tendermint
+              # set ownership for cometbft configs to match cometbft container "tmuser" uid/gid
+              chown -R 100:1000 /penumbra-config/testnet_data/node0/cometbft
 
           volumeMounts:
             - name: config
@@ -181,7 +181,7 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /cometbft
-              subPath: testnet_data/node0/tendermint
+              subPath: testnet_data/node0/cometbft
       {{- with $.Values.nodeSelector }}
       nodeSelector:
         {{- toYaml $ | nindent 8 }}

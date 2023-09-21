@@ -39,7 +39,11 @@ impl DebugCmd {
 #[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct DebugInfo {
+    /// CometBFT version, if cometbft is found on PATH.
+    cometbft_version: Option<String>,
     /// Tendermint version, if tendermint is found on PATH.
+    // Preserved for a while during Tendermint -> CometBFT,
+    // to aid in debugging.
     tendermint_version: Option<String>,
     /// pd version, if pd is found on PATH.
     pd_version: Option<String>,
@@ -59,6 +63,7 @@ impl DebugInfo {
     pub fn new(data_dir: std::path::PathBuf) -> Self {
         let dd = Self::get_pcli_data_directory(data_dir);
         Self {
+            cometbft_version: Self::get_cometbft_version(),
             tendermint_version: Self::get_tendermint_version(),
             pd_version: Self::get_pd_version(),
             pcli_version: Self::get_pcli_version(),
@@ -74,6 +79,20 @@ impl DebugInfo {
     /// we'll just report `None` in that case.
     fn get_tendermint_version() -> Option<String> {
         let cmd = Command::new("tendermint").args(["version"]).output();
+        match cmd {
+            Ok(c) => match std::str::from_utf8(&c.stdout) {
+                Ok(o) => Some(o.trim_end().to_string()),
+                Err(_) => None,
+            },
+            Err(_) => None,
+        }
+    }
+    /// Attempt to retrieve version info for CometBFT by running
+    /// `cometbft version`. Depending on deployment, cometbft may not be on the PATH;
+    /// it may be in container context that `pcli` doesn't have access to. That's OK:
+    /// we'll just report `None` in that case.
+    fn get_cometbft_version() -> Option<String> {
+        let cmd = Command::new("cometbft").args(["version"]).output();
         match cmd {
             Ok(c) => match std::str::from_utf8(&c.stdout) {
                 Ok(o) => Some(o.trim_end().to_string()),

@@ -128,7 +128,7 @@ spec:
             {{- toYaml $.Values.resources | nindent 12 }}
           volumeMounts:
             - name: {{ $val_name }}-config
-              subPath: node{{ $i }}/tendermint
+              subPath: node{{ $i }}/cometbft
               mountPath: /cometbft
       {{- with $.Values.nodeSelector }}
       nodeSelector:

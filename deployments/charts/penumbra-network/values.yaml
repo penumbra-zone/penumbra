@@ -117,15 +117,6 @@ cometbft:
     - start
     - --proxy_app=tcp://127.0.0.1:26658
 
-tendermint:
-  image:
-    repository: tendermint/tendermint
-    pullPolicy: IfNotPresent
-    # WARNING: other versions of tendermint will fail!
-    tag: "v0.34.23"
-  containerArgs:
-    - start
-    - --proxy_app=tcp://127.0.0.1:26658
 # N.B. Only `IngressRoute`, a custom CRD specific to Traefik ingress controller
 # is supported. This is because a traditional Ingress object doesn't allow us
 # to force a backend scheme of h2c, which is required for pd's gRPC service.

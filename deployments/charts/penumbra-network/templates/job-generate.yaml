@@ -85,8 +85,8 @@ spec:
               # set ownership for pd user
               chown -R 1000:1000 /penumbra-config/{{ $val_name }}
 
-              # set ownership for tendermint configs to match tendermint container "tmuser" uid/gid
-              chown -R 100:1000 /penumbra-config/{{ $val_name }}/node{{ $i }}/tendermint
+              # set ownership for cometbft configs to match cometbft container "tmuser" uid/gid
+              chown -R 100:1000 /penumbra-config/{{ $val_name }}/node{{ $i }}/cometbft
 
               ls -lsR /penumbra-config
               {{ end }}

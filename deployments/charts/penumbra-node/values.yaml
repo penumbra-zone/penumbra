@@ -12,7 +12,7 @@ image:
 
 # Penumbra node from which to bootstrap connection. Defaults to testnet.
 # Consider using "preview" for bleeding edge, but make sure container tags match.
-penumbra_bootstrap_node_tendermint_rpc_url: "https://rpc.testnet.penumbra.zone"
+penumbra_bootstrap_node_cometbft_rpc_url: "https://rpc.testnet.penumbra.zone"
 
 # Whether to preserve the LB service, in effect reserving the same IP
 # for subsequent deploys. This costs money! But sure is convenient.

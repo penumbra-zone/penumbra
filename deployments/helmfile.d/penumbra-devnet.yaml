@@ -34,7 +34,7 @@ releases:
       - image:
           tag: main
       # Communicate intra-cluster to the private validator rpc address.
-      - penumbra_bootstrap_node_tendermint_rpc_url: "http://penumbra-devnet-val-0:26657"
+      - penumbra_bootstrap_node_cometbft_rpc_url: "http://penumbra-devnet-val-0:26657"
       - nodes:
           # We intentionally exclude external IPs in this declaration, but include them
           # in the external vars/ file, which is generated via `./scripts/get-lb-ips penumbra-devnet`.

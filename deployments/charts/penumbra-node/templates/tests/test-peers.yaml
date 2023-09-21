@@ -24,7 +24,7 @@ spec:
           n_peers="$(curl -sSf --connect-timeout 5 http://{{ $fn_name }}:26657/net_info | jq -r .result.n_peers)"
           # Ideally we'd check for `count` peers here, but peering will be limited to the number
           # of k8s nodes the Penumbra nodes are spread over, due to 1) k8s node IP being used for egress traffic;
-          # and 2) tendermint rejecting duplicate IPs by default. The real limit here is n_k8s_nodes, but we
+          # and 2) cometbft rejecting duplicate IPs by default. The real limit here is n_k8s_nodes, but we
           # don't know that number in the context of the tests.
           # if [[ "$n_peers" -lt 1 ]] ; then
           if [[ "$n_peers" -lt {{ $count }} ]] ; then

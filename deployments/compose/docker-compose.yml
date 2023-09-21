@@ -16,7 +16,7 @@ services:
     command: >-
       sh -c
       "
-      if ! test -e /pd/testnet_data/node0/tendermint/config/config.toml ; then
+      if ! test -e /pd/testnet_data/node0/cometbft/config/config.toml ; then
           >&2 printf 'ERROR: testnet config not found. Run `pd testnet join` on the host machine.'
           >&2 echo ' See docs for details: https://guide.penumbra.zone/main/pd/join-testnet.html'
           exit 1
@@ -32,7 +32,7 @@ services:
       - "8080:8080"
 
   # The CometBFT node
-  tendermint-node0:
+  cometbft-node0:
     image: "docker.io/cometbft/cometbft:v0.34.27"
     user: "${UID:-1000}"
     ports:
@@ -40,7 +40,7 @@ services:
       - "26657:26657"
     volumes:
       - ~/.penumbra/testnet_data/node0/cometbft:/cometbft
-    entrypoint: tendermint
+    entrypoint: cometbft
     command: start --proxy_app=tcp://pd-node0:26658
     environment:
       - ID=0
