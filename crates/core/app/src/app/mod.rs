@@ -78,13 +78,7 @@ impl App {
         events
     }
 
-    pub async fn init_chain(&mut self, app_state_general: &genesis::AppState) {
-        let app_state = match app_state_general {
-            genesis::AppState::Checkpoint(_) => {
-                unimplemented!("adding support with init handshake pr")
-            }
-            genesis::AppState::Content(state) => state,
-        };
+    pub async fn init_chain(&mut self, app_state: &genesis::Content) {
         let mut state_tx = self
             .state
             .try_begin_transaction()
@@ -117,12 +111,12 @@ impl App {
             },
         );
 
-        Distributions::init_chain(&mut state_tx, app_state_general).await;
-        Staking::init_chain(&mut state_tx, app_state_general).await;
+        Distributions::init_chain(&mut state_tx, app_state).await;
+        Staking::init_chain(&mut state_tx, app_state).await;
         IBCComponent::init_chain(&mut state_tx, &()).await;
         Dex::init_chain(&mut state_tx, &()).await;
         Governance::init_chain(&mut state_tx, &()).await;
-        ShieldedPool::init_chain(&mut state_tx, app_state_general).await;
+        ShieldedPool::init_chain(&mut state_tx, app_state).await;
 
         // Create a synthetic height-zero block
         App::finish_block(&mut state_tx).await;
