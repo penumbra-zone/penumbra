@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use futures::{StreamExt, TryStreamExt};
+use futures::StreamExt;
 use penumbra_asset::{asset, Value, STAKING_TOKEN_DENOM};
 use penumbra_chain::{
     component::{StateReadExt as _, StateWriteExt as _},
@@ -333,7 +333,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     async fn check_proposal_claimable(&self, proposal_id: u64) -> Result<()> {
         if let Some(proposal_state) = self.proposal_state(proposal_id).await? {
             match proposal_state {
-                Voting => {
+                ProposalState::Voting => {
                     anyhow::bail!("proposal {} is still voting", proposal_id)
                 }
                 ProposalState::Withdrawn { .. } => {
@@ -509,30 +509,6 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
         );
 
         Ok(tally)
-    }
-
-    /// Get all the transactions set to be delivered in this block (scheduled in last block).
-    async fn pending_dao_transactions(&self) -> Result<Vec<Transaction>> {
-        // Get the proposal IDs of the DAO transactions we are about to deliver.
-        let prefix = state_key::deliver_dao_transactions_at_height(self.get_block_height().await?);
-        let proposals: Vec<u64> = self
-            .prefix_proto::<u64>(&prefix)
-            .map(|result| anyhow::Ok(result?.1))
-            .try_collect()
-            .await?;
-
-        // For each one, look up the corresponding built transaction, and return the list.
-        let mut transactions = Vec::new();
-        for proposal in proposals {
-            transactions.push(
-                self.get(&state_key::dao_transaction(proposal))
-                    .await?
-                    .ok_or_else(|| {
-                        anyhow::anyhow!("no transaction found for proposal {}", proposal)
-                    })?,
-            );
-        }
-        Ok(transactions)
     }
 
     /// Get the pending chain parameters, if any.
@@ -890,10 +866,6 @@ pub trait StateWriteExt: StateWrite {
         }
 
         Ok(Ok(()))
-    }
-
-    fn put_dao_transaction(&mut self, proposal: u64, transaction: Transaction) {
-        self.put(state_key::dao_transaction(proposal), transaction);
     }
 
     async fn deliver_dao_transaction(&mut self, proposal: u64) -> Result<()> {
