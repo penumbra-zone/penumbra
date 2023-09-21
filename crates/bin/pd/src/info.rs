@@ -83,7 +83,7 @@ impl Info {
             .unwrap_or_default()
             .try_into()?;
 
-        tracing::info!(?info, state_version = ?state.version(), app_version = last_block_height, "reporting height in info query");
+        tracing::info!(?info, state_version = ?state.version(), app_version = ?last_block_height, "reporting height in info query");
 
         let last_block_app_hash = state.app_hash().await?.0.to_vec().try_into()?;
 
