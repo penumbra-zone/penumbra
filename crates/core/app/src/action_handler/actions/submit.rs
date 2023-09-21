@@ -84,11 +84,18 @@ impl ActionHandler for ProposalSubmit {
 
                 for action in &parsed_transaction_plan.actions {
                     match action {
-                        Spend(_) | Output(_) | Swap(_) | SwapClaim(_) | DelegatorVote(_) => {
+                        Spend(_) | Output(_) | Swap(_) | SwapClaim(_) | DelegatorVote(_)
+                        | UndelegateClaim(_) => {
                             // These actions all require proving, so they are banned from DAO spend
                             // proposals to prevent DoS attacks.
                             anyhow::bail!(
                                 "invalid action in DAO spend proposal (would require proving)"
+                            )
+                        }
+                        Delegate(_) | Undelegate(_) => {
+                            // Delegation and undelegation is disallowed due to Undelegateclaim requiring proving.
+                            anyhow::bail!(
+                                "invalid action in DAO spend proposal (can't claim outputs of undelegation)"
                             )
                         }
                         ProposalSubmit(_) | ProposalWithdraw(_) | ProposalDepositClaim(_) => {
@@ -96,10 +103,7 @@ impl ActionHandler for ProposalSubmit {
                             // actions because they could cause recursion.
                             anyhow::bail!("invalid action in DAO spend proposal (not allowed to manipulate proposals from within proposals)")
                         }
-                        Delegate(_)
-                        | Undelegate(_)
-                        | UndelegateClaim(_)
-                        | ValidatorDefinition(_)
+                        ValidatorDefinition(_)
                         | IbcAction(_)
                         | ValidatorVote(_)
                         | PositionOpen(_)
