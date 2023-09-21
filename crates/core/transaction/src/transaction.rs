@@ -16,6 +16,7 @@ use penumbra_dex::{
     swap::Swap,
 };
 use penumbra_fee::Fee;
+use penumbra_governance::{DelegatorVote, ProposalSubmit, ProposalWithdraw, ValidatorVote};
 use penumbra_ibc::IbcAction;
 use penumbra_keys::{FullViewingKey, PayloadKey};
 use penumbra_proto::{
@@ -30,7 +31,6 @@ use penumbra_tct::StateCommitment;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    action::{DelegatorVote, ProposalSubmit, ProposalWithdraw, ValidatorVote},
     memo::{MemoCiphertext, MemoPlaintext},
     view::{action_view::OutputView, MemoView, TransactionBodyView},
     Action, ActionView, Id, IsAction, TransactionPerspective, TransactionView,

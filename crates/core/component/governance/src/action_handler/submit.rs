@@ -8,19 +8,23 @@ use decaf377_rdsa::{VerificationKey, VerificationKeyBytes};
 use once_cell::sync::Lazy;
 use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_governance::{ProposalNft, VotingReceiptToken};
 use penumbra_keys::keys::{FullViewingKey, NullifierKey};
 use penumbra_sct::component::StateReadExt as _;
 use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateDelta, StateRead, StateWrite};
+use rand_chacha::{rand::SeedableRng, ChaCha20Rng};
+
+// TODO: move this action handler elsewhere? due to the following requirements
 use penumbra_transaction::plan::TransactionPlan;
-use penumbra_transaction::proposal::{self, Proposal, ProposalPayload};
-use penumbra_transaction::{action::ProposalSubmit, Transaction};
+use penumbra_transaction::Transaction;
 use penumbra_transaction::{AuthorizationData, WitnessData};
-use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
 
 use crate::action_handler::ActionHandler;
-use crate::governance::{StateReadExt as _, StateWriteExt as _};
+use crate::{
+    component::{StateReadExt as _, StateWriteExt as _},
+    proposal::{self, Proposal, ProposalPayload},
+    ProposalNft, ProposalSubmit, VotingReceiptToken,
+};
 
 // IMPORTANT: these length limits are enforced by consensus! Changing them will change which
 // transactions are accepted by the network, and so they *cannot* be changed without a network

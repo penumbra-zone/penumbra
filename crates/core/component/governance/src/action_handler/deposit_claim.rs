@@ -2,14 +2,15 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_governance::ProposalNft;
 use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::action::ProposalDepositClaim;
-use penumbra_transaction::proposal::{self, Outcome};
 
 use crate::action_handler::ActionHandler;
-use crate::governance::{StateReadExt as _, StateWriteExt as _};
+use crate::component::{StateReadExt as _, StateWriteExt as _};
+use crate::{
+    proposal_state::Outcome, proposal_state::State as ProposalState, ProposalDepositClaim,
+    ProposalNft,
+};
 
 #[async_trait]
 impl ActionHandler for ProposalDepositClaim {
@@ -41,8 +42,7 @@ impl ActionHandler for ProposalDepositClaim {
         // deserving-ness is the supplied proposal NFT, which is burned in the transaction), so we don't
         // need to distribute it here.
 
-        if let Some(proposal::State::Finished { outcome }) = state.proposal_state(*proposal).await?
-        {
+        if let Some(ProposalState::Finished { outcome }) = state.proposal_state(*proposal).await? {
             // This should be prevented by earlier checks, but replicating here JUST IN CASE!
             if *resupplied_outcome != outcome.as_ref().map(|_| ()) {
                 anyhow::bail!(
@@ -66,7 +66,7 @@ impl ActionHandler for ProposalDepositClaim {
                 .await?;
 
             // Set the proposal state to claimed
-            state.put_proposal_state(*proposal, proposal::State::Claimed { outcome });
+            state.put_proposal_state(*proposal, ProposalState::Claimed { outcome });
         } else {
             anyhow::bail!("proposal {} is not in finished state", proposal);
         }

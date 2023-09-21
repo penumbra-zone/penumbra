@@ -2,7 +2,7 @@ use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
 use penumbra_shielded_pool::NoteView;
 use serde::{Deserialize, Serialize};
 
-use crate::action::DelegatorVote;
+use crate::DelegatorVote;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pbt::DelegatorVoteView", into = "pbt::DelegatorVoteView")]

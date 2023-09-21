@@ -4,18 +4,16 @@ use penumbra_dex::{
     swap::SwapView,
     swap_claim::SwapClaimView,
 };
+use penumbra_governance::{ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 use serde::{Deserialize, Serialize};
 
-pub mod delegator_vote_view;
-
-pub use delegator_vote_view::DelegatorVoteView;
+pub use penumbra_governance::DelegatorVoteView;
 pub use penumbra_shielded_pool::OutputView;
 pub use penumbra_shielded_pool::SpendView;
 
-use crate::action::{ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote};
 use crate::Action;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

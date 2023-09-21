@@ -11,10 +11,12 @@ use penumbra_compact_block::CompactBlock;
 use penumbra_component::Component;
 use penumbra_dex::component::{Dex, SwapManager};
 use penumbra_distributions::component::Distributions;
+use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_ibc::component::IBCComponent;
 use penumbra_proto::DomainType;
 use penumbra_sct::component::SctManager;
 use penumbra_shielded_pool::component::{NoteManager, ShieldedPool};
+use penumbra_stake::component::{Staking, ValidatorUpdates};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, Event};
@@ -22,8 +24,6 @@ use tendermint::validator::Update;
 use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
-use crate::governance::{Governance, StateReadExt as _};
-use penumbra_stake::component::{Staking, ValidatorUpdates};
 
 pub mod state_key;
 

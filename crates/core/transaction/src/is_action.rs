@@ -10,11 +10,15 @@ use penumbra_dex::{
     swap::{Swap, SwapCiphertext, SwapView},
     swap_claim::{SwapClaim, SwapClaimView},
 };
+use penumbra_governance::{
+    DelegatorVote, DelegatorVoteView, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
+    ValidatorVote, VotingReceiptToken,
+};
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_shielded_pool::{Note, Output, OutputView, Spend, SpendView};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 
-use crate::{ActionView, TransactionPerspective};
+use crate::{Action, ActionView, TransactionPerspective};
 
 // TODO: how do we have this be implemented in the component crates?
 // currently can't because of txp
