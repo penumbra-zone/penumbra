@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use penumbra_chain::{
-    component::{AppHash, StateReadExt},
+    component::{AppHash, StateReadExt, StateWriteExt},
     genesis::Content,
 };
 use penumbra_stake::StateReadExt as _;
@@ -26,11 +26,17 @@ pub async fn migrate(path_to_export: PathBuf, upgrade: Upgrade) -> anyhow::Resul
             let export_state = storage.latest_snapshot();
             let root_hash = export_state.root_hash().await.expect("can get root hash");
             let app_hash_pre_migration: AppHash = root_hash.into();
+            let height = export_state
+                .get_block_height()
+                .await
+                .expect("can get block height");
+            let post_ugprade_height = height.wrapping_add(1);
 
             /* --------- writing to the jmt  ------------ */
             tracing::info!(?app_hash_pre_migration, "app hash pre upgrade");
             let mut delta = StateDelta::new(export_state);
             delta.put_raw("testnet_60_forked".to_string(), "done".into());
+            delta.put_block_height(0u64);
             let root_hash = storage.commit_in_place(delta).await?;
             let app_hash_post_migration: AppHash = root_hash.into();
             tracing::info!(?app_hash_post_migration, "app hash post upgrade");
@@ -41,11 +47,6 @@ pub async fn migrate(path_to_export: PathBuf, upgrade: Upgrade) -> anyhow::Resul
             let root_hash = migrated_state.root_hash().await.expect("can get root hash");
             let app_hash: AppHash = root_hash.into();
             tracing::info!(?root_hash, "root hash post upgrade2");
-            let height = migrated_state
-                .get_block_height()
-                .await
-                .expect("can get block height");
-            let next_height = height + 1;
             let chain_params = migrated_state
                 .get_chain_params()
                 .await
@@ -63,7 +64,7 @@ pub async fn migrate(path_to_export: PathBuf, upgrade: Upgrade) -> anyhow::Resul
                 .to_vec()
                 .try_into()
                 .expect("infaillible conversion");
-            genesis.initial_height = next_height as i64;
+            genesis.initial_height = post_ugprade_height as i64;
             genesis.genesis_time = tendermint::time::Time::now();
 
             let genesis_json = serde_json::to_string(&genesis).expect("can serialize genesis");
