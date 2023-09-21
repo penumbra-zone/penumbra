@@ -78,49 +78,51 @@ impl App {
         events
     }
 
-    pub async fn init_chain(&mut self, app_state: &genesis::Content) {
+    pub async fn init_chain(&mut self, app_state: &genesis::AppState) {
         let mut state_tx = self
             .state
             .try_begin_transaction()
             .expect("state Arc should not be referenced elsewhere");
+        match app_state {
+            genesis::AppState::Content(app_state) => {
+                state_tx.put_chain_params(app_state.chain_params.clone());
 
-        state_tx.put_chain_params(app_state.chain_params.clone());
+                // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
+                state_tx.put_current_fmd_parameters(FmdParameters::default());
+                state_tx.put_previous_fmd_parameters(FmdParameters::default());
 
-        // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
-        state_tx.put_current_fmd_parameters(FmdParameters::default());
-        state_tx.put_previous_fmd_parameters(FmdParameters::default());
+                // The genesis block height is 0
+                state_tx.put_block_height(0);
 
-        // The genesis block height is 0
-        state_tx.put_block_height(0);
+                state_tx.put_epoch_by_height(
+                    0,
+                    penumbra_chain::Epoch {
+                        index: 0,
+                        start_height: 0,
+                    },
+                );
 
-        state_tx.put_epoch_by_height(
-            0,
-            penumbra_chain::Epoch {
-                index: 0,
-                start_height: 0,
-            },
-        );
+                // We need to set the epoch for the first block as well, since we set
+                // the epoch by height in end_block, and end_block isn't called after init_chain.
+                state_tx.put_epoch_by_height(
+                    1,
+                    penumbra_chain::Epoch {
+                        index: 0,
+                        start_height: 0,
+                    },
+                );
 
-        // We need to set the epoch for the first block as well, since we set
-        // the epoch by height in end_block, and end_block isn't called after init_chain.
-        state_tx.put_epoch_by_height(
-            1,
-            penumbra_chain::Epoch {
-                index: 0,
-                start_height: 0,
-            },
-        );
+                Distributions::init_chain(&mut state_tx, app_state).await;
+                Staking::init_chain(&mut state_tx, app_state).await;
+                IBCComponent::init_chain(&mut state_tx, &()).await;
+                Dex::init_chain(&mut state_tx, &()).await;
+                Governance::init_chain(&mut state_tx, &()).await;
+                ShieldedPool::init_chain(&mut state_tx, app_state).await;
+            }
+            genesis::AppState::Checkpoint(_) => { /* no-op */ }
+        };
 
-        Distributions::init_chain(&mut state_tx, app_state).await;
-        Staking::init_chain(&mut state_tx, app_state).await;
-        IBCComponent::init_chain(&mut state_tx, &()).await;
-        Dex::init_chain(&mut state_tx, &()).await;
-        Governance::init_chain(&mut state_tx, &()).await;
-        ShieldedPool::init_chain(&mut state_tx, app_state).await;
-
-        // Create a synthetic height-zero block
         App::finish_block(&mut state_tx).await;
-
         state_tx.apply();
     }
 
