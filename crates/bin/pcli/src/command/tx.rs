@@ -13,6 +13,7 @@ use ibc_types::core::{channel::ChannelId, client::Height as IbcHeight};
 use penumbra_asset::{asset, asset::DenomMetadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_fee::Fee;
+use penumbra_governance::{proposal::ProposalToml, proposal_state::State as ProposalState, Vote};
 use penumbra_ibc::Ics20Withdrawal;
 use penumbra_keys::keys::AddressIndex;
 use penumbra_num::Amount;
@@ -25,7 +26,7 @@ use penumbra_proto::{
 };
 use penumbra_stake::rate::RateData;
 use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
-use penumbra_transaction::{memo::MemoPlaintext, proposal::ProposalToml, vote::Vote};
+use penumbra_transaction::memo::MemoPlaintext;
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};
 use rand_core::OsRng;
@@ -679,7 +680,7 @@ impl TxCmd {
                 // Find out what the latest proposal ID is so we can include the next ID in the template:
                 let mut client = app.specific_client().await?;
                 let next_proposal_id: u64 = client
-                    .key_proto(penumbra_app::governance::state_key::next_proposal_id())
+                    .key_proto(penumbra_governance::state_key::next_proposal_id())
                     .await?
                     .context(format!("there are no proposals yet"))?;
 
@@ -701,13 +702,12 @@ impl TxCmd {
                 proposal_id,
                 source,
             }) => {
-                use penumbra_app::governance::state_key;
-                use penumbra_transaction::proposal;
+                use penumbra_governance::state_key;
 
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
                 let mut client = app.specific_client().await?;
-                let state: proposal::State = client
+                let state: ProposalState = client
                     .key_domain(state_key::proposal_state(*proposal_id))
                     .await?
                     .context(format!(
@@ -716,15 +716,15 @@ impl TxCmd {
                     ))?;
 
                 let outcome = match state {
-                    proposal::State::Voting => anyhow::bail!(
+                    ProposalState::Voting => anyhow::bail!(
                         "proposal {} is still voting, so the deposit cannot yet be claimed",
                         proposal_id
                     ),
-                    proposal::State::Withdrawn { reason: _ } => {
+                    ProposalState::Withdrawn { reason: _ } => {
                         anyhow::bail!("proposal {} has been withdrawn but voting has not yet concluded, so the deposit cannot yet be claimed", proposal_id);
                     }
-                    proposal::State::Finished { outcome } => outcome.map(|_| ()),
-                    proposal::State::Claimed { outcome: _ } => {
+                    ProposalState::Finished { outcome } => outcome.map(|_| ()),
+                    ProposalState::Claimed { outcome: _ } => {
                         anyhow::bail!("proposal {} has already been claimed", proposal_id)
                     }
                 };

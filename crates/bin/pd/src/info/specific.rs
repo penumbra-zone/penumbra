@@ -4,7 +4,6 @@ use std::sync::Arc;
 use async_stream::try_stream;
 use futures::StreamExt;
 use futures::TryStreamExt;
-use penumbra_app::governance::StateReadExt as _;
 use penumbra_asset::{asset, Value};
 use penumbra_chain::component::AppHashRead;
 use penumbra_chain::component::StateReadExt as _;
@@ -15,6 +14,7 @@ use penumbra_dex::{
     lp::{position, position::Position},
     DirectedTradingPair, SwapExecution, TradingPair,
 };
+use penumbra_governance::StateReadExt as _;
 use penumbra_proto::{
     self as proto,
     client::v1alpha1::{
@@ -744,7 +744,7 @@ impl SpecificQueryService for Info {
             .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
         let proposal_id = request.into_inner().proposal_id;
 
-        use penumbra_app::governance::state_key;
+        use penumbra_governance::state_key;
 
         let s = state.prefix(&state_key::all_rate_data_at_proposal_start(proposal_id));
         Ok(tonic::Response::new(

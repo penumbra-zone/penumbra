@@ -25,6 +25,7 @@ penumbra-proto         = { path = "../proto", default-features = false }
 penumbra-sct           = { path = "../core/component/sct", default-features = false }
 penumbra-shielded-pool = { path = "../core/component/shielded-pool", default-features = false, features = ["proving-keys"] }
 penumbra-stake         = { path = "../core/component/stake", default-features = false }
+penumbra-governance    = { path = "../core/component/governance", default-features = false, features = ["proving-keys"] }
 penumbra-tct           = { path = "../crypto/tct" }
 penumbra-transaction   = { path = "../core/transaction", default-features = false }
 

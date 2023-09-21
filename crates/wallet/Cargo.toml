@@ -23,6 +23,7 @@ penumbra-dex = { path = "../core/component/dex" }
 penumbra-transaction = { path = "../core/transaction" }
 penumbra-app = { path = "../core/app" }
 penumbra-stake = { path = "../core/component/stake" }
+penumbra-governance = { path = "../core/component/governance" }
 penumbra-fee = { path = "../core/component/fee" }
 penumbra-view = { path = "../view" }
 penumbra-custody = { path = "../custody" }

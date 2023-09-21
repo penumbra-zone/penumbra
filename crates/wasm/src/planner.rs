@@ -20,6 +20,10 @@ use penumbra_dex::{
     TradingPair,
 };
 use penumbra_fee::Fee;
+use penumbra_governance::{
+    proposal_state::Outcome as ProposalOutcome, DelegatorVotePlan, Proposal, ProposalDepositClaim,
+    ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
+};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
@@ -28,12 +32,8 @@ use penumbra_stake::{rate::RateData, validator};
 use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{
-    action::{
-        Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
-    },
     memo::MemoPlaintext,
-    plan::{ActionPlan, DelegatorVotePlan, MemoPlan, TransactionPlan},
-    proposal,
+    plan::{ActionPlan, MemoPlan, TransactionPlan},
 };
 
 use crate::note_record::SpendableNoteRecord;
@@ -291,7 +291,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         &mut self,
         proposal: u64,
         deposit_amount: Amount,
-        outcome: proposal::Outcome<()>,
+        outcome: ProposalOutcome<()>,
     ) -> &mut Self {
         self.action(ActionPlan::ProposalDepositClaim(ProposalDepositClaim {
             proposal,

@@ -29,6 +29,7 @@ penumbra-chain = { path = "../core/component/chain" }
 penumbra-shielded-pool = { path = "../core/component/shielded-pool", default-features = false, features = [
     "proving-keys",
 ] }
+penumbra-governance = { path = "../core/component/governance", default-features = false }
 penumbra-stake = { path = "../core/component/stake", default-features = false }
 penumbra-ibc = { path = "../core/component/ibc", default-features = false }
 penumbra-dao = { path = "../core/component/dao", default-features = false }

@@ -1,4 +1,6 @@
 #![deny(clippy::unwrap_used)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 pub mod delegator_vote;
 pub use delegator_vote::{
     DelegatorVote, DelegatorVoteBody, DelegatorVoteCircuit, DelegatorVotePlan, DelegatorVoteProof,
@@ -29,7 +31,10 @@ pub use proposal_nft::ProposalNft;
 pub use voting_receipt_token::VotingReceiptToken;
 
 pub(crate) mod event;
+
 mod metrics;
+pub use crate::metrics::register_metrics;
+
 pub mod state_key;
 pub mod tally;
 pub use tally::Tally;
