@@ -43,6 +43,7 @@ members = [
   "crates/bin/pd",
   "crates/bin/pclientd",
   "crates/bin/pcli",
+  "crates/bin/psumcoordd",
   "crates/wasm",
   "crates/narsil/narsil",
   "crates/test/tct-property-test",
