@@ -1,6 +1,6 @@
 // Cluster configuration for testnet deployments.
 // As of 2022Q4, we're reusing a single cluster to host
-// multiple environments, e.g. "testnet" and "testnet-preview".
+// multiple environments, e.g. "testnet" and "preview".
 // We may migrate to multiple clusters in the future.
 module "gcp_terraform_state_testnet" {
   source = "../../terraform/modules/gcp/terraform_state/chain"

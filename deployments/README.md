@@ -5,7 +5,7 @@ Penumbra networks. As of 2023Q1, prior to mainnet,
 Penumbra Labs runs three (3) discrete networks:
 
   * "testnet", updated approximately weekly
-  * "testnet-preview", updated on every push to `main` in the repo
+  * "preview", updated on every push to `main` in the repo
   * "devnet", updated ad-hoc to serve as a sandbox debugging environment
 
 Those networks each have their own genesis and knowledge of peers.
@@ -17,7 +17,7 @@ The networks are completely separate.
 .
 ├── ci.sh # runner script for executing a deploy against k8s
 ├── charts/ # helm charts used to configure genesis, nodes, and metrics
-├── networks/ # logic specific to network, e.g. "testnet" or "testnet-preview"
+├── networks/ # logic specific to network, e.g. "testnet" or "preview"
 │  └── testnet/
 └── terraform/ # server and cluster provisioning logic
    └── modules/

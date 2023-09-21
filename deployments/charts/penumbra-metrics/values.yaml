@@ -24,8 +24,8 @@ scrape_configs:
   numFullNodes: 2
   numValidators: 2
   # printf formatting string, for generating scrape targets.
-  fmtFullNodeSvc: "penumbra-testnet-preview-fn-%d"
-  fmtValidatorSvc: "penumbra-testnet-preview-val-%d"
+  fmtFullNodeSvc: "penumbra-preview-fn-%d"
+  fmtValidatorSvc: "penumbra-preview-val-%d"
 
 # Configure PVCs for metrics data. If disabled, an emptydir will be used,
 # which means historical metrics will be wiped on every pod restart.
