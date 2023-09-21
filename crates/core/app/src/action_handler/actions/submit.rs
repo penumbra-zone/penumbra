@@ -9,20 +9,21 @@ use once_cell::sync::Lazy;
 use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_keys::keys::{FullViewingKey, NullifierKey};
+use penumbra_proto::DomainType;
 use penumbra_sct::component::StateReadExt as _;
 use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateDelta, StateRead, StateWrite};
-use rand_chacha::{rand::SeedableRng, ChaCha20Rng};
+use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
 
-// TODO: move this action handler elsewhere? due to the following requirements
 use penumbra_transaction::plan::TransactionPlan;
 use penumbra_transaction::Transaction;
 use penumbra_transaction::{AuthorizationData, WitnessData};
 
 use crate::action_handler::ActionHandler;
-use crate::{
+use penumbra_governance::{
     component::{StateReadExt as _, StateWriteExt as _},
-    proposal::{self, Proposal, ProposalPayload},
+    proposal::{Proposal, ProposalPayload},
+    proposal_state::State as ProposalState,
     ProposalNft, ProposalSubmit, VotingReceiptToken,
 };
 
@@ -64,7 +65,7 @@ impl ActionHandler for ProposalSubmit {
             );
         }
 
-        use penumbra_transaction::action::ProposalPayload::*;
+        use penumbra_governance::ProposalPayload::*;
         match payload {
             Signaling { commit: _ } => { /* all signaling proposals are valid */ }
             Emergency { halt_chain: _ } => { /* all emergency proposals are valid */ }
@@ -76,7 +77,11 @@ impl ActionHandler for ProposalSubmit {
                 // Check to make sure that the transaction plan contains only valid actions for the
                 // DAO (none of them should require proving to build):
                 use penumbra_transaction::plan::ActionPlan::*;
-                for action in &transaction_plan.actions {
+
+                let parsed_transaction_plan = TransactionPlan::decode(&transaction_plan[..])
+                    .context("transaction plan was malformed")?;
+
+                for action in &parsed_transaction_plan.actions {
                     match action {
                         Spend(_) | Output(_) | Swap(_) | SwapClaim(_) | DelegatorVote(_) => {
                             // These actions all require proving, so they are banned from DAO spend
@@ -162,7 +167,9 @@ impl ActionHandler for ProposalSubmit {
                 // current chain state. This doesn't guarantee that it will execute successfully at
                 // the time when the proposal passes, but we don't want to allow proposals that are
                 // obviously going to fail to execute.
-                let tx = build_dao_transaction(transaction_plan.clone())
+                let parsed_transaction_plan = TransactionPlan::decode(&transaction_plan[..])
+                    .context("transaction plan was malformed")?;
+                let tx = build_dao_transaction(parsed_transaction_plan.clone())
                     .await
                     .context("failed to build submitted DAO spend transaction plan")?;
                 tx.check_stateless(())
@@ -194,7 +201,9 @@ impl ActionHandler for ProposalSubmit {
         if let ProposalPayload::DaoSpend { transaction_plan } = &proposal.payload {
             // Build the transaction again (this time we know it will succeed because it built and
             // passed all checks in `check_tx_stateful`):
-            let tx = build_dao_transaction(transaction_plan.clone())
+            let parsed_transaction_plan = TransactionPlan::decode(&transaction_plan[..])
+                .context("transaction plan was malformed")?;
+            let tx = build_dao_transaction(parsed_transaction_plan.clone())
                 .await
                 .context("failed to build submitted DAO spend transaction plan in execute step")?;
 
@@ -222,7 +231,7 @@ impl ActionHandler for ProposalSubmit {
             .await?;
 
         // Set the proposal state to voting (votes start immediately)
-        state.put_proposal_state(proposal_id, proposal::State::Voting);
+        state.put_proposal_state(proposal_id, ProposalState::Voting);
 
         // Determine what block it is currently, and calculate when the proposal should start voting
         // (now!) and finish voting (later...), then write that into the state

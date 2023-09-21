@@ -17,9 +17,8 @@ use crate::{
 
 mod view;
 
-pub(crate) use self::view::StateWriteExt;
 pub use view::StateReadExt;
-//pub use penumbra_chain::component::StateReadExt;
+pub use view::StateWriteExt;
 
 use penumbra_chain::component::StateReadExt as _;
 

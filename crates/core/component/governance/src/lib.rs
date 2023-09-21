@@ -44,7 +44,7 @@ mod action_handler;
 
 #[cfg_attr(docsrs, doc(cfg(feature = "component")))]
 #[cfg(feature = "component")]
-pub use component::StateReadExt;
+pub use component::{StateReadExt, StateWriteExt};
 
 pub mod vote;
 pub use vote::Vote;
