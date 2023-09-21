@@ -98,16 +98,18 @@ impl Consensus {
         match &app_state {
             genesis::AppState::Checkpoint(h) => {
                 println!("checkpoint: {h:?}");
+                // finalize a compact block
+                // start an epoch?
                 /* fast-forward to commit */
             }
-            genesis::AppState::Content(_) => {
+            genesis::AppState::Content(genesis_app_state) => {
                 /* run application init_chain */
 
                 // Check that we haven't got a duplicated InitChain message for some reason:
                 if self.storage.latest_version() != u64::MAX {
                     anyhow::bail!("database already initialized");
                 }
-                self.app.init_chain(&app_state).await;
+                self.app.init_chain(&genesis_app_state).await;
             }
         }
 
