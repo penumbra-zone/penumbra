@@ -1,13 +1,10 @@
 use anyhow::Context;
-use base64::engine::Engine;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 use penumbra_chain::params::ChainParameters;
 use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
-
-use crate::proposal_state::State;
 
 /// A governance proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,7 +57,7 @@ impl From<Proposal> for pb::Proposal {
                 proposal.dao_spend = Some(pb::proposal::DaoSpend {
                     transaction_plan: Some(pbjson_types::Any {
                         type_url: TRANSACTION_PLAN_TYPE_URL.to_owned(),
-                        value: transaction_plan.encode_to_vec().into(),
+                        value: transaction_plan.into(),
                     }),
                 });
             }
@@ -119,7 +116,7 @@ impl TryFrom<pb::Proposal> for Proposal {
                                 transaction_plan.type_url
                             );
                         }
-                        TransactionPlan::decode(transaction_plan.value)?
+                        transaction_plan.value.to_vec()
                     },
                 }
             } else if let Some(upgrade_plan) = inner.upgrade_plan {
@@ -263,7 +260,7 @@ pub enum ProposalPayload {
         /// This must be a transaction plan which can be executed by the DAO, which means it can't
         /// require any witness data or authorization signatures, but it may use the `DaoSpend`
         /// action.
-        transaction_plan: TransactionPlan,
+        transaction_plan: Vec<u8>,
     },
     /// An upgrade plan proposal describes a planned upgrade to the chain. If ratified, the chain
     /// will halt at the specified height, trigger an epoch transition, and halt the chain.
@@ -305,11 +302,11 @@ impl TryFrom<ProposalPayloadToml> for ProposalPayload {
                 ProposalPayload::ParameterChange { old, new }
             }
             ProposalPayloadToml::DaoSpend { transaction } => ProposalPayload::DaoSpend {
-                transaction_plan: TransactionPlan::decode(Bytes::from(
+                transaction_plan: Bytes::from(
                     base64::Engine::decode(&base64::engine::general_purpose::STANDARD, transaction)
                         .context("couldn't decode transaction plan from base64")?,
-                ))
-                .context("couldn't decode transaction plan from proto")?,
+                )
+                .to_vec(),
             },
             ProposalPayloadToml::UpgradePlan { height } => ProposalPayload::UpgradePlan { height },
         })
@@ -329,7 +326,7 @@ impl From<ProposalPayload> for ProposalPayloadToml {
             ProposalPayload::DaoSpend { transaction_plan } => ProposalPayloadToml::DaoSpend {
                 transaction: base64::Engine::encode(
                     &base64::engine::general_purpose::STANDARD,
-                    transaction_plan.encode_to_vec(),
+                    transaction_plan,
                 ),
             },
             ProposalPayload::UpgradePlan { height } => ProposalPayloadToml::UpgradePlan { height },

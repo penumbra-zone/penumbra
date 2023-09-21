@@ -41,7 +41,7 @@ decaf377-rdsa = { version = "0.7" }
 decaf377 = {version = "0.5", features = ["r1cs"] }
 
 # Crates.io dependencies
-base64 = "0.20"
+base64 = "0.21"
 ark-r1cs-std = {version = "0.4", default-features = false }
 ark-relations = "0.4"
 ark-ff = { version = "0.4", default_features = false }
@@ -62,6 +62,7 @@ im = "15.1"
 regex = "1.5"
 futures = "0.3"
 tokio = { version = "1.21.1", features = ["full", "tracing"], optional = true }
+pbjson-types = "0.5"
 
 [dev-dependencies]
 proptest = "1"
