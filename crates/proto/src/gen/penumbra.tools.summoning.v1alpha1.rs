@@ -21,8 +21,10 @@ pub mod participate_request {
     pub struct Contribution {
         #[prost(message, optional, tag = "1")]
         pub updated: ::core::option::Option<super::CeremonyCrs>,
-        #[prost(bytes = "vec", tag = "2")]
-        pub update_proof: ::prost::alloc::vec::Vec<u8>,
+        #[prost(message, optional, tag = "2")]
+        pub update_proofs: ::core::option::Option<super::CeremonyLinkingProof>,
+        #[prost(message, optional, tag = "3")]
+        pub parent_hashes: ::core::option::Option<super::CeremonyParentHashes>,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -36,6 +38,42 @@ pub mod participate_request {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CeremonyCrs {
+    #[prost(bytes = "vec", tag = "100")]
+    pub spend: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "101")]
+    pub output: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "102")]
+    pub delegator_vote: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "103")]
+    pub undelegate_claim: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "104")]
+    pub swap: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "105")]
+    pub swap_claim: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "106")]
+    pub nullifer_derivation_crs: ::prost::alloc::vec::Vec<u8>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CeremonyLinkingProof {
+    #[prost(bytes = "vec", tag = "100")]
+    pub spend: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "101")]
+    pub output: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "102")]
+    pub delegator_vote: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "103")]
+    pub undelegate_claim: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "104")]
+    pub swap: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "105")]
+    pub swap_claim: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "106")]
+    pub nullifer_derivation_crs: ::prost::alloc::vec::Vec<u8>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CeremonyParentHashes {
     #[prost(bytes = "vec", tag = "100")]
     pub spend: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "101")]

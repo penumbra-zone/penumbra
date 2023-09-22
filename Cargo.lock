@@ -5317,6 +5317,7 @@ dependencies = [
  "decaf377 0.5.0",
  "penumbra-dex",
  "penumbra-proof-params",
+ "penumbra-proto",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
 ]

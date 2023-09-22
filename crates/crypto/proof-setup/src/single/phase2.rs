@@ -1,6 +1,7 @@
 //! This module is very similar to the one for phase1, so reading that one might be useful.
 use ark_ec::Group;
 use ark_ff::{fields::Field, UniformRand, Zero};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand_core::{CryptoRngCore, OsRng};
 
 use crate::single::log::{ContributionHash, Hashable, Phase};
@@ -10,7 +11,7 @@ use crate::single::{
 };
 
 /// Raw CRS elements, not yet validated for consistency.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize, PartialEq)]
 pub struct RawCRSElements {
     pub delta_1: G1,
     pub delta_2: G2,
@@ -79,7 +80,7 @@ impl Hashable for RawCRSElements {
 /// The CRS elements we produce in phase 2.
 ///
 /// When combined with the elements of phase 1, the entire CRS will be present.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CRSElements {
     pub(crate) raw: RawCRSElements,
 }
@@ -147,7 +148,7 @@ impl From<Contribution> for RawContribution {
 pub struct Contribution {
     pub parent: ContributionHash,
     pub new_elements: CRSElements,
-    linking_proof: dlog::Proof,
+    pub(crate) linking_proof: dlog::Proof,
 }
 
 impl Hashable for Contribution {
