@@ -96,3 +96,17 @@ pub struct ClientConnections {
     #[prost(string, repeated, tag = "1")]
     pub connections: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+/// IBC configuration data.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct IbcParameters {
+    /// Whether IBC (forming connections, processing IBC packets) is enabled.
+    #[prost(bool, tag = "1")]
+    pub ibc_enabled: bool,
+    /// Whether inbound ICS-20 transfers are enabled
+    #[prost(bool, tag = "2")]
+    pub inbound_ics20_transfers_enabled: bool,
+    /// Whether outbound ICS-20 transfers are enabled
+    #[prost(bool, tag = "3")]
+    pub outbound_ics20_transfers_enabled: bool,
+}

@@ -10,6 +10,7 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -19,6 +20,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Dao configuration data.
+type DaoParameters struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Whether DAO spend proposals are enabled.
+	DaoSpendProposalsEnabled bool `protobuf:"varint,1,opt,name=dao_spend_proposals_enabled,json=daoSpendProposalsEnabled,proto3" json:"dao_spend_proposals_enabled,omitempty"`
+}
+
+func (x *DaoParameters) Reset() {
+	*x = DaoParameters{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dao_v1alpha1_dao_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DaoParameters) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DaoParameters) ProtoMessage() {}
+
+func (x *DaoParameters) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dao_v1alpha1_dao_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DaoParameters.ProtoReflect.Descriptor instead.
+func (*DaoParameters) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dao_v1alpha1_dao_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *DaoParameters) GetDaoSpendProposalsEnabled() bool {
+	if x != nil {
+		return x.DaoSpendProposalsEnabled
+	}
+	return false
+}
+
 var File_penumbra_core_component_dao_v1alpha1_dao_proto protoreflect.FileDescriptor
 
 var file_penumbra_core_component_dao_v1alpha1_dao_proto_rawDesc = []byte{
@@ -27,7 +77,12 @@ var file_penumbra_core_component_dao_v1alpha1_dao_proto_rawDesc = []byte{
 	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x64, 0x61, 0x6f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x12, 0x24, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e,
 	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x42, 0xca, 0x02, 0x0a, 0x28, 0x63, 0x6f, 0x6d, 0x2e, 0x70,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x22, 0x4e, 0x0a, 0x0d, 0x44, 0x61, 0x6f, 0x50, 0x61, 0x72,
+	0x61, 0x6d, 0x65, 0x74, 0x65, 0x72, 0x73, 0x12, 0x3d, 0x0a, 0x1b, 0x64, 0x61, 0x6f, 0x5f, 0x73,
+	0x70, 0x65, 0x6e, 0x64, 0x5f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x5f, 0x65,
+	0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x18, 0x64, 0x61,
+	0x6f, 0x53, 0x70, 0x65, 0x6e, 0x64, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x73, 0x45,
+	0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x42, 0xca, 0x02, 0x0a, 0x28, 0x63, 0x6f, 0x6d, 0x2e, 0x70,
 	0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d,
 	0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70,
 	0x68, 0x61, 0x31, 0x42, 0x08, 0x44, 0x61, 0x6f, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a,
@@ -51,7 +106,22 @@ var file_penumbra_core_component_dao_v1alpha1_dao_proto_rawDesc = []byte{
 	0x68, 0x61, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
-var file_penumbra_core_component_dao_v1alpha1_dao_proto_goTypes = []interface{}{}
+var (
+	file_penumbra_core_component_dao_v1alpha1_dao_proto_rawDescOnce sync.Once
+	file_penumbra_core_component_dao_v1alpha1_dao_proto_rawDescData = file_penumbra_core_component_dao_v1alpha1_dao_proto_rawDesc
+)
+
+func file_penumbra_core_component_dao_v1alpha1_dao_proto_rawDescGZIP() []byte {
+	file_penumbra_core_component_dao_v1alpha1_dao_proto_rawDescOnce.Do(func() {
+		file_penumbra_core_component_dao_v1alpha1_dao_proto_rawDescData = protoimpl.X.CompressGZIP(file_penumbra_core_component_dao_v1alpha1_dao_proto_rawDescData)
+	})
+	return file_penumbra_core_component_dao_v1alpha1_dao_proto_rawDescData
+}
+
+var file_penumbra_core_component_dao_v1alpha1_dao_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_penumbra_core_component_dao_v1alpha1_dao_proto_goTypes = []interface{}{
+	(*DaoParameters)(nil), // 0: penumbra.core.component.dao.v1alpha1.DaoParameters
+}
 var file_penumbra_core_component_dao_v1alpha1_dao_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
 	0, // [0:0] is the sub-list for method input_type
@@ -65,18 +135,33 @@ func file_penumbra_core_component_dao_v1alpha1_dao_proto_init() {
 	if File_penumbra_core_component_dao_v1alpha1_dao_proto != nil {
 		return
 	}
+	if !protoimpl.UnsafeEnabled {
+		file_penumbra_core_component_dao_v1alpha1_dao_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DaoParameters); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_penumbra_core_component_dao_v1alpha1_dao_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   0,
+			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_penumbra_core_component_dao_v1alpha1_dao_proto_goTypes,
 		DependencyIndexes: file_penumbra_core_component_dao_v1alpha1_dao_proto_depIdxs,
+		MessageInfos:      file_penumbra_core_component_dao_v1alpha1_dao_proto_msgTypes,
 	}.Build()
 	File_penumbra_core_component_dao_v1alpha1_dao_proto = out.File
 	file_penumbra_core_component_dao_v1alpha1_dao_proto_rawDesc = nil

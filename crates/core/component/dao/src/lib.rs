@@ -10,4 +10,4 @@ pub mod event;
 mod action;
 pub use action::{DaoDeposit, DaoOutput, DaoSpend};
 
-pub mod parameters;
+pub mod params;

@@ -749,6 +749,134 @@ impl<'de> serde::Deserialize<'de> for IbcAction {
         deserializer.deserialize_struct("penumbra.core.component.ibc.v1alpha1.IbcAction", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for IbcParameters {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.ibc_enabled {
+            len += 1;
+        }
+        if self.inbound_ics20_transfers_enabled {
+            len += 1;
+        }
+        if self.outbound_ics20_transfers_enabled {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.ibc.v1alpha1.IbcParameters", len)?;
+        if self.ibc_enabled {
+            struct_ser.serialize_field("ibcEnabled", &self.ibc_enabled)?;
+        }
+        if self.inbound_ics20_transfers_enabled {
+            struct_ser.serialize_field("inboundIcs20TransfersEnabled", &self.inbound_ics20_transfers_enabled)?;
+        }
+        if self.outbound_ics20_transfers_enabled {
+            struct_ser.serialize_field("outboundIcs20TransfersEnabled", &self.outbound_ics20_transfers_enabled)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for IbcParameters {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "ibc_enabled",
+            "ibcEnabled",
+            "inbound_ics20_transfers_enabled",
+            "inboundIcs20TransfersEnabled",
+            "outbound_ics20_transfers_enabled",
+            "outboundIcs20TransfersEnabled",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            IbcEnabled,
+            InboundIcs20TransfersEnabled,
+            OutboundIcs20TransfersEnabled,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "ibcEnabled" | "ibc_enabled" => Ok(GeneratedField::IbcEnabled),
+                            "inboundIcs20TransfersEnabled" | "inbound_ics20_transfers_enabled" => Ok(GeneratedField::InboundIcs20TransfersEnabled),
+                            "outboundIcs20TransfersEnabled" | "outbound_ics20_transfers_enabled" => Ok(GeneratedField::OutboundIcs20TransfersEnabled),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = IbcParameters;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.ibc.v1alpha1.IbcParameters")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<IbcParameters, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut ibc_enabled__ = None;
+                let mut inbound_ics20_transfers_enabled__ = None;
+                let mut outbound_ics20_transfers_enabled__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::IbcEnabled => {
+                            if ibc_enabled__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("ibcEnabled"));
+                            }
+                            ibc_enabled__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::InboundIcs20TransfersEnabled => {
+                            if inbound_ics20_transfers_enabled__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("inboundIcs20TransfersEnabled"));
+                            }
+                            inbound_ics20_transfers_enabled__ = Some(map.next_value()?);
+                        }
+                        GeneratedField::OutboundIcs20TransfersEnabled => {
+                            if outbound_ics20_transfers_enabled__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("outboundIcs20TransfersEnabled"));
+                            }
+                            outbound_ics20_transfers_enabled__ = Some(map.next_value()?);
+                        }
+                    }
+                }
+                Ok(IbcParameters {
+                    ibc_enabled: ibc_enabled__.unwrap_or_default(),
+                    inbound_ics20_transfers_enabled: inbound_ics20_transfers_enabled__.unwrap_or_default(),
+                    outbound_ics20_transfers_enabled: outbound_ics20_transfers_enabled__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.ibc.v1alpha1.IbcParameters", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for Ics20Withdrawal {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
