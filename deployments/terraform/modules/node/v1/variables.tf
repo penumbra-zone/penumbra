@@ -17,7 +17,7 @@ variable "cluster_zones" {
 
 variable "num_nodes" {
   description = "The number of nodes per zone"
-  default     = 2
+  default     = 4
 }
 
 ### The rest of the variables have logical defaults
