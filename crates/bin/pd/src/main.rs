@@ -333,7 +333,7 @@ async fn main() -> anyhow::Result<()> {
                 )
                 .expect("failed to spawn abci server");
 
-            let ibc = penumbra_ibc::component::IbcQuery::new(storage.clone());
+            let ibc = penumbra_ibc::component::rpc::IbcQuery::new(storage.clone());
 
             let grpc_server = Server::builder()
                 .trace_fn(|req| match remote_addr(req) {
