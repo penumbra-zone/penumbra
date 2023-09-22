@@ -2,7 +2,7 @@ use ark_ff::{BigInteger, PrimeField, ToConstraintField};
 use ark_r1cs_std::{prelude::*, uint64::UInt64};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{Fq, Fr};
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::num::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
@@ -507,7 +507,7 @@ impl Sum for Amount {
 #[cfg(test)]
 mod test {
     use crate::Amount;
-    use penumbra_proto::core::crypto::v1alpha1 as pb;
+    use penumbra_proto::penumbra::core::num::v1alpha1 as pb;
     use rand::RngCore;
     use rand_core::OsRng;
 
