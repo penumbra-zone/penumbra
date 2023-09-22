@@ -53,6 +53,12 @@ impl std::cmp::Ord for Address {
     }
 }
 
+impl std::hash::Hash for Address {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.to_vec().hash(state)
+    }
+}
+
 impl Address {
     /// Constructs a payment address from its components.
     ///
