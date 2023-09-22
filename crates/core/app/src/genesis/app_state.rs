@@ -24,8 +24,8 @@ pub enum AppState {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(try_from = "pb::GenesisContent", into = "pb::GenesisContent")]
 pub struct Content {
-    /// Global configuration for the chain, such as chain ID and epoch duration.
-    pub chain_params: ChainParameters,
+    /// Global configuration for the app.
+    pub app_params: AppParameters,
     /// The initial validator set.
     pub validators: Vec<pb_stake::Validator>,
     /// The initial token allocations.
@@ -41,7 +41,7 @@ impl Default for AppState {
 impl Default for Content {
     fn default() -> Self {
         Self {
-            chain_params: Default::default(),
+            app_params: Default::default(),
             // TODO: create a test validator
             validators: Default::default(),
             allocations: vec![

@@ -1,37 +1,53 @@
 use std::fmt::Display;
 
 use anyhow::Result;
+use penumbra_governance::component::Governance;
+use penumbra_ibc::params::IbcParameters;
 
-use super::{ChainParameters, Ratio};
+use super::{AppParameters, Ratio};
 
 // The checks below validate that a parameter change is valid, since some parameter settings or
 // combinations are nonsensical and should be rejected outright, regardless of governance.
 
 #[deny(unused)] // We want to be really careful here to not examine fields!
-impl ChainParameters {
-    pub fn check_valid_update(&self, new: &ChainParameters) -> Result<()> {
+impl AppParameters {
+    pub fn check_valid_update(&self, new: &AppParameters) -> Result<()> {
         new.check_valid()?;
 
-        let ChainParameters {
-            chain_id,
-            epoch_duration,
-            unbonding_epochs: _,
-            active_validator_limit,
-            base_reward_rate: _,
-            slashing_penalty_misbehavior: _,
-            slashing_penalty_downtime: _,
-            signed_blocks_window_len,
-            missed_blocks_maximum: _,
-            ibc_enabled: _,
-            inbound_ics20_transfers_enabled: _,
-            outbound_ics20_transfers_enabled: _,
-            proposal_voting_blocks: _,
-            proposal_deposit_amount: _,
-            proposal_valid_quorum,
-            proposal_pass_threshold,
-            proposal_slash_threshold,
-            dao_spend_proposals_enabled: _,
-            // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
+        let AppParameters {
+            chain_params:
+                ChainParameters {
+                    chain_id,
+                    epoch_duration,
+                },
+            stake_params:
+                StakeParameters {
+                    unbonding_epochs: _,
+                    active_validator_limit,
+                    base_reward_rate: _,
+                    slashing_penalty_misbehavior: _,
+                    slashing_penalty_downtime: _,
+                    signed_blocks_window_len,
+                    missed_blocks_maximum: _,
+                },
+            ibc_params:
+                IbcParameters {
+                    ibc_enabled: _,
+                    inbound_ics20_transfers_enabled: _,
+                    outbound_ics20_transfers_enabled: _,
+                },
+            governance_params:
+                GovernanceParameters {
+                    proposal_voting_blocks: _,
+                    proposal_deposit_amount: _,
+                    proposal_valid_quorum,
+                    proposal_pass_threshold,
+                    proposal_slash_threshold,
+                },
+            dao_params:
+                DaoParameters {
+                    dao_spend_proposals_enabled: _,
+                }, // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
 
         // Ensure that certain parameters are not changed by the update:

@@ -15,8 +15,6 @@ use penumbra_proto::view::v1alpha1 as pb_view;
 use penumbra_proto::{DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
-pub mod change;
-
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(
     try_from = "pb_chain::ChainParameters",

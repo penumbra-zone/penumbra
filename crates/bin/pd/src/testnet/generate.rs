@@ -3,9 +3,10 @@
 //! for Penumbra.
 use crate::testnet::config::{get_testnet_dir, TestnetTendermintConfig, ValidatorKeys};
 use anyhow::{Context, Result};
-use penumbra_chain::genesis;
+use penumbra_app::genesis;
 use penumbra_chain::{genesis::Allocation, params::ChainParameters};
 use penumbra_keys::{keys::SpendKey, Address};
+use penumbra_proto::core::component::stake::v1alpha1::StakeParameters;
 use penumbra_stake::{
     validator::Validator, DelegationToken, FundingStream, FundingStreams, GovernanceKey,
     IdentityKey,
@@ -182,14 +183,18 @@ impl TestnetConfig {
         let default_params = ChainParameters::default();
         let app_state = genesis::Content {
             allocations: allocations.clone(),
-            chain_params: ChainParameters {
-                chain_id: chain_id.to_string(),
-                // Fall back to chain param defaults
-                active_validator_limit: active_validator_limit
-                    .unwrap_or(default_params.active_validator_limit),
-                epoch_duration: epoch_duration.unwrap_or(default_params.epoch_duration),
-                unbonding_epochs: unbonding_epochs.unwrap_or(default_params.unbonding_epochs),
-                ..Default::default()
+            app_params: AppParameters {
+                chain_params: ChainParameters {
+                    chain_id: chain_id.to_string(),
+                    // Fall back to chain param defaults
+                    epoch_duration: epoch_duration.unwrap_or(default_params.epoch_duration),
+                },
+                stake_params: StakeParameters {
+                    active_validator_limit: active_validator_limit
+                        .unwrap_or(default_params.active_validator_limit),
+                    unbonding_epochs: unbonding_epochs.unwrap_or(default_params.unbonding_epochs),
+                    ..Default::default()
+                }..Default::default(),
             },
             // Convert to protobuf types
             validators: validators.into_iter().map(Into::into).collect(),

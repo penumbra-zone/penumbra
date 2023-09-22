@@ -10,7 +10,8 @@ pub use mock_client::MockClient;
 pub use temp_storage_ext::TempStorageExt;
 
 pub mod app;
-pub mod parameters;
+pub mod genesis;
+pub mod params;
 
 pub mod metrics;
 pub mod rpc;
