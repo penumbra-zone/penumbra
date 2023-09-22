@@ -1,0 +1,3 @@
+syntax = "proto3";
+package penumbra.core.component.dao.v1alpha1;
+

@@ -6,7 +6,7 @@ use penumbra_asset::{Balance, Value};
 use penumbra_keys::FullViewingKey;
 use penumbra_num::Amount;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::Note;
 use penumbra_tct as tct;

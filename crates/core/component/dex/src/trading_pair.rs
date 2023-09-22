@@ -3,7 +3,7 @@ use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::{AllocVar, EqGadget};
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{FieldExt, Fq};
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 

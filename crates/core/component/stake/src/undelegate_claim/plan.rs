@@ -2,7 +2,7 @@ use decaf377::{FieldExt, Fq, Fr};
 use penumbra_asset::{asset, balance, Balance};
 use penumbra_num::Amount;
 use penumbra_proof_params::UNDELEGATECLAIM_PROOF_PROVING_KEY;
-use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType, TypeUrl};
 
 use serde::{Deserialize, Serialize};
 

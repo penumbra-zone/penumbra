@@ -7,7 +7,7 @@ use penumbra_keys::{
     symmetric::WrappedMemoKey,
     Address, PayloadKey,
 };
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType, TypeUrl};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -163,10 +163,10 @@ impl TryFrom<pb::OutputPlan> for OutputPlan {
                 .dest_address
                 .ok_or_else(|| anyhow::anyhow!("missing address"))?
                 .try_into()?,
-            rseed: Rseed(msg.rseed.as_ref().try_into()?),
-            value_blinding: Fr::from_bytes(msg.value_blinding.as_ref().try_into()?)?,
-            proof_blinding_r: Fq::from_bytes(msg.proof_blinding_r.as_ref().try_into()?)?,
-            proof_blinding_s: Fq::from_bytes(msg.proof_blinding_s.as_ref().try_into()?)?,
+            rseed: Rseed(msg.rseed.as_slice().try_into()?),
+            value_blinding: Fr::from_bytes(msg.value_blinding.as_slice().try_into()?)?,
+            proof_blinding_r: Fq::from_bytes(msg.proof_blinding_r.as_slice().try_into()?)?,
+            proof_blinding_s: Fq::from_bytes(msg.proof_blinding_s.as_slice().try_into()?)?,
         })
     }
 }

@@ -1,5 +1,5 @@
 use penumbra_keys::PayloadKey;
-use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
+use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pbt, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::NoteView;
@@ -48,7 +48,7 @@ impl TryFrom<pbt::OutputView> for OutputView {
                     .payload_key
                     .ok_or_else(|| anyhow::anyhow!("missing payload key field"))?
                     .inner
-                    .as_ref()
+                    .as_slice()
                     .try_into()?,
             }),
             pbt::output_view::OutputView::Opaque(x) => Ok(OutputView::Opaque {

@@ -8,7 +8,7 @@ use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey};
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::component::stake::v1alpha1 as pb, DomainType, TypeUrl};
 
 use decaf377::{FieldExt, Fq, Fr};
 use penumbra_asset::{

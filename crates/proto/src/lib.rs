@@ -39,74 +39,6 @@ pub use penumbra::*;
 
 pub mod penumbra {
 
-    /// Core protocol structures.
-    pub mod core {
-        /// Crypto structures.
-        pub mod crypto {
-            pub mod v1alpha1 {
-                include!("gen/penumbra.core.crypto.v1alpha1.rs");
-                include!("gen/penumbra.core.crypto.v1alpha1.serde.rs");
-            }
-        }
-
-        /// Staking structures.
-        pub mod stake {
-            pub mod v1alpha1 {
-                include!("gen/penumbra.core.stake.v1alpha1.rs");
-                include!("gen/penumbra.core.stake.v1alpha1.serde.rs");
-            }
-        }
-
-        /// Decentralized exchange structures.
-        pub mod dex {
-            pub mod v1alpha1 {
-                include!("gen/penumbra.core.dex.v1alpha1.rs");
-                include!("gen/penumbra.core.dex.v1alpha1.serde.rs");
-            }
-        }
-
-        /// Governance structures.
-        pub mod governance {
-            pub mod v1alpha1 {
-                include!("gen/penumbra.core.governance.v1alpha1.rs");
-                include!("gen/penumbra.core.governance.v1alpha1.serde.rs");
-            }
-        }
-
-        /// Transaction structures.
-        pub mod transaction {
-            pub mod v1alpha1 {
-                include!("gen/penumbra.core.transaction.v1alpha1.rs");
-                include!("gen/penumbra.core.transaction.v1alpha1.serde.rs");
-            }
-        }
-
-        /// Chain-related structures.
-        pub mod chain {
-            pub mod v1alpha1 {
-                include!("gen/penumbra.core.chain.v1alpha1.rs");
-                include!("gen/penumbra.core.chain.v1alpha1.serde.rs");
-            }
-        }
-
-        /// IBC protocol structures.
-        pub mod ibc {
-            pub mod v1alpha1 {
-                include!("gen/penumbra.core.ibc.v1alpha1.rs");
-                include!("gen/penumbra.core.ibc.v1alpha1.serde.rs");
-            }
-        }
-
-        /// Transparent proofs.
-        ///
-        /// Note that these are protos for the "MVP" transparent version of Penumbra,
-        /// i.e. not for production use and intentionally not private.
-        pub mod transparent_proofs {
-            pub mod v1alpha1 {
-                include!("gen/penumbra.core.transparent_proofs.v1alpha1.rs");
-            }
-        }
-    }
     /// Client protocol structures.
     pub mod client {
         pub mod v1alpha1 {
@@ -232,21 +164,155 @@ pub mod penumbra {
         }
     }
 
-    /// Narsil protocol structures.
-    pub mod narsil {
-        pub mod v1alpha1 {
-            pub mod ledger {
-                include!("gen/penumbra.narsil.ledger.v1alpha1.rs");
-                include!("gen/penumbra.narsil.ledger.v1alpha1.serde.rs");
+    /// Core protocol structures.
+    pub mod core {
+        /*
+        // Commented out as this is currently an empty package.
+        /// Top-level structures for the Penumbra application.
+        pub mod app {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.core.app.v1alpha1.rs");
+                include!("gen/penumbra.core.app.v1alpha1.serde.rs");
+            }
+        }
+        */
+
+        pub mod asset {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.core.asset.v1alpha1.rs");
+                include!("gen/penumbra.core.asset.v1alpha1.serde.rs");
+            }
+        }
+
+        /// Components of the Penumbra application.
+        pub mod component {
+
+            pub mod chain {
+                pub mod v1alpha1 {
+                    include!("gen/penumbra.core.component.chain.v1alpha1.rs");
+                    include!("gen/penumbra.core.component.chain.v1alpha1.serde.rs");
+                }
+            }
+
+            pub mod compact_block {
+                pub mod v1alpha1 {
+                    include!("gen/penumbra.core.component.compact_block.v1alpha1.rs");
+                    include!("gen/penumbra.core.component.compact_block.v1alpha1.serde.rs");
+                }
+            }
+
+            /*
+            pub mod dao {
+                pub mod v1alpha1 {
+                    include!("gen/penumbra.core.component.dao.v1alpha1.rs");
+                    include!("gen/penumbra.core.component.dao.v1alpha1.serde.rs");
+                }
+            }
+            */
+
+            pub mod dex {
+                pub mod v1alpha1 {
+                    include!("gen/penumbra.core.component.dex.v1alpha1.rs");
+                    include!("gen/penumbra.core.component.dex.v1alpha1.serde.rs");
+                }
+            }
+
+            /*
+            pub mod distributions {
+                pub mod v1alpha1 {
+                    include!("gen/penumbra.core.component.distributions.v1alpha1.rs");
+                    include!("gen/penumbra.core.component.distributions.v1alpha1.serde.rs");
+                }
+            }
+            */
+
+            pub mod fee {
+                pub mod v1alpha1 {
+                    include!("gen/penumbra.core.component.fee.v1alpha1.rs");
+                    include!("gen/penumbra.core.component.fee.v1alpha1.serde.rs");
+                }
+            }
+
+            pub mod governance {
+                pub mod v1alpha1 {
+                    include!("gen/penumbra.core.component.governance.v1alpha1.rs");
+                    include!("gen/penumbra.core.component.governance.v1alpha1.serde.rs");
+                }
+            }
+
+            pub mod ibc {
+                pub mod v1alpha1 {
+                    include!("gen/penumbra.core.component.ibc.v1alpha1.rs");
+                    include!("gen/penumbra.core.component.ibc.v1alpha1.serde.rs");
+                }
+            }
+
+            pub mod sct {
+                pub mod v1alpha1 {
+                    include!("gen/penumbra.core.component.sct.v1alpha1.rs");
+                    include!("gen/penumbra.core.component.sct.v1alpha1.serde.rs");
+                }
+            }
+
+            pub mod shielded_pool {
+                pub mod v1alpha1 {
+                    include!("gen/penumbra.core.component.shielded_pool.v1alpha1.rs");
+                    include!("gen/penumbra.core.component.shielded_pool.v1alpha1.serde.rs");
+                }
+            }
+
+            pub mod stake {
+                pub mod v1alpha1 {
+                    include!("gen/penumbra.core.component.stake.v1alpha1.rs");
+                    include!("gen/penumbra.core.component.stake.v1alpha1.serde.rs");
+                }
+            }
+        }
+
+        pub mod keys {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.core.keys.v1alpha1.rs");
+                include!("gen/penumbra.core.keys.v1alpha1.serde.rs");
+            }
+        }
+
+        pub mod num {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.core.num.v1alpha1.rs");
+                include!("gen/penumbra.core.num.v1alpha1.serde.rs");
+            }
+        }
+
+        /// Transaction structures.
+        pub mod transaction {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.core.transaction.v1alpha1.rs");
+                include!("gen/penumbra.core.transaction.v1alpha1.serde.rs");
             }
         }
     }
 
-    /// View protocol structures.
-    pub mod view {
-        pub mod v1alpha1 {
-            include!("gen/penumbra.view.v1alpha1.rs");
-            include!("gen/penumbra.view.v1alpha1.serde.rs");
+    /// Cryptography primitives used by Penumbra.
+    pub mod crypto {
+        pub mod decaf377_fmd {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.crypto.decaf377_fmd.v1alpha1.rs");
+                include!("gen/penumbra.crypto.decaf377_fmd.v1alpha1.serde.rs");
+            }
+        }
+
+        pub mod decaf377_rdsa {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.crypto.decaf377_rdsa.v1alpha1.rs");
+                include!("gen/penumbra.crypto.decaf377_rdsa.v1alpha1.serde.rs");
+            }
+        }
+
+        pub mod tct {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.crypto.tct.v1alpha1.rs");
+                include!("gen/penumbra.crypto.tct.v1alpha1.serde.rs");
+            }
         }
     }
 
@@ -258,12 +324,30 @@ pub mod penumbra {
         }
     }
 
+    /// Narsil protocol structures.
+    pub mod narsil {
+        pub mod v1alpha1 {
+            pub mod ledger {
+                include!("gen/penumbra.narsil.ledger.v1alpha1.rs");
+                include!("gen/penumbra.narsil.ledger.v1alpha1.serde.rs");
+            }
+        }
+    }
+
     pub mod tools {
         pub mod summoning {
             pub mod v1alpha1 {
                 include!("gen/penumbra.tools.summoning.v1alpha1.rs");
                 include!("gen/penumbra.tools.summoning.v1alpha1.serde.rs");
             }
+        }
+    }
+
+    /// View protocol structures.
+    pub mod view {
+        pub mod v1alpha1 {
+            include!("gen/penumbra.view.v1alpha1.rs");
+            include!("gen/penumbra.view.v1alpha1.serde.rs");
         }
     }
 }

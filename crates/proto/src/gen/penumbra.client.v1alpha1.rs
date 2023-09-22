@@ -58,7 +58,7 @@ pub struct CompactBlockRangeRequest {
 pub struct CompactBlockRangeResponse {
     #[prost(message, optional, tag = "1")]
     pub compact_block: ::core::option::Option<
-        super::super::core::chain::v1alpha1::CompactBlock,
+        super::super::core::component::compact_block::v1alpha1::CompactBlock,
     >,
 }
 /// Requests the global configuration data for the chain.
@@ -79,14 +79,16 @@ pub struct EpochByHeightRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EpochByHeightResponse {
     #[prost(message, optional, tag = "1")]
-    pub epoch: ::core::option::Option<super::super::core::chain::v1alpha1::Epoch>,
+    pub epoch: ::core::option::Option<
+        super::super::core::component::chain::v1alpha1::Epoch,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChainParametersResponse {
     #[prost(message, optional, tag = "1")]
     pub chain_parameters: ::core::option::Option<
-        super::super::core::chain::v1alpha1::ChainParameters,
+        super::super::core::component::chain::v1alpha1::ChainParameters,
     >,
 }
 /// Requests information on the chain's validators.
@@ -105,7 +107,7 @@ pub struct ValidatorInfoRequest {
 pub struct ValidatorInfoResponse {
     #[prost(message, optional, tag = "1")]
     pub validator_info: ::core::option::Option<
-        super::super::core::stake::v1alpha1::ValidatorInfo,
+        super::super::core::component::stake::v1alpha1::ValidatorInfo,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -116,7 +118,7 @@ pub struct TransactionByNoteRequest {
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub note_commitment: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::StateCommitment,
+        super::super::crypto::tct::v1alpha1::StateCommitment,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -124,7 +126,7 @@ pub struct TransactionByNoteRequest {
 pub struct TransactionByNoteResponse {
     #[prost(message, optional, tag = "1")]
     pub note_source: ::core::option::Option<
-        super::super::core::chain::v1alpha1::NoteSource,
+        super::super::core::component::chain::v1alpha1::NoteSource,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -135,7 +137,7 @@ pub struct ValidatorStatusRequest {
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub identity_key: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::IdentityKey,
+        super::super::core::keys::v1alpha1::IdentityKey,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -143,7 +145,7 @@ pub struct ValidatorStatusRequest {
 pub struct ValidatorStatusResponse {
     #[prost(message, optional, tag = "1")]
     pub status: ::core::option::Option<
-        super::super::core::stake::v1alpha1::ValidatorStatus,
+        super::super::core::component::stake::v1alpha1::ValidatorStatus,
     >,
 }
 /// Requests the compounded penalty for a validator over a range of epochs.
@@ -155,7 +157,7 @@ pub struct ValidatorPenaltyRequest {
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub identity_key: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::IdentityKey,
+        super::super::core::keys::v1alpha1::IdentityKey,
     >,
     #[prost(uint64, tag = "3")]
     pub start_epoch_index: u64,
@@ -166,7 +168,9 @@ pub struct ValidatorPenaltyRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorPenaltyResponse {
     #[prost(message, optional, tag = "1")]
-    pub penalty: ::core::option::Option<super::super::core::stake::v1alpha1::Penalty>,
+    pub penalty: ::core::option::Option<
+        super::super::core::component::stake::v1alpha1::Penalty,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -176,14 +180,16 @@ pub struct CurrentValidatorRateRequest {
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub identity_key: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::IdentityKey,
+        super::super::core::keys::v1alpha1::IdentityKey,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CurrentValidatorRateResponse {
     #[prost(message, optional, tag = "1")]
-    pub data: ::core::option::Option<super::super::core::stake::v1alpha1::RateData>,
+    pub data: ::core::option::Option<
+        super::super::core::component::stake::v1alpha1::RateData,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -193,14 +199,16 @@ pub struct NextValidatorRateRequest {
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub identity_key: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::IdentityKey,
+        super::super::core::keys::v1alpha1::IdentityKey,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NextValidatorRateResponse {
     #[prost(message, optional, tag = "1")]
-    pub data: ::core::option::Option<super::super::core::stake::v1alpha1::RateData>,
+    pub data: ::core::option::Option<
+        super::super::core::component::stake::v1alpha1::RateData,
+    >,
 }
 /// Requests batch swap data associated with a given height and trading pair from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -213,7 +221,7 @@ pub struct BatchSwapOutputDataRequest {
     pub height: u64,
     #[prost(message, optional, tag = "3")]
     pub trading_pair: ::core::option::Option<
-        super::super::core::dex::v1alpha1::TradingPair,
+        super::super::core::component::dex::v1alpha1::TradingPair,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -221,7 +229,7 @@ pub struct BatchSwapOutputDataRequest {
 pub struct BatchSwapOutputDataResponse {
     #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<
-        super::super::core::dex::v1alpha1::BatchSwapOutputData,
+        super::super::core::component::dex::v1alpha1::BatchSwapOutputData,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -234,7 +242,7 @@ pub struct SwapExecutionRequest {
     pub height: u64,
     #[prost(message, optional, tag = "3")]
     pub trading_pair: ::core::option::Option<
-        super::super::core::dex::v1alpha1::DirectedTradingPair,
+        super::super::core::component::dex::v1alpha1::DirectedTradingPair,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -242,7 +250,7 @@ pub struct SwapExecutionRequest {
 pub struct SwapExecutionResponse {
     #[prost(message, optional, tag = "1")]
     pub swap_execution: ::core::option::Option<
-        super::super::core::dex::v1alpha1::SwapExecution,
+        super::super::core::component::dex::v1alpha1::SwapExecution,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -259,7 +267,7 @@ pub struct ArbExecutionRequest {
 pub struct ArbExecutionResponse {
     #[prost(message, optional, tag = "1")]
     pub swap_execution: ::core::option::Option<
-        super::super::core::dex::v1alpha1::SwapExecution,
+        super::super::core::component::dex::v1alpha1::SwapExecution,
     >,
     #[prost(uint64, tag = "2")]
     pub height: u64,
@@ -279,7 +287,7 @@ pub struct SwapExecutionsRequest {
     /// If present, filter swap executions by the given trading pair.
     #[prost(message, optional, tag = "4")]
     pub trading_pair: ::core::option::Option<
-        super::super::core::dex::v1alpha1::DirectedTradingPair,
+        super::super::core::component::dex::v1alpha1::DirectedTradingPair,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -287,13 +295,13 @@ pub struct SwapExecutionsRequest {
 pub struct SwapExecutionsResponse {
     #[prost(message, optional, tag = "1")]
     pub swap_execution: ::core::option::Option<
-        super::super::core::dex::v1alpha1::SwapExecution,
+        super::super::core::component::dex::v1alpha1::SwapExecution,
     >,
     #[prost(uint64, tag = "2")]
     pub height: u64,
     #[prost(message, optional, tag = "3")]
     pub trading_pair: ::core::option::Option<
-        super::super::core::dex::v1alpha1::DirectedTradingPair,
+        super::super::core::component::dex::v1alpha1::DirectedTradingPair,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -314,7 +322,7 @@ pub struct ArbExecutionsRequest {
 pub struct ArbExecutionsResponse {
     #[prost(message, optional, tag = "1")]
     pub swap_execution: ::core::option::Option<
-        super::super::core::dex::v1alpha1::SwapExecution,
+        super::super::core::component::dex::v1alpha1::SwapExecution,
     >,
     #[prost(uint64, tag = "2")]
     pub height: u64,
@@ -334,7 +342,9 @@ pub struct LiquidityPositionsRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionsResponse {
     #[prost(message, optional, tag = "1")]
-    pub data: ::core::option::Option<super::super::core::dex::v1alpha1::Position>,
+    pub data: ::core::option::Option<
+        super::super::core::component::dex::v1alpha1::Position,
+    >,
 }
 /// Requests liquidity positions for ordered by effective price.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -346,7 +356,7 @@ pub struct LiquidityPositionsByPriceRequest {
     /// The directed trading pair to request positions for
     #[prost(message, optional, tag = "2")]
     pub trading_pair: ::core::option::Option<
-        super::super::core::dex::v1alpha1::DirectedTradingPair,
+        super::super::core::component::dex::v1alpha1::DirectedTradingPair,
     >,
     /// The maximum number of positions to return.
     #[prost(uint64, tag = "5")]
@@ -356,7 +366,9 @@ pub struct LiquidityPositionsByPriceRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionsByPriceResponse {
     #[prost(message, optional, tag = "1")]
-    pub data: ::core::option::Option<super::super::core::dex::v1alpha1::Position>,
+    pub data: ::core::option::Option<
+        super::super::core::component::dex::v1alpha1::Position,
+    >,
 }
 /// Requests specific liquidity position data from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -367,14 +379,16 @@ pub struct LiquidityPositionByIdRequest {
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub position_id: ::core::option::Option<
-        super::super::core::dex::v1alpha1::PositionId,
+        super::super::core::component::dex::v1alpha1::PositionId,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionByIdResponse {
     #[prost(message, optional, tag = "1")]
-    pub data: ::core::option::Option<super::super::core::dex::v1alpha1::Position>,
+    pub data: ::core::option::Option<
+        super::super::core::component::dex::v1alpha1::Position,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -384,14 +398,16 @@ pub struct LiquidityPositionsByIdRequest {
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, repeated, tag = "2")]
     pub position_id: ::prost::alloc::vec::Vec<
-        super::super::core::dex::v1alpha1::PositionId,
+        super::super::core::component::dex::v1alpha1::PositionId,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionsByIdResponse {
     #[prost(message, optional, tag = "1")]
-    pub data: ::core::option::Option<super::super::core::dex::v1alpha1::Position>,
+    pub data: ::core::option::Option<
+        super::super::core::component::dex::v1alpha1::Position,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -401,7 +417,7 @@ pub struct SpreadRequest {
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub trading_pair: ::core::option::Option<
-        super::super::core::dex::v1alpha1::TradingPair,
+        super::super::core::component::dex::v1alpha1::TradingPair,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -410,12 +426,12 @@ pub struct SpreadResponse {
     /// The best position when trading 1 => 2.
     #[prost(message, optional, tag = "1")]
     pub best_1_to_2_position: ::core::option::Option<
-        super::super::core::dex::v1alpha1::Position,
+        super::super::core::component::dex::v1alpha1::Position,
     >,
     /// The best position when trading 2 => 1.
     #[prost(message, optional, tag = "2")]
     pub best_2_to_1_position: ::core::option::Option<
-        super::super::core::dex::v1alpha1::Position,
+        super::super::core::component::dex::v1alpha1::Position,
     >,
     /// An approximation of the effective price when trading 1 => 2.
     #[prost(double, tag = "3")]
@@ -433,7 +449,7 @@ pub struct DenomMetadataByIdRequest {
     pub chain_id: ::prost::alloc::string::String,
     /// The asset id to request information on.
     #[prost(message, optional, tag = "2")]
-    pub asset_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AssetId>,
+    pub asset_id: ::core::option::Option<super::super::core::asset::v1alpha1::AssetId>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -443,7 +459,7 @@ pub struct DenomMetadataByIdResponse {
     /// If the requested asset was unknown, this field will not be present.
     #[prost(message, optional, tag = "1")]
     pub denom_metadata: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::DenomMetadata,
+        super::super::core::asset::v1alpha1::DenomMetadata,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -482,15 +498,17 @@ pub struct ProposalRateDataRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalRateDataResponse {
     #[prost(message, optional, tag = "1")]
-    pub rate_data: ::core::option::Option<super::super::core::stake::v1alpha1::RateData>,
+    pub rate_data: ::core::option::Option<
+        super::super::core::component::stake::v1alpha1::RateData,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SimulateTradeRequest {
     #[prost(message, optional, tag = "1")]
-    pub input: ::core::option::Option<super::super::core::crypto::v1alpha1::Value>,
+    pub input: ::core::option::Option<super::super::core::asset::v1alpha1::Value>,
     #[prost(message, optional, tag = "2")]
-    pub output: ::core::option::Option<super::super::core::crypto::v1alpha1::AssetId>,
+    pub output: ::core::option::Option<super::super::core::asset::v1alpha1::AssetId>,
     #[prost(message, optional, tag = "3")]
     pub routing: ::core::option::Option<simulate_trade_request::Routing>,
 }
@@ -524,7 +542,9 @@ pub mod simulate_trade_request {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SimulateTradeResponse {
     #[prost(message, optional, tag = "1")]
-    pub output: ::core::option::Option<super::super::core::dex::v1alpha1::SwapExecution>,
+    pub output: ::core::option::Option<
+        super::super::core::component::dex::v1alpha1::SwapExecution,
+    >,
 }
 /// Performs a key-value query, either by key or by key hash.
 ///

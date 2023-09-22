@@ -14,7 +14,7 @@ use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
 use tct::r1cs::PositionVar;

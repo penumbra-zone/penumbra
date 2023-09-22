@@ -52,7 +52,7 @@ pub struct TransactionPlannerRequest {
     pub expiry_height: u64,
     /// The fee for the requested TransactionPlan, if any.
     #[prost(message, optional, tag = "2")]
-    pub fee: ::core::option::Option<super::super::core::crypto::v1alpha1::Fee>,
+    pub fee: ::core::option::Option<super::super::core::component::fee::v1alpha1::Fee>,
     /// The memo for the requested TransactionPlan.
     /// The memo must be unspecified unless `outputs` is nonempty.
     #[prost(message, optional, tag = "3")]
@@ -61,13 +61,11 @@ pub struct TransactionPlannerRequest {
     >,
     /// If present, only spends funds from the given account.
     #[prost(message, optional, tag = "4")]
-    pub source: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AddressIndex,
-    >,
+    pub source: ::core::option::Option<super::super::core::keys::v1alpha1::AddressIndex>,
     /// Optionally identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountGroupId,
+        super::super::core::keys::v1alpha1::AccountGroupId,
     >,
     /// Request contents
     #[prost(message, repeated, tag = "20")]
@@ -82,7 +80,7 @@ pub struct TransactionPlannerRequest {
     pub undelegations: ::prost::alloc::vec::Vec<transaction_planner_request::Undelegate>,
     #[prost(message, repeated, tag = "60")]
     pub ibc_actions: ::prost::alloc::vec::Vec<
-        super::super::core::ibc::v1alpha1::IbcAction,
+        super::super::core::component::ibc::v1alpha1::IbcAction,
     >,
     #[prost(message, repeated, tag = "70")]
     pub position_opens: ::prost::alloc::vec::Vec<
@@ -106,12 +104,12 @@ pub mod transaction_planner_request {
         /// The amount and denomination in which the Output is issued.
         #[prost(message, optional, tag = "1")]
         pub value: ::core::option::Option<
-            super::super::super::core::crypto::v1alpha1::Value,
+            super::super::super::core::asset::v1alpha1::Value,
         >,
         /// The address to which Output will be sent.
         #[prost(message, optional, tag = "2")]
         pub address: ::core::option::Option<
-            super::super::super::core::crypto::v1alpha1::Address,
+            super::super::super::core::keys::v1alpha1::Address,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -120,22 +118,22 @@ pub mod transaction_planner_request {
         /// The input amount and denomination to be traded in the Swap.
         #[prost(message, optional, tag = "1")]
         pub value: ::core::option::Option<
-            super::super::super::core::crypto::v1alpha1::Value,
+            super::super::super::core::asset::v1alpha1::Value,
         >,
         /// The denomination to be received as a Output of the Swap.
         #[prost(message, optional, tag = "2")]
         pub target_asset: ::core::option::Option<
-            super::super::super::core::crypto::v1alpha1::AssetId,
+            super::super::super::core::asset::v1alpha1::AssetId,
         >,
         /// The pre-paid fee to be paid for claiming the Swap outputs.
         #[prost(message, optional, tag = "3")]
         pub fee: ::core::option::Option<
-            super::super::super::core::crypto::v1alpha1::Fee,
+            super::super::super::core::component::fee::v1alpha1::Fee,
         >,
         /// The address to which swap claim output will be sent.
         #[prost(message, optional, tag = "4")]
         pub claim_address: ::core::option::Option<
-            super::super::super::core::crypto::v1alpha1::Address,
+            super::super::super::core::keys::v1alpha1::Address,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -143,10 +141,10 @@ pub mod transaction_planner_request {
     pub struct SwapClaim {
         /// SwapCommitment to identify the Swap to be claimed.
         /// Use the commitment from the Swap message:
-        /// penumbra.core.dex.v1alpha1.Swap.body.payload.commitment.
+        /// penumbra.core.component.dex.v1alpha1.Swap.body.payload.commitment.
         #[prost(message, optional, tag = "1")]
         pub swap_commitment: ::core::option::Option<
-            super::super::super::core::crypto::v1alpha1::StateCommitment,
+            super::super::super::crypto::tct::v1alpha1::StateCommitment,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -154,11 +152,11 @@ pub mod transaction_planner_request {
     pub struct Delegate {
         #[prost(message, optional, tag = "1")]
         pub amount: ::core::option::Option<
-            super::super::super::core::crypto::v1alpha1::Amount,
+            super::super::super::core::num::v1alpha1::Amount,
         >,
         #[prost(message, optional, tag = "3")]
         pub rate_data: ::core::option::Option<
-            super::super::super::core::stake::v1alpha1::RateData,
+            super::super::super::core::component::stake::v1alpha1::RateData,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -166,11 +164,11 @@ pub mod transaction_planner_request {
     pub struct Undelegate {
         #[prost(message, optional, tag = "1")]
         pub value: ::core::option::Option<
-            super::super::super::core::crypto::v1alpha1::Value,
+            super::super::super::core::asset::v1alpha1::Value,
         >,
         #[prost(message, optional, tag = "2")]
         pub rate_data: ::core::option::Option<
-            super::super::super::core::stake::v1alpha1::RateData,
+            super::super::super::core::component::stake::v1alpha1::RateData,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -182,7 +180,7 @@ pub mod transaction_planner_request {
         /// are unchanged over the entire lifetime of the position.
         #[prost(message, optional, tag = "1")]
         pub position: ::core::option::Option<
-            super::super::super::core::dex::v1alpha1::Position,
+            super::super::super::core::component::dex::v1alpha1::Position,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -191,7 +189,7 @@ pub mod transaction_planner_request {
         /// The position to close.
         #[prost(message, optional, tag = "1")]
         pub position_id: ::core::option::Option<
-            super::super::super::core::dex::v1alpha1::PositionId,
+            super::super::super::core::component::dex::v1alpha1::PositionId,
         >,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -200,17 +198,17 @@ pub mod transaction_planner_request {
         /// The position to withdraw.
         #[prost(message, optional, tag = "1")]
         pub position_id: ::core::option::Option<
-            super::super::super::core::dex::v1alpha1::PositionId,
+            super::super::super::core::component::dex::v1alpha1::PositionId,
         >,
         /// The position's final reserves.
         #[prost(message, optional, tag = "2")]
         pub reserves: ::core::option::Option<
-            super::super::super::core::dex::v1alpha1::Reserves,
+            super::super::super::core::component::dex::v1alpha1::Reserves,
         >,
         /// The trading pair of the position.
         #[prost(message, optional, tag = "3")]
         pub trading_pair: ::core::option::Option<
-            super::super::super::core::dex::v1alpha1::TradingPair,
+            super::super::super::core::component::dex::v1alpha1::TradingPair,
         >,
     }
 }
@@ -227,7 +225,7 @@ pub struct TransactionPlannerResponse {
 pub struct AddressByIndexRequest {
     #[prost(message, optional, tag = "1")]
     pub address_index: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AddressIndex,
+        super::super::core::keys::v1alpha1::AddressIndex,
     >,
     #[prost(bool, tag = "2")]
     pub display_confirm: bool,
@@ -236,13 +234,13 @@ pub struct AddressByIndexRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AddressByIndexResponse {
     #[prost(message, optional, tag = "1")]
-    pub address: ::core::option::Option<super::super::core::crypto::v1alpha1::Address>,
+    pub address: ::core::option::Option<super::super::core::keys::v1alpha1::Address>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IndexByAddressRequest {
     #[prost(message, optional, tag = "1")]
-    pub address: ::core::option::Option<super::super::core::crypto::v1alpha1::Address>,
+    pub address: ::core::option::Option<super::super::core::keys::v1alpha1::Address>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -250,7 +248,7 @@ pub struct IndexByAddressResponse {
     /// Will be absent if given an address not viewable by this viewing service
     #[prost(message, optional, tag = "1")]
     pub address_index: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AddressIndex,
+        super::super::core::keys::v1alpha1::AddressIndex,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -258,7 +256,7 @@ pub struct IndexByAddressResponse {
 pub struct EphemeralAddressRequest {
     #[prost(message, optional, tag = "1")]
     pub address_index: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AddressIndex,
+        super::super::core::keys::v1alpha1::AddressIndex,
     >,
     #[prost(bool, tag = "2")]
     pub display_confirm: bool,
@@ -267,7 +265,7 @@ pub struct EphemeralAddressRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EphemeralAddressResponse {
     #[prost(message, optional, tag = "1")]
-    pub address: ::core::option::Option<super::super::core::crypto::v1alpha1::Address>,
+    pub address: ::core::option::Option<super::super::core::keys::v1alpha1::Address>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -275,12 +273,12 @@ pub struct BalancesRequest {
     /// If present, filter balances to only include the account specified by the `AddressIndex`.
     #[prost(message, optional, tag = "1")]
     pub account_filter: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AddressIndex,
+        super::super::core::keys::v1alpha1::AddressIndex,
     >,
     /// If present, filter balances to only include the specified asset ID.
     #[prost(message, optional, tag = "2")]
     pub asset_id_filter: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AssetId,
+        super::super::core::asset::v1alpha1::AssetId,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -288,10 +286,10 @@ pub struct BalancesRequest {
 pub struct BalancesResponse {
     #[prost(message, optional, tag = "1")]
     pub account: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AddressIndex,
+        super::super::core::keys::v1alpha1::AddressIndex,
     >,
     #[prost(message, optional, tag = "2")]
-    pub balance: ::core::option::Option<super::super::core::crypto::v1alpha1::Value>,
+    pub balance: ::core::option::Option<super::super::core::asset::v1alpha1::Value>,
 }
 /// Scaffolding for bearer-token authentication for the ViewService.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -304,9 +302,7 @@ pub struct ViewAuthToken {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ViewAuthRequest {
     #[prost(message, optional, tag = "1")]
-    pub fvk: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::FullViewingKey,
-    >,
+    pub fvk: ::core::option::Option<super::super::core::keys::v1alpha1::FullViewingKey>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -321,7 +317,7 @@ pub struct StatusRequest {
     /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountGroupId,
+        super::super::core::keys::v1alpha1::AccountGroupId,
     >,
 }
 /// Returns the status of the view service and whether it is synchronized with the chain state.
@@ -342,7 +338,7 @@ pub struct StatusStreamRequest {
     /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountGroupId,
+        super::super::core::keys::v1alpha1::AccountGroupId,
     >,
 }
 /// A streaming sync status update
@@ -366,23 +362,23 @@ pub struct NotesRequest {
     pub include_spent: bool,
     /// If set, only return notes with the specified asset id.
     #[prost(message, optional, tag = "3")]
-    pub asset_id: ::core::option::Option<super::super::core::crypto::v1alpha1::AssetId>,
-    /// If set, only return notes with the specified address incore.dex.v1alpha1.
+    pub asset_id: ::core::option::Option<super::super::core::asset::v1alpha1::AssetId>,
+    /// If set, only return notes with the specified address incore.component.dex.v1alpha1.
     #[prost(message, optional, tag = "4")]
     pub address_index: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AddressIndex,
+        super::super::core::keys::v1alpha1::AddressIndex,
     >,
     /// If set, stop returning notes once the total exceeds this amount.
     ///
     /// Ignored if `asset_id` is unset or if `include_spent` is set.
     #[prost(message, optional, tag = "6")]
     pub amount_to_spend: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::Amount,
+        super::super::core::num::v1alpha1::Amount,
     >,
     /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountGroupId,
+        super::super::core::keys::v1alpha1::AccountGroupId,
     >,
 }
 /// A query for notes to be used for voting on a proposal.
@@ -395,12 +391,12 @@ pub struct NotesForVotingRequest {
     /// If set, only return notes with the specified asset id.
     #[prost(message, optional, tag = "3")]
     pub address_index: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AddressIndex,
+        super::super::core::keys::v1alpha1::AddressIndex,
     >,
     /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountGroupId,
+        super::super::core::keys::v1alpha1::AccountGroupId,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -409,7 +405,7 @@ pub struct WitnessRequest {
     /// The note commitments to obtain auth paths for.
     #[prost(message, repeated, tag = "2")]
     pub note_commitments: ::prost::alloc::vec::Vec<
-        super::super::core::crypto::v1alpha1::StateCommitment,
+        super::super::crypto::tct::v1alpha1::StateCommitment,
     >,
     /// The transaction plan to witness
     #[prost(message, optional, tag = "3")]
@@ -419,7 +415,7 @@ pub struct WitnessRequest {
     /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountGroupId,
+        super::super::core::keys::v1alpha1::AccountGroupId,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -461,7 +457,7 @@ pub struct AssetsRequest {
     /// Include these specific denominations in the response.
     #[prost(message, repeated, tag = "2")]
     pub include_specific_denominations: ::prost::alloc::vec::Vec<
-        super::super::core::crypto::v1alpha1::Denom,
+        super::super::core::asset::v1alpha1::Denom,
     >,
     /// Include all delegation tokens, to any validator, in the response.
     #[prost(bool, tag = "3")]
@@ -485,7 +481,7 @@ pub struct AssetsRequest {
 pub struct AssetsResponse {
     #[prost(message, optional, tag = "2")]
     pub denom_metadata: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::DenomMetadata,
+        super::super::core::asset::v1alpha1::DenomMetadata,
     >,
 }
 /// Requests the current chain parameters from the view service.
@@ -497,7 +493,7 @@ pub struct ChainParametersRequest {}
 pub struct ChainParametersResponse {
     #[prost(message, optional, tag = "1")]
     pub parameters: ::core::option::Option<
-        super::super::core::chain::v1alpha1::ChainParameters,
+        super::super::core::component::chain::v1alpha1::ChainParameters,
     >,
 }
 /// Requests the current FMD parameters from the view service.
@@ -509,7 +505,7 @@ pub struct FmdParametersRequest {}
 pub struct FmdParametersResponse {
     #[prost(message, optional, tag = "1")]
     pub parameters: ::core::option::Option<
-        super::super::core::chain::v1alpha1::FmdParameters,
+        super::super::core::component::chain::v1alpha1::FmdParameters,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -517,7 +513,7 @@ pub struct FmdParametersResponse {
 pub struct NoteByCommitmentRequest {
     #[prost(message, optional, tag = "2")]
     pub note_commitment: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::StateCommitment,
+        super::super::crypto::tct::v1alpha1::StateCommitment,
     >,
     /// If set to true, waits to return until the requested note is detected.
     #[prost(bool, tag = "3")]
@@ -525,7 +521,7 @@ pub struct NoteByCommitmentRequest {
     /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountGroupId,
+        super::super::core::keys::v1alpha1::AccountGroupId,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -539,7 +535,7 @@ pub struct NoteByCommitmentResponse {
 pub struct SwapByCommitmentRequest {
     #[prost(message, optional, tag = "2")]
     pub swap_commitment: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::StateCommitment,
+        super::super::crypto::tct::v1alpha1::StateCommitment,
     >,
     /// If set to true, waits to return until the requested swap is detected.
     #[prost(bool, tag = "3")]
@@ -547,7 +543,7 @@ pub struct SwapByCommitmentRequest {
     /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountGroupId,
+        super::super::core::keys::v1alpha1::AccountGroupId,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -562,7 +558,7 @@ pub struct UnclaimedSwapsRequest {
     /// Identifies the account group to query.
     #[prost(message, optional, tag = "1")]
     pub account_group_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountGroupId,
+        super::super::core::keys::v1alpha1::AccountGroupId,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -576,14 +572,14 @@ pub struct UnclaimedSwapsResponse {
 pub struct NullifierStatusRequest {
     #[prost(message, optional, tag = "2")]
     pub nullifier: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::Nullifier,
+        super::super::core::component::sct::v1alpha1::Nullifier,
     >,
     #[prost(bool, tag = "3")]
     pub await_detection: bool,
     /// Identifies the account group to query.
     #[prost(message, optional, tag = "14")]
     pub account_group_id: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AccountGroupId,
+        super::super::core::keys::v1alpha1::AccountGroupId,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -659,7 +655,7 @@ pub struct NotesForVotingResponse {
     pub note_record: ::core::option::Option<SpendableNoteRecord>,
     #[prost(message, optional, tag = "2")]
     pub identity_key: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::IdentityKey,
+        super::super::core::keys::v1alpha1::IdentityKey,
     >,
 }
 /// A note plaintext with associated metadata about its status.
@@ -669,20 +665,22 @@ pub struct SpendableNoteRecord {
     /// The note commitment, identifying the note.
     #[prost(message, optional, tag = "1")]
     pub note_commitment: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::StateCommitment,
+        super::super::crypto::tct::v1alpha1::StateCommitment,
     >,
     /// The note plaintext itself.
     #[prost(message, optional, tag = "2")]
-    pub note: ::core::option::Option<super::super::core::crypto::v1alpha1::Note>,
-    /// A precomputed decryption of the note's address incore.dex.v1alpha1.
+    pub note: ::core::option::Option<
+        super::super::core::component::shielded_pool::v1alpha1::Note,
+    >,
+    /// A precomputed decryption of the note's address incore.component.dex.v1alpha1.
     #[prost(message, optional, tag = "3")]
     pub address_index: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::AddressIndex,
+        super::super::core::keys::v1alpha1::AddressIndex,
     >,
     /// The note's nullifier.
     #[prost(message, optional, tag = "4")]
     pub nullifier: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::Nullifier,
+        super::super::core::component::sct::v1alpha1::Nullifier,
     >,
     /// The height at which the note was created.
     #[prost(uint64, tag = "5")]
@@ -695,31 +693,37 @@ pub struct SpendableNoteRecord {
     pub position: u64,
     /// The source of the note (a tx hash or otherwise)
     #[prost(message, optional, tag = "8")]
-    pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
+    pub source: ::core::option::Option<
+        super::super::core::component::chain::v1alpha1::NoteSource,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapRecord {
     #[prost(message, optional, tag = "1")]
     pub swap_commitment: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::StateCommitment,
+        super::super::crypto::tct::v1alpha1::StateCommitment,
     >,
     #[prost(message, optional, tag = "2")]
-    pub swap: ::core::option::Option<super::super::core::dex::v1alpha1::SwapPlaintext>,
+    pub swap: ::core::option::Option<
+        super::super::core::component::dex::v1alpha1::SwapPlaintext,
+    >,
     #[prost(uint64, tag = "3")]
     pub position: u64,
     #[prost(message, optional, tag = "4")]
     pub nullifier: ::core::option::Option<
-        super::super::core::crypto::v1alpha1::Nullifier,
+        super::super::core::component::sct::v1alpha1::Nullifier,
     >,
     #[prost(message, optional, tag = "5")]
     pub output_data: ::core::option::Option<
-        super::super::core::dex::v1alpha1::BatchSwapOutputData,
+        super::super::core::component::dex::v1alpha1::BatchSwapOutputData,
     >,
     #[prost(uint64, tag = "6")]
     pub height_claimed: u64,
     #[prost(message, optional, tag = "7")]
-    pub source: ::core::option::Option<super::super::core::chain::v1alpha1::NoteSource>,
+    pub source: ::core::option::Option<
+        super::super::core::component::chain::v1alpha1::NoteSource,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -727,12 +731,12 @@ pub struct OwnedPositionIdsRequest {
     /// If present, return only positions with this position state.
     #[prost(message, optional, tag = "1")]
     pub position_state: ::core::option::Option<
-        super::super::core::dex::v1alpha1::PositionState,
+        super::super::core::component::dex::v1alpha1::PositionState,
     >,
     /// If present, return only positions for this trading pair.
     #[prost(message, optional, tag = "2")]
     pub trading_pair: ::core::option::Option<
-        super::super::core::dex::v1alpha1::TradingPair,
+        super::super::core::component::dex::v1alpha1::TradingPair,
     >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -740,7 +744,7 @@ pub struct OwnedPositionIdsRequest {
 pub struct OwnedPositionIdsResponse {
     #[prost(message, optional, tag = "1")]
     pub position_id: ::core::option::Option<
-        super::super::core::dex::v1alpha1::PositionId,
+        super::super::core::component::dex::v1alpha1::PositionId,
     >,
 }
 /// Generated client implementations.
@@ -840,7 +844,7 @@ pub mod view_protocol_service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        /// Stream sync status updates until the view service has caught up with the core.chain.v1alpha1.
+        /// Stream sync status updates until the view service has caught up with the chain.
         /// Returns a stream of `StatusStreamResponse`s.
         pub async fn status_stream(
             &mut self,
@@ -864,7 +868,7 @@ pub mod view_protocol_service_client {
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
-        /// Queries for notes that have been accepted by the core.chain.v1alpha1.
+        /// Queries for notes that have been accepted by the chain.
         /// Returns a stream of `NotesResponse`s.
         pub async fn notes(
             &mut self,
@@ -1431,7 +1435,7 @@ pub mod view_protocol_service_server {
             >
             + Send
             + 'static;
-        /// Stream sync status updates until the view service has caught up with the core.chain.v1alpha1.
+        /// Stream sync status updates until the view service has caught up with the chain.
         /// Returns a stream of `StatusStreamResponse`s.
         async fn status_stream(
             &self,
@@ -1443,7 +1447,7 @@ pub mod view_protocol_service_server {
             >
             + Send
             + 'static;
-        /// Queries for notes that have been accepted by the core.chain.v1alpha1.
+        /// Queries for notes that have been accepted by the chain.
         /// Returns a stream of `NotesResponse`s.
         async fn notes(
             &self,

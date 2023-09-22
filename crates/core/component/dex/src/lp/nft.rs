@@ -1,5 +1,5 @@
 use penumbra_asset::asset;
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use regex::Regex;
 
 use super::position::{Id, State};

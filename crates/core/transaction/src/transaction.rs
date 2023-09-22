@@ -5,7 +5,6 @@ use std::{
 
 use anyhow::{Context, Error};
 use ark_ff::Zero;
-use bytes::Bytes;
 use decaf377::Fr;
 use decaf377_fmd::Clue;
 use decaf377_rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes};
@@ -542,10 +541,10 @@ impl From<TransactionBody> for pbt::TransactionBody {
     fn from(msg: TransactionBody) -> Self {
         let encrypted_memo: pbt::MemoData = match msg.memo {
             Some(memo) => pbt::MemoData {
-                encrypted_memo: bytes::Bytes::copy_from_slice(&memo.0),
+                encrypted_memo: memo.0.to_vec(),
             },
             None => pbt::MemoData {
-                encrypted_memo: Bytes::default(),
+                encrypted_memo: Default::default(),
             },
         };
 
@@ -631,7 +630,7 @@ impl From<Transaction> for pbt::Transaction {
         pbt::Transaction {
             body: Some(msg.transaction_body.into()),
             anchor: Some(msg.anchor.into()),
-            binding_sig: Bytes::copy_from_slice(&sig_bytes),
+            binding_sig: sig_bytes.to_vec(),
         }
     }
 }

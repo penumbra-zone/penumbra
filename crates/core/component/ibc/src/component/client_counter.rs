@@ -3,7 +3,7 @@ use ibc_types::core::client::Height;
 use ibc_types::core::connection::{ChainId, ConnectionId};
 use ibc_types::lightclients::tendermint::TrustThreshold;
 use penumbra_chain::component::PENUMBRA_PROOF_SPECS;
-use penumbra_proto::{core::ibc::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::ibc::v1alpha1 as pb, DomainType, TypeUrl};
 
 #[derive(Clone, Debug)]
 pub struct ClientCounter(pub u64);

@@ -1,6 +1,6 @@
 use penumbra_asset::{Balance, Value};
 use penumbra_num::Amount;
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
 
 use crate::TradingPair;
 

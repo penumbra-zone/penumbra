@@ -18,7 +18,8 @@ use penumbra_asset::{asset, asset::DenomMetadata, Value};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
-    core::ibc::v1alpha1::FungibleTokenPacketData, StateReadProto, StateWriteProto,
+    penumbra::core::component::ibc::v1alpha1::FungibleTokenPacketData, StateReadProto,
+    StateWriteProto,
 };
 use penumbra_shielded_pool::component::{NoteManager, SupplyWrite};
 use penumbra_storage::{StateRead, StateWrite};

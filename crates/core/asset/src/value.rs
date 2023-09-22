@@ -12,7 +12,7 @@ use std::{
 
 use anyhow::Context;
 use penumbra_num::{Amount, AmountVar};
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::asset::v1alpha1 as pb, DomainType, TypeUrl};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 

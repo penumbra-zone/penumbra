@@ -1,4 +1,4 @@
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::keys::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::keys::{AccountGroupId, AddressIndex};

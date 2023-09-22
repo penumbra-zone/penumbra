@@ -30,7 +30,7 @@ use penumbra_proto::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,
         GetStatusRequest,
     },
-    core::crypto::v1alpha1 as pbc,
+    core::keys::v1alpha1 as pbc,
     view::v1alpha1::{
         self as pb,
         view_protocol_service_client::ViewProtocolServiceClient,

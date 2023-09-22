@@ -178,7 +178,7 @@ impl ViewServer {
         &mut self,
         compact_block: JsValue,
     ) -> WasmResult<ScanBlockResult> {
-        let block_proto: penumbra_proto::core::chain::v1alpha1::CompactBlock =
+        let block_proto: penumbra_proto::core::component::compact_block::v1alpha1::CompactBlock =
             serde_wasm_bindgen::from_value(compact_block)?;
 
         let block: CompactBlock = block_proto.try_into()?;

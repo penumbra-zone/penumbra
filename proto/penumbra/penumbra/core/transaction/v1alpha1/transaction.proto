@@ -1,12 +1,19 @@
 syntax = "proto3";
-
 package penumbra.core.transaction.v1alpha1;
 
-import "penumbra/core/crypto/v1alpha1/crypto.proto";
-import "penumbra/core/stake/v1alpha1/stake.proto";
-import "penumbra/core/ibc/v1alpha1/ibc.proto";
-import "penumbra/core/dex/v1alpha1/dex.proto";
-import "penumbra/core/governance/v1alpha1/governance.proto";
+import "penumbra/crypto/tct/v1alpha1/tct.proto";
+import "penumbra/crypto/decaf377_fmd/v1alpha1/decaf377_fmd.proto";
+import "penumbra/crypto/decaf377_rdsa/v1alpha1/decaf377_rdsa.proto";
+import "penumbra/core/asset/v1alpha1/asset.proto";
+import "penumbra/core/keys/v1alpha1/keys.proto";
+import "penumbra/core/component/sct/v1alpha1/sct.proto";
+import "penumbra/core/component/chain/v1alpha1/chain.proto";
+import "penumbra/core/component/fee/v1alpha1/fee.proto";
+import "penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto";
+import "penumbra/core/component/dex/v1alpha1/dex.proto";
+import "penumbra/core/component/ibc/v1alpha1/ibc.proto";
+import "penumbra/core/component/stake/v1alpha1/stake.proto";
+import "penumbra/core/component/governance/v1alpha1/governance.proto";
 
 // A Penumbra transaction.
 message Transaction {
@@ -15,16 +22,12 @@ message Transaction {
   bytes binding_sig = 2;
   // The root of some previous state of the state commitment tree, used as an anchor for all
   // ZK state transition proofs.
-  crypto.v1alpha1.MerkleRoot anchor = 3;
+  crypto.tct.v1alpha1.MerkleRoot anchor = 3;
 }
 
 // A transaction ID, the Sha256 hash of a transaction.
 message Id {
   bytes hash = 1;
-}
-
-message EffectHash {
-  bytes inner = 1;
 }
 
 // The body of a transaction.
@@ -34,7 +37,7 @@ message TransactionBody {
   // Parameters determining if a transaction should be accepted by this chain.
   TransactionParameters transaction_parameters = 2;
   // The transaction fee.
-  crypto.v1alpha1.Fee fee = 3;
+  component.fee.v1alpha1.Fee fee = 3;
   // Detection data for use with Fuzzy Message Detection
   DetectionData detection_data = 4;
   // Sub-message containing memo ciphertext if a memo was added to the transaction.
@@ -62,46 +65,47 @@ message TransactionParameters {
 // Detection data used by a detection server performing Fuzzy Message Detection.
 message DetectionData {
   // A list of clues for use with Fuzzy Message Detection.
-  repeated crypto.v1alpha1.Clue fmd_clues = 4;
+  repeated crypto.decaf377_fmd.v1alpha1.Clue fmd_clues = 4;
 }
 
 // A state change performed by a transaction.
 message Action {
   oneof action {
-    Spend spend = 1;
-    Output output = 2;
-    dex.v1alpha1.Swap swap = 3;
-    dex.v1alpha1.SwapClaim swap_claim = 4;
+    // Common actions have numbers < 15, to save space.
+    component.shielded_pool.v1alpha1.Spend spend = 1;
+    component.shielded_pool.v1alpha1.Output output = 2;
+    component.dex.v1alpha1.Swap swap = 3;
+    component.dex.v1alpha1.SwapClaim swap_claim = 4;
 
     // Uncommon actions have numbers > 15.
 
-    stake.v1alpha1.ValidatorDefinition validator_definition = 16;
-    ibc.v1alpha1.IbcAction ibc_action = 17;
+    component.stake.v1alpha1.ValidatorDefinition validator_definition = 16;
+    component.ibc.v1alpha1.IbcAction ibc_action = 17;
 
     // Governance:
-    governance.v1alpha1.ProposalSubmit proposal_submit = 18;
-    governance.v1alpha1.ProposalWithdraw proposal_withdraw = 19;
-    governance.v1alpha1.ValidatorVote validator_vote = 20;
-    governance.v1alpha1.DelegatorVote delegator_vote = 21;
-    governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
+    component.governance.v1alpha1.ProposalSubmit proposal_submit = 18;
+    component.governance.v1alpha1.ProposalWithdraw proposal_withdraw = 19;
+    component.governance.v1alpha1.ValidatorVote validator_vote = 20;
+    component.governance.v1alpha1.DelegatorVote delegator_vote = 21;
+    component.governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
 
     // Positions
-    dex.v1alpha1.PositionOpen position_open = 30;
-    dex.v1alpha1.PositionClose position_close = 31;
-    dex.v1alpha1.PositionWithdraw position_withdraw = 32;
-    dex.v1alpha1.PositionRewardClaim position_reward_claim = 34;
+    component.dex.v1alpha1.PositionOpen position_open = 30;
+    component.dex.v1alpha1.PositionClose position_close = 31;
+    component.dex.v1alpha1.PositionWithdraw position_withdraw = 32;
+    component.dex.v1alpha1.PositionRewardClaim position_reward_claim = 34;
 
     // (un)delegation
-    stake.v1alpha1.Delegate delegate = 40;
-    stake.v1alpha1.Undelegate undelegate = 41;
-    stake.v1alpha1.UndelegateClaim undelegate_claim = 42;
+    component.stake.v1alpha1.Delegate delegate = 40;
+    component.stake.v1alpha1.Undelegate undelegate = 41;
+    component.stake.v1alpha1.UndelegateClaim undelegate_claim = 42;
 
     // DAO
-    governance.v1alpha1.DaoSpend dao_spend = 50;
-    governance.v1alpha1.DaoOutput dao_output = 51;
-    governance.v1alpha1.DaoDeposit dao_deposit = 52;
+    component.governance.v1alpha1.DaoSpend dao_spend = 50;
+    component.governance.v1alpha1.DaoOutput dao_output = 51;
+    component.governance.v1alpha1.DaoDeposit dao_deposit = 52;
 
-    ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
+    component.ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
   }
 }
 
@@ -113,27 +117,23 @@ message TransactionPerspective {
   repeated NullifierWithNote spend_nullifiers = 2;
   // The openings of note commitments referred to in the transaction
   // but not included in the transaction.
-  repeated crypto.v1alpha1.Note advice_notes = 3;
+  repeated component.shielded_pool.v1alpha1.Note advice_notes = 3;
   // Any relevant address views.
-  repeated crypto.v1alpha1.AddressView address_views = 4;
+  repeated keys.v1alpha1.AddressView address_views = 4;
   // Any relevant denoms for viewed assets.
-  repeated crypto.v1alpha1.DenomMetadata denoms = 5;
+  repeated asset.v1alpha1.DenomMetadata denoms = 5;
   // The transaction ID associated with this TransactionPerspective
   transaction.v1alpha1.Id transaction_id = 6;
 }
 
-message PayloadKey {
-  bytes inner = 1;
-}
-
 message PayloadKeyWithCommitment {
-  PayloadKey payload_key = 1;
-  crypto.v1alpha1.StateCommitment commitment = 2;
+  keys.v1alpha1.PayloadKey payload_key = 1;
+  crypto.tct.v1alpha1.StateCommitment commitment = 2;
 }
 
 message NullifierWithNote {
-  crypto.v1alpha1.Nullifier nullifier = 1;
-  crypto.v1alpha1.Note note = 2;
+  component.sct.v1alpha1.Nullifier nullifier = 1;
+  component.shielded_pool.v1alpha1.Note note = 2;
 }
 
 // View of a Penumbra transaction.
@@ -144,7 +144,7 @@ message TransactionView {
   bytes binding_sig = 2;
   // The root of some previous state of the state commitment tree, used as an anchor for all
   // ZK state transition proofs.
-  crypto.v1alpha1.MerkleRoot anchor = 3;
+  crypto.tct.v1alpha1.MerkleRoot anchor = 3;
 }
 
 message TransactionBodyView {
@@ -153,7 +153,7 @@ message TransactionBodyView {
   // Transaction parameters.
   TransactionParameters transaction_parameters = 2;
   // The transaction fee.
-  crypto.v1alpha1.Fee fee = 3;
+  component.fee.v1alpha1.Fee fee = 3;
   // The detection data in this transaction, only populated if
   // there are outputs in the actions of this transaction.
   DetectionData detection_data = 4;
@@ -166,146 +166,62 @@ message TransactionBodyView {
 message ActionView {
   oneof action_view {
     // Action types with visible/opaque variants
-    SpendView spend = 1;
-    OutputView output = 2;
-    dex.v1alpha1.SwapView swap = 3;
-    dex.v1alpha1.SwapClaimView swap_claim = 4;
+    component.shielded_pool.v1alpha1.SpendView spend = 1;
+    component.shielded_pool.v1alpha1.OutputView output = 2;
+    component.dex.v1alpha1.SwapView swap = 3;
+    component.dex.v1alpha1.SwapClaimView swap_claim = 4;
+
     // Action types without visible/opaque variants
-    stake.v1alpha1.ValidatorDefinition validator_definition = 16;
-    ibc.v1alpha1.IbcAction ibc_action = 17;
+    component.stake.v1alpha1.ValidatorDefinition validator_definition = 16;
+    component.ibc.v1alpha1.IbcAction ibc_action = 17;
+
     // Governance:
-    governance.v1alpha1.ProposalSubmit proposal_submit = 18;
-    governance.v1alpha1.ProposalWithdraw proposal_withdraw = 19;
-    governance.v1alpha1.ValidatorVote validator_vote = 20;
-    DelegatorVoteView delegator_vote = 21;
-    governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
-    dex.v1alpha1.PositionOpen position_open = 30;
-    dex.v1alpha1.PositionClose position_close = 31;
-    dex.v1alpha1.PositionWithdraw position_withdraw = 32;
-    dex.v1alpha1.PositionRewardClaim position_reward_claim = 34;
-    stake.v1alpha1.Delegate delegate = 41;
-    stake.v1alpha1.Undelegate undelegate = 42;
+    component.governance.v1alpha1.ProposalSubmit proposal_submit = 18;
+    component.governance.v1alpha1.ProposalWithdraw proposal_withdraw = 19;
+    component.governance.v1alpha1.ValidatorVote validator_vote = 20;
+    component.governance.v1alpha1.DelegatorVoteView delegator_vote = 21;
+    component.governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
+
+    component.dex.v1alpha1.PositionOpen position_open = 30;
+    component.dex.v1alpha1.PositionClose position_close = 31;
+    component.dex.v1alpha1.PositionWithdraw position_withdraw = 32;
+    component.dex.v1alpha1.PositionRewardClaim position_reward_claim = 34;
+
+    component.stake.v1alpha1.Delegate delegate = 41;
+    component.stake.v1alpha1.Undelegate undelegate = 42;
     // DAO
-    governance.v1alpha1.DaoSpend dao_spend = 50;
-    governance.v1alpha1.DaoOutput dao_output = 51;
-    governance.v1alpha1.DaoDeposit dao_deposit = 52;
+    component.governance.v1alpha1.DaoSpend dao_spend = 50;
+    component.governance.v1alpha1.DaoOutput dao_output = 51;
+    component.governance.v1alpha1.DaoDeposit dao_deposit = 52;
+
     // TODO: we have no way to recover the opening of the undelegate_claim's
     // balance commitment, and can only infer the value from looking at the rest
     // of the transaction. is that fine?
-    stake.v1alpha1.UndelegateClaim undelegate_claim = 43;
-    ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
+    component.stake.v1alpha1.UndelegateClaim undelegate_claim = 43;
+    component.ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
 
   }
-}
-
-message SpendView {
-  message Visible {
-    Spend spend = 1;
-    crypto.v1alpha1.NoteView note = 2;
-  }
-  message Opaque {
-    Spend spend = 1;
-  }
-  oneof spend_view {
-    Visible visible = 1;
-    Opaque opaque = 2;
-  }
-}
-
-message DelegatorVoteView {
-  message Visible {
-    governance.v1alpha1.DelegatorVote delegator_vote = 1;
-    crypto.v1alpha1.NoteView note = 2;
-  }
-  message Opaque {
-    governance.v1alpha1.DelegatorVote delegator_vote = 1;
-  }
-  oneof delegator_vote {
-    Visible visible = 1;
-    Opaque opaque = 2;
-  }
-}
-
-message OutputView {
-  message Visible {
-    Output output = 1;
-    crypto.v1alpha1.NoteView note = 2;
-    PayloadKey payload_key = 3;
-  }
-
-  message Opaque {
-    Output output = 1;
-  }
-  oneof output_view {
-    Visible visible = 1;
-    Opaque opaque = 2;
-  }
-}
-
-// Spends a shielded note.
-message Spend {
-  // The effecting data of the spend.
-  SpendBody body = 1;
-  // The authorizing signature for the spend.
-  crypto.v1alpha1.SpendAuthSignature auth_sig = 2;
-  // The proof that the spend is well-formed is authorizing data.
-  crypto.v1alpha1.ZKSpendProof proof = 3;
-}
-
-// The body of a spend description, containing only the effecting data
-// describing changes to the ledger, and not the authorizing data that allows
-// those changes to be performed.
-message SpendBody {
-  // A commitment to the value of the input note.
-  crypto.v1alpha1.BalanceCommitment balance_commitment = 1;
-  // The nullifier of the input note.
-  bytes nullifier = 3;
-  // The randomized validating key for the spend authorization signature.
-  bytes rk = 4;
-}
-
-// Creates a new shielded note.
-message Output {
-  // The effecting data for the output.
-  OutputBody body = 1;
-  // The output proof is authorizing data.
-  crypto.v1alpha1.ZKOutputProof proof = 2;
-}
-
-// The body of an output description, containing only the effecting data
-// describing changes to the ledger, and not the authorizing data that allows
-// those changes to be performed.
-message OutputBody {
-  // The minimal data required to scan and process the new output note.
-  crypto.v1alpha1.NotePayload note_payload = 1;
-  // A commitment to the value of the output note. 32 bytes.
-  crypto.v1alpha1.BalanceCommitment balance_commitment = 2;
-  // An encrypted key for decrypting the memo.
-  bytes wrapped_memo_key = 3;
-  // The key material used for note encryption, wrapped in encryption to the
-  // sender's outgoing viewing key. 80 bytes.
-  bytes ovk_wrapped_key = 4;
 }
 
 // The data required to authorize a transaction plan.
 message AuthorizationData {
     // The computed auth hash for the approved transaction plan.
-    crypto.v1alpha1.EffectHash effect_hash = 1;
+    component.chain.v1alpha1.EffectHash effect_hash = 1;
     // The required spend authorizations, returned in the same order as the
     // Spend actions in the original request.
-    repeated crypto.v1alpha1.SpendAuthSignature spend_auths = 2;
+    repeated crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature spend_auths = 2;
     // The required delegator vote authorizations, returned in the same order as the
     // DelegatorVote actions in the original request.
-    repeated crypto.v1alpha1.SpendAuthSignature delegator_vote_auths = 3;
+    repeated crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature delegator_vote_auths = 3;
 }
 
 // The data required for proving when building a transaction from a plan.
 message WitnessData {
   // The anchor for the state transition proofs.
-  crypto.v1alpha1.MerkleRoot anchor = 1;
+  crypto.tct.v1alpha1.MerkleRoot anchor = 1;
   // The auth paths for the notes the transaction spends, in the
   // same order as the spends in the transaction plan.
-  repeated crypto.v1alpha1.StateCommitmentProof state_commitment_proofs = 2;
+  repeated crypto.tct.v1alpha1.StateCommitmentProof state_commitment_proofs = 2;
 }
 
 // Describes a planned transaction. Permits clients to prepare a transaction
@@ -318,7 +234,7 @@ message TransactionPlan {
     uint64 expiry_height = 2;
     // The name of the network for which this TransactionPlan was built.
     string chain_id = 3;
-    crypto.v1alpha1.Fee fee = 4;
+    component.fee.v1alpha1.Fee fee = 4;
     repeated CluePlan clue_plans = 5;
     // Planning interface for constructing an optional Memo for the Transaction.
     MemoPlan memo_plan = 6;
@@ -330,50 +246,50 @@ message TransactionPlan {
 // themselves.
 message ActionPlan {
     oneof action {
-        SpendPlan spend = 1;
-        OutputPlan output = 2;
-        dex.v1alpha1.SwapPlan swap = 3;
-        dex.v1alpha1.SwapClaimPlan swap_claim = 4;
+        component.shielded_pool.v1alpha1.SpendPlan spend = 1;
+        component.shielded_pool.v1alpha1.OutputPlan output = 2;
+        component.dex.v1alpha1.SwapPlan swap = 3;
+        component.dex.v1alpha1.SwapClaimPlan swap_claim = 4;
 
         // This is just a message relayed to the chain.
-        stake.v1alpha1.ValidatorDefinition validator_definition = 16;
+        component.stake.v1alpha1.ValidatorDefinition validator_definition = 16;
         // This is just a message relayed to the chain.
-        ibc.v1alpha1.IbcAction ibc_action = 17;
+        component.ibc.v1alpha1.IbcAction ibc_action = 17;
         // Governance:
-        governance.v1alpha1.ProposalSubmit proposal_submit = 18;
-        governance.v1alpha1.ProposalWithdraw proposal_withdraw = 19;
-        governance.v1alpha1.ValidatorVote validator_vote = 20;
-        governance.v1alpha1.DelegatorVotePlan delegator_vote = 21;
-        governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
+        component.governance.v1alpha1.ProposalSubmit proposal_submit = 18;
+        component.governance.v1alpha1.ProposalWithdraw proposal_withdraw = 19;
+        component.governance.v1alpha1.ValidatorVote validator_vote = 20;
+        component.governance.v1alpha1.DelegatorVotePlan delegator_vote = 21;
+        component.governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
 
-        ibc.v1alpha1.Ics20Withdrawal withdrawal = 23;
+        component.ibc.v1alpha1.Ics20Withdrawal withdrawal = 23;
 
-        dex.v1alpha1.PositionOpen position_open = 30;
-        dex.v1alpha1.PositionClose position_close = 31;
+        component.dex.v1alpha1.PositionOpen position_open = 30;
+        component.dex.v1alpha1.PositionClose position_close = 31;
 
         // The position withdraw/reward claim actions require balance information so they have Plan types.
-        dex.v1alpha1.PositionWithdrawPlan position_withdraw = 32;
-        dex.v1alpha1.PositionRewardClaimPlan position_reward_claim = 34;
+        component.dex.v1alpha1.PositionWithdrawPlan position_withdraw = 32;
+        component.dex.v1alpha1.PositionRewardClaimPlan position_reward_claim = 34;
 
         // We don't need any extra information (yet) to understand delegations,
         // because we don't yet use flow encryption.
-        stake.v1alpha1.Delegate delegate = 40;
+        component.stake.v1alpha1.Delegate delegate = 40;
         // We don't need any extra information (yet) to understand undelegations,
         // because we don't yet use flow encryption.
-        stake.v1alpha1.Undelegate undelegate = 41;
-        stake.v1alpha1.UndelegateClaimPlan undelegate_claim = 42;
+        component.stake.v1alpha1.Undelegate undelegate = 41;
+        component.stake.v1alpha1.UndelegateClaimPlan undelegate_claim = 42;
 
         // DAO
-        governance.v1alpha1.DaoSpend dao_spend = 50;
-        governance.v1alpha1.DaoOutput dao_output = 51;
-        governance.v1alpha1.DaoDeposit dao_deposit = 52;
+        component.governance.v1alpha1.DaoSpend dao_spend = 50;
+        component.governance.v1alpha1.DaoOutput dao_output = 51;
+        component.governance.v1alpha1.DaoDeposit dao_deposit = 52;
     }
 }
 
 // Describes a plan for forming a `Clue`.
 message CluePlan {
   // The address.
-  crypto.v1alpha1.Address address = 1;
+  keys.v1alpha1.Address address = 1;
   // The random seed to use for the clue plan.
   bytes rseed = 2;
   // The bits of precision.
@@ -391,7 +307,7 @@ message MemoPlan {
 message MemoCiphertext { bytes inner = 1; }
 
 message MemoPlaintext {
-  crypto.v1alpha1.Address sender = 1;
+  keys.v1alpha1.Address sender = 1;
   string text = 2;
 }
 
@@ -408,36 +324,6 @@ message MemoView {
     Visible visible = 1;
     Opaque opaque = 2;
   }
-}
-
-message SpendPlan {
-    // The plaintext note we plan to spend.
-    crypto.v1alpha1.Note note = 1;
-    // The position of the note we plan to spend.
-    uint64 position = 2;
-    // The randomizer to use for the spend.
-    bytes randomizer = 3;
-    // The blinding factor to use for the value commitment.
-    bytes value_blinding = 4;
-    // The first blinding factor to use for the ZK spend proof.
-    bytes proof_blinding_r = 5;
-    // The second blinding factor to use for the ZK spend proof.
-    bytes proof_blinding_s = 6;
-}
-
-message OutputPlan {
-    // The value to send to this output.
-    crypto.v1alpha1.Value value = 1;
-    // The destination address to send it to.
-    crypto.v1alpha1.Address dest_address = 2;
-    // The rseed to use for the new note.
-    bytes rseed = 3;
-    // The blinding factor to use for the value commitment.
-    bytes value_blinding = 4;
-    // The first blinding factor to use for the ZK output proof.
-    bytes proof_blinding_r = 5;
-    // The second blinding factor to use for the ZK output proof.
-    bytes proof_blinding_s = 6;
 }
 
 message GasPrices {

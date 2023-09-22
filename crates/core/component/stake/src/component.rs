@@ -1106,7 +1106,7 @@ pub trait StateReadExt: StateRead {
         // TODO: this is pulling out the whole proto, but only parsing
         // the consensus key.  Alternatively, we could store the consensus
         // keys in a separate index.
-        self.get_proto::<penumbra_proto::penumbra::core::stake::v1alpha1::Validator>(
+        self.get_proto::<penumbra_proto::penumbra::core::component::stake::v1alpha1::Validator>(
             &state_key::validators::by_id(identity_key),
         )
         .map_ok(|opt| {

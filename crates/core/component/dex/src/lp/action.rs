@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use penumbra_asset::{balance, Balance, Value};
-use penumbra_proto::{core::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
 
 use super::{position, position::Position, LpNft};
 

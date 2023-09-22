@@ -4,7 +4,7 @@ use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{r1cs::FqVar, FieldExt, Fq};
-use penumbra_proto::{core::stake::v1alpha1 as pbs, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pbs, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use penumbra_asset::{

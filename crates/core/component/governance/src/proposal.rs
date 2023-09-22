@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 use penumbra_chain::params::ChainParameters;
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 /// A governance proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]

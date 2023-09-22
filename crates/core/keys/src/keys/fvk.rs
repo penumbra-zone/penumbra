@@ -4,7 +4,9 @@ use ark_serialize::CanonicalDeserialize;
 use decaf377::FieldExt;
 use decaf377::{Fq, Fr};
 use once_cell::sync::Lazy;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType, TypeUrl};
+use penumbra_proto::{
+    penumbra::core::keys::v1alpha1 as pb, serializers::bech32str, DomainType, TypeUrl,
+};
 use poseidon377::hash_2;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};

@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 
 use hmac::Hmac;
 use pbkdf2::pbkdf2;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::keys::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use super::{

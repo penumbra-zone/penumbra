@@ -4,7 +4,9 @@ use anyhow::Context;
 use ark_serialize::CanonicalDeserialize;
 use decaf377::Fq;
 use f4jumble::{f4jumble, f4jumble_inv};
-use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType, TypeUrl};
+use penumbra_proto::{
+    penumbra::core::keys::v1alpha1 as pb, serializers::bech32str, DomainType, TypeUrl,
+};
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 

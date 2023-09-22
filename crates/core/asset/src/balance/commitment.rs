@@ -8,7 +8,7 @@ use decaf377::r1cs::ElementVar;
 use decaf377::Fq;
 use decaf377::Fr;
 use once_cell::sync::Lazy;
-use penumbra_proto::core::crypto::v1alpha1 as pb;
+use penumbra_proto::penumbra::core::asset::v1alpha1 as pb;
 use penumbra_proto::{DomainType, TypeUrl};
 
 use crate::value::ValueVar;

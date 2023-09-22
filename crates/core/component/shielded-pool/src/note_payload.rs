@@ -1,10 +1,10 @@
 use anyhow::{Context, Error};
 
-use bytes::Bytes;
-
 use penumbra_keys::keys::FullViewingKey;
 use penumbra_num::Amount;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{
+    penumbra::core::component::shielded_pool::v1alpha1 as pb, DomainType, TypeUrl,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{note, Note, NoteCiphertext};
@@ -82,7 +82,7 @@ impl From<NotePayload> for pb::NotePayload {
     fn from(msg: NotePayload) -> Self {
         pb::NotePayload {
             note_commitment: Some(msg.note_commitment.into()),
-            ephemeral_key: Bytes::copy_from_slice(&msg.ephemeral_key.0),
+            ephemeral_key: msg.ephemeral_key.0.to_vec(),
             encrypted_note: Some(msg.encrypted_note.into()),
         }
     }

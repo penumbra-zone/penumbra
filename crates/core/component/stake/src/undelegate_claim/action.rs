@@ -1,5 +1,5 @@
 use penumbra_asset::balance;
-use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::{IdentityKey, Penalty, UndelegateClaimProof};

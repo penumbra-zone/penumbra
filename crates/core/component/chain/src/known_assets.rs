@@ -1,5 +1,5 @@
 use penumbra_asset::asset::{self, DenomMetadata};
-use penumbra_proto::{core::chain::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::chain::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

@@ -7,7 +7,7 @@ use chacha20poly1305::{
 use decaf377::FieldExt;
 use decaf377_ka as ka;
 use penumbra_asset::balance;
-use penumbra_proto::core::transaction::v1alpha1::{self as pb};
+use penumbra_proto::core::keys::v1alpha1::{self as pb};
 use penumbra_tct::StateCommitment;
 use rand::{CryptoRng, RngCore};
 
@@ -173,7 +173,7 @@ impl From<[u8; 32]> for PayloadKey {
 impl TryFrom<pb::PayloadKey> for PayloadKey {
     type Error = anyhow::Error;
     fn try_from(msg: pb::PayloadKey) -> Result<Self, Self::Error> {
-        msg.inner.as_ref().try_into()
+        msg.inner.as_slice().try_into()
     }
 }
 

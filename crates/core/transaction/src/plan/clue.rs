@@ -63,7 +63,7 @@ impl TryFrom<pb::CluePlan> for CluePlan {
                 .address
                 .ok_or_else(|| anyhow::anyhow!("missing address"))?
                 .try_into()?,
-            rseed: msg.rseed.as_ref().try_into()?,
+            rseed: msg.rseed.as_slice().try_into()?,
             precision_bits: msg.precision_bits.try_into()?,
         })
     }

@@ -137,7 +137,7 @@ pub struct AccountGroupInfo {
     /// The spend verification key component is the `PK` in the FROST I-D.
     #[prost(message, optional, tag = "1")]
     pub full_viewing_key: ::core::option::Option<
-        super::super::super::core::crypto::v1alpha1::FullViewingKey,
+        super::super::super::core::keys::v1alpha1::FullViewingKey,
     >,
     /// Describes the participants in the account group.
     #[prost(message, repeated, tag = "2")]
@@ -153,7 +153,7 @@ pub struct ShardInfo {
     /// The shard verification key, corresponding to `PK_i` in the FROST I-D.
     #[prost(message, optional, tag = "2")]
     pub shard_verification_key: ::core::option::Option<
-        super::super::super::core::crypto::v1alpha1::SpendVerificationKey,
+        super::super::super::core::keys::v1alpha1::SpendVerificationKey,
     >,
     /// The shard operator's identity key, used to identify the operator of this shard.
     #[prost(message, optional, tag = "3")]
@@ -175,7 +175,7 @@ pub struct ShardInfo {
 pub struct RequestIndex {
     #[prost(message, optional, tag = "1")]
     pub effect_hash: ::core::option::Option<
-        super::super::super::core::transaction::v1alpha1::EffectHash,
+        super::super::super::core::component::chain::v1alpha1::EffectHash,
     >,
 }
 /// Identifies a particular signing ceremony.

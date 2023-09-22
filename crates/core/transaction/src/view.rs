@@ -1,5 +1,4 @@
 use anyhow::Context;
-use bytes::Bytes;
 use decaf377_rdsa::{Binding, Signature};
 use penumbra_fee::Fee;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
@@ -209,7 +208,7 @@ impl From<TransactionView> for pbt::TransactionView {
         Self {
             body_view: Some(v.body_view.into()),
             anchor: Some(v.anchor.into()),
-            binding_sig: Bytes::copy_from_slice(&v.binding_sig.to_bytes()),
+            binding_sig: v.binding_sig.to_bytes().to_vec(),
         }
     }
 }

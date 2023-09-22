@@ -3,8 +3,8 @@ use crate::note_record::SpendableNoteRecord;
 use indexed_db_futures::prelude::OpenDbRequest;
 use indexed_db_futures::{IdbDatabase, IdbQuerySource};
 use penumbra_asset::asset::{DenomMetadata, Id};
-use penumbra_proto::core::chain::v1alpha1::{ChainParameters, FmdParameters};
-use penumbra_proto::core::crypto::v1alpha1::StateCommitment;
+use penumbra_proto::core::component::chain::v1alpha1::{ChainParameters, FmdParameters};
+use penumbra_proto::crypto::tct::v1alpha1::StateCommitment;
 use penumbra_proto::view::v1alpha1::{NotesRequest, SwapRecord};
 use penumbra_proto::DomainType;
 use penumbra_sct::Nullifier;
@@ -104,7 +104,8 @@ impl IndexedDBStorage {
         let tx = self.db.transaction_on_one("notes")?;
         let store = tx.object_store("notes")?;
 
-        let note_proto: penumbra_proto::core::crypto::v1alpha1::Note = note.clone().try_into()?;
+        let note_proto: penumbra_proto::core::component::shielded_pool::v1alpha1::Note =
+            note.clone().try_into()?;
         let note_js = serde_wasm_bindgen::to_value(&note_proto)?;
 
         let commitment_proto = note.commit().to_proto();

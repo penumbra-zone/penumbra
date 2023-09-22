@@ -14,9 +14,10 @@ use penumbra_governance::{
 use penumbra_ibc::Ics20Withdrawal;
 use penumbra_keys::{FullViewingKey, PayloadKey};
 use penumbra_proto::{
-    core::crypto::v1alpha1 as pbc, core::dex::v1alpha1 as pbd, core::governance::v1alpha1 as pbg,
-    core::ibc::v1alpha1 as pbi, core::stake::v1alpha1 as pbs, core::transaction::v1alpha1 as pbt,
-    Message,
+    core::component::dex::v1alpha1 as pbd, core::component::fee::v1alpha1 as pbf,
+    core::component::governance::v1alpha1 as pbg, core::component::ibc::v1alpha1 as pbi,
+    core::component::shielded_pool::v1alpha1 as pb_sp, core::component::stake::v1alpha1 as pbs,
+    core::transaction::v1alpha1 as pbt, crypto::decaf377_fmd::v1alpha1 as pb_fmd, Message,
 };
 use penumbra_proto::{DomainType, TypeUrl};
 use penumbra_shielded_pool::{output, spend};
@@ -316,7 +317,7 @@ impl EffectingData for output::Body {
     fn effect_hash(&self) -> EffectHash {
         // The effecting data is in the body of the output, so we can
         // just use hash the proto-encoding of the body.
-        let body: pbt::OutputBody = self.clone().into();
+        let body: pb_sp::OutputBody = self.clone().into();
         hash_proto_effecting_data(output::Body::TYPE_URL, &body)
     }
 }
@@ -325,7 +326,7 @@ impl EffectingData for spend::Body {
     fn effect_hash(&self) -> EffectHash {
         // The effecting data is in the body of the spend, so we can
         // just use hash the proto-encoding of the body.
-        let body: pbt::SpendBody = self.clone().into();
+        let body: pb_sp::SpendBody = self.clone().into();
         hash_proto_effecting_data(spend::Body::TYPE_URL, &body)
     }
 }
@@ -494,7 +495,7 @@ impl EffectingData for DetectionData {
 
 impl EffectingData for Clue {
     fn effect_hash(&self) -> EffectHash {
-        let data: pbc::Clue = self.clone().into();
+        let data: pb_fmd::Clue = self.clone().into();
         hash_proto_effecting_data(Clue::TYPE_URL, &data)
     }
 }
@@ -508,7 +509,7 @@ impl EffectingData for TransactionParameters {
 
 impl EffectingData for Fee {
     fn effect_hash(&self) -> EffectHash {
-        let proto_encoded_fee: pbc::Fee = self.clone().into();
+        let proto_encoded_fee: pbf::Fee = self.clone().into();
         hash_proto_effecting_data(Fee::TYPE_URL, &proto_encoded_fee)
     }
 }

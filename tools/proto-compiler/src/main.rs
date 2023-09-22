@@ -22,6 +22,9 @@ fn main() -> anyhow::Result<()> {
         .file_descriptor_set_path(&descriptor_path)
         .compile_well_known_types();
 
+    // Disable this, in case the CompactBlock having `Bytes` causes memory leaks.
+    // Or don't, if changing it now would cause a lot of errors patching up TryFrom impls.
+    /*
     // Specify which parts of the protos should have their `bytes` fields
     // converted to Rust `Bytes` (= zero-copy view into a shared buffer) rather
     // than `Vec<u8>`.
@@ -45,6 +48,7 @@ fn main() -> anyhow::Result<()> {
         ".penumbra.core.crypto.v1alpha1.NotePayload",
         ".penumbra.core.chain.v1alpha1.CompactBlock",
     ]);
+    */
 
     // As recommended in pbjson_types docs.
     config.extern_path(".google.protobuf", "::pbjson_types");
@@ -66,15 +70,30 @@ fn main() -> anyhow::Result<()> {
 
     config.compile_protos(
         &[
-            "../../proto/penumbra/penumbra/core/crypto/v1alpha1/crypto.proto",
+            "../../proto/penumbra/penumbra/client/v1alpha1/client.proto",
+            "../../proto/penumbra/penumbra/core/app/v1alpha1/app.proto",
+            "../../proto/penumbra/penumbra/core/asset/v1alpha1/asset.proto",
+            "../../proto/penumbra/penumbra/core/component/chain/v1alpha1/chain.proto",
+            "../../proto/penumbra/penumbra/core/component/compact_block/v1alpha1/compact_block.proto",
+            "../../proto/penumbra/penumbra/core/component/dao/v1alpha1/dao.proto",
+            "../../proto/penumbra/penumbra/core/component/dex/v1alpha1/dex.proto",
+            "../../proto/penumbra/penumbra/core/component/distributions/v1alpha1/distributions.proto",
+            "../../proto/penumbra/penumbra/core/component/fee/v1alpha1/fee.proto",
+            "../../proto/penumbra/penumbra/core/component/governance/v1alpha1/governance.proto",
+            "../../proto/penumbra/penumbra/core/component/ibc/v1alpha1/ibc.proto",
+            "../../proto/penumbra/penumbra/core/component/sct/v1alpha1/sct.proto",
+            "../../proto/penumbra/penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto",
+            "../../proto/penumbra/penumbra/core/component/stake/v1alpha1/stake.proto",
+            "../../proto/penumbra/penumbra/core/keys/v1alpha1/keys.proto",
+            "../../proto/penumbra/penumbra/core/num/v1alpha1/num.proto",
             "../../proto/penumbra/penumbra/core/transaction/v1alpha1/transaction.proto",
-            "../../proto/penumbra/penumbra/core/stake/v1alpha1/stake.proto",
-            "../../proto/penumbra/penumbra/core/chain/v1alpha1/chain.proto",
-            "../../proto/penumbra/penumbra/core/ibc/v1alpha1/ibc.proto",
-            "../../proto/penumbra/penumbra/core/dex/v1alpha1/dex.proto",
-            "../../proto/penumbra/penumbra/core/transparent_proofs/v1alpha1/transparent_proofs.proto",
-            "../../proto/penumbra/penumbra/core/governance/v1alpha1/governance.proto",
+            "../../proto/penumbra/penumbra/crypto/decaf377_fmd/v1alpha1/decaf377_fmd.proto",
+            "../../proto/penumbra/penumbra/crypto/decaf377_rdsa/v1alpha1/decaf377_rdsa.proto",
+            "../../proto/penumbra/penumbra/crypto/tct/v1alpha1/tct.proto",
+            "../../proto/penumbra/penumbra/custody/v1alpha1/custody.proto",
+            "../../proto/penumbra/penumbra/narsil/ledger/v1alpha1/ledger.proto",
             "../../proto/penumbra/penumbra/tools/summoning/v1alpha1/summoning.proto",
+            "../../proto/penumbra/penumbra/view/v1alpha1/view.proto",
             "../../proto/rust-vendored/tendermint/types/validator.proto",
             "../../proto/rust-vendored/tendermint/p2p/types.proto",
         ],
