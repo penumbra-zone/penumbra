@@ -70,7 +70,7 @@ impl VerifyError {
 pub struct ProofDecodeError;
 
 use decaf377::{FieldExt, Fq};
-use penumbra_proto::core::crypto::v1alpha1 as pb;
+use penumbra_proto::penumbra::crypto::tct::v1alpha1 as pb;
 
 impl<Tree: Height> From<Proof<Tree>> for pb::StateCommitmentProof
 where
