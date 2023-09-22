@@ -1,4 +1,5 @@
 use ark_ff::UniformRand;
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand_core::CryptoRngCore;
 
 use crate::single::group::{GroupHasher, Hash, F, G1};
@@ -20,7 +21,7 @@ pub struct Witness {
 }
 
 /// A Proof of knowledge of the discrete logarithm of some element relative to another.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, CanonicalSerialize, CanonicalDeserialize)]
 pub struct Proof {
     big_k: G1,
     s: F,
