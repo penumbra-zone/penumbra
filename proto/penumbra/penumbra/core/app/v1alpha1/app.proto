@@ -1,0 +1,3 @@
+syntax = "proto3";
+package penumbra.core.app.v1alpha1;
+

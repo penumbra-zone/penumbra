@@ -2,7 +2,8 @@ syntax = "proto3";
 
 package penumbra.tools.summoning.v1alpha1;
 
-import "penumbra/core/crypto/v1alpha1/crypto.proto";
+import "penumbra/core/keys/v1alpha1/keys.proto";
+import "penumbra/core/num/v1alpha1/num.proto";
 
 // Runs a Phase 2 MPC ceremony with dynamic slot allocation.
 service CeremonyCoordinatorService {
@@ -23,7 +24,7 @@ service CeremonyCoordinatorService {
 message ParticipateRequest {
   // Sent at the beginning of the connection to identify the participant.
   message Identify {
-    core.crypto.v1alpha1.Address address = 1;
+    core.keys.v1alpha1.Address address = 1;
   }
 
   // Sent by the participant after getting a `ContributeNow` message.
@@ -56,9 +57,9 @@ message ParticipateResponse {
     // The total number of participants in the queue.
     uint32 connected_participants = 2;
     // The bid for the most recently executed contribution slot.
-    core.crypto.v1alpha1.Amount last_slot_bid = 3;
+    core.num.v1alpha1.Amount last_slot_bid = 3;
     // The participant's current bid.
-    core.crypto.v1alpha1.Amount your_bid = 4;
+    core.num.v1alpha1.Amount your_bid = 4;
   }
 
   // Sent to the participant to inform them that they should contribute now.

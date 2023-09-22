@@ -2,8 +2,9 @@ syntax = "proto3";
 
 package penumbra.narsil.ledger.v1alpha1;
 
-import "penumbra/core/crypto/v1alpha1/crypto.proto";
+import "penumbra/core/keys/v1alpha1/keys.proto";
 import "penumbra/core/transaction/v1alpha1/transaction.proto";
+import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/custody/v1alpha1/custody.proto";
 
 // Methods for narsil clients to communicate with narsild.
@@ -114,7 +115,7 @@ message AccountGroupInfo {
   // account group.  It is replicated across all shards.
   //
   // The spend verification key component is the `PK` in the FROST I-D.
-  core.crypto.v1alpha1.FullViewingKey full_viewing_key = 1;
+  core.keys.v1alpha1.FullViewingKey full_viewing_key = 1;
   // Describes the participants in the account group.
   repeated ShardInfo participants = 2;
 }
@@ -124,7 +125,7 @@ message ShardInfo {
   // The index of the shard, used for FROST accounting purposes.
   uint32 index = 1;
   // The shard verification key, corresponding to `PK_i` in the FROST I-D.
-  core.crypto.v1alpha1.SpendVerificationKey shard_verification_key = 2;
+  core.keys.v1alpha1.SpendVerificationKey shard_verification_key = 2;
   // The shard operator's identity key, used to identify the operator of this shard.
   ShardIdentityKey identity_key = 3;
 }
@@ -141,7 +142,7 @@ message ShardInfo {
 //   authorization of the same `TransactionPlan` after it has been signed, and the
 //   ledger can immediately return the already-existing authorization data.
 message RequestIndex {
-  core.transaction.v1alpha1.EffectHash effect_hash = 1;
+  core.component.chain.v1alpha1.EffectHash effect_hash = 1;
 }
 
 // Identifies a particular signing ceremony.

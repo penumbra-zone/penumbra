@@ -1,0 +1,111 @@
+syntax = "proto3";
+package penumbra.core.component.chain.v1alpha1;
+
+import "penumbra/core/num/v1alpha1/num.proto";
+import "penumbra/core/keys/v1alpha1/keys.proto";
+import "penumbra/core/asset/v1alpha1/asset.proto";
+import "penumbra/core/component/stake/v1alpha1/stake.proto";
+
+// An authorization hash for a Penumbra transaction.
+message EffectHash {
+  bytes inner = 1;
+}
+
+// Global chain configuration data, such as chain ID, epoch duration, etc.
+message ChainParameters {
+  // The identifier of the chain.
+  string chain_id = 1;
+  // The duration of each epoch, in number of blocks.
+  uint64 epoch_duration = 2;
+
+  // The number of epochs an unbonding note for before being released.
+  uint64 unbonding_epochs = 3;
+  // The maximum number of validators in the consensus set.
+  uint64 active_validator_limit = 4;
+  // The base reward rate, expressed in basis points of basis points
+  uint64 base_reward_rate = 9;
+  // The penalty for slashing due to misbehavior.
+  uint64 slashing_penalty_misbehavior = 5;
+  // The penalty for slashing due to downtime.
+  uint64 slashing_penalty_downtime = 10;
+  // The number of blocks in the window to check for downtime.
+  uint64 signed_blocks_window_len = 11;
+  // The maximum number of blocks in the window each validator can miss signing without slashing.
+  uint64 missed_blocks_maximum = 12;
+
+  // Whether IBC (forming connections, processing IBC packets) is enabled.
+  bool ibc_enabled = 6;
+  // Whether inbound ICS-20 transfers are enabled
+  bool inbound_ics20_transfers_enabled = 7;
+  // Whether outbound ICS-20 transfers are enabled
+  bool outbound_ics20_transfers_enabled = 8;
+
+  // The number of blocks during which a proposal is voted on.
+  uint64 proposal_voting_blocks = 20;
+  // The deposit required to create a proposal.
+  penumbra.core.num.v1alpha1.Amount proposal_deposit_amount = 21;
+  // The quorum required for a proposal to be considered valid, as a fraction of the total stake
+  // weight of the network.
+  string proposal_valid_quorum = 22;
+  // The threshold for a proposal to pass voting, as a ratio of "yes" votes over "no" votes.
+  string proposal_pass_threshold = 23;
+  // The threshold for a proposal to be slashed, regardless of whether the "yes" and "no" votes
+  // would have passed it, as a ratio of "no" votes over all total votes.
+  string proposal_slash_threshold = 24;
+
+  // Whether DAO spend proposals are enabled.
+  bool dao_spend_proposals_enabled = 25;
+}
+
+// The ratio between two numbers, used in governance to describe vote thresholds and quorums.
+message Ratio {
+  // The numerator.
+  uint64 numerator = 1;
+  // The denominator.
+  uint64 denominator = 2;
+}
+
+// Parameters for Fuzzy Message Detection
+message FmdParameters {
+  uint32 precision_bits = 1;
+  uint64 as_of_block_height = 2;
+}
+
+message KnownAssets {
+  repeated asset.v1alpha1.DenomMetadata assets = 1;
+}
+
+// A spicy transaction ID
+message NoteSource {
+  bytes inner = 1;
+}
+
+// A NoteSource paired with the height at which the note was spent
+message SpendInfo {
+  NoteSource note_source = 1;
+  uint64 spend_height = 2;
+}
+
+message GenesisAppState {
+  oneof genesis_app_state {
+    GenesisContent genesis_content = 1;
+    bytes genesis_checkpoint = 2;
+  }
+}
+
+message GenesisContent {
+  message Allocation {
+    penumbra.core.num.v1alpha1.Amount amount = 1;
+    string denom = 2;
+    penumbra.core.keys.v1alpha1.Address address = 3;
+  }
+
+  ChainParameters chain_params = 1;
+  repeated stake.v1alpha1.Validator validators = 2;
+  repeated Allocation allocations = 3;
+}
+
+message Epoch {
+  uint64 index = 1;
+  uint64 start_height = 2;
+}

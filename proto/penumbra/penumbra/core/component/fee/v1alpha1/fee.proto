@@ -1,0 +1,14 @@
+syntax = "proto3";
+package penumbra.core.component.fee.v1alpha1;
+
+import "penumbra/core/num/v1alpha1/num.proto";
+import "penumbra/core/asset/v1alpha1/asset.proto";
+
+// Specifies fees paid by a transaction.
+message Fee {
+    // The amount of the token used to pay fees.
+    num.v1alpha1.Amount amount = 1;
+    // If present, the asset ID of the token used to pay fees.
+    // If absent, specifies the staking token implicitly.
+    asset.v1alpha1.AssetId asset_id = 2;
+}
