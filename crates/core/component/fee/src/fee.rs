@@ -1,5 +1,5 @@
 use anyhow::Context;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::fee::v1alpha1 as pb, DomainType, TypeUrl};
 
 use decaf377::Fr;
 use penumbra_asset::{asset, balance, Balance, Value, STAKING_TOKEN_ASSET_ID};
