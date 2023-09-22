@@ -17,7 +17,6 @@ use serde::{Deserialize, Serialize};
 
 pub mod change;
 
-// TODO: lift into the App
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(
     try_from = "pb_chain::ChainParameters",
@@ -26,42 +25,6 @@ pub mod change;
 pub struct ChainParameters {
     pub chain_id: String,
     pub epoch_duration: u64,
-
-    pub unbonding_epochs: u64,
-    /// The number of validators allowed in the consensus set (Active state).
-    pub active_validator_limit: u64,
-    /// The base reward rate, expressed in basis points of basis points
-    pub base_reward_rate: u64,
-    /// The penalty for slashing due to misbehavior, expressed in basis points squared (10^-8)
-    pub slashing_penalty_misbehavior: u64,
-    /// The penalty for slashing due to downtime, expressed in basis points squared (10^-8)
-    pub slashing_penalty_downtime: u64,
-    /// The number of blocks in the window to check for downtime.
-    pub signed_blocks_window_len: u64,
-    /// The maximum number of blocks in the window each validator can miss signing without slashing.
-    pub missed_blocks_maximum: u64,
-
-    /// Whether IBC (forming connections, processing IBC packets) is enabled.
-    pub ibc_enabled: bool,
-    /// Whether inbound ICS-20 transfers are enabled
-    pub inbound_ics20_transfers_enabled: bool,
-    /// Whether outbound ICS-20 transfers are enabled
-    pub outbound_ics20_transfers_enabled: bool,
-
-    /// The number of blocks during which a proposal is voted on.
-    pub proposal_voting_blocks: u64,
-    /// The deposit required to create a proposal.
-    pub proposal_deposit_amount: Amount,
-    /// The quorum required for a proposal to be considered valid, as a fraction of the total stake
-    /// weight of the network.
-    pub proposal_valid_quorum: Ratio,
-    /// The threshold for a proposal to pass voting, as a ratio of "yes" votes over "no" votes.
-    pub proposal_pass_threshold: Ratio,
-    /// The threshold for a proposal to be slashed, as a ratio of "no" votes over all total votes.
-    pub proposal_slash_threshold: Ratio,
-
-    /// Whether DAO spend proposals are enabled.
-    pub dao_spend_proposals_enabled: bool,
 }
 
 impl TypeUrl for ChainParameters {
