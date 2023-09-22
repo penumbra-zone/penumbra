@@ -42,8 +42,10 @@ pub trait TypeUrl {
 // This should only be done here in cases where the domain type lives in a crate
 // that shouldn't depend on the Penumbra proto framework.
 
-use crate::core::crypto::v1alpha1::{BindingSignature, SpendAuthSignature, SpendVerificationKey};
-use crate::core::ibc::v1alpha1::IbcAction;
+use crate::penumbra::core::component::ibc::v1alpha1::IbcAction;
+use crate::penumbra::core::keys::v1alpha1::SpendVerificationKey;
+use crate::penumbra::crypto::decaf377_rdsa::v1alpha1::{BindingSignature, SpendAuthSignature};
+
 use decaf377_rdsa::{Binding, Signature, SpendAuth, VerificationKey};
 
 impl TypeUrl for Signature<SpendAuth> {
@@ -112,7 +114,7 @@ impl TryFrom<SpendVerificationKey> for VerificationKey<SpendAuth> {
 }
 
 // Fuzzy Message Detection
-use crate::core::crypto::v1alpha1::Clue as ProtoClue;
+use crate::penumbra::crypto::decaf377_fmd::v1alpha1::Clue as ProtoClue;
 use decaf377_fmd::Clue;
 
 impl TypeUrl for Clue {
@@ -148,7 +150,7 @@ impl TryFrom<ProtoClue> for Clue {
 // The tendermint-rs PublicKey type already has a tendermint-proto type;
 // this redefines its proto, because the encodings are consensus-critical
 // and we don't vendor all of the tendermint protos.
-use crate::core::crypto::v1alpha1::ConsensusKey;
+use crate::penumbra::core::keys::v1alpha1::ConsensusKey;
 
 impl TypeUrl for tendermint::PublicKey {
     const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.ConsensusKey";
@@ -158,7 +160,7 @@ impl DomainType for tendermint::PublicKey {
     type Proto = ConsensusKey;
 }
 
-impl From<tendermint::PublicKey> for crate::core::crypto::v1alpha1::ConsensusKey {
+impl From<tendermint::PublicKey> for crate::penumbra::core::keys::v1alpha1::ConsensusKey {
     fn from(v: tendermint::PublicKey) -> Self {
         Self {
             inner: v.to_bytes(),
@@ -166,9 +168,9 @@ impl From<tendermint::PublicKey> for crate::core::crypto::v1alpha1::ConsensusKey
     }
 }
 
-impl TryFrom<crate::core::crypto::v1alpha1::ConsensusKey> for tendermint::PublicKey {
+impl TryFrom<crate::core::keys::v1alpha1::ConsensusKey> for tendermint::PublicKey {
     type Error = anyhow::Error;
-    fn try_from(value: crate::core::crypto::v1alpha1::ConsensusKey) -> Result<Self, Self::Error> {
+    fn try_from(value: crate::core::keys::v1alpha1::ConsensusKey) -> Result<Self, Self::Error> {
         Self::from_raw_ed25519(value.inner.as_slice())
             .ok_or_else(|| anyhow::anyhow!("invalid ed25519 key"))
     }

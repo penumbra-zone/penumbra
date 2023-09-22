@@ -12,7 +12,7 @@ pub mod participate_request {
     pub struct Identify {
         #[prost(message, optional, tag = "1")]
         pub address: ::core::option::Option<
-            super::super::super::super::core::crypto::v1alpha1::Address,
+            super::super::super::super::core::keys::v1alpha1::Address,
         >,
     }
     /// Sent by the participant after getting a `ContributeNow` message.
@@ -72,12 +72,12 @@ pub mod participate_response {
         /// The bid for the most recently executed contribution slot.
         #[prost(message, optional, tag = "3")]
         pub last_slot_bid: ::core::option::Option<
-            super::super::super::super::core::crypto::v1alpha1::Amount,
+            super::super::super::super::core::num::v1alpha1::Amount,
         >,
         /// The participant's current bid.
         #[prost(message, optional, tag = "4")]
         pub your_bid: ::core::option::Option<
-            super::super::super::super::core::crypto::v1alpha1::Amount,
+            super::super::super::super::core::num::v1alpha1::Amount,
         >,
     }
     /// Sent to the participant to inform them that they should contribute now.
