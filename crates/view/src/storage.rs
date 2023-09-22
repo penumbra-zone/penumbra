@@ -1084,8 +1084,8 @@ impl Storage {
         let rseed = note.rseed().to_bytes().to_vec();
 
         dbtx.execute(
-            "INSERT INTO notes (note_commitment, address, amount, asset_id, rseed) 
-                VALUES (?1, ?2, ?3, ?4, ?5) 
+            "INSERT INTO notes (note_commitment, address, amount, asset_id, rseed)
+                VALUES (?1, ?2, ?3, ?4, ?5)
                 ON CONFLICT DO NOTHING",
             (note_commitment, address, amount, asset_id, rseed),
         )?;
@@ -1303,13 +1303,13 @@ impl Storage {
             // Update any rows of the table with matching nullifiers to have height_spent
             for nullifier in &filtered_block.spent_nullifiers {
                 let height_spent = filtered_block.height as i64;
-                let nullifier = nullifier.to_bytes().to_vec();
+                let nullifier_bytes = nullifier.to_bytes().to_vec();
 
                 let spent_commitment: Option<StateCommitment> = dbtx.prepare_cached(
                     "UPDATE spendable_notes SET height_spent = ?1 WHERE nullifier = ?2 RETURNING note_commitment"
                 )?
                 .query_and_then(
-                    (height_spent, &nullifier),
+                    (height_spent, &nullifier_bytes),
                     |row| {
                         let bytes: Vec<u8> = row.get("note_commitment")?;
                         StateCommitment::try_from(&bytes[..]).context("invalid commitment bytes")
@@ -1322,7 +1322,7 @@ impl Storage {
                         "UPDATE swaps SET height_claimed = ?1 WHERE nullifier = ?2 RETURNING swap_commitment"
                     )?
                     .query_and_then(
-                        (height_spent, &nullifier),
+                        (height_spent, &nullifier_bytes),
                         |row| {
                             let bytes: Vec<u8> = row.get("swap_commitment")?;
                             StateCommitment::try_from(&bytes[..]).context("invalid commitment bytes")
@@ -1334,12 +1334,14 @@ impl Storage {
                 // Check denom type
                 let spent_denom: String
                 = dbtx.prepare_cached(
-                        "SELECT assets.denom
-                        FROM spendable_notes JOIN notes LEFT JOIN assets ON notes.asset_id == assets.asset_id
-                        WHERE nullifier = ?1"
+                        "SELECT denom FROM assets
+                        WHERE asset_id ==
+                            (SELECT asset_id FROM notes
+                             WHERE note_commitment ==
+                                (SELECT note_commitment FROM spendable_notes WHERE nullifier = ?1))"
                     )?
                     .query_and_then(
-                        [&nullifier],
+                        [&nullifier_bytes],
                         |row| row.get("denom")
                     )?
                     .next()
@@ -1348,17 +1350,20 @@ impl Storage {
 
                 // Mark spent notes as spent
                 if let Some(spent_commitment) = spent_commitment {
+                    tracing::debug!(?nullifier, ?spent_commitment, ?spent_denom, "detected spent note commitment");
                     // Forget spent note commitments from the SCT unless they are delegation tokens,
                     // which must be saved to allow voting on proposals that might or might not be
                     // open presently
 
                     if DelegationToken::from_str(&spent_denom).is_err() {
+                        tracing::debug!(?nullifier, ?spent_commitment, ?spent_denom, "forgetting spent note commitment");
                         new_sct.forget(spent_commitment);
                     }
                 };
 
                 // Mark spent swaps as spent
                 if let Some(spent_swap_commitment) = swap_commitment {
+                    tracing::debug!(?nullifier, ?spent_swap_commitment, "detected and forgetting spent swap commitment");
                     new_sct.forget(spent_swap_commitment);
                 };
             }
