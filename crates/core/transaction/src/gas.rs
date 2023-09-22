@@ -16,13 +16,12 @@ use penumbra_stake::{
     validator::Definition as ValidatorDefinition, Delegate, Undelegate, UndelegateClaim,
 };
 
-use crate::{
-    action::{
-        DelegatorVote, ProposalDepositClaim, ProposalKind, ProposalSubmit, ProposalWithdraw,
-        ValidatorVote,
-    },
-    Action,
+use penumbra_governance::{
+    DelegatorVote, ProposalDepositClaim, ProposalKind, ProposalSubmit, ProposalWithdraw,
+    ValidatorVote,
 };
+
+use crate::Action;
 
 /// Represents the different resources that a transaction can consume,
 /// for purposes of calculating multidimensional fees based on real
@@ -467,12 +466,12 @@ impl GasCost for IbcAction {
             // For a IbcAction this is the byte size of a [`StatePayload`].
             compact_block_space: match self {
                 // RecvPacket will mint a note if successful.
-                IbcAction::RecvPacket(m) => std::mem::size_of::<StatePayload>() as u64,
+                IbcAction::RecvPacket(_) => std::mem::size_of::<StatePayload>() as u64,
                 _ => 0u64,
             },
             // Includes a proof in the execution for RecvPacket (TODO: check the other variants).
             verification: match self {
-                IbcAction::RecvPacket(m) => 1000 as u64,
+                IbcAction::RecvPacket(_) => 1000 as u64,
                 _ => 0u64,
             },
             // Execution cost is currently hardcoded at 10 for all Action variants.
