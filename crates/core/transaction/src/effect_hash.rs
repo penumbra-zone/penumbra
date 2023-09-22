@@ -604,6 +604,10 @@ mod tests {
 
         let mut rng = OsRng;
 
+        let memo_plaintext = MemoPlaintext {
+            sender: Address::dummy(&mut rng),
+            text: "".to_string(),
+        };
         let plan = TransactionPlan {
             expiry_height: 0,
             fee: Fee::default(),
@@ -625,16 +629,7 @@ mod tests {
                 SwapPlan::new(&mut OsRng, swap_plaintext).into(),
             ],
             clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1)],
-            memo_plan: Some(
-                MemoPlan::new(
-                    &mut OsRng,
-                    MemoPlaintext {
-                        sender: Address::dummy(&mut rng),
-                        text: "".to_string(),
-                    },
-                )
-                .unwrap(),
-            ),
+            memo_plan: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone()).unwrap()),
         };
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());
@@ -663,6 +658,9 @@ mod tests {
         let transaction_effect_hash = transaction.effect_hash();
 
         assert_eq!(plan_effect_hash, transaction_effect_hash);
+
+        let decrypted_memo = transaction.decrypt_memo(fvk).expect("can decrypt memo");
+        assert_eq!(decrypted_memo, memo_plaintext);
 
         // TODO: fix this and move into its own test?
         // // Also check the concurrent build results in the same effect hash.
