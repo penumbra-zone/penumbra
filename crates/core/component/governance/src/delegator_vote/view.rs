@@ -1,4 +1,4 @@
-use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
+use penumbra_proto::{core::component::governance::v1alpha1 as pbt, DomainType, TypeUrl};
 use penumbra_shielded_pool::NoteView;
 use serde::{Deserialize, Serialize};
 

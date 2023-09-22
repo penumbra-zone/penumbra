@@ -6,7 +6,7 @@ use penumbra_asset::{
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
-    core::ibc::v1alpha1::{self as pb, FungibleTokenPacketData},
+    penumbra::core::component::ibc::v1alpha1::{self as pb, FungibleTokenPacketData},
     DomainType, TypeUrl,
 };
 use serde::{Deserialize, Serialize};

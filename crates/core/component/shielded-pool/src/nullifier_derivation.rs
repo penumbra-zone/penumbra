@@ -10,7 +10,9 @@ use ark_groth16::{
 };
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
-use penumbra_proto::{core::crypto::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{
+    penumbra::core::component::shielded_pool::v1alpha1 as pb, DomainType, TypeUrl,
+};
 use penumbra_tct as tct;
 use rand::{CryptoRng, Rng};
 use tct::StateCommitment;

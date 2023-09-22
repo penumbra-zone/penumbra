@@ -8,7 +8,8 @@ use ark_r1cs_std::{
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{r1cs::FqVar, Fq};
 use penumbra_proto::{
-    client::v1alpha1::BatchSwapOutputDataResponse, core::dex::v1alpha1 as pb, DomainType, TypeUrl,
+    client::v1alpha1::BatchSwapOutputDataResponse, penumbra::core::component::dex::v1alpha1 as pb,
+    DomainType, TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 

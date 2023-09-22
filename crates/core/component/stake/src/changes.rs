@@ -1,6 +1,6 @@
 use crate::{Delegate, Undelegate};
 use anyhow::Result;
-use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 /// Data structure used to track queued delegation changes that have been

@@ -1,7 +1,7 @@
 //! Penumbra validators and related structures.
 
 use penumbra_keys::Address;
-use penumbra_proto::{core::stake::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 use serde_unit_struct::{Deserialize_unit_struct, Serialize_unit_struct};
 use serde_with::{serde_as, DisplayFromStr};

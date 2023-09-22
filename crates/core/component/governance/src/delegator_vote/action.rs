@@ -4,7 +4,7 @@ use crate::{vote::Vote, DelegatorVoteProof};
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use penumbra_asset::Value;
 use penumbra_num::Amount;
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 

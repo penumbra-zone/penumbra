@@ -1,6 +1,10 @@
 use anyhow::Context;
 use penumbra_proto::{
-    core::chain::v1alpha1 as pb, core::stake::v1alpha1 as pb_stake, DomainType, TypeUrl,
+    // TODO: avoid this import!
+    core::component::stake::v1alpha1 as pb_stake,
+    penumbra::core::component::chain::v1alpha1 as pb,
+    DomainType,
+    TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 

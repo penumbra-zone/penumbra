@@ -22,7 +22,7 @@ use penumbra_proto::{
         EpochByHeightRequest, LiquidityPositionByIdRequest, ProposalInfoRequest,
         ProposalInfoResponse, ProposalRateDataRequest, ValidatorPenaltyRequest,
     },
-    core::dex::v1alpha1::PositionId,
+    core::component::dex::v1alpha1::PositionId,
 };
 use penumbra_stake::rate::RateData;
 use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};

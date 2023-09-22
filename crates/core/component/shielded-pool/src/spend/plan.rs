@@ -3,7 +3,7 @@ use decaf377::{FieldExt, Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_keys::{Address, FullViewingKey};
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
@@ -161,10 +161,10 @@ impl TryFrom<pb::SpendPlan> for SpendPlan {
                 .ok_or_else(|| anyhow::anyhow!("missing note"))?
                 .try_into()?,
             position: msg.position.into(),
-            randomizer: Fr::from_bytes(msg.randomizer.as_ref().try_into()?)?,
-            value_blinding: Fr::from_bytes(msg.value_blinding.as_ref().try_into()?)?,
-            proof_blinding_r: Fq::from_bytes(msg.proof_blinding_r.as_ref().try_into()?)?,
-            proof_blinding_s: Fq::from_bytes(msg.proof_blinding_s.as_ref().try_into()?)?,
+            randomizer: Fr::from_bytes(msg.randomizer.as_slice().try_into()?)?,
+            value_blinding: Fr::from_bytes(msg.value_blinding.as_slice().try_into()?)?,
+            proof_blinding_r: Fq::from_bytes(msg.proof_blinding_r.as_slice().try_into()?)?,
+            proof_blinding_s: Fq::from_bytes(msg.proof_blinding_s.as_slice().try_into()?)?,
         })
     }
 }

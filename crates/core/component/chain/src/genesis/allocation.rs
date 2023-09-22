@@ -1,6 +1,6 @@
 use penumbra_keys::Address;
 use penumbra_num::Amount;
-use penumbra_proto::{core::chain::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::chain::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 /// A (transparent) genesis allocation.

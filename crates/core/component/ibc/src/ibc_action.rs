@@ -12,7 +12,7 @@ use ibc_types::core::{
 use ibc_types::DomainType as IbcTypesDomainType;
 use ibc_types::TypeUrl as IbcTypesTypeUrl;
 
-use penumbra_proto::core::ibc::v1alpha1::{self as pb};
+use penumbra_proto::penumbra::core::component::ibc::v1alpha1::{self as pb};
 use penumbra_proto::{DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 

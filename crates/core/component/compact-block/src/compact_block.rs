@@ -4,7 +4,8 @@ use anyhow::Result;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_dex::{BatchSwapOutputData, TradingPair};
 use penumbra_proto::{
-    client::v1alpha1::CompactBlockRangeResponse, core::chain::v1alpha1 as pb, DomainType, TypeUrl,
+    client::v1alpha1::CompactBlockRangeResponse,
+    penumbra::core::component::compact_block::v1alpha1 as pb, DomainType, TypeUrl,
 };
 use penumbra_sct::Nullifier;
 use penumbra_tct::builder::{block, epoch};

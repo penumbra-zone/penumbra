@@ -8,7 +8,8 @@ use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use penumbra_fee::Fee;
 use penumbra_proto::{
-    core::crypto::v1alpha1 as pb_crypto, core::dex::v1alpha1 as pb, DomainType, TypeUrl,
+    core::keys::v1alpha1 as pb_keys, penumbra::core::component::dex::v1alpha1 as pb, DomainType,
+    TypeUrl,
 };
 use penumbra_tct::StateCommitment;
 use poseidon377::{hash_1, hash_4, hash_7};
@@ -334,7 +335,7 @@ impl From<&SwapPlaintext> for [u8; SWAP_LEN_BYTES] {
         bytes[80..96].copy_from_slice(&swap.delta_2_i.to_le_bytes());
         bytes[96..112].copy_from_slice(&swap.claim_fee.0.amount.to_le_bytes());
         bytes[112..144].copy_from_slice(&swap.claim_fee.0.asset_id.to_bytes());
-        let pb_address = pb_crypto::Address::from(swap.claim_address);
+        let pb_address = pb_keys::Address::from(swap.claim_address);
         bytes[144..224].copy_from_slice(&pb_address.inner);
         bytes[224..256].copy_from_slice(&swap.rseed.to_bytes());
         bytes
@@ -373,7 +374,7 @@ impl TryFrom<&[u8]> for SwapPlaintext {
         let address_bytes: [u8; 80] = bytes[144..224]
             .try_into()
             .map_err(|_| anyhow!("error fetching address bytes"))?;
-        let pb_address = pb_crypto::Address {
+        let pb_address = pb_keys::Address {
             inner: address_bytes.to_vec(),
             alt_bech32m: String::new(),
         };

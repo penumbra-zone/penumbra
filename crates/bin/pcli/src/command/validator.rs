@@ -7,7 +7,9 @@ use anyhow::{Context, Result};
 use penumbra_fee::Fee;
 use penumbra_governance::{ValidatorVote, ValidatorVoteBody, Vote};
 use penumbra_keys::keys::AddressIndex;
-use penumbra_proto::{core::stake::v1alpha1::Validator as ProtoValidator, DomainType, Message};
+use penumbra_proto::{
+    core::component::stake::v1alpha1::Validator as ProtoValidator, DomainType, Message,
+};
 use penumbra_stake::{
     validator,
     validator::{Validator, ValidatorToml},

@@ -264,7 +264,7 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             },
             ActionPlan::PositionWithdraw(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::PositionWithdraw(Into::<
-                    penumbra_proto::core::dex::v1alpha1::PositionWithdrawPlan,
+                    penumbra_proto::core::component::dex::v1alpha1::PositionWithdrawPlan,
                 >::into(
                     inner
                 ))),

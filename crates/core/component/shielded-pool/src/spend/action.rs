@@ -1,10 +1,9 @@
 use std::convert::{TryFrom, TryInto};
 
 use anyhow::{Context, Error};
-use bytes::Bytes;
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use penumbra_asset::balance;
-use penumbra_proto::{core::transaction::v1alpha1 as transaction, DomainType, TypeUrl};
+use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_sct::Nullifier;
 use serde::{Deserialize, Serialize};
 
@@ -18,7 +17,7 @@ pub struct Spend {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(try_from = "transaction::SpendBody", into = "transaction::SpendBody")]
+#[serde(try_from = "pb::SpendBody", into = "pb::SpendBody")]
 pub struct Body {
     pub balance_commitment: balance::Commitment,
     pub nullifier: Nullifier,
@@ -30,12 +29,12 @@ impl TypeUrl for Spend {
 }
 
 impl DomainType for Spend {
-    type Proto = transaction::Spend;
+    type Proto = pb::Spend;
 }
 
-impl From<Spend> for transaction::Spend {
+impl From<Spend> for pb::Spend {
     fn from(msg: Spend) -> Self {
-        transaction::Spend {
+        pb::Spend {
             body: Some(msg.body.into()),
             auth_sig: Some(msg.auth_sig.into()),
             proof: Some(msg.proof.into()),
@@ -43,10 +42,10 @@ impl From<Spend> for transaction::Spend {
     }
 }
 
-impl TryFrom<transaction::Spend> for Spend {
+impl TryFrom<pb::Spend> for Spend {
     type Error = Error;
 
-    fn try_from(proto: transaction::Spend) -> anyhow::Result<Self, Self::Error> {
+    fn try_from(proto: pb::Spend) -> anyhow::Result<Self, Self::Error> {
         let body = proto
             .body
             .ok_or_else(|| anyhow::anyhow!("missing spend body"))?
@@ -76,25 +75,25 @@ impl TypeUrl for Body {
 }
 
 impl DomainType for Body {
-    type Proto = transaction::SpendBody;
+    type Proto = pb::SpendBody;
 }
 
-impl From<Body> for transaction::SpendBody {
+impl From<Body> for pb::SpendBody {
     fn from(msg: Body) -> Self {
         let nullifier_bytes: [u8; 32] = msg.nullifier.into();
         let rk_bytes: [u8; 32] = msg.rk.into();
-        transaction::SpendBody {
+        pb::SpendBody {
             balance_commitment: Some(msg.balance_commitment.into()),
-            nullifier: Bytes::copy_from_slice(&nullifier_bytes),
-            rk: Bytes::copy_from_slice(&rk_bytes),
+            nullifier: nullifier_bytes.to_vec(),
+            rk: rk_bytes.to_vec(),
         }
     }
 }
 
-impl TryFrom<transaction::SpendBody> for Body {
+impl TryFrom<pb::SpendBody> for Body {
     type Error = Error;
 
-    fn try_from(proto: transaction::SpendBody) -> anyhow::Result<Self, Self::Error> {
+    fn try_from(proto: pb::SpendBody) -> anyhow::Result<Self, Self::Error> {
         let balance_commitment: balance::Commitment = proto
             .balance_commitment
             .ok_or_else(|| anyhow::anyhow!("missing value commitment"))?

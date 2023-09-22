@@ -1,7 +1,9 @@
 use penumbra_proto::{
-    core::crypto::v1alpha1 as pb,
+    // TODO: why is the governance key part of this crate?
+    core::keys::v1alpha1 as pb,
     serializers::bech32str::{self, validator_governance_key::BECH32_PREFIX},
-    DomainType, TypeUrl,
+    DomainType,
+    TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 

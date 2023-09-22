@@ -1,4 +1,4 @@
-use penumbra_proto::{core::chain::v1alpha1 as pb_chain, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::chain::v1alpha1 as pb_chain, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 /// Penumbra groups blocks into epochs and restricts validator changes to epoch boundaries.

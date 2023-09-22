@@ -4,7 +4,7 @@ use std::convert::{TryFrom, TryInto};
 
 use penumbra_asset::{Balance, Value};
 use penumbra_keys::Address;
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::DaoOutput", into = "pb::DaoOutput")]

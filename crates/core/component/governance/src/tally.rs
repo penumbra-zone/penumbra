@@ -3,7 +3,7 @@ use std::ops::{Add, AddAssign};
 use serde::{Deserialize, Serialize};
 
 use penumbra_chain::params::{ChainParameters, Ratio};
-use penumbra_proto::{core::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 use crate::{
     proposal_state::{Outcome as StateOutcome, Withdrawn},

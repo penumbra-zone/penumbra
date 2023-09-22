@@ -1,11 +1,11 @@
 use std::convert::{TryFrom, TryInto};
 
 use anyhow::{Context, Error};
-use bytes::Bytes;
 use penumbra_asset::balance;
 use penumbra_keys::symmetric::{OvkWrappedKey, WrappedMemoKey};
 use penumbra_proto::{
-    core::crypto::v1alpha1 as pbc, core::transaction::v1alpha1 as pb, DomainType, TypeUrl,
+    core::component::shielded_pool::v1alpha1 as pb,
+    penumbra::core::component::shielded_pool::v1alpha1 as pbc, DomainType, TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 
@@ -75,8 +75,8 @@ impl From<Body> for pb::OutputBody {
         pb::OutputBody {
             note_payload: Some(output.note_payload.into()),
             balance_commitment: Some(output.balance_commitment.into()),
-            wrapped_memo_key: Bytes::copy_from_slice(&output.wrapped_memo_key.0),
-            ovk_wrapped_key: Bytes::copy_from_slice(&output.ovk_wrapped_key.0),
+            wrapped_memo_key: output.wrapped_memo_key.0.to_vec(),
+            ovk_wrapped_key: output.ovk_wrapped_key.0.to_vec(),
         }
     }
 }

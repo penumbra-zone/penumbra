@@ -8,7 +8,7 @@ use std::{
 use anyhow::Context;
 use penumbra_num::Amount;
 use penumbra_proto::client::v1alpha1 as pb_client;
-use penumbra_proto::core::chain::v1alpha1 as pb_chain;
+use penumbra_proto::penumbra::core::component::chain::v1alpha1 as pb_chain;
 
 use penumbra_proto::view::v1alpha1 as pb_view;
 use penumbra_proto::{DomainType, TypeUrl};
@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod change;
 
+// TODO: lift into the App
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(
     try_from = "pb_chain::ChainParameters",

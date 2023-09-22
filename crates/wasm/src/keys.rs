@@ -1,7 +1,7 @@
 use crate::error::WasmResult;
 use penumbra_keys::keys::{SeedPhrase, SpendKey};
 use penumbra_keys::{Address, FullViewingKey};
-use penumbra_proto::{core::crypto::v1alpha1 as pb, serializers::bech32str, DomainType};
+use penumbra_proto::{core::keys::v1alpha1 as pb, serializers::bech32str, DomainType};
 use rand_core::OsRng;
 use std::str::FromStr;
 use wasm_bindgen::prelude::*;
