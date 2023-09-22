@@ -10,7 +10,7 @@ use ark_ff::fields::PrimeField;
 use decaf377::Fq;
 use penumbra_num::Amount;
 use penumbra_proto::{
-    core::crypto::v1alpha1 as pb, view::v1alpha1::AssetsResponse, DomainType, TypeUrl,
+    penumbra::core::asset::v1alpha1 as pb, view::v1alpha1::AssetsResponse, DomainType, TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 
