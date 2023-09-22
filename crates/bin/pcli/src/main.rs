@@ -141,6 +141,7 @@ async fn main() -> Result<()> {
         Command::View(view_cmd) => view_cmd.exec(&mut app).await?,
         Command::Validator(cmd) => cmd.exec(&mut app).await?,
         Command::Query(cmd) => cmd.exec(&mut app).await?,
+        Command::Ceremony(cmd) => cmd.exec(&mut app).await?,
     }
 
     Ok(())
