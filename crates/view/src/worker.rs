@@ -3,22 +3,29 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use anyhow::Context;
 use penumbra_compact_block::CompactBlock;
 use penumbra_dex::lp::{position, LpNft};
 use penumbra_keys::FullViewingKey;
-use penumbra_proto::client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient;
 use penumbra_proto::{
     self as proto,
-    client::v1alpha1::{
-        oblivious_query_service_client::ObliviousQueryServiceClient,
-        tendermint_proxy_service_client::TendermintProxyServiceClient, CompactBlockRangeRequest,
-        GetBlockByHeightRequest,
+    core::component::{
+        compact_block::v1alpha1::{
+            query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
+            CompactBlockRangeRequest,
+        },
+        shielded_pool::v1alpha1::{
+            query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
+            DenomMetadataByIdRequest,
+        },
+    },
+    util::tendermint_proxy::v1alpha1::{
+        tendermint_proxy_service_client::TendermintProxyServiceClient, GetBlockByHeightRequest,
     },
     DomainType,
 };
 use penumbra_sct::Nullifier;
 use penumbra_transaction::Transaction;
-use proto::client::v1alpha1::DenomMetadataByIdRequest;
 use sha2::Digest;
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
@@ -31,13 +38,12 @@ use crate::{
 
 pub struct Worker {
     storage: Storage,
-    client: ObliviousQueryServiceClient<Channel>,
     sct: Arc<RwLock<penumbra_tct::Tree>>,
     fvk: FullViewingKey, // TODO: notifications (see TODOs on ViewService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     sync_height_tx: watch::Sender<u64>,
-    tm_client: TendermintProxyServiceClient<Channel>,
-    specific_client: SpecificQueryServiceClient<Channel>,
+    /// Tonic channel used to create GRPC clients.
+    channel: Channel,
 }
 
 impl Worker {
@@ -71,22 +77,20 @@ impl Worker {
         // Mark the current height as seen, since it's not new.
         sync_height_rx.borrow_and_update();
 
-        let client = ObliviousQueryServiceClient::connect(node.to_string()).await?;
-
-        let specific_client = SpecificQueryServiceClient::connect(node.to_string()).await?;
-
-        let tm_client = TendermintProxyServiceClient::connect(node.to_string()).await?;
+        let channel = Channel::from_shared(node.to_string())
+            .with_context(|| "could not parse node URI")?
+            .connect()
+            .await
+            .with_context(|| "could not connect to grpc server")?;
 
         Ok((
             Self {
                 storage,
-                client,
                 sct: sct.clone(),
                 fvk,
                 error_slot: error_slot.clone(),
                 sync_height_tx,
-                tm_client,
-                specific_client,
+                channel,
             },
             sct,
             error_slot,
@@ -116,7 +120,7 @@ impl Worker {
             "fetching full transaction data"
         );
 
-        let block = fetch_block(&mut self.tm_client.clone(), filtered_block.height as i64).await?;
+        let block = fetch_block(self.channel.clone(), filtered_block.height as i64).await?;
 
         let mut transactions = Vec::new();
 
@@ -158,8 +162,8 @@ impl Worker {
             .map(|h| h + 1)
             .unwrap_or(0);
 
-        let mut stream = self
-            .client
+        let mut client = CompactBlockQueryServiceClient::new(self.channel.clone());
+        let mut stream = client
             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
                 chain_id: chain_id.clone(),
                 start_height,
@@ -292,8 +296,8 @@ impl Worker {
                     } else {
                         // If the asset is unknown, we may be able to query for its denom metadata and store that.
 
-                        if let Some(denom_metadata) = self
-                            .specific_client
+                        let mut client = ShieldedPoolQueryServiceClient::new(self.channel.clone());
+                        if let Some(denom_metadata) = client
                             .denom_metadata_by_id(DenomMetadataByIdRequest {
                                 asset_id: Some(note_record.note.asset_id().into()),
                                 chain_id: chain_id.clone(),
@@ -326,7 +330,7 @@ impl Worker {
                 self.sync_height_tx.send(filtered_block.height)?;
             }
             #[cfg(feature = "sct-divergence-check")]
-            sct_divergence_check(&mut self.specific_client, height, sct_guard.root()).await?;
+            sct_divergence_check(self.channel.clone(), height, sct_guard.root()).await?;
 
             // Release the SCT RwLock
             drop(sct_guard);
@@ -362,9 +366,10 @@ impl Worker {
 }
 
 async fn fetch_block(
-    client: &mut TendermintProxyServiceClient<Channel>,
+    channel: Channel,
     height: i64,
 ) -> anyhow::Result<proto::tendermint::types::Block> {
+    let mut client = TendermintProxyServiceClient::new(channel);
     Ok(client
         .get_block_by_height(GetBlockByHeightRequest { height })
         .await?
@@ -375,15 +380,17 @@ async fn fetch_block(
 
 #[cfg(feature = "sct-divergence-check")]
 async fn sct_divergence_check(
-    client: &mut SpecificQueryServiceClient<Channel>,
+    channel: Channel,
     height: u64,
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
-    use anyhow::Context;
+    use penumbra_proto::core::app::v1alpha1::query_service_client::QueryServiceClient;
     use penumbra_sct::state_key as sct_state_key;
 
+    let mut client = QueryServiceClient::new(channel);
+
     let value = client
-        .key_value(penumbra_proto::client::v1alpha1::KeyValueRequest {
+        .key_value(penumbra_proto::core::app::v1alpha1::KeyValueRequest {
             key: sct_state_key::anchor_by_height(height),
             ..Default::default()
         })

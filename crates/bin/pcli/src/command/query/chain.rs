@@ -1,8 +1,21 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_chain::params::ChainParameters;
-use penumbra_proto::client::v1alpha1::{ChainParametersRequest, EpochByHeightRequest, InfoRequest};
+use penumbra_proto::{
+    core::app::v1alpha1::{
+        query_service_client::QueryServiceClient as AppQueryServiceClient, ChainParametersRequest,
+    },
+    core::component::chain::v1alpha1::{
+        query_service_client::QueryServiceClient as ChainQueryServiceClient, EpochByHeightRequest,
+    },
+    core::component::stake::v1alpha1::{
+        query_service_client::QueryServiceClient as StakeQueryServiceClient, ValidatorInfoRequest,
+    },
+    util::tendermint_proxy::v1alpha1::{
+        tendermint_proxy_service_client::TendermintProxyServiceClient, GetStatusRequest,
+    },
+};
 use penumbra_stake::validator;
 
 // TODO: remove this subcommand and merge into `pcli q`
@@ -34,9 +47,8 @@ pub struct Stats {
 
 impl ChainCmd {
     pub async fn print_chain_params(&self, app: &mut App) -> Result<()> {
-        let mut oblivious_client = app.oblivious_client().await?;
-
-        let params: ChainParameters = oblivious_client
+        let mut client = AppQueryServiceClient::new(app.pd_channel().await?);
+        let params: ChainParameters = client
             .chain_parameters(tonic::Request::new(ChainParametersRequest {
                 chain_id: "".to_string(),
             }))
@@ -104,22 +116,18 @@ impl ChainCmd {
     }
 
     pub async fn get_stats(&self, app: &mut App) -> Result<Stats> {
-        use penumbra_proto::client::v1alpha1::ValidatorInfoRequest;
+        let channel = app.pd_channel().await?;
 
-        let mut client = app.oblivious_client().await?;
-
-        // TODO: is it possible to use the TendermintProxyService instead here??
-        let info = client
-            .info(InfoRequest {
-                version: "".to_string(),
-                block_version: 0,
-                p2p_version: 0,
-                abci_version: "".to_string(),
-            })
+        let mut client = TendermintProxyServiceClient::new(channel.clone());
+        let current_block_height = client
+            .get_status(GetStatusRequest::default())
             .await?
-            .into_inner();
+            .into_inner()
+            .sync_info
+            .ok_or_else(|| anyhow!("missing sync_info"))?
+            .latest_block_height;
 
-        let current_block_height = info.last_block_height;
+        let mut client = ChainQueryServiceClient::new(channel.clone());
         let current_epoch: u64 = client
             .epoch_by_height(tonic::Request::new(EpochByHeightRequest {
                 height: current_block_height.clone(),
@@ -130,6 +138,7 @@ impl ChainCmd {
             .context("failed to find EpochByHeight message")?
             .index;
 
+        let mut client = AppQueryServiceClient::new(channel.clone());
         let chain_params = client
             .chain_parameters(tonic::Request::new(ChainParametersRequest {
                 chain_id: "".to_string(),
@@ -140,6 +149,7 @@ impl ChainCmd {
             .ok_or_else(|| anyhow::anyhow!("empty ChainParametersResponse message"))?;
 
         // Fetch validators.
+        let mut client = StakeQueryServiceClient::new(channel.clone());
         let validators = client
             .validator_info(ValidatorInfoRequest {
                 show_inactive: true,

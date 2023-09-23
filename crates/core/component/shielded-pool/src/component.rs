@@ -10,3 +10,5 @@ pub use self::metrics::register_metrics;
 pub use note_manager::NoteManager;
 pub use shielded_pool::{ShieldedPool, StateReadExt};
 pub use supply::{SupplyRead, SupplyWrite};
+
+pub mod rpc;

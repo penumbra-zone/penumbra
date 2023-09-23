@@ -1,4 +1,6 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
+//use anyhow::{Context, Result};
+/*
 use futures::TryStreamExt;
 //use penumbra_app::dao;
 use penumbra_dao::component::state_key;
@@ -8,6 +10,8 @@ use penumbra_num::Amount;
 use penumbra_view::ViewClient;
 
 use crate::{command::query::dao, App};
+ */
+use crate::App;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum DaoCmd {
@@ -25,7 +29,11 @@ impl DaoCmd {
         }
     }
 
-    pub async fn print_balance(&self, app: &mut App, asset: &Option<String>) -> Result<()> {
+    pub async fn print_balance(&self, _app: &mut App, _asset: &Option<String>) -> Result<()> {
+        unimplemented!("dao component needs an RPC defined");
+        // below code is not usable outside of our own crates because
+        // it does raw state key access
+        /*
         let asset_id = asset.as_ref().map(|asset| {
             // Try to parse as an asset ID, then if it's not an asset ID, assume it's a unit name
             if let Ok(asset_id) = asset.parse() {
@@ -69,5 +77,6 @@ impl DaoCmd {
         };
 
         Ok(())
+         */
     }
 }

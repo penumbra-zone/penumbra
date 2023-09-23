@@ -225,3 +225,68 @@ message CurrentConsensusKeys {
 message Penalty {
   uint64 inner = 1;
 }
+
+// Query operations for the staking component.
+service QueryService {
+  // Queries the current validator set, with filtering.
+  rpc ValidatorInfo(ValidatorInfoRequest) returns (stream ValidatorInfoResponse);
+  rpc ValidatorStatus(ValidatorStatusRequest) returns (ValidatorStatusResponse);
+  rpc ValidatorPenalty(ValidatorPenaltyRequest) returns (ValidatorPenaltyResponse);
+  rpc CurrentValidatorRate(CurrentValidatorRateRequest) returns (CurrentValidatorRateResponse);
+  rpc NextValidatorRate(NextValidatorRateRequest) returns (NextValidatorRateResponse);
+}
+
+// Requests information on the chain's validators.
+message ValidatorInfoRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // Whether or not to return inactive validators
+  bool show_inactive = 2;
+}
+
+message ValidatorInfoResponse {
+  core.component.stake.v1alpha1.ValidatorInfo validator_info = 1;
+}
+
+message ValidatorStatusRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  core.keys.v1alpha1.IdentityKey identity_key = 2;
+}
+
+message ValidatorStatusResponse {
+  core.component.stake.v1alpha1.ValidatorStatus status = 1;
+}
+
+// Requests the compounded penalty for a validator over a range of epochs.
+message ValidatorPenaltyRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  core.keys.v1alpha1.IdentityKey identity_key = 2;
+  uint64 start_epoch_index = 3;
+  uint64 end_epoch_index = 4;
+}
+
+message ValidatorPenaltyResponse {
+  core.component.stake.v1alpha1.Penalty penalty = 1;
+}
+
+message CurrentValidatorRateRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  core.keys.v1alpha1.IdentityKey identity_key = 2;
+}
+
+message CurrentValidatorRateResponse {
+  core.component.stake.v1alpha1.RateData data = 1;
+}
+
+message NextValidatorRateRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  core.keys.v1alpha1.IdentityKey identity_key = 2;
+}
+
+message NextValidatorRateResponse {
+  core.component.stake.v1alpha1.RateData data = 1;
+}

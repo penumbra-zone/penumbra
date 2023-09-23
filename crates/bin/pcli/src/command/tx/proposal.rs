@@ -83,6 +83,7 @@ pub enum ProposalKindCmd {
 
 impl ProposalKindCmd {
     /// Generate a default proposal of a particular kind.
+    #[allow(dead_code)] // remove me after implementing governance rpcs
     pub fn template_proposal(&self, chain_params: &ChainParameters, id: u64) -> Result<Proposal> {
         let title = "A short title (at most 80 characters)".to_string();
         let description = "A longer description (at most 10,000 characters)".to_string();

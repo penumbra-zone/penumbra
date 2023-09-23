@@ -1,10 +1,6 @@
 use penumbra_dex::swap_claim::SwapClaimPlan;
-use penumbra_proto::{
-    client::v1alpha1::specific_query_service_client::SpecificQueryServiceClient,
-    view::v1alpha1::NotesRequest,
-};
+use penumbra_proto::view::v1alpha1::NotesRequest;
 use std::collections::BTreeMap;
-use tonic::transport::Channel;
 
 use anyhow::{Context, Result};
 use ark_std::UniformRand;
@@ -140,7 +136,6 @@ pub async fn sweep<V, R>(
     account_group_id: AccountGroupId,
     view: &mut V,
     mut rng: R,
-    specific_client: SpecificQueryServiceClient<Channel>,
 ) -> anyhow::Result<Vec<TransactionPlan>>
 where
     V: ViewClient,

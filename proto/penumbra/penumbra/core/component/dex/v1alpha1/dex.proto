@@ -373,3 +373,191 @@ message PositionWithdrawPlan {
 message PositionRewardClaimPlan {
   Reserves reserves = 1;
 }
+
+// Query operations for the DEX component.
+service QueryService {
+  // Get the batch clearing prices for a specific block height and trading pair.
+  rpc BatchSwapOutputData(BatchSwapOutputDataRequest) returns (BatchSwapOutputDataResponse);
+  // Get the precise swap execution used for a specific batch swap.
+  rpc SwapExecution(SwapExecutionRequest) returns (SwapExecutionResponse);
+  // Get the precise execution used to perform on-chain arbitrage.
+  rpc ArbExecution(ArbExecutionRequest) returns (ArbExecutionResponse);
+
+  // Stream all swap executions over a range of heights, optionally subscribing to future executions.
+  rpc SwapExecutions(SwapExecutionsRequest) returns (stream SwapExecutionsResponse);
+  // Stream all arbitrage executions over a range of heights, optionally subscribing to future executions.
+  rpc ArbExecutions(ArbExecutionsRequest) returns (stream ArbExecutionsResponse);
+
+  // Query all liquidity positions on the DEX.
+  rpc LiquidityPositions(LiquidityPositionsRequest) returns (stream LiquidityPositionsResponse);
+  // Query liquidity positions by ID.
+  //
+  // To get multiple positions, use `LiquidityPositionsById`.
+  rpc LiquidityPositionById(LiquidityPositionByIdRequest) returns (LiquidityPositionByIdResponse);
+  // Query multiple liquidity positions by ID.
+  rpc LiquidityPositionsById(LiquidityPositionsByIdRequest) returns (stream LiquidityPositionsByIdResponse);
+  // Query liquidity positions on a specific pair, sorted by effective price.
+  rpc LiquidityPositionsByPrice(LiquidityPositionsByPriceRequest) returns (stream LiquidityPositionsByPriceResponse);
+
+  // Get the current (direct) spread on a trading pair.
+  // 
+  // This method doesn't do simulation, so actually executing might result in a
+  // better price (if the chain takes a different route to the target asset).
+  rpc Spread(SpreadRequest) returns (SpreadResponse);
+}
+
+// Simulation for the DEX component.
+// 
+// This is a separate service from the QueryService because it's not just a
+// simple read query from the state. Thus it poses greater DoS risks, and node
+// operators may want to enable it separately.
+service SimulationService {
+  // Simulate routing and trade execution.
+  rpc SimulateTrade(SimulateTradeRequest) returns (SimulateTradeResponse);
+}
+
+// Requests batch swap data associated with a given height and trading pair from the view service.
+message BatchSwapOutputDataRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  uint64 height = 2;
+  core.component.dex.v1alpha1.TradingPair trading_pair = 3;
+}
+
+message BatchSwapOutputDataResponse {
+  core.component.dex.v1alpha1.BatchSwapOutputData data = 1;
+}
+
+message SwapExecutionRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  uint64 height = 2;
+  core.component.dex.v1alpha1.DirectedTradingPair trading_pair = 3;
+}
+
+message SwapExecutionResponse {
+  core.component.dex.v1alpha1.SwapExecution swap_execution = 1;
+}
+
+message ArbExecutionRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  uint64 height = 2;
+}
+
+message ArbExecutionResponse {
+  core.component.dex.v1alpha1.SwapExecution swap_execution = 1;
+  uint64 height = 2;
+}
+
+message SwapExecutionsRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // If present, only return swap executions occurring after the given height.
+  uint64 start_height = 2;
+  // If present, only return swap executions occurring before the given height.
+  uint64 end_height = 3;
+  // If present, filter swap executions by the given trading pair.
+  core.component.dex.v1alpha1.DirectedTradingPair trading_pair = 4;
+}
+
+message SwapExecutionsResponse {
+  core.component.dex.v1alpha1.SwapExecution swap_execution = 1;
+  uint64 height = 2;
+  core.component.dex.v1alpha1.DirectedTradingPair trading_pair = 3;
+}
+
+message ArbExecutionsRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // If present, only return arb executions occurring after the given height.
+  uint64 start_height = 2;
+  // If present, only return arb executions occurring before the given height.
+  uint64 end_height = 3;
+}
+
+message ArbExecutionsResponse {
+  core.component.dex.v1alpha1.SwapExecution swap_execution = 1;
+  uint64 height = 2;
+}
+
+message LiquidityPositionsRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // If true, include closed and withdrawn positions.
+  bool include_closed = 4;
+}
+
+message LiquidityPositionsResponse {
+  core.component.dex.v1alpha1.Position data = 1;
+}
+  
+message LiquidityPositionByIdRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  core.component.dex.v1alpha1.PositionId position_id = 2;
+}
+
+message LiquidityPositionByIdResponse {
+  core.component.dex.v1alpha1.Position data = 1;
+}
+
+message LiquidityPositionsByIdRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  repeated core.component.dex.v1alpha1.PositionId position_id = 2;
+}
+
+message LiquidityPositionsByIdResponse {
+  core.component.dex.v1alpha1.Position data = 1;
+}
+
+message LiquidityPositionsByPriceRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // The directed trading pair to request positions for
+  core.component.dex.v1alpha1.DirectedTradingPair trading_pair = 2;
+  // The maximum number of positions to return.
+  uint64 limit = 5;
+}
+
+message LiquidityPositionsByPriceResponse {
+  core.component.dex.v1alpha1.Position data = 1;
+}
+
+message SpreadRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  core.component.dex.v1alpha1.TradingPair trading_pair = 2;
+}
+
+message SpreadResponse {
+  // The best position when trading 1 => 2.
+  core.component.dex.v1alpha1.Position best_1_to_2_position = 1;
+  // The best position when trading 2 => 1.
+  core.component.dex.v1alpha1.Position best_2_to_1_position = 2;
+  // An approximation of the effective price when trading 1 => 2.
+  double approx_effective_price_1_to_2 = 3;
+  // An approximation of the effective price when trading 2 => 1.
+  double approx_effective_price_2_to_1 = 4;
+}
+
+message SimulateTradeRequest {
+  message Routing {
+    oneof setting {
+      Default default = 1;
+      SingleHop single_hop = 2;
+    }
+
+    message SingleHop {}
+    message Default {}
+  }
+
+  core.asset.v1alpha1.Value input = 1;
+  core.asset.v1alpha1.AssetId output = 2;
+  Routing routing = 3;
+}
+
+message SimulateTradeResponse {
+  core.component.dex.v1alpha1.SwapExecution output = 1;
+}

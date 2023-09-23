@@ -15,8 +15,8 @@ use narsil::{
     metrics::register_metrics,
 };
 use penumbra_proto::{
-    client::v1alpha1::tendermint_proxy_service_server::TendermintProxyServiceServer,
     narsil::v1alpha1::ledger::ledger_service_server::LedgerServiceServer,
+    penumbra::util::tendermint_proxy::v1alpha1::tendermint_proxy_service_server::TendermintProxyServiceServer,
 };
 
 use anyhow::Context;

@@ -5,8 +5,8 @@ use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_keys::FullViewingKey;
-use penumbra_proto::client::v1alpha1::{
-    oblivious_query_service_client::ObliviousQueryServiceClient, ValidatorInfoRequest,
+use penumbra_proto::core::component::stake::v1alpha1::{
+    query_service_client::QueryServiceClient as StakeQueryServiceClient, ValidatorInfoRequest,
 };
 use penumbra_stake::{validator, DelegationToken};
 use penumbra_view::ViewClient;
@@ -24,11 +24,11 @@ impl StakedCmd {
         &self,
         full_viewing_key: &FullViewingKey,
         view_client: &mut impl ViewClient,
-        oblivious_client: &mut ObliviousQueryServiceClient<Channel>,
+        pd_channel: Channel,
     ) -> Result<()> {
-        let client = oblivious_client;
-
         let asset_cache = view_client.assets().await?;
+
+        let mut client = StakeQueryServiceClient::new(pd_channel);
 
         let validators = client
             .validator_info(ValidatorInfoRequest {

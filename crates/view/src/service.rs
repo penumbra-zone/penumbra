@@ -26,11 +26,11 @@ use penumbra_keys::{
 };
 use penumbra_num::Amount;
 use penumbra_proto::{
-    client::v1alpha1::{
+    core::keys::v1alpha1 as pbc,
+    util::tendermint_proxy::v1alpha1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,
         GetStatusRequest,
     },
-    core::keys::v1alpha1 as pbc,
     view::v1alpha1::{
         self as pb,
         view_protocol_service_client::ViewProtocolServiceClient,

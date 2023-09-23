@@ -7,7 +7,8 @@ use std::{
 
 use anyhow::Context;
 use penumbra_num::Amount;
-use penumbra_proto::client::v1alpha1 as pb_client;
+// TODO(proto): eliminate these imports
+use penumbra_proto::penumbra::core::app::v1alpha1 as pb_app;
 use penumbra_proto::penumbra::core::component::chain::v1alpha1 as pb_chain;
 
 use penumbra_proto::view::v1alpha1 as pb_view;
@@ -121,10 +122,10 @@ impl TryFrom<pb_view::ChainParametersResponse> for ChainParameters {
     }
 }
 
-impl TryFrom<pb_client::ChainParametersResponse> for ChainParameters {
+impl TryFrom<pb_app::ChainParametersResponse> for ChainParameters {
     type Error = anyhow::Error;
 
-    fn try_from(response: pb_client::ChainParametersResponse) -> Result<Self, Self::Error> {
+    fn try_from(response: pb_app::ChainParametersResponse) -> Result<Self, Self::Error> {
         response
             .chain_parameters
             .ok_or_else(|| anyhow::anyhow!("empty ChainParametersResponse message"))?

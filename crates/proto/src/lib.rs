@@ -18,6 +18,8 @@
 // The autogen code is not clippy-clean, so we disable some clippy warnings for this crate.
 #![allow(clippy::derive_partial_eq_without_eq)]
 #![allow(non_snake_case)]
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 pub use prost::Message;
 
@@ -38,7 +40,7 @@ pub use state::StateWriteProto;
 pub use penumbra::*;
 
 pub mod penumbra {
-
+    /*
     /// Client protocol structures.
     pub mod client {
         pub mod v1alpha1 {
@@ -163,11 +165,10 @@ pub mod penumbra {
             }
         }
     }
+    */
 
     /// Core protocol structures.
     pub mod core {
-        /*
-        // Commented out as this is currently an empty package.
         /// Top-level structures for the Penumbra application.
         pub mod app {
             pub mod v1alpha1 {
@@ -175,7 +176,6 @@ pub mod penumbra {
                 include!("gen/penumbra.core.app.v1alpha1.serde.rs");
             }
         }
-        */
 
         pub mod asset {
             pub mod v1alpha1 {
@@ -330,6 +330,24 @@ pub mod penumbra {
             pub mod ledger {
                 include!("gen/penumbra.narsil.ledger.v1alpha1.rs");
                 include!("gen/penumbra.narsil.ledger.v1alpha1.serde.rs");
+            }
+        }
+    }
+
+    /*
+    pub mod storage {
+        pub mod v1alpha1 {
+            include!("gen/penumbra.storage.v1alpha1.rs");
+            include!("gen/penumbra.storage.v1alpha1.serde.rs");
+        }
+    }
+    */
+
+    pub mod util {
+        pub mod tendermint_proxy {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.util.tendermint_proxy.v1alpha1.rs");
+                include!("gen/penumbra.util.tendermint_proxy.v1alpha1.serde.rs");
             }
         }
     }

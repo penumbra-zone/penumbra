@@ -1,10 +1,6 @@
 use anyhow::Context;
 use penumbra_proto::{
-    client::v1alpha1::{
-        oblivious_query_service_client::ObliviousQueryServiceClient,
-        specific_query_service_client::SpecificQueryServiceClient,
-        tendermint_proxy_service_client::TendermintProxyServiceClient,
-    },
+    util::tendermint_proxy::v1alpha1::tendermint_proxy_service_client::TendermintProxyServiceClient,
     DomainType,
 };
 use penumbra_transaction::{plan::TransactionPlan, Id as TransactionId, Transaction};
@@ -86,7 +82,8 @@ impl App {
         Ok(())
     }
 
-    async fn pd_channel(&self) -> anyhow::Result<Channel> {
+    // TODO: why do we need this here but not in the view crate?
+    pub async fn pd_channel(&self) -> anyhow::Result<Channel> {
         match self.pd_url.scheme() {
             "http" => Ok(Channel::from_shared(self.pd_url.to_string())?
                 .connect()
@@ -98,16 +95,6 @@ impl App {
             other => Err(anyhow::anyhow!("unknown url scheme {other}"))
                 .with_context(|| format!("could not connect to {}", self.pd_url)),
         }
-    }
-
-    pub async fn specific_client(&self) -> anyhow::Result<SpecificQueryServiceClient<Channel>> {
-        let channel = self.pd_channel().await?;
-        Ok(SpecificQueryServiceClient::new(channel))
-    }
-
-    pub async fn oblivious_client(&self) -> anyhow::Result<ObliviousQueryServiceClient<Channel>> {
-        let channel = self.pd_channel().await?;
-        Ok(ObliviousQueryServiceClient::new(channel))
     }
 
     pub async fn tendermint_proxy_client(

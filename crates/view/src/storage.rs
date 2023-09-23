@@ -12,8 +12,8 @@ use penumbra_dex::{
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::{
-    client::v1alpha1::{
-        oblivious_query_service_client::ObliviousQueryServiceClient, ChainParametersRequest,
+    core::app::v1alpha1::{
+        query_service_client::QueryServiceClient as AppQueryServiceClient, ChainParametersRequest,
     },
     DomainType,
 };
@@ -80,7 +80,7 @@ impl Storage {
             }
         };
 
-        let mut client = ObliviousQueryServiceClient::connect(node.to_string()).await?;
+        let mut client = AppQueryServiceClient::connect(node.to_string()).await?;
         let params = client
             .chain_parameters(tonic::Request::new(ChainParametersRequest {
                 chain_id: String::new(),
