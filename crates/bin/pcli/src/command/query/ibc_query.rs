@@ -4,7 +4,9 @@ use ibc_types::core::channel::ChannelEnd;
 use ibc_types::core::connection::ConnectionEnd;
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 
-use penumbra_proto::client::v1alpha1::KeyValueRequest;
+use penumbra_proto::core::app::v1alpha1::{
+    query_service_client::QueryServiceClient as StorageQueryServiceClient, KeyValueRequest,
+};
 use penumbra_proto::DomainType;
 
 use crate::App;
@@ -34,7 +36,7 @@ pub enum IbcCmd {
 
 impl IbcCmd {
     pub async fn exec(&self, app: &mut App) -> Result<()> {
-        let mut client = app.specific_client().await?;
+        let mut client = StorageQueryServiceClient::new(app.pd_channel().await?);
         match self {
             IbcCmd::Client { client_id } => {
                 let key = format!("clients/{client_id}/clientState");

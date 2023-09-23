@@ -2082,6 +2082,1263 @@ func (x *PositionRewardClaimPlan) GetReserves() *Reserves {
 	return nil
 }
 
+// Requests batch swap data associated with a given height and trading pair from the view service.
+type BatchSwapOutputDataRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The expected chain id (empty string if no expectation).
+	ChainId     string       `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	Height      uint64       `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+	TradingPair *TradingPair `protobuf:"bytes,3,opt,name=trading_pair,json=tradingPair,proto3" json:"trading_pair,omitempty"`
+}
+
+func (x *BatchSwapOutputDataRequest) Reset() {
+	*x = BatchSwapOutputDataRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[29]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BatchSwapOutputDataRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchSwapOutputDataRequest) ProtoMessage() {}
+
+func (x *BatchSwapOutputDataRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[29]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchSwapOutputDataRequest.ProtoReflect.Descriptor instead.
+func (*BatchSwapOutputDataRequest) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *BatchSwapOutputDataRequest) GetChainId() string {
+	if x != nil {
+		return x.ChainId
+	}
+	return ""
+}
+
+func (x *BatchSwapOutputDataRequest) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *BatchSwapOutputDataRequest) GetTradingPair() *TradingPair {
+	if x != nil {
+		return x.TradingPair
+	}
+	return nil
+}
+
+type BatchSwapOutputDataResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Data *BatchSwapOutputData `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *BatchSwapOutputDataResponse) Reset() {
+	*x = BatchSwapOutputDataResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[30]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BatchSwapOutputDataResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchSwapOutputDataResponse) ProtoMessage() {}
+
+func (x *BatchSwapOutputDataResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[30]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchSwapOutputDataResponse.ProtoReflect.Descriptor instead.
+func (*BatchSwapOutputDataResponse) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *BatchSwapOutputDataResponse) GetData() *BatchSwapOutputData {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type SwapExecutionRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The expected chain id (empty string if no expectation).
+	ChainId     string               `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	Height      uint64               `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+	TradingPair *DirectedTradingPair `protobuf:"bytes,3,opt,name=trading_pair,json=tradingPair,proto3" json:"trading_pair,omitempty"`
+}
+
+func (x *SwapExecutionRequest) Reset() {
+	*x = SwapExecutionRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[31]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SwapExecutionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SwapExecutionRequest) ProtoMessage() {}
+
+func (x *SwapExecutionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[31]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SwapExecutionRequest.ProtoReflect.Descriptor instead.
+func (*SwapExecutionRequest) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *SwapExecutionRequest) GetChainId() string {
+	if x != nil {
+		return x.ChainId
+	}
+	return ""
+}
+
+func (x *SwapExecutionRequest) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *SwapExecutionRequest) GetTradingPair() *DirectedTradingPair {
+	if x != nil {
+		return x.TradingPair
+	}
+	return nil
+}
+
+type SwapExecutionResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	SwapExecution *SwapExecution `protobuf:"bytes,1,opt,name=swap_execution,json=swapExecution,proto3" json:"swap_execution,omitempty"`
+}
+
+func (x *SwapExecutionResponse) Reset() {
+	*x = SwapExecutionResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[32]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SwapExecutionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SwapExecutionResponse) ProtoMessage() {}
+
+func (x *SwapExecutionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[32]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SwapExecutionResponse.ProtoReflect.Descriptor instead.
+func (*SwapExecutionResponse) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *SwapExecutionResponse) GetSwapExecution() *SwapExecution {
+	if x != nil {
+		return x.SwapExecution
+	}
+	return nil
+}
+
+type ArbExecutionRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The expected chain id (empty string if no expectation).
+	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	Height  uint64 `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+}
+
+func (x *ArbExecutionRequest) Reset() {
+	*x = ArbExecutionRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[33]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ArbExecutionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ArbExecutionRequest) ProtoMessage() {}
+
+func (x *ArbExecutionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[33]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ArbExecutionRequest.ProtoReflect.Descriptor instead.
+func (*ArbExecutionRequest) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *ArbExecutionRequest) GetChainId() string {
+	if x != nil {
+		return x.ChainId
+	}
+	return ""
+}
+
+func (x *ArbExecutionRequest) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+type ArbExecutionResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	SwapExecution *SwapExecution `protobuf:"bytes,1,opt,name=swap_execution,json=swapExecution,proto3" json:"swap_execution,omitempty"`
+	Height        uint64         `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+}
+
+func (x *ArbExecutionResponse) Reset() {
+	*x = ArbExecutionResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[34]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ArbExecutionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ArbExecutionResponse) ProtoMessage() {}
+
+func (x *ArbExecutionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[34]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ArbExecutionResponse.ProtoReflect.Descriptor instead.
+func (*ArbExecutionResponse) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *ArbExecutionResponse) GetSwapExecution() *SwapExecution {
+	if x != nil {
+		return x.SwapExecution
+	}
+	return nil
+}
+
+func (x *ArbExecutionResponse) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+type SwapExecutionsRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The expected chain id (empty string if no expectation).
+	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// If present, only return swap executions occurring after the given height.
+	StartHeight uint64 `protobuf:"varint,2,opt,name=start_height,json=startHeight,proto3" json:"start_height,omitempty"`
+	// If present, only return swap executions occurring before the given height.
+	EndHeight uint64 `protobuf:"varint,3,opt,name=end_height,json=endHeight,proto3" json:"end_height,omitempty"`
+	// If present, filter swap executions by the given trading pair.
+	TradingPair *DirectedTradingPair `protobuf:"bytes,4,opt,name=trading_pair,json=tradingPair,proto3" json:"trading_pair,omitempty"`
+}
+
+func (x *SwapExecutionsRequest) Reset() {
+	*x = SwapExecutionsRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[35]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SwapExecutionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SwapExecutionsRequest) ProtoMessage() {}
+
+func (x *SwapExecutionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[35]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SwapExecutionsRequest.ProtoReflect.Descriptor instead.
+func (*SwapExecutionsRequest) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *SwapExecutionsRequest) GetChainId() string {
+	if x != nil {
+		return x.ChainId
+	}
+	return ""
+}
+
+func (x *SwapExecutionsRequest) GetStartHeight() uint64 {
+	if x != nil {
+		return x.StartHeight
+	}
+	return 0
+}
+
+func (x *SwapExecutionsRequest) GetEndHeight() uint64 {
+	if x != nil {
+		return x.EndHeight
+	}
+	return 0
+}
+
+func (x *SwapExecutionsRequest) GetTradingPair() *DirectedTradingPair {
+	if x != nil {
+		return x.TradingPair
+	}
+	return nil
+}
+
+type SwapExecutionsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	SwapExecution *SwapExecution       `protobuf:"bytes,1,opt,name=swap_execution,json=swapExecution,proto3" json:"swap_execution,omitempty"`
+	Height        uint64               `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+	TradingPair   *DirectedTradingPair `protobuf:"bytes,3,opt,name=trading_pair,json=tradingPair,proto3" json:"trading_pair,omitempty"`
+}
+
+func (x *SwapExecutionsResponse) Reset() {
+	*x = SwapExecutionsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[36]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SwapExecutionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SwapExecutionsResponse) ProtoMessage() {}
+
+func (x *SwapExecutionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[36]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SwapExecutionsResponse.ProtoReflect.Descriptor instead.
+func (*SwapExecutionsResponse) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *SwapExecutionsResponse) GetSwapExecution() *SwapExecution {
+	if x != nil {
+		return x.SwapExecution
+	}
+	return nil
+}
+
+func (x *SwapExecutionsResponse) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+func (x *SwapExecutionsResponse) GetTradingPair() *DirectedTradingPair {
+	if x != nil {
+		return x.TradingPair
+	}
+	return nil
+}
+
+type ArbExecutionsRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The expected chain id (empty string if no expectation).
+	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// If present, only return arb executions occurring after the given height.
+	StartHeight uint64 `protobuf:"varint,2,opt,name=start_height,json=startHeight,proto3" json:"start_height,omitempty"`
+	// If present, only return arb executions occurring before the given height.
+	EndHeight uint64 `protobuf:"varint,3,opt,name=end_height,json=endHeight,proto3" json:"end_height,omitempty"`
+}
+
+func (x *ArbExecutionsRequest) Reset() {
+	*x = ArbExecutionsRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[37]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ArbExecutionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ArbExecutionsRequest) ProtoMessage() {}
+
+func (x *ArbExecutionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[37]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ArbExecutionsRequest.ProtoReflect.Descriptor instead.
+func (*ArbExecutionsRequest) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *ArbExecutionsRequest) GetChainId() string {
+	if x != nil {
+		return x.ChainId
+	}
+	return ""
+}
+
+func (x *ArbExecutionsRequest) GetStartHeight() uint64 {
+	if x != nil {
+		return x.StartHeight
+	}
+	return 0
+}
+
+func (x *ArbExecutionsRequest) GetEndHeight() uint64 {
+	if x != nil {
+		return x.EndHeight
+	}
+	return 0
+}
+
+type ArbExecutionsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	SwapExecution *SwapExecution `protobuf:"bytes,1,opt,name=swap_execution,json=swapExecution,proto3" json:"swap_execution,omitempty"`
+	Height        uint64         `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+}
+
+func (x *ArbExecutionsResponse) Reset() {
+	*x = ArbExecutionsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[38]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ArbExecutionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ArbExecutionsResponse) ProtoMessage() {}
+
+func (x *ArbExecutionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[38]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ArbExecutionsResponse.ProtoReflect.Descriptor instead.
+func (*ArbExecutionsResponse) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *ArbExecutionsResponse) GetSwapExecution() *SwapExecution {
+	if x != nil {
+		return x.SwapExecution
+	}
+	return nil
+}
+
+func (x *ArbExecutionsResponse) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+type LiquidityPositionsRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The expected chain id (empty string if no expectation).
+	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// If true, include closed and withdrawn positions.
+	IncludeClosed bool `protobuf:"varint,4,opt,name=include_closed,json=includeClosed,proto3" json:"include_closed,omitempty"`
+}
+
+func (x *LiquidityPositionsRequest) Reset() {
+	*x = LiquidityPositionsRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[39]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *LiquidityPositionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LiquidityPositionsRequest) ProtoMessage() {}
+
+func (x *LiquidityPositionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[39]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LiquidityPositionsRequest.ProtoReflect.Descriptor instead.
+func (*LiquidityPositionsRequest) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *LiquidityPositionsRequest) GetChainId() string {
+	if x != nil {
+		return x.ChainId
+	}
+	return ""
+}
+
+func (x *LiquidityPositionsRequest) GetIncludeClosed() bool {
+	if x != nil {
+		return x.IncludeClosed
+	}
+	return false
+}
+
+type LiquidityPositionsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Data *Position `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *LiquidityPositionsResponse) Reset() {
+	*x = LiquidityPositionsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[40]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *LiquidityPositionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LiquidityPositionsResponse) ProtoMessage() {}
+
+func (x *LiquidityPositionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[40]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LiquidityPositionsResponse.ProtoReflect.Descriptor instead.
+func (*LiquidityPositionsResponse) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *LiquidityPositionsResponse) GetData() *Position {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type LiquidityPositionByIdRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The expected chain id (empty string if no expectation).
+	ChainId    string      `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	PositionId *PositionId `protobuf:"bytes,2,opt,name=position_id,json=positionId,proto3" json:"position_id,omitempty"`
+}
+
+func (x *LiquidityPositionByIdRequest) Reset() {
+	*x = LiquidityPositionByIdRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[41]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *LiquidityPositionByIdRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LiquidityPositionByIdRequest) ProtoMessage() {}
+
+func (x *LiquidityPositionByIdRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[41]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LiquidityPositionByIdRequest.ProtoReflect.Descriptor instead.
+func (*LiquidityPositionByIdRequest) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *LiquidityPositionByIdRequest) GetChainId() string {
+	if x != nil {
+		return x.ChainId
+	}
+	return ""
+}
+
+func (x *LiquidityPositionByIdRequest) GetPositionId() *PositionId {
+	if x != nil {
+		return x.PositionId
+	}
+	return nil
+}
+
+type LiquidityPositionByIdResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Data *Position `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *LiquidityPositionByIdResponse) Reset() {
+	*x = LiquidityPositionByIdResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[42]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *LiquidityPositionByIdResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LiquidityPositionByIdResponse) ProtoMessage() {}
+
+func (x *LiquidityPositionByIdResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[42]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LiquidityPositionByIdResponse.ProtoReflect.Descriptor instead.
+func (*LiquidityPositionByIdResponse) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *LiquidityPositionByIdResponse) GetData() *Position {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type LiquidityPositionsByIdRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The expected chain id (empty string if no expectation).
+	ChainId    string        `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	PositionId []*PositionId `protobuf:"bytes,2,rep,name=position_id,json=positionId,proto3" json:"position_id,omitempty"`
+}
+
+func (x *LiquidityPositionsByIdRequest) Reset() {
+	*x = LiquidityPositionsByIdRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[43]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *LiquidityPositionsByIdRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LiquidityPositionsByIdRequest) ProtoMessage() {}
+
+func (x *LiquidityPositionsByIdRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[43]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LiquidityPositionsByIdRequest.ProtoReflect.Descriptor instead.
+func (*LiquidityPositionsByIdRequest) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *LiquidityPositionsByIdRequest) GetChainId() string {
+	if x != nil {
+		return x.ChainId
+	}
+	return ""
+}
+
+func (x *LiquidityPositionsByIdRequest) GetPositionId() []*PositionId {
+	if x != nil {
+		return x.PositionId
+	}
+	return nil
+}
+
+type LiquidityPositionsByIdResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Data *Position `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *LiquidityPositionsByIdResponse) Reset() {
+	*x = LiquidityPositionsByIdResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[44]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *LiquidityPositionsByIdResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LiquidityPositionsByIdResponse) ProtoMessage() {}
+
+func (x *LiquidityPositionsByIdResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[44]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LiquidityPositionsByIdResponse.ProtoReflect.Descriptor instead.
+func (*LiquidityPositionsByIdResponse) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *LiquidityPositionsByIdResponse) GetData() *Position {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type LiquidityPositionsByPriceRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The expected chain id (empty string if no expectation).
+	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// The directed trading pair to request positions for
+	TradingPair *DirectedTradingPair `protobuf:"bytes,2,opt,name=trading_pair,json=tradingPair,proto3" json:"trading_pair,omitempty"`
+	// The maximum number of positions to return.
+	Limit uint64 `protobuf:"varint,5,opt,name=limit,proto3" json:"limit,omitempty"`
+}
+
+func (x *LiquidityPositionsByPriceRequest) Reset() {
+	*x = LiquidityPositionsByPriceRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[45]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *LiquidityPositionsByPriceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LiquidityPositionsByPriceRequest) ProtoMessage() {}
+
+func (x *LiquidityPositionsByPriceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[45]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LiquidityPositionsByPriceRequest.ProtoReflect.Descriptor instead.
+func (*LiquidityPositionsByPriceRequest) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *LiquidityPositionsByPriceRequest) GetChainId() string {
+	if x != nil {
+		return x.ChainId
+	}
+	return ""
+}
+
+func (x *LiquidityPositionsByPriceRequest) GetTradingPair() *DirectedTradingPair {
+	if x != nil {
+		return x.TradingPair
+	}
+	return nil
+}
+
+func (x *LiquidityPositionsByPriceRequest) GetLimit() uint64 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type LiquidityPositionsByPriceResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Data *Position `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *LiquidityPositionsByPriceResponse) Reset() {
+	*x = LiquidityPositionsByPriceResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[46]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *LiquidityPositionsByPriceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LiquidityPositionsByPriceResponse) ProtoMessage() {}
+
+func (x *LiquidityPositionsByPriceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[46]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LiquidityPositionsByPriceResponse.ProtoReflect.Descriptor instead.
+func (*LiquidityPositionsByPriceResponse) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *LiquidityPositionsByPriceResponse) GetData() *Position {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type SpreadRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The expected chain id (empty string if no expectation).
+	ChainId     string       `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	TradingPair *TradingPair `protobuf:"bytes,2,opt,name=trading_pair,json=tradingPair,proto3" json:"trading_pair,omitempty"`
+}
+
+func (x *SpreadRequest) Reset() {
+	*x = SpreadRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[47]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SpreadRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SpreadRequest) ProtoMessage() {}
+
+func (x *SpreadRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[47]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SpreadRequest.ProtoReflect.Descriptor instead.
+func (*SpreadRequest) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *SpreadRequest) GetChainId() string {
+	if x != nil {
+		return x.ChainId
+	}
+	return ""
+}
+
+func (x *SpreadRequest) GetTradingPair() *TradingPair {
+	if x != nil {
+		return x.TradingPair
+	}
+	return nil
+}
+
+type SpreadResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The best position when trading 1 => 2.
+	Best_1To_2Position *Position `protobuf:"bytes,1,opt,name=best_1_to_2_position,json=best1To2Position,proto3" json:"best_1_to_2_position,omitempty"`
+	// The best position when trading 2 => 1.
+	Best_2To_1Position *Position `protobuf:"bytes,2,opt,name=best_2_to_1_position,json=best2To1Position,proto3" json:"best_2_to_1_position,omitempty"`
+	// An approximation of the effective price when trading 1 => 2.
+	ApproxEffectivePrice_1To_2 float64 `protobuf:"fixed64,3,opt,name=approx_effective_price_1_to_2,json=approxEffectivePrice1To2,proto3" json:"approx_effective_price_1_to_2,omitempty"`
+	// An approximation of the effective price when trading 2 => 1.
+	ApproxEffectivePrice_2To_1 float64 `protobuf:"fixed64,4,opt,name=approx_effective_price_2_to_1,json=approxEffectivePrice2To1,proto3" json:"approx_effective_price_2_to_1,omitempty"`
+}
+
+func (x *SpreadResponse) Reset() {
+	*x = SpreadResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[48]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SpreadResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SpreadResponse) ProtoMessage() {}
+
+func (x *SpreadResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[48]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SpreadResponse.ProtoReflect.Descriptor instead.
+func (*SpreadResponse) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *SpreadResponse) GetBest_1To_2Position() *Position {
+	if x != nil {
+		return x.Best_1To_2Position
+	}
+	return nil
+}
+
+func (x *SpreadResponse) GetBest_2To_1Position() *Position {
+	if x != nil {
+		return x.Best_2To_1Position
+	}
+	return nil
+}
+
+func (x *SpreadResponse) GetApproxEffectivePrice_1To_2() float64 {
+	if x != nil {
+		return x.ApproxEffectivePrice_1To_2
+	}
+	return 0
+}
+
+func (x *SpreadResponse) GetApproxEffectivePrice_2To_1() float64 {
+	if x != nil {
+		return x.ApproxEffectivePrice_2To_1
+	}
+	return 0
+}
+
+type SimulateTradeRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Input   *v1alpha14.Value              `protobuf:"bytes,1,opt,name=input,proto3" json:"input,omitempty"`
+	Output  *v1alpha14.AssetId            `protobuf:"bytes,2,opt,name=output,proto3" json:"output,omitempty"`
+	Routing *SimulateTradeRequest_Routing `protobuf:"bytes,3,opt,name=routing,proto3" json:"routing,omitempty"`
+}
+
+func (x *SimulateTradeRequest) Reset() {
+	*x = SimulateTradeRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[49]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SimulateTradeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SimulateTradeRequest) ProtoMessage() {}
+
+func (x *SimulateTradeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[49]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SimulateTradeRequest.ProtoReflect.Descriptor instead.
+func (*SimulateTradeRequest) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{49}
+}
+
+func (x *SimulateTradeRequest) GetInput() *v1alpha14.Value {
+	if x != nil {
+		return x.Input
+	}
+	return nil
+}
+
+func (x *SimulateTradeRequest) GetOutput() *v1alpha14.AssetId {
+	if x != nil {
+		return x.Output
+	}
+	return nil
+}
+
+func (x *SimulateTradeRequest) GetRouting() *SimulateTradeRequest_Routing {
+	if x != nil {
+		return x.Routing
+	}
+	return nil
+}
+
+type SimulateTradeResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Output *SwapExecution `protobuf:"bytes,1,opt,name=output,proto3" json:"output,omitempty"`
+}
+
+func (x *SimulateTradeResponse) Reset() {
+	*x = SimulateTradeResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[50]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SimulateTradeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SimulateTradeResponse) ProtoMessage() {}
+
+func (x *SimulateTradeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[50]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SimulateTradeResponse.ProtoReflect.Descriptor instead.
+func (*SimulateTradeResponse) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{50}
+}
+
+func (x *SimulateTradeResponse) GetOutput() *SwapExecution {
+	if x != nil {
+		return x.Output
+	}
+	return nil
+}
+
 type SwapView_Visible struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2094,7 +3351,7 @@ type SwapView_Visible struct {
 func (x *SwapView_Visible) Reset() {
 	*x = SwapView_Visible{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[29]
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[51]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2107,7 +3364,7 @@ func (x *SwapView_Visible) String() string {
 func (*SwapView_Visible) ProtoMessage() {}
 
 func (x *SwapView_Visible) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[29]
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[51]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2148,7 +3405,7 @@ type SwapView_Opaque struct {
 func (x *SwapView_Opaque) Reset() {
 	*x = SwapView_Opaque{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[30]
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[52]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2161,7 +3418,7 @@ func (x *SwapView_Opaque) String() string {
 func (*SwapView_Opaque) ProtoMessage() {}
 
 func (x *SwapView_Opaque) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[30]
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[52]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2197,7 +3454,7 @@ type SwapClaimView_Visible struct {
 func (x *SwapClaimView_Visible) Reset() {
 	*x = SwapClaimView_Visible{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[31]
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[53]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2210,7 +3467,7 @@ func (x *SwapClaimView_Visible) String() string {
 func (*SwapClaimView_Visible) ProtoMessage() {}
 
 func (x *SwapClaimView_Visible) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[31]
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[53]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2258,7 +3515,7 @@ type SwapClaimView_Opaque struct {
 func (x *SwapClaimView_Opaque) Reset() {
 	*x = SwapClaimView_Opaque{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[32]
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[54]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2271,7 +3528,7 @@ func (x *SwapClaimView_Opaque) String() string {
 func (*SwapClaimView_Opaque) ProtoMessage() {}
 
 func (x *SwapClaimView_Opaque) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[32]
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[54]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2307,7 +3564,7 @@ type SwapExecution_Trace struct {
 func (x *SwapExecution_Trace) Reset() {
 	*x = SwapExecution_Trace{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[33]
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[55]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2320,7 +3577,7 @@ func (x *SwapExecution_Trace) String() string {
 func (*SwapExecution_Trace) ProtoMessage() {}
 
 func (x *SwapExecution_Trace) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[33]
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[55]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2341,6 +3598,163 @@ func (x *SwapExecution_Trace) GetValue() []*v1alpha14.Value {
 		return x.Value
 	}
 	return nil
+}
+
+type SimulateTradeRequest_Routing struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Types that are assignable to Setting:
+	//
+	//	*SimulateTradeRequest_Routing_Default_
+	//	*SimulateTradeRequest_Routing_SingleHop_
+	Setting isSimulateTradeRequest_Routing_Setting `protobuf_oneof:"setting"`
+}
+
+func (x *SimulateTradeRequest_Routing) Reset() {
+	*x = SimulateTradeRequest_Routing{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[56]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SimulateTradeRequest_Routing) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SimulateTradeRequest_Routing) ProtoMessage() {}
+
+func (x *SimulateTradeRequest_Routing) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[56]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SimulateTradeRequest_Routing.ProtoReflect.Descriptor instead.
+func (*SimulateTradeRequest_Routing) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{49, 0}
+}
+
+func (m *SimulateTradeRequest_Routing) GetSetting() isSimulateTradeRequest_Routing_Setting {
+	if m != nil {
+		return m.Setting
+	}
+	return nil
+}
+
+func (x *SimulateTradeRequest_Routing) GetDefault() *SimulateTradeRequest_Routing_Default {
+	if x, ok := x.GetSetting().(*SimulateTradeRequest_Routing_Default_); ok {
+		return x.Default
+	}
+	return nil
+}
+
+func (x *SimulateTradeRequest_Routing) GetSingleHop() *SimulateTradeRequest_Routing_SingleHop {
+	if x, ok := x.GetSetting().(*SimulateTradeRequest_Routing_SingleHop_); ok {
+		return x.SingleHop
+	}
+	return nil
+}
+
+type isSimulateTradeRequest_Routing_Setting interface {
+	isSimulateTradeRequest_Routing_Setting()
+}
+
+type SimulateTradeRequest_Routing_Default_ struct {
+	Default *SimulateTradeRequest_Routing_Default `protobuf:"bytes,1,opt,name=default,proto3,oneof"`
+}
+
+type SimulateTradeRequest_Routing_SingleHop_ struct {
+	SingleHop *SimulateTradeRequest_Routing_SingleHop `protobuf:"bytes,2,opt,name=single_hop,json=singleHop,proto3,oneof"`
+}
+
+func (*SimulateTradeRequest_Routing_Default_) isSimulateTradeRequest_Routing_Setting() {}
+
+func (*SimulateTradeRequest_Routing_SingleHop_) isSimulateTradeRequest_Routing_Setting() {}
+
+type SimulateTradeRequest_Routing_SingleHop struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *SimulateTradeRequest_Routing_SingleHop) Reset() {
+	*x = SimulateTradeRequest_Routing_SingleHop{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[57]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SimulateTradeRequest_Routing_SingleHop) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SimulateTradeRequest_Routing_SingleHop) ProtoMessage() {}
+
+func (x *SimulateTradeRequest_Routing_SingleHop) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[57]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SimulateTradeRequest_Routing_SingleHop.ProtoReflect.Descriptor instead.
+func (*SimulateTradeRequest_Routing_SingleHop) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{49, 0, 0}
+}
+
+type SimulateTradeRequest_Routing_Default struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *SimulateTradeRequest_Routing_Default) Reset() {
+	*x = SimulateTradeRequest_Routing_Default{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[58]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SimulateTradeRequest_Routing_Default) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SimulateTradeRequest_Routing_Default) ProtoMessage() {}
+
+func (x *SimulateTradeRequest_Routing_Default) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[58]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SimulateTradeRequest_Routing_Default.ProtoReflect.Descriptor instead.
+func (*SimulateTradeRequest_Routing_Default) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP(), []int{49, 0, 1}
 }
 
 var File_penumbra_core_component_dex_v1alpha1_dex_proto protoreflect.FileDescriptor
@@ -2793,28 +4207,354 @@ var file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDesc = []byte{
 	0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
 	0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
 	0x52, 0x65, 0x73, 0x65, 0x72, 0x76, 0x65, 0x73, 0x52, 0x08, 0x72, 0x65, 0x73, 0x65, 0x72, 0x76,
-	0x65, 0x73, 0x42, 0xca, 0x02, 0x0a, 0x28, 0x63, 0x6f, 0x6d, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d,
+	0x65, 0x73, 0x22, 0xa5, 0x01, 0x0a, 0x1a, 0x42, 0x61, 0x74, 0x63, 0x68, 0x53, 0x77, 0x61, 0x70,
+	0x4f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x44, 0x61, 0x74, 0x61, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x12, 0x19, 0x0a, 0x08, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x64, 0x12, 0x16, 0x0a, 0x06,
+	0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68, 0x65,
+	0x69, 0x67, 0x68, 0x74, 0x12, 0x54, 0x0a, 0x0c, 0x74, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x5f,
+	0x70, 0x61, 0x69, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x31, 0x2e, 0x70, 0x65, 0x6e,
+	0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f,
+	0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
+	0x31, 0x2e, 0x54, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x50, 0x61, 0x69, 0x72, 0x52, 0x0b, 0x74,
+	0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x50, 0x61, 0x69, 0x72, 0x22, 0x6c, 0x0a, 0x1b, 0x42, 0x61,
+	0x74, 0x63, 0x68, 0x53, 0x77, 0x61, 0x70, 0x4f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x44, 0x61, 0x74,
+	0x61, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x4d, 0x0a, 0x04, 0x64, 0x61, 0x74,
+	0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62,
+	0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x42,
+	0x61, 0x74, 0x63, 0x68, 0x53, 0x77, 0x61, 0x70, 0x4f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x44, 0x61,
+	0x74, 0x61, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0xa7, 0x01, 0x0a, 0x14, 0x53, 0x77, 0x61,
+	0x70, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x12, 0x19, 0x0a, 0x08, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x64, 0x12, 0x16, 0x0a, 0x06,
+	0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68, 0x65,
+	0x69, 0x67, 0x68, 0x74, 0x12, 0x5c, 0x0a, 0x0c, 0x74, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x5f,
+	0x70, 0x61, 0x69, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x70, 0x65, 0x6e,
+	0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f,
+	0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
+	0x31, 0x2e, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x65, 0x64, 0x54, 0x72, 0x61, 0x64, 0x69, 0x6e,
+	0x67, 0x50, 0x61, 0x69, 0x72, 0x52, 0x0b, 0x74, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x50, 0x61,
+	0x69, 0x72, 0x22, 0x73, 0x0a, 0x15, 0x53, 0x77, 0x61, 0x70, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74,
+	0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x5a, 0x0a, 0x0e, 0x73,
+	0x77, 0x61, 0x70, 0x5f, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x33, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63,
+	0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65,
+	0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x77, 0x61, 0x70, 0x45,
+	0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0d, 0x73, 0x77, 0x61, 0x70, 0x45, 0x78,
+	0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x48, 0x0a, 0x13, 0x41, 0x72, 0x62, 0x45, 0x78,
+	0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x19,
+	0x0a, 0x08, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x07, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x64, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69,
+	0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68,
+	0x74, 0x22, 0x8a, 0x01, 0x0a, 0x14, 0x41, 0x72, 0x62, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69,
+	0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x5a, 0x0a, 0x0e, 0x73, 0x77,
+	0x61, 0x70, 0x5f, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x33, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f,
+	0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78,
+	0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x77, 0x61, 0x70, 0x45, 0x78,
+	0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0d, 0x73, 0x77, 0x61, 0x70, 0x45, 0x78, 0x65,
+	0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0xd2,
+	0x01, 0x0a, 0x15, 0x53, 0x77, 0x61, 0x70, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e,
+	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x19, 0x0a, 0x08, 0x63, 0x68, 0x61, 0x69,
+	0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x68, 0x61, 0x69,
+	0x6e, 0x49, 0x64, 0x12, 0x21, 0x0a, 0x0c, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x68, 0x65, 0x69,
+	0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0b, 0x73, 0x74, 0x61, 0x72, 0x74,
+	0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x65, 0x6e, 0x64, 0x5f, 0x68, 0x65,
+	0x69, 0x67, 0x68, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x52, 0x09, 0x65, 0x6e, 0x64, 0x48,
+	0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x5c, 0x0a, 0x0c, 0x74, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67,
+	0x5f, 0x70, 0x61, 0x69, 0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x70, 0x65,
+	0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70,
+	0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
+	0x61, 0x31, 0x2e, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x65, 0x64, 0x54, 0x72, 0x61, 0x64, 0x69,
+	0x6e, 0x67, 0x50, 0x61, 0x69, 0x72, 0x52, 0x0b, 0x74, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x50,
+	0x61, 0x69, 0x72, 0x22, 0xea, 0x01, 0x0a, 0x16, 0x53, 0x77, 0x61, 0x70, 0x45, 0x78, 0x65, 0x63,
+	0x75, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x5a,
+	0x0a, 0x0e, 0x73, 0x77, 0x61, 0x70, 0x5f, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x33, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72,
+	0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74,
+	0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x77,
+	0x61, 0x70, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0d, 0x73, 0x77, 0x61,
+	0x70, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65,
+	0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67,
+	0x68, 0x74, 0x12, 0x5c, 0x0a, 0x0c, 0x74, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x5f, 0x70, 0x61,
+	0x69, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d,
 	0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
-	0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x42,
-	0x08, 0x44, 0x65, 0x78, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x5f, 0x67, 0x69, 0x74,
-	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61,
-	0x2d, 0x7a, 0x6f, 0x6e, 0x65, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x70, 0x65, 0x6e, 0x75,
-	0x6d, 0x62, 0x72, 0x61, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e,
-	0x65, 0x6e, 0x74, 0x2f, 0x64, 0x65, 0x78, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
-	0x3b, 0x64, 0x65, 0x78, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xa2, 0x02, 0x04, 0x50,
-	0x43, 0x43, 0x44, 0xaa, 0x02, 0x24, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x43,
-	0x6f, 0x72, 0x65, 0x2e, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x44, 0x65,
-	0x78, 0x2e, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xca, 0x02, 0x24, 0x50, 0x65, 0x6e,
-	0x75, 0x6d, 0x62, 0x72, 0x61, 0x5c, 0x43, 0x6f, 0x72, 0x65, 0x5c, 0x43, 0x6f, 0x6d, 0x70, 0x6f,
-	0x6e, 0x65, 0x6e, 0x74, 0x5c, 0x44, 0x65, 0x78, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
-	0x31, 0xe2, 0x02, 0x30, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x5c, 0x43, 0x6f, 0x72,
-	0x65, 0x5c, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x5c, 0x44, 0x65, 0x78, 0x5c,
-	0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61,
-	0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x28, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x3a,
-	0x3a, 0x43, 0x6f, 0x72, 0x65, 0x3a, 0x3a, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74,
-	0x3a, 0x3a, 0x44, 0x65, 0x78, 0x3a, 0x3a, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x62,
-	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
+	0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x65, 0x64, 0x54, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x50,
+	0x61, 0x69, 0x72, 0x52, 0x0b, 0x74, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x50, 0x61, 0x69, 0x72,
+	0x22, 0x73, 0x0a, 0x14, 0x41, 0x72, 0x62, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e,
+	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x19, 0x0a, 0x08, 0x63, 0x68, 0x61, 0x69,
+	0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x68, 0x61, 0x69,
+	0x6e, 0x49, 0x64, 0x12, 0x21, 0x0a, 0x0c, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x68, 0x65, 0x69,
+	0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0b, 0x73, 0x74, 0x61, 0x72, 0x74,
+	0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x65, 0x6e, 0x64, 0x5f, 0x68, 0x65,
+	0x69, 0x67, 0x68, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x52, 0x09, 0x65, 0x6e, 0x64, 0x48,
+	0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x8b, 0x01, 0x0a, 0x15, 0x41, 0x72, 0x62, 0x45, 0x78, 0x65,
+	0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
+	0x5a, 0x0a, 0x0e, 0x73, 0x77, 0x61, 0x70, 0x5f, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f,
+	0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x33, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62,
+	0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53,
+	0x77, 0x61, 0x70, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0d, 0x73, 0x77,
+	0x61, 0x70, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x16, 0x0a, 0x06, 0x68,
+	0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68, 0x65, 0x69,
+	0x67, 0x68, 0x74, 0x22, 0x5d, 0x0a, 0x19, 0x4c, 0x69, 0x71, 0x75, 0x69, 0x64, 0x69, 0x74, 0x79,
+	0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x12, 0x19, 0x0a, 0x08, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x07, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x64, 0x12, 0x25, 0x0a, 0x0e, 0x69,
+	0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x5f, 0x63, 0x6c, 0x6f, 0x73, 0x65, 0x64, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x08, 0x52, 0x0d, 0x69, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x43, 0x6c, 0x6f, 0x73,
+	0x65, 0x64, 0x22, 0x60, 0x0a, 0x1a, 0x4c, 0x69, 0x71, 0x75, 0x69, 0x64, 0x69, 0x74, 0x79, 0x50,
+	0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x12, 0x42, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2e,
+	0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63,
+	0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61,
+	0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x04,
+	0x64, 0x61, 0x74, 0x61, 0x22, 0x8c, 0x01, 0x0a, 0x1c, 0x4c, 0x69, 0x71, 0x75, 0x69, 0x64, 0x69,
+	0x74, 0x79, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x19, 0x0a, 0x08, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69,
+	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x64,
+	0x12, 0x51, 0x0a, 0x0b, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x69, 0x64, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x30, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61,
+	0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e,
+	0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x50, 0x6f, 0x73,
+	0x69, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x64, 0x52, 0x0a, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f,
+	0x6e, 0x49, 0x64, 0x22, 0x63, 0x0a, 0x1d, 0x4c, 0x69, 0x71, 0x75, 0x69, 0x64, 0x69, 0x74, 0x79,
+	0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x42, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x2e, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f,
+	0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78,
+	0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69,
+	0x6f, 0x6e, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x8d, 0x01, 0x0a, 0x1d, 0x4c, 0x69, 0x71,
+	0x75, 0x69, 0x64, 0x69, 0x74, 0x79, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x42,
+	0x79, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x19, 0x0a, 0x08, 0x63, 0x68,
+	0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x68,
+	0x61, 0x69, 0x6e, 0x49, 0x64, 0x12, 0x51, 0x0a, 0x0b, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f,
+	0x6e, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x30, 0x2e, 0x70, 0x65, 0x6e,
+	0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f,
+	0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
+	0x31, 0x2e, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x64, 0x52, 0x0a, 0x70, 0x6f,
+	0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x64, 0x22, 0x64, 0x0a, 0x1e, 0x4c, 0x69, 0x71, 0x75,
+	0x69, 0x64, 0x69, 0x74, 0x79, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x42, 0x79,
+	0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x42, 0x0a, 0x04, 0x64, 0x61,
+	0x74, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2e, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d,
+	0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
+	0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
+	0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0xb1,
+	0x01, 0x0a, 0x20, 0x4c, 0x69, 0x71, 0x75, 0x69, 0x64, 0x69, 0x74, 0x79, 0x50, 0x6f, 0x73, 0x69,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x42, 0x79, 0x50, 0x72, 0x69, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x12, 0x19, 0x0a, 0x08, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x64, 0x12, 0x5c,
+	0x0a, 0x0c, 0x74, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x5f, 0x70, 0x61, 0x69, 0x72, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e,
+	0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64,
+	0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x44, 0x69, 0x72, 0x65,
+	0x63, 0x74, 0x65, 0x64, 0x54, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x50, 0x61, 0x69, 0x72, 0x52,
+	0x0b, 0x74, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x50, 0x61, 0x69, 0x72, 0x12, 0x14, 0x0a, 0x05,
+	0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x04, 0x52, 0x05, 0x6c, 0x69, 0x6d,
+	0x69, 0x74, 0x22, 0x67, 0x0a, 0x21, 0x4c, 0x69, 0x71, 0x75, 0x69, 0x64, 0x69, 0x74, 0x79, 0x50,
+	0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x42, 0x79, 0x50, 0x72, 0x69, 0x63, 0x65, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x42, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2e, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61,
+	0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e,
+	0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x50, 0x6f, 0x73,
+	0x69, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x80, 0x01, 0x0a, 0x0d,
+	0x53, 0x70, 0x72, 0x65, 0x61, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x19, 0x0a,
+	0x08, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x07, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x64, 0x12, 0x54, 0x0a, 0x0c, 0x74, 0x72, 0x61, 0x64,
+	0x69, 0x6e, 0x67, 0x5f, 0x70, 0x61, 0x69, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x31,
+	0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63,
+	0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61,
+	0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x54, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x50, 0x61, 0x69,
+	0x72, 0x52, 0x0b, 0x74, 0x72, 0x61, 0x64, 0x69, 0x6e, 0x67, 0x50, 0x61, 0x69, 0x72, 0x22, 0xd2,
+	0x02, 0x0a, 0x0e, 0x53, 0x70, 0x72, 0x65, 0x61, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x12, 0x5e, 0x0a, 0x14, 0x62, 0x65, 0x73, 0x74, 0x5f, 0x31, 0x5f, 0x74, 0x6f, 0x5f, 0x32,
+	0x5f, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x2e, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e,
+	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x52,
+	0x10, 0x62, 0x65, 0x73, 0x74, 0x31, 0x54, 0x6f, 0x32, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f,
+	0x6e, 0x12, 0x5e, 0x0a, 0x14, 0x62, 0x65, 0x73, 0x74, 0x5f, 0x32, 0x5f, 0x74, 0x6f, 0x5f, 0x31,
+	0x5f, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x2e, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e,
+	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x52,
+	0x10, 0x62, 0x65, 0x73, 0x74, 0x32, 0x54, 0x6f, 0x31, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f,
+	0x6e, 0x12, 0x3f, 0x0a, 0x1d, 0x61, 0x70, 0x70, 0x72, 0x6f, 0x78, 0x5f, 0x65, 0x66, 0x66, 0x65,
+	0x63, 0x74, 0x69, 0x76, 0x65, 0x5f, 0x70, 0x72, 0x69, 0x63, 0x65, 0x5f, 0x31, 0x5f, 0x74, 0x6f,
+	0x5f, 0x32, 0x18, 0x03, 0x20, 0x01, 0x28, 0x01, 0x52, 0x18, 0x61, 0x70, 0x70, 0x72, 0x6f, 0x78,
+	0x45, 0x66, 0x66, 0x65, 0x63, 0x74, 0x69, 0x76, 0x65, 0x50, 0x72, 0x69, 0x63, 0x65, 0x31, 0x54,
+	0x6f, 0x32, 0x12, 0x3f, 0x0a, 0x1d, 0x61, 0x70, 0x70, 0x72, 0x6f, 0x78, 0x5f, 0x65, 0x66, 0x66,
+	0x65, 0x63, 0x74, 0x69, 0x76, 0x65, 0x5f, 0x70, 0x72, 0x69, 0x63, 0x65, 0x5f, 0x32, 0x5f, 0x74,
+	0x6f, 0x5f, 0x31, 0x18, 0x04, 0x20, 0x01, 0x28, 0x01, 0x52, 0x18, 0x61, 0x70, 0x70, 0x72, 0x6f,
+	0x78, 0x45, 0x66, 0x66, 0x65, 0x63, 0x74, 0x69, 0x76, 0x65, 0x50, 0x72, 0x69, 0x63, 0x65, 0x32,
+	0x54, 0x6f, 0x31, 0x22, 0xf4, 0x03, 0x0a, 0x14, 0x53, 0x69, 0x6d, 0x75, 0x6c, 0x61, 0x74, 0x65,
+	0x54, 0x72, 0x61, 0x64, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x39, 0x0a, 0x05,
+	0x69, 0x6e, 0x70, 0x75, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x23, 0x2e, 0x70, 0x65,
+	0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x73, 0x73, 0x65,
+	0x74, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x75, 0x65,
+	0x52, 0x05, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x12, 0x3d, 0x0a, 0x06, 0x6f, 0x75, 0x74, 0x70, 0x75,
+	0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x25, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62,
+	0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x73, 0x73, 0x65, 0x74, 0x2e, 0x76, 0x31,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x41, 0x73, 0x73, 0x65, 0x74, 0x49, 0x64, 0x52, 0x06,
+	0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x12, 0x5c, 0x0a, 0x07, 0x72, 0x6f, 0x75, 0x74, 0x69, 0x6e,
+	0x67, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x42, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62,
+	0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53,
+	0x69, 0x6d, 0x75, 0x6c, 0x61, 0x74, 0x65, 0x54, 0x72, 0x61, 0x64, 0x65, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x2e, 0x52, 0x6f, 0x75, 0x74, 0x69, 0x6e, 0x67, 0x52, 0x07, 0x72, 0x6f, 0x75,
+	0x74, 0x69, 0x6e, 0x67, 0x1a, 0x83, 0x02, 0x0a, 0x07, 0x52, 0x6f, 0x75, 0x74, 0x69, 0x6e, 0x67,
+	0x12, 0x66, 0x0a, 0x07, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x4a, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72,
+	0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e,
+	0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x69, 0x6d, 0x75, 0x6c, 0x61, 0x74,
+	0x65, 0x54, 0x72, 0x61, 0x64, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x2e, 0x52, 0x6f,
+	0x75, 0x74, 0x69, 0x6e, 0x67, 0x2e, 0x44, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x48, 0x00, 0x52,
+	0x07, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x12, 0x6d, 0x0a, 0x0a, 0x73, 0x69, 0x6e, 0x67,
+	0x6c, 0x65, 0x5f, 0x68, 0x6f, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x4c, 0x2e, 0x70,
+	0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d,
+	0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70,
+	0x68, 0x61, 0x31, 0x2e, 0x53, 0x69, 0x6d, 0x75, 0x6c, 0x61, 0x74, 0x65, 0x54, 0x72, 0x61, 0x64,
+	0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x2e, 0x52, 0x6f, 0x75, 0x74, 0x69, 0x6e, 0x67,
+	0x2e, 0x53, 0x69, 0x6e, 0x67, 0x6c, 0x65, 0x48, 0x6f, 0x70, 0x48, 0x00, 0x52, 0x09, 0x73, 0x69,
+	0x6e, 0x67, 0x6c, 0x65, 0x48, 0x6f, 0x70, 0x1a, 0x0b, 0x0a, 0x09, 0x53, 0x69, 0x6e, 0x67, 0x6c,
+	0x65, 0x48, 0x6f, 0x70, 0x1a, 0x09, 0x0a, 0x07, 0x44, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x42,
+	0x09, 0x0a, 0x07, 0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x22, 0x64, 0x0a, 0x15, 0x53, 0x69,
+	0x6d, 0x75, 0x6c, 0x61, 0x74, 0x65, 0x54, 0x72, 0x61, 0x64, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x12, 0x4b, 0x0a, 0x06, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x33, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63,
+	0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65,
+	0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x77, 0x61, 0x70, 0x45,
+	0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x06, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74,
+	0x32, 0xe8, 0x0b, 0x0a, 0x0c, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63,
+	0x65, 0x12, 0x9a, 0x01, 0x0a, 0x13, 0x42, 0x61, 0x74, 0x63, 0x68, 0x53, 0x77, 0x61, 0x70, 0x4f,
+	0x75, 0x74, 0x70, 0x75, 0x74, 0x44, 0x61, 0x74, 0x61, 0x12, 0x40, 0x2e, 0x70, 0x65, 0x6e, 0x75,
+	0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e,
+	0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
+	0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x53, 0x77, 0x61, 0x70, 0x4f, 0x75, 0x74, 0x70, 0x75, 0x74,
+	0x44, 0x61, 0x74, 0x61, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x41, 0x2e, 0x70, 0x65,
+	0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70,
+	0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
+	0x61, 0x31, 0x2e, 0x42, 0x61, 0x74, 0x63, 0x68, 0x53, 0x77, 0x61, 0x70, 0x4f, 0x75, 0x74, 0x70,
+	0x75, 0x74, 0x44, 0x61, 0x74, 0x61, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x88,
+	0x01, 0x0a, 0x0d, 0x53, 0x77, 0x61, 0x70, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e,
+	0x12, 0x3a, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65,
+	0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x77, 0x61, 0x70, 0x45, 0x78, 0x65, 0x63,
+	0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x3b, 0x2e, 0x70,
+	0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d,
+	0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70,
+	0x68, 0x61, 0x31, 0x2e, 0x53, 0x77, 0x61, 0x70, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f,
+	0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x85, 0x01, 0x0a, 0x0c, 0x41, 0x72,
+	0x62, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x39, 0x2e, 0x70, 0x65, 0x6e,
+	0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f,
+	0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
+	0x31, 0x2e, 0x41, 0x72, 0x62, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x3a, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61,
+	0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e,
+	0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x41, 0x72, 0x62,
+	0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x12, 0x8d, 0x01, 0x0a, 0x0e, 0x53, 0x77, 0x61, 0x70, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x12, 0x3b, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e,
+	0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64,
+	0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x77, 0x61, 0x70,
+	0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x3c, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72,
+	0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e,
+	0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x77, 0x61, 0x70, 0x45, 0x78, 0x65,
+	0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x30,
+	0x01, 0x12, 0x8a, 0x01, 0x0a, 0x0d, 0x41, 0x72, 0x62, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69,
+	0x6f, 0x6e, 0x73, 0x12, 0x3a, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63,
+	0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65,
+	0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x41, 0x72, 0x62, 0x45, 0x78,
+	0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x3b, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e,
+	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x41, 0x72, 0x62, 0x45, 0x78, 0x65, 0x63, 0x75, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x30, 0x01, 0x12, 0x99,
+	0x01, 0x0a, 0x12, 0x4c, 0x69, 0x71, 0x75, 0x69, 0x64, 0x69, 0x74, 0x79, 0x50, 0x6f, 0x73, 0x69,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x3f, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61,
+	0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e,
+	0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4c, 0x69, 0x71,
+	0x75, 0x69, 0x64, 0x69, 0x74, 0x79, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x40, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72,
+	0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74,
+	0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4c, 0x69,
+	0x71, 0x75, 0x69, 0x64, 0x69, 0x74, 0x79, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x30, 0x01, 0x12, 0xa0, 0x01, 0x0a, 0x15, 0x4c,
+	0x69, 0x71, 0x75, 0x69, 0x64, 0x69, 0x74, 0x79, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e,
+	0x42, 0x79, 0x49, 0x64, 0x12, 0x42, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e,
+	0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64,
+	0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4c, 0x69, 0x71, 0x75,
+	0x69, 0x64, 0x69, 0x74, 0x79, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x42, 0x79, 0x49,
+	0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x43, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d,
+	0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
+	0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
+	0x4c, 0x69, 0x71, 0x75, 0x69, 0x64, 0x69, 0x74, 0x79, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f,
+	0x6e, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0xa5, 0x01,
+	0x0a, 0x16, 0x4c, 0x69, 0x71, 0x75, 0x69, 0x64, 0x69, 0x74, 0x79, 0x50, 0x6f, 0x73, 0x69, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x42, 0x79, 0x49, 0x64, 0x12, 0x43, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d,
+	0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
+	0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
+	0x4c, 0x69, 0x71, 0x75, 0x69, 0x64, 0x69, 0x74, 0x79, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f,
+	0x6e, 0x73, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x44, 0x2e,
+	0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f,
+	0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c,
+	0x70, 0x68, 0x61, 0x31, 0x2e, 0x4c, 0x69, 0x71, 0x75, 0x69, 0x64, 0x69, 0x74, 0x79, 0x50, 0x6f,
+	0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x30, 0x01, 0x12, 0xae, 0x01, 0x0a, 0x19, 0x4c, 0x69, 0x71, 0x75, 0x69, 0x64,
+	0x69, 0x74, 0x79, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x42, 0x79, 0x50, 0x72,
+	0x69, 0x63, 0x65, 0x12, 0x46, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63,
+	0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65,
+	0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4c, 0x69, 0x71, 0x75, 0x69,
+	0x64, 0x69, 0x74, 0x79, 0x50, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x42, 0x79, 0x50,
+	0x72, 0x69, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x47, 0x2e, 0x70, 0x65,
+	0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70,
+	0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
+	0x61, 0x31, 0x2e, 0x4c, 0x69, 0x71, 0x75, 0x69, 0x64, 0x69, 0x74, 0x79, 0x50, 0x6f, 0x73, 0x69,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x42, 0x79, 0x50, 0x72, 0x69, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x30, 0x01, 0x12, 0x73, 0x0a, 0x06, 0x53, 0x70, 0x72, 0x65, 0x61, 0x64,
+	0x12, 0x33, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65,
+	0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x70, 0x72, 0x65, 0x61, 0x64, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x34, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61,
+	0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e,
+	0x64, 0x65, 0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x70, 0x72,
+	0x65, 0x61, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x32, 0x9e, 0x01, 0x0a, 0x11,
+	0x53, 0x69, 0x6d, 0x75, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63,
+	0x65, 0x12, 0x88, 0x01, 0x0a, 0x0d, 0x53, 0x69, 0x6d, 0x75, 0x6c, 0x61, 0x74, 0x65, 0x54, 0x72,
+	0x61, 0x64, 0x65, 0x12, 0x3a, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63,
+	0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65,
+	0x78, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x69, 0x6d, 0x75, 0x6c,
+	0x61, 0x74, 0x65, 0x54, 0x72, 0x61, 0x64, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x3b, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e,
+	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78, 0x2e, 0x76, 0x31,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x69, 0x6d, 0x75, 0x6c, 0x61, 0x74, 0x65, 0x54,
+	0x72, 0x61, 0x64, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0xca, 0x02, 0x0a,
+	0x28, 0x63, 0x6f, 0x6d, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f,
+	0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x64, 0x65, 0x78,
+	0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x42, 0x08, 0x44, 0x65, 0x78, 0x50, 0x72,
+	0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x5f, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
+	0x6d, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2d, 0x7a, 0x6f, 0x6e, 0x65, 0x2f,
+	0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67,
+	0x6f, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x63,
+	0x6f, 0x72, 0x65, 0x2f, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2f, 0x64, 0x65,
+	0x78, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x3b, 0x64, 0x65, 0x78, 0x76, 0x31,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xa2, 0x02, 0x04, 0x50, 0x43, 0x43, 0x44, 0xaa, 0x02, 0x24,
+	0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x43, 0x6f, 0x72, 0x65, 0x2e, 0x43, 0x6f,
+	0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x44, 0x65, 0x78, 0x2e, 0x56, 0x31, 0x61, 0x6c,
+	0x70, 0x68, 0x61, 0x31, 0xca, 0x02, 0x24, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x5c,
+	0x43, 0x6f, 0x72, 0x65, 0x5c, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x5c, 0x44,
+	0x65, 0x78, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xe2, 0x02, 0x30, 0x50, 0x65,
+	0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x5c, 0x43, 0x6f, 0x72, 0x65, 0x5c, 0x43, 0x6f, 0x6d, 0x70,
+	0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x5c, 0x44, 0x65, 0x78, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68,
+	0x61, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02,
+	0x28, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x3a, 0x3a, 0x43, 0x6f, 0x72, 0x65, 0x3a,
+	0x3a, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x3a, 0x3a, 0x44, 0x65, 0x78, 0x3a,
+	0x3a, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -2830,130 +4570,202 @@ func file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDescGZIP() []byte {
 }
 
 var file_penumbra_core_component_dex_v1alpha1_dex_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
+var file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes = make([]protoimpl.MessageInfo, 59)
 var file_penumbra_core_component_dex_v1alpha1_dex_proto_goTypes = []interface{}{
-	(PositionState_PositionStateEnum)(0), // 0: penumbra.core.component.dex.v1alpha1.PositionState.PositionStateEnum
-	(*ZKSwapProof)(nil),                  // 1: penumbra.core.component.dex.v1alpha1.ZKSwapProof
-	(*ZKSwapClaimProof)(nil),             // 2: penumbra.core.component.dex.v1alpha1.ZKSwapClaimProof
-	(*Swap)(nil),                         // 3: penumbra.core.component.dex.v1alpha1.Swap
-	(*SwapClaim)(nil),                    // 4: penumbra.core.component.dex.v1alpha1.SwapClaim
-	(*SwapClaimBody)(nil),                // 5: penumbra.core.component.dex.v1alpha1.SwapClaimBody
-	(*SwapBody)(nil),                     // 6: penumbra.core.component.dex.v1alpha1.SwapBody
-	(*SwapPayload)(nil),                  // 7: penumbra.core.component.dex.v1alpha1.SwapPayload
-	(*SwapPlaintext)(nil),                // 8: penumbra.core.component.dex.v1alpha1.SwapPlaintext
-	(*SwapPlan)(nil),                     // 9: penumbra.core.component.dex.v1alpha1.SwapPlan
-	(*SwapClaimPlan)(nil),                // 10: penumbra.core.component.dex.v1alpha1.SwapClaimPlan
-	(*SwapView)(nil),                     // 11: penumbra.core.component.dex.v1alpha1.SwapView
-	(*SwapClaimView)(nil),                // 12: penumbra.core.component.dex.v1alpha1.SwapClaimView
-	(*TradingPair)(nil),                  // 13: penumbra.core.component.dex.v1alpha1.TradingPair
-	(*DirectedTradingPair)(nil),          // 14: penumbra.core.component.dex.v1alpha1.DirectedTradingPair
-	(*BatchSwapOutputData)(nil),          // 15: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData
-	(*TradingFunction)(nil),              // 16: penumbra.core.component.dex.v1alpha1.TradingFunction
-	(*BareTradingFunction)(nil),          // 17: penumbra.core.component.dex.v1alpha1.BareTradingFunction
-	(*Reserves)(nil),                     // 18: penumbra.core.component.dex.v1alpha1.Reserves
-	(*Position)(nil),                     // 19: penumbra.core.component.dex.v1alpha1.Position
-	(*PositionId)(nil),                   // 20: penumbra.core.component.dex.v1alpha1.PositionId
-	(*PositionState)(nil),                // 21: penumbra.core.component.dex.v1alpha1.PositionState
-	(*LpNft)(nil),                        // 22: penumbra.core.component.dex.v1alpha1.LpNft
-	(*PositionOpen)(nil),                 // 23: penumbra.core.component.dex.v1alpha1.PositionOpen
-	(*PositionClose)(nil),                // 24: penumbra.core.component.dex.v1alpha1.PositionClose
-	(*PositionWithdraw)(nil),             // 25: penumbra.core.component.dex.v1alpha1.PositionWithdraw
-	(*PositionRewardClaim)(nil),          // 26: penumbra.core.component.dex.v1alpha1.PositionRewardClaim
-	(*SwapExecution)(nil),                // 27: penumbra.core.component.dex.v1alpha1.SwapExecution
-	(*PositionWithdrawPlan)(nil),         // 28: penumbra.core.component.dex.v1alpha1.PositionWithdrawPlan
-	(*PositionRewardClaimPlan)(nil),      // 29: penumbra.core.component.dex.v1alpha1.PositionRewardClaimPlan
-	(*SwapView_Visible)(nil),             // 30: penumbra.core.component.dex.v1alpha1.SwapView.Visible
-	(*SwapView_Opaque)(nil),              // 31: penumbra.core.component.dex.v1alpha1.SwapView.Opaque
-	(*SwapClaimView_Visible)(nil),        // 32: penumbra.core.component.dex.v1alpha1.SwapClaimView.Visible
-	(*SwapClaimView_Opaque)(nil),         // 33: penumbra.core.component.dex.v1alpha1.SwapClaimView.Opaque
-	(*SwapExecution_Trace)(nil),          // 34: penumbra.core.component.dex.v1alpha1.SwapExecution.Trace
-	(*v1alpha1.Nullifier)(nil),           // 35: penumbra.core.component.sct.v1alpha1.Nullifier
-	(*v1alpha11.Fee)(nil),                // 36: penumbra.core.component.fee.v1alpha1.Fee
-	(*v1alpha12.StateCommitment)(nil),    // 37: penumbra.crypto.tct.v1alpha1.StateCommitment
-	(*v1alpha13.Amount)(nil),             // 38: penumbra.core.num.v1alpha1.Amount
-	(*v1alpha14.BalanceCommitment)(nil),  // 39: penumbra.core.asset.v1alpha1.BalanceCommitment
-	(*v1alpha15.Address)(nil),            // 40: penumbra.core.keys.v1alpha1.Address
-	(*v1alpha14.AssetId)(nil),            // 41: penumbra.core.asset.v1alpha1.AssetId
-	(*v1alpha14.Value)(nil),              // 42: penumbra.core.asset.v1alpha1.Value
-	(*v1alpha16.NoteView)(nil),           // 43: penumbra.core.component.shielded_pool.v1alpha1.NoteView
+	(PositionState_PositionStateEnum)(0),           // 0: penumbra.core.component.dex.v1alpha1.PositionState.PositionStateEnum
+	(*ZKSwapProof)(nil),                            // 1: penumbra.core.component.dex.v1alpha1.ZKSwapProof
+	(*ZKSwapClaimProof)(nil),                       // 2: penumbra.core.component.dex.v1alpha1.ZKSwapClaimProof
+	(*Swap)(nil),                                   // 3: penumbra.core.component.dex.v1alpha1.Swap
+	(*SwapClaim)(nil),                              // 4: penumbra.core.component.dex.v1alpha1.SwapClaim
+	(*SwapClaimBody)(nil),                          // 5: penumbra.core.component.dex.v1alpha1.SwapClaimBody
+	(*SwapBody)(nil),                               // 6: penumbra.core.component.dex.v1alpha1.SwapBody
+	(*SwapPayload)(nil),                            // 7: penumbra.core.component.dex.v1alpha1.SwapPayload
+	(*SwapPlaintext)(nil),                          // 8: penumbra.core.component.dex.v1alpha1.SwapPlaintext
+	(*SwapPlan)(nil),                               // 9: penumbra.core.component.dex.v1alpha1.SwapPlan
+	(*SwapClaimPlan)(nil),                          // 10: penumbra.core.component.dex.v1alpha1.SwapClaimPlan
+	(*SwapView)(nil),                               // 11: penumbra.core.component.dex.v1alpha1.SwapView
+	(*SwapClaimView)(nil),                          // 12: penumbra.core.component.dex.v1alpha1.SwapClaimView
+	(*TradingPair)(nil),                            // 13: penumbra.core.component.dex.v1alpha1.TradingPair
+	(*DirectedTradingPair)(nil),                    // 14: penumbra.core.component.dex.v1alpha1.DirectedTradingPair
+	(*BatchSwapOutputData)(nil),                    // 15: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData
+	(*TradingFunction)(nil),                        // 16: penumbra.core.component.dex.v1alpha1.TradingFunction
+	(*BareTradingFunction)(nil),                    // 17: penumbra.core.component.dex.v1alpha1.BareTradingFunction
+	(*Reserves)(nil),                               // 18: penumbra.core.component.dex.v1alpha1.Reserves
+	(*Position)(nil),                               // 19: penumbra.core.component.dex.v1alpha1.Position
+	(*PositionId)(nil),                             // 20: penumbra.core.component.dex.v1alpha1.PositionId
+	(*PositionState)(nil),                          // 21: penumbra.core.component.dex.v1alpha1.PositionState
+	(*LpNft)(nil),                                  // 22: penumbra.core.component.dex.v1alpha1.LpNft
+	(*PositionOpen)(nil),                           // 23: penumbra.core.component.dex.v1alpha1.PositionOpen
+	(*PositionClose)(nil),                          // 24: penumbra.core.component.dex.v1alpha1.PositionClose
+	(*PositionWithdraw)(nil),                       // 25: penumbra.core.component.dex.v1alpha1.PositionWithdraw
+	(*PositionRewardClaim)(nil),                    // 26: penumbra.core.component.dex.v1alpha1.PositionRewardClaim
+	(*SwapExecution)(nil),                          // 27: penumbra.core.component.dex.v1alpha1.SwapExecution
+	(*PositionWithdrawPlan)(nil),                   // 28: penumbra.core.component.dex.v1alpha1.PositionWithdrawPlan
+	(*PositionRewardClaimPlan)(nil),                // 29: penumbra.core.component.dex.v1alpha1.PositionRewardClaimPlan
+	(*BatchSwapOutputDataRequest)(nil),             // 30: penumbra.core.component.dex.v1alpha1.BatchSwapOutputDataRequest
+	(*BatchSwapOutputDataResponse)(nil),            // 31: penumbra.core.component.dex.v1alpha1.BatchSwapOutputDataResponse
+	(*SwapExecutionRequest)(nil),                   // 32: penumbra.core.component.dex.v1alpha1.SwapExecutionRequest
+	(*SwapExecutionResponse)(nil),                  // 33: penumbra.core.component.dex.v1alpha1.SwapExecutionResponse
+	(*ArbExecutionRequest)(nil),                    // 34: penumbra.core.component.dex.v1alpha1.ArbExecutionRequest
+	(*ArbExecutionResponse)(nil),                   // 35: penumbra.core.component.dex.v1alpha1.ArbExecutionResponse
+	(*SwapExecutionsRequest)(nil),                  // 36: penumbra.core.component.dex.v1alpha1.SwapExecutionsRequest
+	(*SwapExecutionsResponse)(nil),                 // 37: penumbra.core.component.dex.v1alpha1.SwapExecutionsResponse
+	(*ArbExecutionsRequest)(nil),                   // 38: penumbra.core.component.dex.v1alpha1.ArbExecutionsRequest
+	(*ArbExecutionsResponse)(nil),                  // 39: penumbra.core.component.dex.v1alpha1.ArbExecutionsResponse
+	(*LiquidityPositionsRequest)(nil),              // 40: penumbra.core.component.dex.v1alpha1.LiquidityPositionsRequest
+	(*LiquidityPositionsResponse)(nil),             // 41: penumbra.core.component.dex.v1alpha1.LiquidityPositionsResponse
+	(*LiquidityPositionByIdRequest)(nil),           // 42: penumbra.core.component.dex.v1alpha1.LiquidityPositionByIdRequest
+	(*LiquidityPositionByIdResponse)(nil),          // 43: penumbra.core.component.dex.v1alpha1.LiquidityPositionByIdResponse
+	(*LiquidityPositionsByIdRequest)(nil),          // 44: penumbra.core.component.dex.v1alpha1.LiquidityPositionsByIdRequest
+	(*LiquidityPositionsByIdResponse)(nil),         // 45: penumbra.core.component.dex.v1alpha1.LiquidityPositionsByIdResponse
+	(*LiquidityPositionsByPriceRequest)(nil),       // 46: penumbra.core.component.dex.v1alpha1.LiquidityPositionsByPriceRequest
+	(*LiquidityPositionsByPriceResponse)(nil),      // 47: penumbra.core.component.dex.v1alpha1.LiquidityPositionsByPriceResponse
+	(*SpreadRequest)(nil),                          // 48: penumbra.core.component.dex.v1alpha1.SpreadRequest
+	(*SpreadResponse)(nil),                         // 49: penumbra.core.component.dex.v1alpha1.SpreadResponse
+	(*SimulateTradeRequest)(nil),                   // 50: penumbra.core.component.dex.v1alpha1.SimulateTradeRequest
+	(*SimulateTradeResponse)(nil),                  // 51: penumbra.core.component.dex.v1alpha1.SimulateTradeResponse
+	(*SwapView_Visible)(nil),                       // 52: penumbra.core.component.dex.v1alpha1.SwapView.Visible
+	(*SwapView_Opaque)(nil),                        // 53: penumbra.core.component.dex.v1alpha1.SwapView.Opaque
+	(*SwapClaimView_Visible)(nil),                  // 54: penumbra.core.component.dex.v1alpha1.SwapClaimView.Visible
+	(*SwapClaimView_Opaque)(nil),                   // 55: penumbra.core.component.dex.v1alpha1.SwapClaimView.Opaque
+	(*SwapExecution_Trace)(nil),                    // 56: penumbra.core.component.dex.v1alpha1.SwapExecution.Trace
+	(*SimulateTradeRequest_Routing)(nil),           // 57: penumbra.core.component.dex.v1alpha1.SimulateTradeRequest.Routing
+	(*SimulateTradeRequest_Routing_SingleHop)(nil), // 58: penumbra.core.component.dex.v1alpha1.SimulateTradeRequest.Routing.SingleHop
+	(*SimulateTradeRequest_Routing_Default)(nil),   // 59: penumbra.core.component.dex.v1alpha1.SimulateTradeRequest.Routing.Default
+	(*v1alpha1.Nullifier)(nil),                     // 60: penumbra.core.component.sct.v1alpha1.Nullifier
+	(*v1alpha11.Fee)(nil),                          // 61: penumbra.core.component.fee.v1alpha1.Fee
+	(*v1alpha12.StateCommitment)(nil),              // 62: penumbra.crypto.tct.v1alpha1.StateCommitment
+	(*v1alpha13.Amount)(nil),                       // 63: penumbra.core.num.v1alpha1.Amount
+	(*v1alpha14.BalanceCommitment)(nil),            // 64: penumbra.core.asset.v1alpha1.BalanceCommitment
+	(*v1alpha15.Address)(nil),                      // 65: penumbra.core.keys.v1alpha1.Address
+	(*v1alpha14.AssetId)(nil),                      // 66: penumbra.core.asset.v1alpha1.AssetId
+	(*v1alpha14.Value)(nil),                        // 67: penumbra.core.asset.v1alpha1.Value
+	(*v1alpha16.NoteView)(nil),                     // 68: penumbra.core.component.shielded_pool.v1alpha1.NoteView
 }
 var file_penumbra_core_component_dex_v1alpha1_dex_proto_depIdxs = []int32{
-	1,  // 0: penumbra.core.component.dex.v1alpha1.Swap.proof:type_name -> penumbra.core.component.dex.v1alpha1.ZKSwapProof
-	6,  // 1: penumbra.core.component.dex.v1alpha1.Swap.body:type_name -> penumbra.core.component.dex.v1alpha1.SwapBody
-	2,  // 2: penumbra.core.component.dex.v1alpha1.SwapClaim.proof:type_name -> penumbra.core.component.dex.v1alpha1.ZKSwapClaimProof
-	5,  // 3: penumbra.core.component.dex.v1alpha1.SwapClaim.body:type_name -> penumbra.core.component.dex.v1alpha1.SwapClaimBody
-	35, // 4: penumbra.core.component.dex.v1alpha1.SwapClaimBody.nullifier:type_name -> penumbra.core.component.sct.v1alpha1.Nullifier
-	36, // 5: penumbra.core.component.dex.v1alpha1.SwapClaimBody.fee:type_name -> penumbra.core.component.fee.v1alpha1.Fee
-	37, // 6: penumbra.core.component.dex.v1alpha1.SwapClaimBody.output_1_commitment:type_name -> penumbra.crypto.tct.v1alpha1.StateCommitment
-	37, // 7: penumbra.core.component.dex.v1alpha1.SwapClaimBody.output_2_commitment:type_name -> penumbra.crypto.tct.v1alpha1.StateCommitment
-	15, // 8: penumbra.core.component.dex.v1alpha1.SwapClaimBody.output_data:type_name -> penumbra.core.component.dex.v1alpha1.BatchSwapOutputData
-	13, // 9: penumbra.core.component.dex.v1alpha1.SwapBody.trading_pair:type_name -> penumbra.core.component.dex.v1alpha1.TradingPair
-	38, // 10: penumbra.core.component.dex.v1alpha1.SwapBody.delta_1_i:type_name -> penumbra.core.num.v1alpha1.Amount
-	38, // 11: penumbra.core.component.dex.v1alpha1.SwapBody.delta_2_i:type_name -> penumbra.core.num.v1alpha1.Amount
-	39, // 12: penumbra.core.component.dex.v1alpha1.SwapBody.fee_commitment:type_name -> penumbra.core.asset.v1alpha1.BalanceCommitment
-	7,  // 13: penumbra.core.component.dex.v1alpha1.SwapBody.payload:type_name -> penumbra.core.component.dex.v1alpha1.SwapPayload
-	37, // 14: penumbra.core.component.dex.v1alpha1.SwapPayload.commitment:type_name -> penumbra.crypto.tct.v1alpha1.StateCommitment
-	13, // 15: penumbra.core.component.dex.v1alpha1.SwapPlaintext.trading_pair:type_name -> penumbra.core.component.dex.v1alpha1.TradingPair
-	38, // 16: penumbra.core.component.dex.v1alpha1.SwapPlaintext.delta_1_i:type_name -> penumbra.core.num.v1alpha1.Amount
-	38, // 17: penumbra.core.component.dex.v1alpha1.SwapPlaintext.delta_2_i:type_name -> penumbra.core.num.v1alpha1.Amount
-	36, // 18: penumbra.core.component.dex.v1alpha1.SwapPlaintext.claim_fee:type_name -> penumbra.core.component.fee.v1alpha1.Fee
-	40, // 19: penumbra.core.component.dex.v1alpha1.SwapPlaintext.claim_address:type_name -> penumbra.core.keys.v1alpha1.Address
-	8,  // 20: penumbra.core.component.dex.v1alpha1.SwapPlan.swap_plaintext:type_name -> penumbra.core.component.dex.v1alpha1.SwapPlaintext
-	8,  // 21: penumbra.core.component.dex.v1alpha1.SwapClaimPlan.swap_plaintext:type_name -> penumbra.core.component.dex.v1alpha1.SwapPlaintext
-	15, // 22: penumbra.core.component.dex.v1alpha1.SwapClaimPlan.output_data:type_name -> penumbra.core.component.dex.v1alpha1.BatchSwapOutputData
-	30, // 23: penumbra.core.component.dex.v1alpha1.SwapView.visible:type_name -> penumbra.core.component.dex.v1alpha1.SwapView.Visible
-	31, // 24: penumbra.core.component.dex.v1alpha1.SwapView.opaque:type_name -> penumbra.core.component.dex.v1alpha1.SwapView.Opaque
-	32, // 25: penumbra.core.component.dex.v1alpha1.SwapClaimView.visible:type_name -> penumbra.core.component.dex.v1alpha1.SwapClaimView.Visible
-	33, // 26: penumbra.core.component.dex.v1alpha1.SwapClaimView.opaque:type_name -> penumbra.core.component.dex.v1alpha1.SwapClaimView.Opaque
-	41, // 27: penumbra.core.component.dex.v1alpha1.TradingPair.asset_1:type_name -> penumbra.core.asset.v1alpha1.AssetId
-	41, // 28: penumbra.core.component.dex.v1alpha1.TradingPair.asset_2:type_name -> penumbra.core.asset.v1alpha1.AssetId
-	41, // 29: penumbra.core.component.dex.v1alpha1.DirectedTradingPair.start:type_name -> penumbra.core.asset.v1alpha1.AssetId
-	41, // 30: penumbra.core.component.dex.v1alpha1.DirectedTradingPair.end:type_name -> penumbra.core.asset.v1alpha1.AssetId
-	38, // 31: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData.delta_1:type_name -> penumbra.core.num.v1alpha1.Amount
-	38, // 32: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData.delta_2:type_name -> penumbra.core.num.v1alpha1.Amount
-	38, // 33: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData.lambda_1:type_name -> penumbra.core.num.v1alpha1.Amount
-	38, // 34: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData.lambda_2:type_name -> penumbra.core.num.v1alpha1.Amount
-	38, // 35: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData.unfilled_1:type_name -> penumbra.core.num.v1alpha1.Amount
-	38, // 36: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData.unfilled_2:type_name -> penumbra.core.num.v1alpha1.Amount
-	13, // 37: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData.trading_pair:type_name -> penumbra.core.component.dex.v1alpha1.TradingPair
-	17, // 38: penumbra.core.component.dex.v1alpha1.TradingFunction.component:type_name -> penumbra.core.component.dex.v1alpha1.BareTradingFunction
-	13, // 39: penumbra.core.component.dex.v1alpha1.TradingFunction.pair:type_name -> penumbra.core.component.dex.v1alpha1.TradingPair
-	38, // 40: penumbra.core.component.dex.v1alpha1.BareTradingFunction.p:type_name -> penumbra.core.num.v1alpha1.Amount
-	38, // 41: penumbra.core.component.dex.v1alpha1.BareTradingFunction.q:type_name -> penumbra.core.num.v1alpha1.Amount
-	38, // 42: penumbra.core.component.dex.v1alpha1.Reserves.r1:type_name -> penumbra.core.num.v1alpha1.Amount
-	38, // 43: penumbra.core.component.dex.v1alpha1.Reserves.r2:type_name -> penumbra.core.num.v1alpha1.Amount
-	16, // 44: penumbra.core.component.dex.v1alpha1.Position.phi:type_name -> penumbra.core.component.dex.v1alpha1.TradingFunction
-	21, // 45: penumbra.core.component.dex.v1alpha1.Position.state:type_name -> penumbra.core.component.dex.v1alpha1.PositionState
-	18, // 46: penumbra.core.component.dex.v1alpha1.Position.reserves:type_name -> penumbra.core.component.dex.v1alpha1.Reserves
-	0,  // 47: penumbra.core.component.dex.v1alpha1.PositionState.state:type_name -> penumbra.core.component.dex.v1alpha1.PositionState.PositionStateEnum
-	20, // 48: penumbra.core.component.dex.v1alpha1.LpNft.position_id:type_name -> penumbra.core.component.dex.v1alpha1.PositionId
-	21, // 49: penumbra.core.component.dex.v1alpha1.LpNft.state:type_name -> penumbra.core.component.dex.v1alpha1.PositionState
-	19, // 50: penumbra.core.component.dex.v1alpha1.PositionOpen.position:type_name -> penumbra.core.component.dex.v1alpha1.Position
-	20, // 51: penumbra.core.component.dex.v1alpha1.PositionClose.position_id:type_name -> penumbra.core.component.dex.v1alpha1.PositionId
-	20, // 52: penumbra.core.component.dex.v1alpha1.PositionWithdraw.position_id:type_name -> penumbra.core.component.dex.v1alpha1.PositionId
-	39, // 53: penumbra.core.component.dex.v1alpha1.PositionWithdraw.reserves_commitment:type_name -> penumbra.core.asset.v1alpha1.BalanceCommitment
-	20, // 54: penumbra.core.component.dex.v1alpha1.PositionRewardClaim.position_id:type_name -> penumbra.core.component.dex.v1alpha1.PositionId
-	39, // 55: penumbra.core.component.dex.v1alpha1.PositionRewardClaim.rewards_commitment:type_name -> penumbra.core.asset.v1alpha1.BalanceCommitment
-	34, // 56: penumbra.core.component.dex.v1alpha1.SwapExecution.traces:type_name -> penumbra.core.component.dex.v1alpha1.SwapExecution.Trace
-	42, // 57: penumbra.core.component.dex.v1alpha1.SwapExecution.input:type_name -> penumbra.core.asset.v1alpha1.Value
-	42, // 58: penumbra.core.component.dex.v1alpha1.SwapExecution.output:type_name -> penumbra.core.asset.v1alpha1.Value
-	18, // 59: penumbra.core.component.dex.v1alpha1.PositionWithdrawPlan.reserves:type_name -> penumbra.core.component.dex.v1alpha1.Reserves
-	20, // 60: penumbra.core.component.dex.v1alpha1.PositionWithdrawPlan.position_id:type_name -> penumbra.core.component.dex.v1alpha1.PositionId
-	13, // 61: penumbra.core.component.dex.v1alpha1.PositionWithdrawPlan.pair:type_name -> penumbra.core.component.dex.v1alpha1.TradingPair
-	18, // 62: penumbra.core.component.dex.v1alpha1.PositionRewardClaimPlan.reserves:type_name -> penumbra.core.component.dex.v1alpha1.Reserves
-	3,  // 63: penumbra.core.component.dex.v1alpha1.SwapView.Visible.swap:type_name -> penumbra.core.component.dex.v1alpha1.Swap
-	8,  // 64: penumbra.core.component.dex.v1alpha1.SwapView.Visible.swap_plaintext:type_name -> penumbra.core.component.dex.v1alpha1.SwapPlaintext
-	3,  // 65: penumbra.core.component.dex.v1alpha1.SwapView.Opaque.swap:type_name -> penumbra.core.component.dex.v1alpha1.Swap
-	4,  // 66: penumbra.core.component.dex.v1alpha1.SwapClaimView.Visible.swap_claim:type_name -> penumbra.core.component.dex.v1alpha1.SwapClaim
-	43, // 67: penumbra.core.component.dex.v1alpha1.SwapClaimView.Visible.output_1:type_name -> penumbra.core.component.shielded_pool.v1alpha1.NoteView
-	43, // 68: penumbra.core.component.dex.v1alpha1.SwapClaimView.Visible.output_2:type_name -> penumbra.core.component.shielded_pool.v1alpha1.NoteView
-	4,  // 69: penumbra.core.component.dex.v1alpha1.SwapClaimView.Opaque.swap_claim:type_name -> penumbra.core.component.dex.v1alpha1.SwapClaim
-	42, // 70: penumbra.core.component.dex.v1alpha1.SwapExecution.Trace.value:type_name -> penumbra.core.asset.v1alpha1.Value
-	71, // [71:71] is the sub-list for method output_type
-	71, // [71:71] is the sub-list for method input_type
-	71, // [71:71] is the sub-list for extension type_name
-	71, // [71:71] is the sub-list for extension extendee
-	0,  // [0:71] is the sub-list for field type_name
+	1,   // 0: penumbra.core.component.dex.v1alpha1.Swap.proof:type_name -> penumbra.core.component.dex.v1alpha1.ZKSwapProof
+	6,   // 1: penumbra.core.component.dex.v1alpha1.Swap.body:type_name -> penumbra.core.component.dex.v1alpha1.SwapBody
+	2,   // 2: penumbra.core.component.dex.v1alpha1.SwapClaim.proof:type_name -> penumbra.core.component.dex.v1alpha1.ZKSwapClaimProof
+	5,   // 3: penumbra.core.component.dex.v1alpha1.SwapClaim.body:type_name -> penumbra.core.component.dex.v1alpha1.SwapClaimBody
+	60,  // 4: penumbra.core.component.dex.v1alpha1.SwapClaimBody.nullifier:type_name -> penumbra.core.component.sct.v1alpha1.Nullifier
+	61,  // 5: penumbra.core.component.dex.v1alpha1.SwapClaimBody.fee:type_name -> penumbra.core.component.fee.v1alpha1.Fee
+	62,  // 6: penumbra.core.component.dex.v1alpha1.SwapClaimBody.output_1_commitment:type_name -> penumbra.crypto.tct.v1alpha1.StateCommitment
+	62,  // 7: penumbra.core.component.dex.v1alpha1.SwapClaimBody.output_2_commitment:type_name -> penumbra.crypto.tct.v1alpha1.StateCommitment
+	15,  // 8: penumbra.core.component.dex.v1alpha1.SwapClaimBody.output_data:type_name -> penumbra.core.component.dex.v1alpha1.BatchSwapOutputData
+	13,  // 9: penumbra.core.component.dex.v1alpha1.SwapBody.trading_pair:type_name -> penumbra.core.component.dex.v1alpha1.TradingPair
+	63,  // 10: penumbra.core.component.dex.v1alpha1.SwapBody.delta_1_i:type_name -> penumbra.core.num.v1alpha1.Amount
+	63,  // 11: penumbra.core.component.dex.v1alpha1.SwapBody.delta_2_i:type_name -> penumbra.core.num.v1alpha1.Amount
+	64,  // 12: penumbra.core.component.dex.v1alpha1.SwapBody.fee_commitment:type_name -> penumbra.core.asset.v1alpha1.BalanceCommitment
+	7,   // 13: penumbra.core.component.dex.v1alpha1.SwapBody.payload:type_name -> penumbra.core.component.dex.v1alpha1.SwapPayload
+	62,  // 14: penumbra.core.component.dex.v1alpha1.SwapPayload.commitment:type_name -> penumbra.crypto.tct.v1alpha1.StateCommitment
+	13,  // 15: penumbra.core.component.dex.v1alpha1.SwapPlaintext.trading_pair:type_name -> penumbra.core.component.dex.v1alpha1.TradingPair
+	63,  // 16: penumbra.core.component.dex.v1alpha1.SwapPlaintext.delta_1_i:type_name -> penumbra.core.num.v1alpha1.Amount
+	63,  // 17: penumbra.core.component.dex.v1alpha1.SwapPlaintext.delta_2_i:type_name -> penumbra.core.num.v1alpha1.Amount
+	61,  // 18: penumbra.core.component.dex.v1alpha1.SwapPlaintext.claim_fee:type_name -> penumbra.core.component.fee.v1alpha1.Fee
+	65,  // 19: penumbra.core.component.dex.v1alpha1.SwapPlaintext.claim_address:type_name -> penumbra.core.keys.v1alpha1.Address
+	8,   // 20: penumbra.core.component.dex.v1alpha1.SwapPlan.swap_plaintext:type_name -> penumbra.core.component.dex.v1alpha1.SwapPlaintext
+	8,   // 21: penumbra.core.component.dex.v1alpha1.SwapClaimPlan.swap_plaintext:type_name -> penumbra.core.component.dex.v1alpha1.SwapPlaintext
+	15,  // 22: penumbra.core.component.dex.v1alpha1.SwapClaimPlan.output_data:type_name -> penumbra.core.component.dex.v1alpha1.BatchSwapOutputData
+	52,  // 23: penumbra.core.component.dex.v1alpha1.SwapView.visible:type_name -> penumbra.core.component.dex.v1alpha1.SwapView.Visible
+	53,  // 24: penumbra.core.component.dex.v1alpha1.SwapView.opaque:type_name -> penumbra.core.component.dex.v1alpha1.SwapView.Opaque
+	54,  // 25: penumbra.core.component.dex.v1alpha1.SwapClaimView.visible:type_name -> penumbra.core.component.dex.v1alpha1.SwapClaimView.Visible
+	55,  // 26: penumbra.core.component.dex.v1alpha1.SwapClaimView.opaque:type_name -> penumbra.core.component.dex.v1alpha1.SwapClaimView.Opaque
+	66,  // 27: penumbra.core.component.dex.v1alpha1.TradingPair.asset_1:type_name -> penumbra.core.asset.v1alpha1.AssetId
+	66,  // 28: penumbra.core.component.dex.v1alpha1.TradingPair.asset_2:type_name -> penumbra.core.asset.v1alpha1.AssetId
+	66,  // 29: penumbra.core.component.dex.v1alpha1.DirectedTradingPair.start:type_name -> penumbra.core.asset.v1alpha1.AssetId
+	66,  // 30: penumbra.core.component.dex.v1alpha1.DirectedTradingPair.end:type_name -> penumbra.core.asset.v1alpha1.AssetId
+	63,  // 31: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData.delta_1:type_name -> penumbra.core.num.v1alpha1.Amount
+	63,  // 32: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData.delta_2:type_name -> penumbra.core.num.v1alpha1.Amount
+	63,  // 33: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData.lambda_1:type_name -> penumbra.core.num.v1alpha1.Amount
+	63,  // 34: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData.lambda_2:type_name -> penumbra.core.num.v1alpha1.Amount
+	63,  // 35: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData.unfilled_1:type_name -> penumbra.core.num.v1alpha1.Amount
+	63,  // 36: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData.unfilled_2:type_name -> penumbra.core.num.v1alpha1.Amount
+	13,  // 37: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData.trading_pair:type_name -> penumbra.core.component.dex.v1alpha1.TradingPair
+	17,  // 38: penumbra.core.component.dex.v1alpha1.TradingFunction.component:type_name -> penumbra.core.component.dex.v1alpha1.BareTradingFunction
+	13,  // 39: penumbra.core.component.dex.v1alpha1.TradingFunction.pair:type_name -> penumbra.core.component.dex.v1alpha1.TradingPair
+	63,  // 40: penumbra.core.component.dex.v1alpha1.BareTradingFunction.p:type_name -> penumbra.core.num.v1alpha1.Amount
+	63,  // 41: penumbra.core.component.dex.v1alpha1.BareTradingFunction.q:type_name -> penumbra.core.num.v1alpha1.Amount
+	63,  // 42: penumbra.core.component.dex.v1alpha1.Reserves.r1:type_name -> penumbra.core.num.v1alpha1.Amount
+	63,  // 43: penumbra.core.component.dex.v1alpha1.Reserves.r2:type_name -> penumbra.core.num.v1alpha1.Amount
+	16,  // 44: penumbra.core.component.dex.v1alpha1.Position.phi:type_name -> penumbra.core.component.dex.v1alpha1.TradingFunction
+	21,  // 45: penumbra.core.component.dex.v1alpha1.Position.state:type_name -> penumbra.core.component.dex.v1alpha1.PositionState
+	18,  // 46: penumbra.core.component.dex.v1alpha1.Position.reserves:type_name -> penumbra.core.component.dex.v1alpha1.Reserves
+	0,   // 47: penumbra.core.component.dex.v1alpha1.PositionState.state:type_name -> penumbra.core.component.dex.v1alpha1.PositionState.PositionStateEnum
+	20,  // 48: penumbra.core.component.dex.v1alpha1.LpNft.position_id:type_name -> penumbra.core.component.dex.v1alpha1.PositionId
+	21,  // 49: penumbra.core.component.dex.v1alpha1.LpNft.state:type_name -> penumbra.core.component.dex.v1alpha1.PositionState
+	19,  // 50: penumbra.core.component.dex.v1alpha1.PositionOpen.position:type_name -> penumbra.core.component.dex.v1alpha1.Position
+	20,  // 51: penumbra.core.component.dex.v1alpha1.PositionClose.position_id:type_name -> penumbra.core.component.dex.v1alpha1.PositionId
+	20,  // 52: penumbra.core.component.dex.v1alpha1.PositionWithdraw.position_id:type_name -> penumbra.core.component.dex.v1alpha1.PositionId
+	64,  // 53: penumbra.core.component.dex.v1alpha1.PositionWithdraw.reserves_commitment:type_name -> penumbra.core.asset.v1alpha1.BalanceCommitment
+	20,  // 54: penumbra.core.component.dex.v1alpha1.PositionRewardClaim.position_id:type_name -> penumbra.core.component.dex.v1alpha1.PositionId
+	64,  // 55: penumbra.core.component.dex.v1alpha1.PositionRewardClaim.rewards_commitment:type_name -> penumbra.core.asset.v1alpha1.BalanceCommitment
+	56,  // 56: penumbra.core.component.dex.v1alpha1.SwapExecution.traces:type_name -> penumbra.core.component.dex.v1alpha1.SwapExecution.Trace
+	67,  // 57: penumbra.core.component.dex.v1alpha1.SwapExecution.input:type_name -> penumbra.core.asset.v1alpha1.Value
+	67,  // 58: penumbra.core.component.dex.v1alpha1.SwapExecution.output:type_name -> penumbra.core.asset.v1alpha1.Value
+	18,  // 59: penumbra.core.component.dex.v1alpha1.PositionWithdrawPlan.reserves:type_name -> penumbra.core.component.dex.v1alpha1.Reserves
+	20,  // 60: penumbra.core.component.dex.v1alpha1.PositionWithdrawPlan.position_id:type_name -> penumbra.core.component.dex.v1alpha1.PositionId
+	13,  // 61: penumbra.core.component.dex.v1alpha1.PositionWithdrawPlan.pair:type_name -> penumbra.core.component.dex.v1alpha1.TradingPair
+	18,  // 62: penumbra.core.component.dex.v1alpha1.PositionRewardClaimPlan.reserves:type_name -> penumbra.core.component.dex.v1alpha1.Reserves
+	13,  // 63: penumbra.core.component.dex.v1alpha1.BatchSwapOutputDataRequest.trading_pair:type_name -> penumbra.core.component.dex.v1alpha1.TradingPair
+	15,  // 64: penumbra.core.component.dex.v1alpha1.BatchSwapOutputDataResponse.data:type_name -> penumbra.core.component.dex.v1alpha1.BatchSwapOutputData
+	14,  // 65: penumbra.core.component.dex.v1alpha1.SwapExecutionRequest.trading_pair:type_name -> penumbra.core.component.dex.v1alpha1.DirectedTradingPair
+	27,  // 66: penumbra.core.component.dex.v1alpha1.SwapExecutionResponse.swap_execution:type_name -> penumbra.core.component.dex.v1alpha1.SwapExecution
+	27,  // 67: penumbra.core.component.dex.v1alpha1.ArbExecutionResponse.swap_execution:type_name -> penumbra.core.component.dex.v1alpha1.SwapExecution
+	14,  // 68: penumbra.core.component.dex.v1alpha1.SwapExecutionsRequest.trading_pair:type_name -> penumbra.core.component.dex.v1alpha1.DirectedTradingPair
+	27,  // 69: penumbra.core.component.dex.v1alpha1.SwapExecutionsResponse.swap_execution:type_name -> penumbra.core.component.dex.v1alpha1.SwapExecution
+	14,  // 70: penumbra.core.component.dex.v1alpha1.SwapExecutionsResponse.trading_pair:type_name -> penumbra.core.component.dex.v1alpha1.DirectedTradingPair
+	27,  // 71: penumbra.core.component.dex.v1alpha1.ArbExecutionsResponse.swap_execution:type_name -> penumbra.core.component.dex.v1alpha1.SwapExecution
+	19,  // 72: penumbra.core.component.dex.v1alpha1.LiquidityPositionsResponse.data:type_name -> penumbra.core.component.dex.v1alpha1.Position
+	20,  // 73: penumbra.core.component.dex.v1alpha1.LiquidityPositionByIdRequest.position_id:type_name -> penumbra.core.component.dex.v1alpha1.PositionId
+	19,  // 74: penumbra.core.component.dex.v1alpha1.LiquidityPositionByIdResponse.data:type_name -> penumbra.core.component.dex.v1alpha1.Position
+	20,  // 75: penumbra.core.component.dex.v1alpha1.LiquidityPositionsByIdRequest.position_id:type_name -> penumbra.core.component.dex.v1alpha1.PositionId
+	19,  // 76: penumbra.core.component.dex.v1alpha1.LiquidityPositionsByIdResponse.data:type_name -> penumbra.core.component.dex.v1alpha1.Position
+	14,  // 77: penumbra.core.component.dex.v1alpha1.LiquidityPositionsByPriceRequest.trading_pair:type_name -> penumbra.core.component.dex.v1alpha1.DirectedTradingPair
+	19,  // 78: penumbra.core.component.dex.v1alpha1.LiquidityPositionsByPriceResponse.data:type_name -> penumbra.core.component.dex.v1alpha1.Position
+	13,  // 79: penumbra.core.component.dex.v1alpha1.SpreadRequest.trading_pair:type_name -> penumbra.core.component.dex.v1alpha1.TradingPair
+	19,  // 80: penumbra.core.component.dex.v1alpha1.SpreadResponse.best_1_to_2_position:type_name -> penumbra.core.component.dex.v1alpha1.Position
+	19,  // 81: penumbra.core.component.dex.v1alpha1.SpreadResponse.best_2_to_1_position:type_name -> penumbra.core.component.dex.v1alpha1.Position
+	67,  // 82: penumbra.core.component.dex.v1alpha1.SimulateTradeRequest.input:type_name -> penumbra.core.asset.v1alpha1.Value
+	66,  // 83: penumbra.core.component.dex.v1alpha1.SimulateTradeRequest.output:type_name -> penumbra.core.asset.v1alpha1.AssetId
+	57,  // 84: penumbra.core.component.dex.v1alpha1.SimulateTradeRequest.routing:type_name -> penumbra.core.component.dex.v1alpha1.SimulateTradeRequest.Routing
+	27,  // 85: penumbra.core.component.dex.v1alpha1.SimulateTradeResponse.output:type_name -> penumbra.core.component.dex.v1alpha1.SwapExecution
+	3,   // 86: penumbra.core.component.dex.v1alpha1.SwapView.Visible.swap:type_name -> penumbra.core.component.dex.v1alpha1.Swap
+	8,   // 87: penumbra.core.component.dex.v1alpha1.SwapView.Visible.swap_plaintext:type_name -> penumbra.core.component.dex.v1alpha1.SwapPlaintext
+	3,   // 88: penumbra.core.component.dex.v1alpha1.SwapView.Opaque.swap:type_name -> penumbra.core.component.dex.v1alpha1.Swap
+	4,   // 89: penumbra.core.component.dex.v1alpha1.SwapClaimView.Visible.swap_claim:type_name -> penumbra.core.component.dex.v1alpha1.SwapClaim
+	68,  // 90: penumbra.core.component.dex.v1alpha1.SwapClaimView.Visible.output_1:type_name -> penumbra.core.component.shielded_pool.v1alpha1.NoteView
+	68,  // 91: penumbra.core.component.dex.v1alpha1.SwapClaimView.Visible.output_2:type_name -> penumbra.core.component.shielded_pool.v1alpha1.NoteView
+	4,   // 92: penumbra.core.component.dex.v1alpha1.SwapClaimView.Opaque.swap_claim:type_name -> penumbra.core.component.dex.v1alpha1.SwapClaim
+	67,  // 93: penumbra.core.component.dex.v1alpha1.SwapExecution.Trace.value:type_name -> penumbra.core.asset.v1alpha1.Value
+	59,  // 94: penumbra.core.component.dex.v1alpha1.SimulateTradeRequest.Routing.default:type_name -> penumbra.core.component.dex.v1alpha1.SimulateTradeRequest.Routing.Default
+	58,  // 95: penumbra.core.component.dex.v1alpha1.SimulateTradeRequest.Routing.single_hop:type_name -> penumbra.core.component.dex.v1alpha1.SimulateTradeRequest.Routing.SingleHop
+	30,  // 96: penumbra.core.component.dex.v1alpha1.QueryService.BatchSwapOutputData:input_type -> penumbra.core.component.dex.v1alpha1.BatchSwapOutputDataRequest
+	32,  // 97: penumbra.core.component.dex.v1alpha1.QueryService.SwapExecution:input_type -> penumbra.core.component.dex.v1alpha1.SwapExecutionRequest
+	34,  // 98: penumbra.core.component.dex.v1alpha1.QueryService.ArbExecution:input_type -> penumbra.core.component.dex.v1alpha1.ArbExecutionRequest
+	36,  // 99: penumbra.core.component.dex.v1alpha1.QueryService.SwapExecutions:input_type -> penumbra.core.component.dex.v1alpha1.SwapExecutionsRequest
+	38,  // 100: penumbra.core.component.dex.v1alpha1.QueryService.ArbExecutions:input_type -> penumbra.core.component.dex.v1alpha1.ArbExecutionsRequest
+	40,  // 101: penumbra.core.component.dex.v1alpha1.QueryService.LiquidityPositions:input_type -> penumbra.core.component.dex.v1alpha1.LiquidityPositionsRequest
+	42,  // 102: penumbra.core.component.dex.v1alpha1.QueryService.LiquidityPositionById:input_type -> penumbra.core.component.dex.v1alpha1.LiquidityPositionByIdRequest
+	44,  // 103: penumbra.core.component.dex.v1alpha1.QueryService.LiquidityPositionsById:input_type -> penumbra.core.component.dex.v1alpha1.LiquidityPositionsByIdRequest
+	46,  // 104: penumbra.core.component.dex.v1alpha1.QueryService.LiquidityPositionsByPrice:input_type -> penumbra.core.component.dex.v1alpha1.LiquidityPositionsByPriceRequest
+	48,  // 105: penumbra.core.component.dex.v1alpha1.QueryService.Spread:input_type -> penumbra.core.component.dex.v1alpha1.SpreadRequest
+	50,  // 106: penumbra.core.component.dex.v1alpha1.SimulationService.SimulateTrade:input_type -> penumbra.core.component.dex.v1alpha1.SimulateTradeRequest
+	31,  // 107: penumbra.core.component.dex.v1alpha1.QueryService.BatchSwapOutputData:output_type -> penumbra.core.component.dex.v1alpha1.BatchSwapOutputDataResponse
+	33,  // 108: penumbra.core.component.dex.v1alpha1.QueryService.SwapExecution:output_type -> penumbra.core.component.dex.v1alpha1.SwapExecutionResponse
+	35,  // 109: penumbra.core.component.dex.v1alpha1.QueryService.ArbExecution:output_type -> penumbra.core.component.dex.v1alpha1.ArbExecutionResponse
+	37,  // 110: penumbra.core.component.dex.v1alpha1.QueryService.SwapExecutions:output_type -> penumbra.core.component.dex.v1alpha1.SwapExecutionsResponse
+	39,  // 111: penumbra.core.component.dex.v1alpha1.QueryService.ArbExecutions:output_type -> penumbra.core.component.dex.v1alpha1.ArbExecutionsResponse
+	41,  // 112: penumbra.core.component.dex.v1alpha1.QueryService.LiquidityPositions:output_type -> penumbra.core.component.dex.v1alpha1.LiquidityPositionsResponse
+	43,  // 113: penumbra.core.component.dex.v1alpha1.QueryService.LiquidityPositionById:output_type -> penumbra.core.component.dex.v1alpha1.LiquidityPositionByIdResponse
+	45,  // 114: penumbra.core.component.dex.v1alpha1.QueryService.LiquidityPositionsById:output_type -> penumbra.core.component.dex.v1alpha1.LiquidityPositionsByIdResponse
+	47,  // 115: penumbra.core.component.dex.v1alpha1.QueryService.LiquidityPositionsByPrice:output_type -> penumbra.core.component.dex.v1alpha1.LiquidityPositionsByPriceResponse
+	49,  // 116: penumbra.core.component.dex.v1alpha1.QueryService.Spread:output_type -> penumbra.core.component.dex.v1alpha1.SpreadResponse
+	51,  // 117: penumbra.core.component.dex.v1alpha1.SimulationService.SimulateTrade:output_type -> penumbra.core.component.dex.v1alpha1.SimulateTradeResponse
+	107, // [107:118] is the sub-list for method output_type
+	96,  // [96:107] is the sub-list for method input_type
+	96,  // [96:96] is the sub-list for extension type_name
+	96,  // [96:96] is the sub-list for extension extendee
+	0,   // [0:96] is the sub-list for field type_name
 }
 
 func init() { file_penumbra_core_component_dex_v1alpha1_dex_proto_init() }
@@ -3311,7 +5123,7 @@ func file_penumbra_core_component_dex_v1alpha1_dex_proto_init() {
 			}
 		}
 		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[29].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SwapView_Visible); i {
+			switch v := v.(*BatchSwapOutputDataRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3323,7 +5135,7 @@ func file_penumbra_core_component_dex_v1alpha1_dex_proto_init() {
 			}
 		}
 		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[30].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SwapView_Opaque); i {
+			switch v := v.(*BatchSwapOutputDataResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3335,7 +5147,7 @@ func file_penumbra_core_component_dex_v1alpha1_dex_proto_init() {
 			}
 		}
 		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[31].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SwapClaimView_Visible); i {
+			switch v := v.(*SwapExecutionRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3347,7 +5159,7 @@ func file_penumbra_core_component_dex_v1alpha1_dex_proto_init() {
 			}
 		}
 		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[32].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SwapClaimView_Opaque); i {
+			switch v := v.(*SwapExecutionResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3359,7 +5171,307 @@ func file_penumbra_core_component_dex_v1alpha1_dex_proto_init() {
 			}
 		}
 		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[33].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ArbExecutionRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[34].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ArbExecutionResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[35].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SwapExecutionsRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[36].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SwapExecutionsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[37].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ArbExecutionsRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[38].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ArbExecutionsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[39].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*LiquidityPositionsRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[40].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*LiquidityPositionsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[41].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*LiquidityPositionByIdRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[42].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*LiquidityPositionByIdResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[43].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*LiquidityPositionsByIdRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[44].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*LiquidityPositionsByIdResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[45].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*LiquidityPositionsByPriceRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[46].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*LiquidityPositionsByPriceResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[47].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SpreadRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[48].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SpreadResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[49].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SimulateTradeRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[50].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SimulateTradeResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[51].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SwapView_Visible); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[52].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SwapView_Opaque); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[53].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SwapClaimView_Visible); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[54].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SwapClaimView_Opaque); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[55].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SwapExecution_Trace); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[56].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SimulateTradeRequest_Routing); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[57].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SimulateTradeRequest_Routing_SingleHop); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[58].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SimulateTradeRequest_Routing_Default); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3379,15 +5491,19 @@ func file_penumbra_core_component_dex_v1alpha1_dex_proto_init() {
 		(*SwapClaimView_Visible_)(nil),
 		(*SwapClaimView_Opaque_)(nil),
 	}
+	file_penumbra_core_component_dex_v1alpha1_dex_proto_msgTypes[56].OneofWrappers = []interface{}{
+		(*SimulateTradeRequest_Routing_Default_)(nil),
+		(*SimulateTradeRequest_Routing_SingleHop_)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_penumbra_core_component_dex_v1alpha1_dex_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   34,
+			NumMessages:   59,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   2,
 		},
 		GoTypes:           file_penumbra_core_component_dex_v1alpha1_dex_proto_goTypes,
 		DependencyIndexes: file_penumbra_core_component_dex_v1alpha1_dex_proto_depIdxs,

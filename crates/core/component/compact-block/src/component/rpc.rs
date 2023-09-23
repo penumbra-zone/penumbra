@@ -1,178 +1,34 @@
 use std::pin::Pin;
 
 use anyhow::bail;
-use async_stream::try_stream;
-use futures::{
-    stream::{StreamExt, TryStreamExt},
-    TryFutureExt,
-};
+use futures::{StreamExt, TryFutureExt, TryStreamExt};
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_compact_block::component::StateReadExt as _;
-use penumbra_proto::{
-    client::v1alpha1::{
-        oblivious_query_service_server::ObliviousQueryService, ChainParametersRequest,
-        ChainParametersResponse, CompactBlockRangeRequest, CompactBlockRangeResponse,
-        EpochByHeightRequest, EpochByHeightResponse, ValidatorInfoRequest, ValidatorInfoResponse,
-    },
-    DomainType,
+use penumbra_proto::core::component::compact_block::v1alpha1::{
+    query_service_server::QueryService, CompactBlockRangeRequest, CompactBlockRangeResponse,
 };
-use penumbra_stake::{validator, StateReadExt as _};
+use penumbra_storage::Storage;
 use tokio::sync::mpsc;
 use tonic::Status;
 use tracing::{instrument, Instrument};
 
-use crate::metrics;
+use super::{metrics, StateReadExt};
 
-/// RAII guard used to increment and decrement an active connection counter.
-///
-/// This ensures we appropriately decrement the counter when the guard goes out of scope.
-struct CompactBlockConnectionCounter {}
-
-impl CompactBlockConnectionCounter {
-    pub fn new() -> Self {
-        metrics::increment_gauge!(
-            metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_ACTIVE_CONNECTIONS,
-            1.0
-        );
-        CompactBlockConnectionCounter {}
-    }
+// TODO: Hide this and only expose a Router?
+pub struct Server {
+    storage: Storage,
 }
 
-impl Drop for CompactBlockConnectionCounter {
-    fn drop(&mut self) {
-        metrics::decrement_gauge!(
-            metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_ACTIVE_CONNECTIONS,
-            1.0
-        );
+impl Server {
+    pub fn new(storage: Storage) -> Self {
+        Self { storage }
     }
 }
-
-use super::Info;
 
 #[tonic::async_trait]
-impl ObliviousQueryService for Info {
+impl QueryService for Server {
     type CompactBlockRangeStream = Pin<
         Box<dyn futures::Stream<Item = Result<CompactBlockRangeResponse, tonic::Status>> + Send>,
     >;
-
-    type ValidatorInfoStream =
-        Pin<Box<dyn futures::Stream<Item = Result<ValidatorInfoResponse, tonic::Status>> + Send>>;
-
-    #[instrument(skip(self, request))]
-    async fn chain_parameters(
-        &self,
-        request: tonic::Request<ChainParametersRequest>,
-    ) -> Result<tonic::Response<ChainParametersResponse>, Status> {
-        let state = self.storage.latest_snapshot();
-        // We map the error here to avoid including `tonic` as a dependency
-        // in the `chain` crate, to support its compilation to wasm.
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| {
-                tonic::Status::unknown(format!(
-                    "failed to validate chain id during chain parameters lookup: {e}"
-                ))
-            })?;
-
-        let chain_params = state.get_chain_params().await.map_err(|e| {
-            tonic::Status::unavailable(format!("error getting chain parameters: {e}"))
-        })?;
-
-        Ok(tonic::Response::new(ChainParametersResponse {
-            chain_parameters: Some(chain_params.into()),
-        }))
-    }
-
-    #[instrument(skip(self, request))]
-    async fn info(
-        &self,
-        request: tonic::Request<penumbra_proto::client::v1alpha1::InfoRequest>,
-    ) -> Result<tonic::Response<penumbra_proto::client::v1alpha1::InfoResponse>, Status> {
-        let info = self
-            .info(tendermint::v0_34::abci::request::Info {
-                version: request.get_ref().version.clone(),
-                block_version: request.get_ref().block_version,
-                p2p_version: request.get_ref().p2p_version,
-                abci_version: request.get_ref().abci_version.clone(),
-            })
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("error getting ABCI info: {e}")))?;
-
-        Ok(tonic::Response::new(
-            penumbra_proto::client::v1alpha1::InfoResponse {
-                data: info.data.into(),
-                version: info.version,
-                app_version: info.app_version,
-                last_block_height: info.last_block_height.into(),
-                last_block_app_hash: info.last_block_app_hash.into(),
-            },
-        ))
-    }
-
-    #[instrument(skip(self, request))]
-    async fn epoch_by_height(
-        &self,
-        request: tonic::Request<EpochByHeightRequest>,
-    ) -> Result<tonic::Response<EpochByHeightResponse>, Status> {
-        let state = self.storage.latest_snapshot();
-
-        let epoch = state
-            .epoch_by_height(request.get_ref().height)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("could not get epoch for height: {e}")))?;
-
-        Ok(tonic::Response::new(EpochByHeightResponse {
-            epoch: Some(epoch.into()),
-        }))
-    }
-
-    #[instrument(skip(self, request), fields(show_inactive = request.get_ref().show_inactive))]
-    async fn validator_info(
-        &self,
-        request: tonic::Request<ValidatorInfoRequest>,
-    ) -> Result<tonic::Response<Self::ValidatorInfoStream>, Status> {
-        let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| {
-                tonic::Status::unknown(format!(
-                    "failed to validate chain id during validator info request: {e}"
-                ))
-            })?;
-
-        let validators = state
-            .validator_list()
-            .await
-            .map_err(|e| tonic::Status::unavailable(format!("error listing validators: {e}")))?;
-
-        let show_inactive = request.get_ref().show_inactive;
-        let s = try_stream! {
-            for v in validators {
-                let info = state.validator_info(&v.identity_key)
-                    .await?
-                    .expect("known validator must be present");
-                // Slashed and inactive validators are not shown by default.
-                if !show_inactive && info.status.state != validator::State::Active {
-                    continue;
-                }
-                yield info.to_proto();
-            }
-        };
-
-        Ok(tonic::Response::new(
-            s.map_ok(|info| ValidatorInfoResponse {
-                validator_info: Some(info),
-            })
-            .map_err(|e: anyhow::Error| {
-                tonic::Status::unavailable(format!("error getting validator info: {e}"))
-            })
-            // TODO: how do we instrument a Stream
-            //.instrument(Span::current())
-            .boxed(),
-        ))
-    }
 
     #[instrument(
         skip(self, request),
@@ -267,9 +123,7 @@ impl ObliviousQueryService for Info {
                     // outside of the `send_op` future, and investigate if long blocking sends can
                     // happen for benign reasons (i.e not caused by the client).
                     tx_blocks.send(Ok(compact_block.into())).await?;
-                    metrics::increment_counter!(
-                        metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
-                    );
+                    metrics::increment_counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL,);
                 }
 
                 // If the client didn't request a keep-alive, we're done.
@@ -301,9 +155,7 @@ impl ObliviousQueryService for Info {
                         .send(Ok(block.into()))
                         .await
                         .map_err(|_| tonic::Status::cancelled("client closed connection"))?;
-                    metrics::increment_counter!(
-                        metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
-                    );
+                    metrics::increment_counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL,);
                 }
 
                 // Ensure that we don't hold a reference to the snapshot indefinitely
@@ -332,9 +184,7 @@ impl ObliviousQueryService for Info {
                         .send(Ok(block.into()))
                         .await
                         .map_err(|_| tonic::Status::cancelled("channel closed"))?;
-                    metrics::increment_counter!(
-                        metrics::CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL
-                    );
+                    metrics::increment_counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL,);
                 }
             }
             .map_err(|e| async move {
@@ -360,5 +210,23 @@ impl ObliviousQueryService for Info {
                 })
                 .boxed(),
         ))
+    }
+}
+
+/// RAII guard used to increment and decrement an active connection counter.
+///
+/// This ensures we appropriately decrement the counter when the guard goes out of scope.
+struct CompactBlockConnectionCounter {}
+
+impl CompactBlockConnectionCounter {
+    pub fn new() -> Self {
+        metrics::increment_gauge!(metrics::COMPACT_BLOCK_RANGE_ACTIVE_CONNECTIONS, 1.0);
+        CompactBlockConnectionCounter {}
+    }
+}
+
+impl Drop for CompactBlockConnectionCounter {
+    fn drop(&mut self) {
+        metrics::decrement_gauge!(metrics::COMPACT_BLOCK_RANGE_ACTIVE_CONNECTIONS, 1.0);
     }
 }

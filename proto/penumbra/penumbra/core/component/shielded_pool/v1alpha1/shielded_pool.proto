@@ -154,3 +154,23 @@ message OutputPlan {
     // The second blinding factor to use for the ZK output proof.
     bytes proof_blinding_s = 6;
 }
+
+// Query operations for the shielded pool component.
+service QueryService {
+  rpc DenomMetadataById(DenomMetadataByIdRequest) returns (DenomMetadataByIdResponse);
+}
+
+// Requests information on an asset by asset id
+message DenomMetadataByIdRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // The asset id to request information on.
+  core.asset.v1alpha1.AssetId asset_id = 2;
+}
+
+message DenomMetadataByIdResponse {
+  // If present, information on the requested asset.
+  //
+  // If the requested asset was unknown, this field will not be present.
+  core.asset.v1alpha1.DenomMetadata denom_metadata = 1;
+}

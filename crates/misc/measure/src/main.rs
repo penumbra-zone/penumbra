@@ -8,10 +8,15 @@ use tracing_subscriber::EnvFilter;
 use penumbra_chain::params::ChainParameters;
 use penumbra_compact_block::CompactBlock;
 use penumbra_proto::{
-    client::v1alpha1::{
-        oblivious_query_service_client::ObliviousQueryServiceClient,
-        tendermint_proxy_service_client::TendermintProxyServiceClient, ChainParametersRequest,
-        CompactBlockRangeRequest, GetStatusRequest,
+    penumbra::core::app::v1alpha1::{
+        query_service_client::QueryServiceClient as AppQueryServiceClient, ChainParametersRequest,
+    },
+    penumbra::core::component::compact_block::v1alpha1::{
+        query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
+        CompactBlockRangeRequest,
+    },
+    penumbra::util::tendermint_proxy::v1alpha1::{
+        tendermint_proxy_service_client::TendermintProxyServiceClient, GetStatusRequest,
     },
     Message,
 };
@@ -99,7 +104,7 @@ impl Opt {
                     js.spawn(
                         async move {
                             let mut client =
-                                ObliviousQueryServiceClient::connect(node2).await.unwrap();
+                                CompactBlockQueryServiceClient::connect(node2).await.unwrap();
 
                             let mut stream = client
                                 .compact_block_range(tonic::Request::new(
@@ -143,7 +148,9 @@ impl Opt {
                 for conn_id in 0..num_connections {
                     let node2 = node.clone();
                     js.spawn(async move {
-                        let mut client = ObliviousQueryServiceClient::connect(node2).await.unwrap();
+                        let mut client = CompactBlockQueryServiceClient::connect(node2)
+                            .await
+                            .unwrap();
 
                         let mut stream = client
                             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
@@ -177,10 +184,14 @@ impl Opt {
                 }
             }
             Command::StreamBlocks { skip_genesis } => {
-                let mut client =
-                    ObliviousQueryServiceClient::connect(self.node.to_string()).await?;
+                let channel = Channel::from_shared(self.node.to_string())?
+                    .connect()
+                    .await?;
 
-                let params: ChainParameters = client
+                let mut app_client = AppQueryServiceClient::new(channel.clone());
+                let mut cb_client = CompactBlockQueryServiceClient::new(channel.clone());
+
+                let params: ChainParameters = app_client
                     .chain_parameters(tonic::Request::new(ChainParametersRequest {
                         chain_id: String::new(),
                     }))
@@ -191,7 +202,7 @@ impl Opt {
                 let end_height = self.latest_known_block_height().await?.0;
                 let start_height = if skip_genesis { 1 } else { 0 };
 
-                let mut stream = client
+                let mut stream = cb_client
                     .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
                         chain_id: params.chain_id,
                         start_height,

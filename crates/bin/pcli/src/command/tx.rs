@@ -1,7 +1,7 @@
 use std::{
     collections::BTreeMap,
     fs::File,
-    io::{Read, Write},
+    io::Read,
     str::FromStr,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -13,16 +13,26 @@ use ibc_types::core::{channel::ChannelId, client::Height as IbcHeight};
 use penumbra_asset::{asset, asset::DenomMetadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_fee::Fee;
-use penumbra_governance::{proposal::ProposalToml, proposal_state::State as ProposalState, Vote};
+use penumbra_governance::{proposal::ProposalToml, Vote};
 use penumbra_ibc::Ics20Withdrawal;
 use penumbra_keys::keys::AddressIndex;
 use penumbra_num::Amount;
-use penumbra_proto::{
-    client::v1alpha1::{
-        EpochByHeightRequest, LiquidityPositionByIdRequest, ProposalInfoRequest,
-        ProposalInfoResponse, ProposalRateDataRequest, ValidatorPenaltyRequest,
+use penumbra_proto::core::component::{
+    chain::v1alpha1::{
+        query_service_client::QueryServiceClient as ChainQueryServiceClient, EpochByHeightRequest,
     },
-    core::component::dex::v1alpha1::PositionId,
+    dex::v1alpha1::{
+        query_service_client::QueryServiceClient as DexQueryServiceClient,
+        LiquidityPositionByIdRequest, PositionId,
+    },
+    governance::v1alpha1::{
+        query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
+        ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
+    },
+    stake::v1alpha1::{
+        query_service_client::QueryServiceClient as StakeQueryServiceClient,
+        ValidatorPenaltyRequest,
+    },
 };
 use penumbra_stake::rate::RateData;
 use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
@@ -320,14 +330,12 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Sweep => loop {
-                let specific_client = app.specific_client().await?;
                 let plans = plan::sweep(
                     app.fvk.account_group_id(),
                     app.view
                         .as_mut()
                         .context("view service must be initialized")?,
                     OsRng,
-                    specific_client,
                 )
                 .await?;
                 let num_plans = plans.len();
@@ -459,7 +467,7 @@ impl TxCmd {
 
                 let to = to.parse::<IdentityKey>()?;
 
-                let mut client = app.specific_client().await?;
+                let mut client = StakeQueryServiceClient::new(app.pd_channel().await?);
                 let rate_data: RateData = client
                     .current_validator_rate(tonic::Request::new(to.into()))
                     .await?
@@ -507,7 +515,7 @@ impl TxCmd {
 
                 let from = delegation_token.validator();
 
-                let mut client = app.specific_client().await?;
+                let mut client = StakeQueryServiceClient::new(app.pd_channel().await?);
                 let rate_data: RateData = client
                     .current_validator_rate(tonic::Request::new(from.into()))
                     .await?
@@ -536,8 +544,7 @@ impl TxCmd {
 
                 let account_group_id = app.fvk.account_group_id(); // this should be optional? or saved in the client statefully?
 
-                let mut specific_client = app.specific_client().await?;
-                let mut oblivious_client = app.oblivious_client().await?;
+                let channel = app.pd_channel().await?;
                 let view: &mut dyn ViewClient = app
                     .view
                     .as_mut()
@@ -545,7 +552,8 @@ impl TxCmd {
 
                 let params = view.chain_params().await?;
                 let current_height = view.status(account_group_id).await?.sync_height;
-                let current_epoch = oblivious_client
+                let mut client = ChainQueryServiceClient::new(channel.clone());
+                let current_epoch = client
                     .epoch_by_height(EpochByHeightRequest {
                         height: current_height,
                     })
@@ -580,7 +588,8 @@ impl TxCmd {
                         let start_epoch_index = token.start_epoch_index();
                         let end_epoch_index = current_epoch.index;
 
-                        let penalty: Penalty = specific_client
+                        let mut client = StakeQueryServiceClient::new(channel.clone());
+                        let penalty: Penalty = client
                             .validator_penalty(tonic::Request::new(ValidatorPenaltyRequest {
                                 chain_id: params.chain_id.to_string(),
                                 identity_key: Some(validator_identity.into()),
@@ -674,11 +683,14 @@ impl TxCmd {
 
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Proposal(ProposalCmd::Template { file, kind }) => {
+            TxCmd::Proposal(ProposalCmd::Template { .. }) => {
+                unimplemented!("governance needs an RPC endpoint");
+                // below code isn't usable by any other client
+                /*
                 let chain_params = app.view().chain_params().await?;
 
                 // Find out what the latest proposal ID is so we can include the next ID in the template:
-                let mut client = app.specific_client().await?;
+                let mut client = StorageQueryServiceClient::new(app.pd_channel().await?);
                 let next_proposal_id: u64 = client
                     .key_proto(penumbra_governance::state_key::next_proposal_id())
                     .await?
@@ -696,12 +708,12 @@ impl TxCmd {
                 } else {
                     println!("{}", toml::to_string_pretty(&toml_template)?);
                 }
+                 */
             }
-            TxCmd::Proposal(ProposalCmd::DepositClaim {
-                fee,
-                proposal_id,
-                source,
-            }) => {
+            TxCmd::Proposal(ProposalCmd::DepositClaim { .. }) => {
+                unimplemented!("governance needs an RPC endpoint");
+                // below code isn't usable by any other client
+                /*
                 use penumbra_governance::state_key;
 
                 let fee = Fee::from_staking_token_amount((*fee).into());
@@ -750,6 +762,7 @@ impl TxCmd {
                     .await?;
 
                 app.build_and_submit_transaction(plan).await?;
+                */
             }
             TxCmd::Vote { vote, fee, source } => {
                 let (proposal_id, vote): (u64, Vote) = (*vote).into();
@@ -763,7 +776,7 @@ impl TxCmd {
                 //   convert staked notes into voting power and mint the correct amount of voting
                 //   receipt tokens to ourselves
 
-                let mut client = app.specific_client().await?;
+                let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
                 let ProposalInfoResponse {
                     start_block_height,
                     start_position,
@@ -995,7 +1008,7 @@ impl TxCmd {
 
                 let mut plan = &mut Planner::new(OsRng);
 
-                let mut specific_client = app.specific_client().await?;
+                let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
 
                 let view: &mut dyn ViewClient = app
                     .view
@@ -1006,7 +1019,7 @@ impl TxCmd {
                     // Withdraw the position
 
                     // Fetch the information regarding the position from the view service.
-                    let position = specific_client
+                    let position = client
                         .liquidity_position_by_id(LiquidityPositionByIdRequest {
                             chain_id: params.chain_id.to_string(),
                             position_id: Some(position_id.into()),
@@ -1051,7 +1064,7 @@ impl TxCmd {
                 source,
                 position_id,
             }) => {
-                let mut specific_client = app.specific_client().await?;
+                let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
 
                 let view: &mut dyn ViewClient = app
                     .view
@@ -1060,7 +1073,7 @@ impl TxCmd {
                 let params = view.chain_params().await?;
 
                 // Fetch the information regarding the position from the view service.
-                let position = specific_client
+                let position = client
                     .liquidity_position_by_id(LiquidityPositionByIdRequest {
                         chain_id: params.chain_id.to_string(),
                         position_id: Some(PositionId::from(*position_id)),

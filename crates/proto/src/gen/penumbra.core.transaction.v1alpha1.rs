@@ -89,7 +89,7 @@ pub mod action {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Action {
-        /// Common actions have numbers < 15, to save space.
+        /// Common actions have numbers \< 15, to save space.
         #[prost(message, tag = "1")]
         Spend(super::super::super::component::shielded_pool::v1alpha1::Spend),
         #[prost(message, tag = "2")]

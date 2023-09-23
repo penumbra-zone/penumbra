@@ -4805,6 +4805,8 @@ dependencies = [
  "serde",
  "sha2 0.9.9",
  "tendermint",
+ "tokio",
+ "tonic",
  "tracing",
 ]
 
@@ -4833,6 +4835,9 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "tendermint",
+ "tokio",
+ "tokio-stream",
+ "tonic",
  "tracing",
 ]
 
@@ -4957,6 +4962,7 @@ dependencies = [
  "tendermint-light-client-verifier",
  "thiserror",
  "tokio",
+ "tonic",
  "tracing",
  "tracing-subscriber 0.3.17",
 ]
@@ -5062,6 +5068,7 @@ dependencies = [
  "serde",
  "tendermint",
  "tokio",
+ "tonic",
  "tracing",
 ]
 
@@ -5340,6 +5347,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "tendermint",
+ "tonic",
  "tracing",
 ]
 
@@ -5384,6 +5392,7 @@ dependencies = [
  "serde",
  "tendermint",
  "thiserror",
+ "tonic",
  "tracing",
 ]
 
@@ -5398,6 +5407,7 @@ dependencies = [
  "ark-relations",
  "ark-serialize",
  "ark-snark",
+ "async-stream 0.3.5",
  "async-trait",
  "base64 0.20.0",
  "bech32",
@@ -5433,6 +5443,7 @@ dependencies = [
  "sha2 0.9.9",
  "tendermint",
  "tokio",
+ "tonic",
  "tracing",
  "tracing-subscriber 0.3.17",
  "vergen",
@@ -5447,18 +5458,23 @@ dependencies = [
  "borsh",
  "futures",
  "hex",
+ "ibc-proto",
  "ics23",
  "jmt",
  "metrics",
  "parking_lot 0.12.1",
+ "pbjson",
  "pin-project",
+ "prost",
  "rocksdb",
+ "serde",
  "sha2 0.10.7",
  "smallvec",
  "tempfile",
  "tendermint",
  "tokio",
  "tokio-stream",
+ "tonic",
  "tracing",
  "tracing-subscriber 0.3.17",
 ]

@@ -1,17 +1,7 @@
-use std::{
-    collections::BTreeMap,
-    io::{stdout, Write},
-    str::FromStr,
-};
+//use std::io::{stdout, Write};
 
-use anyhow::{Context, Result};
-use futures::{StreamExt, TryStreamExt};
-use penumbra_governance::state_key::*;
-use penumbra_governance::{proposal_state::State as ProposalState, Proposal, Vote};
-use penumbra_proto::client::v1alpha1::{PrefixValueRequest, PrefixValueResponse};
-use penumbra_stake::IdentityKey;
-use serde::Serialize;
-use serde_json::json;
+use anyhow::Result;
+//use serde::Serialize;
 
 use crate::App;
 
@@ -46,13 +36,15 @@ pub enum PerProposalCmd {
 }
 
 impl GovernanceCmd {
-    pub async fn exec(&self, app: &mut App) -> Result<()> {
-        use PerProposalCmd::*;
-
-        let mut client = app.specific_client().await?;
+    pub async fn exec(&self, _app: &mut App) -> Result<()> {
+        // use PerProposalCmd::*;
 
         match self {
-            GovernanceCmd::ListProposals { inactive } => {
+            GovernanceCmd::ListProposals { .. } => {
+                unimplemented!("governance component needs an RPC defined")
+                // below code is not usable outside of our own crates because
+                // it does raw state key accesses.
+                /*
                 let proposal_id_list: Vec<u64> = if *inactive {
                     let next: u64 = client
                         .key_proto(next_proposal_id())
@@ -100,145 +92,154 @@ impl GovernanceCmd {
                         "#{proposal_id} {proposal_state:?}    {proposal_title}"
                     )?;
                 }
+                 */
             }
-            GovernanceCmd::Proposal { proposal_id, query } => match query {
-                Definition => {
-                    let proposal: Proposal = client
-                        .key_domain(proposal_definition(*proposal_id))
-                        .await?
-                        .context(format!(
-                            "proposal definition for proposal {} not found",
-                            proposal_id
-                        ))?;
-                    toml(&proposal)?;
-                }
-                State => {
-                    let state: ProposalState = client
-                        .key_domain(proposal_state(*proposal_id))
-                        .await?
-                        .context(format!(
-                            "proposal state for proposal {} not found",
-                            proposal_id
-                        ))?;
-                    json(&state)?;
-                }
-                Period => {
-                    let start: u64 = client
-                        .key_proto(proposal_voting_start(*proposal_id))
-                        .await?
-                        .context(format!(
-                            "proposal voting start for proposal {} not found",
-                            proposal_id
-                        ))?;
-                    let end: u64 = client
-                        .key_proto(proposal_voting_end(*proposal_id))
-                        .await?
-                        .context(format!(
-                            "proposal voting end for proposal {} not found",
-                            proposal_id
-                        ))?;
-                    let period = json!({
-                        "voting_start_block": start,
-                        "voting_end_block": end,
-                    });
-                    json(&period)?;
-                }
-                Tally => {
-                    let validator_votes: BTreeMap<IdentityKey, Vote> = client
-                        .prefix_domain::<Vote>(all_validator_votes_for_proposal(*proposal_id))
-                        .await?
-                        .and_then(|r| async move {
-                            let identity_key = IdentityKey::from_str(
-                                r.0.rsplit('/').next().context("invalid key")?,
-                            )?;
-                            Ok((identity_key, r.1))
-                        })
-                        .try_collect()
-                        .await?;
-
-                    let mut validator_votes_and_power: BTreeMap<IdentityKey, (Vote, u64)> =
-                        BTreeMap::new();
-                    for (identity_key, vote) in validator_votes.iter() {
-                        let power: u64 = client
-                            .key_proto(voting_power_at_proposal_start(*proposal_id, *identity_key))
-                            .await
-                            .context("Error looking for validator power")?
-                            .context("validator power not found")?;
-
-                        validator_votes_and_power.insert(*identity_key, (*vote, power));
+            GovernanceCmd::Proposal { .. } => {
+                unimplemented!("governance component needs an RPC defined");
+                // below code is not usable outside of our own crates because
+                // it does raw state key accesses.
+                /*
+                    match query {
+                    Definition => {
+                        let proposal: Proposal = client
+                            .key_domain(proposal_definition(*proposal_id))
+                            .await?
+                            .context(format!(
+                                "proposal definition for proposal {} not found",
+                                proposal_id
+                            ))?;
+                        toml(&proposal)?;
                     }
-
-                    let mut delegator_tallies: BTreeMap<IdentityKey, penumbra_governance::Tally> =
-                        client
-                            .prefix_domain::<penumbra_governance::Tally>(
-                                all_tallied_delegator_votes_for_proposal(*proposal_id),
-                            )
+                    State => {
+                        let state: ProposalState = client
+                            .key_domain(proposal_state(*proposal_id))
+                            .await?
+                            .context(format!(
+                                "proposal state for proposal {} not found",
+                                proposal_id
+                            ))?;
+                        json(&state)?;
+                    }
+                    Period => {
+                        let start: u64 = client
+                            .key_proto(proposal_voting_start(*proposal_id))
+                            .await?
+                            .context(format!(
+                                "proposal voting start for proposal {} not found",
+                                proposal_id
+                            ))?;
+                        let end: u64 = client
+                            .key_proto(proposal_voting_end(*proposal_id))
+                            .await?
+                            .context(format!(
+                                "proposal voting end for proposal {} not found",
+                                proposal_id
+                            ))?;
+                        let period = json!({
+                            "voting_start_block": start,
+                            "voting_end_block": end,
+                        });
+                        json(&period)?;
+                    }
+                    Tally => {
+                        let validator_votes: BTreeMap<IdentityKey, Vote> = client
+                            .prefix_domain::<Vote>(all_validator_votes_for_proposal(*proposal_id))
                             .await?
                             .and_then(|r| async move {
-                                Ok((
-                                    IdentityKey::from_str(
-                                        r.0.rsplit('/').next().context("invalid key")?,
-                                    )?,
-                                    r.1,
-                                ))
+                                let identity_key = IdentityKey::from_str(
+                                    r.0.rsplit('/').next().context("invalid key")?,
+                                )?;
+                                Ok((identity_key, r.1))
                             })
                             .try_collect()
                             .await?;
 
-                    // Combine the two mappings
-                    let mut total = penumbra_governance::Tally::default();
-                    let mut all_votes_and_power: BTreeMap<String, serde_json::Value> =
-                        BTreeMap::new();
-                    for (identity_key, (vote, power)) in validator_votes_and_power.into_iter() {
-                        all_votes_and_power.insert(identity_key.to_string(), {
-                            let mut map = serde_json::Map::new();
-                            map.insert(
-                                "validator".to_string(),
-                                json!({
-                                    vote.to_string(): power,
-                                }),
-                            );
-                            let delegator_tally =
-                                if let Some(tally) = delegator_tallies.remove(&identity_key) {
-                                    map.insert("delegators".to_string(), json_tally(&tally));
-                                    tally
-                                } else {
-                                    Default::default()
-                                };
-                            // Subtract delegator total from validator power, then add delegator
-                            // tally in to get the total tally for this validator:
-                            let sub_total = penumbra_governance::Tally::from((
-                                vote,
-                                power - delegator_tally.total(),
-                            )) + delegator_tally;
-                            map.insert("sub_total".to_string(), json_tally(&sub_total));
-                            total += sub_total;
-                            map.into()
-                        });
-                    }
-                    for (identity_key, tally) in delegator_tallies.into_iter() {
-                        all_votes_and_power.insert(identity_key.to_string(), {
-                            let mut map = serde_json::Map::new();
-                            let sub_total = tally;
-                            map.insert("delegators".to_string(), json_tally(&tally));
-                            map.insert("sub_total".to_string(), json_tally(&sub_total));
-                            total += sub_total;
-                            map.into()
-                        });
-                    }
+                        let mut validator_votes_and_power: BTreeMap<IdentityKey, (Vote, u64)> =
+                            BTreeMap::new();
+                        for (identity_key, vote) in validator_votes.iter() {
+                            let power: u64 = client
+                                .key_proto(voting_power_at_proposal_start(*proposal_id, *identity_key))
+                                .await
+                                .context("Error looking for validator power")?
+                                .context("validator power not found")?;
 
-                    json(&json!({
-                        "total": json_tally(&total),
-                        "details": all_votes_and_power,
-                    }))?;
-                }
-            },
+                            validator_votes_and_power.insert(*identity_key, (*vote, power));
+                        }
+
+                        let mut delegator_tallies: BTreeMap<IdentityKey, penumbra_governance::Tally> =
+                            client
+                                .prefix_domain::<penumbra_governance::Tally>(
+                                    all_tallied_delegator_votes_for_proposal(*proposal_id),
+                                )
+                                .await?
+                                .and_then(|r| async move {
+                                    Ok((
+                                        IdentityKey::from_str(
+                                            r.0.rsplit('/').next().context("invalid key")?,
+                                        )?,
+                                        r.1,
+                                    ))
+                                })
+                                .try_collect()
+                                .await?;
+
+                        // Combine the two mappings
+                        let mut total = penumbra_governance::Tally::default();
+                        let mut all_votes_and_power: BTreeMap<String, serde_json::Value> =
+                            BTreeMap::new();
+                        for (identity_key, (vote, power)) in validator_votes_and_power.into_iter() {
+                            all_votes_and_power.insert(identity_key.to_string(), {
+                                let mut map = serde_json::Map::new();
+                                map.insert(
+                                    "validator".to_string(),
+                                    json!({
+                                        vote.to_string(): power,
+                                    }),
+                                );
+                                let delegator_tally =
+                                    if let Some(tally) = delegator_tallies.remove(&identity_key) {
+                                        map.insert("delegators".to_string(), json_tally(&tally));
+                                        tally
+                                    } else {
+                                        Default::default()
+                                    };
+                                // Subtract delegator total from validator power, then add delegator
+                                // tally in to get the total tally for this validator:
+                                let sub_total = penumbra_governance::Tally::from((
+                                    vote,
+                                    power - delegator_tally.total(),
+                                )) + delegator_tally;
+                                map.insert("sub_total".to_string(), json_tally(&sub_total));
+                                total += sub_total;
+                                map.into()
+                            });
+                        }
+                        for (identity_key, tally) in delegator_tallies.into_iter() {
+                            all_votes_and_power.insert(identity_key.to_string(), {
+                                let mut map = serde_json::Map::new();
+                                let sub_total = tally;
+                                map.insert("delegators".to_string(), json_tally(&tally));
+                                map.insert("sub_total".to_string(), json_tally(&sub_total));
+                                total += sub_total;
+                                map.into()
+                            });
+                        }
+
+                        json(&json!({
+                            "total": json_tally(&total),
+                            "details": all_votes_and_power,
+                        }))?;
+                    }
+                },
+                */
+            }
         }
 
-        Ok(())
+        // Ok(())
     }
 }
 
+/*
 fn json<T: Serialize>(value: &T) -> Result<()> {
     let mut writer = stdout();
     serde_json::to_writer_pretty(&mut writer, value)?;
@@ -266,3 +267,4 @@ fn toml<T: Serialize>(value: &T) -> Result<()> {
     writer.write_all(string.as_bytes())?;
     Ok(())
 }
+ */

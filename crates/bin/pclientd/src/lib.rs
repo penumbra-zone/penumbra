@@ -11,8 +11,9 @@ use penumbra_custody::soft_kms::{self, SoftKms};
 use penumbra_keys::keys::{SeedPhrase, SpendKey};
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
-    client::v1alpha1::oblivious_query_service_client::ObliviousQueryServiceClient,
-    client::v1alpha1::ChainParametersRequest,
+    core::app::v1alpha1::{
+        query_service_client::QueryServiceClient as AppQueryServiceClient, ChainParametersRequest,
+    },
     custody::v1alpha1::custody_protocol_service_server::CustodyProtocolServiceServer,
     view::v1alpha1::view_protocol_service_server::ViewProtocolServiceServer,
 };
@@ -146,7 +147,7 @@ impl Opt {
 
     async fn init_sqlite(&self, fvk: &FullViewingKey, grpc_url: &Url) -> Result<Storage> {
         // Initialize client and storage
-        let mut client = ObliviousQueryServiceClient::connect(grpc_url.to_string()).await?;
+        let mut client = AppQueryServiceClient::connect(grpc_url.to_string()).await?;
 
         let params = client
             .chain_parameters(tonic::Request::new(ChainParametersRequest {

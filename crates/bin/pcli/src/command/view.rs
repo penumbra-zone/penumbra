@@ -78,10 +78,10 @@ impl ViewCmd {
                 balance_cmd.exec(&full_viewing_key, view_client).await?;
             }
             ViewCmd::Staked(staked_cmd) => {
-                let mut oblivious_client = app.oblivious_client().await?;
+                let channel = app.pd_channel().await?;
                 let view_client = app.view();
                 staked_cmd
-                    .exec(&full_viewing_key, view_client, &mut oblivious_client)
+                    .exec(&full_viewing_key, view_client, channel)
                     .await?;
             }
         }

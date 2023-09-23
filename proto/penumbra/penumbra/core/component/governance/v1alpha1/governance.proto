@@ -8,6 +8,7 @@ import "penumbra/core/num/v1alpha1/num.proto";
 import "penumbra/core/asset/v1alpha1/asset.proto";
 import "penumbra/core/keys/v1alpha1/keys.proto";
 import "penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto";
+import "penumbra/core/component/stake/v1alpha1/stake.proto";
 import "penumbra/core/component/chain/v1alpha1/chain.proto";
 
 // A Penumbra ZK delegator vote proof.
@@ -284,4 +285,38 @@ message Proposal {
   message UpgradePlan {
     uint64 height = 1;
   }
+}
+
+// Query operations for the governance component.
+service QueryService {
+  rpc ProposalInfo(ProposalInfoRequest) returns (ProposalInfoResponse);
+  // Used for computing voting power ?
+  rpc ProposalRateData(ProposalRateDataRequest) returns (stream ProposalRateDataResponse);
+}
+
+message ProposalInfoRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // The proposal id to request information on.
+  uint64 proposal_id = 2;
+}
+
+message ProposalInfoResponse {
+  // The block height at which the proposal started voting.
+  uint64 start_block_height = 1;
+  // The position of the state commitment tree at which the proposal is considered to have started voting.
+  uint64 start_position = 2;
+}
+
+// Requests the validator rate data for a proposal.
+message ProposalRateDataRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // The proposal id to request information on.
+  uint64 proposal_id = 2;
+}
+
+// The rate data for a single validator.
+message ProposalRateDataResponse {
+  core.component.stake.v1alpha1.RateData rate_data = 1;
 }

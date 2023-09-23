@@ -1,5 +1,8 @@
-//! The dex component contains implementations of the Penumbra dex with token supplies based on liquidity provider interactions.
+//! The dex component contains implementations of the Penumbra dex with token
+//! supplies based on liquidity provider interactions.
+
 pub mod metrics;
+pub mod rpc;
 
 pub mod router;
 

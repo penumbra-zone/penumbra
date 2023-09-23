@@ -108,8 +108,10 @@ impl QueryCmd {
             QueryCmd::Key { key } => key.clone(),
         };
 
-        let mut client = app.specific_client().await?;
-        let req = penumbra_proto::client::v1alpha1::KeyValueRequest {
+        use penumbra_proto::core::app::v1alpha1::query_service_client::QueryServiceClient;
+        let mut client = QueryServiceClient::new(app.pd_channel().await?);
+
+        let req = penumbra_proto::core::app::v1alpha1::KeyValueRequest {
             key: key.clone(),
             ..Default::default()
         };

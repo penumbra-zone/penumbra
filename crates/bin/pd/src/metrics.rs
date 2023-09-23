@@ -18,10 +18,8 @@ pub use metrics::*;
 /// For this implementation, in the `pd` crate, we also call the `register_metrics()`
 /// functions in our dependencies.
 pub fn register_metrics() {
-    penumbra_storage::register_metrics();
-    penumbra_stake::register_metrics();
-    // penumbra_app::ibc::register_metrics();
-    penumbra_shielded_pool::component::register_metrics();
+    // This will register metrics for all components.
+    penumbra_app::register_metrics();
 
     register_counter!(MEMPOOL_CHECKTX_TOTAL);
     describe_counter!(
@@ -29,26 +27,6 @@ pub fn register_metrics() {
         Unit::Count,
         "The total number of checktx requests made to the mempool"
     );
-
-    register_gauge!(CLIENT_OBLIVIOUS_COMPACT_BLOCK_ACTIVE_CONNECTIONS);
-    describe_gauge!(
-        CLIENT_OBLIVIOUS_COMPACT_BLOCK_ACTIVE_CONNECTIONS,
-        Unit::Count,
-        "The number of active connections streaming compact blocks"
-    );
-
-    register_counter!(CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL);
-    describe_counter!(
-        CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL,
-        Unit::Count,
-        "The total number of compact blocks served to clients"
-    );
 }
 
 pub const MEMPOOL_CHECKTX_TOTAL: &str = "penumbra_pd_mempool_checktx_total";
-
-pub const CLIENT_OBLIVIOUS_COMPACT_BLOCK_ACTIVE_CONNECTIONS: &str =
-    "penumbra_pd_oblivious_client_compact_active_connections";
-
-pub const CLIENT_OBLIVIOUS_COMPACT_BLOCK_SERVED_TOTAL: &str =
-    "penumbra_pd_oblivious_client_compact_block_served_total";
