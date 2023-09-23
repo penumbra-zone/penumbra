@@ -5,7 +5,9 @@ mod storage;
 
 use anyhow::Result;
 use clap::Parser;
+use console_subscriber::ConsoleLayer;
 use coordinator::Coordinator;
+use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
 use penumbra_proto::{
     tools::summoning::v1alpha1::ceremony_coordinator_service_server::CeremonyCoordinatorServiceServer,
     view::v1alpha1::{
@@ -18,6 +20,7 @@ use std::{net::SocketAddr, time::Duration};
 use storage::Storage;
 use tokio::time::sleep;
 use tonic::transport::Server;
+use tracing_subscriber::{prelude::*, EnvFilter};
 
 use crate::server::CoordinatorService;
 
@@ -28,6 +31,9 @@ use crate::server::CoordinatorService;
     version = env!("VERGEN_GIT_SEMVER"),
 )]
 struct Opt {
+    /// Enable Tokio Console support.
+    #[clap(long, default_value = "false")]
+    tokio_console: bool,
     /// Command to run.
     #[clap(subcommand)]
     pub cmd: Command,
@@ -44,6 +50,7 @@ enum Command {
 
 impl Opt {
     async fn exec(self) -> Result<()> {
+        tracing::info!(?self, "exec");
         match self.cmd {
             Command::Start { listen } => {
                 let storage = Storage::new();
@@ -56,6 +63,7 @@ impl Opt {
                         .add_service(tonic_web::enable(CeremonyCoordinatorServiceServer::new(
                             service,
                         )));
+                tracing::debug!(?listen, "starting grpc server");
                 let server_handle = tokio::spawn(grpc_server.serve(listen));
                 // TODO: better error reporting
                 // We error out if a service errors, rather than keep running
@@ -71,7 +79,30 @@ impl Opt {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Instantiate tracing layers.
+    // The MetricsLayer handles enriching metrics output with labels from tracing spans.
+    let metrics_layer = MetricsLayer::new();
+    // The ConsoleLayer enables collection of data for `tokio-console`.
+    let console_layer = ConsoleLayer::builder().with_default_env().spawn();
+    // The `FmtLayer` is used to print to the console.
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .with_ansi(atty::is(atty::Stream::Stdout))
+        .with_target(true);
+    // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
+    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
+
     let opt = Opt::parse();
+
+    // Register the tracing subscribers, conditionally enabling tokio console support
+    let registry = tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .with(metrics_layer);
+    if opt.tokio_console {
+        registry.with(console_layer).init();
+    } else {
+        registry.init();
+    }
 
     opt.exec().await
 }
