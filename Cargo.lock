@@ -6300,11 +6300,14 @@ name = "psumcoordd"
 version = "0.60.0"
 dependencies = [
  "anyhow",
+ "atty",
  "bytes",
  "camino",
  "clap 3.2.25",
+ "console-subscriber",
  "futures",
  "http-body",
+ "metrics-tracing-context",
  "penumbra-keys",
  "penumbra-proto",
  "penumbra-view",
@@ -6315,6 +6318,7 @@ dependencies = [
  "tonic-web",
  "tower",
  "tracing",
+ "tracing-subscriber 0.3.17",
  "url",
  "vergen",
 ]
