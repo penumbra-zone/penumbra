@@ -8,7 +8,7 @@ use std::{
 
 pub mod metrics;
 pub mod rpc;
-pub use metrics::register_metrics;
+pub use self::metrics::register_metrics;
 
 // TODO: move into leaf submodules under component/ and re-export
 
