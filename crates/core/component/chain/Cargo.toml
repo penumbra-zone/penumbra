@@ -41,6 +41,7 @@ component = [
     "penumbra-component",
     "penumbra-storage",
     "penumbra-proto/penumbra-storage",
+    "penumbra-proto/rpc",
     "tonic",
     "tokio",
 ]
