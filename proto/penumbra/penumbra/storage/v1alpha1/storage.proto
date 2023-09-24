@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package penumbra.storage.v1alpha1;
 
-import "ibc/core/commitment/v1/commitment.proto";
 
 /*
 // This code really seems to belong in the storage crate,
@@ -10,6 +9,8 @@ import "ibc/core/commitment/v1/commitment.proto";
 // proof up to the Penumbra AppHash, which is a concern of the Penumbra
 // application, not the storage layer, which doesn't know about the extra
 // "dummy proof" we insert for IBC compatibility.
+
+import "ibc/core/commitment/v1/commitment.proto";
 
 service QueryService {
   // General-purpose key-value state query API, that can be used to query
