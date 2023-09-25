@@ -41,6 +41,7 @@ function helm_uninstall() {
         | xargs -r helm uninstall --wait
     set -o pipefail
     # Follow up with a specific task to remove PVCs.
+    kubectl delete jobs -l app.kubernetes.io/part-of="$HELM_RELEASE" --wait=true
     kubectl delete pvc -l app.kubernetes.io/part-of="$HELM_RELEASE" --wait=true
 }
 
