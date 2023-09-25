@@ -73,6 +73,9 @@ pub struct ValidatorVoteBody {
     pub governance_key: ::core::option::Option<
         super::super::super::keys::v1alpha1::GovernanceKey,
     >,
+    /// A justification of the vote.
+    #[prost(string, tag = "5")]
+    pub reason: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

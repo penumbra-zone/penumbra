@@ -40,6 +40,7 @@ impl ActionHandler for ValidatorVote {
                     vote: _, // All votes are valid, so we don't need to do anything with this
                     identity_key,
                     governance_key,
+                    reason: _, // TODO: Check length
                 },
             auth_sig: _, // We already checked this in stateless verification
         } = self;
@@ -67,10 +68,12 @@ impl ActionHandler for ValidatorVote {
                     vote,
                     identity_key,
                     governance_key: _, // This is only used for checks so that stateless verification can be done on the signature
+                    reason,
                 },
         } = self;
 
         tracing::debug!(proposal = %proposal, "cast validator vote");
+        // TODO: Store vote justification
         state.cast_validator_vote(*proposal, *identity_key, *vote);
 
         // If a proposal is an emergency proposal, every validator vote triggers a check to see if
