@@ -1225,6 +1225,8 @@ impl Storage {
         let scanned_nullifiers_tx = self.scanned_nullifiers_tx.clone();
         let scanned_swaps_tx = self.scanned_swaps_tx.clone();
 
+        let fvk = self.full_viewing_key().await?;
+
         // Cloning the SCT is cheap because it's a copy-on-write structure, so we move an owned copy
         // into the spawned thread. This means that if for any reason the thread panics or throws an
         // error, the changes to the SCT will be discarded, just like any changes to the database,
@@ -1378,12 +1380,13 @@ impl Storage {
                 let tx_hash_owned = sha2::Sha256::digest(&tx_bytes);
                 let tx_hash = tx_hash_owned.as_slice();
                 let tx_block_height = filtered_block.height as i64;
+                let return_address = transaction.decrypt_memo(&fvk).map_or(None, |x| Some(x.sender.to_vec()));
 
                 tracing::debug!(tx_hash = ?hex::encode(tx_hash), "recording extended transaction");
 
                 dbtx.execute(
-                    "INSERT INTO tx (tx_hash, tx_bytes, block_height) VALUES (?1, ?2, ?3)",
-                    (&tx_hash, &tx_bytes, tx_block_height),
+                    "INSERT INTO tx (tx_hash, tx_bytes, block_height, return_address) VALUES (?1, ?2, ?3, ?4)",
+                    (&tx_hash, &tx_bytes, tx_block_height, return_address),
                 )?;
 
                 // Associate all of the spent nullifiers with the transaction by hash.
@@ -1492,5 +1495,40 @@ impl Storage {
                 .collect()
         })
         .await?
+    }
+
+    pub async fn notes_by_sender(
+        &self,
+        return_address: &Address,
+    ) -> anyhow::Result<Vec<SpendableNoteRecord>> {
+        let pool = self.pool.clone();
+
+        let query = "SELECT notes.note_commitment,
+            spendable_notes.height_created,
+            notes.address,
+            notes.amount,
+            notes.asset_id,
+            notes.rseed,
+            spendable_notes.address_index,
+            spendable_notes.source,
+            spendable_notes.height_spent,
+            spendable_notes.nullifier,
+            spendable_notes.position
+            FROM notes
+            JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+            JOIN tx ON spendable_notes.source = tx.tx_hash
+            WHERE tx.return_address = ?1";
+
+        let return_address = return_address.to_vec();
+
+        let records = spawn_blocking(move || {
+            pool.get()?
+                .prepare(query)?
+                .query_and_then([return_address], |record| record.try_into())?
+                .collect::<anyhow::Result<Vec<_>>>()
+        })
+        .await??;
+
+        Ok(records)
     }
 }
