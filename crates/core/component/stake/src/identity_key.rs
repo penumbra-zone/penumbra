@@ -1,5 +1,5 @@
 use penumbra_proto::{
-    client::v1alpha1::{CurrentValidatorRateRequest, NextValidatorRateRequest},
+    core::component::stake::v1alpha1::{CurrentValidatorRateRequest, NextValidatorRateRequest},
     // TODO: why is this not in the keys crate?
     core::keys::v1alpha1 as pb,
     serializers::bech32str::{self, validator_identity_key::BECH32_PREFIX},

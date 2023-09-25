@@ -101,6 +101,54 @@ impl Transaction {
             .sum()
     }
 
+    /// Helper function for decrypting the memo on the transaction given an FVK.
+    ///
+    /// Will return an Error if there is no memo.
+    pub fn decrypt_memo(&self, fvk: &FullViewingKey) -> anyhow::Result<MemoPlaintext> {
+        // Error if we don't have an encrypted memo field to decrypt.
+        if self.transaction_body().memo.is_none() {
+            return Err(anyhow::anyhow!("no memo"));
+        }
+
+        // Iterate through the outputs until we find an output that lets us decrypt the memo.
+        for output in self.outputs() {
+            // First decrypt the wrapped memo key on the output.
+            let ovk_wrapped_key = output.body.ovk_wrapped_key.clone();
+            let shared_secret = Note::decrypt_key(
+                ovk_wrapped_key,
+                output.body.note_payload.note_commitment,
+                output.body.balance_commitment,
+                fvk.outgoing(),
+                &output.body.note_payload.ephemeral_key,
+            );
+
+            let wrapped_memo_key = &output.body.wrapped_memo_key;
+            let memo_key: PayloadKey = match shared_secret {
+                Ok(shared_secret) => {
+                    let payload_key =
+                        PayloadKey::derive(&shared_secret, &output.body.note_payload.ephemeral_key);
+                    wrapped_memo_key.decrypt_outgoing(&payload_key)?
+                }
+                Err(_) => wrapped_memo_key
+                    .decrypt(output.body.note_payload.ephemeral_key, fvk.incoming())?,
+            };
+
+            // Now we can use the memo key to decrypt the memo.
+            let tx_body = self.transaction_body();
+            let memo_ciphertext = tx_body
+                .memo
+                .as_ref()
+                .expect("memo field exists on this transaction");
+            let decrypted_memo = MemoCiphertext::decrypt(&memo_key, memo_ciphertext.clone())?;
+
+            // The memo is shared across all outputs, so we can stop here.
+            return Ok(decrypted_memo);
+        }
+
+        // If we got here, we were unable to find an output to decrypt the memo.
+        Err(anyhow::anyhow!("unable to decrypt memo"))
+    }
+
     pub fn payload_keys(
         &self,
         fvk: &FullViewingKey,

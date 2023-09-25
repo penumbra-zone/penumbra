@@ -5,13 +5,13 @@ edition = "2021"
 
 [dependencies]
 # Workspace dependencies
-penumbra-asset = { path = "../../../core/asset", default-features = false  } 
+penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-proto = { path = "../../../proto", default-features = false }
 penumbra-storage = { path = "../../../storage", optional = true }
 penumbra-tct = { path = "../../../crypto/tct" }
-penumbra-keys = { path = "../../../core/keys", default-features = false  } 
+penumbra-keys = { path = "../../../core/keys", default-features = false }
 penumbra-component = { path = "../component", optional = true }
-penumbra-num = { path = "../../../core/num", default-features = false  } 
+penumbra-num = { path = "../../../core/num", default-features = false }
 
 # Penumbra dependencies
 decaf377 = "0.5"
@@ -32,8 +32,19 @@ serde = { version = "1", features = ["derive"] }
 async-trait = "0.1.52"
 tracing = "0.1"
 
+# Component dependencies
+tonic = { version = "0.9", optional = true }
+tokio = { version = "1", optional = true }
+
 [features]
-component = ["penumbra-component", "penumbra-storage", "penumbra-proto/penumbra-storage"]
+component = [
+    "penumbra-component",
+    "penumbra-storage",
+    "penumbra-proto/penumbra-storage",
+    "penumbra-proto/rpc",
+    "tonic",
+    "tokio",
+]
 default = ["std", "component"]
 std = ["ark-ff/std", "ibc-types/std"]
 docsrs = []

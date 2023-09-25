@@ -11,6 +11,10 @@ pub use temp_storage_ext::TempStorageExt;
 
 pub mod app;
 
+pub mod metrics;
+pub mod rpc;
+pub use self::metrics::register_metrics;
+
 #[cfg(test)]
 mod tests;
 

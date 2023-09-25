@@ -7,7 +7,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-component = ["penumbra-component", "penumbra-storage", "penumbra-proto/penumbra-storage", "penumbra-chain/component"]
+component = [
+    "penumbra-component",
+    "penumbra-storage",
+    "penumbra-proto/penumbra-storage",
+    "penumbra-chain/component",
+    "tonic",
+]
 default = ["std", "component"]
 std = ["ark-ff/std"]
 docsrs = []
@@ -18,16 +24,16 @@ penumbra-proto = { path = "../../../proto", default-features = false }
 penumbra-storage = { path = "../../../storage", optional = true }
 penumbra-tct = { path = "../../../crypto/tct" }
 penumbra-chain = { path = "../chain", default-features = false }
-penumbra-keys = { path = "../../../core/keys", default-features = false  } 
+penumbra-keys = { path = "../../../core/keys", default-features = false }
 penumbra-component = { path = "../component", optional = true }
 
 # Penumbra dependencies
-decaf377 = {version = "0.5", features = ["r1cs"] }
+decaf377 = { version = "0.5", features = ["r1cs"] }
 poseidon377 = { version = "0.6", features = ["r1cs"] }
 decaf377-rdsa = { version = "0.7" }
 
 # Crates.io dependencies
-ark-r1cs-std = {version = "0.4", default-features = false }
+ark-r1cs-std = { version = "0.4", default-features = false }
 ark-relations = "0.4"
 ark-ff = { version = "0.4", default_features = false }
 ark-serialize = "0.4"
@@ -45,4 +51,5 @@ bincode = "1.3.3"
 once_cell = "1.8"
 hex = "0.4"
 
-
+# Component dependencies
+tonic = { version = "0.9", optional = true }

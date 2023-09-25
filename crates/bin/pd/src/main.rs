@@ -21,11 +21,7 @@ use pd::testnet::{
     join::testnet_join,
 };
 use pd::upgrade::{self, Upgrade};
-use penumbra_proto::client::v1alpha1::{
-    oblivious_query_service_server::ObliviousQueryServiceServer,
-    specific_query_service_server::SpecificQueryServiceServer,
-    tendermint_proxy_service_server::TendermintProxyServiceServer,
-};
+use penumbra_proto::util::tendermint_proxy::v1alpha1::tendermint_proxy_service_server::TendermintProxyServiceServer;
 use penumbra_storage::{StateDelta, Storage};
 use penumbra_tendermint_proxy::TendermintProxy;
 use penumbra_tower_trace::remote_addr;
@@ -333,7 +329,39 @@ async fn main() -> anyhow::Result<()> {
                 )
                 .expect("failed to spawn abci server");
 
-            let ibc = penumbra_ibc::component::IbcQuery::new(storage.clone());
+            let ibc = penumbra_ibc::component::rpc::IbcQuery::new(storage.clone());
+
+            // TODO: Once we migrate to Tonic 0.10.0, we'll be able to use the
+            // `Routes` structure to have each component define a method that
+            // returns a `Routes` with all of its query services bundled inside.
+            //
+            // This means we won't have to import all this shit and recite every
+            // single service -- we can e.g., have the app crate assemble all of
+            // its components' query services into a single `Routes` and then
+            // just add that to the gRPC server.
+
+            use penumbra_proto::core::{
+                app::v1alpha1::query_service_server::QueryServiceServer as AppQueryServiceServer,
+                component::{
+                    chain::v1alpha1::query_service_server::QueryServiceServer as ChainQueryServiceServer,
+                    compact_block::v1alpha1::query_service_server::QueryServiceServer as CompactBlockQueryServiceServer,
+                    dex::v1alpha1::query_service_server::QueryServiceServer as DexQueryServiceServer,
+                    governance::v1alpha1::query_service_server::QueryServiceServer as GovernanceQueryServiceServer,
+                    sct::v1alpha1::query_service_server::QueryServiceServer as SctQueryServiceServer,
+                    shielded_pool::v1alpha1::query_service_server::QueryServiceServer as ShieldedPoolQueryServiceServer,
+                    stake::v1alpha1::query_service_server::QueryServiceServer as StakeQueryServiceServer,
+                },
+            };
+            use tonic_web::enable as we;
+
+            use penumbra_app::rpc::Server as AppServer;
+            use penumbra_chain::component::rpc::Server as ChainServer;
+            use penumbra_compact_block::component::rpc::Server as CompactBlockServer;
+            use penumbra_dex::component::rpc::Server as DexServer;
+            use penumbra_governance::component::rpc::Server as GovernanceServer;
+            use penumbra_sct::component::rpc::Server as SctServer;
+            use penumbra_shielded_pool::component::rpc::Server as ShieldedPoolServer;
+            use penumbra_stake::component::rpc::Server as StakeServer;
 
             let grpc_server = Server::builder()
                 .trace_fn(|req| match remote_addr(req) {
@@ -352,24 +380,38 @@ async fn main() -> anyhow::Result<()> {
                 // new blocks.
                 // .timeout(std::time::Duration::from_secs(7))
                 // Wrap each of the gRPC services in a tonic-web proxy:
-                .add_service(tonic_web::enable(ObliviousQueryServiceServer::new(
-                    info.clone(),
+                .add_service(we(AppQueryServiceServer::new(AppServer::new(
+                    storage.clone(),
+                ))))
+                .add_service(we(ChainQueryServiceServer::new(ChainServer::new(
+                    storage.clone(),
+                ))))
+                .add_service(we(CompactBlockQueryServiceServer::new(
+                    CompactBlockServer::new(storage.clone()),
                 )))
-                .add_service(tonic_web::enable(SpecificQueryServiceServer::new(
-                    info.clone(),
+                .add_service(we(DexQueryServiceServer::new(DexServer::new(
+                    storage.clone(),
+                ))))
+                .add_service(we(GovernanceQueryServiceServer::new(
+                    GovernanceServer::new(storage.clone()),
                 )))
-                .add_service(tonic_web::enable(ClientQueryServer::new(ibc.clone())))
-                .add_service(tonic_web::enable(ChannelQueryServer::new(ibc.clone())))
-                .add_service(tonic_web::enable(ConnectionQueryServer::new(ibc.clone())))
-                .add_service(tonic_web::enable(TendermintProxyServiceServer::new(
-                    tm_proxy.clone(),
+                .add_service(we(SctQueryServiceServer::new(SctServer::new(
+                    storage.clone(),
+                ))))
+                .add_service(we(ShieldedPoolQueryServiceServer::new(
+                    ShieldedPoolServer::new(storage.clone()),
                 )))
-                .add_service(tonic_web::enable(
-                    tonic_reflection::server::Builder::configure()
-                        .register_encoded_file_descriptor_set(penumbra_proto::FILE_DESCRIPTOR_SET)
-                        .build()
-                        .with_context(|| "could not configure grpc reflection service")?,
-                ));
+                .add_service(we(StakeQueryServiceServer::new(StakeServer::new(
+                    storage.clone(),
+                ))))
+                .add_service(we(ClientQueryServer::new(ibc.clone())))
+                .add_service(we(ChannelQueryServer::new(ibc.clone())))
+                .add_service(we(ConnectionQueryServer::new(ibc.clone())))
+                .add_service(we(TendermintProxyServiceServer::new(tm_proxy.clone())))
+                .add_service(we(tonic_reflection::server::Builder::configure()
+                    .register_encoded_file_descriptor_set(penumbra_proto::FILE_DESCRIPTOR_SET)
+                    .build()
+                    .with_context(|| "could not configure grpc reflection service")?));
 
             let grpc_server = if let Some(domain) = grpc_auto_https {
                 use pd::auto_https::Wrapper;

@@ -16,7 +16,7 @@ component = [
 default = ["component", "std"]
 std = ["ibc-types/std"]
 docsrs = []
-rpc = ["dep:tonic"]
+rpc = ["dep:tonic", "ibc-proto/client", "ibc-proto/server"]
 
 [dependencies]
 # Workspace dependencies

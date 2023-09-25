@@ -10,16 +10,30 @@ component = [
     "penumbra-component",
     "penumbra-storage",
     "penumbra-proto/penumbra-storage",
+    "penumbra-proto/rpc",
     "penumbra-chain/component",
     "penumbra-sct/component",
+    "penumbra-shielded-pool/component",
+    "penumbra-dao/component",
     "tokio",
     "im",
     "futures",
+    "async-trait",
+    "async-stream",
+    "tonic",
+    "metrics",
 ]
 proving-keys = ["penumbra-proof-params/proving-keys"]
 default = ["component", "proving-keys"]
 docsrs = []
-parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "decaf377-rdsa/parallel", "ark-groth16/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
+parallel = [
+    "penumbra-tct/parallel",
+    "ark-ff/parallel",
+    "decaf377-rdsa/parallel",
+    "ark-groth16/parallel",
+    "ark-r1cs-std/parallel",
+    "decaf377/parallel",
+]
 
 [dependencies]
 # Workspace dependencies
@@ -32,29 +46,24 @@ penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 penumbra-sct = { path = "../sct", default-features = false }
 penumbra-dao = { path = "../dao", default-features = false }
 penumbra-chain = { path = "../chain", default-features = false }
-penumbra-asset = { path = "../../../core/asset", default-features = false  } 
-penumbra-num = { path = "../../../core/num", default-features = false  } 
-penumbra-keys = { path = "../../../core/keys", default-features = false  } 
+penumbra-asset = { path = "../../../core/asset", default-features = false }
+penumbra-num = { path = "../../../core/num", default-features = false }
+penumbra-keys = { path = "../../../core/keys", default-features = false }
 
 # Penumbra dependencies
-decaf377 = {version = "0.5", features = ["r1cs"] }
+decaf377 = { version = "0.5", features = ["r1cs"] }
 decaf377-rdsa = { version = "0.7" }
-ark-r1cs-std = {version = "0.4", default-features = false }
+ark-r1cs-std = { version = "0.4", default-features = false }
 ark-relations = "0.4"
 ark-ff = { version = "0.4", default_features = false }
 ark-serialize = "0.4"
-ark-groth16 = {version = "0.4", default-features = false}
+ark-groth16 = { version = "0.4", default-features = false }
 ark-snark = "0.4"
-tokio = { version = "1.21.1", features = ["full", "tracing"], optional = true }
-im = { version = "15.1.0", optional = true }
-futures = { version = "0.3", optional = true }
-async-trait = { version = "0.1.52" }
 tendermint = { version = "0.33.0" }
 anyhow = "1"
 tracing = "0.1"
 serde = { version = "1", features = ["derive"] }
 serde_with = "2.2"
-metrics = "0.19.0"
 sha2 = "0.9"
 serde_unit_struct = "0.1"
 bech32 = "0.8"
@@ -66,12 +75,21 @@ base64 = "0.20"
 rand_core = "0.6"
 rand_chacha = "0.3"
 
+# Used by component implementation
+async-trait = { version = "0.1.52", optional = true }
+tokio = { version = "1.21.1", features = ["full", "tracing"], optional = true }
+tonic = { version = "0.9", optional = true }
+im = { version = "15.1.0", optional = true }
+futures = { version = "0.3", optional = true }
+metrics = { version = "0.19.0", optional = true }
+async-stream = { version = "0.3.5", optional = true }
+
 [dev-dependencies]
 ed25519-consensus = "2"
 rand_chacha = "0.3"
 penumbra-transaction = { path = "../../transaction", features = ["parallel"] }
 tracing-subscriber = "0.3"
-proptest = "1" 
+proptest = "1"
 
 [build-dependencies]
 vergen = "5"

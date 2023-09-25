@@ -1033,6 +1033,114 @@ func (x *OutputPlan) GetProofBlindingS() []byte {
 	return nil
 }
 
+// Requests information on an asset by asset id
+type DenomMetadataByIdRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The expected chain id (empty string if no expectation).
+	ChainId string `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// The asset id to request information on.
+	AssetId *v1alpha1.AssetId `protobuf:"bytes,2,opt,name=asset_id,json=assetId,proto3" json:"asset_id,omitempty"`
+}
+
+func (x *DenomMetadataByIdRequest) Reset() {
+	*x = DenomMetadataByIdRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[15]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DenomMetadataByIdRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DenomMetadataByIdRequest) ProtoMessage() {}
+
+func (x *DenomMetadataByIdRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[15]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DenomMetadataByIdRequest.ProtoReflect.Descriptor instead.
+func (*DenomMetadataByIdRequest) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *DenomMetadataByIdRequest) GetChainId() string {
+	if x != nil {
+		return x.ChainId
+	}
+	return ""
+}
+
+func (x *DenomMetadataByIdRequest) GetAssetId() *v1alpha1.AssetId {
+	if x != nil {
+		return x.AssetId
+	}
+	return nil
+}
+
+type DenomMetadataByIdResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// If present, information on the requested asset.
+	//
+	// If the requested asset was unknown, this field will not be present.
+	DenomMetadata *v1alpha1.DenomMetadata `protobuf:"bytes,1,opt,name=denom_metadata,json=denomMetadata,proto3" json:"denom_metadata,omitempty"`
+}
+
+func (x *DenomMetadataByIdResponse) Reset() {
+	*x = DenomMetadataByIdResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[16]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DenomMetadataByIdResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DenomMetadataByIdResponse) ProtoMessage() {}
+
+func (x *DenomMetadataByIdResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[16]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DenomMetadataByIdResponse.ProtoReflect.Descriptor instead.
+func (*DenomMetadataByIdResponse) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *DenomMetadataByIdResponse) GetDenomMetadata() *v1alpha1.DenomMetadata {
+	if x != nil {
+		return x.DenomMetadata
+	}
+	return nil
+}
+
 type SpendView_Visible struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1045,7 +1153,7 @@ type SpendView_Visible struct {
 func (x *SpendView_Visible) Reset() {
 	*x = SpendView_Visible{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[15]
+		mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1058,7 +1166,7 @@ func (x *SpendView_Visible) String() string {
 func (*SpendView_Visible) ProtoMessage() {}
 
 func (x *SpendView_Visible) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[15]
+	mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1099,7 +1207,7 @@ type SpendView_Opaque struct {
 func (x *SpendView_Opaque) Reset() {
 	*x = SpendView_Opaque{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[16]
+		mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1112,7 +1220,7 @@ func (x *SpendView_Opaque) String() string {
 func (*SpendView_Opaque) ProtoMessage() {}
 
 func (x *SpendView_Opaque) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[16]
+	mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1148,7 +1256,7 @@ type OutputView_Visible struct {
 func (x *OutputView_Visible) Reset() {
 	*x = OutputView_Visible{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[17]
+		mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1161,7 +1269,7 @@ func (x *OutputView_Visible) String() string {
 func (*OutputView_Visible) ProtoMessage() {}
 
 func (x *OutputView_Visible) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[17]
+	mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1209,7 +1317,7 @@ type OutputView_Opaque struct {
 func (x *OutputView_Opaque) Reset() {
 	*x = OutputView_Opaque{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[18]
+		mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1222,7 +1330,7 @@ func (x *OutputView_Opaque) String() string {
 func (*OutputView_Opaque) ProtoMessage() {}
 
 func (x *OutputView_Opaque) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[18]
+	mi := &file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1466,33 +1574,59 @@ var file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_rawD
 	0x0e, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x42, 0x6c, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x52, 0x12,
 	0x28, 0x0a, 0x10, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x5f, 0x62, 0x6c, 0x69, 0x6e, 0x64, 0x69, 0x6e,
 	0x67, 0x5f, 0x73, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0e, 0x70, 0x72, 0x6f, 0x6f, 0x66,
-	0x42, 0x6c, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x53, 0x42, 0x95, 0x03, 0x0a, 0x32, 0x63, 0x6f,
-	0x6d, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e,
-	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x73, 0x68, 0x69, 0x65, 0x6c, 0x64,
-	0x65, 0x64, 0x5f, 0x70, 0x6f, 0x6f, 0x6c, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
-	0x42, 0x11, 0x53, 0x68, 0x69, 0x65, 0x6c, 0x64, 0x65, 0x64, 0x50, 0x6f, 0x6f, 0x6c, 0x50, 0x72,
-	0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x73, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
-	0x6d, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2d, 0x7a, 0x6f, 0x6e, 0x65, 0x2f,
-	0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67,
-	0x6f, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x63,
-	0x6f, 0x72, 0x65, 0x2f, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2f, 0x73, 0x68,
-	0x69, 0x65, 0x6c, 0x64, 0x65, 0x64, 0x5f, 0x70, 0x6f, 0x6f, 0x6c, 0x2f, 0x76, 0x31, 0x61, 0x6c,
-	0x70, 0x68, 0x61, 0x31, 0x3b, 0x73, 0x68, 0x69, 0x65, 0x6c, 0x64, 0x65, 0x64, 0x5f, 0x70, 0x6f,
-	0x6f, 0x6c, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xa2, 0x02, 0x04, 0x50, 0x43, 0x43,
-	0x53, 0xaa, 0x02, 0x2d, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x43, 0x6f, 0x72,
-	0x65, 0x2e, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x53, 0x68, 0x69, 0x65,
-	0x6c, 0x64, 0x65, 0x64, 0x50, 0x6f, 0x6f, 0x6c, 0x2e, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
-	0x31, 0xca, 0x02, 0x2d, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x5c, 0x43, 0x6f, 0x72,
-	0x65, 0x5c, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x5c, 0x53, 0x68, 0x69, 0x65,
-	0x6c, 0x64, 0x65, 0x64, 0x50, 0x6f, 0x6f, 0x6c, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
-	0x31, 0xe2, 0x02, 0x39, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x5c, 0x43, 0x6f, 0x72,
-	0x65, 0x5c, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x5c, 0x53, 0x68, 0x69, 0x65,
-	0x6c, 0x64, 0x65, 0x64, 0x50, 0x6f, 0x6f, 0x6c, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
-	0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x31,
-	0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x3a, 0x3a, 0x43, 0x6f, 0x72, 0x65, 0x3a, 0x3a,
-	0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x3a, 0x3a, 0x53, 0x68, 0x69, 0x65, 0x6c,
-	0x64, 0x65, 0x64, 0x50, 0x6f, 0x6f, 0x6c, 0x3a, 0x3a, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
-	0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x42, 0x6c, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x53, 0x22, 0x77, 0x0a, 0x18, 0x44, 0x65, 0x6e,
+	0x6f, 0x6d, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x19, 0x0a, 0x08, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69,
+	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x64,
+	0x12, 0x40, 0x0a, 0x08, 0x61, 0x73, 0x73, 0x65, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x25, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f,
+	0x72, 0x65, 0x2e, 0x61, 0x73, 0x73, 0x65, 0x74, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
+	0x31, 0x2e, 0x41, 0x73, 0x73, 0x65, 0x74, 0x49, 0x64, 0x52, 0x07, 0x61, 0x73, 0x73, 0x65, 0x74,
+	0x49, 0x64, 0x22, 0x6f, 0x0a, 0x19, 0x44, 0x65, 0x6e, 0x6f, 0x6d, 0x4d, 0x65, 0x74, 0x61, 0x64,
+	0x61, 0x74, 0x61, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
+	0x52, 0x0a, 0x0e, 0x64, 0x65, 0x6e, 0x6f, 0x6d, 0x5f, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
+	0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2b, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62,
+	0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x61, 0x73, 0x73, 0x65, 0x74, 0x2e, 0x76, 0x31,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x44, 0x65, 0x6e, 0x6f, 0x6d, 0x4d, 0x65, 0x74, 0x61,
+	0x64, 0x61, 0x74, 0x61, 0x52, 0x0d, 0x64, 0x65, 0x6e, 0x6f, 0x6d, 0x4d, 0x65, 0x74, 0x61, 0x64,
+	0x61, 0x74, 0x61, 0x32, 0xb9, 0x01, 0x0a, 0x0c, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x65, 0x72,
+	0x76, 0x69, 0x63, 0x65, 0x12, 0xa8, 0x01, 0x0a, 0x11, 0x44, 0x65, 0x6e, 0x6f, 0x6d, 0x4d, 0x65,
+	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x42, 0x79, 0x49, 0x64, 0x12, 0x48, 0x2e, 0x70, 0x65, 0x6e,
+	0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f,
+	0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x73, 0x68, 0x69, 0x65, 0x6c, 0x64, 0x65, 0x64, 0x5f, 0x70, 0x6f,
+	0x6f, 0x6c, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x44, 0x65, 0x6e, 0x6f,
+	0x6d, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x49, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e,
+	0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x73,
+	0x68, 0x69, 0x65, 0x6c, 0x64, 0x65, 0x64, 0x5f, 0x70, 0x6f, 0x6f, 0x6c, 0x2e, 0x76, 0x31, 0x61,
+	0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x44, 0x65, 0x6e, 0x6f, 0x6d, 0x4d, 0x65, 0x74, 0x61, 0x64,
+	0x61, 0x74, 0x61, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42,
+	0x95, 0x03, 0x0a, 0x32, 0x63, 0x6f, 0x6d, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61,
+	0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e,
+	0x73, 0x68, 0x69, 0x65, 0x6c, 0x64, 0x65, 0x64, 0x5f, 0x70, 0x6f, 0x6f, 0x6c, 0x2e, 0x76, 0x31,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x42, 0x11, 0x53, 0x68, 0x69, 0x65, 0x6c, 0x64, 0x65, 0x64,
+	0x50, 0x6f, 0x6f, 0x6c, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x73, 0x67, 0x69, 0x74,
+	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61,
+	0x2d, 0x7a, 0x6f, 0x6e, 0x65, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x70, 0x65, 0x6e, 0x75,
+	0x6d, 0x62, 0x72, 0x61, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e,
+	0x65, 0x6e, 0x74, 0x2f, 0x73, 0x68, 0x69, 0x65, 0x6c, 0x64, 0x65, 0x64, 0x5f, 0x70, 0x6f, 0x6f,
+	0x6c, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x3b, 0x73, 0x68, 0x69, 0x65, 0x6c,
+	0x64, 0x65, 0x64, 0x5f, 0x70, 0x6f, 0x6f, 0x6c, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
+	0xa2, 0x02, 0x04, 0x50, 0x43, 0x43, 0x53, 0xaa, 0x02, 0x2d, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62,
+	0x72, 0x61, 0x2e, 0x43, 0x6f, 0x72, 0x65, 0x2e, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x2e, 0x53, 0x68, 0x69, 0x65, 0x6c, 0x64, 0x65, 0x64, 0x50, 0x6f, 0x6f, 0x6c, 0x2e, 0x56,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xca, 0x02, 0x2d, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62,
+	0x72, 0x61, 0x5c, 0x43, 0x6f, 0x72, 0x65, 0x5c, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x5c, 0x53, 0x68, 0x69, 0x65, 0x6c, 0x64, 0x65, 0x64, 0x50, 0x6f, 0x6f, 0x6c, 0x5c, 0x56,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xe2, 0x02, 0x39, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62,
+	0x72, 0x61, 0x5c, 0x43, 0x6f, 0x72, 0x65, 0x5c, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x5c, 0x53, 0x68, 0x69, 0x65, 0x6c, 0x64, 0x65, 0x64, 0x50, 0x6f, 0x6f, 0x6c, 0x5c, 0x56,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64,
+	0x61, 0x74, 0x61, 0xea, 0x02, 0x31, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x3a, 0x3a,
+	0x43, 0x6f, 0x72, 0x65, 0x3a, 0x3a, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x3a,
+	0x3a, 0x53, 0x68, 0x69, 0x65, 0x6c, 0x64, 0x65, 0x64, 0x50, 0x6f, 0x6f, 0x6c, 0x3a, 0x3a, 0x56,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1507,7 +1641,7 @@ func file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_raw
 	return file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_rawDescData
 }
 
-var file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_goTypes = []interface{}{
 	(*Note)(nil),                         // 0: penumbra.core.component.shielded_pool.v1alpha1.Note
 	(*NoteView)(nil),                     // 1: penumbra.core.component.shielded_pool.v1alpha1.NoteView
@@ -1524,53 +1658,61 @@ var file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_goTy
 	(*OutputBody)(nil),                   // 12: penumbra.core.component.shielded_pool.v1alpha1.OutputBody
 	(*OutputView)(nil),                   // 13: penumbra.core.component.shielded_pool.v1alpha1.OutputView
 	(*OutputPlan)(nil),                   // 14: penumbra.core.component.shielded_pool.v1alpha1.OutputPlan
-	(*SpendView_Visible)(nil),            // 15: penumbra.core.component.shielded_pool.v1alpha1.SpendView.Visible
-	(*SpendView_Opaque)(nil),             // 16: penumbra.core.component.shielded_pool.v1alpha1.SpendView.Opaque
-	(*OutputView_Visible)(nil),           // 17: penumbra.core.component.shielded_pool.v1alpha1.OutputView.Visible
-	(*OutputView_Opaque)(nil),            // 18: penumbra.core.component.shielded_pool.v1alpha1.OutputView.Opaque
-	(*v1alpha1.Value)(nil),               // 19: penumbra.core.asset.v1alpha1.Value
-	(*v1alpha11.Address)(nil),            // 20: penumbra.core.keys.v1alpha1.Address
-	(*v1alpha1.ValueView)(nil),           // 21: penumbra.core.asset.v1alpha1.ValueView
-	(*v1alpha11.AddressView)(nil),        // 22: penumbra.core.keys.v1alpha1.AddressView
-	(*v1alpha12.StateCommitment)(nil),    // 23: penumbra.crypto.tct.v1alpha1.StateCommitment
-	(*v1alpha13.SpendAuthSignature)(nil), // 24: penumbra.crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature
-	(*v1alpha1.BalanceCommitment)(nil),   // 25: penumbra.core.asset.v1alpha1.BalanceCommitment
-	(*v1alpha11.PayloadKey)(nil),         // 26: penumbra.core.keys.v1alpha1.PayloadKey
+	(*DenomMetadataByIdRequest)(nil),     // 15: penumbra.core.component.shielded_pool.v1alpha1.DenomMetadataByIdRequest
+	(*DenomMetadataByIdResponse)(nil),    // 16: penumbra.core.component.shielded_pool.v1alpha1.DenomMetadataByIdResponse
+	(*SpendView_Visible)(nil),            // 17: penumbra.core.component.shielded_pool.v1alpha1.SpendView.Visible
+	(*SpendView_Opaque)(nil),             // 18: penumbra.core.component.shielded_pool.v1alpha1.SpendView.Opaque
+	(*OutputView_Visible)(nil),           // 19: penumbra.core.component.shielded_pool.v1alpha1.OutputView.Visible
+	(*OutputView_Opaque)(nil),            // 20: penumbra.core.component.shielded_pool.v1alpha1.OutputView.Opaque
+	(*v1alpha1.Value)(nil),               // 21: penumbra.core.asset.v1alpha1.Value
+	(*v1alpha11.Address)(nil),            // 22: penumbra.core.keys.v1alpha1.Address
+	(*v1alpha1.ValueView)(nil),           // 23: penumbra.core.asset.v1alpha1.ValueView
+	(*v1alpha11.AddressView)(nil),        // 24: penumbra.core.keys.v1alpha1.AddressView
+	(*v1alpha12.StateCommitment)(nil),    // 25: penumbra.crypto.tct.v1alpha1.StateCommitment
+	(*v1alpha13.SpendAuthSignature)(nil), // 26: penumbra.crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature
+	(*v1alpha1.BalanceCommitment)(nil),   // 27: penumbra.core.asset.v1alpha1.BalanceCommitment
+	(*v1alpha1.AssetId)(nil),             // 28: penumbra.core.asset.v1alpha1.AssetId
+	(*v1alpha1.DenomMetadata)(nil),       // 29: penumbra.core.asset.v1alpha1.DenomMetadata
+	(*v1alpha11.PayloadKey)(nil),         // 30: penumbra.core.keys.v1alpha1.PayloadKey
 }
 var file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_depIdxs = []int32{
-	19, // 0: penumbra.core.component.shielded_pool.v1alpha1.Note.value:type_name -> penumbra.core.asset.v1alpha1.Value
-	20, // 1: penumbra.core.component.shielded_pool.v1alpha1.Note.address:type_name -> penumbra.core.keys.v1alpha1.Address
-	21, // 2: penumbra.core.component.shielded_pool.v1alpha1.NoteView.value:type_name -> penumbra.core.asset.v1alpha1.ValueView
-	22, // 3: penumbra.core.component.shielded_pool.v1alpha1.NoteView.address:type_name -> penumbra.core.keys.v1alpha1.AddressView
-	23, // 4: penumbra.core.component.shielded_pool.v1alpha1.NotePayload.note_commitment:type_name -> penumbra.crypto.tct.v1alpha1.StateCommitment
+	21, // 0: penumbra.core.component.shielded_pool.v1alpha1.Note.value:type_name -> penumbra.core.asset.v1alpha1.Value
+	22, // 1: penumbra.core.component.shielded_pool.v1alpha1.Note.address:type_name -> penumbra.core.keys.v1alpha1.Address
+	23, // 2: penumbra.core.component.shielded_pool.v1alpha1.NoteView.value:type_name -> penumbra.core.asset.v1alpha1.ValueView
+	24, // 3: penumbra.core.component.shielded_pool.v1alpha1.NoteView.address:type_name -> penumbra.core.keys.v1alpha1.AddressView
+	25, // 4: penumbra.core.component.shielded_pool.v1alpha1.NotePayload.note_commitment:type_name -> penumbra.crypto.tct.v1alpha1.StateCommitment
 	2,  // 5: penumbra.core.component.shielded_pool.v1alpha1.NotePayload.encrypted_note:type_name -> penumbra.core.component.shielded_pool.v1alpha1.NoteCiphertext
 	8,  // 6: penumbra.core.component.shielded_pool.v1alpha1.Spend.body:type_name -> penumbra.core.component.shielded_pool.v1alpha1.SpendBody
-	24, // 7: penumbra.core.component.shielded_pool.v1alpha1.Spend.auth_sig:type_name -> penumbra.crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature
+	26, // 7: penumbra.core.component.shielded_pool.v1alpha1.Spend.auth_sig:type_name -> penumbra.crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature
 	5,  // 8: penumbra.core.component.shielded_pool.v1alpha1.Spend.proof:type_name -> penumbra.core.component.shielded_pool.v1alpha1.ZKSpendProof
-	25, // 9: penumbra.core.component.shielded_pool.v1alpha1.SpendBody.balance_commitment:type_name -> penumbra.core.asset.v1alpha1.BalanceCommitment
-	15, // 10: penumbra.core.component.shielded_pool.v1alpha1.SpendView.visible:type_name -> penumbra.core.component.shielded_pool.v1alpha1.SpendView.Visible
-	16, // 11: penumbra.core.component.shielded_pool.v1alpha1.SpendView.opaque:type_name -> penumbra.core.component.shielded_pool.v1alpha1.SpendView.Opaque
+	27, // 9: penumbra.core.component.shielded_pool.v1alpha1.SpendBody.balance_commitment:type_name -> penumbra.core.asset.v1alpha1.BalanceCommitment
+	17, // 10: penumbra.core.component.shielded_pool.v1alpha1.SpendView.visible:type_name -> penumbra.core.component.shielded_pool.v1alpha1.SpendView.Visible
+	18, // 11: penumbra.core.component.shielded_pool.v1alpha1.SpendView.opaque:type_name -> penumbra.core.component.shielded_pool.v1alpha1.SpendView.Opaque
 	0,  // 12: penumbra.core.component.shielded_pool.v1alpha1.SpendPlan.note:type_name -> penumbra.core.component.shielded_pool.v1alpha1.Note
 	12, // 13: penumbra.core.component.shielded_pool.v1alpha1.Output.body:type_name -> penumbra.core.component.shielded_pool.v1alpha1.OutputBody
 	4,  // 14: penumbra.core.component.shielded_pool.v1alpha1.Output.proof:type_name -> penumbra.core.component.shielded_pool.v1alpha1.ZKOutputProof
 	3,  // 15: penumbra.core.component.shielded_pool.v1alpha1.OutputBody.note_payload:type_name -> penumbra.core.component.shielded_pool.v1alpha1.NotePayload
-	25, // 16: penumbra.core.component.shielded_pool.v1alpha1.OutputBody.balance_commitment:type_name -> penumbra.core.asset.v1alpha1.BalanceCommitment
-	17, // 17: penumbra.core.component.shielded_pool.v1alpha1.OutputView.visible:type_name -> penumbra.core.component.shielded_pool.v1alpha1.OutputView.Visible
-	18, // 18: penumbra.core.component.shielded_pool.v1alpha1.OutputView.opaque:type_name -> penumbra.core.component.shielded_pool.v1alpha1.OutputView.Opaque
-	19, // 19: penumbra.core.component.shielded_pool.v1alpha1.OutputPlan.value:type_name -> penumbra.core.asset.v1alpha1.Value
-	20, // 20: penumbra.core.component.shielded_pool.v1alpha1.OutputPlan.dest_address:type_name -> penumbra.core.keys.v1alpha1.Address
-	7,  // 21: penumbra.core.component.shielded_pool.v1alpha1.SpendView.Visible.spend:type_name -> penumbra.core.component.shielded_pool.v1alpha1.Spend
-	1,  // 22: penumbra.core.component.shielded_pool.v1alpha1.SpendView.Visible.note:type_name -> penumbra.core.component.shielded_pool.v1alpha1.NoteView
-	7,  // 23: penumbra.core.component.shielded_pool.v1alpha1.SpendView.Opaque.spend:type_name -> penumbra.core.component.shielded_pool.v1alpha1.Spend
-	11, // 24: penumbra.core.component.shielded_pool.v1alpha1.OutputView.Visible.output:type_name -> penumbra.core.component.shielded_pool.v1alpha1.Output
-	1,  // 25: penumbra.core.component.shielded_pool.v1alpha1.OutputView.Visible.note:type_name -> penumbra.core.component.shielded_pool.v1alpha1.NoteView
-	26, // 26: penumbra.core.component.shielded_pool.v1alpha1.OutputView.Visible.payload_key:type_name -> penumbra.core.keys.v1alpha1.PayloadKey
-	11, // 27: penumbra.core.component.shielded_pool.v1alpha1.OutputView.Opaque.output:type_name -> penumbra.core.component.shielded_pool.v1alpha1.Output
-	28, // [28:28] is the sub-list for method output_type
-	28, // [28:28] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	27, // 16: penumbra.core.component.shielded_pool.v1alpha1.OutputBody.balance_commitment:type_name -> penumbra.core.asset.v1alpha1.BalanceCommitment
+	19, // 17: penumbra.core.component.shielded_pool.v1alpha1.OutputView.visible:type_name -> penumbra.core.component.shielded_pool.v1alpha1.OutputView.Visible
+	20, // 18: penumbra.core.component.shielded_pool.v1alpha1.OutputView.opaque:type_name -> penumbra.core.component.shielded_pool.v1alpha1.OutputView.Opaque
+	21, // 19: penumbra.core.component.shielded_pool.v1alpha1.OutputPlan.value:type_name -> penumbra.core.asset.v1alpha1.Value
+	22, // 20: penumbra.core.component.shielded_pool.v1alpha1.OutputPlan.dest_address:type_name -> penumbra.core.keys.v1alpha1.Address
+	28, // 21: penumbra.core.component.shielded_pool.v1alpha1.DenomMetadataByIdRequest.asset_id:type_name -> penumbra.core.asset.v1alpha1.AssetId
+	29, // 22: penumbra.core.component.shielded_pool.v1alpha1.DenomMetadataByIdResponse.denom_metadata:type_name -> penumbra.core.asset.v1alpha1.DenomMetadata
+	7,  // 23: penumbra.core.component.shielded_pool.v1alpha1.SpendView.Visible.spend:type_name -> penumbra.core.component.shielded_pool.v1alpha1.Spend
+	1,  // 24: penumbra.core.component.shielded_pool.v1alpha1.SpendView.Visible.note:type_name -> penumbra.core.component.shielded_pool.v1alpha1.NoteView
+	7,  // 25: penumbra.core.component.shielded_pool.v1alpha1.SpendView.Opaque.spend:type_name -> penumbra.core.component.shielded_pool.v1alpha1.Spend
+	11, // 26: penumbra.core.component.shielded_pool.v1alpha1.OutputView.Visible.output:type_name -> penumbra.core.component.shielded_pool.v1alpha1.Output
+	1,  // 27: penumbra.core.component.shielded_pool.v1alpha1.OutputView.Visible.note:type_name -> penumbra.core.component.shielded_pool.v1alpha1.NoteView
+	30, // 28: penumbra.core.component.shielded_pool.v1alpha1.OutputView.Visible.payload_key:type_name -> penumbra.core.keys.v1alpha1.PayloadKey
+	11, // 29: penumbra.core.component.shielded_pool.v1alpha1.OutputView.Opaque.output:type_name -> penumbra.core.component.shielded_pool.v1alpha1.Output
+	15, // 30: penumbra.core.component.shielded_pool.v1alpha1.QueryService.DenomMetadataById:input_type -> penumbra.core.component.shielded_pool.v1alpha1.DenomMetadataByIdRequest
+	16, // 31: penumbra.core.component.shielded_pool.v1alpha1.QueryService.DenomMetadataById:output_type -> penumbra.core.component.shielded_pool.v1alpha1.DenomMetadataByIdResponse
+	31, // [31:32] is the sub-list for method output_type
+	30, // [30:31] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_init() }
@@ -1760,7 +1902,7 @@ func file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_ini
 			}
 		}
 		file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SpendView_Visible); i {
+			switch v := v.(*DenomMetadataByIdRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1772,7 +1914,7 @@ func file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_ini
 			}
 		}
 		file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SpendView_Opaque); i {
+			switch v := v.(*DenomMetadataByIdResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1784,7 +1926,7 @@ func file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_ini
 			}
 		}
 		file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*OutputView_Visible); i {
+			switch v := v.(*SpendView_Visible); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1796,6 +1938,30 @@ func file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_ini
 			}
 		}
 		file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SpendView_Opaque); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*OutputView_Visible); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*OutputView_Opaque); i {
 			case 0:
 				return &v.state
@@ -1822,9 +1988,9 @@ func file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_ini
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   21,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_goTypes,
 		DependencyIndexes: file_penumbra_core_component_shielded_pool_v1alpha1_shielded_pool_proto_depIdxs,

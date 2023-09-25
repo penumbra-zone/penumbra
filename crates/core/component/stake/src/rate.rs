@@ -1,10 +1,10 @@
 //! Staking reward and delegation token exchange rates.
 
 use penumbra_num::Amount;
-use penumbra_proto::client::v1alpha1::CurrentValidatorRateResponse;
+use penumbra_proto::core::component::stake::v1alpha1::CurrentValidatorRateResponse;
 use penumbra_proto::{
-    client::v1alpha1::NextValidatorRateResponse, penumbra::core::component::stake::v1alpha1 as pb,
-    DomainType, TypeUrl,
+    core::component::stake::v1alpha1::NextValidatorRateResponse,
+    penumbra::core::component::stake::v1alpha1 as pb, DomainType, TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 

@@ -165,11 +165,11 @@ pub struct ShardInfo {
 /// This acts as a form of content addressing, providing a number of useful
 /// behaviors:
 ///
-/// - Multiple users can request authorization of the same `TransactionPlan`, and
-///    the ledger can stack their pre-authorizations until some threshold is met.
-/// - Rather than having to hold open a connection, clients can re-request
-///    authorization of the same `TransactionPlan` after it has been signed, and the
-///    ledger can immediately return the already-existing authorization data.
+/// * Multiple users can request authorization of the same `TransactionPlan`, and
+///   the ledger can stack their pre-authorizations until some threshold is met.
+/// * Rather than having to hold open a connection, clients can re-request
+///   authorization of the same `TransactionPlan` after it has been signed, and the
+///   ledger can immediately return the already-existing authorization data.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestIndex {
@@ -238,16 +238,17 @@ pub mod ceremony_failure {
 /// The data recorded on-chain about the current state of a signing ceremony.
 ///
 /// The state machine of a signing ceremony is depicted in the following diagram:
-/// ```
+///
+/// ```text,
 /// ┌───────┐   ┌─────────────┐   ┌─────────────┐   ┌────────┐
 /// │Pending│──▶│StartedRound1│──▶│StartedRound2│──▶│Finished│
 /// └───────┘   └─────────────┘   └─────────────┘   ├────────┤
-///      │              │                 │          │AuthData│
-///      │              │                 │          └────────┘
-///      │              │                 │
-///      │              │                 │          ┌────────┐
-///      └──────────────┴─────────────────┴─────────▶│ Failed │
-///                                                  └────────┘
+///     │              │                 │          │AuthData│
+///     │              │                 │          └────────┘
+///     │              │                 │
+///     │              │                 │          ┌────────┐
+///     └──────────────┴─────────────────┴─────────▶│ Failed │
+///                                                 └────────┘
 /// ```
 ///
 /// The ceremony steps are described in the FROST I-D:
@@ -370,9 +371,10 @@ pub mod narsil_packet {
         /// An authorization request submitted to the Narsil cluster
         ///
         /// Packet handling:
-        /// - check admission policy (black box / ignore for now)
-        /// - index the request
-        /// - start 1 or more committees to sign it
+        ///
+        /// * check admission policy (black box / ignore for now)
+        /// * index the request
+        /// * start 1 or more committees to sign it
         #[prost(message, tag = "1")]
         AuthorizeRequest(
             super::super::super::super::custody::v1alpha1::AuthorizeRequest,

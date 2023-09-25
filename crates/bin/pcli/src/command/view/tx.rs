@@ -9,7 +9,7 @@ use penumbra_dex::{
     DirectedUnitPair,
 };
 use penumbra_keys::{keys::IncomingViewingKey, Address};
-use penumbra_proto::{client::v1alpha1::GetTxRequest, DomainType};
+use penumbra_proto::{util::tendermint_proxy::v1alpha1::GetTxRequest, DomainType};
 use penumbra_shielded_pool::{Note, NoteView};
 use penumbra_transaction::{
     view::action_view::{OutputView, SpendView},

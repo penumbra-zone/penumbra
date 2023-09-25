@@ -1,4 +1,4 @@
-#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(clippy::unwrap_used)]
 #![allow(clippy::clone_on_copy)]
 
@@ -6,18 +6,15 @@ mod changes;
 mod current_consensus_keys;
 mod event;
 mod funding_stream;
-mod metrics;
 mod uptime;
 
-#[cfg_attr(docsrs, doc(cfg(feature = "component")))]
+// TODO: move into component mod like other component crates
 #[cfg(feature = "component")]
 mod action_handler;
 
-#[cfg_attr(docsrs, doc(cfg(feature = "component")))]
 #[cfg(feature = "component")]
 pub mod component;
 
-#[cfg_attr(docsrs, doc(cfg(feature = "component")))]
 #[cfg(feature = "component")]
 pub use component::StateReadExt;
 
@@ -47,7 +44,6 @@ pub use identity_key::IdentityKey;
 pub use penalty::{Penalty, PenaltyVar};
 pub use unbonding_token::UnbondingToken;
 
-pub use self::metrics::register_metrics;
 pub use changes::DelegationChanges;
 pub use current_consensus_keys::CurrentConsensusKeys;
 pub use funding_stream::{FundingStream, FundingStreams};

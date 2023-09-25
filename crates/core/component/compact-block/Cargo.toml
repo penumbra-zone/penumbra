@@ -6,7 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-component = ["penumbra-component", "penumbra-storage", "penumbra-proto/penumbra-storage", "penumbra-chain/component"]
+component = [
+    "penumbra-component",
+    "penumbra-storage",
+    "penumbra-proto/penumbra-storage",
+    "penumbra-chain/component",
+    "tonic",
+    "tokio-stream",
+    "tokio",
+]
 proving-keys = ["penumbra-proof-params/proving-keys"]
 default = ["std", "component", "proving-keys"]
 std = ["ark-ff/std"]
@@ -38,4 +46,6 @@ bytes = "1"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
 rand = "0.8"
 futures = "0.3.28"
-
+tonic = { version = "0.9", optional = true }
+tokio-stream = { version = "0.1", optional = true }
+tokio = { version = "1", optional = true }

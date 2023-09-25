@@ -6,7 +6,12 @@ use std::{
     sync::Arc,
 };
 
-use ::metrics::{decrement_gauge, gauge, increment_gauge};
+pub mod metrics;
+pub mod rpc;
+pub use self::metrics::register_metrics;
+
+// TODO: move into leaf submodules under component/ and re-export
+
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
@@ -37,7 +42,6 @@ use tracing::{instrument, Instrument};
 
 use crate::{
     funding_stream::Recipient,
-    metrics,
     rate::{BaseRateData, RateData},
     state_key,
     validator::{self, Validator},
@@ -125,18 +129,18 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
         // Update metrics
         match cur_state {
-            Inactive => decrement_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
-            Active => decrement_gauge!(metrics::ACTIVE_VALIDATORS, 1.0),
-            Disabled => decrement_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
-            Jailed => decrement_gauge!(metrics::JAILED_VALIDATORS, 1.0),
-            Tombstoned => decrement_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0),
+            Inactive => metrics::decrement_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
+            Active => metrics::decrement_gauge!(metrics::ACTIVE_VALIDATORS, 1.0),
+            Disabled => metrics::decrement_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
+            Jailed => metrics::decrement_gauge!(metrics::JAILED_VALIDATORS, 1.0),
+            Tombstoned => metrics::decrement_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0),
         };
         match new_state {
-            Inactive => increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
-            Active => increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0),
-            Disabled => increment_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
-            Jailed => increment_gauge!(metrics::JAILED_VALIDATORS, 1.0),
-            Tombstoned => increment_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0),
+            Inactive => metrics::increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
+            Active => metrics::increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0),
+            Disabled => metrics::increment_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
+            Jailed => metrics::increment_gauge!(metrics::JAILED_VALIDATORS, 1.0),
+            Tombstoned => metrics::increment_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0),
         };
 
         // Doing a single tuple match, rather than matching on substates,
@@ -183,7 +187,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 self.put(state_key, Active);
 
                 // Update metrics
-                gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
+                metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
 
                 tracing::debug!(?power, "validator became active");
                 Ok(())
@@ -204,7 +208,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 self.put(state_key, new_state);
 
                 // Update metrics
-                gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
+                metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
 
                 Ok(())
             }
@@ -731,7 +735,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                     ?params.missed_blocks_maximum,
                     "recorded vote info"
                 );
-                gauge!(metrics::MISSED_BLOCKS, uptime.num_missed_blocks() as f64, "identity_key" => identity_key.to_string());
+                metrics::gauge!(metrics::MISSED_BLOCKS, uptime.num_missed_blocks() as f64, "identity_key" => identity_key.to_string());
 
                 uptime.mark_height_as_signed(height, voted)?;
                 if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
@@ -1421,14 +1425,14 @@ pub trait StateWriteExt: StateWrite {
         // Lastly, update metrics for the new validator.
         match state {
             validator::State::Active => {
-                increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0);
+                metrics::increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0);
             }
             validator::State::Inactive => {
-                increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0);
+                metrics::increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0);
             }
             _ => unreachable!(),
         };
-        gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => id.to_string());
+        metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => id.to_string());
 
         Ok(())
     }

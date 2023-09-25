@@ -7,10 +7,7 @@ use ark_r1cs_std::{
 };
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{r1cs::FqVar, Fq};
-use penumbra_proto::{
-    client::v1alpha1::BatchSwapOutputDataResponse, penumbra::core::component::dex::v1alpha1 as pb,
-    DomainType, TypeUrl,
-};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use penumbra_num::fixpoint::{bit_constrain, U128x128, U128x128Var};
@@ -272,9 +269,9 @@ impl BatchSwapOutputDataVar {
     }
 }
 
-impl From<BatchSwapOutputData> for BatchSwapOutputDataResponse {
+impl From<BatchSwapOutputData> for pb::BatchSwapOutputDataResponse {
     fn from(s: BatchSwapOutputData) -> Self {
-        BatchSwapOutputDataResponse {
+        pb::BatchSwapOutputDataResponse {
             data: Some(s.into()),
         }
     }
@@ -318,9 +315,9 @@ impl TryFrom<pb::BatchSwapOutputData> for BatchSwapOutputData {
     }
 }
 
-impl TryFrom<BatchSwapOutputDataResponse> for BatchSwapOutputData {
+impl TryFrom<pb::BatchSwapOutputDataResponse> for BatchSwapOutputData {
     type Error = anyhow::Error;
-    fn try_from(value: BatchSwapOutputDataResponse) -> Result<Self, Self::Error> {
+    fn try_from(value: pb::BatchSwapOutputDataResponse) -> Result<Self, Self::Error> {
         value
             .data
             .ok_or_else(|| anyhow::anyhow!("empty BatchSwapOutputDataResponse message"))?

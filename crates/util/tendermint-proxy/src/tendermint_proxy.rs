@@ -4,19 +4,22 @@ use chrono::DateTime;
 use penumbra_proto::{self as proto};
 
 use penumbra_transaction::Transaction;
-use proto::client::v1alpha1::tendermint_proxy_service_server::TendermintProxyService;
-use proto::client::v1alpha1::AbciQueryRequest;
-use proto::client::v1alpha1::AbciQueryResponse;
-use proto::client::v1alpha1::BroadcastTxAsyncRequest;
-use proto::client::v1alpha1::BroadcastTxAsyncResponse;
-use proto::client::v1alpha1::BroadcastTxSyncRequest;
-use proto::client::v1alpha1::BroadcastTxSyncResponse;
-use proto::client::v1alpha1::GetBlockByHeightRequest;
-use proto::client::v1alpha1::GetBlockByHeightResponse;
-use proto::client::v1alpha1::GetStatusRequest;
-use proto::client::v1alpha1::GetStatusResponse;
-use proto::client::v1alpha1::GetTxRequest;
-use proto::client::v1alpha1::GetTxResponse;
+use proto::util::tendermint_proxy::v1alpha1::tendermint_proxy_service_server::TendermintProxyService;
+use proto::util::tendermint_proxy::v1alpha1::AbciQueryRequest;
+use proto::util::tendermint_proxy::v1alpha1::AbciQueryResponse;
+use proto::util::tendermint_proxy::v1alpha1::BroadcastTxAsyncRequest;
+use proto::util::tendermint_proxy::v1alpha1::BroadcastTxAsyncResponse;
+use proto::util::tendermint_proxy::v1alpha1::BroadcastTxSyncRequest;
+use proto::util::tendermint_proxy::v1alpha1::BroadcastTxSyncResponse;
+use proto::util::tendermint_proxy::v1alpha1::GetBlockByHeightRequest;
+use proto::util::tendermint_proxy::v1alpha1::GetBlockByHeightResponse;
+use proto::util::tendermint_proxy::v1alpha1::GetStatusRequest;
+use proto::util::tendermint_proxy::v1alpha1::GetStatusResponse;
+use proto::util::tendermint_proxy::v1alpha1::GetTxRequest;
+use proto::util::tendermint_proxy::v1alpha1::GetTxResponse;
+use proto::util::tendermint_proxy::v1alpha1::SyncInfo;
+use proto::util::tendermint_proxy::v1alpha1::Tag;
+use proto::util::tendermint_proxy::v1alpha1::TxResult;
 use proto::DomainType;
 use proto::Message;
 use tendermint::abci::Code;
@@ -64,7 +67,7 @@ impl TendermintProxyService for TendermintProxy {
 
         Ok(tonic::Response::new(GetTxResponse {
             tx: tx.into(),
-            tx_result: Some(proto::client::v1alpha1::TxResult {
+            tx_result: Some(TxResult {
                 log: rsp.tx_result.log.to_string(),
                 // TODO: validation here, fix mismatch between i64 <> u64
                 gas_wanted: rsp.tx_result.gas_wanted as u64,
@@ -76,7 +79,7 @@ impl TendermintProxyService for TendermintProxy {
                     .flat_map(|e| {
                         let a = &e.attributes;
                         a.iter().map(move |a| {
-                            proto::client::v1alpha1::Tag {
+                            Tag {
                                 key: a.key.to_string().as_bytes().to_vec(),
                                 value: a.value.to_string().as_bytes().to_vec(),
                                 // TODO: not sure where this index value comes from
@@ -179,7 +182,7 @@ impl TendermintProxyService for TendermintProxy {
                     rpc_address: res.node_info.other.rpc_address.to_string(),
                 }),
             }),
-            sync_info: Some(penumbra_proto::client::v1alpha1::SyncInfo {
+            sync_info: Some(SyncInfo {
                 latest_block_hash: res
                     .sync_info
                     .latest_block_hash

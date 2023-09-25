@@ -6,11 +6,28 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-component = ["penumbra-component", "penumbra-storage", "penumbra-proto/penumbra-storage", "penumbra-chain/component", "penumbra-shielded-pool/component", "penumbra-fee/component", "tokio"]
+component = [
+    "penumbra-component",
+    "penumbra-storage",
+    "penumbra-proto/penumbra-storage",
+    "penumbra-chain/component",
+    "penumbra-shielded-pool/component",
+    "penumbra-fee/component",
+    "tokio",
+    "tonic",
+]
 default = ["component", "proving-keys"]
 docsrs = []
 proving-keys = ["penumbra-proof-params/proving-keys"]
-parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "ark-groth16/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
+parallel = [
+    "penumbra-tct/parallel",
+    "ark-ff/parallel",
+    "poseidon377/parallel",
+    "decaf377-rdsa/parallel",
+    "ark-groth16/parallel",
+    "ark-r1cs-std/parallel",
+    "decaf377/parallel",
+]
 
 [dependencies]
 # Workspace dependencies
@@ -23,27 +40,26 @@ penumbra-sct = { path = "../sct", default-features = false }
 penumbra-fee = { path = "../fee", default-features = false }
 penumbra-tct = { path = "../../../crypto/tct", default-features = false }
 penumbra-proof-params = { path = "../../../crypto/proof-params" }
-penumbra-asset = { path = "../../../core/asset", default-features = false  } 
-penumbra-num = { path = "../../../core/num", default-features = false  } 
-penumbra-keys = { path = "../../../core/keys", default-features = false  } 
+penumbra-asset = { path = "../../../core/asset", default-features = false }
+penumbra-num = { path = "../../../core/num", default-features = false }
+penumbra-keys = { path = "../../../core/keys", default-features = false }
 decaf377-ka = { path = "../../../crypto/decaf377-ka/" }
 decaf377-fmd = { path = "../../../crypto/decaf377-fmd/" }
 
 # Penumbra dependencies
 poseidon377 = { version = "0.6", features = ["r1cs"] }
-decaf377 = {version = "0.5", features = ["r1cs"] }
+decaf377 = { version = "0.5", features = ["r1cs"] }
 decaf377-rdsa = { version = "0.7" }
 
 # Crates.io deps
-ark-r1cs-std = {version = "0.4", default-features = false }
+ark-r1cs-std = { version = "0.4", default-features = false }
 ark-relations = "0.4"
 ark-ff = { version = "0.4", default_features = false }
 ark-serialize = "0.4"
-ark-groth16 = {version = "0.4", default-features = false}
+ark-groth16 = { version = "0.4", default-features = false }
 ark-snark = "0.4"
 async-trait = "0.1.52"
 async-stream = "0.2"
-tokio = {version = "1.3", features = ["full"], optional = true} 
 hex = "0.4"
 thiserror = "1"
 anyhow = "1"
@@ -63,6 +79,10 @@ im = "15.1.0"
 parking_lot = "0.12.1"
 rand_core = "0.6.4"
 regex = "1.8.1"
+
+# Component dependencies
+tokio = { version = "1.3", features = ["full"], optional = true }
+tonic = { version = "0.9", optional = true }
 
 [dev-dependencies]
 proptest = "1"

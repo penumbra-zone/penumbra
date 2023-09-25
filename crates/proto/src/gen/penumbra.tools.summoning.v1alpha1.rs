@@ -182,13 +182,14 @@ pub mod ceremony_coordinator_service_client {
         /// The protocol used to participate in the ceremony.
         ///
         /// The message flow is
-        /// ```
+        ///
+        /// ```text,
         /// Client                     Server
-        ///  Identify     ===========>
-        ///               <=========== Position (repeated)
-        ///               <=========== ContributeNow
-        ///  Contribution ===========>
-        ///               <=========== Confirm
+        /// Identify     ===========>
+        ///              <=========== Position (repeated)
+        ///              <=========== ContributeNow
+        /// Contribution ===========>
+        ///              <=========== Confirm
         /// ```
         pub async fn participate(
             &mut self,
@@ -233,13 +234,14 @@ pub mod ceremony_coordinator_service_server {
         /// The protocol used to participate in the ceremony.
         ///
         /// The message flow is
-        /// ```
+        ///
+        /// ```text,
         /// Client                     Server
-        ///  Identify     ===========>
-        ///               <=========== Position (repeated)
-        ///               <=========== ContributeNow
-        ///  Contribution ===========>
-        ///               <=========== Confirm
+        /// Identify     ===========>
+        ///              <=========== Position (repeated)
+        ///              <=========== ContributeNow
+        /// Contribution ===========>
+        ///              <=========== Confirm
         /// ```
         async fn participate(
             &self,
