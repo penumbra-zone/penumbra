@@ -1,6 +1,7 @@
 use crate::error::WasmResult;
 use crate::note_record::SpendableNoteRecord;
 use crate::storage::IndexedDBStorage;
+use crate::storage::IndexedDbConstants;
 use crate::swap_record::SwapRecord;
 use penumbra_asset::asset::{DenomMetadata, Id};
 use penumbra_compact_block::{CompactBlock, StatePayload};
@@ -72,6 +73,7 @@ impl ViewServer {
         full_viewing_key: &str,
         epoch_duration: u64,
         stored_tree: JsValue,
+        idb_constants: IndexedDbConstants,
     ) -> WasmResult<ViewServer> {
         let fvk = FullViewingKey::from_str(full_viewing_key)?;
         let stored_tree: StoredTree = serde_wasm_bindgen::from_value(stored_tree)?;
@@ -85,7 +87,7 @@ impl ViewServer {
             denoms: Default::default(),
             nct: tree,
             swaps: Default::default(),
-            storage: IndexedDBStorage::new().await?,
+            storage: IndexedDBStorage::new(idb_constants).await?,
         };
         Ok(view_server)
     }

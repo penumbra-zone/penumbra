@@ -1,5 +1,6 @@
 use crate::error::WasmResult;
 use crate::storage::IndexedDBStorage;
+use crate::storage::IndexedDbConstants;
 use crate::view_server::{load_tree, StoredTree};
 use penumbra_keys::keys::SpendKey;
 use penumbra_keys::FullViewingKey;
@@ -88,21 +89,26 @@ pub fn build_tx(
 /// Arguments:
 ///     full_viewing_key: `bech32 String`
 ///     tx: `pbt::Transaction`
+///     idb_constants: IndexedDbConstants
 /// Returns: `TxInfoResponse`
 #[wasm_bindgen]
-pub async fn transaction_info(full_viewing_key: &str, tx: JsValue) -> Result<JsValue, Error> {
+pub async fn transaction_info(
+    full_viewing_key: &str,
+    tx: JsValue,
+    idb_constants: IndexedDbConstants,
+) -> Result<JsValue, Error> {
     let transaction = serde_wasm_bindgen::from_value(tx)?;
-    let response = transaction_info_inner(full_viewing_key, transaction).await?;
+    let response = transaction_info_inner(full_viewing_key, transaction, idb_constants).await?;
 
     serde_wasm_bindgen::to_value(&response)
 }
 
-/// deprecated
 pub async fn transaction_info_inner(
     full_viewing_key: &str,
     tx: Transaction,
+    idb_constants: IndexedDbConstants,
 ) -> WasmResult<TxInfoResponse> {
-    let storage = IndexedDBStorage::new().await?;
+    let storage = IndexedDBStorage::new(idb_constants).await?;
 
     let fvk = FullViewingKey::from_str(full_viewing_key)?;
 

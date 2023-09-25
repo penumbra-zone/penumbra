@@ -1,6 +1,7 @@
 use crate::error::WasmResult;
 use crate::planner::Planner;
 use crate::storage::IndexedDBStorage;
+use crate::storage::IndexedDbConstants;
 use crate::swap_record::SwapRecord;
 use anyhow::Result;
 use ark_ff::UniformRand;
@@ -27,10 +28,10 @@ pub struct WasmPlanner {
 #[wasm_bindgen]
 impl WasmPlanner {
     #[wasm_bindgen(constructor)]
-    pub async fn new() -> Result<WasmPlanner, Error> {
+    pub async fn new(idb_constants: IndexedDbConstants) -> Result<WasmPlanner, Error> {
         let planner = WasmPlanner {
             planner: Planner::new(OsRng),
-            storage: IndexedDBStorage::new().await?,
+            storage: IndexedDBStorage::new(idb_constants).await?,
         };
         Ok(planner)
     }
@@ -167,9 +168,8 @@ impl WasmPlanner {
 
         let (spendable_requests, _) = self.planner.notes_requests();
 
-        let idb_storage = IndexedDBStorage::new().await?;
         for request in spendable_requests {
-            let notes = idb_storage.get_notes(request);
+            let notes = self.storage.get_notes(request);
             spendable_notes.extend(notes.await?);
         }
 
