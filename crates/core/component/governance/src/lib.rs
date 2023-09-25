@@ -11,7 +11,9 @@ pub mod proposal_deposit_claim;
 pub use proposal_deposit_claim::ProposalDepositClaim;
 
 pub mod validator_vote;
-pub use validator_vote::{ValidatorVote, ValidatorVoteBody};
+pub use validator_vote::{
+    ValidatorVote, ValidatorVoteBody, ValidatorVoteReason, MAX_VALIDATOR_VOTE_REASON_LENGTH,
+};
 
 pub mod proposal_submit;
 pub use proposal_submit::ProposalSubmit;

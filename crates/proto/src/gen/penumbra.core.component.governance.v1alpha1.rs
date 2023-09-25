@@ -56,6 +56,12 @@ pub struct ValidatorVote {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorVoteReason {
+    #[prost(string, tag = "1")]
+    pub reason: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorVoteBody {
     /// The proposal being voted on.
     #[prost(uint64, tag = "1")]
@@ -74,8 +80,8 @@ pub struct ValidatorVoteBody {
         super::super::super::keys::v1alpha1::GovernanceKey,
     >,
     /// A justification of the vote.
-    #[prost(string, tag = "5")]
-    pub reason: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "5")]
+    pub reason: ::core::option::Option<ValidatorVoteReason>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
