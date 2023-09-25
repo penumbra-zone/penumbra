@@ -46,6 +46,10 @@ message ValidatorVote {
   penumbra.crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature auth_sig = 2;
 }
 
+message ValidatorVoteReason {
+  string reason = 1;
+}
+
 message ValidatorVoteBody {
   // The proposal being voted on.
   uint64 proposal = 1;
@@ -56,7 +60,7 @@ message ValidatorVoteBody {
   // The validator governance key.
   keys.v1alpha1.GovernanceKey governance_key = 4;
   // A justification of the vote.
-  string reason = 5;
+  ValidatorVoteReason reason = 5;
 }
 
 message DelegatorVote {

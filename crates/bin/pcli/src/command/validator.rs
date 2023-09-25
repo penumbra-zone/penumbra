@@ -5,7 +5,9 @@ use std::{
 
 use anyhow::{Context, Result};
 use penumbra_fee::Fee;
-use penumbra_governance::{ValidatorVote, ValidatorVoteBody, Vote};
+use penumbra_governance::{
+    ValidatorVote, ValidatorVoteBody, ValidatorVoteReason, Vote, MAX_VALIDATOR_VOTE_REASON_LENGTH,
+};
 use penumbra_keys::keys::AddressIndex;
 use penumbra_proto::{
     core::component::stake::v1alpha1::Validator as ProtoValidator, DomainType, Message,
@@ -178,7 +180,9 @@ impl ValidatorCmd {
 
                 let (proposal, vote): (u64, Vote) = (*vote).into();
 
-                // TODO: Validate reason length here
+                if reason.len() > MAX_VALIDATOR_VOTE_REASON_LENGTH {
+                    anyhow::bail!("validator vote reason is too long, max 1024 bytes");
+                }
 
                 // Construct the vote body
                 let body = ValidatorVoteBody {
@@ -186,7 +190,7 @@ impl ValidatorCmd {
                     vote,
                     identity_key,
                     governance_key,
-                    reason: reason.to_string(),
+                    reason: ValidatorVoteReason(reason.clone()),
                 };
 
                 // TODO: support signing with a separate governance key

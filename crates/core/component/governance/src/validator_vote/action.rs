@@ -54,7 +54,7 @@ pub struct ValidatorVoteBody {
     /// The governance key for the validator who is voting.
     pub governance_key: GovernanceKey,
     /// A comment or justification of the vote. Limited to 1 KB.
-    pub reason: String,
+    pub reason: ValidatorVoteReason,
 }
 
 impl From<ValidatorVoteBody> for pb::ValidatorVoteBody {
@@ -64,7 +64,7 @@ impl From<ValidatorVoteBody> for pb::ValidatorVoteBody {
             vote: Some(value.vote.into()),
             identity_key: Some(value.identity_key.into()),
             governance_key: Some(value.governance_key.into()),
-            reason: value.reason,
+            reason: Some(value.reason.into()),
         }
     }
 }
@@ -89,7 +89,12 @@ impl TryFrom<pb::ValidatorVoteBody> for ValidatorVoteBody {
                     anyhow::anyhow!("missing validator governance key in `ValidatorVote`")
                 })?
                 .try_into()?,
-            reason: msg.reason,
+            reason: msg
+                .reason
+                .ok_or_else(|| {
+                    anyhow::anyhow!("missing validator governance key in `ValidatorVote`")
+                })?
+                .try_into()?,
         })
     }
 }
@@ -100,4 +105,31 @@ impl TypeUrl for ValidatorVoteBody {
 
 impl DomainType for ValidatorVoteBody {
     type Proto = pb::ValidatorVoteBody;
+}
+
+/// A comment or justification of the vote. Limited to 1 KB.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(try_from = "pb::ValidatorVoteReason", into = "pb::ValidatorVoteReason")]
+pub struct ValidatorVoteReason(pub String);
+
+impl From<ValidatorVoteReason> for pb::ValidatorVoteReason {
+    fn from(value: ValidatorVoteReason) -> Self {
+        pb::ValidatorVoteReason { reason: value.0 }
+    }
+}
+
+impl TryFrom<pb::ValidatorVoteReason> for ValidatorVoteReason {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::ValidatorVoteReason) -> Result<Self, Self::Error> {
+        Ok(ValidatorVoteReason(msg.reason))
+    }
+}
+
+impl TypeUrl for ValidatorVoteReason {
+    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ValidatorVoteReason";
+}
+
+impl DomainType for ValidatorVoteReason {
+    type Proto = pb::ValidatorVoteReason;
 }

@@ -27,6 +27,7 @@ use crate::{
     params::GovernanceParameters,
     proposal::{Proposal, ProposalPayload},
     proposal_state::State as ProposalState,
+    validator_vote::action::ValidatorVoteReason,
     vote::Vote,
 };
 use crate::{state_key, tally::Tally};
@@ -669,9 +670,20 @@ pub trait StateWriteExt: StateWrite {
     }
 
     /// Record a validator vote for a proposal.
-    fn cast_validator_vote(&mut self, proposal_id: u64, identity_key: IdentityKey, vote: Vote) {
+    fn cast_validator_vote(
+        &mut self,
+        proposal_id: u64,
+        identity_key: IdentityKey,
+        vote: Vote,
+        reason: ValidatorVoteReason,
+    ) {
         // Record the vote
         self.put(state_key::validator_vote(proposal_id, identity_key), vote);
+        // Record the vote justification
+        self.put(
+            state_key::validator_vote_reason(proposal_id, identity_key),
+            reason,
+        );
     }
 
     /// Set the proposal voting start block height for a proposal.

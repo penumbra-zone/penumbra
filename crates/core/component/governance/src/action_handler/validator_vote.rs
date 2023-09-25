@@ -10,7 +10,7 @@ use crate::{action_handler::ActionHandler, StateReadExt};
 use crate::{
     proposal_state::Outcome,
     proposal_state::State as ProposalState,
-    {ValidatorVote, ValidatorVoteBody},
+    {ValidatorVote, ValidatorVoteBody, MAX_VALIDATOR_VOTE_REASON_LENGTH},
 };
 
 #[async_trait]
@@ -26,6 +26,11 @@ impl ActionHandler for ValidatorVote {
             .verify(&body_bytes, auth_sig)
             .context("validator vote signature failed to verify")?;
 
+        // Check the length of the validator reason field.
+        if body.reason.0.len() > MAX_VALIDATOR_VOTE_REASON_LENGTH {
+            anyhow::bail!("validator vote reason is too long");
+        }
+
         // This is stateless verification, so we still need to check that the proposal being voted
         // on exists, and that this validator hasn't voted on it already.
 
@@ -40,7 +45,7 @@ impl ActionHandler for ValidatorVote {
                     vote: _, // All votes are valid, so we don't need to do anything with this
                     identity_key,
                     governance_key,
-                    reason: _, // TODO: Check length
+                    reason: _, // Checked the length in the stateless verification
                 },
             auth_sig: _, // We already checked this in stateless verification
         } = self;
@@ -73,8 +78,7 @@ impl ActionHandler for ValidatorVote {
         } = self;
 
         tracing::debug!(proposal = %proposal, "cast validator vote");
-        // TODO: Store vote justification
-        state.cast_validator_vote(*proposal, *identity_key, *vote);
+        state.cast_validator_vote(*proposal, *identity_key, *vote, reason.clone());
 
         // If a proposal is an emergency proposal, every validator vote triggers a check to see if
         // we should immediately enact the proposal (if it's reached a 2/3 majority).

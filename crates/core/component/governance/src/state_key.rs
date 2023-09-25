@@ -72,6 +72,10 @@ pub fn validator_vote(proposal_id: u64, identity_key: IdentityKey) -> String {
     format!("governance/validator_vote/{proposal_id:020}/{identity_key}")
 }
 
+pub fn validator_vote_reason(proposal_id: u64, identity_key: IdentityKey) -> String {
+    format!("governance/validator_vote_reason/{proposal_id:020}/{identity_key}")
+}
+
 pub fn all_validator_votes_for_proposal(proposal_id: u64) -> String {
     // Note: this has to be the prefix of the `validator_vote` function above.
     format!("governance/validator_vote/{proposal_id:020}/")
