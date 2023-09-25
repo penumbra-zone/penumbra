@@ -12,8 +12,7 @@ releases:
           tag: latest
       - network:
           preserve_chain_id: true
-        # TODO: provision real ips for testnet env
-        # external_addresses: "104.198.226.117:26656,34.134.110.25:26656"
+        external_addresses: "34.68.222.252:26656,35.226.255.25:26656"
       - part_of: penumbra-testnet
       # Sidecar vars file for storing external ips. The "penumbra-network" chart
       # doesn't read these vars, but the "get-lb-ips" script writes them there,
