@@ -48,8 +48,7 @@ impl Component for IBCComponent {
 
         // Currently, we don't use a revision number, because we don't have
         // any further namespacing of blocks than the block height.
-        let revision_number = 0;
-        let height = Height::new(revision_number, begin_block.header.height.into())
+        let height = Height::new(APP_VERSION, begin_block.header.height.into())
             .expect("block height cannot be zero");
 
         state.put_penumbra_consensus_state(height, cs);

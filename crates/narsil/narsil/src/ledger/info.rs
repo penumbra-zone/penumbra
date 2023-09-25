@@ -5,7 +5,7 @@ use std::{
 };
 
 use futures::FutureExt;
-use penumbra_chain::component::AppHashRead;
+use penumbra_chain::{component::AppHashRead, APP_VERSION};
 use penumbra_storage::Storage;
 use penumbra_tower_trace::v034::RequestExt;
 use tendermint::v0_34::abci::{self, response::Echo, InfoRequest, InfoResponse};
@@ -14,7 +14,6 @@ use tracing::Instrument;
 
 // const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 const ABCI_INFO_VERSION: &str = "wut";
-const APP_VERSION: u64 = 1;
 
 /// Implements service traits for Tonic gRPC services.
 ///

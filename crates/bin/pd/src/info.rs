@@ -26,7 +26,10 @@ use ibc_types::core::channel::{ChannelId, PortId};
 use ibc_types::core::client::ClientId;
 use ibc_types::core::connection::ConnectionId;
 use ibc_types::core::connection::IdentifiedConnectionEnd;
-use penumbra_chain::component::{AppHashRead, StateReadExt};
+use penumbra_chain::{
+    component::{AppHashRead, StateReadExt},
+    APP_VERSION,
+};
 use penumbra_ibc::component::ChannelStateReadExt as _;
 use penumbra_ibc::component::ClientStateReadExt as _;
 use penumbra_ibc::component::ConnectionStateReadExt as _;
@@ -44,7 +47,6 @@ use tracing::Instrument;
 use penumbra_tower_trace::v034::RequestExt;
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
-const APP_VERSION: u64 = 1;
 
 /// Implements service traits for Tonic gRPC services.
 ///
@@ -80,7 +82,7 @@ impl Info {
             .unwrap_or_default()
             .try_into()?;
 
-        tracing::info!(?info, state_version = ?state.version(), app_version = ?last_block_height, "reporting height in info query");
+        tracing::info!(?info, state_version = ?state.version(), last_block_height = ?last_block_height, "reporting height in info query");
 
         let last_block_app_hash = state.app_hash().await?.0.to_vec().try_into()?;
 
