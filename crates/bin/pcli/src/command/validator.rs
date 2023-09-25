@@ -43,6 +43,9 @@ pub enum ValidatorCmd {
         /// The vote to cast.
         #[clap(subcommand)]
         vote: super::tx::VoteCmd,
+        /// A comment or justification of the vote. Limited to 1 KB.
+        #[clap(long, default_value = "", global = true, display_order = 400)]
+        reason: String,
     },
 }
 
@@ -162,7 +165,12 @@ impl ValidatorCmd {
                 // never appear on-chain.
                 println!("Uploaded validator definition");
             }
-            ValidatorCmd::Vote { fee, source, vote } => {
+            ValidatorCmd::Vote {
+                fee,
+                source,
+                vote,
+                reason,
+            } => {
                 // TODO: support submitting a separate governance key.
                 let identity_key = IdentityKey(*sk.full_viewing_key().spend_verification_key());
                 // Currently this is always just copied from the identity key
@@ -170,12 +178,15 @@ impl ValidatorCmd {
 
                 let (proposal, vote): (u64, Vote) = (*vote).into();
 
+                // TODO: Validate reason length here
+
                 // Construct the vote body
                 let body = ValidatorVoteBody {
                     proposal,
                     vote,
                     identity_key,
                     governance_key,
+                    reason: reason.to_string(),
                 };
 
                 // TODO: support signing with a separate governance key

@@ -4105,6 +4105,9 @@ impl serde::Serialize for ValidatorVoteBody {
         if self.governance_key.is_some() {
             len += 1;
         }
+        if !self.reason.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ValidatorVoteBody", len)?;
         if self.proposal != 0 {
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
@@ -4117,6 +4120,9 @@ impl serde::Serialize for ValidatorVoteBody {
         }
         if let Some(v) = self.governance_key.as_ref() {
             struct_ser.serialize_field("governanceKey", v)?;
+        }
+        if !self.reason.is_empty() {
+            struct_ser.serialize_field("reason", &self.reason)?;
         }
         struct_ser.end()
     }
@@ -4134,6 +4140,7 @@ impl<'de> serde::Deserialize<'de> for ValidatorVoteBody {
             "identityKey",
             "governance_key",
             "governanceKey",
+            "reason",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -4142,6 +4149,7 @@ impl<'de> serde::Deserialize<'de> for ValidatorVoteBody {
             Vote,
             IdentityKey,
             GovernanceKey,
+            Reason,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -4167,6 +4175,7 @@ impl<'de> serde::Deserialize<'de> for ValidatorVoteBody {
                             "vote" => Ok(GeneratedField::Vote),
                             "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
                             "governanceKey" | "governance_key" => Ok(GeneratedField::GovernanceKey),
+                            "reason" => Ok(GeneratedField::Reason),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -4190,6 +4199,7 @@ impl<'de> serde::Deserialize<'de> for ValidatorVoteBody {
                 let mut vote__ = None;
                 let mut identity_key__ = None;
                 let mut governance_key__ = None;
+                let mut reason__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Proposal => {
@@ -4218,6 +4228,12 @@ impl<'de> serde::Deserialize<'de> for ValidatorVoteBody {
                             }
                             governance_key__ = map.next_value()?;
                         }
+                        GeneratedField::Reason => {
+                            if reason__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("reason"));
+                            }
+                            reason__ = Some(map.next_value()?);
+                        }
                     }
                 }
                 Ok(ValidatorVoteBody {
@@ -4225,6 +4241,7 @@ impl<'de> serde::Deserialize<'de> for ValidatorVoteBody {
                     vote: vote__,
                     identity_key: identity_key__,
                     governance_key: governance_key__,
+                    reason: reason__.unwrap_or_default(),
                 })
             }
         }

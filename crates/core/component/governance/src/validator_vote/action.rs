@@ -53,6 +53,8 @@ pub struct ValidatorVoteBody {
     pub identity_key: IdentityKey,
     /// The governance key for the validator who is voting.
     pub governance_key: GovernanceKey,
+    /// A comment or justification of the vote. Limited to 1 KB.
+    pub reason: String,
 }
 
 impl From<ValidatorVoteBody> for pb::ValidatorVoteBody {
@@ -62,6 +64,7 @@ impl From<ValidatorVoteBody> for pb::ValidatorVoteBody {
             vote: Some(value.vote.into()),
             identity_key: Some(value.identity_key.into()),
             governance_key: Some(value.governance_key.into()),
+            reason: value.reason,
         }
     }
 }
@@ -86,6 +89,7 @@ impl TryFrom<pb::ValidatorVoteBody> for ValidatorVoteBody {
                     anyhow::anyhow!("missing validator governance key in `ValidatorVote`")
                 })?
                 .try_into()?,
+            reason: msg.reason,
         })
     }
 }
