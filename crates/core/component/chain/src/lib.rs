@@ -9,11 +9,6 @@ mod note_source;
 #[cfg(feature = "component")]
 pub mod component;
 
-// This corresponds to the "revision number" in Cosmos SDK chains, and the "app_version" field in the Tendermint RPC.
-// Currently, we don't use a revision number, because we don't have
-// any further namespacing of blocks than the block height. So, we just set this to 0.
-pub const APP_VERSION: u64 = 0;
-
 pub mod genesis;
 pub mod params;
 pub mod state_key;

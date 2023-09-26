@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
+use ibc_types::core::connection::ChainId;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 use tendermint::Time;
@@ -52,6 +53,13 @@ pub trait StateReadExt: StateRead {
         // point. but having it be a separate method means we can do a narrower
         // load later if we want
         self.get_chain_params().await.map(|params| params.chain_id)
+    }
+
+    /// Gets the chain revision number, from the chain ID
+    async fn get_revision_number(&self) -> Result<u64> {
+        let cid_str = self.get_chain_id().await?;
+
+        Ok(ChainId::from_string(&cid_str).version())
     }
 
     /// Gets the current block height from the JMT

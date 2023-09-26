@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use ibc_types::{
     core::client::Height, lightclients::tendermint::ConsensusState as TendermintConsensusState,
 };
+use penumbra_chain::component::StateReadExt;
 use penumbra_chain::genesis;
 use penumbra_component::Component;
 use penumbra_storage::StateWrite;
@@ -48,8 +49,14 @@ impl Component for IBCComponent {
 
         // Currently, we don't use a revision number, because we don't have
         // any further namespacing of blocks than the block height.
-        let height = Height::new(APP_VERSION, begin_block.header.height.into())
-            .expect("block height cannot be zero");
+        let height = Height::new(
+            state
+                .get_revision_number()
+                .await
+                .expect("must be able to get revision number in begin block"),
+            begin_block.header.height.into(),
+        )
+        .expect("block height cannot be zero");
 
         state.put_penumbra_consensus_state(height, cs);
     }

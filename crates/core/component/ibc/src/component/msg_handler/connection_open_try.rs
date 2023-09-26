@@ -13,7 +13,6 @@ use ibc_types::{
     },
 };
 use penumbra_chain::component::{StateReadExt as _, PENUMBRA_COMMITMENT_PREFIX};
-use penumbra_chain::APP_VERSION;
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::{
@@ -204,7 +203,10 @@ async fn consensus_height_is_correct<S: StateRead>(
     state: S,
     msg: &MsgConnectionOpenTry,
 ) -> anyhow::Result<()> {
-    let current_height = IBCHeight::new(APP_VERSION, state.get_block_height().await?)?;
+    let current_height = IBCHeight::new(
+        state.get_revision_number().await?,
+        state.get_block_height().await?,
+    )?;
     if msg.consensus_height_of_b_on_a > current_height {
         anyhow::bail!("consensus height is greater than the current block height",);
     }

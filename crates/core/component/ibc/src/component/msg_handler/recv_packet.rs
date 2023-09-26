@@ -10,7 +10,7 @@ use ibc_types::core::{
     client::Height as IBCHeight,
     connection::State as ConnectionState,
 };
-use penumbra_chain::{component::StateReadExt, APP_VERSION};
+use penumbra_chain::component::StateReadExt;
 use penumbra_storage::StateWrite;
 
 use crate::component::{
@@ -65,7 +65,7 @@ impl MsgHandler for MsgRecvPacket {
         }
 
         let block_height = state.get_block_height().await?;
-        let height = IBCHeight::new(APP_VERSION, block_height)?;
+        let height = IBCHeight::new(state.get_revision_number().await?, block_height)?;
 
         if self.packet.timeout_height_on_b.has_expired(height) {
             anyhow::bail!("packet has timed out");

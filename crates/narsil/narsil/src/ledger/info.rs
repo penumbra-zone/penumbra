@@ -5,7 +5,7 @@ use std::{
 };
 
 use futures::FutureExt;
-use penumbra_chain::{component::AppHashRead, APP_VERSION};
+use penumbra_chain::component::{AppHashRead, StateReadExt};
 use penumbra_storage::Storage;
 use penumbra_tower_trace::v034::RequestExt;
 use tendermint::v0_34::abci::{self, response::Echo, InfoRequest, InfoResponse};
@@ -47,7 +47,7 @@ impl Info {
         Ok(abci::response::Info {
             data: "penumbra".to_string(),
             version: ABCI_INFO_VERSION.to_string(),
-            app_version: APP_VERSION,
+            app_version: state.get_revision_number().await?,
             last_block_height,
             last_block_app_hash,
         })
