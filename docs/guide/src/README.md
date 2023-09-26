@@ -23,8 +23,8 @@ is to download and build `pcli`, as described in
 [Installation](./pcli/install.md).
 
 The Penumbra node software is the Penumbra daemon, `pd`.  This is an ABCI
-application, which must be driven by Tendermint, so a Penumbra full node
-consists of both a `pd` instance and a `tendermint` instance.
+application, which must be driven by CometBFT, so a Penumbra full node
+consists of both a `pd` instance and a `cometbft` instance.
 
 The basic architecture of Penumbra is as follows:
 
@@ -57,7 +57,7 @@ capability│   │logic  │────────┐
      chain│ │  │               │      │
       data│ │  │               ▼      │
           │ │ ┌──┐ app   ┌──────────┐ │
-          │ │ │pd│◀─────▶│tendermint│ │
+          │ │ │pd│◀─────▶│ cometbft │ │
           │ │ └──┘ sync  └──────────┘ │
           │ │               ▲         │
           ╰ └───────────────┼─────────┘

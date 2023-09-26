@@ -68,7 +68,7 @@ pub fn build_tx(
 ) -> Result<JsValue, Error> {
     let plan: TransactionPlan = serde_wasm_bindgen::from_value(transaction_plan)?;
 
-    let fvk = FullViewingKey::from_str(full_viewing_key.as_ref())
+    let fvk = FullViewingKey::from_str(full_viewing_key)
         .expect("The provided string is not a valid FullViewingKey");
 
     let auth_data = sign_plan(spend_key_str, plan.clone())?;
@@ -254,7 +254,7 @@ fn witness(nct: Tree, plan: TransactionPlan) -> WasmResult<WitnessData> {
     let note_commitments: Vec<StateCommitment> = plan
         .spend_plans()
         .filter(|plan| plan.note.amount() != 0u64.into())
-        .map(|spend| spend.note.commit().into())
+        .map(|spend| spend.note.commit())
         .chain(
             plan.swap_claim_plans()
                 .map(|swap_claim| swap_claim.swap_plaintext.swap_commitment()),

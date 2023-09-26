@@ -68,7 +68,7 @@ pub struct ViewServer {
 
 #[wasm_bindgen]
 impl ViewServer {
-    #[wasm_bindgen(constructor)]
+    #[wasm_bindgen]
     pub async fn new(
         full_viewing_key: &str,
         epoch_duration: u64,

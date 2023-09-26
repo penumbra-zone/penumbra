@@ -52,6 +52,7 @@ impl App {
         // to ensure that automatic restarts by software like systemd do not cause the chain to come
         // back up again after a halt.
         if state.is_chain_halted(TOTAL_HALT_COUNT).await? {
+            tracing::error!("chain is halted, refusing to restart!");
             anyhow::bail!("chain is halted, refusing to restart");
         }
 
@@ -79,7 +80,7 @@ impl App {
         events
     }
 
-    pub async fn init_chain(&mut self, post_genesis_height: u64, app_state: &genesis::AppState) {
+    pub async fn init_chain(&mut self, app_state: &genesis::AppState) {
         let mut state_tx = self
             .state
             .try_begin_transaction()
@@ -112,19 +113,16 @@ impl App {
                         start_height: 0,
                     },
                 );
-
-                Distributions::init_chain(&mut state_tx, app_state).await;
-                Staking::init_chain(&mut state_tx, app_state).await;
-                IBCComponent::init_chain(&mut state_tx, &()).await;
-                Dex::init_chain(&mut state_tx, &()).await;
-                Governance::init_chain(&mut state_tx, &()).await;
-                ShieldedPool::init_chain(&mut state_tx, app_state).await;
             }
-            genesis::AppState::Checkpoint(_) => {
-                state_tx.put_block_height(post_genesis_height);
-            }
+            genesis::AppState::Checkpoint(_) => { /* perform upgrade specific check */ }
         };
 
+        Distributions::init_chain(&mut state_tx, app_state).await;
+        Staking::init_chain(&mut state_tx, app_state).await;
+        IBCComponent::init_chain(&mut state_tx, app_state).await;
+        Dex::init_chain(&mut state_tx, &()).await;
+        Governance::init_chain(&mut state_tx, &()).await;
+        ShieldedPool::init_chain(&mut state_tx, app_state).await;
         App::finish_block(&mut state_tx).await;
         state_tx.apply();
     }

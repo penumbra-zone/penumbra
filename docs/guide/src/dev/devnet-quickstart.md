@@ -1,9 +1,9 @@
 # Devnet Quickstart
 
-This page describes a quickstart method for running `pd`+`tendermint` to test
+This page describes a quickstart method for running `pd`+`cometbft` to test
 changes during development.
 
-To start, you'll need to [install Tendermint `v0.34`](../pd/build.md#installing-tendermint).
+To start, you'll need to [install CometBFT `v0.34`](../pd/build.md#installing-cometbft).
 
 ## Generating configs
 
@@ -30,14 +30,14 @@ To run `pd`, run
 cargo run --release --bin pd -- start  --home ~/.penumbra/testnet_data/node0/pd
 ```
 
-This will start but won't do anything yet, because Tendermint isn't running.
+This will start but won't do anything yet, because CometBFT isn't running.
 
-## Running `tendermint`
+## Running `cometbft`
 
-To run Tendermint, run
+To run CometBFT, run
 
 ```shell
-tendermint --home ~/.penumbra/testnet_data/node0/tendermint/ start
+cometbft --home ~/.penumbra/testnet_data/node0/cometbft/ start
 ```
 
 in another terminal window.
@@ -77,8 +77,8 @@ cargo run --release --bin pcli -- view reset
 ```
 
 At this point you're ready to generate new configs, and restart both `pd` and
-`tendermint`.  The order they're started in doesn't particularly matter for
-correctness, because `tendermint` will retry connecting to the ABCI server until
+`cometbft`.  The order they're started in doesn't particularly matter for
+correctness, because `cometbft` will retry connecting to the ABCI server until
 it succeeds.
 
 ## Optional: running smoke-tests

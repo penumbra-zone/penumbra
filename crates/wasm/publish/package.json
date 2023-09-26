@@ -5,7 +5,8 @@
   "license": "ISC",
   "scripts": {
     "format": "prettier --write .",
-    "publish-wasm": "tsc && node build/publish-wasm.js"
+    "compile-wasm": "tsc && node build/run.js",
+    "publish-wasm": "npm run compile-wasm -- --publish"
   },
   "dependencies": {
     "wasm-pack": "^0.12.1"

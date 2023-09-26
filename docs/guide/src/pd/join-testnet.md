@@ -3,8 +3,8 @@
 We provide instructions for running both fullnode deployments and validator deployments. A
 fullnode will sync with the network but will not have any voting power, and will
 not be eligible for staking or funding stream rewards. For more information on
-what a fullnode is, see the [Tendermint
-documentation](https://docs.tendermint.com/v0.34/tendermint-core/using-tendermint.html#adding-a-non-validator).
+what a fullnode is, see the [CometBFT
+documentation](https://docs.cometbft.com/v0.34/core/using-cometbft#adding-a-non-validator).
 
 A regular validator will participate in voting and rewards, if it becomes part
 of the consensus set.  Of course, these rewards, like all other testnet tokens,
@@ -14,7 +14,7 @@ have no value.
 
 To join a testnet as a fullnode, check out the tag for the current testnet, run
 `pd testnet join` to generate configs, then use those configs to run `pd` and
-`tendermint`. In more detail:
+`cometbft`. In more detail:
 
 ### Resetting state
 
@@ -47,7 +47,7 @@ configs to a testnet data directory (by default, `~/.penumbra/testnet_data`).
 If any data exists in the testnet data directory, this command will fail.  See
 the section above on resetting node state.
 
-### Running `pd` and `tendermint`
+### Running `pd` and `cometbft`
 
 Next, run `pd` with the `--home` parameter pointed at the correct part of the
 testnet data directory.
@@ -56,13 +56,13 @@ testnet data directory.
 cargo run --bin pd --release -- start --home ~/.penumbra/testnet_data/node0/pd
 ```
 
-Then (perhaps in another terminal), run Tendermint, also specifying `--home`:
+Then (perhaps in another terminal), run CometBFT, also specifying `--home`:
 
 ```shell
-tendermint start --home ~/.penumbra/testnet_data/node0/tendermint
+cometbft start --home ~/.penumbra/testnet_data/node0/cometbft
 ```
 
-Alternatively, `pd` and `tendermint` can be orchestrated with `docker-compose`:
+Alternatively, `pd` and `cometbft` can be orchestrated with `docker-compose`:
 
 ```shell
 cd deployments/compose/
@@ -77,7 +77,7 @@ cd deployments/systemd/
 sudo cp *.service /etc/systemd/system/
 # edit service files to customize for your system
 sudo systemctl daemon-reload
-sudo systemctl restart penumbra tendermint
+sudo systemctl restart penumbra cometbft
 ```
 
 ## Joining as a validator
@@ -103,7 +103,7 @@ To create a template configuration, use `pcli validator definition template`:
 
 ```shell
 $ cargo run --release --bin pcli -- validator definition template \
-    --tendermint-validator-keyfile ~/.penumbra/testnet_data/node0/tendermint/config/priv_validator_key.json \
+    --tendermint-validator-keyfile ~/.penumbra/testnet_data/node0/cometbft/config/priv_validator_key.json \
     --file validator.toml
 $ cat validator.toml
 # This is a template for a validator definition.
@@ -148,7 +148,7 @@ rewards.
 
 This is useful if, for example, you know your validator will not be online for a period of time,
 and you want to avoid an uptime violation penalty. If you are uploading your validator for the
-first time, you will likely want to start with it disabled until your Tendermint & `pd`
+first time, you will likely want to start with it disabled until your CometBFT & `pd`
 instances have caught up to the consensus block height.
 
 Note that by default the `enabled` field is set to false and will need to be
@@ -161,14 +161,14 @@ removed if you wish.
 #### Setting the consensus key
 
 In the command above, the `--tendermint-validator-keyfile` flag was used to instruct
-`pcli` to import the consensus key for the Tendermint identity. This works well
+`pcli` to import the consensus key for the CometBFT identity. This works well
 if `pcli` and `pd` are used on the same machine. If you are running them in separate
 environments, you can omit the flag, and `pd` will generate a random key in the template.
 You must then **manually update the `consensus_key`**. You can get the correct value
-for `consensus_key` from your `tendermint` configs:
+for `consensus_key` from your `cometbft` configs:
 
 ```shell
-$ grep -A3 pub_key ~/.penumbra/testnet_data/node0/tendermint/config/priv_validator_key.json
+$ grep -A3 pub_key ~/.penumbra/testnet_data/node0/cometbft/config/priv_validator_key.json
   "pub_key": {
     "type": "tendermint/PubKeyEd25519",
     "value": "Fodjg0m1kF/6uzcAZpRcLJswGf3EeNShLP2A+UCz8lw="
