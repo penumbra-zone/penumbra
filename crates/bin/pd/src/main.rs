@@ -127,9 +127,9 @@ enum RootCommand {
 
     /// Export the storage state the full node.
     Export {
-        /// The data directory of the full node.
+        /// The home directory of the full node.
         #[clap(long, env = "PENUMBRA_PD_HOME", display_order = 100)]
-        data_path: PathBuf,
+        home: PathBuf,
         /// The directory that the exported state will be written to.
         #[clap(long, display_order = 200)]
         export_path: PathBuf,
@@ -140,9 +140,9 @@ enum RootCommand {
     /// Run a migration on the exported storage state of the full node,
     /// and create a genesis file.
     Upgrade {
-        /// The directory containing the exported state.
+        /// The directory containing exported state to which the upgrade will be applied.
         #[clap(long, display_order = 200)]
-        export_path: PathBuf,
+        upgrade_path: PathBuf,
     },
 }
 

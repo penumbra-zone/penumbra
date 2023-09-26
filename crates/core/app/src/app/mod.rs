@@ -52,6 +52,7 @@ impl App {
         // to ensure that automatic restarts by software like systemd do not cause the chain to come
         // back up again after a halt.
         if state.is_chain_halted(TOTAL_HALT_COUNT).await? {
+            tracing::error!("chain is halted, refusing to restart!");
             anyhow::bail!("chain is halted, refusing to restart");
         }
 
