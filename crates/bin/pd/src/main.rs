@@ -629,7 +629,7 @@ async fn main() -> anyhow::Result<()> {
             t.write_configs()?;
         }
         RootCommand::Export {
-            mut data_path,
+            mut home,
             mut export_path,
             prune,
         } => {
@@ -637,13 +637,9 @@ async fn main() -> anyhow::Result<()> {
 
             tracing::info!("exporting state to {}", export_path.display());
             let copy_opts = fs_extra::dir::CopyOptions::new();
-            data_path.push("rocksdb");
-            let from = [data_path.as_path()];
-            tracing::info!(
-                ?data_path,
-                ?export_path,
-                "copying from data dir to export dir",
-            );
+            home.push("rocksdb");
+            let from = [home.as_path()];
+            tracing::info!(?home, ?export_path, "copying from data dir to export dir",);
             std::fs::create_dir_all(&export_path)?;
             fs_extra::copy_items(&from, export_path.as_path(), &copy_opts)?;
 
@@ -662,9 +658,9 @@ async fn main() -> anyhow::Result<()> {
             // - apply checks: root hash, size, etc.
             todo!()
         }
-        RootCommand::Upgrade { export_path } => {
-            tracing::info!("upgrading state from {}", export_path.display());
-            let _ = upgrade::migrate(export_path.clone(), Upgrade::Testnet60)
+        RootCommand::Upgrade { upgrade_path } => {
+            tracing::info!("upgrading state from {}", upgrade_path.display());
+            let _ = upgrade::migrate(upgrade_path.clone(), Upgrade::Testnet60)
                 .await
                 .context("failed to upgrade state")?;
         }
