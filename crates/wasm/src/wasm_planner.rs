@@ -26,11 +26,17 @@ pub struct WasmPlanner {
 
 #[wasm_bindgen]
 impl WasmPlanner {
-    #[wasm_bindgen(constructor)]
-    pub async fn new() -> Result<WasmPlanner, Error> {
+    /// Create new instances of `WasmPlanner`
+    /// Function opens a connection to indexedDb
+    /// Arguments:
+    ///     idb_constants: `IndexedDbConstants`
+    /// Returns: `WasmPlanner`
+    #[wasm_bindgen]
+    pub async fn new(idb_constants: JsValue) -> Result<WasmPlanner, Error> {
+        let constants = serde_wasm_bindgen::from_value(idb_constants)?;
         let planner = WasmPlanner {
             planner: Planner::new(OsRng),
-            storage: IndexedDBStorage::new().await?,
+            storage: IndexedDBStorage::new(constants).await?,
         };
         Ok(planner)
     }
@@ -167,9 +173,8 @@ impl WasmPlanner {
 
         let (spendable_requests, _) = self.planner.notes_requests();
 
-        let idb_storage = IndexedDBStorage::new().await?;
         for request in spendable_requests {
-            let notes = idb_storage.get_notes(request);
+            let notes = self.storage.get_notes(request);
             spendable_notes.extend(notes.await?);
         }
 

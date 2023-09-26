@@ -67,15 +67,25 @@ pub struct ViewServer {
 
 #[wasm_bindgen]
 impl ViewServer {
+    /// Create new instances of `ViewServer`
+    /// Function opens a connection to indexedDb
+    /// Arguments:
+    ///     full_viewing_key: `bech32 string`
+    ///     epoch_duration: `u64`
+    ///     stored_tree: `StoredTree`
+    ///     idb_constants: `IndexedDbConstants`
+    /// Returns: `ViewServer`
     #[wasm_bindgen]
     pub async fn new(
         full_viewing_key: &str,
         epoch_duration: u64,
         stored_tree: JsValue,
+        idb_constants: JsValue,
     ) -> WasmResult<ViewServer> {
         let fvk = FullViewingKey::from_str(full_viewing_key)?;
         let stored_tree: StoredTree = serde_wasm_bindgen::from_value(stored_tree)?;
         let tree = load_tree(stored_tree);
+        let constants = serde_wasm_bindgen::from_value(idb_constants)?;
         let view_server = Self {
             latest_height: u64::MAX,
             fvk,
@@ -85,7 +95,7 @@ impl ViewServer {
             denoms: Default::default(),
             nct: tree,
             swaps: Default::default(),
-            storage: IndexedDBStorage::new().await?,
+            storage: IndexedDBStorage::new(constants).await?,
         };
         Ok(view_server)
     }
