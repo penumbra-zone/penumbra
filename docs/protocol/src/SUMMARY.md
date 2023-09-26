@@ -34,6 +34,7 @@
     - [The `eddy` construction](./crypto/flow/eddy.md)
     - [Distributed Key Generation](./crypto/flow-encryption/dkg.md)
     - [Homomorphic Threshold Encryption](./crypto/flow-encryption/threshold-encryption.md)
+    - [Flow Encryption and Consensus](./protocol/flow-consensus.md)
   - [Transaction Signing](./crypto/transaction_signing.md)
 - [Groth 16 Setup Ceremony](./setup.md)
   - [Groth16 Recap](./setup/groth16_recap.md)
