@@ -24,6 +24,7 @@ use tracing::instrument;
 use penumbra_stake::{rate::RateData, validator, StateReadExt as _};
 
 use crate::{
+    params::GovernanceParameters,
     proposal::{Proposal, ProposalPayload},
     proposal_state::State as ProposalState,
     vote::Vote,
@@ -32,6 +33,13 @@ use crate::{state_key, tally::Tally};
 
 #[async_trait]
 pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
+    /// Gets the governance parameters from the JMT.
+    async fn get_governance_params(&self) -> Result<GovernanceParameters> {
+        self.get(state_key::governance_params())
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("Missing GovernanceParameters"))
+    }
+
     /// Get the id of the next proposal in the sequence of ids.
     async fn next_proposal_id(&self) -> Result<u64> {
         Ok(self
@@ -278,7 +286,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
 
     async fn check_height_in_future_of_voting_end(&self, height: u64) -> Result<()> {
         let block_height = self.get_block_height().await?;
-        let voting_blocks = self.get_chain_params().await?.proposal_voting_blocks;
+        let voting_blocks = self.get_governance_params().await?.proposal_voting_blocks;
         let voting_end_height = block_height + voting_blocks;
 
         if height < voting_end_height {
@@ -815,42 +823,44 @@ pub trait StateWriteExt: StateWrite {
                 }
             }
             ProposalPayload::ParameterChange { old, new } => {
-                tracing::info!(
-                    "parameter change proposal passed, attempting to update chain parameters"
-                );
+                // TODO: Renable (#3107)
+                tracing::info!("Parameter change proposal passed, however parameter change is currently disabled. See issue #3107");
+                // tracing::info!(
+                //     "parameter change proposal passed, attempting to update chain parameters"
+                // );
 
-                // If there has been a chain upgrade while the proposal was pending, the stateless
-                // verification criteria for the parameter change proposal could have changed, so we
-                // should check them again here, just to be sure:
-                old.check_valid_update(new)
-                    .context("final check for validity of chain parameter update failed")?;
+                // // If there has been a chain upgrade while the proposal was pending, the stateless
+                // // verification criteria for the parameter change proposal could have changed, so we
+                // // should check them again here, just to be sure:
+                // old.check_valid_update(new)
+                //     .context("final check for validity of chain parameter update failed")?;
 
-                // Check that the old parameters are an exact match for the current parameters, or
-                // else abort the update.
-                let current =
-                    // If there is a pending parameter change, sequence the update on top of that
-                    // one (i.e., pretend that those new parameters are the old parameters, since
-                    // chain parameter updates must be sequentially consistent)
-                    if let Some(params) = self.next_block_pending_chain_parameters().await? {
-                        params
-                    } else {
-                        // If no pending parameter change, use the current parameters
-                        self.get_chain_params().await?
-                    };
+                // // Check that the old parameters are an exact match for the current parameters, or
+                // // else abort the update.
+                // let current =
+                //     // If there is a pending parameter change, sequence the update on top of that
+                //     // one (i.e., pretend that those new parameters are the old parameters, since
+                //     // chain parameter updates must be sequentially consistent)
+                //     if let Some(params) = self.next_block_pending_chain_parameters().await? {
+                //         params
+                //     } else {
+                //         // If no pending parameter change, use the current parameters
+                //         self.get_chain_params().await?
+                //     };
 
-                // The current parameters (whether pending from a previous passed proposal or just the
-                // current ones, unchanged) have to match the old parameters specified in the
-                // proposal, exactly. This prevents updates from clashing.
-                if **old != current {
-                    return Ok(Err(anyhow::anyhow!(
-                        "current chain parameters do not match the old parameters in the proposal"
-                    )));
-                }
+                // // The current parameters (whether pending from a previous passed proposal or just the
+                // // current ones, unchanged) have to match the old parameters specified in the
+                // // proposal, exactly. This prevents updates from clashing.
+                // if **old != current {
+                //     return Ok(Err(anyhow::anyhow!(
+                //         "current chain parameters do not match the old parameters in the proposal"
+                //     )));
+                // }
 
-                // Tell the app to update the chain parameters in the next block
-                self.schedule_chain_params_change((**new).clone()).await?;
+                // // Tell the app to update the chain parameters in the next block
+                // self.schedule_chain_params_change((**new).clone()).await?;
 
-                tracing::info!("chain parameters updated successfully");
+                // tracing::info!("chain parameters updated successfully");
             }
             ProposalPayload::DaoSpend {
                 transaction_plan: _,

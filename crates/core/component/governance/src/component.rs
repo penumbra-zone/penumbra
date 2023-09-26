@@ -104,7 +104,7 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
                     state
                         .total_voting_power_at_proposal_start(proposal_id)
                         .await?,
-                    &state.get_chain_params().await?,
+                    &state.get_governance_params().await?,
                 );
 
                 // If the proposal passes, enact it now (or try to: if the proposal can't be

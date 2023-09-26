@@ -92,8 +92,8 @@ impl ActionHandler for ValidatorVote {
             let total_voting_power = state
                 .total_voting_power_at_proposal_start(*proposal)
                 .await?;
-            let chain_params = state.get_chain_params().await?;
-            if tally.emergency_pass(total_voting_power, &chain_params) {
+            let governance_params = state.get_governance_params().await?;
+            if tally.emergency_pass(total_voting_power, &governance_params) {
                 // If the emergency pass condition is met, enact the proposal
                 tracing::debug!(proposal = %proposal, "emergency pass condition met, trying to enact proposal");
                 // Try to enact the proposal based on its payload

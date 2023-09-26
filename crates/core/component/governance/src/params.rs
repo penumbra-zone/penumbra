@@ -1,4 +1,7 @@
-use penumbra_proto::governance::v1alpha1 as pb;
+use anyhow::Context;
+use penumbra_chain::params::Ratio;
+use penumbra_num::Amount;
+use penumbra_proto::core::component::governance::v1alpha1 as pb;
 use penumbra_proto::{DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 

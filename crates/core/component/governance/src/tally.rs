@@ -1,11 +1,12 @@
 use std::ops::{Add, AddAssign};
 
+use penumbra_chain::params::Ratio;
 use serde::{Deserialize, Serialize};
 
-use penumbra_chain::params::{ChainParameters, Ratio};
 use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
 
 use crate::{
+    params::GovernanceParameters,
     proposal_state::{Outcome as StateOutcome, Withdrawn},
     vote::Vote,
 };
@@ -138,11 +139,11 @@ impl<T> From<Outcome> for StateOutcome<T> {
 }
 
 impl Tally {
-    fn meets_quorum(&self, total_voting_power: u64, params: &ChainParameters) -> bool {
+    fn meets_quorum(&self, total_voting_power: u64, params: &GovernanceParameters) -> bool {
         Ratio::new(self.total(), total_voting_power) >= params.proposal_valid_quorum
     }
 
-    fn slashed(&self, params: &ChainParameters) -> bool {
+    fn slashed(&self, params: &GovernanceParameters) -> bool {
         Ratio::new(self.no, self.total()) > params.proposal_slash_threshold
     }
 
@@ -153,7 +154,7 @@ impl Tally {
         // desired in that situation
     }
 
-    pub fn outcome(self, total_voting_power: u64, params: &ChainParameters) -> Outcome {
+    pub fn outcome(self, total_voting_power: u64, params: &GovernanceParameters) -> Outcome {
         use Outcome::*;
 
         // Check to see if we've met quorum
@@ -174,7 +175,7 @@ impl Tally {
         }
     }
 
-    pub fn emergency_pass(self, total_voting_power: u64, params: &ChainParameters) -> bool {
+    pub fn emergency_pass(self, total_voting_power: u64, params: &GovernanceParameters) -> bool {
         // Check to see if we've met quorum
         if !self.meets_quorum(total_voting_power, params) {
             return false;
