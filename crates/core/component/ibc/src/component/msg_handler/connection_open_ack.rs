@@ -195,7 +195,7 @@ async fn consensus_height_is_correct<S: StateRead>(
         state.get_revision_number().await?,
         state.get_block_height().await?,
     )?;
-    if msg.consensus_height_of_a_on_b > current_height {
+    if msg.consensus_height_of_a_on_b >= current_height {
         anyhow::bail!("consensus height is greater than the current block height",);
     }
 
