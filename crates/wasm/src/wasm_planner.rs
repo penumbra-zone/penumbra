@@ -26,6 +26,12 @@ pub struct WasmPlanner {
 
 #[wasm_bindgen]
 impl WasmPlanner {
+
+    /// Create new instances of `WasmPlanner`
+    /// Function opens a connection to indexedDb
+    /// Arguments:
+    ///     idb_constants: `IndexedDbConstants`
+    /// Returns: `WasmPlanner`
     #[wasm_bindgen]
     pub async fn new(idb_constants: JsValue) -> Result<WasmPlanner, Error> {
         let constants = serde_wasm_bindgen::from_value(idb_constants)?;

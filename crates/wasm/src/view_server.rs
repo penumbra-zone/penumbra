@@ -67,6 +67,15 @@ pub struct ViewServer {
 
 #[wasm_bindgen]
 impl ViewServer {
+
+    /// Create new instances of `ViewServer`
+    /// Function opens a connection to indexedDb
+    /// Arguments:
+    ///     full_viewing_key: `bech32 string`
+    ///     epoch_duration: `u64`
+    ///     stored_tree: `StoredTree`
+    ///     idb_constants: `IndexedDbConstants`
+    /// Returns: `ViewServer`
     #[wasm_bindgen]
     pub async fn new(
         full_viewing_key: &str,
