@@ -92,7 +92,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                     address_index: None,
                     amount_to_spend: Some(amount.into()),
                     include_spent: false,
-                    ..Default::default()
                 })
                 .collect(),
             self.vote_intents
@@ -107,7 +106,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                         account_group_id: None,
                         votable_at_height: *start_block_height,
                         address_index: None,
-                        ..Default::default()
                     },
                 )
                 .collect(),
