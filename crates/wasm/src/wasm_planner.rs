@@ -1,7 +1,6 @@
 use crate::error::WasmResult;
 use crate::planner::Planner;
 use crate::storage::IndexedDBStorage;
-use crate::storage::IndexedDbConstants;
 use crate::swap_record::SwapRecord;
 use anyhow::Result;
 use ark_ff::UniformRand;

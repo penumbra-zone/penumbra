@@ -1,7 +1,6 @@
 use crate::error::WasmResult;
 use crate::note_record::SpendableNoteRecord;
 use crate::storage::IndexedDBStorage;
-use crate::storage::IndexedDbConstants;
 use crate::swap_record::SwapRecord;
 use penumbra_asset::asset::{DenomMetadata, Id};
 use penumbra_compact_block::{CompactBlock, StatePayload};
