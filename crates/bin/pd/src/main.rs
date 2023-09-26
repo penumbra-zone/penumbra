@@ -662,9 +662,9 @@ async fn main() -> anyhow::Result<()> {
             // - apply checks: root hash, size, etc.
             todo!()
         }
-        RootCommand::Upgrade { export_path } => {
-            tracing::info!("upgrading state from {}", export_path.display());
-            let _ = upgrade::migrate(export_path.clone(), Upgrade::Testnet60)
+        RootCommand::Upgrade { upgrade_path } => {
+            tracing::info!("upgrading state from {}", upgrade_path.display());
+            let _ = upgrade::migrate(upgrade_path.clone(), Upgrade::Testnet60)
                 .await
                 .context("failed to upgrade state")?;
         }
