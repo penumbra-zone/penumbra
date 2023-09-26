@@ -355,8 +355,6 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
 impl<T: StateRead> PacketProofVerifier for T {}
 
 mod inner {
-    use penumbra_chain::APP_VERSION;
-
     use super::*;
 
     #[async_trait]
@@ -398,7 +396,7 @@ mod inner {
 
             TendermintClientState::verify_delay_passed(
                 current_timestamp.into(),
-                Height::new(APP_VERSION, current_height)?,
+                Height::new(self.get_revision_number().await?, current_height)?,
                 processed_time,
                 processed_height,
                 delay_period_time,

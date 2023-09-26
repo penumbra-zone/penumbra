@@ -26,10 +26,7 @@ use ibc_types::core::channel::{ChannelId, PortId};
 use ibc_types::core::client::ClientId;
 use ibc_types::core::connection::ConnectionId;
 use ibc_types::core::connection::IdentifiedConnectionEnd;
-use penumbra_chain::{
-    component::{AppHashRead, StateReadExt},
-    APP_VERSION,
-};
+use penumbra_chain::component::{AppHashRead, StateReadExt};
 use penumbra_ibc::component::ChannelStateReadExt as _;
 use penumbra_ibc::component::ClientStateReadExt as _;
 use penumbra_ibc::component::ConnectionStateReadExt as _;
@@ -82,6 +79,9 @@ impl Info {
             .unwrap_or_default()
             .try_into()?;
 
+        // likewise, we want to return 0 if we can't get the revision number
+        let app_version = state.get_revision_number().await.unwrap_or_default();
+
         tracing::info!(?info, state_version = ?state.version(), last_block_height = ?last_block_height, "reporting height in info query");
 
         let last_block_app_hash = state.app_hash().await?.0.to_vec().try_into()?;
@@ -89,7 +89,7 @@ impl Info {
         Ok(response::Info {
             data: "penumbra".to_string(),
             version: ABCI_INFO_VERSION.to_string(),
-            app_version: APP_VERSION,
+            app_version,
             last_block_height,
             last_block_app_hash,
         })

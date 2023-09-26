@@ -7,10 +7,7 @@ use ibc_types::core::{
 };
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
-use penumbra_chain::{
-    component::{StateReadExt as _, PENUMBRA_COMMITMENT_PREFIX},
-    APP_VERSION,
-};
+use penumbra_chain::component::{StateReadExt as _, PENUMBRA_COMMITMENT_PREFIX};
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::{
@@ -197,7 +194,10 @@ async fn consensus_height_is_correct<S: StateRead>(
     state: S,
     msg: &MsgConnectionOpenAck,
 ) -> anyhow::Result<()> {
-    let current_height = Height::new(APP_VERSION, state.get_block_height().await?)?;
+    let current_height = Height::new(
+        state.get_revision_number().await?,
+        state.get_block_height().await?,
+    )?;
     if msg.consensus_height_of_a_on_b > current_height {
         anyhow::bail!("consensus height is greater than the current block height",);
     }
