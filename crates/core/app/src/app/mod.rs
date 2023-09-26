@@ -113,16 +113,6 @@ impl App {
                         start_height: 0,
                     },
                 );
-
-                Distributions::init_chain(&mut state_tx, app_state).await;
-                IBCComponent::init_chain(&mut state_tx, &()).await;
-                Dex::init_chain(&mut state_tx, &()).await;
-                Governance::init_chain(&mut state_tx, &()).await;
-                ShieldedPool::init_chain(&mut state_tx, app_state).await;
-                Staking::init_chain(&mut state_tx, app_state).await;
-            }
-            genesis::AppState::Checkpoint(_) => {
-                state_tx.put_block_height(post_genesis_height);
             }
             genesis::AppState::Checkpoint(_) => { /* perform upgrade specific check */ }
         };
