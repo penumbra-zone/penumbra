@@ -1,4 +1,4 @@
-use penumbra_proto::stake::v1alpha1 as pb;
+use penumbra_proto::core::component::stake::v1alpha1 as pb;
 use penumbra_proto::{DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
@@ -44,7 +44,7 @@ impl TryFrom<pb::StakeParameters> for StakeParameters {
     }
 }
 
-impl From<StakeParameters> for pb_chain::StakeParameters {
+impl From<StakeParameters> for pb::StakeParameters {
     fn from(params: StakeParameters) -> Self {
         pb::StakeParameters {
             unbonding_epochs: params.unbonding_epochs,

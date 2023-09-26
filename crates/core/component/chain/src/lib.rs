@@ -9,6 +9,7 @@ mod note_source;
 #[cfg(feature = "component")]
 pub mod component;
 
+pub mod genesis;
 pub mod params;
 pub mod state_key;
 

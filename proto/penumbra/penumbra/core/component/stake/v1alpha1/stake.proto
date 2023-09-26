@@ -308,3 +308,11 @@ message StakeParameters {
   // The maximum number of blocks in the window each validator can miss signing without slashing.
   uint64 missed_blocks_maximum = 7;
 }
+
+// Genesis data for the staking component.
+message GenesisContent {
+  // The configuration parameters for the staking component present at genesis
+  StakeParameters stake_params = 1;
+  // The list of validators present at genesis.
+  repeated stake.v1alpha1.Validator validators = 2;
+}

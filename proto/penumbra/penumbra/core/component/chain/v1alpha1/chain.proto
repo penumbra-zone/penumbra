@@ -55,16 +55,10 @@ message GenesisAppState {
   }
 }
 
+// Chain-specific genesis content.
 message GenesisContent {
-  message Allocation {
-    penumbra.core.num.v1alpha1.Amount amount = 1;
-    string denom = 2;
-    penumbra.core.keys.v1alpha1.Address address = 3;
-  }
-
+  // The ChainParameters present at genesis.
   ChainParameters chain_params = 1;
-  repeated stake.v1alpha1.Validator validators = 2;
-  repeated Allocation allocations = 3;
 }
 
 message Epoch {

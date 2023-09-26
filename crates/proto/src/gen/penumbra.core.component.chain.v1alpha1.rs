@@ -77,32 +77,13 @@ pub mod genesis_app_state {
         GenesisCheckpoint(::prost::alloc::vec::Vec<u8>),
     }
 }
+/// Chain-specific genesis content.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisContent {
+    /// The ChainParameters present at genesis.
     #[prost(message, optional, tag = "1")]
     pub chain_params: ::core::option::Option<ChainParameters>,
-    #[prost(message, repeated, tag = "2")]
-    pub validators: ::prost::alloc::vec::Vec<super::super::stake::v1alpha1::Validator>,
-    #[prost(message, repeated, tag = "3")]
-    pub allocations: ::prost::alloc::vec::Vec<genesis_content::Allocation>,
-}
-/// Nested message and enum types in `GenesisContent`.
-pub mod genesis_content {
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct Allocation {
-        #[prost(message, optional, tag = "1")]
-        pub amount: ::core::option::Option<
-            super::super::super::super::num::v1alpha1::Amount,
-        >,
-        #[prost(string, tag = "2")]
-        pub denom: ::prost::alloc::string::String,
-        #[prost(message, optional, tag = "3")]
-        pub address: ::core::option::Option<
-            super::super::super::super::keys::v1alpha1::Address,
-        >,
-    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

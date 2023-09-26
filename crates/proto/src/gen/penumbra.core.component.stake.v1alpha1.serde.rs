@@ -1189,6 +1189,115 @@ impl<'de> serde::Deserialize<'de> for funding_stream::ToDao {
         deserializer.deserialize_struct("penumbra.core.component.stake.v1alpha1.FundingStream.ToDao", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for GenesisContent {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.stake_params.is_some() {
+            len += 1;
+        }
+        if !self.validators.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1alpha1.GenesisContent", len)?;
+        if let Some(v) = self.stake_params.as_ref() {
+            struct_ser.serialize_field("stakeParams", v)?;
+        }
+        if !self.validators.is_empty() {
+            struct_ser.serialize_field("validators", &self.validators)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for GenesisContent {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "stake_params",
+            "stakeParams",
+            "validators",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            StakeParams,
+            Validators,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "stakeParams" | "stake_params" => Ok(GeneratedField::StakeParams),
+                            "validators" => Ok(GeneratedField::Validators),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = GenesisContent;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.stake.v1alpha1.GenesisContent")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<GenesisContent, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut stake_params__ = None;
+                let mut validators__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::StakeParams => {
+                            if stake_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("stakeParams"));
+                            }
+                            stake_params__ = map.next_value()?;
+                        }
+                        GeneratedField::Validators => {
+                            if validators__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validators"));
+                            }
+                            validators__ = Some(map.next_value()?);
+                        }
+                    }
+                }
+                Ok(GenesisContent {
+                    stake_params: stake_params__,
+                    validators: validators__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.stake.v1alpha1.GenesisContent", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for NextValidatorRateRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

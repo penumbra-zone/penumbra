@@ -113,6 +113,16 @@ impl App {
                         start_height: 0,
                     },
                 );
+
+                Distributions::init_chain(&mut state_tx, app_state).await;
+                IBCComponent::init_chain(&mut state_tx, &()).await;
+                Dex::init_chain(&mut state_tx, &()).await;
+                Governance::init_chain(&mut state_tx, &()).await;
+                ShieldedPool::init_chain(&mut state_tx, app_state).await;
+                Staking::init_chain(&mut state_tx, app_state).await;
+            }
+            genesis::AppState::Checkpoint(_) => {
+                state_tx.put_block_height(post_genesis_height);
             }
             genesis::AppState::Checkpoint(_) => { /* perform upgrade specific check */ }
         };
@@ -153,10 +163,10 @@ impl App {
         // Run each of the begin block handlers for each component, in sequence:
         let mut arc_state_tx = Arc::new(state_tx);
         Distributions::begin_block(&mut arc_state_tx, begin_block).await;
-        Staking::begin_block(&mut arc_state_tx, begin_block).await;
         IBCComponent::begin_block(&mut arc_state_tx, begin_block).await;
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
         ShieldedPool::begin_block(&mut arc_state_tx, begin_block).await;
+        Staking::begin_block(&mut arc_state_tx, begin_block).await;
 
         let state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
@@ -257,11 +267,11 @@ impl App {
 
         let mut arc_state_tx = Arc::new(state_tx);
         Distributions::end_block(&mut arc_state_tx, end_block).await;
-        Staking::end_block(&mut arc_state_tx, end_block).await;
         IBCComponent::end_block(&mut arc_state_tx, end_block).await;
         Dex::end_block(&mut arc_state_tx, end_block).await;
         Governance::end_block(&mut arc_state_tx, end_block).await;
         ShieldedPool::end_block(&mut arc_state_tx, end_block).await;
+        Staking::end_block(&mut arc_state_tx, end_block).await;
         let mut state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
 
@@ -297,9 +307,6 @@ impl App {
             Distributions::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on Distributions component");
-            Staking::end_epoch(&mut arc_state_tx)
-                .await
-                .expect("able to call end_epoch on Staking component");
             IBCComponent::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on IBC component");
@@ -312,6 +319,9 @@ impl App {
             ShieldedPool::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on shielded pool component");
+            Staking::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on Staking component");
 
             let mut state_tx = Arc::try_unwrap(arc_state_tx)
                 .expect("components did not retain copies of shared state");

@@ -539,6 +539,17 @@ pub struct StakeParameters {
     #[prost(uint64, tag = "7")]
     pub missed_blocks_maximum: u64,
 }
+/// Genesis data for the staking component.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContent {
+    /// The configuration parameters for the staking component present at genesis
+    #[prost(message, optional, tag = "1")]
+    pub stake_params: ::core::option::Option<StakeParameters>,
+    /// The list of validators present at genesis.
+    #[prost(message, repeated, tag = "2")]
+    pub validators: ::prost::alloc::vec::Vec<Validator>,
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

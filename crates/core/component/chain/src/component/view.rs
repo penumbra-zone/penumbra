@@ -12,7 +12,7 @@ use crate::{
     state_key, Epoch,
 };
 
-/// This trait provides read access to common parts of the Penumbra
+/// This trait provides read access to chain-related parts of the Penumbra
 /// state store.
 ///
 /// Note: the `get_` methods in this trait assume that the state store has been
@@ -20,7 +20,7 @@ use crate::{
 //#[async_trait(?Send)]
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    /// Gets the chain parameters from the JMT.
+    /// Gets the app chain parameters from the JMT.
     async fn get_chain_params(&self) -> Result<ChainParameters> {
         self.get(state_key::chain_params())
             .await?

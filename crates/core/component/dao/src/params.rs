@@ -1,4 +1,4 @@
-use penumbra_proto::dao::v1alpha1 as pb;
+use penumbra_proto::core::component::dao::v1alpha1 as pb;
 use penumbra_proto::{DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 

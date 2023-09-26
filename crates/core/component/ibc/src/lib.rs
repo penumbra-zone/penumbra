@@ -12,7 +12,7 @@ pub mod component;
 mod ibc_action;
 mod ibc_token;
 mod ics20_withdrawal;
-pub mod parameters;
+pub mod params;
 mod version;
 
 pub use ibc_action::IbcAction;

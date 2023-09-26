@@ -12,6 +12,7 @@ use penumbra_storage::StateWrite;
 use tendermint::v0_34::abci;
 use tracing::instrument;
 
+use crate::genesis::Content as GenesisContent;
 use crate::state_key;
 
 use super::{NoteManager, SupplyWrite};
@@ -20,17 +21,16 @@ pub struct ShieldedPool {}
 
 #[async_trait]
 impl Component for ShieldedPool {
-    type AppState = genesis::AppState;
+    type AppState = GenesisContent;
 
     #[instrument(name = "shielded_pool", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: &GenesisContent) {
         match app_state {
             genesis::AppState::Checkpoint(_) => { /* no-op */ }
             genesis::AppState::Content(app_state) => {
                 // Register a denom for each asset in the genesis state
                 for allocation in &app_state.allocations {
                     tracing::debug!(?allocation, "processing allocation");
-
                     assert_ne!(
                         allocation.amount,
                         0u128.into(),

@@ -9,9 +9,10 @@ use penumbra_proto::{
 use serde::{Deserialize, Serialize};
 
 use super::Allocation;
-use crate::params::ChainParameters;
+use penumbra_app::params::AppParameters;
 
 /// The application state at genesis.
+/// TODO: bubble up to penumbra_app (https://github.com/penumbra-zone/penumbra/issues/3085)
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(try_from = "pb::GenesisAppState", into = "pb::GenesisAppState")]
 pub enum AppState {
@@ -26,10 +27,10 @@ pub enum AppState {
 pub struct Content {
     /// Global configuration for the app.
     pub app_params: AppParameters,
-    /// The initial validator set.
-    pub validators: Vec<pb_stake::Validator>,
-    /// The initial token allocations.
-    pub allocations: Vec<Allocation>,
+    /// Stake module genesis state.
+    pub stake_content: StakeContent,
+    /// Shielded pool module genesis state.
+    pub shielded_pool_content: ShieldedPoolContent,
 }
 
 impl Default for AppState {
@@ -42,46 +43,8 @@ impl Default for Content {
     fn default() -> Self {
         Self {
             app_params: Default::default(),
-            // TODO: create a test validator
-            validators: Default::default(),
-            allocations: vec![
-                Allocation {
-                    amount: 1000u128.into(),
-                    denom: "penumbra"
-                        .parse()
-                        .expect("hardcoded \"penumbra\" denom should be parseable"),
-                    address: crate::test_keys::ADDRESS_0_STR
-                        .parse()
-                        .expect("hardcoded test address should be valid"),
-                },
-                Allocation {
-                    amount: 100u128.into(),
-                    denom: "test_usd"
-                        .parse()
-                        .expect("hardcoded \"test_usd\" denom should be parseable"),
-                    address: crate::test_keys::ADDRESS_0_STR
-                        .parse()
-                        .expect("hardcoded test address should be valid"),
-                },
-                Allocation {
-                    amount: 100u128.into(),
-                    denom: "gm"
-                        .parse()
-                        .expect("hardcoded \"gm\" denom should be parseable"),
-                    address: crate::test_keys::ADDRESS_1_STR
-                        .parse()
-                        .expect("hardcoded test address should be valid"),
-                },
-                Allocation {
-                    amount: 100u128.into(),
-                    denom: "gn"
-                        .parse()
-                        .expect("hardcoded \"gn\" denom should be parseable"),
-                    address: crate::test_keys::ADDRESS_1_STR
-                        .parse()
-                        .expect("hardcoded test address should be valid"),
-                },
-            ],
+            stake_content: Default::default(),
+            shielded_pool_content: Default::default(),
         }
     }
 }
@@ -105,8 +68,6 @@ impl From<Content> for pb::GenesisContent {
     fn from(value: Content) -> Self {
         pb::GenesisContent {
             chain_params: Some(value.chain_params.into()),
-            validators: value.validators.into_iter().map(Into::into).collect(),
-            allocations: value.allocations.into_iter().map(Into::into).collect(),
         }
     }
 }
@@ -134,18 +95,17 @@ impl TryFrom<pb::GenesisContent> for Content {
 
     fn try_from(msg: pb::GenesisContent) -> Result<Self, Self::Error> {
         Ok(Content {
-            chain_params: msg
-                .chain_params
-                .context("chain params not present in protobuf message")?
+            app_params: msg
+                .app_params
+                .context("app params not present in protobuf message")?
                 .try_into()?,
-            validators: msg
-                .validators
+            stake_content: msg
+                .stake_content
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
-
-            allocations: msg
-                .allocations
+            shielded_pool_content: msg
+                .shielded_pool_content
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,

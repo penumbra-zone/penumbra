@@ -1,12 +1,12 @@
 use std::convert::{TryFrom, TryInto};
 
+use crate::genesis::Allocation;
 use ark_ff::PrimeField;
 use blake2b_simd;
 use decaf377::{FieldExt, Fq};
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 use once_cell::sync::Lazy;
-use penumbra_chain::genesis::Allocation;
 use penumbra_keys::{
     keys::{Diversifier, FullViewingKey, IncomingViewingKey, OutgoingViewingKey},
     symmetric::{OutgoingCipherKey, OvkWrappedKey, PayloadKey, PayloadKind},
