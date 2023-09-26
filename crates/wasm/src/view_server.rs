@@ -67,7 +67,6 @@ pub struct ViewServer {
 
 #[wasm_bindgen]
 impl ViewServer {
-
     /// Create new instances of `ViewServer`
     /// Function opens a connection to indexedDb
     /// Arguments:

@@ -26,7 +26,6 @@ pub struct WasmPlanner {
 
 #[wasm_bindgen]
 impl WasmPlanner {
-
     /// Create new instances of `WasmPlanner`
     /// Function opens a connection to indexedDb
     /// Arguments:
