@@ -382,8 +382,19 @@ impl TxCmd {
                         "Claim Liquidity Position Reward".to_string(),
                         "".to_string(),
                     ],
-                    penumbra_transaction::ActionView::Ics20Withdrawal(_) => {
-                        ["Ics20 Withdrawal".to_string(), "".to_string()]
+                    penumbra_transaction::ActionView::Ics20Withdrawal(w) => {
+                        let unit = w.denom.best_unit_for(w.amount);
+                        [
+                            "Ics20 Withdrawal".to_string(),
+                            // TODO: why doesn't format_value include the unit?
+                            format!(
+                                "{}{} via {} to {}",
+                                unit.format_value(w.amount),
+                                unit,
+                                w.source_channel,
+                                w.destination_chain_address,
+                            ),
+                        ]
                     }
                     penumbra_transaction::ActionView::DaoDeposit(_) => {
                         ["Dao Deposit".to_string(), "".to_string()]

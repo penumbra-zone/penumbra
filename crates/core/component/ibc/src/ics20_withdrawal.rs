@@ -34,6 +34,7 @@ pub struct Ics20Withdrawal {
     // the source channel used for the withdrawal
     pub source_channel: ChannelId,
 }
+
 impl Ics20Withdrawal {
     pub fn value(&self) -> Value {
         Value {
