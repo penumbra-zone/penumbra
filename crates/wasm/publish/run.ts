@@ -2,9 +2,9 @@ import path from 'path';
 import { execSync } from 'child_process';
 import { readFileSync, writeFileSync } from 'fs';
 
-const targets = ['web', 'nodejs', 'bundler'];
+const TARGETS = ['web', 'nodejs', 'bundler'];
 
-targets.forEach(target => {
+TARGETS.forEach(target => {
   // Run wasm-pack for each target
   execSync(
     `wasm-pack build ../ --release --target ${target} --out-name index --out-dir publish/${target}`,
@@ -23,8 +23,10 @@ targets.forEach(target => {
   process.chdir(target);
   execSync('npm pack', { stdio: 'inherit' });
 
-  // Publish to npm
-  execSync('npm publish --access public', { stdio: 'inherit' });
+  // Publish to npm if flag provided
+  if (process.argv.includes('--publish')) {
+    execSync('npm publish --access public', { stdio: 'inherit' });
+  }
 
   // Change working directory back to parent
   process.chdir('..');
