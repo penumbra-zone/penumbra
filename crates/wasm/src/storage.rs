@@ -11,22 +11,19 @@ use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-#[wasm_bindgen]
 pub struct IndexedDbConstants {
     name: String,
     version: u32,
+    tables: Tables
+}
 
+pub struct Tables{
     assets: String,
     chain_parameters: String,
     fmd_parameters: String,
-    last_block_synced: String,
     notes: String,
     spendable_notes: String,
     swaps: String,
-    tree_commitments: String,
-    tree_hashes: String,
-    tree_last_forgotten: String,
-    tree_last_position: String,
 }
 
 pub struct IndexedDBStorage {
@@ -46,8 +43,8 @@ impl IndexedDBStorage {
     pub async fn get_notes(&self, request: NotesRequest) -> WasmResult<Vec<SpendableNoteRecord>> {
         let idb_tx = self
             .db
-            .transaction_on_one(&self.constants.spendable_notes)?;
-        let store = idb_tx.object_store(&self.constants.spendable_notes)?;
+            .transaction_on_one(&self.constants.tables.spendable_notes)?;
+        let store = idb_tx.object_store(&self.constants.tables.spendable_notes)?;
 
         let values = store.get_all()?.await?;
 
@@ -74,8 +71,8 @@ impl IndexedDBStorage {
     }
 
     pub async fn get_asset(&self, id: &Id) -> WasmResult<Option<DenomMetadata>> {
-        let tx = self.db.transaction_on_one(&self.constants.assets)?;
-        let store = tx.object_store(&self.constants.assets)?;
+        let tx = self.db.transaction_on_one(&self.constants.tables.assets)?;
+        let store = tx.object_store(&self.constants.tables.assets)?;
 
         Ok(store
             .get_owned(base64::Engine::encode(
@@ -93,8 +90,8 @@ impl IndexedDBStorage {
     ) -> WasmResult<Option<SpendableNoteRecord>> {
         let tx = self
             .db
-            .transaction_on_one(&self.constants.spendable_notes)?;
-        let store = tx.object_store(&self.constants.spendable_notes)?;
+            .transaction_on_one(&self.constants.tables.spendable_notes)?;
+        let store = tx.object_store(&self.constants.tables.spendable_notes)?;
 
         Ok(store
             .get_owned(base64::Engine::encode(
@@ -112,8 +109,8 @@ impl IndexedDBStorage {
     ) -> WasmResult<Option<SpendableNoteRecord>> {
         let tx = self
             .db
-            .transaction_on_one(&self.constants.spendable_notes)?;
-        let store = tx.object_store(&self.constants.spendable_notes)?;
+            .transaction_on_one(&self.constants.tables.spendable_notes)?;
+        let store = tx.object_store(&self.constants.tables.spendable_notes)?;
 
         Ok(store
             .index("nullifier")?
@@ -127,8 +124,8 @@ impl IndexedDBStorage {
     }
 
     pub async fn store_advice(&self, note: Note) -> WasmResult<()> {
-        let tx = self.db.transaction_on_one(&self.constants.notes)?;
-        let store = tx.object_store(&self.constants.notes)?;
+        let tx = self.db.transaction_on_one(&self.constants.tables.notes)?;
+        let store = tx.object_store(&self.constants.tables.notes)?;
 
         let note_proto: penumbra_proto::core::component::shielded_pool::v1alpha1::Note =
             note.clone().try_into()?;
@@ -144,8 +141,8 @@ impl IndexedDBStorage {
     }
 
     pub async fn read_advice(&self, commitment: note::StateCommitment) -> WasmResult<Option<Note>> {
-        let tx = self.db.transaction_on_one(&self.constants.notes)?;
-        let store = tx.object_store(&self.constants.notes)?;
+        let tx = self.db.transaction_on_one(&self.constants.tables.notes)?;
+        let store = tx.object_store(&self.constants.tables.notes)?;
 
         let commitment_proto = commitment.to_proto();
 
@@ -161,8 +158,8 @@ impl IndexedDBStorage {
     pub async fn get_chain_parameters(&self) -> WasmResult<Option<ChainParameters>> {
         let tx = self
             .db
-            .transaction_on_one(&self.constants.chain_parameters)?;
-        let store = tx.object_store(&self.constants.chain_parameters)?;
+            .transaction_on_one(&self.constants.tables.chain_parameters)?;
+        let store = tx.object_store(&self.constants.tables.chain_parameters)?;
 
         Ok(store
             .get_owned("chain_parameters")?
@@ -172,8 +169,8 @@ impl IndexedDBStorage {
     }
 
     pub async fn get_fmd_parameters(&self) -> WasmResult<Option<FmdParameters>> {
-        let tx = self.db.transaction_on_one(&self.constants.fmd_parameters)?;
-        let store = tx.object_store(&self.constants.fmd_parameters)?;
+        let tx = self.db.transaction_on_one(&self.constants.tables.fmd_parameters)?;
+        let store = tx.object_store(&self.constants.tables.fmd_parameters)?;
 
         Ok(store
             .get_owned("fmd")?
@@ -186,8 +183,8 @@ impl IndexedDBStorage {
         &self,
         swap_commitment: StateCommitment,
     ) -> WasmResult<Option<SwapRecord>> {
-        let tx = self.db.transaction_on_one(&self.constants.swaps)?;
-        let store = tx.object_store(&self.constants.swaps)?;
+        let tx = self.db.transaction_on_one(&self.constants.tables.swaps)?;
+        let store = tx.object_store(&self.constants.tables.swaps)?;
 
         Ok(store
             .get_owned(base64::Engine::encode(
