@@ -95,10 +95,10 @@ impl Consensus {
         let app_state: genesis::AppState = serde_json::from_slice(&init_chain.app_state_bytes)
             .expect("can parse app_state in genesis file");
 
-        let initial_height = match &app_state {
+        match &app_state {
             genesis::AppState::Checkpoint(h) => {
                 tracing::info!(?h, "genesis state is a checkpoint");
-                init_chain.initial_height.into()
+                /* perform upgrade specific check */
             }
             genesis::AppState::Content(_) => {
                 tracing::info!("genesis state is a full configuration");
@@ -106,11 +106,10 @@ impl Consensus {
                 if self.storage.latest_version() != u64::MAX {
                     anyhow::bail!("database already initialized");
                 }
-                1u64
             }
-        };
+        }
 
-        self.app.init_chain(initial_height, &app_state).await;
+        self.app.init_chain(&app_state).await;
 
         // Extract the Tendermint validators from the app state
         //
