@@ -2,7 +2,6 @@ use crate::error::WasmResult;
 use crate::note_record::SpendableNoteRecord;
 use indexed_db_futures::prelude::OpenDbRequest;
 use indexed_db_futures::{IdbDatabase, IdbQuerySource};
-use serde::{Deserialize, Serialize};
 use penumbra_asset::asset::{DenomMetadata, Id};
 use penumbra_proto::core::component::chain::v1alpha1::{ChainParameters, FmdParameters};
 use penumbra_proto::crypto::tct::v1alpha1::StateCommitment;
@@ -10,17 +9,18 @@ use penumbra_proto::view::v1alpha1::{NotesRequest, SwapRecord};
 use penumbra_proto::DomainType;
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note};
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IndexedDbConstants {
     name: String,
     version: u32,
-    tables: Tables
+    tables: Tables,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Tables{
+pub struct Tables {
     assets: String,
     chain_parameters: String,
     fmd_parameters: String,
@@ -172,7 +172,9 @@ impl IndexedDBStorage {
     }
 
     pub async fn get_fmd_parameters(&self) -> WasmResult<Option<FmdParameters>> {
-        let tx = self.db.transaction_on_one(&self.constants.tables.fmd_parameters)?;
+        let tx = self
+            .db
+            .transaction_on_one(&self.constants.tables.fmd_parameters)?;
         let store = tx.object_store(&self.constants.tables.fmd_parameters)?;
 
         Ok(store
