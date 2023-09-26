@@ -29,9 +29,10 @@ if ! hash cometmock > /dev/null 2>&1 ; then
 fi
 
 export RUST_LOG="pclientd=info,pcli=info,pd=info,penumbra=info"
+# export RUST_LOG="warn"
 
 # Duration that the network will run before integration tests are run.
-TESTNET_BOOTTIME="${TESTNET_BOOTTIME:-20}"
+TESTNET_BOOTTIME="${TESTNET_BOOTTIME:-5}"
 # Duration that the network will be left running before script exits.
 TESTNET_RUNTIME="${TESTNET_RUNTIME:-10}"
 
@@ -40,8 +41,8 @@ cargo build --release --bin pd
 
 echo "Generating testnet config..."
 # Export the epoch duration, so it's accessible as env var in test suite.
-export EPOCH_DURATION="${EPOCH_DURATION:-100}"
-cargo run --quiet --release --bin pd -- testnet generate --epoch-duration "$EPOCH_DURATION" --timeout-commit 500ms
+export EPOCH_DURATION="${EPOCH_DURATION:-10}"
+cargo run --quiet --release --bin pd -- testnet generate --epoch-duration "$EPOCH_DURATION" --timeout-commit 50ms
 
 echo "Starting pd..."
 cargo run --quiet --release --bin pd -- start --home "${HOME}/.penumbra/testnet_data/node0/pd" &

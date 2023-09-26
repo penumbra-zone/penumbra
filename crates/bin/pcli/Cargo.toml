@@ -109,6 +109,7 @@ penumbra-proof-params = { path = "../../crypto/proof-params", features = [
     "proving-keys",
     "download-proving-keys",
 ] }
+penumbra-cometmock-driver = { path = "../../util/cometmock-driver" }
 
 [package.metadata.dist]
 dist = true

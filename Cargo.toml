@@ -40,6 +40,7 @@ members = [
   "crates/view",
   "crates/util/tendermint-proxy",
   "crates/util/tower-trace",
+  "crates/util/cometmock-driver",
   "crates/bin/pd",
   "crates/bin/pclientd",
   "crates/bin/pcli",
