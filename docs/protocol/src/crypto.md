@@ -20,7 +20,7 @@ construction that allows users to outsource a probabalistic detection
 capability, allowing a third party to scan and filter the chain on their behalf,
 without revealing precisely which transactions are theirs.
 
-- The [Homomorphic Threshold Decryption](./crypto/threshold.md) section
+- The [Homomorphic Threshold Decryption](./crypto/flow-encryption/threshold-encryption.md) section
 describes the construction used to [batch flows of
 value](./concepts/batching_flows.md) across transactions.
 

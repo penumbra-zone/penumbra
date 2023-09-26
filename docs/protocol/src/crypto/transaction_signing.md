@@ -1,6 +1,6 @@
 # Transaction Signing
 
-Transactions are signed used the [`decaf377-rdsa` construction](../crypto/decaf377-rdas.md). As described briefly in that section, there are two signature domains used in Penumbra: `SpendAuth` signatures and `Binding` signatures.
+Transactions are signed used the [`decaf377-rdsa` construction](../crypto/decaf377-rdsa.md). As described briefly in that section, there are two signature domains used in Penumbra: `SpendAuth` signatures and `Binding` signatures.
 
 ## `SpendAuth` Signatures
 
