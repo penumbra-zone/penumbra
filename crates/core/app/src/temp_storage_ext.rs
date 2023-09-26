@@ -22,7 +22,7 @@ impl TempStorageExt for TempStorage {
 
         // Apply the genesis state to the storage
         let mut app = App::new(self.latest_snapshot()).await?;
-        app.init_chain(1u64, &genesis).await;
+        app.init_chain(&genesis).await;
         app.commit(self.deref().clone()).await;
 
         Ok(self)

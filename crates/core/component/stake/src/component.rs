@@ -893,69 +893,74 @@ impl<T: StateWrite + StateWriteExt + ?Sized> StakingImpl for T {}
 
 #[async_trait]
 impl Component for Staking {
-    type AppState = genesis::Content;
+    type AppState = genesis::AppState;
 
     #[instrument(name = "staking", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::Content) {
-        let starting_height = state
-            .get_block_height()
-            .await
-            .expect("should be able to get initial block height");
-        let starting_epoch = state
-            .epoch_by_height(starting_height)
-            .await
-            .expect("should be able to get initial epoch");
-        let epoch_index = starting_epoch.index;
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
+        match app_state {
+            genesis::AppState::Content(app_state) => {
+                let starting_height = state
+                    .get_block_height()
+                    .await
+                    .expect("should be able to get initial block height");
+                let starting_epoch = state
+                    .epoch_by_height(starting_height)
+                    .await
+                    .expect("should be able to get initial epoch");
+                let epoch_index = starting_epoch.index;
 
-        // Delegations require knowing the rates for the next epoch, so
-        // pre-populate with 0 reward => exchange rate 1 for the current
-        // (index 0) and next (index 1) epochs for base rate data.
-        let genesis_base_rate = BaseRateData {
-            epoch_index,
-            base_reward_rate: 0,
-            base_exchange_rate: 1_0000_0000,
-        };
-        let next_base_rate = BaseRateData {
-            epoch_index: epoch_index + 1,
-            base_reward_rate: 0,
-            base_exchange_rate: 1_0000_0000,
-        };
-        state
-            .set_base_rates(genesis_base_rate.clone(), next_base_rate)
-            .await;
+                // Delegations require knowing the rates for the next epoch, so
+                // pre-populate with 0 reward => exchange rate 1 for the current
+                // (index 0) and next (index 1) epochs for base rate data.
+                let genesis_base_rate = BaseRateData {
+                    epoch_index,
+                    base_reward_rate: 0,
+                    base_exchange_rate: 1_0000_0000,
+                };
+                let next_base_rate = BaseRateData {
+                    epoch_index: epoch_index + 1,
+                    base_reward_rate: 0,
+                    base_exchange_rate: 1_0000_0000,
+                };
+                state
+                    .set_base_rates(genesis_base_rate.clone(), next_base_rate)
+                    .await;
 
-        // Compile totals of genesis allocations by denom, which we can use
-        // to compute the delegation tokens for each validator.
-        let mut genesis_allocations = BTreeMap::new();
-        for allocation in &app_state.allocations {
-            *genesis_allocations.entry(&allocation.denom).or_insert(0) +=
-                u128::from(allocation.amount);
+                // Compile totals of genesis allocations by denom, which we can use
+                // to compute the delegation tokens for each validator.
+                let mut genesis_allocations = BTreeMap::new();
+                for allocation in &app_state.allocations {
+                    *genesis_allocations.entry(&allocation.denom).or_insert(0) +=
+                        u128::from(allocation.amount);
+                }
+
+                // Add initial validators to the JMT
+                // Validators are indexed in the JMT by their public key,
+                // and there is a separate key containing the list of all validator keys.
+                for validator in &app_state.validators {
+                    // Parse the proto into a domain type.
+                    let validator = Validator::try_from(validator.clone())
+                        .expect("should be able to parse genesis validator");
+
+                    state
+                        .add_genesis_validator(&genesis_allocations, &genesis_base_rate, validator)
+                        .await
+                        .expect("should be able to add genesis validator to state");
+                }
+
+                // Finally, record that there were no delegations in this block, so the data
+                // isn't missing when we process the first epoch transition.
+                state
+                    .set_delegation_changes(
+                        starting_height
+                            .try_into()
+                            .expect("should be able to convert u64 into block height"),
+                        Default::default(),
+                    )
+                    .await;
+            }
+            genesis::AppState::Checkpoint(_) => { /* perform upgrade specific check */ }
         }
-
-        // Add initial validators to the JMT
-        // Validators are indexed in the JMT by their public key,
-        // and there is a separate key containing the list of all validator keys.
-        for validator in &app_state.validators {
-            // Parse the proto into a domain type.
-            let validator = Validator::try_from(validator.clone())
-                .expect("should be able to parse genesis validator");
-
-            state
-                .add_genesis_validator(&genesis_allocations, &genesis_base_rate, validator)
-                .await
-                .expect("should be able to add genesis validator to state");
-        }
-
-        // Finally, record that there were no delegations in this block, so the data
-        // isn't missing when we process the first epoch transition.
-        state
-            .set_delegation_changes(
-                starting_height
-                    .try_into()
-                    .expect("should be able to convert u64 into block height"),
-                Default::default(),
-            )
-            .await;
 
         // Build the initial validator set update.
         // First, "prime" the state with an empty set, so the build_ function can read it.

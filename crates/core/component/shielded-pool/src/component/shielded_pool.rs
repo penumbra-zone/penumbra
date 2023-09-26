@@ -20,39 +20,44 @@ pub struct ShieldedPool {}
 
 #[async_trait]
 impl Component for ShieldedPool {
-    type AppState = genesis::Content;
+    type AppState = genesis::AppState;
 
     #[instrument(name = "shielded_pool", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::Content) {
-        // Register a denom for each asset in the genesis state
-        for allocation in &app_state.allocations {
-            tracing::debug!(?allocation, "processing allocation");
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
+        match app_state {
+            genesis::AppState::Checkpoint(_) => { /* no-op */ }
+            genesis::AppState::Content(app_state) => {
+                // Register a denom for each asset in the genesis state
+                for allocation in &app_state.allocations {
+                    tracing::debug!(?allocation, "processing allocation");
 
-            assert_ne!(
-                allocation.amount,
-                0u128.into(),
-                "Genesis allocations contain empty note",
-            );
+                    assert_ne!(
+                        allocation.amount,
+                        0u128.into(),
+                        "Genesis allocations contain empty note",
+                    );
 
-            let unit = asset::REGISTRY.parse_unit(&allocation.denom);
+                    let unit = asset::REGISTRY.parse_unit(&allocation.denom);
 
-            state
-                .register_denom(&unit.base())
-                .await
-                .expect("able to register denom for genesis allocation");
-            state
-                .mint_note(
-                    Value {
-                        amount: (u128::from(allocation.amount)
-                            * 10u128.pow(unit.exponent().into()))
-                        .into(),
-                        asset_id: unit.id(),
-                    },
-                    &allocation.address,
-                    NoteSource::Genesis,
-                )
-                .await
-                .expect("able to mint note for genesis allocation");
+                    state
+                        .register_denom(&unit.base())
+                        .await
+                        .expect("able to register denom for genesis allocation");
+                    state
+                        .mint_note(
+                            Value {
+                                amount: (u128::from(allocation.amount)
+                                    * 10u128.pow(unit.exponent().into()))
+                                .into(),
+                                asset_id: unit.id(),
+                            },
+                            &allocation.address,
+                            NoteSource::Genesis,
+                        )
+                        .await
+                        .expect("able to mint note for genesis allocation");
+                }
+            }
         }
     }
 
