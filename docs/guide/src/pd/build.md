@@ -20,7 +20,7 @@ on your system to join your node to the testnet.
 **NOTE**: Previous versions of Penumbra used Tendermint, but as of Testnet 61 (released 2023-09-25),
 only CometBFT is supported. **Do not use** any version of Tendermint, which may not work with `pd`.
 
-Follow the [CometBFT installation instructions](https://docs.cometbft.com/v0.34/guides/install)
+You can download `v0.34.27` [from the CometBFT releases page](https://github.com/cometbft/cometbft/releases/tag/v0.34.27)
 to install a binary. If you prefer to compile from source instead,
 make sure you are compiling version `v0.34.27`:
 
