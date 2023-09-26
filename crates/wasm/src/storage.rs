@@ -2,6 +2,7 @@ use crate::error::WasmResult;
 use crate::note_record::SpendableNoteRecord;
 use indexed_db_futures::prelude::OpenDbRequest;
 use indexed_db_futures::{IdbDatabase, IdbQuerySource};
+use serde::{Deserialize, Serialize};
 use penumbra_asset::asset::{DenomMetadata, Id};
 use penumbra_proto::core::component::chain::v1alpha1::{ChainParameters, FmdParameters};
 use penumbra_proto::crypto::tct::v1alpha1::StateCommitment;
@@ -11,12 +12,14 @@ use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note};
 use wasm_bindgen::prelude::wasm_bindgen;
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IndexedDbConstants {
     name: String,
     version: u32,
     tables: Tables
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Tables{
     assets: String,
     chain_parameters: String,

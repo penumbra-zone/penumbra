@@ -73,11 +73,12 @@ impl ViewServer {
         full_viewing_key: &str,
         epoch_duration: u64,
         stored_tree: JsValue,
-        idb_constants: IndexedDbConstants,
+        idb_constants: JsValue,
     ) -> WasmResult<ViewServer> {
         let fvk = FullViewingKey::from_str(full_viewing_key)?;
         let stored_tree: StoredTree = serde_wasm_bindgen::from_value(stored_tree)?;
         let tree = load_tree(stored_tree);
+        let constants = serde_wasm_bindgen::from_value(idb_constants)?;
         let view_server = Self {
             latest_height: u64::MAX,
             fvk,
@@ -87,7 +88,7 @@ impl ViewServer {
             denoms: Default::default(),
             nct: tree,
             swaps: Default::default(),
-            storage: IndexedDBStorage::new(idb_constants).await?,
+            storage: IndexedDBStorage::new(constants).await?,
         };
         Ok(view_server)
     }

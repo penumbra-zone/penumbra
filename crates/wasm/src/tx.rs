@@ -95,10 +95,11 @@ pub fn build_tx(
 pub async fn transaction_info(
     full_viewing_key: &str,
     tx: JsValue,
-    idb_constants: IndexedDbConstants,
+    idb_constants: JsValue,
 ) -> Result<JsValue, Error> {
     let transaction = serde_wasm_bindgen::from_value(tx)?;
-    let response = transaction_info_inner(full_viewing_key, transaction, idb_constants).await?;
+    let constants = serde_wasm_bindgen::from_value(idb_constants)?;
+    let response = transaction_info_inner(full_viewing_key, transaction, constants).await?;
 
     serde_wasm_bindgen::to_value(&response)
 }

@@ -27,11 +27,13 @@ pub struct WasmPlanner {
 
 #[wasm_bindgen]
 impl WasmPlanner {
-    #[wasm_bindgen(constructor)]
-    pub async fn new(idb_constants: IndexedDbConstants) -> Result<WasmPlanner, Error> {
+
+    #[wasm_bindgen]
+    pub async fn new(idb_constants: JsValue) -> Result<WasmPlanner, Error> {
+        let constants = serde_wasm_bindgen::from_value(idb_constants)?;
         let planner = WasmPlanner {
             planner: Planner::new(OsRng),
-            storage: IndexedDBStorage::new(idb_constants).await?,
+            storage: IndexedDBStorage::new(constants).await?,
         };
         Ok(planner)
     }
