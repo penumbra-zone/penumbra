@@ -87,4 +87,4 @@ jobs:
       # we're still working on reliable packet relaying between test chains.
       - name: bounce relayer
         run: |-
-          ./deployments/scripts/bounce-relayer || true
+          kubectl rollout restart deployment relayer-preview || true
