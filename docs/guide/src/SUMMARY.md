@@ -23,4 +23,5 @@
   - [Metrics](./dev/metrics.md)
   - [Zero Knowledge Proofs](./dev/parameter_setup.md)
   - [RPC access](./dev/rpc.md)
+  - [Testing IBC](./dev/ibc.md)
 - [Resources](./resources.md)
