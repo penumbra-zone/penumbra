@@ -1322,6 +1322,17 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 /// Extension trait providing write access to staking data.
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
+    /// Writes the provided stake parameters to the JMT.
+    fn put_stake_params(&mut self, params: StakeParameters) {
+        // TODO: this needs to be handled on a per-component basis or possibly removed from the compact block
+        // entirely, currently disabled, see https://github.com/penumbra-zone/penumbra/issues/3107
+        // Note to the shielded pool to include the chain parameters in the next compact block:
+        // self.object_put(state_key::chain_params_changed(), ());
+
+        // Change the stake parameters:
+        self.put(state_key::stake_params().into(), params)
+    }
+
     /// Delegation changes accumulated over the course of this block, to be
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.

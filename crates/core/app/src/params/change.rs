@@ -1,10 +1,13 @@
 use std::fmt::Display;
 
 use anyhow::Result;
-use penumbra_governance::component::Governance;
+use penumbra_chain::params::{ChainParameters, Ratio};
+use penumbra_dao::params::DaoParameters;
+use penumbra_governance::{component::Governance, params::GovernanceParameters};
 use penumbra_ibc::params::IBCParameters;
+use penumbra_stake::params::StakeParameters;
 
-use super::{AppParameters, Ratio};
+use super::AppParameters;
 
 // The checks below validate that a parameter change is valid, since some parameter settings or
 // combinations are nonsensical and should be rejected outright, regardless of governance.
@@ -13,6 +16,7 @@ use super::{AppParameters, Ratio};
 impl AppParameters {
     pub fn check_valid_update(&self, new: &AppParameters) -> Result<()> {
         new.check_valid()?;
+        // TODO: move the checks below into their respective components
 
         let AppParameters {
             chain_params:
@@ -51,34 +55,38 @@ impl AppParameters {
         } = self;
 
         // Ensure that certain parameters are not changed by the update:
-        check_invariant([(chain_id, &new.chain_id, "chain ID")])?;
+        check_invariant([(chain_id, &new.chain_params.chain_id, "chain ID")])?;
         check_invariant([
-            (epoch_duration, &new.epoch_duration, "epoch duration"),
+            (
+                epoch_duration,
+                &new.chain_params.epoch_duration,
+                "epoch duration",
+            ),
             (
                 active_validator_limit,
-                &new.active_validator_limit,
+                &new.stake_params.active_validator_limit,
                 "active validator limit",
             ),
             (
                 signed_blocks_window_len,
-                &new.signed_blocks_window_len,
+                &new.stake_params.signed_blocks_window_len,
                 "signed blocks window length",
             ),
         ])?;
         check_invariant([
             (
                 proposal_valid_quorum,
-                &new.proposal_valid_quorum,
+                &new.governance_params.proposal_valid_quorum,
                 "proposal valid quorum",
             ),
             (
                 proposal_pass_threshold,
-                &new.proposal_pass_threshold,
+                &new.governance_params.proposal_pass_threshold,
                 "proposal pass threshold",
             ),
             (
                 proposal_slash_threshold,
-                &new.proposal_slash_threshold,
+                &new.governance_params.proposal_slash_threshold,
                 "proposal slash threshold",
             ),
         ])?;
@@ -87,26 +95,40 @@ impl AppParameters {
     }
 
     pub fn check_valid(&self) -> Result<()> {
-        let ChainParameters {
-            chain_id,
-            epoch_duration,
-            unbonding_epochs,
-            active_validator_limit,
-            base_reward_rate,
-            slashing_penalty_misbehavior,
-            slashing_penalty_downtime,
-            signed_blocks_window_len,
-            missed_blocks_maximum,
-            ibc_enabled,
-            inbound_ics20_transfers_enabled,
-            outbound_ics20_transfers_enabled,
-            proposal_voting_blocks,
-            proposal_deposit_amount,
-            proposal_valid_quorum,
-            proposal_pass_threshold,
-            proposal_slash_threshold,
-            dao_spend_proposals_enabled: _,
-            // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
+        let AppParameters {
+            chain_params:
+                ChainParameters {
+                    chain_id,
+                    epoch_duration,
+                },
+            stake_params:
+                StakeParameters {
+                    unbonding_epochs,
+                    active_validator_limit,
+                    base_reward_rate,
+                    slashing_penalty_misbehavior,
+                    slashing_penalty_downtime,
+                    signed_blocks_window_len,
+                    missed_blocks_maximum,
+                },
+            ibc_params:
+                IBCParameters {
+                    ibc_enabled,
+                    inbound_ics20_transfers_enabled,
+                    outbound_ics20_transfers_enabled,
+                },
+            governance_params:
+                GovernanceParameters {
+                    proposal_voting_blocks,
+                    proposal_deposit_amount,
+                    proposal_valid_quorum,
+                    proposal_pass_threshold,
+                    proposal_slash_threshold,
+                },
+            dao_params:
+                DaoParameters {
+                    dao_spend_proposals_enabled: _,
+                }, // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
 
         check_all([

@@ -48,13 +48,6 @@ message SpendInfo {
   uint64 spend_height = 2;
 }
 
-message GenesisAppState {
-  oneof genesis_app_state {
-    GenesisContent genesis_content = 1;
-    bytes genesis_checkpoint = 2;
-  }
-}
-
 // Chain-specific genesis content.
 message GenesisContent {
   // The ChainParameters present at genesis.

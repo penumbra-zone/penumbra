@@ -85,3 +85,9 @@ message IbcParameters {
   // Whether outbound ICS-20 transfers are enabled
   bool outbound_ics20_transfers_enabled = 3;
 }
+
+// IBC genesis state.
+message GenesisContent {
+  // IBC parameters.
+  IbcParameters ibc_params = 1;
+}

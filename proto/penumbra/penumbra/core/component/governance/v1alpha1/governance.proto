@@ -336,3 +336,9 @@ message GovernanceParameters {
   // would have passed it, as a ratio of "no" votes over all total votes.
   string proposal_slash_threshold = 5;
 }
+
+// Governance genesis state.
+message GenesisContent {
+  // Governance parameters.
+  GovernanceParameters governance_params = 1;
+}

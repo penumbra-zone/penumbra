@@ -10,4 +10,9 @@ pub mod event;
 mod action;
 pub use action::{DaoDeposit, DaoOutput, DaoSpend};
 
+pub mod genesis;
 pub mod params;
+
+#[cfg_attr(docsrs, doc(cfg(feature = "component")))]
+#[cfg(feature = "component")]
+pub use component::{StateReadExt, StateWriteExt};

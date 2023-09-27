@@ -524,6 +524,14 @@ pub struct GovernanceParameters {
     #[prost(string, tag = "5")]
     pub proposal_slash_threshold: ::prost::alloc::string::String,
 }
+/// Governance genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContent {
+    /// Governance parameters.
+    #[prost(message, optional, tag = "1")]
+    pub governance_params: ::core::option::Option<GovernanceParameters>,
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

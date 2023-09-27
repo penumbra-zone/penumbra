@@ -8,6 +8,7 @@ use decaf377_rdsa::{VerificationKey, VerificationKeyBytes};
 use once_cell::sync::Lazy;
 use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_chain::component::StateReadExt as _;
+use penumbra_dao::component::StateReadExt as _;
 use penumbra_keys::keys::{FullViewingKey, NullifierKey};
 use penumbra_proto::DomainType;
 use penumbra_sct::component::StateReadExt as _;
@@ -164,6 +165,7 @@ impl ActionHandler for ProposalSubmit {
             }
             ProposalPayload::DaoSpend { transaction_plan } => {
                 // If DAO spend proposals aren't enabled, then we can't allow them to be submitted
+                let dao_parameters = state.get_dao_params().await?;
                 anyhow::ensure!(
                     dao_parameters.dao_spend_proposals_enabled,
                     "DAO spend proposals are not enabled",
@@ -242,15 +244,15 @@ impl ActionHandler for ProposalSubmit {
 
         // Determine what block it is currently, and calculate when the proposal should start voting
         // (now!) and finish voting (later...), then write that into the state
-        let chain_params = state
-            .get_chain_params()
+        let governance_params = state
+            .get_governance_params()
             .await
             .context("can get chain params")?;
         let current_block = state
             .get_block_height()
             .await
             .context("can get block height")?;
-        let voting_end = current_block + chain_params.proposal_voting_blocks;
+        let voting_end = current_block + governance_params.proposal_voting_blocks;
         state.put_proposal_voting_start(proposal_id, current_block);
         state.put_proposal_voting_end(proposal_id, voting_end);
 

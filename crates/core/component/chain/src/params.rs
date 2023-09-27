@@ -44,28 +44,6 @@ impl TryFrom<pb_chain::ChainParameters> for ChainParameters {
     }
 }
 
-impl TryFrom<pb_view::ChainParametersResponse> for ChainParameters {
-    type Error = anyhow::Error;
-
-    fn try_from(response: pb_view::ChainParametersResponse) -> Result<Self, Self::Error> {
-        response
-            .parameters
-            .ok_or_else(|| anyhow::anyhow!("empty ChainParametersResponse message"))?
-            .try_into()
-    }
-}
-
-impl TryFrom<pb_app::ChainParametersResponse> for ChainParameters {
-    type Error = anyhow::Error;
-
-    fn try_from(response: pb_app::ChainParametersResponse) -> Result<Self, Self::Error> {
-        response
-            .chain_parameters
-            .ok_or_else(|| anyhow::anyhow!("empty ChainParametersResponse message"))?
-            .try_into()
-    }
-}
-
 impl From<ChainParameters> for pb_chain::ChainParameters {
     fn from(params: ChainParameters) -> Self {
         pb_chain::ChainParameters {

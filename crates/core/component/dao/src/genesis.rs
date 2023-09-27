@@ -1,20 +1,20 @@
 use anyhow::Context;
-use penumbra_proto::{penumbra::core::component::chain::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dao::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
-use crate::params::ChainParameters;
+use crate::params::DaoParameters;
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 #[serde(try_from = "pb::GenesisContent", into = "pb::GenesisContent")]
 pub struct Content {
-    /// The initial configuration parameters for the chain component.
-    pub chain_params: ChainParameters,
+    /// The initial configuration parameters for the DAO component.
+    pub dao_params: DaoParameters,
 }
 
 impl From<Content> for pb::GenesisContent {
     fn from(value: Content) -> Self {
         pb::GenesisContent {
-            chain_params: Some(value.chain_params.into()),
+            dao_params: Some(value.dao_params.into()),
         }
     }
 }
@@ -24,14 +24,18 @@ impl TryFrom<pb::GenesisContent> for Content {
 
     fn try_from(msg: pb::GenesisContent) -> Result<Self, Self::Error> {
         Ok(Content {
-            chain_params: msg
-                .chain_params
-                .context("chain params not present in protobuf message")?
+            dao_params: msg
+                .dao_params
+                .context("dao params not present in protobuf message")?
                 .try_into()?,
         })
     }
 }
 
 impl TypeUrl for Content {
-    const TYPE_URL: &'static str = "/penumbra.chain.v1alpha1.GenesisContent";
+    const TYPE_URL: &'static str = "/penumbra.dao.v1alpha1.GenesisContent";
+}
+
+impl DomainType for Content {
+    type Proto = pb::GenesisContent;
 }

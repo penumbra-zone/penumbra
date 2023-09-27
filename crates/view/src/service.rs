@@ -35,7 +35,7 @@ use penumbra_proto::{
         self as pb,
         view_protocol_service_client::ViewProtocolServiceClient,
         view_protocol_service_server::{ViewProtocolService, ViewProtocolServiceServer},
-        ChainParametersResponse, FmdParametersResponse, NoteByCommitmentResponse, StatusResponse,
+        AppParametersResponse, FmdParametersResponse, NoteByCommitmentResponse, StatusResponse,
         SwapByCommitmentResponse, TransactionPlannerResponse, WitnessResponse,
     },
     DomainType,
@@ -1408,10 +1408,10 @@ impl ViewProtocolService for ViewService {
         }))
     }
 
-    async fn chain_parameters(
+    async fn app_parameters(
         &self,
-        _request: tonic::Request<pb::ChainParametersRequest>,
-    ) -> Result<tonic::Response<pb::ChainParametersResponse>, tonic::Status> {
+        _request: tonic::Request<pb::AppParametersRequest>,
+    ) -> Result<tonic::Response<pb::AppParametersResponse>, tonic::Status> {
         self.check_worker().await?;
 
         let parameters =
@@ -1419,7 +1419,7 @@ impl ViewProtocolService for ViewService {
                 tonic::Status::unavailable(format!("error getting chain params: {e}"))
             })?;
 
-        let response = ChainParametersResponse {
+        let response = AppParametersResponse {
             parameters: Some(parameters.into()),
         };
 

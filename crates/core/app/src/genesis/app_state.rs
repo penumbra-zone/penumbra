@@ -1,15 +1,14 @@
 use anyhow::Context;
-use penumbra_proto::{
-    // TODO: avoid this import!
-    core::component::stake::v1alpha1 as pb_stake,
-    penumbra::core::component::chain::v1alpha1 as pb,
-    DomainType,
-    TypeUrl,
-};
+use penumbra_chain::genesis::Content as ChainContent;
+use penumbra_dao::genesis::Content as DaoContent;
+use penumbra_governance::genesis::Content as GovernanceContent;
+use penumbra_ibc::genesis::Content as IBCContent;
+use penumbra_proto::{penumbra::core::app::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_shielded_pool::genesis::Content as ShieldedPoolContent;
+use penumbra_stake::genesis::Content as StakeContent;
 use serde::{Deserialize, Serialize};
 
-use super::Allocation;
-use penumbra_app::params::AppParameters;
+use crate::params::AppParameters;
 
 /// The application state at genesis.
 /// TODO: bubble up to penumbra_app (https://github.com/penumbra-zone/penumbra/issues/3085)
@@ -25,12 +24,18 @@ pub enum AppState {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(try_from = "pb::GenesisContent", into = "pb::GenesisContent")]
 pub struct Content {
-    /// Global configuration for the app.
-    pub app_params: AppParameters,
     /// Stake module genesis state.
     pub stake_content: StakeContent,
     /// Shielded pool module genesis state.
     pub shielded_pool_content: ShieldedPoolContent,
+    /// Governance module genesis state.
+    pub governance_content: GovernanceContent,
+    /// IBC module genesis state.
+    pub ibc_content: IBCContent,
+    /// Chain module genesis state.
+    pub chain_content: ChainContent,
+    /// DAO module genesis state.
+    pub dao_content: DaoContent,
 }
 
 impl Default for AppState {
@@ -42,9 +47,12 @@ impl Default for AppState {
 impl Default for Content {
     fn default() -> Self {
         Self {
-            app_params: Default::default(),
             stake_content: Default::default(),
             shielded_pool_content: Default::default(),
+            governance_content: Default::default(),
+            ibc_content: Default::default(),
+            chain_content: Default::default(),
+            dao_content: Default::default(),
         }
     }
 }
@@ -67,7 +75,12 @@ impl From<AppState> for pb::GenesisAppState {
 impl From<Content> for pb::GenesisContent {
     fn from(value: Content) -> Self {
         pb::GenesisContent {
-            chain_params: Some(value.chain_params.into()),
+            chain_content: Some(value.chain_content.into()),
+            stake_content: Some(value.stake_content.into()),
+            ibc_content: Some(value.ibc_content.into()),
+            governance_content: Some(value.governance_content.into()),
+            dao_content: Some(value.dao_content.into()),
+            shielded_pool_content: Some(value.shielded_pool_content.into()),
         }
     }
 }
@@ -95,20 +108,30 @@ impl TryFrom<pb::GenesisContent> for Content {
 
     fn try_from(msg: pb::GenesisContent) -> Result<Self, Self::Error> {
         Ok(Content {
-            app_params: msg
-                .app_params
-                .context("app params not present in protobuf message")?
-                .try_into()?,
             stake_content: msg
                 .stake_content
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
+                .ok_or_else(|| anyhow::anyhow!("proto response missing stake content"))?
+                .try_into()?,
             shielded_pool_content: msg
                 .shielded_pool_content
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
+                .ok_or_else(|| anyhow::anyhow!("proto response missing shielded pool content"))?
+                .try_into()?,
+            governance_content: msg
+                .governance_content
+                .ok_or_else(|| anyhow::anyhow!("proto response missing governance content"))?
+                .try_into()?,
+            ibc_content: msg
+                .ibc_content
+                .ok_or_else(|| anyhow::anyhow!("proto response missing ibc content"))?
+                .try_into()?,
+            dao_content: msg
+                .dao_content
+                .ok_or_else(|| anyhow::anyhow!("proto response missing dao content"))?
+                .try_into()?,
+            chain_content: msg
+                .chain_content
+                .ok_or_else(|| anyhow::anyhow!("proto response missing chain content"))?
+                .try_into()?,
         })
     }
 }

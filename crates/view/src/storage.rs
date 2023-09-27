@@ -13,7 +13,7 @@ use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::{
     core::app::v1alpha1::{
-        query_service_client::QueryServiceClient as AppQueryServiceClient, ChainParametersRequest,
+        query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
     },
     DomainType,
 };
@@ -82,7 +82,7 @@ impl Storage {
 
         let mut client = AppQueryServiceClient::connect(node.to_string()).await?;
         let params = client
-            .chain_parameters(tonic::Request::new(ChainParametersRequest {
+            .app_parameters(tonic::Request::new(AppParametersRequest {
                 chain_id: String::new(),
             }))
             .await?

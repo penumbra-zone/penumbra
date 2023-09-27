@@ -548,6 +548,17 @@ impl<T: StateRead + penumbra_stake::StateReadExt + ?Sized> StateReadExt for T {}
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
+    /// Writes the provided governance parameters to the JMT.
+    fn put_governance_params(&mut self, params: GovernanceParameters) {
+        // TODO: this needs to be handled on a per-component basis or possibly removed from the compact block
+        // entirely, currently disabled, see https://github.com/penumbra-zone/penumbra/issues/3107
+        // Note to the shielded pool to include the chain parameters in the next compact block:
+        // self.object_put(state_key::chain_params_changed(), ());
+
+        // Change the governance parameters:
+        self.put(state_key::governance_params().into(), params)
+    }
+
     /// Initialize the proposal counter so that it can always be read.
     fn init_proposal_counter(&mut self) {
         self.put_proto(state_key::next_proposal_id().to_string(), 0);

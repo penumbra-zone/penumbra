@@ -13,12 +13,15 @@ publish = false
 
 [dependencies]
 # Workspace dependencies
-penumbra-proto            = { path = "../../proto" , features = ["rpc"] }
-penumbra-storage          = { path = "../../storage" }
-penumbra-tower-trace      = { path = "../../util/tower-trace" }
+penumbra-proto = { path = "../../proto", features = ["rpc"] }
+penumbra-storage = { path = "../../storage" }
+penumbra-tower-trace = { path = "../../util/tower-trace" }
 penumbra-tendermint-proxy = { path = "../../util/tendermint-proxy" }
 # TODO: remove dependency on penumbra-chain
-penumbra-chain            = { path = "../../core/component/chain" , features = ["component"] }
+penumbra-chain = { path = "../../core/component/chain", features = [
+    "component",
+] }
+penumbra-app = { path = "../../core/app" }
 
 # Penumbra dependencies
 tower-abci = "0.9.0"

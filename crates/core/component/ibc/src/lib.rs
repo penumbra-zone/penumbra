@@ -9,6 +9,7 @@
 #[cfg(feature = "component")]
 pub mod component;
 
+pub mod genesis;
 mod ibc_action;
 mod ibc_token;
 mod ics20_withdrawal;
@@ -18,3 +19,7 @@ mod version;
 pub use ibc_action::IbcAction;
 pub use ibc_token::IbcToken;
 pub use ics20_withdrawal::Ics20Withdrawal;
+
+#[cfg_attr(docsrs, doc(cfg(feature = "component")))]
+#[cfg(feature = "component")]
+pub use component::{StateReadExt, StateWriteExt};

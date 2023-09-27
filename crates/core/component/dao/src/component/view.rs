@@ -9,10 +9,19 @@ use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 
+use crate::params::DaoParameters;
+
 use super::state_key;
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
+    /// Gets the DAO parameters from the JMT.
+    async fn get_dao_params(&self) -> Result<DaoParameters> {
+        self.get(state_key::dao_params())
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("Missing DaoParameters"))
+    }
+
     async fn dao_asset_balance(&self, asset_id: asset::Id) -> Result<Amount> {
         Ok(self
             .get(&state_key::balance_for_asset(asset_id))
@@ -38,6 +47,17 @@ impl<T> StateReadExt for T where T: StateRead + ?Sized {}
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
+    /// Writes the provided DAO parameters to the JMT.
+    fn put_dao_params(&mut self, params: DaoParameters) {
+        // TODO: this needs to be handled on a per-component basis or possibly removed from the compact block
+        // entirely, currently disabled, see https://github.com/penumbra-zone/penumbra/issues/3107
+        // Note to the shielded pool to include the chain parameters in the next compact block:
+        // self.object_put(state_key::chain_params_changed(), ());
+
+        // Change the DAO parameters:
+        self.put(state_key::dao_params().into(), params)
+    }
+
     async fn dao_deposit(&mut self, value: Value) -> Result<()> {
         let key = state_key::balance_for_asset(value.asset_id);
         let current = self.get(&key).await?.unwrap_or_else(|| Amount::from(0u64));

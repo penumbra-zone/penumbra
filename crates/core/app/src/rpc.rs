@@ -2,14 +2,20 @@ use std::pin::Pin;
 
 use futures::{StreamExt, TryStreamExt};
 use penumbra_chain::component::{AppHashRead, StateReadExt as _};
+use penumbra_dao::StateReadExt as _;
+use penumbra_governance::StateReadExt as _;
+use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1alpha1::{
-    key_value_response::Value, query_service_server::QueryService, ChainParametersRequest,
-    ChainParametersResponse, KeyValueRequest, KeyValueResponse, PrefixValueRequest,
+    key_value_response::Value, query_service_server::QueryService, AppParametersRequest,
+    AppParametersResponse, KeyValueRequest, KeyValueResponse, PrefixValueRequest,
     PrefixValueResponse,
 };
+use penumbra_stake::StateReadExt as _;
 use penumbra_storage::{StateRead, Storage};
 use tonic::Status;
 use tracing::instrument;
+
+use crate::params::AppParameters;
 
 // TODO: Hide this and only expose a Router?
 pub struct Server {
@@ -25,10 +31,10 @@ impl Server {
 #[tonic::async_trait]
 impl QueryService for Server {
     #[instrument(skip(self, request))]
-    async fn chain_parameters(
+    async fn app_parameters(
         &self,
-        request: tonic::Request<ChainParametersRequest>,
-    ) -> Result<tonic::Response<ChainParametersResponse>, Status> {
+        request: tonic::Request<AppParametersRequest>,
+    ) -> Result<tonic::Response<AppParametersResponse>, Status> {
         let state = self.storage.latest_snapshot();
         // We map the error here to avoid including `tonic` as a dependency
         // in the `chain` crate, to support its compilation to wasm.
@@ -37,16 +43,37 @@ impl QueryService for Server {
             .await
             .map_err(|e| {
                 tonic::Status::unknown(format!(
-                    "failed to validate chain id during chain parameters lookup: {e}"
+                    "failed to validate chain id during app parameters lookup: {e}"
                 ))
             })?;
 
         let chain_params = state.get_chain_params().await.map_err(|e| {
             tonic::Status::unavailable(format!("error getting chain parameters: {e}"))
         })?;
+        let stake_params = state.get_stake_params().await.map_err(|e| {
+            tonic::Status::unavailable(format!("error getting stake parameters: {e}"))
+        })?;
+        let ibc_params = state.get_ibc_params().await.map_err(|e| {
+            tonic::Status::unavailable(format!("error getting ibc parameters: {e}"))
+        })?;
+        let governance_params = state.get_governance_params().await.map_err(|e| {
+            tonic::Status::unavailable(format!("error getting governance parameters: {e}"))
+        })?;
+        let dao_params = state.get_dao_params().await.map_err(|e| {
+            tonic::Status::unavailable(format!("error getting dao parameters: {e}"))
+        })?;
 
-        Ok(tonic::Response::new(ChainParametersResponse {
-            chain_parameters: Some(chain_params.into()),
+        Ok(tonic::Response::new(AppParametersResponse {
+            app_parameters: Some(
+                AppParameters {
+                    chain_params,
+                    stake_params,
+                    ibc_params,
+                    governance_params,
+                    dao_params,
+                }
+                .into(),
+            ),
         }))
     }
 

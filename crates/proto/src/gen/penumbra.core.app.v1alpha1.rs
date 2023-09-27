@@ -54,20 +54,98 @@ pub struct PrefixValueResponse {
     #[prost(bytes = "vec", tag = "2")]
     pub value: ::prost::alloc::vec::Vec<u8>,
 }
-/// Requests the global configuration data for the chain.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ChainParametersRequest {
+pub struct AppParameters {
+    /// Chain module parameters.
+    #[prost(message, optional, tag = "1")]
+    pub chain_params: ::core::option::Option<
+        super::super::component::chain::v1alpha1::ChainParameters,
+    >,
+    /// DAO module parameters.
+    #[prost(message, optional, tag = "2")]
+    pub dao_params: ::core::option::Option<
+        super::super::component::dao::v1alpha1::DaoParameters,
+    >,
+    /// Governance module parameters.
+    #[prost(message, optional, tag = "3")]
+    pub governance_params: ::core::option::Option<
+        super::super::component::governance::v1alpha1::GovernanceParameters,
+    >,
+    /// IBC module parameters.
+    #[prost(message, optional, tag = "4")]
+    pub ibc_params: ::core::option::Option<
+        super::super::component::ibc::v1alpha1::IbcParameters,
+    >,
+    /// Stake module parameters.
+    #[prost(message, optional, tag = "5")]
+    pub stake_params: ::core::option::Option<
+        super::super::component::stake::v1alpha1::StakeParameters,
+    >,
+}
+/// Requests the global configuration data for the app.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AppParametersRequest {
     /// The expected chain id (empty string if no expectation).
     #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ChainParametersResponse {
+pub struct AppParametersResponse {
     #[prost(message, optional, tag = "1")]
-    pub chain_parameters: ::core::option::Option<
-        super::super::component::chain::v1alpha1::ChainParameters,
+    pub app_parameters: ::core::option::Option<AppParameters>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisAppState {
+    #[prost(oneof = "genesis_app_state::GenesisAppState", tags = "1, 2")]
+    pub genesis_app_state: ::core::option::Option<genesis_app_state::GenesisAppState>,
+}
+/// Nested message and enum types in `GenesisAppState`.
+pub mod genesis_app_state {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum GenesisAppState {
+        #[prost(message, tag = "1")]
+        GenesisContent(super::GenesisContent),
+        #[prost(bytes, tag = "2")]
+        GenesisCheckpoint(::prost::alloc::vec::Vec<u8>),
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContent {
+    /// Stake module genesis state.
+    #[prost(message, optional, tag = "1")]
+    pub stake_content: ::core::option::Option<
+        super::super::component::stake::v1alpha1::GenesisContent,
+    >,
+    /// Shielded pool module genesis state.
+    #[prost(message, optional, tag = "2")]
+    pub shielded_pool_content: ::core::option::Option<
+        super::super::component::shielded_pool::v1alpha1::GenesisContent,
+    >,
+    /// Governance module genesis state.
+    #[prost(message, optional, tag = "3")]
+    pub governance_content: ::core::option::Option<
+        super::super::component::governance::v1alpha1::GenesisContent,
+    >,
+    /// IBC module genesis state.
+    #[prost(message, optional, tag = "4")]
+    pub ibc_content: ::core::option::Option<
+        super::super::component::ibc::v1alpha1::GenesisContent,
+    >,
+    /// Chain module genesis state.
+    #[prost(message, optional, tag = "5")]
+    pub chain_content: ::core::option::Option<
+        super::super::component::chain::v1alpha1::GenesisContent,
+    >,
+    /// DAO module genesis state.
+    #[prost(message, optional, tag = "6")]
+    pub dao_content: ::core::option::Option<
+        super::super::component::dao::v1alpha1::GenesisContent,
     >,
 }
 /// Generated client implementations.
@@ -141,11 +219,11 @@ pub mod query_service_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
-        /// Gets the chain parameters.
-        pub async fn chain_parameters(
+        /// Gets the app parameters.
+        pub async fn app_parameters(
             &mut self,
-            request: impl tonic::IntoRequest<super::ChainParametersRequest>,
-        ) -> Result<tonic::Response<super::ChainParametersResponse>, tonic::Status> {
+            request: impl tonic::IntoRequest<super::AppParametersRequest>,
+        ) -> Result<tonic::Response<super::AppParametersResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -157,7 +235,7 @@ pub mod query_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.core.app.v1alpha1.QueryService/ChainParameters",
+                "/penumbra.core.app.v1alpha1.QueryService/AppParameters",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -217,11 +295,11 @@ pub mod query_service_server {
     /// Generated trait containing gRPC methods that should be implemented for use with QueryServiceServer.
     #[async_trait]
     pub trait QueryService: Send + Sync + 'static {
-        /// Gets the chain parameters.
-        async fn chain_parameters(
+        /// Gets the app parameters.
+        async fn app_parameters(
             &self,
-            request: tonic::Request<super::ChainParametersRequest>,
-        ) -> Result<tonic::Response<super::ChainParametersResponse>, tonic::Status>;
+            request: tonic::Request<super::AppParametersRequest>,
+        ) -> Result<tonic::Response<super::AppParametersResponse>, tonic::Status>;
         /// General-purpose key-value state query API, that can be used to query
         /// arbitrary keys in the JMT storage.
         async fn key_value(
@@ -302,25 +380,25 @@ pub mod query_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/penumbra.core.app.v1alpha1.QueryService/ChainParameters" => {
+                "/penumbra.core.app.v1alpha1.QueryService/AppParameters" => {
                     #[allow(non_camel_case_types)]
-                    struct ChainParametersSvc<T: QueryService>(pub Arc<T>);
+                    struct AppParametersSvc<T: QueryService>(pub Arc<T>);
                     impl<
                         T: QueryService,
-                    > tonic::server::UnaryService<super::ChainParametersRequest>
-                    for ChainParametersSvc<T> {
-                        type Response = super::ChainParametersResponse;
+                    > tonic::server::UnaryService<super::AppParametersRequest>
+                    for AppParametersSvc<T> {
+                        type Response = super::AppParametersResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::ChainParametersRequest>,
+                            request: tonic::Request<super::AppParametersRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                (*inner).chain_parameters(request).await
+                                (*inner).app_parameters(request).await
                             };
                             Box::pin(fut)
                         }
@@ -330,7 +408,7 @@ pub mod query_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = ChainParametersSvc(inner);
+                        let method = AppParametersSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

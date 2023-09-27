@@ -110,3 +110,11 @@ pub struct IbcParameters {
     #[prost(bool, tag = "3")]
     pub outbound_ics20_transfers_enabled: bool,
 }
+/// IBC genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContent {
+    /// IBC parameters.
+    #[prost(message, optional, tag = "1")]
+    pub ibc_params: ::core::option::Option<IbcParameters>,
+}

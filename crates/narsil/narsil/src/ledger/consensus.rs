@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use penumbra_chain::genesis;
+use penumbra_app::genesis;
 use penumbra_storage::Storage;
 use tendermint::abci::Event;
 use tendermint::v0_34::abci::{

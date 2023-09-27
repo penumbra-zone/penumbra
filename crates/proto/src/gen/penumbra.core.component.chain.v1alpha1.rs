@@ -60,23 +60,6 @@ pub struct SpendInfo {
     #[prost(uint64, tag = "2")]
     pub spend_height: u64,
 }
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisAppState {
-    #[prost(oneof = "genesis_app_state::GenesisAppState", tags = "1, 2")]
-    pub genesis_app_state: ::core::option::Option<genesis_app_state::GenesisAppState>,
-}
-/// Nested message and enum types in `GenesisAppState`.
-pub mod genesis_app_state {
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum GenesisAppState {
-        #[prost(message, tag = "1")]
-        GenesisContent(super::GenesisContent),
-        #[prost(bytes, tag = "2")]
-        GenesisCheckpoint(::prost::alloc::vec::Vec<u8>),
-    }
-}
 /// Chain-specific genesis content.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

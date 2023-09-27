@@ -282,7 +282,10 @@ where
 {
     Planner::new(rng)
         .fee(fee)
-        .proposal_submit(proposal, view.chain_params().await?.proposal_deposit_amount)
+        .proposal_submit(
+            proposal,
+            view.governance_params().await?.proposal_deposit_amount,
+        )
         .plan(view, account_group_id, source_address)
         .await
         .context("can't build proposal submit transaction")
