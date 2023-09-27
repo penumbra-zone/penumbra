@@ -2,12 +2,13 @@ use anyhow::{anyhow, Context, Result};
 use penumbra_keys::Address;
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::{
-        self as pb, ceremony_coordinator_service_server as server,
-        participate_request::{Identify, Msg as RequestMsg},
+        self as pb,
+        participate_request::Msg as RequestMsg,
         participate_response::{ContributeNow, Msg as ResponseMsg, Position},
     },
     tools::summoning::v1alpha1::{
-        participate_request::Contribution, ParticipateRequest, ParticipateResponse,
+        participate_request::Contribution, participate_response::Confirm, ParticipateRequest,
+        ParticipateResponse,
     },
 };
 use tokio::sync::mpsc;
@@ -55,6 +56,7 @@ impl Participant {
     }
 
     // TODO: Use the actual types we want to use
+    #[tracing::instrument(skip(self, parent))]
     pub async fn contribute(&mut self, parent: pb::CeremonyCrs) -> Result<pb::CeremonyCrs> {
         self.tx
             .send(Ok(ParticipateResponse {
@@ -63,6 +65,7 @@ impl Participant {
                 })),
             }))
             .await?;
+        let msg = self.rx.message().await?;
         if let Some(ParticipateRequest {
             msg:
                 Some(RequestMsg::Contribution(Contribution {
@@ -70,7 +73,7 @@ impl Participant {
                     update_proofs: _,
                     parent_hashes: _,
                 })),
-        }) = self.rx.message().await?
+        }) = msg
         {
             Ok(updated)
         } else {
@@ -78,5 +81,13 @@ impl Participant {
                 "Participant sent a different message than a contribution message when asked"
             ))
         }
+    }
+
+    pub async fn confirm(&mut self, slot: u64) -> Result<()> {
+        let response = ParticipateResponse {
+            msg: Some(ResponseMsg::Confirm(Confirm { slot })),
+        };
+        self.tx.send(Ok(response)).await?;
+        Ok(())
     }
 }

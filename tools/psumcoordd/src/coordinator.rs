@@ -2,7 +2,6 @@ use std::{collections::HashMap, time::Duration};
 
 use anyhow::{anyhow, Context, Result};
 use penumbra_keys::Address;
-use penumbra_proto::tools::summoning::v1alpha1::CeremonyCrs;
 use rand::{rngs::OsRng, seq::SliceRandom};
 use tokio::sync::mpsc::{self, error::TryRecvError};
 
@@ -29,6 +28,10 @@ impl Coordinator {
 
     pub async fn run(mut self) -> Result<()> {
         loop {
+            tracing::debug!(
+                participant_count = self.participants.len(),
+                "top of coordinator loop"
+            );
             // 0. Wait for the first participant
             if self.participants.is_empty() {
                 self.wait_for_participant().await?;
@@ -99,7 +102,7 @@ impl Coordinator {
                 .get(address)
                 .expect("Ranked participants are chosen from the set of connections");
             if let Err(e) = connection.try_notify(i as u32, ranked.len() as u32) {
-                tracing::info!(?e, "pruning connection that we failed to notify");
+                tracing::info!(?e, ?address, "pruning connection that we failed to notify");
                 self.participants.remove(address);
             };
         }
@@ -123,16 +126,15 @@ impl Coordinator {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     async fn contribute_inner(&mut self, contributor: Address) -> Result<()> {
         // TODO: Verify contribution
         let parent = self.storage.current_crs().await?;
-        let new_crs = match self
+        let participant = self
             .participants
             .get_mut(&contributor)
-            .expect("We ask for the contributions of participants we're connected to")
-            .contribute(parent)
-            .await
-        {
+            .expect("We ask for the contributions of participants we're connected to");
+        let new_crs = match participant.contribute(parent).await {
             Ok(crs) => crs,
             Err(e) => {
                 // TODO: Maybe remove permanently
@@ -143,6 +145,9 @@ impl Coordinator {
         // TODO: Run actual validation math
         self.storage
             .commit_contribution(contributor, &new_crs)
+            .await?;
+        participant
+            .confirm(self.storage.current_slot().await?)
             .await?;
         Ok(())
     }

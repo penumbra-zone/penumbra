@@ -68,7 +68,7 @@ impl Command {
             Command::Validator(cmd) => cmd.offline(),
             Command::Query(cmd) => cmd.offline(),
             Command::Debug(cmd) => cmd.offline(),
-            Command::Ceremony(cmd) => false,
+            Command::Ceremony(_) => false,
         }
     }
 }
