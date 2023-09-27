@@ -110,8 +110,8 @@ impl Transaction {
             return Err(anyhow::anyhow!("no memo"));
         }
 
-        // Iterate through the outputs until we find an output that lets us decrypt the memo.
-        for output in self.outputs() {
+        // Any output will let us decrypt the memo.
+        if let Some(output) = self.outputs().next() {
             // First decrypt the wrapped memo key on the output.
             let ovk_wrapped_key = output.body.ovk_wrapped_key.clone();
             let shared_secret = Note::decrypt_key(
@@ -145,7 +145,7 @@ impl Transaction {
             return Ok(decrypted_memo);
         }
 
-        // If we got here, we were unable to find an output to decrypt the memo.
+        // If we got here, we were unable to decrypt the memo.
         Err(anyhow::anyhow!("unable to decrypt memo"))
     }
 
