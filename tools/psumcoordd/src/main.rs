@@ -50,7 +50,6 @@ enum Command {
 
 impl Opt {
     async fn exec(self) -> Result<()> {
-        tracing::info!(?self, "exec");
         match self.cmd {
             Command::Start { listen } => {
                 let storage = Storage::new();
@@ -63,7 +62,7 @@ impl Opt {
                         .add_service(tonic_web::enable(CeremonyCoordinatorServiceServer::new(
                             service,
                         )));
-                tracing::debug!(?listen, "starting grpc server");
+                tracing::info!(?listen, "starting grpc server");
                 let server_handle = tokio::spawn(grpc_server.serve(listen));
                 // TODO: better error reporting
                 // We error out if a service errors, rather than keep running

@@ -3,10 +3,9 @@ use penumbra_proto::penumbra::tools::summoning::v1alpha1::{
     self as pb, ceremony_coordinator_service_server as server,
     participate_request::{Identify, Msg},
 };
-use std::pin::Pin;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::{async_trait, codegen::futures_core::Stream, Request, Response, Status, Streaming};
+use tonic::{async_trait, Request, Response, Status, Streaming};
 
 use crate::{participant::Participant, storage::Storage};
 
@@ -29,17 +28,19 @@ impl CoordinatorService {
 impl server::CeremonyCoordinatorService for CoordinatorService {
     type ParticipateStream = ReceiverStream<Result<pb::ParticipateResponse, Status>>;
 
+    #[tracing::instrument(skip(self, request))]
     async fn participate(
         &self,
         request: Request<Streaming<pb::ParticipateRequest>>,
     ) -> Result<Response<Self::ParticipateStream>, Status> {
         let mut streaming = request.into_inner();
+        let msg = streaming.message().await?;
         let address = if let Some(pb::ParticipateRequest {
             msg:
                 Some(Msg::Identify(Identify {
                     address: Some(address),
                 })),
-        }) = streaming.message().await?
+        }) = msg
         {
             tracing::info!(?address, "server connection");
             address
