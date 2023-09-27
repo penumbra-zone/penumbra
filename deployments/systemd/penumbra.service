@@ -1,6 +1,6 @@
 [Unit]
 Description=Penumbra pd
-Wants=tendermint.service
+Wants=cometbft.service
 
 [Service]
 ExecStart=/usr/local/bin/pd start --home $HOME/.penumbra/testnet_data/node0/pd

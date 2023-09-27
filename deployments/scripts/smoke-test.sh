@@ -38,7 +38,7 @@ echo "Generating testnet config..."
 EPOCH_DURATION="${EPOCH_DURATION:-100}"
 cargo run --quiet --release --bin pd -- testnet generate --epoch-duration "$EPOCH_DURATION" --timeout-commit 500ms
 
-echo "Starting Tendermint..."
+echo "Starting CometBFT..."
 cometbft start --log_level=error --home "${HOME}/.penumbra/testnet_data/node0/cometbft" &
 cometbft_pid="$!"
 
