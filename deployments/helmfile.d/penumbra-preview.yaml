@@ -40,6 +40,8 @@ releases:
           # in the external vars/ file, which is generated via `./scripts/get-lb-ips penumbra-devnet`.
           - moniker: phobos
           - moniker: deimos
+          - moniker: naiad
+          - moniker: thalassa
       - persistence:
           enabled: true
           size: 50G
@@ -57,7 +59,7 @@ releases:
           secretName: penumbra-preview-wildcard
       - scrape_configs:
           # Must match settings from "penumbra-node" chart
-          numFullNodes: 2
+          numFullNodes: 4
           fmtFullNodeSvc: "penumbra-preview-nodes-fn-%d"
           # Must match settings from "penumbra-network" chart
           numValidators: 2
