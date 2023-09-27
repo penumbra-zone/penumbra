@@ -31,7 +31,7 @@ impl Component for Governance {
     type AppState = ();
 
     #[instrument(name = "governance", skip(state, _app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, _app_state: &()) {
+    async fn init_chain<S: StateWrite>(mut state: S, _app_state: Option<&()>) {
         // Clients need to be able to read the next proposal number, even when no proposals have
         // been submitted yet
         state.init_proposal_counter();

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_asset::{asset, Value};
-use penumbra_chain::{genesis, NoteSource, SpendInfo};
+use penumbra_chain::{NoteSource, SpendInfo};
 use penumbra_component::Component;
 use penumbra_proto::StateReadProto;
 use penumbra_sct::Nullifier;
@@ -24,10 +24,10 @@ impl Component for ShieldedPool {
     type AppState = GenesisContent;
 
     #[instrument(name = "shielded_pool", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: &GenesisContent) {
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&GenesisContent>) {
         match app_state {
-            genesis::AppState::Checkpoint(_) => { /* no-op */ }
-            genesis::AppState::Content(app_state) => {
+            None => { /* Checkpoint -- no-op */ }
+            Some(app_state) => {
                 // Register a denom for each asset in the genesis state
                 for allocation in &app_state.allocations {
                     tracing::debug!(?allocation, "processing allocation");

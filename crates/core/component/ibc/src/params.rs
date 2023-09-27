@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::IbcParameters", into = "pb::IbcParameters")]
-pub struct IbcParameters {
+pub struct IBCParameters {
     /// Whether IBC (forming connections, processing IBC packets) is enabled.
     pub ibc_enabled: bool,
     /// Whether inbound ICS-20 transfers are enabled
@@ -13,19 +13,19 @@ pub struct IbcParameters {
     pub outbound_ics20_transfers_enabled: bool,
 }
 
-impl TypeUrl for IbcParameters {
+impl TypeUrl for IBCParameters {
     const TYPE_URL: &'static str = "/penumbra.core.ibc.v1alpha1.IbcParameters";
 }
 
-impl DomainType for IbcParameters {
+impl DomainType for IBCParameters {
     type Proto = pb::IbcParameters;
 }
 
-impl TryFrom<pb::IbcParameters> for IbcParameters {
+impl TryFrom<pb::IbcParameters> for IBCParameters {
     type Error = anyhow::Error;
 
     fn try_from(msg: pb::IbcParameters) -> anyhow::Result<Self> {
-        Ok(IbcParameters {
+        Ok(IBCParameters {
             ibc_enabled: msg.ibc_enabled,
             inbound_ics20_transfers_enabled: msg.inbound_ics20_transfers_enabled,
             outbound_ics20_transfers_enabled: msg.outbound_ics20_transfers_enabled,
@@ -33,8 +33,8 @@ impl TryFrom<pb::IbcParameters> for IbcParameters {
     }
 }
 
-impl From<IbcParameters> for pb::IbcParameters {
-    fn from(params: IbcParameters) -> Self {
+impl From<IBCParameters> for pb::IbcParameters {
+    fn from(params: IBCParameters) -> Self {
         pb::IbcParameters {
             ibc_enabled: params.ibc_enabled,
             inbound_ics20_transfers_enabled: params.inbound_ics20_transfers_enabled,
@@ -43,7 +43,7 @@ impl From<IbcParameters> for pb::IbcParameters {
     }
 }
 
-impl Default for IbcParameters {
+impl Default for IBCParameters {
     fn default() -> Self {
         Self {
             ibc_enabled: true,

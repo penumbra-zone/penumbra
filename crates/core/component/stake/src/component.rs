@@ -898,9 +898,9 @@ impl Component for Staking {
     type AppState = GenesisContent;
 
     #[instrument(name = "staking", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&GenesisContent>) {
         match app_state {
-            genesis::AppState::Content(app_state) => {
+            Some(app_state) => {
                 let starting_height = state
                     .get_block_height()
                     .await
@@ -976,7 +976,7 @@ impl Component for Staking {
                     )
                     .await;
             }
-            genesis::AppState::Checkpoint(_) => { /* perform upgrade specific check */ }
+            None => { /* perform upgrade specific check */ }
         }
         // Build the initial validator set update.
         // First, "prime" the state with an empty set, so the build_ function can read it.

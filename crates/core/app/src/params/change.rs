@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use anyhow::Result;
 use penumbra_governance::component::Governance;
-use penumbra_ibc::params::IbcParameters;
+use penumbra_ibc::params::IBCParameters;
 
 use super::{AppParameters, Ratio};
 
@@ -31,7 +31,7 @@ impl AppParameters {
                     missed_blocks_maximum: _,
                 },
             ibc_params:
-                IbcParameters {
+                IBCParameters {
                     ibc_enabled: _,
                     inbound_ics20_transfers_enabled: _,
                     outbound_ics20_transfers_enabled: _,

@@ -71,8 +71,10 @@ impl ActionHandler for ProposalSubmit {
             Signaling { commit: _ } => { /* all signaling proposals are valid */ }
             Emergency { halt_chain: _ } => { /* all emergency proposals are valid */ }
             ParameterChange { old, new } => {
-                old.check_valid_update(new)
-                    .context("invalid change to chain parameters")?;
+                // TODO: re-enable (https://github.com/penumbra-zone/penumbra/issues/3107)
+                tracing::warn!("parameter change proposals are currently disabled (see #3107)");
+                // old.check_valid_update(new)
+                //     .context("invalid change to chain parameters")?;
             }
             DaoSpend { transaction_plan } => {
                 // Check to make sure that the transaction plan contains only valid actions for the
@@ -132,14 +134,14 @@ impl ActionHandler for ProposalSubmit {
             proposal, // statelessly verified
         } = self;
 
-        // Check that the deposit amount agrees with the chain parameters
-        let chain_parameters = state.get_chain_params().await?;
-        if *deposit_amount != chain_parameters.proposal_deposit_amount {
+        // Check that the deposit amount agrees with the parameters
+        let governance_parameters = state.get_governance_params().await?;
+        if *deposit_amount != governance_parameters.proposal_deposit_amount {
             anyhow::bail!(
                 "submitted proposal deposit of {}{} does not match required proposal deposit of {}{}",
                 deposit_amount,
                 *STAKING_TOKEN_DENOM,
-                chain_parameters.proposal_deposit_amount,
+                governance_parameters.proposal_deposit_amount,
                 *STAKING_TOKEN_DENOM,
             );
         }
@@ -163,7 +165,7 @@ impl ActionHandler for ProposalSubmit {
             ProposalPayload::DaoSpend { transaction_plan } => {
                 // If DAO spend proposals aren't enabled, then we can't allow them to be submitted
                 anyhow::ensure!(
-                    chain_parameters.dao_spend_proposals_enabled,
+                    dao_parameters.dao_spend_proposals_enabled,
                     "DAO spend proposals are not enabled",
                 );
 

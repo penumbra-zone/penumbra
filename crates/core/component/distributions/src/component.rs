@@ -6,7 +6,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::genesis;
 use penumbra_component::Component;
 use penumbra_storage::StateWrite;
 use tendermint::abci;
@@ -18,7 +17,7 @@ pub struct Distributions {}
 impl Component for Distributions {
     type AppState = ();
 
-    async fn init_chain<S: StateWrite>(_state: S, _app_state: &()) {}
+    async fn init_chain<S: StateWrite>(_state: S, _app_state: Option<&()>) {}
 
     async fn begin_block<S: StateWrite + 'static>(
         _state: &mut Arc<S>,

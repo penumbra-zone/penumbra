@@ -4,6 +4,10 @@ use penumbra_asset::asset;
 
 use std::string::String;
 
+pub fn ibc_params() -> &'static str {
+    "ibc_params"
+}
+
 // TODO (ava): move these to ibc-types eventually
 pub fn client_processed_heights(client_id: &ClientId, height: &Height) -> String {
     format!("clients/{client_id}/processedHeights/{height}")

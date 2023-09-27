@@ -18,13 +18,13 @@ pub struct IBCComponent {}
 
 #[async_trait]
 impl Component for IBCComponent {
-    type AppState = genesis::AppState;
+    type AppState = ();
 
     #[instrument(name = "ibc", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&()>) {
         match app_state {
-            genesis::AppState::Content(_) => state.put_client_counter(ClientCounter(0)),
-            genesis::AppState::Checkpoint(_) => { /* perform upgrade specific check */ }
+            Some(_) => state.put_client_counter(ClientCounter(0)),
+            None => { /* perform upgrade specific check */ }
         }
     }
 

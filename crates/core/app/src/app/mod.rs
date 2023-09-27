@@ -113,16 +113,26 @@ impl App {
                         start_height: 0,
                     },
                 );
+
+                Distributions::init_chain(&mut state_tx, Some(&())).await;
+                Staking::init_chain(&mut state_tx, Some(app_state.stake_content)).await;
+                IBCComponent::init_chain(&mut state_tx, Some(&())).await;
+                Dex::init_chain(&mut state_tx, Some(&())).await;
+                Governance::init_chain(&mut state_tx, Some(&())).await;
+                ShieldedPool::init_chain(&mut state_tx, Some(app_state.shielded_pool_content))
+                    .await;
             }
-            genesis::AppState::Checkpoint(_) => { /* perform upgrade specific check */ }
+            genesis::AppState::Checkpoint(_) => {
+                /* perform upgrade specific check */
+                Distributions::init_chain(&mut state_tx, None).await;
+                Staking::init_chain(&mut state_tx, None).await;
+                IBCComponent::init_chain(&mut state_tx, None).await;
+                Dex::init_chain(&mut state_tx, None).await;
+                Governance::init_chain(&mut state_tx, None).await;
+                ShieldedPool::init_chain(&mut state_tx, None).await;
+            }
         };
 
-        Distributions::init_chain(&mut state_tx, app_state).await;
-        Staking::init_chain(&mut state_tx, app_state).await;
-        IBCComponent::init_chain(&mut state_tx, app_state).await;
-        Dex::init_chain(&mut state_tx, &()).await;
-        Governance::init_chain(&mut state_tx, &()).await;
-        ShieldedPool::init_chain(&mut state_tx, app_state).await;
         App::finish_block(&mut state_tx).await;
         state_tx.apply();
     }

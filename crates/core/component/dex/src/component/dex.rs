@@ -27,7 +27,7 @@ impl Component for Dex {
     type AppState = ();
 
     #[instrument(name = "dex", skip(_state, _app_state))]
-    async fn init_chain<S: StateWrite>(_state: S, _app_state: &()) {}
+    async fn init_chain<S: StateWrite>(_state: S, _app_state: Option<&()>) {}
 
     #[instrument(name = "dex", skip(_state, _begin_block))]
     async fn begin_block<S: StateWrite + 'static>(
