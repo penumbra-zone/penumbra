@@ -53,7 +53,7 @@ a run of the full deploy logic.
 There are several DNS records that are not handled
 by the automation in this repo. Each testnet should have:
 
-* `rpc.<fqdn>` # the tendermint rpc service
+* `rpc.<fqdn>` # the cometbft rpc service
 * `grpc.<fqdn>` # the pd grpc service
 * `grafana.<fqdn>` # web interface for metrics dashboards
 

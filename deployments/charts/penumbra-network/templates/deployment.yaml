@@ -33,7 +33,7 @@ spec:
         app.kubernetes.io/component: genesis-validator
         {{- include "penumbra-network.selectorLabels" $ | nindent 8 }}
     spec:
-      # Force the pods to different k8s nodes, so that egress ip is unique per Tendermint node.
+      # Force the pods to different k8s nodes, so that egress ip is unique per CometBFT node.
       # Effectively limits the number of Penumbra nodes to the number of k8s nodes in the cluster.
       affinity:
         podAntiAffinity:
