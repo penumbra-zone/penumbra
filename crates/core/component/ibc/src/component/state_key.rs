@@ -8,44 +8,17 @@ pub fn ibc_params() -> &'static str {
     "ibc/params"
 }
 
-// TODO (ava): move these to ibc-types eventually
+// these are internal helpers that are used by penumbra-ibc, but not part of the IBC spec (that is,
+// counterparties don't expect to verify proofs about them)
 pub fn client_processed_heights(client_id: &ClientId, height: &Height) -> String {
-    format!("ibc/clients/{client_id}/processedHeights/{height}")
+    format!("clients/{client_id}/processedHeights/{height}")
 }
 pub fn client_processed_times(client_id: &ClientId, height: &Height) -> String {
-    format!("ibc/clients/{client_id}/processedTimes/{height}")
+    format!("clients/{client_id}/processedTimes/{height}")
 }
-
-pub mod connections {
-    use ibc_types::core::client::ClientId;
-    use ibc_types::core::connection::ConnectionId;
-
-    use std::string::String;
-
-    // This is part of the ICS-3 spec but not exposed yet:
-    // https://github.com/cosmos/ibc/tree/main/spec/core/ics-003-connection-semantics
-    #[allow(dead_code)]
-    pub fn by_client_id_list(client_id: &ClientId) -> String {
-        format!("ibc/clients/{client_id}/connections/")
-    }
-
-    pub fn by_client_id(client_id: &ClientId, connection_id: &ConnectionId) -> String {
-        format!(
-            "ibc/clients/{}/connections/{}",
-            client_id,
-            connection_id.as_str()
-        )
-    }
-
-    pub fn by_connection_id(connection_id: &ConnectionId) -> String {
-        format!("ibc/connections/{}", connection_id.as_str())
-    }
-
-    pub fn counter() -> &'static str {
-        "ibc/ics03-connection/connection_counter"
-    }
+pub fn counter() -> &'static str {
+    "ibc/connection_counter"
 }
-
 pub fn ics20_value_balance(channel_id: &ChannelId, asset_id: &asset::Id) -> String {
     format!("ibc/ics20-value-balance/{channel_id}/{asset_id}")
 }
