@@ -180,7 +180,7 @@ impl TryFrom<pb::PayloadKey> for PayloadKey {
 impl From<PayloadKey> for pb::PayloadKey {
     fn from(msg: PayloadKey) -> Self {
         pb::PayloadKey {
-            inner: msg.0.to_vec().into(),
+            inner: msg.0.to_vec(),
         }
     }
 }

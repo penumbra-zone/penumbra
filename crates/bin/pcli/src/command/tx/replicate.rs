@@ -101,10 +101,7 @@ impl ConstantProduct {
         {
             return Ok(());
         }
-        println!("");
-        println!("so it shall be...");
-        println!("");
-        println!("");
+        println!("\nso it shall be...\n\n");
         println!(
             "#################################################################################"
         );
@@ -114,14 +111,10 @@ impl ConstantProduct {
         println!(
             "#################################################################################"
         );
-        println!("");
-        println!(
-            "You want to provide liquidity on the pair {}",
-            pair.to_string()
-        );
+        println!("\nYou want to provide liquidity on the pair {}", pair);
         println!("You will need:",);
-        println!(" -> {amount_start}{}", pair.start.to_string());
-        println!(" -> {amount_end}{}", pair.end.to_string());
+        println!(" -> {amount_start}{}", pair.start);
+        println!(" -> {amount_end}{}", pair.end);
         // TODO(erwan): would be nice to print current balance?
 
         println!("You will create the following pools:");

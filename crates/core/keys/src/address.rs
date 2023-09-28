@@ -183,7 +183,7 @@ impl TryFrom<pb::Address> for Address {
 
 impl std::fmt::Display for Address {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let proto_address = pb::Address::from(self.clone());
+        let proto_address = pb::Address::from(*self);
         f.write_str(&bech32str::encode(
             &proto_address.inner,
             bech32str::address::BECH32_PREFIX,

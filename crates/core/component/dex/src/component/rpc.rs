@@ -86,7 +86,7 @@ impl QueryService for Server {
         match arb_execution {
             Some(arb_execution) => Ok(tonic::Response::new(ArbExecutionResponse {
                 swap_execution: Some(arb_execution.into()),
-                height: height.into(),
+                height,
             })),
             None => Err(Status::not_found("arb execution data not found")),
         }
@@ -106,7 +106,7 @@ impl QueryService for Server {
         let start_height = request_inner.start_height;
         let end_height = request_inner.end_height;
 
-        let s = state.prefix(&state_key::arb_executions());
+        let s = state.prefix(state_key::arb_executions());
         Ok(tonic::Response::new(
             s.filter_map(
                 move |i: anyhow::Result<(String, SwapExecution)>| async move {
@@ -287,7 +287,7 @@ impl QueryService for Server {
 
         let pair: TradingPair = request
             .trading_pair
-            .ok_or_else(|| tonic::Status::invalid_argument(format!("missing trading pair")))?
+            .ok_or_else(|| tonic::Status::invalid_argument("missing trading pair"))?
             .try_into()
             .map_err(|e| {
                 tonic::Status::invalid_argument(format!("error parsing trading pair: {:#}", e))
@@ -354,9 +354,7 @@ impl QueryService for Server {
 
         let pair: DirectedTradingPair = request
             .trading_pair
-            .ok_or_else(|| {
-                tonic::Status::invalid_argument(format!("missing directed trading pair"))
-            })?
+            .ok_or_else(|| tonic::Status::invalid_argument("missing directed trading pair"))?
             .try_into()
             .map_err(|e| {
                 tonic::Status::invalid_argument(format!(

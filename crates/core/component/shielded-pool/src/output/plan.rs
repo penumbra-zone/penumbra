@@ -143,10 +143,10 @@ impl From<OutputPlan> for pb::OutputPlan {
         Self {
             value: Some(msg.value.into()),
             dest_address: Some(msg.dest_address.into()),
-            rseed: msg.rseed.to_bytes().to_vec().into(),
-            value_blinding: msg.value_blinding.to_bytes().to_vec().into(),
-            proof_blinding_r: msg.proof_blinding_r.to_bytes().to_vec().into(),
-            proof_blinding_s: msg.proof_blinding_s.to_bytes().to_vec().into(),
+            rseed: msg.rseed.to_bytes().to_vec(),
+            value_blinding: msg.value_blinding.to_bytes().to_vec(),
+            proof_blinding_r: msg.proof_blinding_r.to_bytes().to_vec(),
+            proof_blinding_s: msg.proof_blinding_s.to_bytes().to_vec(),
         }
     }
 }

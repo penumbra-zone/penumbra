@@ -131,14 +131,14 @@ impl MsgHandler for MsgRecvPacket {
         state.record(
             events::packet::ReceivePacket {
                 packet_data: self.packet.data.clone(),
-                timeout_height: self.packet.timeout_height_on_b.clone(),
-                timeout_timestamp: self.packet.timeout_timestamp_on_b.clone(),
-                sequence: self.packet.sequence.clone(),
+                timeout_height: self.packet.timeout_height_on_b,
+                timeout_timestamp: self.packet.timeout_timestamp_on_b,
+                sequence: self.packet.sequence,
                 src_port_id: self.packet.port_on_a.clone(),
                 src_channel_id: self.packet.chan_on_a.clone(),
                 dst_port_id: self.packet.port_on_b.clone(),
                 dst_channel_id: self.packet.chan_on_b.clone(),
-                channel_ordering: channel.ordering.clone(),
+                channel_ordering: channel.ordering,
                 dst_connection_id: channel.connection_hops[0].clone(),
             }
             .into(),

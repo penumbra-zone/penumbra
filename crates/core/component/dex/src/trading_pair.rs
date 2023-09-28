@@ -5,7 +5,10 @@ use ark_relations::r1cs::SynthesisError;
 use decaf377::{FieldExt, Fq};
 use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
-use std::{fmt, str::FromStr};
+use std::{
+    fmt::{self, Display, Formatter},
+    str::FromStr,
+};
 
 use penumbra_asset::asset::{self, AssetIdVar, Unit, REGISTRY};
 
@@ -280,10 +283,6 @@ impl DirectedUnitPair {
         Self { start, end }
     }
 
-    pub fn to_string(&self) -> String {
-        format!("{}:{}", self.start.to_string(), self.end.to_string())
-    }
-
     pub fn to_canonical_string(&self) -> String {
         if self.match_canonical_ordering() {
             self.to_string()
@@ -328,5 +327,11 @@ impl FromStr for DirectedUnitPair {
             let denom_2 = REGISTRY.parse_unit(parts[1]);
             Ok(Self::new(denom_1, denom_2))
         }
+    }
+}
+
+impl Display for DirectedUnitPair {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.start, self.end)
     }
 }

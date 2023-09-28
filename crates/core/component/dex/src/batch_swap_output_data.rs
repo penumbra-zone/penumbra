@@ -155,7 +155,7 @@ impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let output_data = f()?.borrow().clone();
+        let output_data = *(f()?.borrow());
         let delta_1_fixpoint: U128x128 = output_data.delta_1.into();
         let delta_1 = U128x128Var::new_variable(cs.clone(), || Ok(delta_1_fixpoint), mode)?;
         let delta_2_fixpoint: U128x128 = output_data.delta_2.into();

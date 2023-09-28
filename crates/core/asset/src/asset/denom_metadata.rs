@@ -262,7 +262,7 @@ impl Inner {
 impl DenomMetadata {
     /// Return the [`Id`] associated with this denomination.
     pub fn id(&self) -> Id {
-        self.inner.id.clone()
+        self.inner.id
     }
 
     pub fn base_denom(&self) -> Denom {
@@ -411,7 +411,7 @@ impl Unit {
 
     /// Return the [`Id`] associated with this denomination.
     pub fn id(&self) -> Id {
-        self.inner.id.clone()
+        self.inner.id
     }
 
     pub fn format_value(&self, value: Amount) -> String {

@@ -53,9 +53,9 @@ impl<S: StateRead + 'static> Path<S> {
     // We can't clone, because StateDelta only has an explicit fork() on purpose
     pub fn fork(&mut self) -> Self {
         Self {
-            start: self.start.clone(),
+            start: self.start,
             nodes: self.nodes.clone(),
-            price: self.price.clone(),
+            price: self.price,
             state: self.state.fork(),
             span: self.span.clone(),
         }
@@ -70,7 +70,7 @@ impl<S: StateRead + 'static> Path<S> {
     }
 
     async fn extend_to_inner(mut self, new_end: asset::Id) -> Result<Option<Path<S>>> {
-        let target_pair = DirectedTradingPair::new(self.end().clone(), new_end.clone());
+        let target_pair = DirectedTradingPair::new(*self.end(), new_end);
         let Some(best_price_position) = self.state.best_position(&target_pair).await? else {
             tracing::debug!("no best position, failing to extend path");
             return Ok(None);

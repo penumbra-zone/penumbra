@@ -296,7 +296,6 @@ where
         async move {
             let status = self2.status(tonic::Request::new(pb::StatusRequest {
                 account_group_id: Some(account_group_id.into()),
-                ..Default::default()
             }));
             let status = status.await?.into_inner();
             Ok(status)
@@ -321,7 +320,6 @@ where
         async move {
             let stream = self2.status_stream(tonic::Request::new(pb::StatusStreamRequest {
                 account_group_id: Some(account_group_id.into()),
-                ..Default::default()
             }));
             let stream = stream.await?.into_inner();
 
@@ -437,7 +435,6 @@ where
                     account_group_id: Some(account_group_id.into()),
                     note_commitment: Some(note_commitment.into()),
                     await_detection: false,
-                    ..Default::default()
                 }),
             );
             let note_commitment_response = note_commitment_response.await?.into_inner();
@@ -504,7 +501,6 @@ where
                     account_group_id: Some(account_group_id.into()),
                     swap_commitment: Some(swap_commitment.into()),
                     await_detection: false,
-                    ..Default::default()
                 }),
             );
             let swap_commitment_response = swap_commitment_response.await?.into_inner();
@@ -533,7 +529,6 @@ where
                     account_group_id: Some(account_group_id.into()),
                     note_commitment: Some(note_commitment.into()),
                     await_detection: true,
-                    ..Default::default()
                 }),
             );
             let spendable_note = spendable_note.await?.into_inner().spendable_note;
@@ -559,7 +554,6 @@ where
                     account_group_id: Some(account_group_id.into()),
                     nullifier: Some(nullifier.into()),
                     await_detection: false,
-                    ..Default::default()
                 }),
             );
             Ok(rsp.await?.into_inner().spent)
@@ -582,7 +576,6 @@ where
                     account_group_id: Some(account_group_id.into()),
                     nullifier: Some(nullifier.into()),
                     await_detection: true,
-                    ..Default::default()
                 }),
             );
             rsp.await?;
@@ -619,7 +612,6 @@ where
             account_group_id: Some(account_group_id.into()),
             note_commitments,
             transaction_plan: Some(plan.clone().into()),
-            ..Default::default()
         };
 
         let mut self2 = self.clone();
@@ -678,7 +670,6 @@ where
                 tonic::Request::new(pb::OwnedPositionIdsRequest {
                     trading_pair: trading_pair.map(TryInto::try_into).transpose()?,
                     position_state: position_state.map(TryInto::try_into).transpose()?,
-                    ..Default::default()
                 }),
             );
 

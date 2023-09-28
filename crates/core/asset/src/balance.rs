@@ -327,6 +327,7 @@ impl BalanceVar {
     ///
     /// This is like a vectorized [`ValueVar::commit`].
     #[allow(non_snake_case)]
+    #[allow(clippy::assign_op_pattern)]
     pub fn commit(
         &self,
         blinding_factor: Vec<UInt8<Fq>>,
@@ -355,6 +356,7 @@ impl BalanceVar {
             let vG = G_v.scalar_mul_le(value_amount.to_bits_le()?.iter())?;
             let minus_vG = vG.negate()?;
             let to_add = ElementVar::conditionally_select(sign, &vG, &minus_vG)?;
+            // It seems like the AddAssign impl here doesn't match the Add impl
             commitment = commitment + to_add;
         }
         Ok(BalanceCommitmentVar { inner: commitment })
@@ -502,6 +504,7 @@ mod test {
     });
     static ASSET_ID_2: Lazy<Id> = Lazy::new(|| DENOM_2.id());
 
+    #[allow(clippy::arc_with_non_send_sync)]
     fn gen_expression() -> impl proptest::strategy::Strategy<Value = Expression> {
         (
             (0u64..u32::MAX as u64), // limit amounts so that there is no overflow

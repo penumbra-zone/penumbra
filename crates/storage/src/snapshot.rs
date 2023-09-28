@@ -522,6 +522,6 @@ impl HasPreimage for Inner {
             .cf_handle("jmt_keys_by_keyhash")
             .expect("jmt_keys_by_keyhash column family not found");
 
-        Ok(self.snapshot.get_cf(jmt_keys_by_keyhash_cf, &key_hash.0)?)
+        Ok(self.snapshot.get_cf(jmt_keys_by_keyhash_cf, key_hash.0)?)
     }
 }

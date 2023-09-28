@@ -451,8 +451,7 @@ async fn position_get_best_price() -> anyhow::Result<()> {
         .positions_by_price(&pair)
         .then(|result| async {
             let id = result.unwrap();
-            let position = state_tx.position_by_id(&id).await.unwrap().unwrap();
-            position
+            state_tx.position_by_id(&id).await.unwrap().unwrap()
         })
         .collect::<Vec<position::Position>>()
         .await;
@@ -469,8 +468,7 @@ async fn position_get_best_price() -> anyhow::Result<()> {
         .positions_by_price(&pair)
         .then(|result| async {
             let id = result.unwrap();
-            let position = state_tx.position_by_id(&id).await.unwrap().unwrap();
-            position
+            state_tx.position_by_id(&id).await.unwrap().unwrap()
         })
         .collect::<Vec<position::Position>>()
         .await;
@@ -1274,7 +1272,7 @@ async fn fill_dust_route() -> anyhow::Result<()> {
 
 #[tokio::test]
 /// Try filling a route with a dust position.
-async fn fill_route_dust() -> () {
+async fn fill_route_dust() {
     let _ = tracing_subscriber::fmt::try_init();
     let storage = TempStorage::new()
         .await
@@ -1574,6 +1572,7 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
 ///               │ C   │
 ///               └─────┘
 ///
+#[allow(clippy::await_holding_lock)]
 async fn path_search_testnet_53_1_reproduction() -> anyhow::Result<()> {
     use crate::component::router::PathCache;
     let _ = tracing_subscriber::fmt::try_init();
@@ -1723,6 +1722,7 @@ async fn path_search_testnet_53_1_reproduction() -> anyhow::Result<()> {
 /// would be to generate random liquidity graphs and check that the
 /// best path and spill path are always the same, but this is a good
 /// start.
+#[allow(clippy::await_holding_lock)]
 async fn path_search_commutative() -> anyhow::Result<()> {
     use crate::component::router::PathCache;
     let _ = tracing_subscriber::fmt::try_init();
@@ -1941,6 +1941,7 @@ async fn path_search_commutative() -> anyhow::Result<()> {
 #[tokio::test]
 /// Asserts that `path_search` produces unique results even if multiple
 /// paths have the exact same cost.
+#[allow(clippy::await_holding_lock)]
 async fn path_search_unique() -> anyhow::Result<()> {
     use crate::component::router::PathCache;
     let _ = tracing_subscriber::fmt::try_init();
@@ -2089,7 +2090,7 @@ async fn path_compare_price() -> anyhow::Result<()> {
     let path1 = Path {
         start: gm.id(),
         nodes: vec![gn.id()],
-        price: big_price.clone(),
+        price: big_price,
         state: state.fork(),
         span: tracing::debug_span!("path1"),
     };
@@ -2097,7 +2098,7 @@ async fn path_compare_price() -> anyhow::Result<()> {
     let path2 = Path {
         start: gm.id(),
         nodes: vec![gn.id(), gn.id()],
-        price: small_price.clone(),
+        price: small_price,
         state: state.fork(),
         span: tracing::debug_span!("path2"),
     };
@@ -2127,7 +2128,7 @@ async fn path_compare_nodes() -> anyhow::Result<()> {
     let path1 = Path {
         start: gm.id(),
         nodes: vec![gn.id(), gn.id()],
-        price: price.clone(),
+        price,
         state: state.fork(),
         span: tracing::debug_span!("path1"),
     };
@@ -2135,7 +2136,7 @@ async fn path_compare_nodes() -> anyhow::Result<()> {
     let path2 = Path {
         start: gm.id(),
         nodes: vec![gn.id()],
-        price: price.clone(),
+        price,
         state: state.fork(),
         span: tracing::debug_span!("path2"),
     };
@@ -2165,7 +2166,7 @@ async fn path_compare_node_ids() -> anyhow::Result<()> {
     let path1 = Path {
         start: gm.id(),
         nodes: vec![gn.id()],
-        price: price.clone(),
+        price,
         state: state.fork(),
         span: tracing::debug_span!("path1"),
     };
@@ -2173,7 +2174,7 @@ async fn path_compare_node_ids() -> anyhow::Result<()> {
     let path2 = Path {
         start: gm.id(),
         nodes: vec![gm.id()],
-        price: price.clone(),
+        price,
         state: state.fork(),
         span: tracing::debug_span!("path2"),
     };

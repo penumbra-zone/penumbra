@@ -141,7 +141,7 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
         .cloned()
         .unwrap_or_default();
 
-    if net_info_peers.len() == 0 {
+    if net_info_peers.is_empty() {
         tracing::warn!(
             ?net_info_peers,
             "bootstrap node reported 0 peers; we'll have no way to get blocks"
@@ -274,17 +274,15 @@ mod tests {
     #[test]
     fn parse_tendermint_address_tcp() -> anyhow::Result<()> {
         let tm1 = parse_tm_address(None, &Url::parse("tcp://35.226.255.25:26656")?)?;
-        match tm1 {
-            TendermintAddress::Tcp {
-                peer_id,
-                host,
-                port,
-            } => {
-                assert!(peer_id == None);
-                assert!(port == 26656);
-                assert!(host == "35.226.255.25");
-            }
-            _ => {}
+        if let TendermintAddress::Tcp {
+            peer_id,
+            host,
+            port,
+        } = tm1
+        {
+            assert!(peer_id.is_none());
+            assert!(port == 26656);
+            assert!(host == "35.226.255.25");
         }
         Ok(())
     }
@@ -308,7 +306,7 @@ mod tests {
 
         let l3 = "Listener(@)";
         let r3 = parse_tm_address_listener(l3);
-        assert!(r3 == None);
+        assert!(r3.is_none());
 
         Ok(())
     }
@@ -320,7 +318,7 @@ mod tests {
             "Listener(@35.226.255.25:26656)".to_string(),
         );
         let tm1 = TendermintAddress::from_listen_address(&l);
-        assert!(tm1 == None);
+        assert!(tm1.is_none());
         Ok(())
     }
 }

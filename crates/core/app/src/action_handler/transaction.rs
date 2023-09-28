@@ -124,18 +124,18 @@ mod tests {
             amount: 100u64.into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
-        let note = Note::generate(&mut OsRng, &*test_keys::ADDRESS_0, value);
+        let note = Note::generate(&mut OsRng, &test_keys::ADDRESS_0, value);
         let value2 = Value {
             amount: 50u64.into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
-        let note2 = Note::generate(&mut OsRng, &*test_keys::ADDRESS_0, value2);
+        let note2 = Note::generate(&mut OsRng, &test_keys::ADDRESS_0, value2);
 
         // Record that note in an SCT, where we can generate an auth path.
         let mut sct = tct::Tree::new();
         // Assume there's a bunch of stuff already in the SCT.
         for _ in 0..5 {
-            let random_note = Note::generate(&mut OsRng, &*test_keys::ADDRESS_0, value);
+            let random_note = Note::generate(&mut OsRng, &test_keys::ADDRESS_0, value);
             sct.insert(tct::Witness::Keep, random_note.commit())
                 .unwrap();
         }
@@ -163,7 +163,7 @@ mod tests {
         // Build the transaction.
         let fvk = &test_keys::FULL_VIEWING_KEY;
         let sk = &test_keys::SPEND_KEY;
-        let auth_data = plan.authorize(OsRng, &sk);
+        let auth_data = plan.authorize(OsRng, sk);
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan
@@ -202,7 +202,7 @@ mod tests {
             amount: 100u64.into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
-        let note = Note::generate(&mut OsRng, &*test_keys::ADDRESS_0, value);
+        let note = Note::generate(&mut OsRng, &test_keys::ADDRESS_0, value);
 
         // Record that note in an SCT, where we can generate an auth path.
         let mut sct = tct::Tree::new();
@@ -227,7 +227,7 @@ mod tests {
         // Build the transaction.
         let fvk = &test_keys::FULL_VIEWING_KEY;
         let sk = &test_keys::SPEND_KEY;
-        let auth_data = plan.authorize(OsRng, &sk);
+        let auth_data = plan.authorize(OsRng, sk);
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan

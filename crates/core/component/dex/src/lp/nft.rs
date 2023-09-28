@@ -48,11 +48,11 @@ impl LpNft {
     }
 
     pub fn position_id(&self) -> Id {
-        self.position_id.clone()
+        self.position_id
     }
 
     pub fn state(&self) -> State {
-        self.state.clone()
+        self.state
     }
 }
 
@@ -161,7 +161,7 @@ mod tests {
     #[test]
     fn lpnft_denom_parsing_roundtrip() {
         let pair = DirectedTradingPair {
-            start: STAKING_TOKEN_ASSET_ID.clone(),
+            start: *STAKING_TOKEN_ASSET_ID,
             end: asset::Cache::with_known_assets()
                 .get_unit("cube")
                 .unwrap()
@@ -171,7 +171,7 @@ mod tests {
         let position = Position::new(
             rand_core::OsRng,
             pair,
-            1u32.into(),
+            1u32,
             1u64.into(),
             1u64.into(),
             crate::lp::Reserves {

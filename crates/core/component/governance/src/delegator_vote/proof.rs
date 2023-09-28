@@ -119,7 +119,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         let claimed_balance_commitment_var =
             BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
         let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
-        let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.rk.clone()))?;
+        let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.rk))?;
         let start_position = PositionVar::new_input(cs.clone(), || Ok(self.start_position))?;
 
         // Note commitment integrity.
@@ -292,7 +292,7 @@ impl DelegatorVoteProof {
     /// Called to verify the proof using the provided public inputs.
     // For debugging proof verification failures,
     // to check that the proof data and verification keys are consistent.
-    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?general_purpose::STANDARD.encode(&self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
+    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?general_purpose::STANDARD.encode(self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,

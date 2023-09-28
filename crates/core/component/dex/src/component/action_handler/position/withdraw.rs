@@ -67,7 +67,7 @@ impl ActionHandler for PositionWithdraw {
             );
         }
 
-        state.record(event::position_withdraw(&self, &metadata));
+        state.record(event::position_withdraw(self, &metadata));
 
         metadata.state = position::State::Withdrawn;
         state.put_position(metadata).await?;

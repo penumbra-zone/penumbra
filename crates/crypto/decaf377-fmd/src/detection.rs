@@ -37,7 +37,6 @@ impl DetectionKey {
         let root_pub_enc = root_pub.vartime_compress();
 
         let xs: [_; MAX_PRECISION] = (0..MAX_PRECISION)
-            .into_iter()
             .map(|i| {
                 hkd::derive_private(
                     &dtk,

@@ -40,7 +40,7 @@ impl AllocVar<Address, Fq> for AddressVar {
 
         let diversified_generator: ElementVar = AllocVar::<Element, Fq>::new_variable(
             cs.clone(),
-            || Ok(address.diversified_generator().clone()),
+            || Ok(address.diversified_generator()),
             mode,
         )?;
         let element_transmission_key = decaf377::Encoding(address.transmission_key().0)

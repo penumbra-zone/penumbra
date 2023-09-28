@@ -43,7 +43,7 @@ impl ConsensusQuery for IbcQuery {
         let snapshot = self.0.latest_snapshot();
         let height = Height {
             revision_number: 0,
-            revision_height: snapshot.version().into(),
+            revision_height: snapshot.version(),
         };
 
         let channel_counter = snapshot
@@ -90,7 +90,7 @@ impl ConsensusQuery for IbcQuery {
         let snapshot = self.0.latest_snapshot();
         let height = Height {
             revision_number: 0,
-            revision_height: snapshot.version().into(),
+            revision_height: snapshot.version(),
         };
         let request = request.get_ref();
 
@@ -209,7 +209,7 @@ impl ConsensusQuery for IbcQuery {
 
         let height = Height {
             revision_number: 0,
-            revision_height: height.into(),
+            revision_height: height,
         };
 
         let res = QueryPacketCommitmentsResponse {
@@ -246,7 +246,7 @@ impl ConsensusQuery for IbcQuery {
         let snapshot = self.0.latest_snapshot();
         let height = Height {
             revision_number: 0,
-            revision_height: snapshot.version().into(),
+            revision_height: snapshot.version(),
         };
         let request = request.get_ref();
 
@@ -335,7 +335,7 @@ impl ConsensusQuery for IbcQuery {
 
         let height = Height {
             revision_number: 0,
-            revision_height: height.into(),
+            revision_height: height,
         };
 
         let res = QueryUnreceivedPacketsResponse {
@@ -354,7 +354,7 @@ impl ConsensusQuery for IbcQuery {
         let snapshot = self.0.latest_snapshot();
         let height = Height {
             revision_number: 0,
-            revision_height: snapshot.version().into(),
+            revision_height: snapshot.version(),
         };
         let request = request.get_ref();
 

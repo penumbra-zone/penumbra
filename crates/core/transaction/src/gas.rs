@@ -471,7 +471,7 @@ impl GasCost for IbcAction {
             },
             // Includes a proof in the execution for RecvPacket (TODO: check the other variants).
             verification: match self {
-                IbcAction::RecvPacket(_) => 1000 as u64,
+                IbcAction::RecvPacket(_) => 1000,
                 _ => 0u64,
             },
             // Execution cost is currently hardcoded at 10 for all Action variants.

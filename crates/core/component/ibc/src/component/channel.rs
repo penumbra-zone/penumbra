@@ -189,7 +189,7 @@ pub trait StateReadExt: StateRead {
     async fn get_packet_commitment(&self, packet: &Packet) -> Result<Option<Vec<u8>>> {
         let commitment = self
             .get_raw(
-                &CommitmentPath::new(&packet.port_on_a, &packet.chan_on_a, packet.sequence.into())
+                &CommitmentPath::new(&packet.port_on_a, &packet.chan_on_a, packet.sequence)
                     .to_string(),
             )
             .await?;

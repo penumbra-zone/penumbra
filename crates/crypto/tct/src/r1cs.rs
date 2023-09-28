@@ -152,7 +152,7 @@ impl MerkleAuthPathVar {
         &self,
         cs: ConstraintSystemRef<Fq>,
         enforce: &Boolean<Fq>,
-        position_bits: &Vec<Boolean<Fq>>,
+        position_bits: &[Boolean<Fq>],
         anchor_var: FqVar,
         commitment_var: FqVar,
     ) -> Result<(), SynthesisError> {

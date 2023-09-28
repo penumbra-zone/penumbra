@@ -83,7 +83,7 @@ fn verify_merkle_absence_proof(
     path: impl Into<Path>,
 ) -> anyhow::Result<()> {
     let merkle_path = prefix.apply(vec![path.into().to_string()]);
-    proof.verify_non_membership(proof_specs, root.clone().into(), merkle_path)?;
+    proof.verify_non_membership(proof_specs, root.clone(), merkle_path)?;
 
     Ok(())
 }
@@ -102,7 +102,7 @@ fn verify_merkle_proof(
         ?merkle_path,
         value = ?hex::encode(&value),
     );
-    proof.verify_membership(proof_specs, root.clone().into(), merkle_path, value, 0)?;
+    proof.verify_membership(proof_specs, root.clone(), merkle_path, value, 0)?;
 
     Ok(())
 }
@@ -137,7 +137,7 @@ pub trait ChannelProofVerifier: StateReadExt {
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
-            &connection.counterparty.prefix.clone().into(),
+            &connection.counterparty.prefix.clone(),
             proof,
             &trusted_consensus_state.root,
             ChannelEndPath::new(port_id, channel_id),
@@ -250,7 +250,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
-            &connection.counterparty.prefix.clone().into(),
+            &connection.counterparty.prefix.clone(),
             &msg.proof_commitment_on_a,
             &trusted_consensus_state.root,
             commitment_path,
@@ -283,7 +283,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
-            &connection.counterparty.prefix.clone().into(),
+            &connection.counterparty.prefix.clone(),
             &msg.proof_acked_on_b,
             &trusted_consensus_state.root,
             ack_path,
@@ -311,7 +311,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
-            &connection.counterparty.prefix.clone().into(),
+            &connection.counterparty.prefix.clone(),
             &msg.proof_unreceived_on_b,
             &trusted_consensus_state.root,
             seq_path,
@@ -342,7 +342,7 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
 
         verify_merkle_absence_proof(
             &trusted_client_state.proof_specs,
-            &connection.counterparty.prefix.clone().into(),
+            &connection.counterparty.prefix.clone(),
             &msg.proof_unreceived_on_b,
             &trusted_consensus_state.root,
             receipt_path,

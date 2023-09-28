@@ -73,7 +73,7 @@ impl SwapPlaintext {
         let output_1_note = Note::from_parts(
             self.claim_address,
             Value {
-                amount: lambda_1_i.into(),
+                amount: lambda_1_i,
                 asset_id: self.trading_pair.asset_1(),
             },
             output_1_rseed,
@@ -83,7 +83,7 @@ impl SwapPlaintext {
         let output_2_note = Note::from_parts(
             self.claim_address,
             Value {
-                amount: lambda_2_i.into(),
+                amount: lambda_2_i,
                 asset_id: self.trading_pair.asset_2(),
             },
             output_2_rseed,

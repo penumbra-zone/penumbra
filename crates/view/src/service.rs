@@ -157,9 +157,7 @@ impl ViewService {
                         })?
                         .as_ref()
                         .ok_or_else(|| {
-                            tonic::Status::unavailable(format!(
-                                "unable to get ref to worker error slot",
-                            ))
+                            tonic::Status::unavailable("unable to get ref to worker error slot")
                         })?
                 ),
             ));
@@ -717,7 +715,7 @@ impl ViewProtocolService for ViewService {
             .map_err(|_| {
                 tonic::Status::failed_precondition(format!(
                     "Error retrieving transaction by hash {}",
-                    hex::encode(&request.id.expect("transaction id is present").hash)
+                    hex::encode(request.id.expect("transaction id is present").hash)
                 ))
             })?;
 
@@ -839,7 +837,7 @@ impl ViewProtocolService for ViewService {
             }
         }
 
-        txp.denoms.extend(denoms.into_iter());
+        txp.denoms.extend(denoms);
 
         txp.address_views = address_views.into_values().collect();
 
@@ -848,7 +846,7 @@ impl ViewProtocolService for ViewService {
 
         let response = pb::TransactionInfoByHashResponse {
             tx_info: Some(pb::TransactionInfo {
-                height: height,
+                height,
                 id: Some(tx.id().into()),
                 perspective: Some(txp.into()),
                 transaction: Some(tx.into()),
@@ -898,7 +896,7 @@ impl ViewProtocolService for ViewService {
     ) -> Result<tonic::Response<Self::BalancesStream>, tonic::Status> {
         let request = request.into_inner();
 
-        let account_filter = request.account_filter.map_or(None, |x| {
+        let account_filter = request.account_filter.and_then(|x| {
             AddressIndex::try_from(x)
                 .map_err(|_| {
                     tonic::Status::failed_precondition("Invalid swap commitment in request")
@@ -906,7 +904,7 @@ impl ViewProtocolService for ViewService {
                 .map_or(None, |x| x.into())
         });
 
-        let asset_id_filter = request.asset_id_filter.map_or(None, |x| {
+        let asset_id_filter = request.asset_id_filter.and_then(|x| {
             asset::Id::try_from(x)
                 .map_err(|_| {
                     tonic::Status::failed_precondition("Invalid swap commitment in request")
@@ -1379,7 +1377,6 @@ impl ViewProtocolService for ViewService {
             account_group_id: Some(self.account_group_id.into()),
             note_commitments,
             transaction_plan: Some(transaction_plan.clone().into()),
-            ..Default::default()
         };
 
         let witness_data: WitnessData = self

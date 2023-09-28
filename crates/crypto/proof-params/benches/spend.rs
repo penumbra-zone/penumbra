@@ -16,6 +16,7 @@ use penumbra_tct as tct;
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
+#[allow(clippy::too_many_arguments)]
 fn prove(
     r: Fq,
     s: Fq,

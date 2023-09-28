@@ -53,7 +53,7 @@ impl ConnectionQuery for IbcQuery {
 
         let height = Height {
             revision_number: 0,
-            revision_height: snapshot.version().into(),
+            revision_height: snapshot.version(),
         };
 
         let res = QueryConnectionResponse {
@@ -112,7 +112,7 @@ impl ConnectionQuery for IbcQuery {
 
         let height = Height {
             revision_number: 0,
-            revision_height: height.into(),
+            revision_height: height,
         };
 
         let res = QueryConnectionsResponse {

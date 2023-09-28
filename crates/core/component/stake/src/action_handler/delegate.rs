@@ -93,7 +93,7 @@ impl ActionHandler for Delegate {
         tracing::debug!(?self, "queuing delegation for next epoch");
         state.stub_push_delegation(self.clone());
 
-        state.record(event::delegate(&self));
+        state.record(event::delegate(self));
 
         Ok(())
     }

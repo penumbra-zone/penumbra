@@ -93,9 +93,7 @@ impl RateData {
     pub fn delegation_amount(&self, unbonded_amount: u128) -> u128 {
         // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
         // upconvert to u128 intermediates and panic if the result is too large (unlikely)
-        ((unbonded_amount as u128 * 1_0000_0000) / self.validator_exchange_rate as u128)
-            .try_into()
-            .expect("delegation amount should fit in u128")
+        (unbonded_amount * 1_0000_0000) / self.validator_exchange_rate as u128
     }
 
     pub fn slash(&self, penalty: Penalty) -> Self {

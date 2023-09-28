@@ -33,7 +33,7 @@ pub trait StateReadExt: StateRead {
 
     async fn compact_block(&self, height: u64) -> Result<Option<CompactBlock>> {
         Ok(self
-            .nonverifiable_get_raw(&state_key::compact_block(height).as_bytes())
+            .nonverifiable_get_raw(state_key::compact_block(height).as_bytes())
             .await?
             .map(|bytes| {
                 CompactBlock::decode(&mut bytes.as_slice()).expect("failed to decode compact block")

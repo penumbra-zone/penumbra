@@ -53,8 +53,7 @@ impl Action {
                 // Construct a nested span, identifying the IbcAction within
                 // the transaction but also the message within the IbcAction.
                 let action_span = tracing::info_span!("IbcAction", ?idx);
-                let inner_span = msg.create_span(&action_span);
-                inner_span
+                msg.create_span(&action_span)
             }
             Action::Swap(_) => tracing::info_span!("Swap", ?idx),
             Action::SwapClaim(_) => tracing::info_span!("SwapClaim", ?idx),

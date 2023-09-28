@@ -42,9 +42,7 @@ impl App {
             .try_begin_transaction()
             .expect("state Arc should not be referenced elsewhere");
 
-        let events = state_tx.apply().1;
-
-        events
+        state_tx.apply().1
     }
 
     /// Wrapper function for [`Self::deliver_tx`]  that decodes from bytes.

@@ -64,7 +64,6 @@ impl ExpandedClueKey {
         }
 
         let mut expanded_keys = (current_precision..precision)
-            .into_iter()
             .map(|i| hkd::derive_public(&self.root_pub, &self.root_pub_enc, i as u8))
             .collect::<Vec<_>>();
 

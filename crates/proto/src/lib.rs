@@ -17,6 +17,8 @@
 
 // The autogen code is not clippy-clean, so we disable some clippy warnings for this crate.
 #![allow(clippy::derive_partial_eq_without_eq)]
+#![allow(clippy::large_enum_variant)]
+#![allow(clippy::needless_borrow)]
 #![allow(non_snake_case)]
 // Requires nightly.
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]

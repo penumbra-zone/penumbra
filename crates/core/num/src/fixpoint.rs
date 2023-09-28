@@ -227,10 +227,10 @@ impl AllocVar<U128x128, Fq> for U128x128Var {
             .collect::<Vec<_>>();
 
         hi_128_var.enforce_equal(&Boolean::<Fq>::le_bits_to_fp_var(
-            &(&hi_128_bits[..]).to_bits_le()?,
+            &(hi_128_bits[..]).to_bits_le()?,
         )?)?;
         lo_128_var.enforce_equal(&Boolean::<Fq>::le_bits_to_fp_var(
-            &(&lo_128_bits[..]).to_bits_le()?,
+            &(lo_128_bits[..]).to_bits_le()?,
         )?)?;
 
         Ok(Self {

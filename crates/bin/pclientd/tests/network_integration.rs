@@ -115,11 +115,11 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     let plan = view_client
         .transaction_planner(TransactionPlannerRequest {
             outputs: vec![tpr::Output {
-                address: Some(test_keys::ADDRESS_1.clone().into()),
+                address: Some((*test_keys::ADDRESS_1).into()),
                 value: Some(
                     Value {
                         amount: 1_000_000u64.into(),
-                        asset_id: STAKING_TOKEN_ASSET_ID.clone(),
+                        asset_id: *STAKING_TOKEN_ASSET_ID,
                     }
                     .into(),
                 ),
@@ -246,7 +246,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
                 value: Some(
                     Value {
                         amount: 1_000u64.into(),
-                        asset_id: STAKING_TOKEN_ASSET_ID.clone(),
+                        asset_id: *STAKING_TOKEN_ASSET_ID,
                     }
                     .into(),
                 ),
@@ -255,7 +255,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
                     amount: Some(num::Amount { lo: 0, hi: 0 }),
                     asset_id: None,
                 }),
-                claim_address: Some(test_keys::ADDRESS_1.clone().into()),
+                claim_address: Some((*test_keys::ADDRESS_1).into()),
             }],
             ..Default::default()
         })

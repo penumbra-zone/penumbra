@@ -206,7 +206,7 @@ impl TypeUrl for MemoCiphertext {
 impl From<MemoCiphertext> for pbt::MemoCiphertext {
     fn from(ciphertext: MemoCiphertext) -> pbt::MemoCiphertext {
         pbt::MemoCiphertext {
-            inner: ciphertext.0.to_vec().into(),
+            inner: ciphertext.0.to_vec(),
         }
     }
 }

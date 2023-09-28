@@ -43,7 +43,7 @@ impl std::fmt::Debug for Position {
             .field("state", &self.state)
             .field("reserves", &self.reserves)
             .field("phi", &self.phi)
-            .field("nonce", &hex::encode(&self.nonce))
+            .field("nonce", &hex::encode(self.nonce))
             .finish()
     }
 }
@@ -119,8 +119,8 @@ impl Position {
     }
 
     pub fn check_stateless(&self) -> anyhow::Result<()> {
-        if self.reserves.r1.value() as u128 > MAX_RESERVE_AMOUNT
-            || self.reserves.r2.value() as u128 > MAX_RESERVE_AMOUNT
+        if self.reserves.r1.value() > MAX_RESERVE_AMOUNT
+            || self.reserves.r2.value() > MAX_RESERVE_AMOUNT
         {
             Err(anyhow::anyhow!(format!(
                 "Reserve amounts are out-of-bounds (limit: {MAX_RESERVE_AMOUNT})"

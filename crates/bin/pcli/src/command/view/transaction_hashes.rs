@@ -31,7 +31,7 @@ impl TransactionHashesCmd {
         for tx_info in txs {
             table.add_row(vec![
                 format!("{}", tx_info.height),
-                format!("{}", hex::encode(&tx_info.id)),
+                format!("{}", hex::encode(tx_info.id)),
             ]);
         }
 

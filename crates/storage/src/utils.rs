@@ -5,6 +5,7 @@ use anyhow::bail;
 /// # Errors
 /// This method returns an error when the range is inclusive on the end bound,
 /// and when the lower bound is greater than the upper bound.
+#[allow(clippy::type_complexity)]
 pub(crate) fn convert_bounds(
     range: impl std::ops::RangeBounds<Vec<u8>>,
 ) -> anyhow::Result<(

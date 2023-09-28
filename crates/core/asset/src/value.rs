@@ -86,7 +86,7 @@ impl Value {
             },
             None => ValueView::UnknownDenom {
                 amount: self.amount,
-                asset_id: self.asset_id.clone(),
+                asset_id: self.asset_id,
             },
         }
     }

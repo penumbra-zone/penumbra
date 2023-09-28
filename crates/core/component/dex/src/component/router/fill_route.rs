@@ -117,7 +117,7 @@ async fn fill_route_inner<S: StateWrite + Sized>(
         asset_id: route
             .last()
             .cloned()
-            .ok_or_else(|| FillError::InvalidRoute(route.len()))?,
+            .ok_or(FillError::InvalidRoute(route.len()))?,
     };
 
     let mut frontier = Frontier::load(&mut this, pairs).await?;
@@ -161,10 +161,7 @@ async fn fill_route_inner<S: StateWrite + Sized>(
         // - `None` on the spill price means no limit.
         // - `None` on the actual price means infinite price.
         let should_apply = if let Some(spill_price) = spill_price {
-            let below_limit = tx
-                .actual_price()
-                .and_then(|p| Ok(p <= spill_price))
-                .unwrap_or(false);
+            let below_limit = tx.actual_price().map(|p| p <= spill_price).unwrap_or(false);
 
             // We should apply if we're below the limit, or we haven't yet made progress.
             below_limit || !filled_once
@@ -188,7 +185,7 @@ async fn fill_route_inner<S: StateWrite + Sized>(
 
         // Update the input and output amounts tracked outside of the loop:
         input.amount = input.amount - current_input;
-        output.amount = output.amount + current_output;
+        output.amount += current_output;
 
         tracing::debug!(
             ?current_input,
@@ -272,8 +269,8 @@ fn breakdown_route(route: &[asset::Id]) -> Result<Vec<DirectedTradingPair>, Fill
     } else {
         let mut pairs = vec![];
         for pair in route.windows(2) {
-            let start = pair[0].clone();
-            let end = pair[1].clone();
+            let start = pair[0];
+            let end = pair[1];
             pairs.push(DirectedTradingPair::new(start, end));
         }
         Ok(pairs)
@@ -356,8 +353,8 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         let mut positions_by_price = BTreeMap::new();
         for pair in &pairs {
             positions_by_price
-                .entry(pair.clone())
-                .or_insert_with(|| state.positions_by_price(&pair));
+                .entry(*pair)
+                .or_insert_with(|| state.positions_by_price(pair));
         }
 
         for pair in &pairs {
@@ -368,7 +365,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
                     .as_mut()
                     .next()
                     .await
-                    .ok_or_else(|| FillError::InsufficientLiquidity(pair.clone()))?
+                    .ok_or(FillError::InsufficientLiquidity(*pair))?
                     .expect("stream should not error");
 
                 // Check that the position is not already part of the frontier.
@@ -379,7 +376,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
                         .position_by_id(&id)
                         .await
                         .expect("stream doesn't error")
-                        .ok_or_else(|| FillError::MissingFrontierPosition(id.clone()))?;
+                        .ok_or(FillError::MissingFrontierPosition(id))?;
 
                     position_ids.insert(id);
                     positions.push(position);
@@ -601,7 +598,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
                 .start
         );
 
-        let mut tx = FrontierTx::new(&self);
+        let mut tx = FrontierTx::new(self);
         // We have to manually update the trace here, because fill_forward
         // doesn't handle the input amount, only things that come after it.
         tx.trace[0] = Some(input.amount);
@@ -612,7 +609,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
     }
 
     fn fill_constrained(&self, constraining_index: usize) -> FrontierTx {
-        let mut tx = FrontierTx::new(&self);
+        let mut tx = FrontierTx::new(self);
 
         // If there was a constraining position along the path, we want to
         // completely consume its reserves, then work "outwards" along the
