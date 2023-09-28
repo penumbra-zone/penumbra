@@ -3,7 +3,7 @@ use std::fmt::Display;
 use anyhow::Result;
 use penumbra_chain::params::{ChainParameters, Ratio};
 use penumbra_dao::params::DaoParameters;
-use penumbra_governance::{component::Governance, params::GovernanceParameters};
+use penumbra_governance::params::GovernanceParameters;
 use penumbra_ibc::params::IBCParameters;
 use penumbra_stake::params::StakeParameters;
 

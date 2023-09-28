@@ -71,7 +71,7 @@ impl ActionHandler for ProposalSubmit {
         match payload {
             Signaling { commit: _ } => { /* all signaling proposals are valid */ }
             Emergency { halt_chain: _ } => { /* all emergency proposals are valid */ }
-            ParameterChange { old, new } => {
+            ParameterChange { old: _, new: _ } => {
                 // TODO: re-enable (https://github.com/penumbra-zone/penumbra/issues/3107)
                 tracing::warn!("parameter change proposals are currently disabled (see #3107)");
                 // old.check_valid_update(new)

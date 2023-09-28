@@ -4,12 +4,11 @@ use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
 use penumbra_app::params::AppParameters;
 use penumbra_asset::asset::{self, DenomMetadata, Id};
-use penumbra_chain::params::{ChainParameters, FmdParameters};
+use penumbra_chain::params::FmdParameters;
 use penumbra_dex::{
     lp::position::{self},
     TradingPair,
 };
-use penumbra_governance::params::GovernanceParameters;
 use penumbra_keys::{
     keys::{AccountGroupId, AddressIndex},
     Address,

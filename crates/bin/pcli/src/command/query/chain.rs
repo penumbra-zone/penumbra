@@ -2,7 +2,6 @@ use anyhow::{anyhow, Context, Result};
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_app::params::AppParameters;
-use penumbra_chain::params::ChainParameters;
 use penumbra_proto::{
     core::app::v1alpha1::{
         query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
