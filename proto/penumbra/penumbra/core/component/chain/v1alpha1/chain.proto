@@ -1,10 +1,7 @@
 syntax = "proto3";
 package penumbra.core.component.chain.v1alpha1;
 
-import "penumbra/core/num/v1alpha1/num.proto";
-import "penumbra/core/keys/v1alpha1/keys.proto";
 import "penumbra/core/asset/v1alpha1/asset.proto";
-import "penumbra/core/component/stake/v1alpha1/stake.proto";
 
 // An authorization hash for a Penumbra transaction.
 message EffectHash {
