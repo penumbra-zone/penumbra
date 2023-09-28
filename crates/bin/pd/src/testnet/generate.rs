@@ -657,7 +657,7 @@ mod tests {
         let genesis::AppState::Content(app_state) = testnet_config.genesis.app_state else {
             unimplemented!("TODO: support checkpointed app state")
         };
-        assert_eq!(app_state.validators.len(), 1);
+        assert_eq!(app_state.stake_content.validators.len(), 1);
         Ok(())
     }
 
@@ -683,7 +683,7 @@ mod tests {
         let genesis::AppState::Content(app_state) = testnet_config.genesis.app_state else {
             unimplemented!("TODO: support checkpointed app state")
         };
-        assert_eq!(app_state.validators.len(), 2);
+        assert_eq!(app_state.stake_content.validators.len(), 2);
         Ok(())
     }
 
