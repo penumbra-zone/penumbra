@@ -182,13 +182,20 @@ extern crate ibc_types;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+use ibc_proto::ibc::core::connection::v1::ClientPaths as RawClientPaths;
 use ibc_proto::ibc::core::connection::v1::ConnectionEnd as RawConnectionEnd;
 
 use ibc_types::core::channel::ChannelEnd;
 use ibc_types::core::client::Height;
-use ibc_types::core::connection::ConnectionEnd;
+use ibc_types::core::connection::{ClientPaths, ConnectionEnd};
 use ibc_types::lightclients::tendermint::client_state::ClientState;
 
+impl TypeUrl for ClientPaths {
+    const TYPE_URL: &'static str = "/ibc.core.connection.v1.ClientPaths";
+}
+impl DomainType for ClientPaths {
+    type Proto = RawClientPaths;
+}
 impl TypeUrl for ConnectionEnd {
     const TYPE_URL: &'static str = "/ibc.core.connection.v1.ConnectionEnd";
 }

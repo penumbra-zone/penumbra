@@ -4,20 +4,28 @@ use async_trait::async_trait;
 // use ibc_types::core::ics02_client::client_def::AnyClient;
 // use ibc_types::core::ics02_client::client_def::ClientDef;
 use ibc_types::{
-    core::{connection::ConnectionEnd, connection::ConnectionId},
-    path::ConnectionPath,
+    core::{
+        client::ClientId,
+        connection::ConnectionId,
+        connection::{ClientPaths, ConnectionEnd},
+    },
+    path::{ClientConnectionPath, ConnectionPath},
 };
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 
 use super::{connection_counter::ConnectionCounter, state_key};
 
-// This type is defined by cosmos SDK, and committed, to the store, but not
-
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
     fn put_connection_counter(&mut self, counter: ConnectionCounter) {
         self.put(state_key::counter().into(), counter);
+    }
+    fn put_client_connection(&mut self, client_id: &ClientId, paths: ClientPaths) {
+        self.put(
+            ClientConnectionPath::new(client_id).to_string(),
+            paths.clone(),
+        );
     }
 
     // puts a new connection into the state, updating the connections associated with the client,
@@ -31,6 +39,11 @@ pub trait StateWriteExt: StateWrite {
             ConnectionPath::new(connection_id).to_string(),
             connection.clone(),
         );
+
+        let mut client_paths = self.get_client_connections(&connection.client_id).await?;
+        client_paths.paths.push(connection_id.clone());
+        self.put_client_connection(&connection.client_id, client_paths);
+
         let counter = self
             .get_connection_counter()
             .await
@@ -61,6 +74,12 @@ pub trait StateReadExt: StateRead {
     async fn get_connection(&self, connection_id: &ConnectionId) -> Result<Option<ConnectionEnd>> {
         self.get(&ConnectionPath::new(connection_id).to_string())
             .await
+    }
+
+    async fn get_client_connections(&self, client_id: &ClientId) -> Result<ClientPaths> {
+        self.get(&ClientConnectionPath::new(client_id).to_string())
+            .await
+            .map(|paths| paths.unwrap_or(ClientPaths { paths: vec![] }))
     }
 }
 
