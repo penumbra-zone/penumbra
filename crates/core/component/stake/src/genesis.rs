@@ -4,13 +4,20 @@ use serde::{Deserialize, Serialize};
 
 use crate::params::StakeParameters;
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
 #[serde(try_from = "pb::GenesisContent", into = "pb::GenesisContent")]
 pub struct Content {
     /// The initial configuration parameters for the staking component.
     pub stake_params: StakeParameters,
     /// The initial validator set.
     pub validators: Vec<pb::Validator>,
+}
+impl TypeUrl for Content {
+    const TYPE_URL: &'static str = "/penumbra.stake.v1alpha1.GenesisContent";
+}
+
+impl DomainType for Content {
+    type Proto = pb::GenesisContent;
 }
 
 impl From<Content> for pb::GenesisContent {
@@ -37,15 +44,5 @@ impl TryFrom<pb::GenesisContent> for Content {
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
         })
-    }
-}
-
-impl Default for Content {
-    fn default() -> Self {
-        Self {
-            // TODO: create a test validator
-            validators: Default::default(),
-            stake_params: Default::default(),
-        }
     }
 }

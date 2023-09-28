@@ -1,5 +1,5 @@
 use anyhow::Context;
-use penumbra_proto::{penumbra::core::component::chain::v1alpha1 as pb, TypeUrl};
+use penumbra_proto::{penumbra::core::component::chain::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::params::ChainParameters;
@@ -34,4 +34,8 @@ impl TryFrom<pb::GenesisContent> for Content {
 
 impl TypeUrl for Content {
     const TYPE_URL: &'static str = "/penumbra.chain.v1alpha1.GenesisContent";
+}
+
+impl DomainType for Content {
+    type Proto = pb::GenesisContent;
 }

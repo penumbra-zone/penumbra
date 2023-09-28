@@ -14,6 +14,14 @@ pub struct Content {
     pub allocations: Vec<Allocation>,
 }
 
+impl TypeUrl for Content {
+    const TYPE_URL: &'static str = "/penumbra.shielded_pool.v1alpha1.GenesisContent";
+}
+
+impl DomainType for Content {
+    type Proto = pb::GenesisContent;
+}
+
 impl From<Content> for pb::GenesisContent {
     fn from(value: Content) -> Self {
         pb::GenesisContent {

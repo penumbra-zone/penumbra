@@ -1,4 +1,3 @@
-use anyhow::Context;
 use penumbra_chain::genesis::Content as ChainContent;
 use penumbra_dao::genesis::Content as DaoContent;
 use penumbra_governance::genesis::Content as GovernanceContent;
@@ -8,10 +7,7 @@ use penumbra_shielded_pool::genesis::Content as ShieldedPoolContent;
 use penumbra_stake::genesis::Content as StakeContent;
 use serde::{Deserialize, Serialize};
 
-use crate::params::AppParameters;
-
 /// The application state at genesis.
-/// TODO: bubble up to penumbra_app (https://github.com/penumbra-zone/penumbra/issues/3085)
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(try_from = "pb::GenesisAppState", into = "pb::GenesisAppState")]
 pub enum AppState {
@@ -21,7 +17,7 @@ pub enum AppState {
     Checkpoint(Vec<u8>),
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
 #[serde(try_from = "pb::GenesisContent", into = "pb::GenesisContent")]
 pub struct Content {
     /// Stake module genesis state.
@@ -38,22 +34,17 @@ pub struct Content {
     pub dao_content: DaoContent,
 }
 
+impl TypeUrl for Content {
+    const TYPE_URL: &'static str = "/penumbra.core.app.v1alpha1.GenesisContent";
+}
+
+impl DomainType for Content {
+    type Proto = pb::GenesisContent;
+}
+
 impl Default for AppState {
     fn default() -> Self {
         Self::Content(Default::default())
-    }
-}
-
-impl Default for Content {
-    fn default() -> Self {
-        Self {
-            stake_content: Default::default(),
-            shielded_pool_content: Default::default(),
-            governance_content: Default::default(),
-            ibc_content: Default::default(),
-            chain_content: Default::default(),
-            dao_content: Default::default(),
-        }
     }
 }
 
@@ -137,7 +128,7 @@ impl TryFrom<pb::GenesisContent> for Content {
 }
 
 impl TypeUrl for AppState {
-    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.GenesisAppState";
+    const TYPE_URL: &'static str = "/penumbra.core.app.v1alpha1.GenesisAppState";
 }
 
 impl DomainType for AppState {
