@@ -34,6 +34,9 @@ TESTNET_RUNTIME="${TESTNET_RUNTIME:-120}"
 # Duration that the network will run before integration tests are run.
 TESTNET_BOOTTIME="${TESTNET_BOOTTIME:-20}"
 
+echo "Building latest version of pd from source..."
+cargo build --quiet --release --bin pd
+
 echo "Generating testnet config..."
 EPOCH_DURATION="${EPOCH_DURATION:-100}"
 cargo run --quiet --release --bin pd -- testnet generate --epoch-duration "$EPOCH_DURATION" --timeout-commit 500ms

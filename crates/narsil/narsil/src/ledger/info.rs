@@ -7,8 +7,8 @@ use std::{
 use futures::FutureExt;
 use penumbra_chain::component::{AppHashRead, StateReadExt};
 use penumbra_storage::Storage;
-use penumbra_tower_trace::v034::RequestExt;
-use tendermint::v0_34::abci::{self, response::Echo, InfoRequest, InfoResponse};
+use penumbra_tower_trace::v037::RequestExt;
+use tendermint::v0_37::abci::{self, response::Echo, InfoRequest, InfoResponse};
 use tower_abci::BoxError;
 use tracing::Instrument;
 
@@ -78,7 +78,6 @@ impl tower_service::Service<InfoRequest> for Info {
                 InfoRequest::Echo(echo) => Ok(InfoResponse::Echo(Echo {
                     message: echo.message,
                 })),
-                InfoRequest::SetOption(_) => todo!(),
             }
         }
         .instrument(span)

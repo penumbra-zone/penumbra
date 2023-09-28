@@ -7,7 +7,7 @@ use penumbra_chain::component::StateReadExt as _;
 use penumbra_component::Component;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
-use tendermint::v0_34::abci;
+use tendermint::v0_37::abci;
 use tracing::instrument;
 
 use crate::{

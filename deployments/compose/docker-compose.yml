@@ -33,7 +33,7 @@ services:
 
   # The CometBFT node
   cometbft-node0:
-    image: "docker.io/cometbft/cometbft:v0.34.27"
+    image: "docker.io/cometbft/cometbft:v0.37.2"
     user: "${UID:-1000}"
     ports:
       - "26656:26656"

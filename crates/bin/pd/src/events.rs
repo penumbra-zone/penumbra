@@ -4,7 +4,7 @@ use anyhow::Result;
 use futures::FutureExt;
 use regex::RegexSet;
 use tendermint::abci::Event;
-use tendermint::v0_34::abci::{ConsensusRequest as Request, ConsensusResponse as Response};
+use tendermint::v0_37::abci::{ConsensusRequest as Request, ConsensusResponse as Response};
 use tower::{Layer, Service};
 
 #[derive(Debug, Clone)]
@@ -102,6 +102,8 @@ where
                 // No events.
                 Response::InitChain(_) => {}
                 Response::Commit(_) => {}
+                Response::PrepareProposal(_) => {}
+                Response::ProcessProposal(_) => {}
                 // These responses have events.
                 Response::BeginBlock(ref mut msg) => config.adjust_events(&mut msg.events),
                 Response::DeliverTx(ref mut msg) => config.adjust_events(&mut msg.events),

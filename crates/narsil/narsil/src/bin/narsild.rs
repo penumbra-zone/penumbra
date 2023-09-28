@@ -7,8 +7,8 @@ use console_subscriber::ConsoleLayer;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
 use metrics_util::layers::Stack;
 use penumbra_tendermint_proxy::TendermintProxy;
-use penumbra_tower_trace::v034::RequestExt;
-use tendermint::v0_34::abci::{ConsensusRequest, MempoolRequest};
+use penumbra_tower_trace::v037::RequestExt;
+use tendermint::v0_37::abci::{ConsensusRequest, MempoolRequest};
 
 use narsil::{
     ledger::{consensus::Consensus, mempool::Mempool, snapshot::Snapshot, Info},
@@ -159,7 +159,7 @@ async fn main() -> anyhow::Result<()> {
             let abci_server = tokio::task::Builder::new()
                 .name("abci_server")
                 .spawn(
-                    tower_abci::v034::Server::builder()
+                    tower_abci::v037::Server::builder()
                         .consensus(consensus)
                         .snapshot(snapshot)
                         .mempool(mempool)
