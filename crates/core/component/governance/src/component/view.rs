@@ -833,7 +833,7 @@ pub trait StateWriteExt: StateWrite {
                     self.signal_halt().await?;
                 }
             }
-            ProposalPayload::ParameterChange { old, new } => {
+            ProposalPayload::ParameterChange { old: _, new: _ } => {
                 // TODO: Renable (#3107)
                 tracing::info!("Parameter change proposal passed, however parameter change is currently disabled. See issue #3107");
                 // tracing::info!(
