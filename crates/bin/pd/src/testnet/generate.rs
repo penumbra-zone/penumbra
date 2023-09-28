@@ -196,7 +196,6 @@ impl TestnetConfig {
             },
             shielded_pool_content: ShieldedPoolContent {
                 allocations: allocations.clone(),
-                ..Default::default()
             },
             chain_content: ChainContent {
                 chain_params: ChainParameters {

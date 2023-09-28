@@ -147,7 +147,7 @@ mod test {
         let a = Content {
             ..Default::default()
         };
-        assert!(a.validators.is_empty());
+        assert!(a.stake_content.validators.is_empty());
         Ok(())
     }
 }
