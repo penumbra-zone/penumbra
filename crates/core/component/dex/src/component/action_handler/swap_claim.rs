@@ -77,7 +77,7 @@ impl ActionHandler for SwapClaim {
 
         state.spend_nullifier(self.body.nullifier, source).await;
 
-        state.record(event::swap_claim(&self));
+        state.record(event::swap_claim(self));
 
         Ok(())
     }

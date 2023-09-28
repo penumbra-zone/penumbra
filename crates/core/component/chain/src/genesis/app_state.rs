@@ -123,7 +123,7 @@ impl TryFrom<pb::GenesisAppState> for AppState {
                 Ok(AppState::Content(c.try_into()?))
             }
             pb::genesis_app_state::GenesisAppState::GenesisCheckpoint(h) => {
-                Ok(AppState::Checkpoint(h.try_into()?))
+                Ok(AppState::Checkpoint(h))
             }
         }
     }
@@ -173,7 +173,7 @@ mod test {
         let a = Content {
             ..Default::default()
         };
-        assert!(a.validators.len() == 0);
+        assert!(a.validators.is_empty());
         Ok(())
     }
 }

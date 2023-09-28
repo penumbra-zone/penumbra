@@ -425,7 +425,7 @@ pub fn updates(
                     // Deleting children, then adding the hash allows the backend to do a sensibility check that
                     // there are no children of essential hashes, if it chooses to.
 
-                    deletion_update.into_iter().chain(hash_update.into_iter())
+                    deletion_update.into_iter().chain(hash_update)
                 },
             );
 

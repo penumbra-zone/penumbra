@@ -282,7 +282,7 @@ mod tests {
         let (pk, vk) = generate_prepared_test_parameters::<SwapCircuit>(&mut rng);
 
 
-        let seed_phrase = SeedPhrase::generate(&mut rng);
+        let seed_phrase = SeedPhrase::generate(rng);
         let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();

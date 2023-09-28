@@ -33,11 +33,9 @@ pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position
                         format!("{}bps", position.phi.component.fee),
                         format!(
                             "{}",
-                            sell_order
-                                .price_str(&asset_cache)
-                                .expect("assets are known"),
+                            sell_order.price_str(asset_cache).expect("assets are known"),
                         ),
-                        sell_order.offered.format(&asset_cache),
+                        sell_order.offered.format(asset_cache),
                     ]);
                 } else if let Some((sell_order_1, sell_order_2)) = position.interpret_as_mixed() {
                     table.add_row(vec![
@@ -47,10 +45,10 @@ pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position
                         format!(
                             "{}",
                             sell_order_1
-                                .price_str(&asset_cache)
+                                .price_str(asset_cache)
                                 .expect("assets are known"),
                         ),
-                        sell_order_1.offered.format(&asset_cache),
+                        sell_order_1.offered.format(asset_cache),
                     ]);
                     table.add_row(vec![
                         // Add a mark indicating this row is associated with the same position.
@@ -61,10 +59,10 @@ pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position
                         format!(
                             "{}",
                             sell_order_2
-                                .price_str(&asset_cache)
+                                .price_str(asset_cache)
                                 .expect("assets are known"),
                         ),
-                        sell_order_2.offered.format(&asset_cache),
+                        sell_order_2.offered.format(asset_cache),
                     ]);
                 } else {
                     table.add_row(vec![
@@ -84,7 +82,7 @@ pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position
                         amount: position.reserves.r1,
                         asset_id: position.phi.pair.asset_1(),
                     }
-                    .format(&asset_cache),
+                    .format(asset_cache),
                 ]);
                 table.add_row(vec![
                     String::new(),
@@ -95,7 +93,7 @@ pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position
                         amount: position.reserves.r2,
                         asset_id: position.phi.pair.asset_2(),
                     }
-                    .format(&asset_cache),
+                    .format(asset_cache),
                 ]);
             }
         }

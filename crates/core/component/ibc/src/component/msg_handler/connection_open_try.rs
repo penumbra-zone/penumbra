@@ -2,7 +2,6 @@ use crate::component::proof_verification;
 use crate::version::pick_connection_version;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use ibc_types::core::commitment::MerkleProof;
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
 use ibc_types::{
@@ -99,7 +98,7 @@ impl MsgHandler for MsgConnectionOpenTry {
 
         // PROOF VERIFICATION
         // 1. verify that the counterparty chain committed the expected_conn to its state
-        let proof_conn_end_on_a = MerkleProof::try_from(self.proof_conn_end_on_a.clone())?;
+        let proof_conn_end_on_a = self.proof_conn_end_on_a.clone();
         proof_verification::verify_connection_state(
             &trusted_client_state,
             self.proofs_height_on_a,
@@ -118,8 +117,7 @@ impl MsgHandler for MsgConnectionOpenTry {
 
         // 2. verify that the counterparty chain committed the correct ClientState (that was
         //    provided in the msg)
-        let proof_client_state_of_b_on_a =
-            MerkleProof::try_from(self.proof_client_state_of_b_on_a.clone())?;
+        let proof_client_state_of_b_on_a = self.proof_client_state_of_b_on_a.clone();
 
         let client_state_of_b_on_a: TendermintClientState =
             self.client_state_of_b_on_a.clone().try_into()?;
@@ -141,8 +139,7 @@ impl MsgHandler for MsgConnectionOpenTry {
 
         // 3. verify that the counterparty chain stored the correct consensus state of Penumbra at
         //    the given consensus height
-        let proof_consensus_state_of_b_on_a =
-            MerkleProof::try_from(self.proof_consensus_state_of_b_on_a.clone())?;
+        let proof_consensus_state_of_b_on_a = self.proof_consensus_state_of_b_on_a.clone();
         proof_verification::verify_client_consensus_state(
             &trusted_client_state,
             self.proofs_height_on_a,

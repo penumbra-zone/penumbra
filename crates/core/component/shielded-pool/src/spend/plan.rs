@@ -144,10 +144,10 @@ impl From<SpendPlan> for pb::SpendPlan {
         Self {
             note: Some(msg.note.into()),
             position: u64::from(msg.position),
-            randomizer: msg.randomizer.to_bytes().to_vec().into(),
-            value_blinding: msg.value_blinding.to_bytes().to_vec().into(),
-            proof_blinding_r: msg.proof_blinding_r.to_bytes().to_vec().into(),
-            proof_blinding_s: msg.proof_blinding_s.to_bytes().to_vec().into(),
+            randomizer: msg.randomizer.to_bytes().to_vec(),
+            value_blinding: msg.value_blinding.to_bytes().to_vec(),
+            proof_blinding_r: msg.proof_blinding_r.to_bytes().to_vec(),
+            proof_blinding_s: msg.proof_blinding_s.to_bytes().to_vec(),
         }
     }
 }

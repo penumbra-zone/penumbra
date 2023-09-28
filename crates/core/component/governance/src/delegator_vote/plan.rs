@@ -89,7 +89,7 @@ impl DelegatorVotePlan {
             value: self.staked_note.value(),
             unbonded_amount: self.unbonded_amount,
             nullifier: Nullifier::derive(
-                &fvk.nullifier_key(),
+                fvk.nullifier_key(),
                 self.position,
                 &self.staked_note.commit(),
             ),
@@ -129,7 +129,7 @@ impl DelegatorVotePlan {
     /// Construct the [`Nullifier`] associated with this [`DelegatorVotePlan`].
     pub fn nullifier(&self, fvk: &FullViewingKey) -> Nullifier {
         Nullifier::derive(
-            &fvk.nullifier_key(),
+            fvk.nullifier_key(),
             self.position,
             &self.staked_note.commit(),
         )
@@ -154,8 +154,8 @@ impl From<DelegatorVotePlan> for pb::DelegatorVotePlan {
             unbonded_amount: Some(inner.unbonded_amount.into()),
             staked_note_position: inner.position.into(),
             randomizer: inner.randomizer.to_bytes().to_vec(),
-            proof_blinding_r: inner.proof_blinding_r.to_bytes().to_vec().into(),
-            proof_blinding_s: inner.proof_blinding_s.to_bytes().to_vec().into(),
+            proof_blinding_r: inner.proof_blinding_r.to_bytes().to_vec(),
+            proof_blinding_s: inner.proof_blinding_s.to_bytes().to_vec(),
         }
     }
 }

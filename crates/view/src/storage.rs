@@ -236,28 +236,22 @@ impl Storage {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            let query = format!(
-                "SELECT notes.asset_id, notes.amount, spendable_notes.address_index
+            let query = "SELECT notes.asset_id, notes.amount, spendable_notes.address_index
                 FROM    notes
                 JOIN    spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-                WHERE   spendable_notes.height_spent IS NULL"
-            );
+                WHERE   spendable_notes.height_spent IS NULL";
 
             tracing::debug!(?query);
 
             let mut balances = BTreeMap::new();
 
-            for result in pool
-                .get()?
-                .prepare_cached(query.as_str())?
-                .query_map([], |row| {
-                    let asset_id = row.get::<&str, Vec<u8>>("asset_id")?;
-                    let amount = row.get::<&str, Vec<u8>>("amount")?;
-                    let address_index = row.get::<&str, Vec<u8>>("address_index")?;
+            for result in pool.get()?.prepare_cached(query)?.query_map([], |row| {
+                let asset_id = row.get::<&str, Vec<u8>>("asset_id")?;
+                let amount = row.get::<&str, Vec<u8>>("amount")?;
+                let address_index = row.get::<&str, Vec<u8>>("address_index")?;
 
-                    Ok((asset_id, amount, address_index))
-                })?
-            {
+                Ok((asset_id, amount, address_index))
+            })? {
                 let (id, amount, index) = result?;
 
                 let id = Id::try_from(id.as_slice())?;
@@ -436,9 +430,7 @@ impl Storage {
         let records = spawn_blocking(move || {
             // Check if we already have the swap record
             pool.get()?
-                .prepare(&format!(
-                    "SELECT * FROM swaps WHERE swaps.height_claimed is NULL"
-                ))?
+                .prepare("SELECT * FROM swaps WHERE swaps.height_claimed is NULL")?
                 .query_and_then((), |record| record.try_into())?
                 .collect::<anyhow::Result<Vec<_>>>()
         })
@@ -1462,12 +1454,12 @@ impl Storage {
         let pool = self.pool.clone();
 
         let state_clause = match position_state {
-            Some(state) => format!("position_state = \"{}\"", state.to_string()),
+            Some(state) => format!("position_state = \"{}\"", state),
             None => "".to_string(),
         };
 
         let pair_clause = match trading_pair {
-            Some(pair) => format!("trading_pair = \"{}\"", pair.to_string()),
+            Some(pair) => format!("trading_pair = \"{}\"", pair),
             None => "".to_string(),
         };
 

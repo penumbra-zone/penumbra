@@ -41,6 +41,7 @@ pub struct TransactionBodyView {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pbt::MemoView", into = "pbt::MemoView")]
+#[allow(clippy::large_enum_variant)]
 pub enum MemoView {
     Visible {
         plaintext: MemoPlaintext,

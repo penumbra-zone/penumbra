@@ -404,20 +404,19 @@ impl TxCmd {
 
                 let asset_cache = app.view().assets().await?;
 
-                let pro_rata_outputs = swap_record.output_data.pro_rata_outputs((
-                    swap_plaintext.delta_1_i.into(),
-                    swap_plaintext.delta_2_i.into(),
-                ));
+                let pro_rata_outputs = swap_record
+                    .output_data
+                    .pro_rata_outputs((swap_plaintext.delta_1_i, swap_plaintext.delta_2_i));
                 println!("Swap submitted and batch confirmed!");
                 println!(
                     "You will receive outputs of {} and {}. Claiming now...",
                     Value {
-                        amount: pro_rata_outputs.0.into(),
+                        amount: pro_rata_outputs.0,
                         asset_id: swap_record.output_data.trading_pair.asset_1()
                     }
                     .format(&asset_cache),
                     Value {
-                        amount: pro_rata_outputs.1.into(),
+                        amount: pro_rata_outputs.1,
                         asset_id: swap_record.output_data.trading_pair.asset_2()
                     }
                     .format(&asset_cache),
@@ -837,7 +836,7 @@ impl TxCmd {
                 tracing::info!(?order);
                 let fee = Fee::from_staking_token_amount(order.fee().into());
                 let source = AddressIndex::new(order.source());
-                let position = order.into_position(&asset_cache, OsRng)?;
+                let position = order.as_position(&asset_cache, OsRng)?;
                 tracing::info!(?position);
 
                 let plan = Planner::new(OsRng)
@@ -899,7 +898,7 @@ impl TxCmd {
                     }
                 }
 
-                let (amount, denom) = parse_denom_and_amount(&value)?;
+                let (amount, denom) = parse_denom_and_amount(value)?;
 
                 let withdrawal = Ics20Withdrawal {
                     destination_chain_address: destination_chain_address.to_string(),

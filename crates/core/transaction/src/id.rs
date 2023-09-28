@@ -51,7 +51,7 @@ impl DomainType for Id {
 impl From<Id> for pb::Id {
     fn from(id: Id) -> pb::Id {
         pb::Id {
-            hash: id.0.to_vec().into(),
+            hash: id.0.to_vec(),
         }
     }
 }

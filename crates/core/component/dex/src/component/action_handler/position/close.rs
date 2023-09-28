@@ -29,7 +29,7 @@ impl ActionHandler for PositionClose {
         // during that block's batch swap execution.
         state.queue_close_position(self.position_id);
 
-        state.record(event::position_close(&self));
+        state.record(event::position_close(self));
 
         Ok(())
     }

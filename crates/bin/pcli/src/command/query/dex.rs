@@ -482,7 +482,7 @@ impl DexCmd {
                         "q".to_string(),
                         position.phi.component.q.value().to_string(),
                     ]);
-                    table.add_row(vec!["Nonce".to_string(), hex::encode(&position.nonce)]);
+                    table.add_row(vec!["Nonce".to_string(), hex::encode(position.nonce)]);
                     println!("{}", table);
                 }
             }

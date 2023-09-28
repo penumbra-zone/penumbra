@@ -43,7 +43,7 @@ fn check_phase2(
     root: &Phase2CRSElements,
     parent: &Phase2CRSElements,
 ) -> bool {
-    let validated_contribution = contribution.validate(&mut OsRng, &root);
+    let validated_contribution = contribution.validate(&mut OsRng, root);
     if validated_contribution.is_none() {
         return false;
     }

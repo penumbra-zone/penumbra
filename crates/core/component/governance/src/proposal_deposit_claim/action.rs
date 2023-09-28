@@ -63,7 +63,7 @@ impl ProposalDepositClaim {
     pub fn balance(&self) -> Balance {
         let deposit = Value {
             amount: self.deposit_amount,
-            asset_id: STAKING_TOKEN_ASSET_ID.clone(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
         };
 
         let (voting_or_withdrawn_proposal_denom, claimed_proposal_denom): (

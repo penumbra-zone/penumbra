@@ -167,7 +167,7 @@ impl TransactionPlan {
         for position_close in self.position_closings().cloned() {
             actions.push(Action::PositionClose(position_close))
         }
-        for position_withdraw in self.position_withdrawals().cloned() {
+        for position_withdraw in self.position_withdrawals() {
             actions.push(Action::PositionWithdraw(
                 position_withdraw.position_withdraw(),
             ))
@@ -393,7 +393,7 @@ impl TransactionPlan {
         for position_close in self.position_closings().cloned() {
             actions.push(Action::PositionClose(position_close))
         }
-        for position_withdraw in self.position_withdrawals().cloned() {
+        for position_withdraw in self.position_withdrawals() {
             actions.push(Action::PositionWithdraw(
                 position_withdraw.position_withdraw(),
             ))

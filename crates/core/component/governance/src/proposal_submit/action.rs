@@ -25,7 +25,7 @@ impl ProposalSubmit {
     pub fn balance(&self) -> Balance {
         let deposit = Value {
             amount: self.deposit_amount,
-            asset_id: STAKING_TOKEN_ASSET_ID.clone(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
         };
 
         let proposal_nft = Value {

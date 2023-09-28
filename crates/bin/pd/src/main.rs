@@ -660,7 +660,7 @@ async fn main() -> anyhow::Result<()> {
         }
         RootCommand::Upgrade { upgrade_path } => {
             tracing::info!("upgrading state from {}", upgrade_path.display());
-            let _ = upgrade::migrate(upgrade_path.clone(), Upgrade::Testnet60)
+            upgrade::migrate(upgrade_path.clone(), Upgrade::Testnet60)
                 .await
                 .context("failed to upgrade state")?;
         }

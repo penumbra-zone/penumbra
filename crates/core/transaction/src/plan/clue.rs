@@ -49,7 +49,7 @@ impl From<CluePlan> for pb::CluePlan {
     fn from(msg: CluePlan) -> Self {
         Self {
             address: Some(msg.address.into()),
-            rseed: msg.rseed.to_vec().into(),
+            rseed: msg.rseed.to_vec(),
             precision_bits: msg.precision_bits as u64,
         }
     }

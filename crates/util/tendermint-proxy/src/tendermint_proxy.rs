@@ -326,7 +326,7 @@ impl TendermintProxyService for TendermintProxy {
                     height: res.block.header.height.into(),
                     time: Some(pbjson_types::Timestamp {
                         seconds: header_time.timestamp(),
-                        nanos: header_time.timestamp_nanos_opt().unwrap() as i32,
+                        nanos: header_time.timestamp_nanos_opt().ok_or_else(|| tonic::Status::invalid_argument("missing header_time nanos"))? as i32,
                     }),
                     last_block_id: res.block.header.last_block_id.map(|id| {
                         penumbra_proto::tendermint::types::BlockId {
@@ -378,7 +378,7 @@ impl TendermintProxyService for TendermintProxy {
                         .evidence
                         .into_vec()
                         .iter()
-                        .map(|e| proto::tendermint::types::Evidence {
+                        .map(|e| Ok(proto::tendermint::types::Evidence {
                             sum: Some( match e {
                                 tendermint::evidence::Evidence::DuplicateVote(e) => {
                                    let e2 = tendermint_proto::types::DuplicateVoteEvidence::from(e.deref().clone());
@@ -399,7 +399,7 @@ impl TendermintProxyService for TendermintProxy {
                                         }),
                                         timestamp: Some(pbjson_types::Timestamp{
                                             seconds: DateTime::parse_from_rfc3339(&e.votes().0.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
-                                            nanos: DateTime::parse_from_rfc3339(&e.votes().0.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos_opt().unwrap() as i32,
+                                            nanos: DateTime::parse_from_rfc3339(&e.votes().0.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos_opt().ok_or_else(|| tonic::Status::invalid_argument("missing timestamp nanos"))? as i32,
                                         }),
                                         validator_address: e.votes().0.validator_address.into(),
                                         validator_index: e.votes().0.validator_index.into(),
@@ -421,7 +421,7 @@ impl TendermintProxyService for TendermintProxy {
                                         }),
                                         timestamp: Some(pbjson_types::Timestamp{
                                             seconds: DateTime::parse_from_rfc3339(&e.votes().1.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
-                                            nanos: DateTime::parse_from_rfc3339(&e.votes().1.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos_opt().unwrap() as i32,
+                                            nanos: DateTime::parse_from_rfc3339(&e.votes().1.timestamp.expect("timestamp").to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos_opt().ok_or_else(|| tonic::Status::invalid_argument("missing timestamp nanos"))?  as i32,
                                         }),
                                         validator_address: e.votes().1.validator_address.into(),
                                         validator_index: e.votes().1.validator_index.into(),
@@ -442,8 +442,8 @@ impl TendermintProxyService for TendermintProxy {
                                 }
 
                         }),
-                        })
-                        .collect(),
+                        }))
+                        .collect::<anyhow::Result<Vec<_>, tonic::Status>>()?,
                 }),
                 last_commit: Some(proto::tendermint::types::Commit {
                     height: res.block.last_commit.as_ref().expect("last_commit").height.into(),
@@ -459,7 +459,7 @@ impl TendermintProxyService for TendermintProxy {
                         Some(commit) => commit
                             .signatures
                             .into_iter()
-                            .map(|s| {
+                            .map(|s| Ok({
                                 match s {
                                     tendermint::block::CommitSig::BlockIdFlagAbsent => proto::tendermint::types::CommitSig {
                                         block_id_flag: proto::tendermint::types::BlockIdFlag::Absent as i32,
@@ -473,7 +473,7 @@ impl TendermintProxyService for TendermintProxy {
                                         validator_address: validator_address.into(),
                                         timestamp: Some(pbjson_types::Timestamp{
                                             seconds: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
-                                            nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos_opt().unwrap() as i32,
+                                            nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos_opt().ok_or_else(|| tonic::Status::invalid_argument("missing timestamp nanos"))? as i32,
                                         }),
                                         signature: signature.expect("signature").into(),
                                     },
@@ -482,13 +482,13 @@ impl TendermintProxyService for TendermintProxy {
                                         validator_address: validator_address.into(),
                                         timestamp: Some(pbjson_types::Timestamp{
                                             seconds: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp(),
-                                            nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos_opt().unwrap() as i32,
+                                            nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339()).expect("timestamp should roundtrip to string").timestamp_nanos_opt().ok_or_else(|| tonic::Status::invalid_argument("missing timestamp nanos"))? as i32,
                                         }),
                                         signature: signature.expect("signature").into(),
                                     },
                                 }
-                            })
-                            .collect(),
+                            }))
+                            .collect::<anyhow::Result<Vec<_>, tonic::Status>>()?,
                         None => vec![],
                     },
                 }),

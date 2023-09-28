@@ -50,6 +50,7 @@ impl TestnetConfig {
     /// Create a new testnet configuration, optionally customizing the allocations and validator
     /// set. By default, will use the prepared Discord allocations and Penumbra Labs CI validator
     /// configs.
+    #[allow(clippy::too_many_arguments)]
     pub fn generate(
         chain_id: &str,
         testnet_dir: Option<PathBuf>,
@@ -125,20 +126,15 @@ impl TestnetConfig {
             )?
         };
 
-        if external_addresses.len() > 0 {
-            if external_addresses.len() != testnet_validators.len() {
-                anyhow::bail!("Number of validators did not equal number of external addresses");
-            }
+        if !external_addresses.is_empty() && external_addresses.len() != testnet_validators.len() {
+            anyhow::bail!("Number of validators did not equal number of external addresses");
         }
 
         Ok(testnet_validators
             .into_iter()
             .enumerate()
             .map(|(i, v)| TestnetValidator {
-                peer_address_template: match &peer_address_template {
-                    Some(t) => Some(format!("{t}-{i}")),
-                    None => None,
-                },
+                peer_address_template: peer_address_template.as_ref().map(|t| format!("{t}-{i}")),
                 external_address: external_addresses.get(i).cloned(),
                 ..v
             })
@@ -290,10 +286,7 @@ impl TestnetConfig {
             let ips_minus_mine = ips_minus_mine?;
             tracing::debug!(?ips_minus_mine, "Found these peer ips");
 
-            let external_address: Option<TendermintAddress> = match &v.external_address {
-                Some(e) => Some(e.clone()),
-                None => None,
-            };
+            let external_address: Option<TendermintAddress> = v.external_address.as_ref().cloned();
             let mut tm_config = TestnetTendermintConfig::new(
                 &node_name,
                 ips_minus_mine,

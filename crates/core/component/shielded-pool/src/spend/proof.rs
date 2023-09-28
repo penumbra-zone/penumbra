@@ -119,7 +119,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let claimed_balance_commitment_var =
             BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
         let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
-        let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.rk.clone()))?;
+        let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.rk))?;
 
         // We short circuit to true if value released is 0. That means this is a _dummy_ spend.
         let is_dummy = note_var.amount().is_eq(&FqVar::zero())?;
@@ -261,7 +261,7 @@ impl SpendProof {
     /// Called to verify the proof using the provided public inputs.
     // For debugging proof verification failures,
     // to check that the proof data and verification keys are consistent.
-    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?base64::encode(&self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
+    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?base64::encode(self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
@@ -299,7 +299,7 @@ impl SpendProof {
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
         let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
-            &vk,
+            vk,
             public_inputs.as_slice(),
             &proof,
         )

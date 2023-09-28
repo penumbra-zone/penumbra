@@ -61,7 +61,7 @@ impl ActionHandler for Swap {
             crate::component::metrics::DEX_SWAP_DURATION,
             swap_start.elapsed()
         );
-        state.record(event::swap(&self));
+        state.record(event::swap(self));
 
         Ok(())
     }

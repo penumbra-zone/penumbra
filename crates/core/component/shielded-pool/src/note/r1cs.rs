@@ -63,10 +63,9 @@ impl AllocVar<Note, Fq> for NoteVar {
         let cs = ns.cs();
         let note1 = f()?;
         let note: &Note = note1.borrow();
-        let note_blinding =
-            FqVar::new_variable(cs.clone(), || Ok(note.note_blinding().clone()), mode)?;
-        let value = ValueVar::new_variable(cs.clone(), || Ok(note.value().clone()), mode)?;
-        let address = AddressVar::new_variable(cs, || Ok(note.address().clone()), mode)?;
+        let note_blinding = FqVar::new_variable(cs.clone(), || Ok(note.note_blinding()), mode)?;
+        let value = ValueVar::new_variable(cs.clone(), || Ok(note.value()), mode)?;
+        let address = AddressVar::new_variable(cs, || Ok(note.address()), mode)?;
 
         Ok(Self {
             note_blinding,

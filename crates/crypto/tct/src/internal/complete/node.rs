@@ -206,7 +206,7 @@ impl<'tree, Child: Height + structure::Any<'tree> + Clone> structure::Any<'tree>
         self.forgotten
             .iter()
             .copied()
-            .zip(self.children.children().into_iter())
+            .zip(self.children.children())
             .map(|(forgotten, child)| match child {
                 Insert::Keep(node) => HashOrNode::Node(node),
                 Insert::Hash(hash) => HashOrNode::Hash(HashedNode {

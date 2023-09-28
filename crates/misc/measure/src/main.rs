@@ -110,8 +110,8 @@ impl Opt {
                                 .compact_block_range(tonic::Request::new(
                                     CompactBlockRangeRequest {
                                         chain_id: String::new(),
-                                        start_height: start_height,
-                                        end_height: end_height,
+                                        start_height,
+                                        end_height,
                                         keep_alive: true,
                                     },
                                 ))

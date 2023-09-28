@@ -2,7 +2,6 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types::core::{
     client::Height,
-    commitment::MerkleProof,
     connection::{events, msgs::MsgConnectionOpenAck, ConnectionEnd, Counterparty, State},
 };
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
@@ -100,7 +99,7 @@ impl MsgHandler for MsgConnectionOpenAck {
         tracing::debug!(
             expected_conn = ?expected_conn,
         );
-        let conn_end_on_b_proof = MerkleProof::try_from(self.proof_conn_end_on_b.clone())?;
+        let conn_end_on_b_proof = self.proof_conn_end_on_b.clone();
         proof_verification::verify_connection_state(
             &trusted_client_state,
             self.proofs_height_on_b,
@@ -114,8 +113,7 @@ impl MsgHandler for MsgConnectionOpenAck {
 
         // 2. verify that the counterparty chain committed the correct ClientState (that was
         //    provided in the msg)
-        let proof_client_state_of_a_on_b =
-            MerkleProof::try_from(self.proof_client_state_of_a_on_b.clone())?;
+        let proof_client_state_of_a_on_b = self.proof_client_state_of_a_on_b.clone();
         let client_state_of_a_on_b: TendermintClientState =
             self.client_state_of_a_on_b.clone().try_into()?;
 
@@ -136,8 +134,7 @@ impl MsgHandler for MsgConnectionOpenAck {
 
         // 3. verify that the counterparty chain stored the correct consensus state of Penumbra at
         //    the given consensus height
-        let proof_consensus_state_of_a_on_b =
-            MerkleProof::try_from(self.proof_consensus_state_of_a_on_b.clone())?;
+        let proof_consensus_state_of_a_on_b = self.proof_consensus_state_of_a_on_b.clone();
         proof_verification::verify_client_consensus_state(
             &trusted_client_state,
             self.proofs_height_on_b,
@@ -211,7 +208,7 @@ async fn penumbra_client_state_is_well_formed<S: StateRead>(
 ) -> anyhow::Result<()> {
     let height = state.get_block_height().await?;
     let chain_id = state.get_chain_id().await?;
-    _ = validate_penumbra_client_state(msg.client_state_of_a_on_b.clone(), &chain_id, height)?;
+    validate_penumbra_client_state(msg.client_state_of_a_on_b.clone(), &chain_id, height)?;
 
     Ok(())
 }

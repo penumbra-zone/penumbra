@@ -209,7 +209,7 @@ impl Storage {
                             // Key was deleted, so delete the key preimage, and its keyhash index.
                             None => {
                                 inner.db.delete_cf(jmt_keys_cf, key_preimage)?;
-                                inner.db.delete_cf(jmt_keys_by_keyhash_cf, &keyhash.0)?;
+                                inner.db.delete_cf(jmt_keys_by_keyhash_cf, keyhash.0)?;
                             }
                         };
                     }

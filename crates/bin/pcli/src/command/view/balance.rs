@@ -126,7 +126,7 @@ fn combine_ephemeral(
         let mut cur_row = ephemeral_notes[0];
         for row in ephemeral_notes.iter().skip(1) {
             if cur_row.1.asset_id == row.1.asset_id {
-                cur_row.1.amount = cur_row.1.amount + row.1.amount;
+                cur_row.1.amount += row.1.amount;
             } else {
                 new_ephemeral_notes.push(cur_row);
                 cur_row = *row;

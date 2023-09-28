@@ -104,7 +104,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                     address_index: Some(source.into()),
                     amount_to_spend: Some(amount.into()),
                     include_spent: false,
-                    ..Default::default()
                 })
                 .collect(),
             self.vote_intents
@@ -119,7 +118,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                         account_group_id: Some(account_group_id.into()),
                         votable_at_height: *start_block_height,
                         address_index: Some(source.into()),
-                        ..Default::default()
                     },
                 )
                 .collect(),
@@ -290,7 +288,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Upload a validator definition in this transaction.
     #[instrument(skip(self))]
     pub fn validator_definition(&mut self, new_validator: validator::Definition) -> &mut Self {
-        self.action(ActionPlan::ValidatorDefinition(new_validator.into()));
+        self.action(ActionPlan::ValidatorDefinition(new_validator));
         self
     }
 

@@ -146,7 +146,7 @@ impl OrderCmd {
         }
     }
 
-    pub fn into_position<R: CryptoRngCore>(
+    pub fn as_position<R: CryptoRngCore>(
         &self,
         // Preserved since we'll need it after denom metadata refactor
         _asset_cache: &asset::Cache,
@@ -155,12 +155,12 @@ impl OrderCmd {
         let mut position = match self {
             OrderCmd::Buy { buy_order, .. } => {
                 tracing::info!(?buy_order, "parsing buy order");
-                let order = BuyOrder::parse_str(&buy_order)?;
+                let order = BuyOrder::parse_str(buy_order)?;
                 order.into_position(rng)
             }
             OrderCmd::Sell { sell_order, .. } => {
                 tracing::info!(?sell_order, "parsing sell order");
-                let order = SellOrder::parse_str(&sell_order)?;
+                let order = SellOrder::parse_str(sell_order)?;
                 order.into_position(rng)
             }
         };

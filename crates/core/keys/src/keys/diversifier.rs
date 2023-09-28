@@ -139,7 +139,7 @@ impl Debug for AddressIndex {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AddressIndex")
             .field("account", &self.account)
-            .field("randomizer", &hex::encode(&self.randomizer))
+            .field("randomizer", &hex::encode(self.randomizer))
             .finish()
     }
 }

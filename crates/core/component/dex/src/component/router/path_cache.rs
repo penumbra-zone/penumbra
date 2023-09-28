@@ -71,7 +71,7 @@ impl<S: StateRead + 'static> PathCache<S> {
     pub fn begin(start: asset::Id, state: StateDelta<S>) -> SharedPathCache<S> {
         let mut cache = BTreeMap::new();
         cache.insert(
-            start.clone(),
+            start,
             PathEntry {
                 path: Path::begin(start, state),
                 active: true,

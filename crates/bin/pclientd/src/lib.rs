@@ -271,7 +271,7 @@ impl Opt {
                     kms_config,
                     full_viewing_key,
                     grpc_url: grpc_url.clone(),
-                    bind_addr: bind_addr.clone(),
+                    bind_addr: *bind_addr,
                 };
 
                 let encoded = toml::to_string_pretty(&client_config)
@@ -319,7 +319,7 @@ impl Opt {
                 let server = Server::builder()
                     .accept_http1(true)
                     .add_service(tonic_web::enable(view_service))
-                    .add_optional_service(custody_service.map(|s| tonic_web::enable(s)))
+                    .add_optional_service(custody_service.map(tonic_web::enable))
                     .add_service(tonic_web::enable(oblivious_query_proxy))
                     .add_service(tonic_web::enable(specific_query_proxy))
                     .add_service(tonic_web::enable(tendermint_proxy_proxy))
@@ -331,7 +331,7 @@ impl Opt {
                             .build()
                             .with_context(|| "could not configure grpc reflection service")?,
                     ))
-                    .serve(config.bind_addr.clone());
+                    .serve(config.bind_addr);
 
                 tokio::spawn(server).await??;
 

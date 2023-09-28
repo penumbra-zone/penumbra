@@ -155,7 +155,7 @@ impl Note {
     /// random blinding factor.
     pub fn generate(rng: &mut (impl Rng + CryptoRng), address: &Address, value: Value) -> Self {
         let rseed = Rseed::generate(rng);
-        Note::from_parts(address.clone(), value, rseed)
+        Note::from_parts(*address, value, rseed)
             .expect("transmission key in address is always valid")
     }
 
@@ -321,7 +321,7 @@ impl Note {
             .map_err(|_| Error::DecryptionError)?;
 
         // Ephemeral public key integrity check. See ZIP 212 or Penumbra issue #1688.
-        if note.ephemeral_public_key() != epk.clone() {
+        if note.ephemeral_public_key() != *epk {
             return Err(Error::DecryptionError);
         }
 

@@ -1065,7 +1065,7 @@ async fn range_queries_basic() -> anyhow::Result<()> {
     // Check that the deleted compact blocks are not included in the results.
     let mut range = tx02.nonverifiable_range_raw(Some(b"compact_block/"), ..)?;
     for i in 0..=100 {
-        if i >= 9 && i <= 21 {
+        if (9..=21).contains(&i) {
             continue;
         }
         assert_eq!(

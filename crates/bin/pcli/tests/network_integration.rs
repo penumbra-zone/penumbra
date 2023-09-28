@@ -131,7 +131,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
             "--to",
             ADDRESS_1_STR,
             "--memo",
-            &memo_text,
+            memo_text,
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
@@ -150,7 +150,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
             "view",
             "tx",
             "--raw",
-            &tx_id,
+            tx_id,
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     view_cmd.assert().success();
@@ -182,10 +182,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
             assert!(plaintext.text == memo_text);
         }
         penumbra_transaction::MemoView::Opaque { .. } => {
-            assert!(
-                false,
-                "MemoView for transaction was Opaque! We should be able to read this memo."
-            );
+            panic!("MemoView for transaction was Opaque! We should be able to read this memo.");
         }
     }
 
@@ -198,7 +195,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
     // test_asset only by whitespace.
     balance_cmd
         .assert()
-        .stdout(predicate::str::is_match(format!(r"1\s*2020test_usd")).unwrap());
+        .stdout(predicate::str::is_match(r"1\s*2020test_usd").unwrap());
 
     // Cleanup: Send the asset back at the end of the test such that other tests begin
     // from the original state.
@@ -553,17 +550,17 @@ fn swap() {
     balance_cmd
         .assert()
         // Address 0 has 100gm.
-        .stdout(predicate::str::is_match(format!(r"0\s*100gm")).unwrap())
+        .stdout(predicate::str::is_match(r"0\s*100gm").unwrap())
         // Address 1 has no gm.
         .stdout(
-            predicate::str::is_match(format!(r"1\s[0-9]*\.?[0-9]gm"))
+            predicate::str::is_match(r"1\s[0-9]*\.?[0-9]gm")
                 .unwrap()
                 .not(),
         )
         // Address 0 has some penumbra.
-        .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
+        .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
         // Address 1 has 1001penumbra.
-        .stdout(predicate::str::is_match(format!(r"1\s*1001(\.[0-9]+)?penumbra")).unwrap());
+        .stdout(predicate::str::is_match(r"1\s*1001(\.[0-9]+)?penumbra").unwrap());
 
     // Address 1: post an order to sell 1penumbra for 1gm.
     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
@@ -585,17 +582,17 @@ fn swap() {
     balance_cmd
         .assert()
         // Address 0 has 100gm.
-        .stdout(predicate::str::is_match(format!(r"0\s*100gm")).unwrap())
+        .stdout(predicate::str::is_match(r"0\s*100gm").unwrap())
         // Address 1 has no gm.
         .stdout(
-            predicate::str::is_match(format!(r"1\s[0-9]*\.?[0-9]gm"))
+            predicate::str::is_match(r"1\s[0-9]*\.?[0-9]gm")
                 .unwrap()
                 .not(),
         )
         // Address 0 has some penumbra.
-        .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
+        .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
         // Address 1 has 1000penumbra.
-        .stdout(predicate::str::is_match(format!(r"1\s*1000(\.[0-9]+)?penumbra")).unwrap());
+        .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
 
     // Address 1: swaps 1gm for 1penumbra.
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
@@ -624,17 +621,17 @@ fn swap() {
     balance_cmd
         .assert()
         // Address 0 has 100gm.
-        .stdout(predicate::str::is_match(format!(r"0\s*99gm")).unwrap())
+        .stdout(predicate::str::is_match(r"0\s*99gm").unwrap())
         // Address 1 has no gm.
         .stdout(
-            predicate::str::is_match(format!(r"1\s[0-9]*\.?[0-9]gm"))
+            predicate::str::is_match(r"1\s[0-9]*\.?[0-9]gm")
                 .unwrap()
                 .not(),
         )
         // Address 0 has some penumbra.
-        .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
+        .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
         // Address 1 has 1000penumbra.
-        .stdout(predicate::str::is_match(format!(r"1\s*1000(\.[0-9]+)?penumbra")).unwrap());
+        .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
 
     // Close and withdraw any existing liquidity positions.
     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
@@ -676,13 +673,13 @@ fn swap() {
     balance_cmd
         .assert()
         // Address 0 has 99gm.
-        .stdout(predicate::str::is_match(format!(r"0\s*99gm")).unwrap())
+        .stdout(predicate::str::is_match(r"0\s*99gm").unwrap())
         // Address 1 has 1gm.
-        .stdout(predicate::str::is_match(format!(r"1\s*1gm")).unwrap())
+        .stdout(predicate::str::is_match(r"1\s*1gm").unwrap())
         // Address 0 has some penumbra.
-        .stdout(predicate::str::is_match(format!(r"0\s*.*penumbra")).unwrap())
+        .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
         // Address 1 has 1000penumbra.
-        .stdout(predicate::str::is_match(format!(r"1\s*1000(\.[0-9]+)?penumbra")).unwrap());
+        .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
 }
 
 // Note: As part of #2589, we changed the way DEX calculations are performed. In particular,

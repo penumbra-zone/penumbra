@@ -155,7 +155,7 @@ impl Id {
     pub fn value(&self, amount: Amount) -> Value {
         Value {
             amount,
-            asset_id: self.clone(),
+            asset_id: *self,
         }
     }
 

@@ -52,10 +52,9 @@ impl SwapClaimPlan {
         state_commitment_proof: &tct::Proof,
         nk: &NullifierKey,
     ) -> SwapClaimProof {
-        let (lambda_1, lambda_2) = self.output_data.pro_rata_outputs((
-            self.swap_plaintext.delta_1_i.into(),
-            self.swap_plaintext.delta_2_i.into(),
-        ));
+        let (lambda_1, lambda_2) = self
+            .output_data
+            .pro_rata_outputs((self.swap_plaintext.delta_1_i, self.swap_plaintext.delta_2_i));
         let (output_rseed_1, output_rseed_2) = self.swap_plaintext.output_rseeds();
         let note_blinding_1 = output_rseed_1.derive_note_blinding();
         let note_blinding_2 = output_rseed_2.derive_note_blinding();
@@ -64,14 +63,14 @@ impl SwapClaimPlan {
         let note_commitment_2 = output_2_note.commit();
 
         let nullifier =
-            Nullifier::derive(&nk, self.position, &self.swap_plaintext.swap_commitment());
+            Nullifier::derive(nk, self.position, &self.swap_plaintext.swap_commitment());
         SwapClaimProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
             &SWAPCLAIM_PROOF_PROVING_KEY,
             self.swap_plaintext.clone(),
             state_commitment_proof.clone(),
-            nk.clone(),
+            *nk,
             state_commitment_proof.root(),
             nullifier,
             lambda_1,

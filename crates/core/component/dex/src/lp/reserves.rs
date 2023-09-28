@@ -20,9 +20,7 @@ pub struct Reserves {
 
 impl Reserves {
     pub fn check_bounds(&self) -> anyhow::Result<()> {
-        if self.r1.value() as u128 > MAX_RESERVE_AMOUNT
-            || self.r2.value() as u128 > MAX_RESERVE_AMOUNT
-        {
+        if self.r1.value() > MAX_RESERVE_AMOUNT || self.r2.value() > MAX_RESERVE_AMOUNT {
             anyhow::bail!(format!(
                 "Reserve amounts are out-of-bounds (limit: {MAX_RESERVE_AMOUNT})"
             ))

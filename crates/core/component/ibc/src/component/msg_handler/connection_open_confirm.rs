@@ -1,9 +1,8 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types::{
-    core::{
-        commitment::MerkleProof,
-        connection::{events, msgs::MsgConnectionOpenConfirm, ConnectionEnd, Counterparty, State},
+    core::connection::{
+        events, msgs::MsgConnectionOpenConfirm, ConnectionEnd, Counterparty, State,
     },
     path::ConnectionPath,
 };
@@ -72,7 +71,7 @@ impl MsgHandler for MsgConnectionOpenConfirm {
         // in connectionOpenConfirm, only the inclusion of the connection state must be
         // verified, not the client or consensus states.
 
-        let proof_conn_end_on_a = MerkleProof::try_from(self.proof_conn_end_on_a.clone())?;
+        let proof_conn_end_on_a = self.proof_conn_end_on_a.clone();
         proof_verification::verify_connection_state(
             &trusted_client_state,
             self.proof_height_on_a,

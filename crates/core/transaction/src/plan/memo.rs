@@ -42,7 +42,7 @@ impl From<MemoPlan> for pb::MemoPlan {
         let text = msg.plaintext.text;
         Self {
             plaintext: Some(pb::MemoPlaintext { sender, text }),
-            key: msg.key.to_vec().into(),
+            key: msg.key.to_vec(),
         }
     }
 }

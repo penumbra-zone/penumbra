@@ -71,7 +71,7 @@ impl ActionHandler for Undelegate {
             .await?;
         // TODO: should we be tracking changes to token supply here or in end_epoch?
 
-        state.record(event::undelegate(&self));
+        state.record(event::undelegate(self));
 
         Ok(())
     }

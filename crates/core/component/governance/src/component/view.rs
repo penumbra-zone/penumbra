@@ -531,7 +531,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
 
     /// Check if any proposal is started in this block.
     fn proposal_started(&self) -> bool {
-        self.object_get::<()>(&state_key::proposal_started())
+        self.object_get::<()>(state_key::proposal_started())
             .is_some()
     }
 }

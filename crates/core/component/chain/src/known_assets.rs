@@ -41,6 +41,6 @@ impl From<KnownAssets> for pb::KnownAssets {
 
 impl From<KnownAssets> for asset::Cache {
     fn from(assets: KnownAssets) -> Self {
-        Self::from_iter(assets.0.into_iter())
+        Self::from_iter(assets.0)
     }
 }

@@ -1,9 +1,6 @@
 use std::path::PathBuf;
 
-use penumbra_chain::{
-    component::{AppHash, StateReadExt, StateWriteExt},
-    genesis::Content,
-};
+use penumbra_chain::component::{AppHash, StateReadExt, StateWriteExt};
 use penumbra_stake::StateReadExt as _;
 use penumbra_storage::{StateDelta, StateWrite, Storage};
 
@@ -54,9 +51,11 @@ pub async fn migrate(path_to_export: PathBuf, upgrade: Upgrade) -> anyhow::Resul
 
             /* ---------- genereate genesis ------------  */
             let validators = migrated_state.validator_list().await?;
-            let mut app_state = Content::default();
-            app_state.chain_params = chain_params;
-            app_state.validators = validators.into_iter().map(Into::into).collect();
+            let app_state = penumbra_chain::genesis::Content {
+                chain_params,
+                validators: validators.into_iter().map(Into::into).collect(),
+                ..Default::default()
+            };
             let mut genesis =
                 TestnetConfig::make_genesis(app_state.clone()).expect("can make genesis");
             genesis.app_hash = app_hash

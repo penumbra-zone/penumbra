@@ -354,7 +354,6 @@ impl BareTradingFunction {
             //
             // r2 = effective_price * delta_1, and since p,q != 0, effective_price != 0:
             // delta_1 = r2 * effective_price^-1
-            let r2 = U128x128::from(r2);
             let fillable_delta_1 = self.convert_to_delta_1(r2)?;
 
             // We burn the rouding error by apply `ceil` to delta_1:
