@@ -1,22 +1,21 @@
 use std::sync::Arc;
 
 use anyhow::Result;
+use penumbra_chain::component::{AppHash, StateReadExt as _, StateWriteExt as _};
 use penumbra_chain::params::FmdParameters;
-use penumbra_chain::{
-    component::{AppHash, StateReadExt as _, StateWriteExt as _},
-    genesis,
-};
 use penumbra_compact_block::component::StateWriteExt as _;
 use penumbra_compact_block::CompactBlock;
 use penumbra_component::Component;
+use penumbra_dao::component::StateWriteExt as _;
 use penumbra_dex::component::{Dex, SwapManager};
 use penumbra_distributions::component::Distributions;
 use penumbra_governance::component::{Governance, StateReadExt as _};
-use penumbra_ibc::component::IBCComponent;
+use penumbra_governance::StateWriteExt as _;
+use penumbra_ibc::component::{IBCComponent, StateWriteExt as _};
 use penumbra_proto::DomainType;
 use penumbra_sct::component::SctManager;
 use penumbra_shielded_pool::component::{NoteManager, ShieldedPool};
-use penumbra_stake::component::{Staking, ValidatorUpdates};
+use penumbra_stake::component::{Staking, StateWriteExt as _, ValidatorUpdates};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, Event};
@@ -24,7 +23,7 @@ use tendermint::validator::Update;
 use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
-use crate::DaoStateReadExt;
+use crate::{genesis, DaoStateReadExt};
 
 pub mod state_key;
 
@@ -87,7 +86,15 @@ impl App {
             .expect("state Arc should not be referenced elsewhere");
         match app_state {
             genesis::AppState::Content(app_state) => {
-                state_tx.put_chain_params(app_state.chain_params.clone());
+                // Put all the initial component parameters in the JMT:
+                // TODO: should the components themselves handle this in their
+                // `init_chain` methods?
+                state_tx.put_chain_params(app_state.chain_content.chain_params.clone());
+                state_tx.put_dao_params(app_state.dao_content.dao_params.clone());
+                state_tx.put_stake_params(app_state.stake_content.stake_params.clone());
+                state_tx
+                    .put_governance_params(app_state.governance_content.governance_params.clone());
+                state_tx.put_ibc_params(app_state.ibc_content.ibc_params.clone());
 
                 // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
                 state_tx.put_current_fmd_parameters(FmdParameters::default());
@@ -113,16 +120,26 @@ impl App {
                         start_height: 0,
                     },
                 );
+
+                Distributions::init_chain(&mut state_tx, Some(&())).await;
+                ShieldedPool::init_chain(&mut state_tx, Some(&app_state.shielded_pool_content))
+                    .await;
+                Staking::init_chain(&mut state_tx, Some(&app_state.stake_content)).await;
+                IBCComponent::init_chain(&mut state_tx, Some(&())).await;
+                Dex::init_chain(&mut state_tx, Some(&())).await;
+                Governance::init_chain(&mut state_tx, Some(&())).await;
             }
-            genesis::AppState::Checkpoint(_) => { /* perform upgrade specific check */ }
+            genesis::AppState::Checkpoint(_) => {
+                /* perform upgrade specific check */
+                Distributions::init_chain(&mut state_tx, None).await;
+                ShieldedPool::init_chain(&mut state_tx, None).await;
+                Staking::init_chain(&mut state_tx, None).await;
+                IBCComponent::init_chain(&mut state_tx, None).await;
+                Dex::init_chain(&mut state_tx, None).await;
+                Governance::init_chain(&mut state_tx, None).await;
+            }
         };
 
-        Distributions::init_chain(&mut state_tx, app_state).await;
-        Staking::init_chain(&mut state_tx, app_state).await;
-        IBCComponent::init_chain(&mut state_tx, app_state).await;
-        Dex::init_chain(&mut state_tx, &()).await;
-        Governance::init_chain(&mut state_tx, &()).await;
-        ShieldedPool::init_chain(&mut state_tx, app_state).await;
         App::finish_block(&mut state_tx).await;
         state_tx.apply();
     }
@@ -153,10 +170,10 @@ impl App {
         // Run each of the begin block handlers for each component, in sequence:
         let mut arc_state_tx = Arc::new(state_tx);
         Distributions::begin_block(&mut arc_state_tx, begin_block).await;
-        Staking::begin_block(&mut arc_state_tx, begin_block).await;
         IBCComponent::begin_block(&mut arc_state_tx, begin_block).await;
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
         ShieldedPool::begin_block(&mut arc_state_tx, begin_block).await;
+        Staking::begin_block(&mut arc_state_tx, begin_block).await;
 
         let state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
@@ -257,11 +274,11 @@ impl App {
 
         let mut arc_state_tx = Arc::new(state_tx);
         Distributions::end_block(&mut arc_state_tx, end_block).await;
-        Staking::end_block(&mut arc_state_tx, end_block).await;
         IBCComponent::end_block(&mut arc_state_tx, end_block).await;
         Dex::end_block(&mut arc_state_tx, end_block).await;
         Governance::end_block(&mut arc_state_tx, end_block).await;
         ShieldedPool::end_block(&mut arc_state_tx, end_block).await;
+        Staking::end_block(&mut arc_state_tx, end_block).await;
         let mut state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
 
@@ -297,9 +314,6 @@ impl App {
             Distributions::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on Distributions component");
-            Staking::end_epoch(&mut arc_state_tx)
-                .await
-                .expect("able to call end_epoch on Staking component");
             IBCComponent::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on IBC component");
@@ -312,6 +326,9 @@ impl App {
             ShieldedPool::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on shielded pool component");
+            Staking::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on Staking component");
 
             let mut state_tx = Arc::try_unwrap(arc_state_tx)
                 .expect("components did not retain copies of shared state");

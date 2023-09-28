@@ -3,6 +3,10 @@ use tendermint::PublicKey;
 
 use crate::IdentityKey;
 
+pub fn stake_params() -> &'static str {
+    "staking/params"
+}
+
 pub fn current_base_rate() -> &'static str {
     "staking/base_rate/current"
 }

@@ -3,12 +3,15 @@
 //! for Penumbra.
 use crate::testnet::config::{get_testnet_dir, TestnetTendermintConfig, ValidatorKeys};
 use anyhow::{Context, Result};
-use penumbra_chain::genesis;
-use penumbra_chain::{genesis::Allocation, params::ChainParameters};
+use penumbra_app::{genesis, params::AppParameters};
+use penumbra_chain::{genesis::Content as ChainContent, params::ChainParameters};
 use penumbra_keys::{keys::SpendKey, Address};
+use penumbra_shielded_pool::genesis::{
+    self as shielded_pool_genesis, Allocation, Content as ShieldedPoolContent,
+};
 use penumbra_stake::{
-    validator::Validator, DelegationToken, FundingStream, FundingStreams, GovernanceKey,
-    IdentityKey,
+    genesis::Content as StakeContent, params::StakeParameters, validator::Validator,
+    DelegationToken, FundingStream, FundingStreams, GovernanceKey, IdentityKey,
 };
 use serde::{de, Deserialize};
 use std::{
@@ -178,21 +181,31 @@ impl TestnetConfig {
         epoch_duration: Option<u64>,
         unbonding_epochs: Option<u64>,
     ) -> anyhow::Result<genesis::Content> {
-        // Look up default chain params, so we can fill in defaults.
-        let default_params = ChainParameters::default();
+        // Look up default app params, so we can fill in defaults.
+        let default_params = AppParameters::default();
         let app_state = genesis::Content {
-            allocations: allocations.clone(),
-            chain_params: ChainParameters {
-                chain_id: chain_id.to_string(),
-                // Fall back to chain param defaults
-                active_validator_limit: active_validator_limit
-                    .unwrap_or(default_params.active_validator_limit),
-                epoch_duration: epoch_duration.unwrap_or(default_params.epoch_duration),
-                unbonding_epochs: unbonding_epochs.unwrap_or(default_params.unbonding_epochs),
-                ..Default::default()
+            stake_content: StakeContent {
+                validators: validators.into_iter().map(Into::into).collect(),
+                stake_params: StakeParameters {
+                    active_validator_limit: active_validator_limit
+                        .unwrap_or(default_params.stake_params.active_validator_limit),
+                    unbonding_epochs: unbonding_epochs
+                        .unwrap_or(default_params.stake_params.unbonding_epochs),
+                    ..Default::default()
+                },
             },
-            // Convert to protobuf types
-            validators: validators.into_iter().map(Into::into).collect(),
+            shielded_pool_content: ShieldedPoolContent {
+                allocations: allocations.clone(),
+            },
+            chain_content: ChainContent {
+                chain_params: ChainParameters {
+                    chain_id: chain_id.to_string(),
+                    // Fall back to chain param defaults
+                    epoch_duration: epoch_duration
+                        .unwrap_or(default_params.chain_params.epoch_duration),
+                },
+            },
+            ..Default::default()
         };
         Ok(app_state)
     }
@@ -215,6 +228,7 @@ impl TestnetConfig {
         let genesis = Genesis {
             genesis_time,
             chain_id: app_state
+                .chain_content
                 .chain_params
                 .chain_id
                 .parse::<tendermint::chain::Id>()
@@ -367,9 +381,10 @@ impl TestnetAllocation {
         let mut res = vec![];
         for (line, result) in rdr.deserialize().enumerate() {
             let record: TestnetAllocation = result?;
-            let record: genesis::Allocation = record.try_into().with_context(|| {
-                format!("invalid allocation in entry {line} of allocations file")
-            })?;
+            let record: shielded_pool_genesis::Allocation =
+                record.try_into().with_context(|| {
+                    format!("invalid allocation in entry {line} of allocations file")
+                })?;
             res.push(record);
         }
 
@@ -532,11 +547,11 @@ impl TryFrom<&TestnetValidator> for Validator {
     }
 }
 
-impl TryFrom<TestnetAllocation> for genesis::Allocation {
+impl TryFrom<TestnetAllocation> for shielded_pool_genesis::Allocation {
     type Error = anyhow::Error;
 
-    fn try_from(a: TestnetAllocation) -> anyhow::Result<genesis::Allocation> {
-        Ok(genesis::Allocation {
+    fn try_from(a: TestnetAllocation) -> anyhow::Result<shielded_pool_genesis::Allocation> {
+        Ok(shielded_pool_genesis::Allocation {
             amount: a.amount.into(),
             denom: a.denom.clone(),
             address: Address::from_str(&a.address)
@@ -641,7 +656,7 @@ mod tests {
         let genesis::AppState::Content(app_state) = testnet_config.genesis.app_state else {
             unimplemented!("TODO: support checkpointed app state")
         };
-        assert_eq!(app_state.validators.len(), 1);
+        assert_eq!(app_state.stake_content.validators.len(), 1);
         Ok(())
     }
 
@@ -667,7 +682,7 @@ mod tests {
         let genesis::AppState::Content(app_state) = testnet_config.genesis.app_state else {
             unimplemented!("TODO: support checkpointed app state")
         };
-        assert_eq!(app_state.validators.len(), 2);
+        assert_eq!(app_state.stake_content.validators.len(), 2);
         Ok(())
     }
 

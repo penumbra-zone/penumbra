@@ -1,7 +1,11 @@
 use std::path::PathBuf;
 
-use penumbra_chain::component::{AppHash, StateReadExt, StateWriteExt};
-use penumbra_stake::StateReadExt as _;
+use penumbra_app::genesis;
+use penumbra_chain::{
+    component::{AppHash, StateReadExt, StateWriteExt},
+    genesis::Content as ChainContent,
+};
+use penumbra_stake::{genesis::Content as StakeContent, StateReadExt as _};
 use penumbra_storage::{StateDelta, StateWrite, Storage};
 
 use crate::testnet::generate::TestnetConfig;
@@ -51,9 +55,12 @@ pub async fn migrate(path_to_export: PathBuf, upgrade: Upgrade) -> anyhow::Resul
 
             /* ---------- genereate genesis ------------  */
             let validators = migrated_state.validator_list().await?;
-            let app_state = penumbra_chain::genesis::Content {
-                chain_params,
-                validators: validators.into_iter().map(Into::into).collect(),
+            let app_state = genesis::Content {
+                chain_content: ChainContent { chain_params },
+                stake_content: StakeContent {
+                    validators: validators.into_iter().map(Into::into).collect(),
+                    ..Default::default()
+                },
                 ..Default::default()
             };
             let mut genesis =

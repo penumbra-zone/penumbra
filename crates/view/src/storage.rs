@@ -3,8 +3,9 @@ use camino::Utf8Path;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use penumbra_app::params::AppParameters;
 use penumbra_asset::{asset, asset::DenomMetadata, asset::Id, Value};
-use penumbra_chain::params::{ChainParameters, FmdParameters};
+use penumbra_chain::params::FmdParameters;
 use penumbra_dex::{
     lp::position::{self, Position, State},
     TradingPair,
@@ -13,7 +14,7 @@ use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::{
     core::app::v1alpha1::{
-        query_service_client::QueryServiceClient as AppQueryServiceClient, ChainParametersRequest,
+        query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
     },
     DomainType,
 };
@@ -82,7 +83,7 @@ impl Storage {
 
         let mut client = AppQueryServiceClient::connect(node.to_string()).await?;
         let params = client
-            .chain_parameters(tonic::Request::new(ChainParametersRequest {
+            .app_parameters(tonic::Request::new(AppParametersRequest {
                 chain_id: String::new(),
             }))
             .await?
@@ -169,7 +170,7 @@ impl Storage {
     pub async fn initialize(
         storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: FullViewingKey,
-        params: ChainParameters,
+        params: AppParameters,
     ) -> anyhow::Result<Self> {
         tracing::debug!(storage_path = ?storage_path.as_ref().map(AsRef::as_ref), ?fvk, ?params);
 
@@ -184,10 +185,10 @@ impl Storage {
             // Create the tables
             tx.execute_batch(include_str!("storage/schema.sql"))?;
 
-            let chain_params_bytes = &ChainParameters::encode_to_vec(&params)[..];
+            let app_params_bytes = &AppParameters::encode_to_vec(&params)[..];
             tx.execute(
-                "INSERT INTO chain_params (bytes) VALUES (?1)",
-                [chain_params_bytes],
+                "INSERT INTO app_params (bytes) VALUES (?1)",
+                [app_params_bytes],
             )?;
 
             let fvk_bytes = &FullViewingKey::encode_to_vec(&fvk)[..];
@@ -512,17 +513,17 @@ impl Storage {
         .await?
     }
 
-    pub async fn chain_params(&self) -> anyhow::Result<ChainParameters> {
+    pub async fn app_params(&self) -> anyhow::Result<AppParameters> {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
             let bytes = pool
                 .get()?
-                .prepare_cached("SELECT bytes FROM chain_params LIMIT 1")?
+                .prepare_cached("SELECT bytes FROM app_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing chain params"))?;
+                .ok_or_else(|| anyhow!("missing app params"))?;
 
-            ChainParameters::decode(bytes.as_slice())
+            AppParameters::decode(bytes.as_slice())
         })
         .await?
     }
@@ -1233,13 +1234,14 @@ impl Storage {
             let mut dbtx = lock.transaction()?;
 
             // If the chain parameters have changed, update them.
-            if let Some(params) = filtered_block.chain_parameters {
-                let chain_params_bytes = &ChainParameters::encode_to_vec(&params)[..];
-                dbtx.execute(
-                    "INSERT INTO chain_params (bytes) VALUES (?1)",
-                    [chain_params_bytes],
-                )?;
-            }
+            // TODO: disabled for now, see https://github.com/penumbra-zone/penumbra/issues/3107
+            // if let Some(params) = filtered_block.chain_parameters {
+            //     let chain_params_bytes = &ChainParameters::encode_to_vec(&params)[..];
+            //     dbtx.execute(
+            //         "INSERT INTO chain_params (bytes) VALUES (?1)",
+            //         [chain_params_bytes],
+            //     )?;
+            // }
 
             // Insert new note records into storage
             for note_record in &filtered_block.new_notes {

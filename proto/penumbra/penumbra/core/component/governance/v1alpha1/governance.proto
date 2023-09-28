@@ -320,3 +320,25 @@ message ProposalRateDataRequest {
 message ProposalRateDataResponse {
   core.component.stake.v1alpha1.RateData rate_data = 1;
 }
+
+// Governance configuration data.
+message GovernanceParameters {
+  // The number of blocks during which a proposal is voted on.
+  uint64 proposal_voting_blocks = 1;
+  // The deposit required to create a proposal.
+  penumbra.core.num.v1alpha1.Amount proposal_deposit_amount = 2;
+  // The quorum required for a proposal to be considered valid, as a fraction of the total stake
+  // weight of the network.
+  string proposal_valid_quorum = 3;
+  // The threshold for a proposal to pass voting, as a ratio of "yes" votes over "no" votes.
+  string proposal_pass_threshold = 4;
+  // The threshold for a proposal to be slashed, regardless of whether the "yes" and "no" votes
+  // would have passed it, as a ratio of "no" votes over all total votes.
+  string proposal_slash_threshold = 5;
+}
+
+// Governance genesis state.
+message GenesisContent {
+  // Governance parameters.
+  GovernanceParameters governance_params = 1;
+}

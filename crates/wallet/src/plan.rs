@@ -168,7 +168,7 @@ where
     // if they do, check if the associated notes are unspent
     // if they are, decrypt the SwapCiphertext in the Swap action and construct a SwapClaim
 
-    let chain_params = view.chain_params().await?;
+    let chain_params = view.app_params().await?.chain_params;
     let epoch_duration = chain_params.clone().epoch_duration;
 
     let unclaimed_swaps = view.unclaimed_swaps().await?;
@@ -282,7 +282,13 @@ where
 {
     Planner::new(rng)
         .fee(fee)
-        .proposal_submit(proposal, view.chain_params().await?.proposal_deposit_amount)
+        .proposal_submit(
+            proposal,
+            view.app_params()
+                .await?
+                .governance_params
+                .proposal_deposit_amount,
+        )
         .plan(view, account_group_id, source_address)
         .await
         .context("can't build proposal submit transaction")

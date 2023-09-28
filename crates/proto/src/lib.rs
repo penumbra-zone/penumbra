@@ -203,14 +203,12 @@ pub mod penumbra {
                 }
             }
 
-            /*
             pub mod dao {
                 pub mod v1alpha1 {
                     include!("gen/penumbra.core.component.dao.v1alpha1.rs");
                     include!("gen/penumbra.core.component.dao.v1alpha1.serde.rs");
                 }
             }
-            */
 
             pub mod dex {
                 pub mod v1alpha1 {

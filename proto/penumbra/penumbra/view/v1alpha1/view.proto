@@ -5,6 +5,7 @@ package penumbra.view.v1alpha1;
 import "penumbra/crypto/tct/v1alpha1/tct.proto";
 import "penumbra/core/keys/v1alpha1/keys.proto";
 import "penumbra/core/num/v1alpha1/num.proto";
+import "penumbra/core/app/v1alpha1/app.proto";
 import "penumbra/core/asset/v1alpha1/asset.proto";
 import "penumbra/core/transaction/v1alpha1/transaction.proto";
 import "penumbra/core/component/chain/v1alpha1/chain.proto";
@@ -51,8 +52,8 @@ service ViewProtocolService {
   // Returns a stream of `AssetsResponse`s.
   rpc Assets(AssetsRequest) returns (stream AssetsResponse);
 
-  // Query for the current chain parameters.
-  rpc ChainParameters(ChainParametersRequest) returns (ChainParametersResponse);
+  // Query for the current app parameters.
+  rpc AppParameters(AppParametersRequest) returns (AppParametersResponse);
 
   // Query for the current FMD parameters.
   rpc FMDParameters(FMDParametersRequest) returns (FMDParametersResponse);
@@ -375,11 +376,11 @@ message AssetsResponse {
   core.asset.v1alpha1.DenomMetadata denom_metadata = 2;
 }
 
-// Requests the current chain parameters from the view service.
-message ChainParametersRequest {}
+// Requests the current app parameters from the view service.
+message AppParametersRequest {}
 
-message ChainParametersResponse {
-  core.component.chain.v1alpha1.ChainParameters parameters = 1;
+message AppParametersResponse {
+  core.app.v1alpha1.AppParameters parameters = 1;
 }
 
 // Requests the current FMD parameters from the view service.

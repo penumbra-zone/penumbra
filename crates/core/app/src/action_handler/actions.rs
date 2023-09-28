@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_chain::TransactionContext;
+use penumbra_ibc::component::StateReadExt as _;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Action;
 
@@ -66,7 +66,7 @@ impl ActionHandler for Action {
             Action::Spend(action) => action.check_stateful(state).await,
             Action::Output(action) => action.check_stateful(state).await,
             Action::IbcAction(action) => {
-                if !state.get_chain_params().await?.ibc_enabled {
+                if !state.get_ibc_params().await?.ibc_enabled {
                     anyhow::bail!("transaction contains IBC actions, but IBC is not enabled");
                 }
 

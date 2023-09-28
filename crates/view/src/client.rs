@@ -2,8 +2,9 @@ use std::{collections::BTreeMap, future::Future, pin::Pin};
 
 use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
+use penumbra_app::params::AppParameters;
 use penumbra_asset::asset::{self, DenomMetadata, Id};
-use penumbra_chain::params::{ChainParameters, FmdParameters};
+use penumbra_chain::params::FmdParameters;
 use penumbra_dex::{
     lp::position::{self},
     TradingPair,
@@ -63,10 +64,10 @@ pub trait ViewClient {
         >,
     >;
 
-    /// Get a copy of the chain parameters.
-    fn chain_params(
+    /// Get a copy of the app parameters.
+    fn app_params(
         &mut self,
-    ) -> Pin<Box<dyn Future<Output = Result<ChainParameters>> + Send + 'static>>;
+    ) -> Pin<Box<dyn Future<Output = Result<AppParameters>> + Send + 'static>>;
 
     /// Get a copy of the FMD parameters.
     fn fmd_parameters(
@@ -331,16 +332,16 @@ where
         .boxed()
     }
 
-    fn chain_params(
+    fn app_params(
         &mut self,
-    ) -> Pin<Box<dyn Future<Output = Result<ChainParameters>> + Send + 'static>> {
+    ) -> Pin<Box<dyn Future<Output = Result<AppParameters>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
             // We have to manually invoke the method on the type, because it has the
             // same name as the one we're implementing.
-            let rsp = ViewProtocolServiceClient::chain_parameters(
+            let rsp = ViewProtocolServiceClient::app_parameters(
                 &mut self2,
-                tonic::Request::new(pb::ChainParametersRequest {}),
+                tonic::Request::new(pb::AppParametersRequest {}),
             );
             rsp.await?.into_inner().try_into()
         }

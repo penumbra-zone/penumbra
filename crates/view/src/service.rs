@@ -35,7 +35,7 @@ use penumbra_proto::{
         self as pb,
         view_protocol_service_client::ViewProtocolServiceClient,
         view_protocol_service_server::{ViewProtocolService, ViewProtocolServiceServer},
-        ChainParametersResponse, FmdParametersResponse, NoteByCommitmentResponse, StatusResponse,
+        AppParametersResponse, FmdParametersResponse, NoteByCommitmentResponse, StatusResponse,
         SwapByCommitmentResponse, TransactionPlannerResponse, WitnessResponse,
     },
     DomainType,
@@ -379,9 +379,9 @@ impl ViewProtocolService for ViewService {
     ) -> Result<tonic::Response<pb::TransactionPlannerResponse>, tonic::Status> {
         let prq = request.into_inner();
 
-        let chain_params =
-            self.storage.chain_params().await.map_err(|e| {
-                tonic::Status::internal(format!("could not get chain params: {:#}", e))
+        let app_params =
+            self.storage.app_params().await.map_err(|e| {
+                tonic::Status::internal(format!("could not get app params: {:#}", e))
             })?;
 
         let mut planner = Planner::new(OsRng);
@@ -483,7 +483,7 @@ impl ViewProtocolService for ViewService {
                 swap_plaintext: swap_record.swap,
                 position: swap_record.position,
                 output_data: swap_record.output_data,
-                epoch_duration: chain_params.epoch_duration,
+                epoch_duration: app_params.chain_params.epoch_duration,
                 proof_blinding_r: Fq::rand(&mut OsRng),
                 proof_blinding_s: Fq::rand(&mut OsRng),
             });
@@ -1408,18 +1408,18 @@ impl ViewProtocolService for ViewService {
         }))
     }
 
-    async fn chain_parameters(
+    async fn app_parameters(
         &self,
-        _request: tonic::Request<pb::ChainParametersRequest>,
-    ) -> Result<tonic::Response<pb::ChainParametersResponse>, tonic::Status> {
+        _request: tonic::Request<pb::AppParametersRequest>,
+    ) -> Result<tonic::Response<pb::AppParametersResponse>, tonic::Status> {
         self.check_worker().await?;
 
         let parameters =
-            self.storage.chain_params().await.map_err(|e| {
-                tonic::Status::unavailable(format!("error getting chain params: {e}"))
+            self.storage.app_params().await.map_err(|e| {
+                tonic::Status::unavailable(format!("error getting app params: {e}"))
             })?;
 
-        let response = ChainParametersResponse {
+        let response = AppParametersResponse {
             parameters: Some(parameters.into()),
         };
 

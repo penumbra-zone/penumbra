@@ -18,7 +18,11 @@ pub trait Component {
     /// This method is called once per chain, and should only perform
     /// writes, since the backing tree for the [`State`] will
     /// be empty.
-    async fn init_chain<S: StateWrite>(state: S, app_state: &Self::AppState);
+    ///
+    /// If the app is checkpointed, no genesis app state will be passed in,
+    /// and `app_state` will be `None`. Otherwise, `app_state` will be `Some`,
+    /// indicating that the chain needs to fully initialize.
+    async fn init_chain<S: StateWrite>(state: S, app_state: Option<&Self::AppState>);
 
     /// Begins a new block, optionally inspecting the ABCI
     /// [`BeginBlock`](abci::request::BeginBlock) request.

@@ -18,7 +18,7 @@ use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
 use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::{
     component::{StateReadExt as _, StateWriteExt as _},
-    genesis, Epoch, NoteSource,
+    Epoch, NoteSource,
 };
 use penumbra_component::Component;
 use penumbra_dao::component::StateWriteExt as _;
@@ -42,6 +42,8 @@ use tracing::{instrument, Instrument};
 
 use crate::{
     funding_stream::Recipient,
+    genesis::Content as GenesisContent,
+    params::StakeParameters,
     rate::{BaseRateData, RateData},
     state_key,
     validator::{self, Validator},
@@ -238,7 +240,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 Ok(())
             }
             (Active, Jailed) => {
-                let penalty = self.get_chain_params().await?.slashing_penalty_downtime;
+                let penalty = self.get_stake_params().await?.slashing_penalty_downtime;
 
                 // Record the slashing penalty on this validator.
                 self.record_slashing_penalty(identity_key, Penalty(penalty))
@@ -262,7 +264,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 Ok(())
             }
             (Active | Inactive | Disabled | Jailed, Tombstoned) => {
-                let penalty = self.get_chain_params().await?.slashing_penalty_misbehavior;
+                let penalty = self.get_stake_params().await?.slashing_penalty_misbehavior;
 
                 // Record the slashing penalty on this validator.
                 self.record_slashing_penalty(identity_key, Penalty(penalty))
@@ -329,7 +331,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 .sum::<usize>(),
         );
 
-        let chain_params = self.get_chain_params().await?;
+        let chain_params = self.get_stake_params().await?;
 
         tracing::debug!("processing base rate");
         // We are transitioning to the next epoch, so set "cur_base_rate" to the previous "next_base_rate", and
@@ -527,7 +529,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
         // The top `limit` validators with nonzero power become active.
         // All other validators become inactive.
-        let limit = self.get_chain_params().await?.active_validator_limit as usize;
+        let limit = self.get_stake_params().await?.active_validator_limit as usize;
         let active = validators_by_power.iter().take(limit);
         let inactive = validators_by_power
             .iter()
@@ -669,7 +671,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // which is about the *last* commit, but at least it'll be consistent,
         // which is all we need to count signatures.
         let height = self.get_block_height().await?;
-        let params = self.get_chain_params().await?;
+        let params = self.get_stake_params().await?;
 
         // Build a mapping from addresses (20-byte truncated SHA256(pubkey)) to vote statuses.
         let did_address_vote = last_commit_info
@@ -754,7 +756,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
     /// state with power assigned.
     async fn add_genesis_validator(
         &mut self,
-        genesis_allocations: &BTreeMap<&String, u128>,
+        genesis_allocations: &BTreeMap<String, u128>,
         genesis_base_rate: &BaseRateData,
         validator: Validator,
     ) -> Result<()> {
@@ -893,12 +895,12 @@ impl<T: StateWrite + StateWriteExt + ?Sized> StakingImpl for T {}
 
 #[async_trait]
 impl Component for Staking {
-    type AppState = genesis::AppState;
+    type AppState = GenesisContent;
 
     #[instrument(name = "staking", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&GenesisContent>) {
         match app_state {
-            genesis::AppState::Content(app_state) => {
+            Some(app_state) => {
                 let starting_height = state
                     .get_block_height()
                     .await
@@ -929,9 +931,24 @@ impl Component for Staking {
                 // Compile totals of genesis allocations by denom, which we can use
                 // to compute the delegation tokens for each validator.
                 let mut genesis_allocations = BTreeMap::new();
-                for allocation in &app_state.allocations {
-                    *genesis_allocations.entry(&allocation.denom).or_insert(0) +=
-                        u128::from(allocation.amount);
+                // Grab the token supply info from the staking component's state.
+                // Note that this requires the staking component's init_chain to be called first.
+                // First grab all known assets:
+                let known_assets = state
+                    .known_assets()
+                    .await
+                    .expect("shielded pool component called first");
+                for asset in known_assets.0 {
+                    // Grab the associated denom
+                    let denom = asset.base_denom().denom;
+                    // Grab the token supply associated with the denom
+                    let genesis_allocation = state
+                        .token_supply(&asset.id())
+                        .await
+                        .expect("should be able to get token supply")
+                        .expect("should have token supply for known denom")
+                        as u128;
+                    genesis_allocations.insert(denom, genesis_allocation);
                 }
 
                 // Add initial validators to the JMT
@@ -959,9 +976,8 @@ impl Component for Staking {
                     )
                     .await;
             }
-            genesis::AppState::Checkpoint(_) => { /* perform upgrade specific check */ }
+            None => { /* perform upgrade specific check */ }
         }
-
         // Build the initial validator set update.
         // First, "prime" the state with an empty set, so the build_ function can read it.
         state.put(
@@ -1034,6 +1050,13 @@ impl Component for Staking {
 /// Extension trait providing read access to staking data.
 #[async_trait]
 pub trait StateReadExt: StateRead {
+    /// Gets the stake parameters from the JMT.
+    async fn get_stake_params(&self) -> Result<StakeParameters> {
+        self.get(state_key::stake_params())
+            .await?
+            .ok_or_else(|| anyhow!("Missing StakeParameters"))
+    }
+
     /// Delegation changes accumulated over the course of this block, to be
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
@@ -1247,11 +1270,11 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn signed_blocks_window_len(&self) -> Result<u64> {
-        Ok(self.get_chain_params().await?.signed_blocks_window_len)
+        Ok(self.get_stake_params().await?.signed_blocks_window_len)
     }
 
     async fn missed_blocks_maximum(&self) -> Result<u64> {
-        Ok(self.get_chain_params().await?.missed_blocks_maximum)
+        Ok(self.get_stake_params().await?.missed_blocks_maximum)
     }
 
     async fn unbonding_end_epoch_for(
@@ -1259,7 +1282,7 @@ pub trait StateReadExt: StateRead {
         id: &IdentityKey,
         start_epoch_index: u64,
     ) -> Result<u64> {
-        let unbonding_epochs = self.get_chain_params().await?.unbonding_epochs;
+        let unbonding_epochs = self.get_stake_params().await?.unbonding_epochs;
 
         let default_unbonding = start_epoch_index + unbonding_epochs;
 
@@ -1277,7 +1300,7 @@ pub trait StateReadExt: StateRead {
 
     async fn current_unbonding_end_epoch_for(&self, id: &IdentityKey) -> Result<u64> {
         let current_epoch = self.get_current_epoch().await?;
-        let unbonding_epochs = self.get_chain_params().await?.unbonding_epochs;
+        let unbonding_epochs = self.get_stake_params().await?.unbonding_epochs;
 
         let default_unbonding = current_epoch.index + unbonding_epochs;
 
@@ -1299,6 +1322,17 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 /// Extension trait providing write access to staking data.
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
+    /// Writes the provided stake parameters to the JMT.
+    fn put_stake_params(&mut self, params: StakeParameters) {
+        // TODO: this needs to be handled on a per-component basis or possibly removed from the compact block
+        // entirely, currently disabled, see https://github.com/penumbra-zone/penumbra/issues/3107
+        // Note to the shielded pool to include the chain parameters in the next compact block:
+        // self.object_put(state_key::chain_params_changed(), ());
+
+        // Change the stake parameters:
+        self.put(state_key::stake_params().into(), params)
+    }
+
     /// Delegation changes accumulated over the course of this block, to be
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.

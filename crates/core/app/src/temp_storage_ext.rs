@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
+use crate::genesis;
 use async_trait::async_trait;
-use penumbra_chain::genesis;
 use penumbra_storage::TempStorage;
 
 use crate::app::App;

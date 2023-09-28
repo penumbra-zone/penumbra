@@ -500,6 +500,38 @@ pub struct ProposalRateDataResponse {
     #[prost(message, optional, tag = "1")]
     pub rate_data: ::core::option::Option<super::super::stake::v1alpha1::RateData>,
 }
+/// Governance configuration data.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GovernanceParameters {
+    /// The number of blocks during which a proposal is voted on.
+    #[prost(uint64, tag = "1")]
+    pub proposal_voting_blocks: u64,
+    /// The deposit required to create a proposal.
+    #[prost(message, optional, tag = "2")]
+    pub proposal_deposit_amount: ::core::option::Option<
+        super::super::super::num::v1alpha1::Amount,
+    >,
+    /// The quorum required for a proposal to be considered valid, as a fraction of the total stake
+    /// weight of the network.
+    #[prost(string, tag = "3")]
+    pub proposal_valid_quorum: ::prost::alloc::string::String,
+    /// The threshold for a proposal to pass voting, as a ratio of "yes" votes over "no" votes.
+    #[prost(string, tag = "4")]
+    pub proposal_pass_threshold: ::prost::alloc::string::String,
+    /// The threshold for a proposal to be slashed, regardless of whether the "yes" and "no" votes
+    /// would have passed it, as a ratio of "no" votes over all total votes.
+    #[prost(string, tag = "5")]
+    pub proposal_slash_threshold: ::prost::alloc::string::String,
+}
+/// Governance genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContent {
+    /// Governance parameters.
+    #[prost(message, optional, tag = "1")]
+    pub governance_params: ::core::option::Option<GovernanceParameters>,
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

@@ -426,7 +426,7 @@ impl TxCmd {
                     .view
                     .as_mut()
                     .context("view service must be initialized")?
-                    .chain_params()
+                    .app_params()
                     .await?;
 
                 let account_group_id = app.fvk.account_group_id();
@@ -437,7 +437,7 @@ impl TxCmd {
                         swap_plaintext,
                         position: swap_record.position,
                         output_data: swap_record.output_data,
-                        epoch_duration: params.epoch_duration,
+                        epoch_duration: params.chain_params.epoch_duration,
                         proof_blinding_r: Fq::rand(&mut OsRng),
                         proof_blinding_s: Fq::rand(&mut OsRng),
                     })
@@ -549,7 +549,7 @@ impl TxCmd {
                     .as_mut()
                     .context("view service must be initialized")?;
 
-                let params = view.chain_params().await?;
+                let params = view.app_params().await?;
                 let current_height = view.status(account_group_id).await?.sync_height;
                 let mut client = ChainQueryServiceClient::new(channel.clone());
                 let current_epoch = client
@@ -590,7 +590,7 @@ impl TxCmd {
                         let mut client = StakeQueryServiceClient::new(channel.clone());
                         let penalty: Penalty = client
                             .validator_penalty(tonic::Request::new(ValidatorPenaltyRequest {
-                                chain_id: params.chain_id.to_string(),
+                                chain_id: params.chain_params.chain_id.to_string(),
                                 identity_key: Some(validator_identity.into()),
                                 start_epoch_index,
                                 end_epoch_index,
@@ -781,7 +781,7 @@ impl TxCmd {
                     start_position,
                 } = client
                     .proposal_info(ProposalInfoRequest {
-                        chain_id: app.view().chain_params().await?.chain_id,
+                        chain_id: app.view().app_params().await?.chain_params.chain_id,
                         proposal_id,
                     })
                     .await?
@@ -790,7 +790,7 @@ impl TxCmd {
 
                 let mut rate_data_stream = client
                     .proposal_rate_data(ProposalRateDataRequest {
-                        chain_id: app.view().chain_params().await?.chain_id,
+                        chain_id: app.view().app_params().await?.chain_params.chain_id,
                         proposal_id,
                     })
                     .await?
@@ -1013,14 +1013,14 @@ impl TxCmd {
                     .view
                     .as_mut()
                     .context("view service must be initialized")?;
-                let params = view.chain_params().await?;
+                let params = view.app_params().await?;
                 for position_id in owned_position_ids {
                     // Withdraw the position
 
                     // Fetch the information regarding the position from the view service.
                     let position = client
                         .liquidity_position_by_id(LiquidityPositionByIdRequest {
-                            chain_id: params.chain_id.to_string(),
+                            chain_id: params.chain_params.chain_id.to_string(),
                             position_id: Some(position_id.into()),
                         })
                         .await?
@@ -1069,12 +1069,12 @@ impl TxCmd {
                     .view
                     .as_mut()
                     .context("view service must be initialized")?;
-                let params = view.chain_params().await?;
+                let params = view.app_params().await?;
 
                 // Fetch the information regarding the position from the view service.
                 let position = client
                     .liquidity_position_by_id(LiquidityPositionByIdRequest {
-                        chain_id: params.chain_id.to_string(),
+                        chain_id: params.chain_params.chain_id.to_string(),
                         position_id: Some(PositionId::from(*position_id)),
                     })
                     .await?

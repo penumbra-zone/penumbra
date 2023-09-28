@@ -513,6 +513,43 @@ pub struct NextValidatorRateResponse {
     #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<RateData>,
 }
+/// Staking configuration data.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StakeParameters {
+    /// The number of epochs an unbonding note for before being released.
+    #[prost(uint64, tag = "1")]
+    pub unbonding_epochs: u64,
+    /// The maximum number of validators in the consensus set.
+    #[prost(uint64, tag = "2")]
+    pub active_validator_limit: u64,
+    /// The base reward rate, expressed in basis points of basis points
+    #[prost(uint64, tag = "3")]
+    pub base_reward_rate: u64,
+    /// The penalty for slashing due to misbehavior.
+    #[prost(uint64, tag = "4")]
+    pub slashing_penalty_misbehavior: u64,
+    /// The penalty for slashing due to downtime.
+    #[prost(uint64, tag = "5")]
+    pub slashing_penalty_downtime: u64,
+    /// The number of blocks in the window to check for downtime.
+    #[prost(uint64, tag = "6")]
+    pub signed_blocks_window_len: u64,
+    /// The maximum number of blocks in the window each validator can miss signing without slashing.
+    #[prost(uint64, tag = "7")]
+    pub missed_blocks_maximum: u64,
+}
+/// Genesis data for the staking component.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContent {
+    /// The configuration parameters for the staking component present at genesis
+    #[prost(message, optional, tag = "1")]
+    pub stake_params: ::core::option::Option<StakeParameters>,
+    /// The list of validators present at genesis.
+    #[prost(message, repeated, tag = "2")]
+    pub validators: ::prost::alloc::vec::Vec<Validator>,
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

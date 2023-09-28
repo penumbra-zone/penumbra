@@ -8,6 +8,7 @@ use decaf377_rdsa::{VerificationKey, VerificationKeyBytes};
 use once_cell::sync::Lazy;
 use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_chain::component::StateReadExt as _;
+use penumbra_dao::component::StateReadExt as _;
 use penumbra_keys::keys::{FullViewingKey, NullifierKey};
 use penumbra_proto::DomainType;
 use penumbra_sct::component::StateReadExt as _;
@@ -70,9 +71,11 @@ impl ActionHandler for ProposalSubmit {
         match payload {
             Signaling { commit: _ } => { /* all signaling proposals are valid */ }
             Emergency { halt_chain: _ } => { /* all emergency proposals are valid */ }
-            ParameterChange { old, new } => {
-                old.check_valid_update(new)
-                    .context("invalid change to chain parameters")?;
+            ParameterChange { old: _, new: _ } => {
+                // TODO: re-enable (https://github.com/penumbra-zone/penumbra/issues/3107)
+                tracing::warn!("parameter change proposals are currently disabled (see #3107)");
+                // old.check_valid_update(new)
+                //     .context("invalid change to chain parameters")?;
             }
             DaoSpend { transaction_plan } => {
                 // Check to make sure that the transaction plan contains only valid actions for the
@@ -132,14 +135,14 @@ impl ActionHandler for ProposalSubmit {
             proposal, // statelessly verified
         } = self;
 
-        // Check that the deposit amount agrees with the chain parameters
-        let chain_parameters = state.get_chain_params().await?;
-        if *deposit_amount != chain_parameters.proposal_deposit_amount {
+        // Check that the deposit amount agrees with the parameters
+        let governance_parameters = state.get_governance_params().await?;
+        if *deposit_amount != governance_parameters.proposal_deposit_amount {
             anyhow::bail!(
                 "submitted proposal deposit of {}{} does not match required proposal deposit of {}{}",
                 deposit_amount,
                 *STAKING_TOKEN_DENOM,
-                chain_parameters.proposal_deposit_amount,
+                governance_parameters.proposal_deposit_amount,
                 *STAKING_TOKEN_DENOM,
             );
         }
@@ -162,8 +165,9 @@ impl ActionHandler for ProposalSubmit {
             }
             ProposalPayload::DaoSpend { transaction_plan } => {
                 // If DAO spend proposals aren't enabled, then we can't allow them to be submitted
+                let dao_parameters = state.get_dao_params().await?;
                 anyhow::ensure!(
-                    chain_parameters.dao_spend_proposals_enabled,
+                    dao_parameters.dao_spend_proposals_enabled,
                     "DAO spend proposals are not enabled",
                 );
 
@@ -240,15 +244,15 @@ impl ActionHandler for ProposalSubmit {
 
         // Determine what block it is currently, and calculate when the proposal should start voting
         // (now!) and finish voting (later...), then write that into the state
-        let chain_params = state
-            .get_chain_params()
+        let governance_params = state
+            .get_governance_params()
             .await
             .context("can get chain params")?;
         let current_block = state
             .get_block_height()
             .await
             .context("can get block height")?;
-        let voting_end = current_block + chain_params.proposal_voting_blocks;
+        let voting_end = current_block + governance_params.proposal_voting_blocks;
         state.put_proposal_voting_start(proposal_id, current_block);
         state.put_proposal_voting_end(proposal_id, voting_end);
 

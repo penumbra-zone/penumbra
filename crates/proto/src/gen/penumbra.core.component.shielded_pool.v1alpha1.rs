@@ -268,6 +268,31 @@ pub struct DenomMetadataByIdResponse {
         super::super::super::asset::v1alpha1::DenomMetadata,
     >,
 }
+/// Genesis data for the shielded pool component.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContent {
+    /// The allocations present at genesis
+    #[prost(message, repeated, tag = "2")]
+    pub allocations: ::prost::alloc::vec::Vec<genesis_content::Allocation>,
+}
+/// Nested message and enum types in `GenesisContent`.
+pub mod genesis_content {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Allocation {
+        #[prost(message, optional, tag = "1")]
+        pub amount: ::core::option::Option<
+            super::super::super::super::num::v1alpha1::Amount,
+        >,
+        #[prost(string, tag = "2")]
+        pub denom: ::prost::alloc::string::String,
+        #[prost(message, optional, tag = "3")]
+        pub address: ::core::option::Option<
+            super::super::super::super::keys::v1alpha1::Address,
+        >,
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

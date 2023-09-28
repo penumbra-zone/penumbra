@@ -484,16 +484,16 @@ pub struct AssetsResponse {
         super::super::core::asset::v1alpha1::DenomMetadata,
     >,
 }
-/// Requests the current chain parameters from the view service.
+/// Requests the current app parameters from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ChainParametersRequest {}
+pub struct AppParametersRequest {}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ChainParametersResponse {
+pub struct AppParametersResponse {
     #[prost(message, optional, tag = "1")]
     pub parameters: ::core::option::Option<
-        super::super::core::component::chain::v1alpha1::ChainParameters,
+        super::super::core::app::v1alpha1::AppParameters,
     >,
 }
 /// Requests the current FMD parameters from the view service.
@@ -983,11 +983,11 @@ pub mod view_protocol_service_client {
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
-        /// Query for the current chain parameters.
-        pub async fn chain_parameters(
+        /// Query for the current app parameters.
+        pub async fn app_parameters(
             &mut self,
-            request: impl tonic::IntoRequest<super::ChainParametersRequest>,
-        ) -> Result<tonic::Response<super::ChainParametersResponse>, tonic::Status> {
+            request: impl tonic::IntoRequest<super::AppParametersRequest>,
+        ) -> Result<tonic::Response<super::AppParametersResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -999,7 +999,7 @@ pub mod view_protocol_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocolService/ChainParameters",
+                "/penumbra.view.v1alpha1.ViewProtocolService/AppParameters",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -1490,11 +1490,11 @@ pub mod view_protocol_service_server {
             &self,
             request: tonic::Request<super::AssetsRequest>,
         ) -> Result<tonic::Response<Self::AssetsStream>, tonic::Status>;
-        /// Query for the current chain parameters.
-        async fn chain_parameters(
+        /// Query for the current app parameters.
+        async fn app_parameters(
             &self,
-            request: tonic::Request<super::ChainParametersRequest>,
-        ) -> Result<tonic::Response<super::ChainParametersResponse>, tonic::Status>;
+            request: tonic::Request<super::AppParametersRequest>,
+        ) -> Result<tonic::Response<super::AppParametersResponse>, tonic::Status>;
         /// Query for the current FMD parameters.
         async fn fmd_parameters(
             &self,
@@ -1942,25 +1942,25 @@ pub mod view_protocol_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocolService/ChainParameters" => {
+                "/penumbra.view.v1alpha1.ViewProtocolService/AppParameters" => {
                     #[allow(non_camel_case_types)]
-                    struct ChainParametersSvc<T: ViewProtocolService>(pub Arc<T>);
+                    struct AppParametersSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
                         T: ViewProtocolService,
-                    > tonic::server::UnaryService<super::ChainParametersRequest>
-                    for ChainParametersSvc<T> {
-                        type Response = super::ChainParametersResponse;
+                    > tonic::server::UnaryService<super::AppParametersRequest>
+                    for AppParametersSvc<T> {
+                        type Response = super::AppParametersResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::ChainParametersRequest>,
+                            request: tonic::Request<super::AppParametersRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                (*inner).chain_parameters(request).await
+                                (*inner).app_parameters(request).await
                             };
                             Box::pin(fut)
                         }
@@ -1970,7 +1970,7 @@ pub mod view_protocol_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = ChainParametersSvc(inner);
+                        let method = AppParametersSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

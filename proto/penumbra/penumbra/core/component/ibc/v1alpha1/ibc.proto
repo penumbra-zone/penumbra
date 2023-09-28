@@ -75,3 +75,19 @@ message ConnectionCounter {
 message ClientConnections {
   repeated string connections = 1;
 }
+
+// IBC configuration data.
+message IbcParameters {
+  // Whether IBC (forming connections, processing IBC packets) is enabled.
+  bool ibc_enabled = 1;
+  // Whether inbound ICS-20 transfers are enabled
+  bool inbound_ics20_transfers_enabled = 2;
+  // Whether outbound ICS-20 transfers are enabled
+  bool outbound_ics20_transfers_enabled = 3;
+}
+
+// IBC genesis state.
+message GenesisContent {
+  // IBC parameters.
+  IbcParameters ibc_params = 1;
+}

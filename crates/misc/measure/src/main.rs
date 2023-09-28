@@ -5,11 +5,11 @@ use clap::Parser;
 use tracing::Instrument;
 use tracing_subscriber::EnvFilter;
 
-use penumbra_chain::params::ChainParameters;
+use penumbra_app::params::AppParameters;
 use penumbra_compact_block::CompactBlock;
 use penumbra_proto::{
     penumbra::core::app::v1alpha1::{
-        query_service_client::QueryServiceClient as AppQueryServiceClient, ChainParametersRequest,
+        query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
     },
     penumbra::core::component::compact_block::v1alpha1::{
         query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
@@ -191,8 +191,8 @@ impl Opt {
                 let mut app_client = AppQueryServiceClient::new(channel.clone());
                 let mut cb_client = CompactBlockQueryServiceClient::new(channel.clone());
 
-                let params: ChainParameters = app_client
-                    .chain_parameters(tonic::Request::new(ChainParametersRequest {
+                let params: AppParameters = app_client
+                    .app_parameters(tonic::Request::new(AppParametersRequest {
                         chain_id: String::new(),
                     }))
                     .await?
@@ -204,7 +204,7 @@ impl Opt {
 
                 let mut stream = cb_client
                     .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
-                        chain_id: params.chain_id,
+                        chain_id: params.chain_params.chain_id,
                         start_height,
                         end_height,
                         keep_alive: false,

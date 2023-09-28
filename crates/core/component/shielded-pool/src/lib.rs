@@ -6,6 +6,7 @@
 pub mod component;
 
 pub mod event;
+pub mod genesis;
 pub mod state_key;
 
 pub mod note;

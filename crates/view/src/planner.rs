@@ -429,7 +429,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         source: AddressIndex,
     ) -> anyhow::Result<TransactionPlan> {
         // Gather all the information needed from the view service
-        let chain_params = view.chain_params().await?;
+        let chain_params = view.app_params().await?.chain_params;
         let fmd_params = view.fmd_parameters().await?;
         let mut spendable_notes = Vec::new();
         let mut voting_notes = Vec::new();

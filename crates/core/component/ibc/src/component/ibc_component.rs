@@ -5,8 +5,7 @@ use async_trait::async_trait;
 use ibc_types::{
     core::client::Height, lightclients::tendermint::ConsensusState as TendermintConsensusState,
 };
-use penumbra_chain::component::StateReadExt;
-use penumbra_chain::genesis;
+use penumbra_chain::component::StateReadExt as _;
 use penumbra_component::Component;
 use penumbra_storage::StateWrite;
 use tendermint::abci;
@@ -18,13 +17,13 @@ pub struct IBCComponent {}
 
 #[async_trait]
 impl Component for IBCComponent {
-    type AppState = genesis::AppState;
+    type AppState = ();
 
     #[instrument(name = "ibc", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: &genesis::AppState) {
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&()>) {
         match app_state {
-            genesis::AppState::Content(_) => state.put_client_counter(ClientCounter(0)),
-            genesis::AppState::Checkpoint(_) => { /* perform upgrade specific check */ }
+            Some(_) => state.put_client_counter(ClientCounter(0)),
+            None => { /* perform upgrade specific check */ }
         }
     }
 

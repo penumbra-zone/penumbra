@@ -12,7 +12,7 @@ use crate::{
     state_key, Epoch,
 };
 
-/// This trait provides read access to common parts of the Penumbra
+/// This trait provides read access to chain-related parts of the Penumbra
 /// state store.
 ///
 /// Note: the `get_` methods in this trait assume that the state store has been
@@ -20,7 +20,7 @@ use crate::{
 //#[async_trait(?Send)]
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    /// Gets the chain parameters from the JMT.
+    /// Gets the app chain parameters from the JMT.
     async fn get_chain_params(&self) -> Result<ChainParameters> {
         self.get(state_key::chain_params())
             .await?
@@ -191,15 +191,18 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided chain parameters to the JMT.
     fn put_chain_params(&mut self, params: ChainParameters) {
+        // TODO: this needs to be handled on a per-component basis or possibly removed from the compact block
+        // entirely, currently disabled, see https://github.com/penumbra-zone/penumbra/issues/3107
         // Note to the shielded pool to include the chain parameters in the next compact block:
         self.object_put(state_key::chain_params_changed(), ());
 
         // Change the chain parameters:
         self.put(state_key::chain_params().into(), params)
     }
+
     /// Writes the block height to the JMT
     fn put_block_height(&mut self, height: u64) {
-        self.put_proto("block_height".into(), height)
+        self.put_proto(state_key::block_height().to_string(), height)
     }
 
     /// Writes the epoch for the current height
