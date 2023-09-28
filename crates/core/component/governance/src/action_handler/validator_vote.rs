@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::DomainType;
 use penumbra_storage::{StateRead, StateWrite};
 
