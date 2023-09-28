@@ -594,7 +594,6 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // Using a JoinSet, run each validator's state queries concurrently.
         let mut js = JoinSet::new();
         for v in self.validator_identity_list().await?.iter() {
-            tracing::info!("Adding validator to join set: {:#?}", v);
             let state = self.validator_state(v);
             let power = self.validator_power(v);
             let consensus_key = self.validator_consensus_key(v);
@@ -648,10 +647,6 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 })
             })
             .collect::<Result<Vec<_>>>()?;
-        tracing::info!(
-            "tendermint validator updates: {:#?}",
-            tendermint_validator_updates
-        );
         self.put_tendermint_validator_updates(tendermint_validator_updates);
 
         // Record the new consensus keys we will have told tendermint about.
@@ -959,10 +954,6 @@ impl Component for Staking {
                 // Add initial validators to the JMT
                 // Validators are indexed in the JMT by their public key,
                 // and there is a separate key containing the list of all validator keys.
-                tracing::info!(
-                    "adding initial validators to JMT: {:#?}",
-                    app_state.validators
-                );
                 for validator in &app_state.validators {
                     // Parse the proto into a domain type.
                     let validator = Validator::try_from(validator.clone())
