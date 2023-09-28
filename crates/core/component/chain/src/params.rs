@@ -5,13 +5,9 @@ use std::{
     str::FromStr,
 };
 
-use anyhow::Context;
-use penumbra_num::Amount;
 // TODO(proto): eliminate these imports
-use penumbra_proto::penumbra::core::app::v1alpha1 as pb_app;
 use penumbra_proto::penumbra::core::component::chain::v1alpha1 as pb_chain;
 
-use penumbra_proto::view::v1alpha1 as pb_view;
 use penumbra_proto::{DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 

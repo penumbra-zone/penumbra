@@ -1,5 +1,5 @@
 use anyhow::Context;
-use penumbra_proto::{penumbra::core::component::chain::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::chain::v1alpha1 as pb, TypeUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::params::ChainParameters;
