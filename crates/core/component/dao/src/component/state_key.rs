@@ -1,7 +1,7 @@
 use penumbra_asset::asset;
 
 pub fn dao_params() -> &'static str {
-    "dao_params"
+    "dao/params"
 }
 
 pub fn balance_for_asset(asset_id: asset::Id) -> String {

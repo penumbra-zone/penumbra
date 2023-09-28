@@ -2,7 +2,7 @@ use penumbra_sct::Nullifier;
 use penumbra_stake::IdentityKey;
 
 pub fn governance_params() -> &'static str {
-    "governance_params"
+    "governance/params"
 }
 
 pub fn next_proposal_id() -> &'static str {

@@ -5,15 +5,15 @@ use penumbra_asset::asset;
 use std::string::String;
 
 pub fn ibc_params() -> &'static str {
-    "ibc_params"
+    "ibc/params"
 }
 
 // TODO (ava): move these to ibc-types eventually
 pub fn client_processed_heights(client_id: &ClientId, height: &Height) -> String {
-    format!("clients/{client_id}/processedHeights/{height}")
+    format!("ibc/clients/{client_id}/processedHeights/{height}")
 }
 pub fn client_processed_times(client_id: &ClientId, height: &Height) -> String {
-    format!("clients/{client_id}/processedTimes/{height}")
+    format!("ibc/clients/{client_id}/processedTimes/{height}")
 }
 
 pub mod connections {
@@ -26,19 +26,19 @@ pub mod connections {
     // https://github.com/cosmos/ibc/tree/main/spec/core/ics-003-connection-semantics
     #[allow(dead_code)]
     pub fn by_client_id_list(client_id: &ClientId) -> String {
-        format!("clients/{client_id}/connections/")
+        format!("ibc/clients/{client_id}/connections/")
     }
 
     pub fn by_client_id(client_id: &ClientId, connection_id: &ConnectionId) -> String {
         format!(
-            "clients/{}/connections/{}",
+            "ibc/clients/{}/connections/{}",
             client_id,
             connection_id.as_str()
         )
     }
 
     pub fn by_connection_id(connection_id: &ConnectionId) -> String {
-        format!("connections/{}", connection_id.as_str())
+        format!("ibc/connections/{}", connection_id.as_str())
     }
 
     pub fn counter() -> &'static str {
@@ -47,5 +47,5 @@ pub mod connections {
 }
 
 pub fn ics20_value_balance(channel_id: &ChannelId, asset_id: &asset::Id) -> String {
-    format!("ics20-value-balance/{channel_id}/{asset_id}")
+    format!("ibc/ics20-value-balance/{channel_id}/{asset_id}")
 }

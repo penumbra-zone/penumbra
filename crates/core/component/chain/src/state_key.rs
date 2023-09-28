@@ -1,23 +1,23 @@
 use std::string::String;
 
 pub fn chain_params() -> &'static str {
-    "chain_params"
+    "chain/params"
 }
 
 pub fn block_height() -> &'static str {
-    "block_height"
+    "chain/block_height"
 }
 
 pub fn block_timestamp() -> &'static str {
-    "block_timestamp"
+    "chain/block_timestamp"
 }
 
 pub fn fmd_parameters_current() -> &'static str {
-    "fmd_parameters/current"
+    "chain/fmd_parameters/current"
 }
 
 pub fn fmd_parameters_previous() -> &'static str {
-    "fmd_parameters/previous"
+    "chain/fmd_parameters/previous"
 }
 
 pub fn chain_halt_count() -> &'static str {
@@ -37,7 +37,7 @@ pub fn next_upgrade() -> &'static str {
 
 // These are used for the object store:
 pub fn chain_params_changed() -> &'static str {
-    "chain_params_changed"
+    "chain/chain_params_changed"
 }
 
 pub fn epoch_by_height(height: u64) -> String {
@@ -49,5 +49,5 @@ pub fn epoch_change_at_height(height: u64) -> String {
 }
 
 pub fn end_epoch_early() -> &'static str {
-    "end_epoch_early"
+    "chain/end_epoch_early"
 }
