@@ -5,7 +5,7 @@ CREATE TABLE schema_hash (schema_hash TEXT NOT NULL);
 CREATE TABLE client_version (client_version TEXT NOT NULL);
 
 -- Application state, stored in single-row tables
-CREATE TABLE chain_params (bytes BLOB NOT NULL);
+CREATE TABLE app_params (bytes BLOB NOT NULL);
 CREATE TABLE fmd_parameters (bytes BLOB NOT NULL);
 CREATE TABLE full_viewing_key (bytes BLOB NOT NULL);
 CREATE TABLE sync_height (height BIGINT NOT NULL);

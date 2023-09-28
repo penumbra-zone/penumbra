@@ -12,7 +12,7 @@ use penumbra_keys::keys::{SeedPhrase, SpendKey};
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     core::app::v1alpha1::{
-        query_service_client::QueryServiceClient as AppQueryServiceClient, ChainParametersRequest,
+        query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
     },
     custody::v1alpha1::custody_protocol_service_server::CustodyProtocolServiceServer,
     view::v1alpha1::view_protocol_service_server::ViewProtocolServiceServer,
@@ -150,7 +150,7 @@ impl Opt {
         let mut client = AppQueryServiceClient::connect(grpc_url.to_string()).await?;
 
         let params = client
-            .chain_parameters(tonic::Request::new(ChainParametersRequest {
+            .app_parameters(tonic::Request::new(AppParametersRequest {
                 chain_id: String::new(),
             }))
             .await?

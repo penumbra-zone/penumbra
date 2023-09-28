@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use penumbra_app::genesis::Content;
 use penumbra_chain::component::{AppHash, StateReadExt, StateWriteExt};
 use penumbra_stake::StateReadExt as _;
 use penumbra_storage::{StateDelta, StateWrite, Storage};

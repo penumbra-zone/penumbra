@@ -1,7 +1,7 @@
 use anyhow::Context;
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
 use directories::UserDirs;
-use penumbra_chain::genesis::AppState;
+use penumbra_app::genesis::AppState;
 use penumbra_keys::keys::{SpendKey, SpendKeyBytes};
 use penumbra_wallet::KeyStore;
 use rand::Rng;

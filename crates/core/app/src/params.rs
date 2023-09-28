@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod change;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(try_from = "pb::AppParameters", into = "pb::AppParameters")]
 pub struct AppParameters {
     pub stake_params: StakeParameters,
