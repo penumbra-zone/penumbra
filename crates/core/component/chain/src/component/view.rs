@@ -202,7 +202,7 @@ pub trait StateWriteExt: StateWrite {
 
     /// Writes the block height to the JMT
     fn put_block_height(&mut self, height: u64) {
-        self.put_proto("block_height".into(), height)
+        self.put_proto(state_key::block_height(), height)
     }
 
     /// Writes the epoch for the current height
