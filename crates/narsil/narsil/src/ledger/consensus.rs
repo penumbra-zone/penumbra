@@ -3,7 +3,7 @@ use anyhow::Result;
 use penumbra_app::genesis;
 use penumbra_storage::Storage;
 use tendermint::abci::Event;
-use tendermint::v0_34::abci::{
+use tendermint::v0_37::abci::{
     request, response, ConsensusRequest as Request, ConsensusResponse as Response,
 };
 use tokio::sync::mpsc;
@@ -80,6 +80,18 @@ impl Consensus {
                         .instrument(span)
                         .await
                         .expect("commit must succeed"),
+                ),
+                Request::PrepareProposal(proposal) => Response::PrepareProposal(
+                    self.prepare_proposal(proposal)
+                        .instrument(span)
+                        .await
+                        .expect("prepare proposal must succeed"),
+                ),
+                Request::ProcessProposal(proposal) => Response::ProcessProposal(
+                    self.process_proposal(proposal)
+                        .instrument(span)
+                        .await
+                        .expect("process proposal must succeed"),
                 ),
             }));
         }
@@ -192,5 +204,46 @@ impl Consensus {
             data: app_hash.0.to_vec().into(),
             retain_height: 0u32.into(),
         })
+    }
+
+    /// Ensures that a proposal is suitable for processing. Inspects
+    /// the transactions within the proposal, discarding any that would
+    /// exceed the maximum number of tx bytes for a proposal, and returns
+    /// a propoal with the remainder.
+    async fn prepare_proposal(
+        &mut self,
+        proposal: request::PrepareProposal,
+    ) -> Result<response::PrepareProposal> {
+        let mut txs: Vec<bytes::Bytes> = Vec::new();
+        let num_candidate_txs = proposal.txs.len();
+        tracing::debug!(
+            "Processing PrepareProposal, found {} candidate transactions",
+            proposal.txs.len()
+        );
+        // Ensure that list of transactions doesn't exceed max tx bytes. See spec at
+        // https://github.com/cometbft/cometbft/blob/v0.37.2/spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci
+        for tx in proposal.txs {
+            if (tx.len() + txs.len()) <= proposal.max_tx_bytes.try_into()? {
+                txs.push(tx);
+            } else {
+                break;
+            }
+        }
+        tracing::debug!(
+            "Finished processing PrepareProposal, including {}/{} candidate transactions",
+            txs.len(),
+            num_candidate_txs
+        );
+        Ok(response::PrepareProposal { txs: txs })
+    }
+
+    /// Mark the proposal as accepted. The [prepare_proposal] method ensures
+    /// that the number of tx bytes is within the acceptable limit.
+    async fn process_proposal(
+        &mut self,
+        proposal: request::ProcessProposal,
+    ) -> Result<response::ProcessProposal> {
+        tracing::debug!(?proposal, "Processing proposal");
+        Ok(response::ProcessProposal::Accept)
     }
 }

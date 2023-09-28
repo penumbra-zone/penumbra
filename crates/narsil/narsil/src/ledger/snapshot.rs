@@ -5,7 +5,7 @@ use std::{
 };
 
 use futures::FutureExt;
-use tendermint::v0_34::abci::{SnapshotRequest, SnapshotResponse};
+use tendermint::v0_37::abci::{SnapshotRequest, SnapshotResponse};
 use tower_abci::BoxError;
 
 #[derive(Clone, Debug)]

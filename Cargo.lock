@@ -3958,6 +3958,7 @@ dependencies = [
  "anyhow",
  "async-stream 0.2.1",
  "atty",
+ "bytes",
  "clap 3.2.25",
  "console-subscriber",
  "futures",

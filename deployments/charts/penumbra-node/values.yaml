@@ -38,8 +38,7 @@ cometbft:
     repository: cometbft/cometbft
     pullPolicy: IfNotPresent
     # https://github.com/cometbft/cometbft#supported-versions
-    # https://github.com/cometbft/cometbft/blob/main/UPGRADING.md#v03427
-    tag: "v0.34.27"
+    tag: "v0.37.2"
 
 # Configure nodes. By default, only one is created.
 # Extend this list to add more. Valid node attributes are:

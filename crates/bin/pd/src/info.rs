@@ -33,7 +33,7 @@ use penumbra_ibc::component::ConnectionStateReadExt as _;
 use penumbra_storage::Storage;
 use prost::Message;
 use std::str::FromStr;
-use tendermint::v0_34::abci::{
+use tendermint::v0_37::abci::{
     request,
     response::{self, Echo},
     InfoRequest, InfoResponse,
@@ -41,7 +41,7 @@ use tendermint::v0_34::abci::{
 use tower_abci::BoxError;
 use tracing::Instrument;
 
-use penumbra_tower_trace::v034::RequestExt;
+use penumbra_tower_trace::v037::RequestExt;
 
 const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
 
@@ -609,7 +609,6 @@ impl tower_service::Service<InfoRequest> for Info {
                 InfoRequest::Echo(echo) => Ok(InfoResponse::Echo(Echo {
                     message: echo.message,
                 })),
-                InfoRequest::SetOption(_) => todo!(),
             }
         }
         .instrument(span)

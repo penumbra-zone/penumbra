@@ -25,17 +25,19 @@ jobs:
 
       - name: Install cometbft binary
         run: |
-          curl -L -O "https://github.com/cometbft/cometbft/releases/download/v0.34.27/cometbft_0.34.27_linux_amd64.tar.gz"
-          tar -xzf "cometbft_0.34.27_linux_amd64.tar.gz" cometbft
+          COMETBFT_VERSION="0.37.2"
+          curl -L -O "https://github.com/cometbft/cometbft/releases/download/v${COMETBFT_VERSION}/cometbft_${COMETBFT_VERSION}_linux_amd64.tar.gz"
+          tar -xzf "cometbft_${COMETBFT_VERSION}_linux_amd64.tar.gz" cometbft
           mkdir -p $HOME/bin
           cp cometbft $HOME/bin
           echo $PATH
           export PATH=$HOME/bin:$PATH
           which cometbft
+          cometbft version
 
       - name: Run the smoke test suite
         run: |
-          export PATH=$HOME/bin:$PATH
+          export PATH="$HOME/bin:$PATH"
           ./deployments/scripts/smoke-test.sh
         env:
           TESTNET_RUNTIME: 2m

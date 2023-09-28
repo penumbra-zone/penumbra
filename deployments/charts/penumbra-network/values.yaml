@@ -78,8 +78,7 @@ cometbft:
     repository: cometbft/cometbft
     pullPolicy: IfNotPresent
     # https://github.com/cometbft/cometbft#supported-versions
-    # https://github.com/cometbft/cometbft/blob/main/UPGRADING.md#v03427
-    tag: "v0.34.27"
+    tag: "v0.37.2"
   containerArgs:
     - start
     - --proxy_app=tcp://127.0.0.1:26658
@@ -105,17 +104,6 @@ securityContext: {}
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
-
-cometbft:
-  image:
-    repository: cometbft/cometbft
-    pullPolicy: IfNotPresent
-    # https://github.com/cometbft/cometbft#supported-versions
-    # https://github.com/cometbft/cometbft/blob/main/UPGRADING.md#v03427
-    tag: "v0.34.27"
-  containerArgs:
-    - start
-    - --proxy_app=tcp://127.0.0.1:26658
 
 # N.B. Only `IngressRoute`, a custom CRD specific to Traefik ingress controller
 # is supported. This is because a traditional Ingress object doesn't allow us

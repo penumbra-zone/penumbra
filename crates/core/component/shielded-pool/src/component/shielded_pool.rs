@@ -9,7 +9,7 @@ use penumbra_proto::StateReadProto;
 use penumbra_sct::Nullifier;
 use penumbra_storage::StateRead;
 use penumbra_storage::StateWrite;
-use tendermint::v0_34::abci;
+use tendermint::v0_37::abci;
 use tracing::instrument;
 
 use crate::genesis::Content as GenesisContent;
