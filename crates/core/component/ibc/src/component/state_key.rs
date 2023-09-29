@@ -11,10 +11,10 @@ pub fn ibc_params() -> &'static str {
 // these are internal helpers that are used by penumbra-ibc, but not part of the IBC spec (that is,
 // counterparties don't expect to verify proofs about them)
 pub fn client_processed_heights(client_id: &ClientId, height: &Height) -> String {
-    format!("clients/{client_id}/processedHeights/{height}")
+    format!("ibc/clients/{client_id}/processedHeights/{height}")
 }
 pub fn client_processed_times(client_id: &ClientId, height: &Height) -> String {
-    format!("clients/{client_id}/processedTimes/{height}")
+    format!("ibc/clients/{client_id}/processedTimes/{height}")
 }
 pub fn counter() -> &'static str {
     "ibc/connection_counter"
