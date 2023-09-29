@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use ibc_proto::ibc::core::client::v1::query_server::Query as ClientQuery;
 use ibc_proto::ibc::core::client::v1::{
-    IdentifiedClientState, QueryClientParamsRequest, QueryClientParamsResponse,
+    Height, IdentifiedClientState, QueryClientParamsRequest, QueryClientParamsResponse,
     QueryClientStateRequest, QueryClientStateResponse, QueryClientStatesRequest,
     QueryClientStatesResponse, QueryClientStatusRequest, QueryClientStatusResponse,
     QueryConsensusStateHeightsRequest, QueryConsensusStateHeightsResponse,
@@ -13,11 +13,14 @@ use ibc_proto::ibc::core::client::v1::{
 };
 
 use ibc_types::core::client::ClientId;
+use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
+use ibc_types::TypeUrl;
 
 use std::str::FromStr;
 use tonic::{Response, Status};
 
 use crate::component::ClientStateReadExt;
+use prost::Message;
 
 use super::IbcQuery;
 
@@ -25,9 +28,44 @@ use super::IbcQuery;
 impl ClientQuery for IbcQuery {
     async fn client_state(
         &self,
-        _request: tonic::Request<QueryClientStateRequest>,
+        request: tonic::Request<QueryClientStateRequest>,
     ) -> std::result::Result<Response<QueryClientStateResponse>, Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.0.latest_snapshot();
+        let client_id = ClientId::from_str(&request.get_ref().client_id)
+            .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
+        let height = Height {
+            revision_number: 0,
+            revision_height: snapshot.version(),
+        };
+
+        // Query for client_state and associated proof.
+        let (cs_opt, proof) = snapshot
+            .get_with_proof(client_id.to_string().as_bytes().to_vec())
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get client: {e}")))?;
+
+        // Client state may be None, which we'll convert to a NotFound response.
+        let client_state = match cs_opt {
+            // If found, convert to a suitable type to match
+            // https://docs.rs/ibc-proto/0.36.1/ibc_proto/ibc/core/client/v1/struct.QueryClientStateResponse.html
+            Some(c) => ibc_proto::google::protobuf::Any {
+                type_url: TendermintClientState::TYPE_URL.to_string(),
+                value: c,
+            },
+            None => {
+                return Err(tonic::Status::not_found(format!(
+                    "couldn't find client: {client_id}"
+                )))
+            }
+        };
+
+        let res = QueryClientStateResponse {
+            client_state: Some(client_state),
+            proof: proof.encode_to_vec(),
+            proof_height: Some(height),
+        };
+
+        Ok(tonic::Response::new(res))
     }
     /// ClientStates queries all the IBC light clients of a chain.
     async fn client_states(
