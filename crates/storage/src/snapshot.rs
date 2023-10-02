@@ -20,7 +20,8 @@ use crate::{
 use crate::metrics;
 
 mod rocks_wrapper;
-use rocks_wrapper::RocksDbSnapshot;
+
+pub(crate) use rocks_wrapper::RocksDbSnapshot;
 
 /// A snapshot of the underlying storage at a specific state version, suitable
 /// for read-only access by multiple threads, e.g., RPC calls.
@@ -43,10 +44,10 @@ impl std::fmt::Debug for Snapshot {
 // We don't want to expose the `TreeReader` implementation outside of this crate.
 #[derive(Debug)]
 pub(crate) struct Inner {
-    snapshot: RocksDbSnapshot,
-    version: jmt::Version,
+    pub(crate) snapshot: RocksDbSnapshot,
+    pub(crate) version: jmt::Version,
     // Used to retrieve column family handles.
-    db: Arc<rocksdb::DB>,
+    pub(crate) db: Arc<rocksdb::DB>,
 }
 
 impl Snapshot {
