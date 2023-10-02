@@ -110,7 +110,7 @@ jobs:
       - name: Trigger remote build
         shell: bash
         env:
-          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+          GITHUB_PAT: ${{ secrets.GH_PAT }}
         run: |-
           export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
           cd deployments/
@@ -129,7 +129,7 @@ jobs:
       - name: Trigger remote build
         shell: bash
         env:
-          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+          GITHUB_PAT: ${{ secrets.GH_PAT }}
         run: |-
           export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
           # Galileo only runs against public testnets, so skip building non-tagged versions.
@@ -154,7 +154,7 @@ jobs:
       - name: Trigger remote build
         shell: bash
         env:
-          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+          GITHUB_PAT: ${{ secrets.GH_PAT }}
         run: |-
           export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
           # Hermes only runs against public testnets, so we need only build tags, but for now
