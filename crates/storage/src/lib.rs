@@ -39,6 +39,7 @@
 // Requires nightly.
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
+mod store;
 mod cache;
 mod delta;
 mod escaped_byte_slice;
