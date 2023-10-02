@@ -97,6 +97,64 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+  osiris:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      # We use the GHA Repository Dispatch functionality to trigger a container
+      # build in the penumbra-zone/osiris repo.
+      - name: Trigger remote build
+        shell: bash
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+        run: |-
+          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
+          cd deployments/
+          ./scripts/gha-repository-dispatch penumbra-zone/osiris
+
+  galileo:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      # We use the GHA Repository Dispatch functionality to trigger a container
+      # build in the penumbra-zone/galileo repo.
+      - name: Trigger remote build
+        shell: bash
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+        run: |-
+          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
+          # Galileo only runs against public testnets, so skip building non-tagged versions.
+          if ! grep -q '^v' <<< "$PENUMBRA_VERSION" ; then
+            echo "Detected version '$PENUBRA_VERSION', skipping Galileo container build"
+            exit 0
+          fi
+          cd deployments/
+          ./scripts/gha-repository-dispatch penumbra-zone/galileo
+
+  hermes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      # We use the GHA Repository Dispatch functionality to trigger a container
+      # build in the penumbra-zone/hermes repo.
+      - name: Trigger remote build
+        shell: bash
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+        run: |-
+          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
+          # Hermes only runs against public testnets, so we need only build tags, but for now
+          # we build even on main, to ensure a working build as ibc code changes.
+          cd deployments/
+          ./scripts/gha-repository-dispatch penumbra-zone/hermes
+
   relayer:
     runs-on: ubuntu-latest
     permissions:
