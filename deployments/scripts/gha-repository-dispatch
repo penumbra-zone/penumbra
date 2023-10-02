@@ -1,0 +1,43 @@
+#!/bin/bash
+# Utility script to trigger GitHub Action workflows across different repositories [0].
+# Requires a GitHub Personal Access Token (PAT), exported as GITHUB_PAT env var [1].
+#
+# [0] https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#repository_dispatch
+# [1] https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
+set -euo pipefail
+
+
+# Unpack cli args.
+github_repo="${1:-}"
+github_pat="${GITHUB_PAT:-}"
+if [[ -z "$github_repo" ]]; then
+    echo >&2 "ERROR: No GitHub repository was specified"
+    echo >&2 "Usage: $0 <github_repo>"
+    exit 1
+elif [[ -z "$github_pat" ]] ; then
+    echo >&2 "ERROR: export GitHub Personal Access Token as GITHUB_PAT env var."
+    exit 1
+fi
+
+# Support overriding the upstream version of Penumbra, but default to 'main'.
+penumbra_version="${PENUMBRA_VERSION:-main}"
+
+# Build URL for repository dispatch API endpoint.
+github_repository_url="https://api.github.com/repos/${github_repo}/dispatches"
+
+# Accept arguments for workflow, and emit valid JSON for curl request.
+# Using printf allows us to interpolate bash variables in JSON,
+# without an insane amount of quote-handling.
+function format_json_payload() {
+    local v
+    v="${1:-}"
+    shift
+    printf '{"event_type": "container-build", "client_payload": { "penumbra_version": "%s" }}' "$v"
+}
+
+json_payload="$(format_json_payload "$penumbra_version")"
+curl -f -X POST "$github_repository_url" \
+          -H 'Accept: application/vnd.github.v3+json' \
+          -H 'Content-Type: application/json' \
+          -H "Authorization: token $github_pat" \
+          --data "$json_payload"

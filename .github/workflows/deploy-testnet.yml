@@ -72,8 +72,24 @@ jobs:
       - name: bounce grpcui
         run: kubectl rollout restart deployment grpcui-testnet
 
-      # TODO: Set up some tagging logic to associate osiris versions with specific releases.
-      # This workflow only runs on new tags, so it won't bounce osiris often, but it'll always
-      # pull the latest image when it does. That *might* not be what we want.
       - name: bounce osiris
-        run: kubectl rollout restart deployment osiris-testnet
+        shell: bash
+        run: |-
+          # Set the exact version for the current testnet for Osiris, so deps match.
+          kubectl set image deployments \
+              -l "app.kubernetes.io/instance=osiris-testnet"
+              "osiris=ghcr.io/penumbra-zone/osiris:penumbra-${PENUMBRA_VERSION}"
+          # Wait for rollout to complete. Will block until pods are marked Ready.
+          kubectl rollout status deployment \
+              -l "app.kubernetes.io/instance=osiris-testnet"
+
+      - name: bounce galileo
+        shell: bash
+        run: |-
+          # Set the exact version for the current testnet for Galileo, so deps match.
+          kubectl set image deployments \
+              -l "app.kubernetes.io/instance=galileo"
+              "galileo=ghcr.io/penumbra-zone/galileo:penumbra-${PENUMBRA_VERSION}"
+          # Wait for rollout to complete. Will block until pods are marked Ready.
+          kubectl rollout status deployment \
+              -l "app.kubernetes.io/instance=galileo"
