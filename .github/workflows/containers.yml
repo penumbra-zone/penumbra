@@ -103,6 +103,8 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
       # We use the GHA Repository Dispatch functionality to trigger a container
       # build in the penumbra-zone/osiris repo.
       - name: Trigger remote build
@@ -120,6 +122,8 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
       # We use the GHA Repository Dispatch functionality to trigger a container
       # build in the penumbra-zone/galileo repo.
       - name: Trigger remote build
@@ -142,6 +146,9 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
       # We use the GHA Repository Dispatch functionality to trigger a container
       # build in the penumbra-zone/hermes repo.
       - name: Trigger remote build
