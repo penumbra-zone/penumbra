@@ -1,8 +1,10 @@
 use anyhow::Result;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_chain::params::FmdParameters;
+use penumbra_fee::component::StateReadExt as _;
 use penumbra_sct::component::StateReadExt as _;
 use penumbra_storage::StateRead;
+use penumbra_transaction::gas::GasCost;
 use penumbra_transaction::Transaction;
 
 pub(super) async fn claimed_anchor_is_valid<S: StateRead>(
@@ -60,4 +62,25 @@ pub fn fmd_precision_within_grace_period(
         }
     }
     Ok(())
+}
+
+pub(super) async fn fee_greater_than_base_fee<S: StateRead>(
+    state: S,
+    transaction: &Transaction,
+) -> Result<()> {
+    let current_gas_prices = state
+        .get_fee_params()
+        .await
+        .expect("fee params request must succeed")
+        .gas_prices;
+
+    let transaction_base_price = current_gas_prices.price(&transaction.gas_cost());
+
+    if transaction.transaction_body().fee.amount() > transaction_base_price {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "consensus rule violated: paid transaction fee must be greater than transaction's base fee"
+        ))
+    }
 }

@@ -18,13 +18,19 @@ use penumbra_governance::{
     ValidatorVote,
 };
 
-use crate::Action;
+use crate::{Action, Transaction};
 
 /// Allows [`Action`]s and [`Transaction`]s to statically indicate their relative resource consumption.
 /// Since the gas cost needs to be multiplied by a price, the values returned
 /// only need to be scaled relatively to each other.
 pub trait GasCost {
     fn gas_cost(&self) -> Gas;
+}
+
+impl GasCost for Transaction {
+    fn gas_cost(&self) -> Gas {
+        self.actions().map(GasCost::gas_cost).sum()
+    }
 }
 
 impl GasCost for Action {

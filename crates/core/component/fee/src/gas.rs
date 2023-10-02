@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::{iter::Sum, ops::Add};
 
 use penumbra_num::Amount;
 use penumbra_proto::{core::component::fee::v1alpha1 as pb, DomainType, TypeUrl};
@@ -13,6 +13,17 @@ pub struct Gas {
     pub execution: u64,
 }
 
+impl Gas {
+    pub fn zero() -> Self {
+        Self {
+            block_space: 0,
+            compact_block_space: 0,
+            verification: 0,
+            execution: 0,
+        }
+    }
+}
+
 impl Add for Gas {
     type Output = Self;
 
@@ -23,6 +34,12 @@ impl Add for Gas {
             verification: self.verification + rhs.verification,
             execution: self.execution + rhs.execution,
         }
+    }
+}
+
+impl Sum for Gas {
+    fn sum<I: Iterator<Item = Gas>>(iter: I) -> Gas {
+        iter.fold(Gas::zero(), |acc, x| acc + x)
     }
 }
 

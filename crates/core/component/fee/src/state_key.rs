@@ -1,1 +1,3 @@
-// TODO: fill in when implementing fees
+pub fn fee_params() -> &'static str {
+    "fee/params"
+}
