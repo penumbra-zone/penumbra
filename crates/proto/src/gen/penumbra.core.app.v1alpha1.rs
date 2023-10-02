@@ -147,6 +147,11 @@ pub struct GenesisContent {
     pub dao_content: ::core::option::Option<
         super::super::component::dao::v1alpha1::GenesisContent,
     >,
+    /// Fee module genesis state.
+    #[prost(message, optional, tag = "7")]
+    pub fee_content: ::core::option::Option<
+        super::super::component::fee::v1alpha1::GenesisContent,
+    >,
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]

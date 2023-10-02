@@ -10,3 +10,35 @@ pub struct Fee {
     #[prost(message, optional, tag = "2")]
     pub asset_id: ::core::option::Option<super::super::super::asset::v1alpha1::AssetId>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GasPrices {
+    /// The price per unit block space in terms of the staking token.
+    #[prost(uint64, tag = "1")]
+    pub block_space_price: u64,
+    /// The price per unit compact block space in terms of the staking token.
+    #[prost(uint64, tag = "2")]
+    pub compact_block_space_price: u64,
+    /// The price per unit verification cost in terms of the staking token.
+    #[prost(uint64, tag = "3")]
+    pub verification_price: u64,
+    /// The price per unit execution cost in terms of the staking token.
+    #[prost(uint64, tag = "4")]
+    pub execution_price: u64,
+}
+/// Fee component configuration data.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FeeParameters {
+    /// The current gas prices per resource.
+    #[prost(message, optional, tag = "1")]
+    pub gas_prices: ::core::option::Option<GasPrices>,
+}
+/// Fee-specific genesis content.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContent {
+    /// The FeeParameters present at genesis.
+    #[prost(message, optional, tag = "1")]
+    pub fee_params: ::core::option::Option<FeeParameters>,
+}

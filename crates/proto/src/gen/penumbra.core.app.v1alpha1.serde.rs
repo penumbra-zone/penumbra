@@ -482,6 +482,9 @@ impl serde::Serialize for GenesisContent {
         if self.dao_content.is_some() {
             len += 1;
         }
+        if self.fee_content.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.app.v1alpha1.GenesisContent", len)?;
         if let Some(v) = self.stake_content.as_ref() {
             struct_ser.serialize_field("stakeContent", v)?;
@@ -500,6 +503,9 @@ impl serde::Serialize for GenesisContent {
         }
         if let Some(v) = self.dao_content.as_ref() {
             struct_ser.serialize_field("daoContent", v)?;
+        }
+        if let Some(v) = self.fee_content.as_ref() {
+            struct_ser.serialize_field("feeContent", v)?;
         }
         struct_ser.end()
     }
@@ -523,6 +529,8 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
             "chainContent",
             "dao_content",
             "daoContent",
+            "fee_content",
+            "feeContent",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -533,6 +541,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
             IbcContent,
             ChainContent,
             DaoContent,
+            FeeContent,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -560,6 +569,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                             "ibcContent" | "ibc_content" => Ok(GeneratedField::IbcContent),
                             "chainContent" | "chain_content" => Ok(GeneratedField::ChainContent),
                             "daoContent" | "dao_content" => Ok(GeneratedField::DaoContent),
+                            "feeContent" | "fee_content" => Ok(GeneratedField::FeeContent),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -585,6 +595,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 let mut ibc_content__ = None;
                 let mut chain_content__ = None;
                 let mut dao_content__ = None;
+                let mut fee_content__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::StakeContent => {
@@ -623,6 +634,12 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                             }
                             dao_content__ = map.next_value()?;
                         }
+                        GeneratedField::FeeContent => {
+                            if fee_content__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("feeContent"));
+                            }
+                            fee_content__ = map.next_value()?;
+                        }
                     }
                 }
                 Ok(GenesisContent {
@@ -632,6 +649,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                     ibc_content: ibc_content__,
                     chain_content: chain_content__,
                     dao_content: dao_content__,
+                    fee_content: fee_content__,
                 })
             }
         }

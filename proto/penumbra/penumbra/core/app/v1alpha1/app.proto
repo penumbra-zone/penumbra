@@ -6,6 +6,7 @@ import "penumbra/core/component/stake/v1alpha1/stake.proto";
 import "penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto";
 import "penumbra/core/component/governance/v1alpha1/governance.proto";
 import "penumbra/core/component/ibc/v1alpha1/ibc.proto";
+import "penumbra/core/component/fee/v1alpha1/fee.proto";
 import "penumbra/core/component/dao/v1alpha1/dao.proto";
 import "ibc/core/commitment/v1/commitment.proto";
 
@@ -102,4 +103,6 @@ message GenesisContent {
     core.component.chain.v1alpha1.GenesisContent chain_content = 5;
     // DAO module genesis state.
     core.component.dao.v1alpha1.GenesisContent dao_content = 6;
+    // Fee module genesis state.
+    core.component.fee.v1alpha1.GenesisContent fee_content = 7;
 }
