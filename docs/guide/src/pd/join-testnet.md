@@ -4,7 +4,7 @@ We provide instructions for running both fullnode deployments and validator depl
 fullnode will sync with the network but will not have any voting power, and will
 not be eligible for staking or funding stream rewards. For more information on
 what a fullnode is, see the [CometBFT
-documentation](https://docs.cometbft.com/v0.37/core/using-cometbft#adding-a-non-validator).
+documentation](https://docs.cometbft.com/v0.34/core/using-cometbft#adding-a-non-validator).
 
 A regular validator will participate in voting and rewards, if it becomes part
 of the consensus set.  Of course, these rewards, like all other testnet tokens,
