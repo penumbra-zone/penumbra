@@ -39,6 +39,11 @@ cometbft:
     pullPolicy: IfNotPresent
     # https://github.com/cometbft/cometbft#supported-versions
     tag: "v0.37.2"
+  # Override sections of the CometBFT config. Applies to all nodes.
+  config:
+    p2p:
+      max_num_inbound_peers: 300
+      max_num_outbound_peers: 200
 
 # Configure nodes. By default, only one is created.
 # Extend this list to add more. Valid node attributes are:
