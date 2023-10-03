@@ -6,7 +6,7 @@ use std::{
 
 use anyhow::Result;
 
-use penumbra_asset::{asset, Balance, Value};
+use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_dao::DaoDeposit;
 use penumbra_dex::{
@@ -36,6 +36,7 @@ use penumbra_stake::{rate::RateData, validator};
 use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{
+    gas::GasCost,
     memo::MemoPlaintext,
     plan::{ActionPlan, MemoPlan, TransactionPlan},
 };
@@ -154,6 +155,23 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// This function should be called once.
     #[instrument(skip(self))]
     pub fn fee(&mut self, fee: Fee) -> &mut Self {
+        self.balance += fee.0;
+        self.plan.fee = fee;
+        self
+    }
+
+    /// Calculate gas cost-based fees and add to the transaction plan.
+    ///
+    /// This function should be called once.
+    #[instrument(skip(self))]
+    pub fn add_gas_fees(&mut self) -> &mut Self {
+        let minimum_fee = self.gas_prices.price(&self.plan.gas_cost());
+
+        // Since paying the fee possibly requires adding an additional Spend to the
+        // transaction, which would then change the fee calculation, we multiply the
+        // fee here by a factor of 2 and then recalculate and capture the excess as
+        // change outputs.
+        let fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(2u32));
         self.balance += fee.0;
         self.plan.fee = fee;
         self
@@ -440,6 +458,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // Gather all the information needed from the view service
         let chain_params = view.app_params().await?.chain_params;
         let fmd_params = view.fmd_parameters().await?;
+
+        // Calculate the gas that needs to be paid for the transaction based on the configured gas prices.
+        // Note that _paying the fee might incur an additional `Spend` action_, thus increasing the fee,
+        // so we slightly overpay here and then capture the excess as change later during `plan_with_spendable_and_votable_notes`.
+        // Add the fee to the planner's internal balance.
+        self.add_gas_fees();
+
         let mut spendable_notes = Vec::new();
         let mut voting_notes = Vec::new();
         let (spendable_requests, voting_requests) = self.notes_requests(account_group_id, source);
@@ -563,8 +588,19 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             }
         }
 
-        // For any remaining provided balance, make a single change note for each
+        // Since we over-estimate the fees to be paid upfront by a fixed multiple to account
+        // for the cost of any additional `Spend` actions necessary to pay the fee, we need
+        // to now calculate the transaction's fee again and capture the excess as change
+        // by subtracting the excess from the required value balance.
+        let tx_real_fee = self.gas_prices.price(&self.plan.gas_cost());
+        let excess_fee_spent = self.plan.fee.amount() - tx_real_fee;
+        self.balance -= Value {
+            amount: excess_fee_spent,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+        self.plan.fee = Fee::from_staking_token_amount(tx_real_fee);
 
+        // For any remaining provided balance, make a single change note for each
         for value in self.balance.provided().collect::<Vec<_>>() {
             self.output(value, self_address);
         }
@@ -574,12 +610,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         if self.plan.actions.is_empty() {
             anyhow::bail!("planned transaction would be empty, so should not be submitted");
         }
-
-        // Calculate the gas that needs to be paid for the transaction based on the configured gas prices.
-        // TODO: this really needs to happen earlier, and then here the difference needs to be captured as change...
-        self.plan.add_gas_fees(&self.gas_prices);
-        // Add the fee to the planner's internal balance.
-        self.fee(self.plan.fee.clone());
 
         // Now the transaction should be fully balanced, unless we didn't have enough to spend
         if !self.balance.is_zero() {

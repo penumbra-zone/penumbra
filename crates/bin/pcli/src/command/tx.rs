@@ -426,13 +426,6 @@ impl TxCmd {
                     .format(&asset_cache),
                 );
 
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
                 let account_group_id = app.fvk.account_group_id();
 
                 let params = app

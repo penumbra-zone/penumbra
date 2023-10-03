@@ -234,7 +234,7 @@ impl Consensus {
             txs.len(),
             num_candidate_txs
         );
-        Ok(response::PrepareProposal { txs: txs })
+        Ok(response::PrepareProposal { txs })
     }
 
     /// Mark the proposal as accepted. The [prepare_proposal] method ensures
