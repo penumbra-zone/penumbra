@@ -575,6 +575,12 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             anyhow::bail!("planned transaction would be empty, so should not be submitted");
         }
 
+        // Calculate the gas that needs to be paid for the transaction based on the configured gas prices.
+        // TODO: this really needs to happen earlier, and then here the difference needs to be captured as change...
+        self.plan.add_gas_fees(&self.gas_prices);
+        // Add the fee to the planner's internal balance.
+        self.fee(self.plan.fee.clone());
+
         // Now the transaction should be fully balanced, unless we didn't have enough to spend
         if !self.balance.is_zero() {
             anyhow::bail!(
@@ -595,9 +601,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         let precision_bits = fmd_params.precision_bits;
         self.plan
             .add_all_clue_plans(&mut self.rng, precision_bits.into());
-
-        // Calculate the gas that needs to be paid for the transaction based on the configured gas prices.
-        self.plan.add_gas_fees(&self.gas_prices);
 
         tracing::debug!(plan = ?self.plan, "finished balancing transaction");
 
