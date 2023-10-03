@@ -151,7 +151,8 @@ impl ConstantProduct {
             .await?;
 
         let gas_prices = params.fee_params.gas_prices;
-        let mut planner = Planner::new(OsRng).set_gas_prices(gas_prices);
+        let mut planner = Planner::new(OsRng);
+        planner.set_gas_prices(gas_prices);
         positions.iter().for_each(|position| {
             planner.position_open(position.clone());
         });

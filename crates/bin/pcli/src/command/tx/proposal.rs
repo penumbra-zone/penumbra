@@ -24,6 +24,9 @@ pub enum ProposalCmd {
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0")]
         source: u32,
+        /// The amount of the staking token to deposit alongside the proposal.
+        #[clap(long)]
+        deposit_amount: u64,
     },
     /// Withdraw a governance proposal that you previously submitted.
     Withdraw {

@@ -149,7 +149,7 @@ fn swap_gas_cost() -> Gas {
     }
 }
 
-fn swap_claim_gas_cost() -> Gas {
+pub fn swap_claim_gas_cost() -> Gas {
     Gas {
         // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
         // will use the encoded size of the complete transaction to calculate the block space.
