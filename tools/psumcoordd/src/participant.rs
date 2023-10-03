@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 use penumbra_keys::Address;
+use penumbra_proof_setup::all::{Phase2CeremonyCRS, Phase2RawCeremonyContribution};
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::{
         self as pb,
@@ -7,8 +8,7 @@ use penumbra_proto::{
         participate_response::{ContributeNow, Msg as ResponseMsg, Position},
     },
     tools::summoning::v1alpha1::{
-        participate_request::Contribution, participate_response::Confirm, ParticipateRequest,
-        ParticipateResponse,
+        participate_response::Confirm, ParticipateRequest, ParticipateResponse,
     },
 };
 use tokio::sync::mpsc;
@@ -55,27 +55,24 @@ impl Participant {
         })
     }
 
-    // TODO: Use the actual types we want to use
     #[tracing::instrument(skip(self, parent))]
-    pub async fn contribute(&mut self, parent: pb::CeremonyCrs) -> Result<pb::CeremonyCrs> {
+    pub async fn contribute(
+        &mut self,
+        parent: &Phase2CeremonyCRS,
+    ) -> Result<Phase2RawCeremonyContribution> {
         self.tx
             .send(Ok(ParticipateResponse {
                 msg: Some(ResponseMsg::ContributeNow(ContributeNow {
-                    parent: Some(parent),
+                    parent: Some(parent.clone().try_into()?),
                 })),
             }))
             .await?;
         let msg = self.rx.message().await?;
         if let Some(ParticipateRequest {
-            msg:
-                Some(RequestMsg::Contribution(Contribution {
-                    updated: Some(updated),
-                    update_proofs: _,
-                    parent_hashes: _,
-                })),
+            msg: Some(RequestMsg::Contribution(contribution)),
         }) = msg
         {
-            Ok(updated)
+            Ok(Phase2RawCeremonyContribution::try_from(contribution)?)
         } else {
             Err(anyhow!(
                 "Participant sent a different message than a contribution message when asked"

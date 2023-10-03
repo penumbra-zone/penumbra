@@ -13,6 +13,20 @@ impl AsRef<[u8]> for ContributionHash {
     }
 }
 
+impl TryFrom<&[u8]> for ContributionHash {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        if value.len() != CONTRIBUTION_HASH_SIZE {
+            anyhow::bail!(
+                "Failed to read ContributionHash from slice of len {}",
+                value.len()
+            );
+        }
+        Ok(Self(value.try_into()?))
+    }
+}
+
 /// Represents an item that can be hashed.
 pub trait Hashable {
     fn hash(&self) -> ContributionHash;

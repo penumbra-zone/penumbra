@@ -2,7 +2,7 @@
 #![deny(clippy::unwrap_used)]
 // Todo: prune public interface once we know exactly what's needed.
 mod dlog;
-mod group;
+pub(crate) mod group;
 pub mod log;
 mod phase1;
 mod phase2;
@@ -17,12 +17,16 @@ use ark_relations::r1cs::ConstraintMatrices;
 
 use decaf377::Bls12_377;
 
+pub use dlog::Proof as DLogProof;
+
 pub use phase1::CRSElements as Phase1CRSElements;
 pub use phase1::Contribution as Phase1Contribution;
+pub use phase1::RawCRSElements as Phase1RawCRSElements;
 pub use phase1::RawContribution as Phase1RawContribution;
 
 pub use phase2::CRSElements as Phase2CRSElements;
 pub use phase2::Contribution as Phase2Contribution;
+pub use phase2::RawCRSElements as Phase2RawCRSElements;
 pub use phase2::RawContribution as Phase2RawContribution;
 
 use group::{F, G1, G2};
