@@ -19,7 +19,7 @@ use penumbra_dex::{
     swap_claim::SwapClaimPlan,
     TradingPair,
 };
-use penumbra_fee::Fee;
+use penumbra_fee::{Fee, GasPrices};
 use penumbra_governance::{
     proposal_state, DelegatorVotePlan, Proposal, ProposalDepositClaim, ProposalSubmit,
     ProposalWithdraw, ValidatorVote, Vote,
@@ -52,6 +52,7 @@ pub struct Planner<R: RngCore + CryptoRng> {
     vote_intents: BTreeMap<u64, VoteIntent>,
     plan: TransactionPlan,
     ibc_actions: Vec<IbcAction>,
+    gas_prices: GasPrices,
     // IMPORTANT: if you add more fields here, make sure to clear them when the planner is finished
 }
 
@@ -81,7 +82,15 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             vote_intents: BTreeMap::default(),
             plan: TransactionPlan::default(),
             ibc_actions: Vec::new(),
+            gas_prices: GasPrices::zero(),
         }
+    }
+
+    /// Set the current gas prices for fee prediction.
+    #[instrument(skip(self))]
+    pub fn set_gas_prices(&mut self, gas_prices: GasPrices) -> &mut Self {
+        self.gas_prices = gas_prices;
+        self
     }
 
     /// Get the current transaction balance of the planner.
@@ -587,12 +596,16 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self.plan
             .add_all_clue_plans(&mut self.rng, precision_bits.into());
 
+        // Calculate the gas that needs to be paid for the transaction based on the configured gas prices.
+        self.plan.add_gas_fees(&self.gas_prices);
+
         tracing::debug!(plan = ?self.plan, "finished balancing transaction");
 
         // Clear the planner and pull out the plan to return
         self.balance = Balance::zero();
         self.vote_intents = BTreeMap::new();
         self.ibc_actions = Vec::new();
+        self.gas_prices = GasPrices::zero();
         let plan = mem::take(&mut self.plan);
 
         Ok(plan)

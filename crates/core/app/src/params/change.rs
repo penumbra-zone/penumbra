@@ -3,6 +3,7 @@ use std::fmt::Display;
 use anyhow::Result;
 use penumbra_chain::params::{ChainParameters, Ratio};
 use penumbra_dao::params::DaoParameters;
+use penumbra_fee::FeeParameters;
 use penumbra_governance::params::GovernanceParameters;
 use penumbra_ibc::params::IBCParameters;
 use penumbra_stake::params::StakeParameters;
@@ -48,6 +49,7 @@ impl AppParameters {
                     proposal_pass_threshold,
                     proposal_slash_threshold,
                 },
+            fee_params: FeeParameters { gas_prices },
             dao_params:
                 DaoParameters {
                     dao_spend_proposals_enabled: _,
@@ -55,6 +57,7 @@ impl AppParameters {
         } = self;
 
         // Ensure that certain parameters are not changed by the update:
+        check_invariant([(gas_prices, &new.fee_params.gas_prices, "gas prices")])?;
         check_invariant([(chain_id, &new.chain_params.chain_id, "chain ID")])?;
         check_invariant([
             (
@@ -125,6 +128,7 @@ impl AppParameters {
                     proposal_pass_threshold,
                     proposal_slash_threshold,
                 },
+            fee_params: FeeParameters { gas_prices: _ },
             dao_params:
                 DaoParameters {
                     dao_spend_proposals_enabled: _,

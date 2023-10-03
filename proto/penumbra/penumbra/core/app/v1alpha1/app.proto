@@ -71,6 +71,8 @@ message AppParameters {
     core.component.ibc.v1alpha1.IbcParameters ibc_params = 4;
     // Stake module parameters.
     core.component.stake.v1alpha1.StakeParameters stake_params = 5;
+    // Fee module parameters.
+    core.component.fee.v1alpha1.FeeParameters fee_params = 6;
 }
 
 // Requests the global configuration data for the app.

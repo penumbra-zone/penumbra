@@ -21,18 +21,12 @@ pub enum ProposalCmd {
         /// The proposal to vote on, in TOML format.
         #[clap(long)]
         file: camino::Utf8PathBuf,
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0")]
         source: u32,
     },
     /// Withdraw a governance proposal that you previously submitted.
     Withdraw {
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
         /// The proposal id to withdraw.
         proposal_id: u64,
         /// A short description of the reason for the proposal being withdrawn, meant to be
@@ -49,9 +43,6 @@ pub enum ProposalCmd {
     /// proposal passed, failed, or was slashed. In the case of a slash, the deposit is not returned
     /// by this action; in other cases, it is returned to you.
     DepositClaim {
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
         /// The proposal id to claim the deposit for.
         proposal_id: u64,
         /// Only spend funds originally received by the given account.

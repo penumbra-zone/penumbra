@@ -53,6 +53,15 @@ pub struct GasPrices {
 }
 
 impl GasPrices {
+    pub fn zero() -> Self {
+        Self {
+            block_space_price: 0,
+            compact_block_space_price: 0,
+            verification_price: 0,
+            execution_price: 0,
+        }
+    }
+
     pub fn price(&self, gas: &Gas) -> Amount {
         Amount::from(
             self.block_space_price * gas.block_space

@@ -82,6 +82,11 @@ pub struct AppParameters {
     pub stake_params: ::core::option::Option<
         super::super::component::stake::v1alpha1::StakeParameters,
     >,
+    /// Fee module parameters.
+    #[prost(message, optional, tag = "6")]
+    pub fee_params: ::core::option::Option<
+        super::super::component::fee::v1alpha1::FeeParameters,
+    >,
 }
 /// Requests the global configuration data for the app.
 #[allow(clippy::derive_partial_eq_without_eq)]

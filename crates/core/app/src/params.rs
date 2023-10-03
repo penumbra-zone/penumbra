@@ -1,5 +1,6 @@
 use penumbra_chain::params::ChainParameters;
 use penumbra_dao::params::DaoParameters;
+use penumbra_fee::FeeParameters;
 use penumbra_governance::params::GovernanceParameters;
 use penumbra_ibc::params::IBCParameters;
 use penumbra_proto::core::app::v1alpha1 as pb;
@@ -18,6 +19,7 @@ pub struct AppParameters {
     pub governance_params: GovernanceParameters,
     pub chain_params: ChainParameters,
     pub dao_params: DaoParameters,
+    pub fee_params: FeeParameters,
 }
 
 impl TypeUrl for AppParameters {
@@ -53,6 +55,10 @@ impl TryFrom<pb::AppParameters> for AppParameters {
                 .dao_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing dao params"))?
                 .try_into()?,
+            fee_params: msg
+                .fee_params
+                .ok_or_else(|| anyhow::anyhow!("proto response missing fee params"))?
+                .try_into()?,
         })
     }
 }
@@ -65,6 +71,7 @@ impl From<AppParameters> for pb::AppParameters {
             governance_params: Some(params.governance_params.into()),
             ibc_params: Some(params.ibc_params.into()),
             stake_params: Some(params.stake_params.into()),
+            fee_params: Some(params.fee_params.into()),
         }
     }
 }

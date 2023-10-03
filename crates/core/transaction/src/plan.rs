@@ -9,12 +9,13 @@ use penumbra_dex::{
     swap::SwapPlan,
     swap_claim::SwapClaimPlan,
 };
-use penumbra_fee::Fee;
+use penumbra_fee::{Fee, GasPrices};
 use penumbra_governance::{
     DelegatorVotePlan, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
 };
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_keys::Address;
+use penumbra_num::Amount;
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
@@ -30,6 +31,8 @@ mod memo;
 pub use action::ActionPlan;
 pub use clue::CluePlan;
 pub use memo::MemoPlan;
+
+use crate::gas::GasCost;
 
 /// A declaration of a planned [`Transaction`](crate::Transaction),
 /// for use in transaction authorization and creation.
@@ -288,6 +291,18 @@ impl TransactionPlan {
         }
 
         self.clue_plans = clue_plans;
+    }
+
+    /// Method to add fee amounts necessary for the transaction to be included,
+    /// based on provided gas prices.
+    pub fn add_gas_fees(&mut self, gas_prices: &GasPrices) {
+        let minimum_fee = gas_prices.price(&self.gas_cost());
+
+        // Since paying the fee possibly requires adding an additional Spend to the
+        // transaction, which would then change the fee calculation, we multiply the
+        // fee here by a factor of 2 and then recalculate and capture the excess as
+        // change outputs.
+        self.fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(2u32));
     }
 }
 

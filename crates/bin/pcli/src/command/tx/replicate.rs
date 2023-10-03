@@ -143,7 +143,15 @@ impl ConstantProduct {
             return Ok(());
         }
 
-        let mut planner = Planner::new(OsRng);
+        let params = app
+            .view
+            .as_mut()
+            .context("view service must be initialized")?
+            .app_params()
+            .await?;
+
+        let gas_prices = params.fee_params.gas_prices;
+        let mut planner = Planner::new(OsRng).set_gas_prices(gas_prices);
         positions.iter().for_each(|position| {
             planner.position_open(position.clone());
         });
