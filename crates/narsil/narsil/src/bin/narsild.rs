@@ -166,7 +166,7 @@ async fn main() -> anyhow::Result<()> {
                         .info(info.clone())
                         .finish()
                         .ok_or_else(|| anyhow::anyhow!("failed to build abci server"))?
-                        .listen(abci_bind),
+                        .listen_tcp(abci_bind),
                 )
                 .expect("failed to spawn abci server");
 
