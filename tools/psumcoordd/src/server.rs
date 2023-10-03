@@ -55,6 +55,7 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
             Status::permission_denied(format!("nyo contwibution *cries* fow you {:#}", e))
         })?;
         let (participant, response_rx) = Participant::new(address, streaming);
+        // TODO: Check if this is what we want to do
         self.participant_tx
             .send(participant)
             .await

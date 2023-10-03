@@ -7,18 +7,11 @@ use anyhow::Result;
 use clap::Parser;
 use console_subscriber::ConsoleLayer;
 use coordinator::Coordinator;
-use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
-use penumbra_proto::{
-    tools::summoning::v1alpha1::ceremony_coordinator_service_server::CeremonyCoordinatorServiceServer,
-    view::v1alpha1::{
-        view_protocol_service_client::ViewProtocolServiceClient,
-        view_protocol_service_server::ViewProtocolServiceServer,
-    },
-};
-use penumbra_view::{ViewClient, ViewService};
-use std::{net::SocketAddr, time::Duration};
+use metrics_tracing_context::MetricsLayer;
+use penumbra_proof_setup::all::Phase2CeremonyCRS;
+use penumbra_proto::tools::summoning::v1alpha1::ceremony_coordinator_service_server::CeremonyCoordinatorServiceServer;
+use std::net::SocketAddr;
 use storage::Storage;
-use tokio::time::sleep;
 use tonic::transport::Server;
 use tracing_subscriber::{prelude::*, EnvFilter};
 
@@ -52,7 +45,8 @@ impl Opt {
     async fn exec(self) -> Result<()> {
         match self.cmd {
             Command::Start { listen } => {
-                let storage = Storage::new();
+                let root = Phase2CeremonyCRS::root()?;
+                let storage = Storage::new(root);
                 let (coordinator, participant_tx) = Coordinator::new(storage.clone());
                 let coordinator_handle = tokio::spawn(coordinator.run());
                 let service = CoordinatorService::new(storage, participant_tx);

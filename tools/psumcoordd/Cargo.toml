@@ -26,6 +26,7 @@ http-body = "0.4.5"
 metrics-tracing-context = "0.11.0"
 penumbra-keys = { path = "../../crates/core/keys/" }
 penumbra-view = { path = "../../crates/view/" }
+penumbra-proof-setup = { path = "../../crates/crypto/proof-setup/" }
 penumbra-proto = { path = "../../crates/proto/" } 
 rand = "0.8"
 tokio = { version = "1.22", features = ["full"] }

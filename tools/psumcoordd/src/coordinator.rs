@@ -7,6 +7,9 @@ use tokio::sync::mpsc::{self, error::TryRecvError};
 
 use crate::{participant::Participant, storage::Storage};
 
+/// Wait time of 10 minutes
+const CONTRIBUTION_TIME_SECS: u64 = 10 * 60;
+
 pub struct Coordinator {
     storage: Storage,
     participants: HashMap<Address, Participant>,
@@ -111,8 +114,7 @@ impl Coordinator {
     #[tracing::instrument(skip(self))]
     async fn contribute(&mut self, contributor: Address) -> Result<()> {
         match tokio::time::timeout(
-            // 10 minutes
-            Duration::from_secs(10 * 60),
+            Duration::from_secs(CONTRIBUTION_TIME_SECS),
             self.contribute_inner(contributor),
         )
         .await
@@ -128,27 +130,29 @@ impl Coordinator {
 
     #[tracing::instrument(skip(self))]
     async fn contribute_inner(&mut self, contributor: Address) -> Result<()> {
-        // TODO: Verify contribution
         let parent = self.storage.current_crs().await?;
         let participant = self
             .participants
             .get_mut(&contributor)
             .expect("We ask for the contributions of participants we're connected to");
-        let new_crs = match participant.contribute(parent).await {
+        let contribution = match participant.contribute(&parent).await {
             Ok(crs) => crs,
             Err(e) => {
-                // TODO: Maybe remove permanently
                 tracing::info!(?e, "Made a bad contribution");
                 return Ok(());
             }
         };
-        // TODO: Run actual validation math
-        self.storage
-            .commit_contribution(contributor, &new_crs)
-            .await?;
-        participant
-            .confirm(self.storage.current_slot().await?)
-            .await?;
+        if let Some(contribution) = contribution.validate(&mut OsRng, &self.storage.root().await?) {
+            if contribution.is_linked_to(&parent) {
+                self.storage
+                    .commit_contribution(contributor, &contribution)
+                    .await?;
+                participant
+                    .confirm(self.storage.current_slot().await?)
+                    .await?;
+            }
+        }
+        // TODO: Strike if bad contribution
         Ok(())
     }
 }
