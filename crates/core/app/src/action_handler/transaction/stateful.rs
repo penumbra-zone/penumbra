@@ -76,11 +76,11 @@ pub(super) async fn fee_greater_than_base_fee<S: StateRead>(
 
     let transaction_base_price = current_gas_prices.price(&transaction.gas_cost());
 
-    if transaction.transaction_body().fee.amount() > transaction_base_price {
+    if transaction.transaction_body().fee.amount() >= transaction_base_price {
         Ok(())
     } else {
         Err(anyhow::anyhow!(
-            "consensus rule violated: paid transaction fee must be greater than transaction's base fee"
+            "consensus rule violated: paid transaction fee must be greater than or equal to transaction's base fee"
         ))
     }
 }
