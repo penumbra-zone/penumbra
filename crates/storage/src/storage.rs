@@ -36,6 +36,7 @@ struct Inner {
     tx_dispatcher: watch::Sender<Snapshot>,
     tx_state: Arc<watch::Sender<Snapshot>>,
     snapshots: RwLock<SnapshotCache>,
+    substore_configs: Vec<Arc<SubstoreConfig>>,
     #[allow(dead_code)]
     /// A handle to the dispatcher task.
     jh_dispatcher: Option<tokio::task::JoinHandle<()>>,
@@ -100,7 +101,11 @@ impl Storage {
                     // jmt version to be u64::MAX, corresponding to -1 mod 2^64.
                     let jmt_version = latest_version(db.as_ref())?.unwrap_or(u64::MAX);
 
-                    let latest_snapshot = Snapshot::new(db.clone(), jmt_version);
+                    let latest_snapshot = Snapshot::new_with_substores(
+                        db.clone(),
+                        jmt_version,
+                        substore_configs.clone(),
+                    );
 
                     // A concurrent-safe ring buffer of the latest 10 snapshots.
                     let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot.clone(), 10));
@@ -143,6 +148,7 @@ impl Storage {
                         tx_dispatcher,
                         tx_state,
                         snapshots,
+                        substore_configs: substore_configs,
                         db,
                     })))
                 })
@@ -229,6 +235,7 @@ impl Storage {
                         tx_dispatcher,
                         tx_state,
                         snapshots,
+                        substore_configs: vec![],
                         db,
                     })))
                 })
@@ -353,7 +360,7 @@ impl Storage {
                         return Ok(root_hash);
                     }
 
-                    let latest_snapshot = Snapshot::new(inner.db.clone(), new_version);
+                    let latest_snapshot = Snapshot::new_with_substores(inner.db.clone(), new_version, inner.substore_configs.clone());
                     // Obtain a write lock to the snapshot cache, and push the latest snapshot
                     // available. The lock guard is implicitly dropped immediately.
                     inner
