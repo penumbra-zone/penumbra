@@ -46,7 +46,7 @@ struct Inner {
 impl Storage {
     /// Initializes a new storage instance at the given path, along with a substore
     /// defined by each of the provided prefixes.
-    /// TODO: potentially restore the impl `IntoIterator` if it makes sense later in the pr.
+    /// TODO: potentially restore the `impl IntoIterator` if it makes sense later in the pr.
     pub async fn init(path: PathBuf, store_prefixes: Vec<String>) -> Result<Self> {
         let span = Span::current();
 
@@ -81,11 +81,8 @@ impl Storage {
                     // jmt version to be u64::MAX, corresponding to -1 mod 2^64.
                     let jmt_version = latest_version(db.as_ref())?.unwrap_or(u64::MAX);
 
-                    let latest_snapshot = Snapshot::new_with_substores(
-                        db.clone(),
-                        jmt_version,
-                        store_configs.clone(),
-                    );
+                    let latest_snapshot =
+                        Snapshot::new(db.clone(), jmt_version, store_configs.clone());
 
                     // A concurrent-safe ring buffer of the latest 10 snapshots.
                     let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot.clone(), 10));
@@ -136,6 +133,7 @@ impl Storage {
             .await?
     }
 
+    // TODO: hack, will consolidate later in the pr.
     pub async fn load(path: PathBuf) -> Result<Self> {
         Storage::init(path, vec![]).await
     }
@@ -257,7 +255,7 @@ impl Storage {
                         return Ok(root_hash);
                     }
 
-                    let latest_snapshot = Snapshot::new_with_substores(inner.db.clone(), new_version, inner.substore_configs.clone());
+                    let latest_snapshot = Snapshot::new(inner.db.clone(), new_version, inner.substore_configs.clone());
                     // Obtain a write lock to the snapshot cache, and push the latest snapshot
                     // available. The lock guard is implicitly dropped immediately.
                     inner
