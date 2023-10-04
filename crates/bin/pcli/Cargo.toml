@@ -20,26 +20,27 @@ parallel = ["penumbra-proof-params/parallel", "decaf377/parallel", "penumbra-shi
 
 [dependencies]
 # Workspace dependencies
-penumbra-proto            = { path = "../../proto", features = ["rpc"] }
-penumbra-tct              = { path = "../../crypto/tct" }
+penumbra-proto         = { path = "../../proto", features = ["rpc"] }
+penumbra-tct           = { path = "../../crypto/tct" }
 penumbra-num           = { path = "../../core/num", default-features=false }
-penumbra-asset           = { path = "../../core/asset", default-features=false }
-penumbra-keys           = { path = "../../core/keys", default-features=false }
-penumbra-chain            = { path = "../../core/component/chain", default-features = false }
-penumbra-shielded-pool    = { path = "../../core/component/shielded-pool", default-features = false }
+penumbra-asset         = { path = "../../core/asset", default-features=false }
+penumbra-keys          = { path = "../../core/keys", default-features=false }
+penumbra-chain         = { path = "../../core/component/chain", default-features = false }
+penumbra-shielded-pool = { path = "../../core/component/shielded-pool", default-features = false }
 penumbra-governance    = { path = "../../core/component/governance", default-features = false }
-penumbra-stake            = { path = "../../core/component/stake", default-features = false }
-penumbra-sct              = { path = "../../core/component/sct", default-features = false }
-penumbra-fee              = { path = "../../core/component/fee", default-features = false }
-penumbra-dex              = { path = "../../core/component/dex", default-features = false }
-penumbra-dao              = { path = "../../core/component/dao", default-features = false }
-penumbra-ibc              = { path = "../../core/component/ibc", default-features = false }
-penumbra-compact-block    = { path = "../../core/component/compact-block", default-features = false }
-penumbra-transaction      = { path = "../../core/transaction", features = ["clap"] }
-penumbra-app              = { path = "../../core/app" }
-penumbra-wallet           = { path = "../../wallet" }
-penumbra-custody          = { path = "../../custody" }
-penumbra-view             = { path = "../../view" }
+penumbra-stake         = { path = "../../core/component/stake", default-features = false }
+penumbra-sct           = { path = "../../core/component/sct", default-features = false }
+penumbra-fee           = { path = "../../core/component/fee", default-features = false }
+penumbra-dex           = { path = "../../core/component/dex", default-features = false }
+penumbra-dao           = { path = "../../core/component/dao", default-features = false }
+penumbra-ibc           = { path = "../../core/component/ibc", default-features = false }
+penumbra-compact-block = { path = "../../core/component/compact-block", default-features = false }
+penumbra-transaction   = { path = "../../core/transaction", features = ["clap"] }
+penumbra-proof-setup   = { path = "../../crypto/proof-setup" }
+penumbra-app           = { path = "../../core/app" }
+penumbra-wallet        = { path = "../../wallet" }
+penumbra-custody       = { path = "../../custody" }
+penumbra-view          = { path = "../../view" }
 
 # Penumbra dependencies
 decaf377 = { version = "0.5" }
