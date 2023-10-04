@@ -72,6 +72,9 @@ impl SubstoreConfig {
             .expect("substore jmt-keys-by-keyhash column family not found")
     }
 
+    // TODO: we can use a `rocksdb::OptimisticTransactionDB` since we know that
+    // our write load is not contentious (definitionally), and we can use make
+    // writing to every substore atomic.
     pub fn commit(&self, changeset: ()) -> Result<()> {
         todo!("commit changeset to rocksdb")
     }
