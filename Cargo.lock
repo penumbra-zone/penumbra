@@ -4480,6 +4480,7 @@ dependencies = [
  "penumbra-keys",
  "penumbra-num",
  "penumbra-proof-params",
+ "penumbra-proof-setup",
  "penumbra-proto",
  "penumbra-sct",
  "penumbra-shielded-pool",

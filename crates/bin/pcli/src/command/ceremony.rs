@@ -2,6 +2,9 @@ use std::time::Duration;
 
 use crate::App;
 use anyhow::Result;
+use penumbra_proof_setup::all::{
+    Phase2CeremonyCRS, Phase2CeremonyContribution, Phase2RawCeremonyCRS,
+};
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::ceremony_coordinator_service_client::CeremonyCoordinatorServiceClient,
     tools::summoning::v1alpha1::{
@@ -21,8 +24,6 @@ pub enum CeremonyCmd {
     Contribute {
         #[clap(long)]
         coordinator_url: Url,
-        #[clap(long)]
-        seconds: u64,
     },
 }
 
@@ -57,7 +58,7 @@ impl CeremonyCmd {
                     .participate(ReceiverStream::new(req_rx))
                     .await?
                     .into_inner();
-                let mut crs = loop {
+                let mut parent = loop {
                     match response_rx.message().await? {
                         None => anyhow::bail!("Coordinator closed connection"),
                         Some(ParticipateResponse {
@@ -72,6 +73,7 @@ impl CeremonyCmd {
                                 })),
                         }) => {
                             tracing::debug!("contribute now");
+                            let parent = Phase2RawCeremonyCRS::try_from(parent)?.assume_valid();
                             break parent;
                         }
                         m => {
@@ -79,16 +81,10 @@ impl CeremonyCmd {
                         }
                     }
                 };
-                // TODO: Make an actual contribution
-                crs.spend.push(0xFF);
-                tokio::time::sleep(Duration::from_secs(*seconds)).await;
+                let contribution = Phase2CeremonyContribution::make(&mut OsRng, &parent);
                 req_tx
                     .send(ParticipateRequest {
-                        msg: Some(RequestMsg::Contribution(Contribution {
-                            updated: Some(crs),
-                            update_proofs: None,
-                            parent_hashes: None,
-                        })),
+                        msg: Some(RequestMsg::Contribution(contribution.try_into()?)),
                     })
                     .await?;
                 match response_rx.message().await? {
