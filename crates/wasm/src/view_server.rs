@@ -109,7 +109,7 @@ impl ViewServer {
     #[wasm_bindgen]
     pub async fn scan_block(&mut self, compact_block: JsValue) -> Result<bool, Error> {
         let result = self.scan_block_inner(compact_block).await?;
-        Ok(true)
+        Ok(result)
     }
 
     /// Get new notes, swaps, SCT state updates
