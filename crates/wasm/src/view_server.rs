@@ -101,15 +101,15 @@ impl ViewServer {
     }
 
     /// Scans block for notes, swaps
-    /// This method does not return SCT updates (nct_updates).
-    /// Although we can make it do if we want to save SCT updates after each blob is processed
-    /// Arguments:
+    /// Returns true if the block contains new notes, swaps or false if the block is empty for us
     ///     compact_block: `v1alpha1::CompactBlock`
+    /// Scan results are saved in-memory rather than returned
+    /// Use `get_updates()` to get the scan results
     /// Returns: `ScanBlockResult`
     #[wasm_bindgen]
-    pub async fn scan_block(&mut self, compact_block: JsValue) -> Result<JsValue, Error> {
+    pub async fn scan_block(&mut self, compact_block: JsValue) -> Result<bool, Error> {
         let result = self.scan_block_inner(compact_block).await?;
-        serde_wasm_bindgen::to_value(&result)
+        Ok(true)
     }
 
     /// get SCT state updates
@@ -187,16 +187,13 @@ impl ViewServer {
     pub async fn scan_block_inner(
         &mut self,
         compact_block: JsValue,
-    ) -> WasmResult<ScanBlockResult> {
+    ) -> WasmResult<bool> {
         let block_proto: penumbra_proto::core::component::compact_block::v1alpha1::CompactBlock =
             serde_wasm_bindgen::from_value(compact_block)?;
 
         let block: CompactBlock = block_proto.try_into()?;
 
-        // Newly detected spendable notes.
-        let mut new_notes = Vec::new();
-        // Newly detected claimable swaps.
-        let mut new_swaps: Vec<SwapRecord> = Vec::new();
+        let mut found_new_data: bool = false;
 
         for state_payload in block.state_payloads {
             let clone_payload = state_payload.clone();
@@ -228,11 +225,11 @@ impl ViewServer {
                                 position: note_position,
                                 source,
                             };
-                            new_notes.push(note_record.clone());
                             self.notes
                                 .insert(payload.note_commitment, note_record.clone());
                             self.notes_by_nullifier
                                 .insert(nullifier, note_record.clone());
+                            found_new_data = true;
                         }
                         None => {
                             self.nct.insert(Forget, payload.note_commitment)?;
@@ -264,7 +261,6 @@ impl ViewServer {
                                 output_data: *batch_data,
                                 height_claimed: None,
                             };
-                            new_swaps.push(swap_record.clone());
                             self.swaps.insert(payload.commitment, swap_record);
 
                             let batch_data =
@@ -276,6 +272,7 @@ impl ViewServer {
 
                             self.storage.store_advice(output_1).await?;
                             self.storage.store_advice(output_2).await?;
+                            found_new_data = true;
                         }
                         None => {
                             self.nct.insert(Forget, payload.commitment)?;
@@ -318,9 +315,9 @@ impl ViewServer {
                                     position,
                                     source,
                                 };
-
                                 e.insert(spendable_note.clone());
-                                new_notes.push(spendable_note.clone());
+                                found_new_data = true;
+
                             }
                         }
                     } else {
@@ -338,13 +335,7 @@ impl ViewServer {
 
         self.latest_height = block.height;
 
-        let result = ScanBlockResult {
-            height: self.latest_height,
-            nct_updates: Default::default(),
-            new_notes,
-            new_swaps,
-        };
-        Ok(result)
+        Ok(found_new_data)
     }
 }
 
