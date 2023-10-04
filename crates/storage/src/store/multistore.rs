@@ -30,7 +30,6 @@ impl Multistore {
         // Note: This is a linear search, but the number of substores is small.
         self.substores
             .iter()
-            // .skip(1) /* skip the transparent substore - not necessary if we split them in the struct */
             .find(|s| key.starts_with(&s.prefix))
             .cloned()
     }
