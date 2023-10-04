@@ -31,21 +31,35 @@ impl Multistore {
     }
 
     /// Returns the substore matching the key's prefix, return `None` otherwise.
-    pub fn find_substore(&self, key: &str) -> Option<Arc<SubstoreConfig>> {
+    pub fn find_substore(&self, key: &[u8]) -> Option<Arc<SubstoreConfig>> {
+        let key = key.as_ref();
         // Note: This is a linear search, but the number of substores is small.
         self.substores
             .iter()
-            .find(|s| key.starts_with(&s.prefix))
+            .find(|s| key.starts_with(&s.prefix.as_bytes()))
             .cloned()
     }
 
     /// Route the key to the correct substore, or the transparent store if no prefix matches.
     /// Returns the truncated key, and the target snapshot.
-    pub fn route_key<'a>(&self, key: &'a str) -> (&'a str, Arc<SubstoreConfig>) {
+    /// TODO: refactor this later. or not. it's repetitive but simple, and mean we don't have to do an expensive utf8 conversion
+    pub fn route_key_str<'a>(&self, key: &'a str) -> (&'a str, Arc<SubstoreConfig>) {
+        match self.find_substore(key.as_bytes()) {
+            Some(config) => (
+                key.strip_prefix(&config.prefix)
+                    .expect("key has the prefix of the matched substore"),
+                config,
+            ),
+            None => (key, self.transparent_store.clone()),
+        }
+    }
+
+    /// Route the key to the correct substore, or the transparent store if no prefix matches.
+    /// Returns the truncated key, and the target snapshot.
+    pub fn route_key<'a>(&self, key: &'a [u8]) -> (&'a [u8], Arc<SubstoreConfig>) {
         match self.find_substore(key) {
             Some(config) => (
-                // TODO: this is definitely incomplete, we need to include a path separator, revisit later in the pr
-                key.strip_prefix(&config.prefix)
+                key.strip_prefix(config.prefix.as_bytes())
                     .expect("key has the prefix of the matched substore"),
                 config,
             ),

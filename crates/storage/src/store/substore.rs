@@ -75,6 +75,7 @@ impl SubstoreConfig {
             .chain(std::iter::once(&self.cf_jmt_keys_by_keyhash))
             .chain(std::iter::once(&self.cf_nonverifiable))
     }
+
     pub fn cf_jmt<'s>(&self, snapshot: &'s Snapshot) -> &'s ColumnFamily {
         snapshot
             .0
@@ -107,6 +108,13 @@ impl SubstoreConfig {
             .expect("substore jmt-keys column family not found")
     }
 
+    pub fn cf_nonverifiable<'s>(&self, snapshot: &'s Snapshot) -> &'s ColumnFamily {
+        snapshot
+            .0
+            .db
+            .cf_handle(&self.cf_nonverifiable.as_str())
+            .expect("substore jmt-keys column family not found")
+    }
     // TODO: we can use a `rocksdb::OptimisticTransactionDB` since we know that
     // our write load is not contentious (definitionally), and we can use make
     // writing to every substore atomic.
