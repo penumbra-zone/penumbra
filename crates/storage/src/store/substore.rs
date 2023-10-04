@@ -39,6 +39,15 @@ impl SubstoreConfig {
         }
     }
 
+    /// Returns an iterator over all column families in this substore.
+    /// This is verbose, but simple.
+    pub fn columns(&self) -> impl Iterator<Item = &String> {
+        std::iter::once(&self.cf_jmt)
+            .chain(std::iter::once(&self.cf_jmt_keys))
+            .chain(std::iter::once(&self.cf_jmt_values))
+            .chain(std::iter::once(&self.cf_jmt_keys_by_keyhash))
+            .chain(std::iter::once(&self.cf_nonverifiable))
+    }
     pub fn cf_jmt<'s>(&self, snapshot: &'s Snapshot) -> &'s ColumnFamily {
         snapshot
             .0
