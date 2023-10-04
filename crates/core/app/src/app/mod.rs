@@ -9,6 +9,7 @@ use penumbra_component::Component;
 use penumbra_dao::component::StateWriteExt as _;
 use penumbra_dex::component::{Dex, SwapManager};
 use penumbra_distributions::component::Distributions;
+use penumbra_fee::component::StateWriteExt as _;
 use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
 use penumbra_ibc::component::{IBCComponent, StateWriteExt as _};
@@ -95,6 +96,7 @@ impl App {
                 state_tx
                     .put_governance_params(app_state.governance_content.governance_params.clone());
                 state_tx.put_ibc_params(app_state.ibc_content.ibc_params.clone());
+                state_tx.put_fee_params(app_state.fee_content.fee_params.clone());
 
                 // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
                 state_tx.put_current_fmd_parameters(FmdParameters::default());
