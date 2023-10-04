@@ -105,7 +105,7 @@ impl ViewServer {
     ///     compact_block: `v1alpha1::CompactBlock`
     /// Scan results are saved in-memory rather than returned
     /// Use `get_updates()` to get the scan results
-    /// Returns: `ScanBlockResult`
+    /// Returns: `bool`
     #[wasm_bindgen]
     pub async fn scan_block(&mut self, compact_block: JsValue) -> Result<bool, Error> {
         let result = self.scan_block_inner(compact_block).await?;
