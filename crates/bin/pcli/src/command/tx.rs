@@ -240,6 +240,15 @@ impl TxCmd {
     }
 
     pub async fn exec(&self, app: &mut App) -> Result<()> {
+        let params = app
+            .view
+            .as_mut()
+            .context("view service must be initialized")?
+            .app_params()
+            .await?;
+
+        let gas_prices = params.fee_params.gas_prices;
+
         match self {
             TxCmd::Send {
                 values,
@@ -262,15 +271,6 @@ impl TxCmd {
                     sender: memo_ephemeral_address,
                     text: memo.clone().unwrap_or_default(),
                 };
-
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
-                let gas_prices = params.fee_params.gas_prices;
 
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
@@ -295,15 +295,6 @@ impl TxCmd {
                     .iter()
                     .map(|v| v.parse())
                     .collect::<Result<Vec<Value>, _>>()?;
-
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
-                let gas_prices = params.fee_params.gas_prices;
 
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
@@ -360,26 +351,21 @@ impl TxCmd {
                 let (claim_address, _dtk_d) =
                     fvk.incoming().payment_address(AddressIndex::new(*source));
 
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
-                let gas_prices = params.fee_params.gas_prices;
-
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices.clone());
                 // The swap claim requires a pre-paid fee, however gas costs might change in the meantime.
                 // This shouldn't be an issue, since the planner will account for the difference and add additional
                 // spends alongside the swap claim transaction as necessary.
                 //
+                // Regardless, we apply a gas adjustment factor of 2.0 up-front to reduce the likelihood of
+                // requiring an additional spend at the time of claim.
+                //
                 // Since the swap claim fee needs to be passed in to the planner to build the swap (it is
-                // part of the `SwapPlaintext`), we can't use the planner to estimate the fee and call the
-                // helper method directly.
-                let estimated_claim_fee =
-                    Fee::from_staking_token_amount(gas_prices.price(&swap_claim_gas_cost()));
+                // part of the `SwapPlaintext`), we can't use the planner to estimate the fee and need to
+                // call the helper method directly.
+                let estimated_claim_fee = Fee::from_staking_token_amount(
+                    Amount::from(2u32) * gas_prices.price(&swap_claim_gas_cost()),
+                );
                 planner.swap(input, into.id(), estimated_claim_fee, claim_address)?;
 
                 let account_group_id = app.fvk.account_group_id();
@@ -428,15 +414,6 @@ impl TxCmd {
 
                 let account_group_id = app.fvk.account_group_id();
 
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
-                let gas_prices = params.fee_params.gas_prices;
-
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
                 let plan = planner
@@ -475,15 +452,6 @@ impl TxCmd {
                     .into_inner()
                     .try_into()?;
 
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
-                let gas_prices = params.fee_params.gas_prices;
-
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
                 let account_group_id = app.fvk.account_group_id().clone();
@@ -521,15 +489,6 @@ impl TxCmd {
                     .into_inner()
                     .try_into()?;
 
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
-                let gas_prices = params.fee_params.gas_prices;
-
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
 
@@ -556,7 +515,6 @@ impl TxCmd {
                     .as_mut()
                     .context("view service must be initialized")?;
 
-                let params = view.app_params().await?;
                 let current_height = view.status(account_group_id).await?.sync_height;
                 let mut client = ChainQueryServiceClient::new(channel.clone());
                 let current_epoch = client
@@ -613,17 +571,8 @@ impl TxCmd {
                             })?
                             .try_into()?;
 
-                        let params = app
-                            .view
-                            .as_mut()
-                            .context("view service must be initialized")?
-                            .app_params()
-                            .await?;
-
-                        let gas_prices = params.fee_params.gas_prices;
-
                         let mut planner = Planner::new(OsRng);
-                        planner.set_gas_prices(gas_prices);
+                        planner.set_gas_prices(gas_prices.clone());
                         let unbonding_amount = notes.iter().map(|n| n.note.amount()).sum();
                         for note in notes {
                             planner.spend(note.note, note.position);
@@ -666,14 +615,6 @@ impl TxCmd {
                 let proposal = proposal_toml
                     .try_into()
                     .context("can't parse proposal file")?;
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
-                let gas_prices = params.fee_params.gas_prices;
 
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
@@ -694,15 +635,6 @@ impl TxCmd {
                 reason,
                 source,
             }) => {
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
-                let gas_prices = params.fee_params.gas_prices;
-
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
                 let plan = planner
@@ -844,14 +776,6 @@ impl TxCmd {
                     start_rate_data.insert(rate_data.identity_key.clone(), rate_data);
                 }
 
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
-                let gas_prices = params.fee_params.gas_prices;
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
                     .delegator_vote(
@@ -1007,15 +931,6 @@ impl TxCmd {
 
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
-                let gas_prices = params.fee_params.gas_prices;
-
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
 
@@ -1057,15 +972,6 @@ impl TxCmd {
 
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
-                let gas_prices = params.fee_params.gas_prices;
-
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
 
@@ -1075,7 +981,6 @@ impl TxCmd {
                     .view
                     .as_mut()
                     .context("view service must be initialized")?;
-                let params = view.app_params().await?;
                 for position_id in owned_position_ids {
                     // Withdraw the position
 
@@ -1131,7 +1036,6 @@ impl TxCmd {
                     .view
                     .as_mut()
                     .context("view service must be initialized")?;
-                let params = view.app_params().await?;
 
                 // Fetch the information regarding the position from the view service.
                 let position = client
@@ -1157,15 +1061,6 @@ impl TxCmd {
                     .expect("missing trading function pair");
 
                 let fee = Fee::from_staking_token_amount((*fee).into());
-
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
-                let gas_prices = params.fee_params.gas_prices;
 
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
