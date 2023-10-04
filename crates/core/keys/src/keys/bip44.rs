@@ -17,7 +17,7 @@ pub struct Bip44Path {
 }
 
 impl Bip44Path {
-    /// Create a new BIP44 path for a Penumbra account group.
+    /// Create a new BIP44 path for a Penumbra wallet.
     pub fn new(account: u32) -> Self {
         Self {
             purpose: 44,

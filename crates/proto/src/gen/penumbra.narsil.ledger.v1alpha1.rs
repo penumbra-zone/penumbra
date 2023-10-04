@@ -124,22 +124,22 @@ pub struct GenesisData {
     #[prost(uint32, tag = "2")]
     pub threshold: u32,
 }
-/// Describes the Penumbra account group jointly controlled by the Narsil instance.
+/// Describes the Penumbra wallet id jointly controlled by the Narsil instance.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AccountGroupInfo {
+pub struct WalletInfo {
     /// The full viewing key for the shared account.
     ///
     /// In the Penumbra key hierarchy, this is the highest-authority key below
     /// spend authority, and allows deriving all subkeys for all accounts in the
-    /// account group.  It is replicated across all shards.
+    /// wallet id.  It is replicated across all shards.
     ///
     /// The spend verification key component is the `PK` in the FROST I-D.
     #[prost(message, optional, tag = "1")]
     pub full_viewing_key: ::core::option::Option<
         super::super::super::core::keys::v1alpha1::FullViewingKey,
     >,
-    /// Describes the participants in the account group.
+    /// Describes the participants in the wallet id.
     #[prost(message, repeated, tag = "2")]
     pub participants: ::prost::alloc::vec::Vec<ShardInfo>,
 }
@@ -510,7 +510,7 @@ pub mod dkg_state {
         #[prost(message, repeated, tag = "2")]
         pub round_2_messages: ::prost::alloc::vec::Vec<super::DkgRound2>,
     }
-    /// The DKG has finished successfully, producing the jointly-controlled `AccountGroupInfo`.
+    /// The DKG has finished successfully, producing the jointly-controlled `WalletInfo`.
     ///
     /// Unlike the signing ceremony, we don't record a failure case here: if the DKG fails, we abort the entire ledger.
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -522,9 +522,9 @@ pub mod dkg_state {
         /// A list of messages received during round 2.
         #[prost(message, repeated, tag = "2")]
         pub round_2_messages: ::prost::alloc::vec::Vec<super::DkgRound2>,
-        /// The jointly-controlled `AccountGroupInfo` resulting from the DKG.
+        /// The jointly-controlled `WalletInfo` resulting from the DKG.
         #[prost(message, optional, tag = "3")]
-        pub account_group_info: ::core::option::Option<super::AccountGroupInfo>,
+        pub wallet_info: ::core::option::Option<super::WalletInfo>,
     }
 }
 /// Generated client implementations.

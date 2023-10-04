@@ -2014,7 +2014,7 @@ impl serde::Serialize for NoteByCommitmentRequest {
         if self.await_detection {
             len += 1;
         }
-        if self.account_group_id.is_some() {
+        if self.wallet_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NoteByCommitmentRequest", len)?;
@@ -2024,8 +2024,8 @@ impl serde::Serialize for NoteByCommitmentRequest {
         if self.await_detection {
             struct_ser.serialize_field("awaitDetection", &self.await_detection)?;
         }
-        if let Some(v) = self.account_group_id.as_ref() {
-            struct_ser.serialize_field("accountGroupId", v)?;
+        if let Some(v) = self.wallet_id.as_ref() {
+            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -2041,15 +2041,15 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentRequest {
             "noteCommitment",
             "await_detection",
             "awaitDetection",
-            "account_group_id",
-            "accountGroupId",
+            "wallet_id",
+            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             NoteCommitment,
             AwaitDetection,
-            AccountGroupId,
+            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2073,7 +2073,7 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentRequest {
                         match value {
                             "noteCommitment" | "note_commitment" => Ok(GeneratedField::NoteCommitment),
                             "awaitDetection" | "await_detection" => Ok(GeneratedField::AwaitDetection),
-                            "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
+                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2095,7 +2095,7 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentRequest {
             {
                 let mut note_commitment__ = None;
                 let mut await_detection__ = None;
-                let mut account_group_id__ = None;
+                let mut wallet_id__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::NoteCommitment => {
@@ -2110,18 +2110,18 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentRequest {
                             }
                             await_detection__ = Some(map.next_value()?);
                         }
-                        GeneratedField::AccountGroupId => {
-                            if account_group_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("accountGroupId"));
+                        GeneratedField::WalletId => {
+                            if wallet_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            account_group_id__ = map.next_value()?;
+                            wallet_id__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(NoteByCommitmentRequest {
                     note_commitment: note_commitment__,
                     await_detection: await_detection__.unwrap_or_default(),
-                    account_group_id: account_group_id__,
+                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -2234,7 +2234,7 @@ impl serde::Serialize for NotesForVotingRequest {
         if self.address_index.is_some() {
             len += 1;
         }
-        if self.account_group_id.is_some() {
+        if self.wallet_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NotesForVotingRequest", len)?;
@@ -2244,8 +2244,8 @@ impl serde::Serialize for NotesForVotingRequest {
         if let Some(v) = self.address_index.as_ref() {
             struct_ser.serialize_field("addressIndex", v)?;
         }
-        if let Some(v) = self.account_group_id.as_ref() {
-            struct_ser.serialize_field("accountGroupId", v)?;
+        if let Some(v) = self.wallet_id.as_ref() {
+            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -2261,15 +2261,15 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
             "votableAtHeight",
             "address_index",
             "addressIndex",
-            "account_group_id",
-            "accountGroupId",
+            "wallet_id",
+            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             VotableAtHeight,
             AddressIndex,
-            AccountGroupId,
+            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2293,7 +2293,7 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
                         match value {
                             "votableAtHeight" | "votable_at_height" => Ok(GeneratedField::VotableAtHeight),
                             "addressIndex" | "address_index" => Ok(GeneratedField::AddressIndex),
-                            "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
+                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2315,7 +2315,7 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
             {
                 let mut votable_at_height__ = None;
                 let mut address_index__ = None;
-                let mut account_group_id__ = None;
+                let mut wallet_id__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::VotableAtHeight => {
@@ -2332,18 +2332,18 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
                             }
                             address_index__ = map.next_value()?;
                         }
-                        GeneratedField::AccountGroupId => {
-                            if account_group_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("accountGroupId"));
+                        GeneratedField::WalletId => {
+                            if wallet_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            account_group_id__ = map.next_value()?;
+                            wallet_id__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(NotesForVotingRequest {
                     votable_at_height: votable_at_height__.unwrap_or_default(),
                     address_index: address_index__,
-                    account_group_id: account_group_id__,
+                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -2480,7 +2480,7 @@ impl serde::Serialize for NotesRequest {
         if self.amount_to_spend.is_some() {
             len += 1;
         }
-        if self.account_group_id.is_some() {
+        if self.wallet_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NotesRequest", len)?;
@@ -2496,8 +2496,8 @@ impl serde::Serialize for NotesRequest {
         if let Some(v) = self.amount_to_spend.as_ref() {
             struct_ser.serialize_field("amountToSpend", v)?;
         }
-        if let Some(v) = self.account_group_id.as_ref() {
-            struct_ser.serialize_field("accountGroupId", v)?;
+        if let Some(v) = self.wallet_id.as_ref() {
+            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -2517,8 +2517,8 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
             "addressIndex",
             "amount_to_spend",
             "amountToSpend",
-            "account_group_id",
-            "accountGroupId",
+            "wallet_id",
+            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2527,7 +2527,7 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
             AssetId,
             AddressIndex,
             AmountToSpend,
-            AccountGroupId,
+            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2553,7 +2553,7 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                             "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
                             "addressIndex" | "address_index" => Ok(GeneratedField::AddressIndex),
                             "amountToSpend" | "amount_to_spend" => Ok(GeneratedField::AmountToSpend),
-                            "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
+                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2577,7 +2577,7 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                 let mut asset_id__ = None;
                 let mut address_index__ = None;
                 let mut amount_to_spend__ = None;
-                let mut account_group_id__ = None;
+                let mut wallet_id__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::IncludeSpent => {
@@ -2604,11 +2604,11 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                             }
                             amount_to_spend__ = map.next_value()?;
                         }
-                        GeneratedField::AccountGroupId => {
-                            if account_group_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("accountGroupId"));
+                        GeneratedField::WalletId => {
+                            if wallet_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            account_group_id__ = map.next_value()?;
+                            wallet_id__ = map.next_value()?;
                         }
                     }
                 }
@@ -2617,7 +2617,7 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                     asset_id: asset_id__,
                     address_index: address_index__,
                     amount_to_spend: amount_to_spend__,
-                    account_group_id: account_group_id__,
+                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -2730,7 +2730,7 @@ impl serde::Serialize for NullifierStatusRequest {
         if self.await_detection {
             len += 1;
         }
-        if self.account_group_id.is_some() {
+        if self.wallet_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NullifierStatusRequest", len)?;
@@ -2740,8 +2740,8 @@ impl serde::Serialize for NullifierStatusRequest {
         if self.await_detection {
             struct_ser.serialize_field("awaitDetection", &self.await_detection)?;
         }
-        if let Some(v) = self.account_group_id.as_ref() {
-            struct_ser.serialize_field("accountGroupId", v)?;
+        if let Some(v) = self.wallet_id.as_ref() {
+            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -2756,15 +2756,15 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusRequest {
             "nullifier",
             "await_detection",
             "awaitDetection",
-            "account_group_id",
-            "accountGroupId",
+            "wallet_id",
+            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Nullifier,
             AwaitDetection,
-            AccountGroupId,
+            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2788,7 +2788,7 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusRequest {
                         match value {
                             "nullifier" => Ok(GeneratedField::Nullifier),
                             "awaitDetection" | "await_detection" => Ok(GeneratedField::AwaitDetection),
-                            "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
+                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2810,7 +2810,7 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusRequest {
             {
                 let mut nullifier__ = None;
                 let mut await_detection__ = None;
-                let mut account_group_id__ = None;
+                let mut wallet_id__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Nullifier => {
@@ -2825,18 +2825,18 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusRequest {
                             }
                             await_detection__ = Some(map.next_value()?);
                         }
-                        GeneratedField::AccountGroupId => {
-                            if account_group_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("accountGroupId"));
+                        GeneratedField::WalletId => {
+                            if wallet_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            account_group_id__ = map.next_value()?;
+                            wallet_id__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(NullifierStatusRequest {
                     nullifier: nullifier__,
                     await_detection: await_detection__.unwrap_or_default(),
-                    account_group_id: account_group_id__,
+                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -3364,12 +3364,12 @@ impl serde::Serialize for StatusRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.account_group_id.is_some() {
+        if self.wallet_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.StatusRequest", len)?;
-        if let Some(v) = self.account_group_id.as_ref() {
-            struct_ser.serialize_field("accountGroupId", v)?;
+        if let Some(v) = self.wallet_id.as_ref() {
+            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -3381,13 +3381,13 @@ impl<'de> serde::Deserialize<'de> for StatusRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "account_group_id",
-            "accountGroupId",
+            "wallet_id",
+            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            AccountGroupId,
+            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3409,7 +3409,7 @@ impl<'de> serde::Deserialize<'de> for StatusRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
+                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3429,19 +3429,19 @@ impl<'de> serde::Deserialize<'de> for StatusRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut account_group_id__ = None;
+                let mut wallet_id__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::AccountGroupId => {
-                            if account_group_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("accountGroupId"));
+                        GeneratedField::WalletId => {
+                            if wallet_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            account_group_id__ = map.next_value()?;
+                            wallet_id__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(StatusRequest {
-                    account_group_id: account_group_id__,
+                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -3568,12 +3568,12 @@ impl serde::Serialize for StatusStreamRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.account_group_id.is_some() {
+        if self.wallet_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.StatusStreamRequest", len)?;
-        if let Some(v) = self.account_group_id.as_ref() {
-            struct_ser.serialize_field("accountGroupId", v)?;
+        if let Some(v) = self.wallet_id.as_ref() {
+            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -3585,13 +3585,13 @@ impl<'de> serde::Deserialize<'de> for StatusStreamRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "account_group_id",
-            "accountGroupId",
+            "wallet_id",
+            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            AccountGroupId,
+            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3613,7 +3613,7 @@ impl<'de> serde::Deserialize<'de> for StatusStreamRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
+                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3633,19 +3633,19 @@ impl<'de> serde::Deserialize<'de> for StatusStreamRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut account_group_id__ = None;
+                let mut wallet_id__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::AccountGroupId => {
-                            if account_group_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("accountGroupId"));
+                        GeneratedField::WalletId => {
+                            if wallet_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            account_group_id__ = map.next_value()?;
+                            wallet_id__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(StatusStreamRequest {
-                    account_group_id: account_group_id__,
+                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -3780,7 +3780,7 @@ impl serde::Serialize for SwapByCommitmentRequest {
         if self.await_detection {
             len += 1;
         }
-        if self.account_group_id.is_some() {
+        if self.wallet_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.SwapByCommitmentRequest", len)?;
@@ -3790,8 +3790,8 @@ impl serde::Serialize for SwapByCommitmentRequest {
         if self.await_detection {
             struct_ser.serialize_field("awaitDetection", &self.await_detection)?;
         }
-        if let Some(v) = self.account_group_id.as_ref() {
-            struct_ser.serialize_field("accountGroupId", v)?;
+        if let Some(v) = self.wallet_id.as_ref() {
+            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -3807,15 +3807,15 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentRequest {
             "swapCommitment",
             "await_detection",
             "awaitDetection",
-            "account_group_id",
-            "accountGroupId",
+            "wallet_id",
+            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             SwapCommitment,
             AwaitDetection,
-            AccountGroupId,
+            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3839,7 +3839,7 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentRequest {
                         match value {
                             "swapCommitment" | "swap_commitment" => Ok(GeneratedField::SwapCommitment),
                             "awaitDetection" | "await_detection" => Ok(GeneratedField::AwaitDetection),
-                            "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
+                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3861,7 +3861,7 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentRequest {
             {
                 let mut swap_commitment__ = None;
                 let mut await_detection__ = None;
-                let mut account_group_id__ = None;
+                let mut wallet_id__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::SwapCommitment => {
@@ -3876,18 +3876,18 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentRequest {
                             }
                             await_detection__ = Some(map.next_value()?);
                         }
-                        GeneratedField::AccountGroupId => {
-                            if account_group_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("accountGroupId"));
+                        GeneratedField::WalletId => {
+                            if wallet_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            account_group_id__ = map.next_value()?;
+                            wallet_id__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(SwapByCommitmentRequest {
                     swap_commitment: swap_commitment__,
                     await_detection: await_detection__.unwrap_or_default(),
-                    account_group_id: account_group_id__,
+                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -4755,7 +4755,7 @@ impl serde::Serialize for TransactionPlannerRequest {
         if self.source.is_some() {
             len += 1;
         }
-        if self.account_group_id.is_some() {
+        if self.wallet_id.is_some() {
             len += 1;
         }
         if !self.outputs.is_empty() {
@@ -4798,8 +4798,8 @@ impl serde::Serialize for TransactionPlannerRequest {
         if let Some(v) = self.source.as_ref() {
             struct_ser.serialize_field("source", v)?;
         }
-        if let Some(v) = self.account_group_id.as_ref() {
-            struct_ser.serialize_field("accountGroupId", v)?;
+        if let Some(v) = self.wallet_id.as_ref() {
+            struct_ser.serialize_field("walletId", v)?;
         }
         if !self.outputs.is_empty() {
             struct_ser.serialize_field("outputs", &self.outputs)?;
@@ -4843,8 +4843,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "fee",
             "memo",
             "source",
-            "account_group_id",
-            "accountGroupId",
+            "wallet_id",
+            "walletId",
             "outputs",
             "swaps",
             "swap_claims",
@@ -4867,7 +4867,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             Fee,
             Memo,
             Source,
-            AccountGroupId,
+            WalletId,
             Outputs,
             Swaps,
             SwapClaims,
@@ -4902,7 +4902,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "fee" => Ok(GeneratedField::Fee),
                             "memo" => Ok(GeneratedField::Memo),
                             "source" => Ok(GeneratedField::Source),
-                            "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
+                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             "outputs" => Ok(GeneratedField::Outputs),
                             "swaps" => Ok(GeneratedField::Swaps),
                             "swapClaims" | "swap_claims" => Ok(GeneratedField::SwapClaims),
@@ -4935,7 +4935,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut fee__ = None;
                 let mut memo__ = None;
                 let mut source__ = None;
-                let mut account_group_id__ = None;
+                let mut wallet_id__ = None;
                 let mut outputs__ = None;
                 let mut swaps__ = None;
                 let mut swap_claims__ = None;
@@ -4973,11 +4973,11 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             }
                             source__ = map.next_value()?;
                         }
-                        GeneratedField::AccountGroupId => {
-                            if account_group_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("accountGroupId"));
+                        GeneratedField::WalletId => {
+                            if wallet_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            account_group_id__ = map.next_value()?;
+                            wallet_id__ = map.next_value()?;
                         }
                         GeneratedField::Outputs => {
                             if outputs__.is_some() {
@@ -5040,7 +5040,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     fee: fee__,
                     memo: memo__,
                     source: source__,
-                    account_group_id: account_group_id__,
+                    wallet_id: wallet_id__,
                     outputs: outputs__.unwrap_or_default(),
                     swaps: swaps__.unwrap_or_default(),
                     swap_claims: swap_claims__.unwrap_or_default(),
@@ -6027,12 +6027,12 @@ impl serde::Serialize for UnclaimedSwapsRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.account_group_id.is_some() {
+        if self.wallet_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.UnclaimedSwapsRequest", len)?;
-        if let Some(v) = self.account_group_id.as_ref() {
-            struct_ser.serialize_field("accountGroupId", v)?;
+        if let Some(v) = self.wallet_id.as_ref() {
+            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -6044,13 +6044,13 @@ impl<'de> serde::Deserialize<'de> for UnclaimedSwapsRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "account_group_id",
-            "accountGroupId",
+            "wallet_id",
+            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            AccountGroupId,
+            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -6072,7 +6072,7 @@ impl<'de> serde::Deserialize<'de> for UnclaimedSwapsRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
+                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -6092,19 +6092,19 @@ impl<'de> serde::Deserialize<'de> for UnclaimedSwapsRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut account_group_id__ = None;
+                let mut wallet_id__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
-                        GeneratedField::AccountGroupId => {
-                            if account_group_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("accountGroupId"));
+                        GeneratedField::WalletId => {
+                            if wallet_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            account_group_id__ = map.next_value()?;
+                            wallet_id__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(UnclaimedSwapsRequest {
-                    account_group_id: account_group_id__,
+                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -6692,7 +6692,7 @@ impl serde::Serialize for WitnessRequest {
         if self.transaction_plan.is_some() {
             len += 1;
         }
-        if self.account_group_id.is_some() {
+        if self.wallet_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.WitnessRequest", len)?;
@@ -6702,8 +6702,8 @@ impl serde::Serialize for WitnessRequest {
         if let Some(v) = self.transaction_plan.as_ref() {
             struct_ser.serialize_field("transactionPlan", v)?;
         }
-        if let Some(v) = self.account_group_id.as_ref() {
-            struct_ser.serialize_field("accountGroupId", v)?;
+        if let Some(v) = self.wallet_id.as_ref() {
+            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -6719,15 +6719,15 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
             "noteCommitments",
             "transaction_plan",
             "transactionPlan",
-            "account_group_id",
-            "accountGroupId",
+            "wallet_id",
+            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             NoteCommitments,
             TransactionPlan,
-            AccountGroupId,
+            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -6751,7 +6751,7 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
                         match value {
                             "noteCommitments" | "note_commitments" => Ok(GeneratedField::NoteCommitments),
                             "transactionPlan" | "transaction_plan" => Ok(GeneratedField::TransactionPlan),
-                            "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
+                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -6773,7 +6773,7 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
             {
                 let mut note_commitments__ = None;
                 let mut transaction_plan__ = None;
-                let mut account_group_id__ = None;
+                let mut wallet_id__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::NoteCommitments => {
@@ -6788,18 +6788,18 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
                             }
                             transaction_plan__ = map.next_value()?;
                         }
-                        GeneratedField::AccountGroupId => {
-                            if account_group_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("accountGroupId"));
+                        GeneratedField::WalletId => {
+                            if wallet_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            account_group_id__ = map.next_value()?;
+                            wallet_id__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(WitnessRequest {
                     note_commitments: note_commitments__.unwrap_or_default(),
                     transaction_plan: transaction_plan__,
-                    account_group_id: account_group_id__,
+                    wallet_id: wallet_id__,
                 })
             }
         }

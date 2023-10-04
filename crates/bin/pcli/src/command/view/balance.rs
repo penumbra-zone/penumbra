@@ -24,7 +24,7 @@ impl BalanceCmd {
 
         let rows: Vec<(Option<AddressIndex>, Value)> = if self.by_note {
             let notes = view
-                .unspent_notes_by_address_and_asset(fvk.account_group_id())
+                .unspent_notes_by_address_and_asset(fvk.wallet_id())
                 .await?;
 
             notes
@@ -40,7 +40,7 @@ impl BalanceCmd {
                 .collect()
         } else {
             let notes = view
-                .unspent_notes_by_address_and_asset(fvk.account_group_id())
+                .unspent_notes_by_address_and_asset(fvk.wallet_id())
                 .await?;
 
             notes

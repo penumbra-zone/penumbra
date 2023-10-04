@@ -87,7 +87,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             self.balance
                 .required()
                 .map(|Value { asset_id, amount }| NotesRequest {
-                    account_group_id: None,
+                    wallet_id: None,
                     asset_id: Some(asset_id.into()),
                     address_index: None,
                     amount_to_spend: Some(amount.into()),
@@ -103,7 +103,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                             start_block_height, ..
                         },
                     )| NotesForVotingRequest {
-                        account_group_id: None,
+                        wallet_id: None,
                         votable_at_height: *start_block_height,
                         address_index: None,
                     },

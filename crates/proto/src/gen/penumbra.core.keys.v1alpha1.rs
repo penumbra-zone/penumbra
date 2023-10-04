@@ -33,7 +33,7 @@ pub mod address_view {
         #[prost(message, optional, tag = "2")]
         pub index: ::core::option::Option<super::AddressIndex>,
         #[prost(message, optional, tag = "3")]
-        pub account_group_id: ::core::option::Option<super::AccountGroupId>,
+        pub wallet_id: ::core::option::Option<super::WalletId>,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -76,7 +76,7 @@ pub struct FullViewingKey {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AccountGroupId {
+pub struct WalletId {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }

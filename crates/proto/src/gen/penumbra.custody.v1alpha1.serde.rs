@@ -9,7 +9,7 @@ impl serde::Serialize for AuthorizeRequest {
         if self.plan.is_some() {
             len += 1;
         }
-        if self.account_group_id.is_some() {
+        if self.wallet_id.is_some() {
             len += 1;
         }
         if !self.pre_authorizations.is_empty() {
@@ -19,8 +19,8 @@ impl serde::Serialize for AuthorizeRequest {
         if let Some(v) = self.plan.as_ref() {
             struct_ser.serialize_field("plan", v)?;
         }
-        if let Some(v) = self.account_group_id.as_ref() {
-            struct_ser.serialize_field("accountGroupId", v)?;
+        if let Some(v) = self.wallet_id.as_ref() {
+            struct_ser.serialize_field("walletId", v)?;
         }
         if !self.pre_authorizations.is_empty() {
             struct_ser.serialize_field("preAuthorizations", &self.pre_authorizations)?;
@@ -36,8 +36,8 @@ impl<'de> serde::Deserialize<'de> for AuthorizeRequest {
     {
         const FIELDS: &[&str] = &[
             "plan",
-            "account_group_id",
-            "accountGroupId",
+            "wallet_id",
+            "walletId",
             "pre_authorizations",
             "preAuthorizations",
         ];
@@ -45,7 +45,7 @@ impl<'de> serde::Deserialize<'de> for AuthorizeRequest {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Plan,
-            AccountGroupId,
+            WalletId,
             PreAuthorizations,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -69,7 +69,7 @@ impl<'de> serde::Deserialize<'de> for AuthorizeRequest {
                     {
                         match value {
                             "plan" => Ok(GeneratedField::Plan),
-                            "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
+                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             "preAuthorizations" | "pre_authorizations" => Ok(GeneratedField::PreAuthorizations),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -91,7 +91,7 @@ impl<'de> serde::Deserialize<'de> for AuthorizeRequest {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut plan__ = None;
-                let mut account_group_id__ = None;
+                let mut wallet_id__ = None;
                 let mut pre_authorizations__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
@@ -101,11 +101,11 @@ impl<'de> serde::Deserialize<'de> for AuthorizeRequest {
                             }
                             plan__ = map.next_value()?;
                         }
-                        GeneratedField::AccountGroupId => {
-                            if account_group_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("accountGroupId"));
+                        GeneratedField::WalletId => {
+                            if wallet_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            account_group_id__ = map.next_value()?;
+                            wallet_id__ = map.next_value()?;
                         }
                         GeneratedField::PreAuthorizations => {
                             if pre_authorizations__.is_some() {
@@ -117,7 +117,7 @@ impl<'de> serde::Deserialize<'de> for AuthorizeRequest {
                 }
                 Ok(AuthorizeRequest {
                     plan: plan__,
-                    account_group_id: account_group_id__,
+                    wallet_id: wallet_id__,
                     pre_authorizations: pre_authorizations__.unwrap_or_default(),
                 })
             }

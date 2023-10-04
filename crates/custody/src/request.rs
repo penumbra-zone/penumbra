@@ -1,4 +1,4 @@
-use penumbra_keys::keys::AccountGroupId;
+use penumbra_keys::keys::WalletId;
 use penumbra_proto::{custody::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_transaction::plan::TransactionPlan;
 
@@ -10,7 +10,7 @@ pub struct AuthorizeRequest {
     /// The transaction plan to authorize.
     pub plan: TransactionPlan,
     /// Identifies the FVK (and hence the spend authorization key) to use for signing.
-    pub account_group_id: Option<AccountGroupId>,
+    pub wallet_id: Option<WalletId>,
     /// Optionally, pre-authorization data, if required by the custodian.
     pub pre_authorizations: Vec<PreAuthorization>,
 }
@@ -31,7 +31,7 @@ impl TryFrom<pb::AuthorizeRequest> for AuthorizeRequest {
                 .plan
                 .ok_or_else(|| anyhow::anyhow!("missing plan"))?
                 .try_into()?,
-            account_group_id: value.account_group_id.map(TryInto::try_into).transpose()?,
+            wallet_id: value.wallet_id.map(TryInto::try_into).transpose()?,
             pre_authorizations: value
                 .pre_authorizations
                 .into_iter()
@@ -45,7 +45,7 @@ impl From<AuthorizeRequest> for pb::AuthorizeRequest {
     fn from(value: AuthorizeRequest) -> pb::AuthorizeRequest {
         Self {
             plan: Some(value.plan.into()),
-            account_group_id: value.account_group_id.map(Into::into),
+            wallet_id: value.wallet_id.map(Into::into),
             pre_authorizations: value
                 .pre_authorizations
                 .into_iter()

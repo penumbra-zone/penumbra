@@ -20,7 +20,7 @@ where
     // Get the authorization data from the custody service...
     let auth_data: AuthorizationData = custody
         .authorize(AuthorizeRequest {
-            account_group_id: Some(fvk.account_group_id()),
+            wallet_id: Some(fvk.wallet_id()),
             plan: plan.clone(),
             pre_authorizations: Vec::new(),
         })
@@ -30,7 +30,7 @@ where
         .try_into()?;
 
     // Send a witness request to the view service to get witness data
-    let witness_data = view.witness(fvk.account_group_id(), &plan).await?;
+    let witness_data = view.witness(fvk.wallet_id(), &plan).await?;
 
     // ... and then build the transaction:
     #[cfg(not(feature = "parallel"))]

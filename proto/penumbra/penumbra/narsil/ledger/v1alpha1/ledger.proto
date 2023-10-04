@@ -106,17 +106,17 @@ message GenesisData {
   uint32 threshold = 2;
 }
 
-// Describes the Penumbra account group jointly controlled by the Narsil instance.
-message AccountGroupInfo {
+// Describes the Penumbra wallet id jointly controlled by the Narsil instance.
+message WalletInfo {
   // The full viewing key for the shared account.
   //
   // In the Penumbra key hierarchy, this is the highest-authority key below
   // spend authority, and allows deriving all subkeys for all accounts in the
-  // account group.  It is replicated across all shards.
+  // wallet id.  It is replicated across all shards.
   //
   // The spend verification key component is the `PK` in the FROST I-D.
   core.keys.v1alpha1.FullViewingKey full_viewing_key = 1;
-  // Describes the participants in the account group.
+  // Describes the participants in the wallet id.
   repeated ShardInfo participants = 2;
 }
 
@@ -352,7 +352,7 @@ message DkgState {
     // A list of round 2 messages received so far (begins empty).
     repeated DkgRound2 round_2_messages = 2;
   }
-  // The DKG has finished successfully, producing the jointly-controlled `AccountGroupInfo`.
+  // The DKG has finished successfully, producing the jointly-controlled `WalletInfo`.
   //
   // Unlike the signing ceremony, we don't record a failure case here: if the DKG fails, we abort the entire ledger.
   message Finished {
@@ -360,7 +360,7 @@ message DkgState {
     repeated DkgRound1 round_1_messages = 1;
     // A list of messages received during round 2.
     repeated DkgRound2 round_2_messages = 2;
-    // The jointly-controlled `AccountGroupInfo` resulting from the DKG.
-    AccountGroupInfo account_group_info = 3;
+    // The jointly-controlled `WalletInfo` resulting from the DKG.
+    WalletInfo wallet_info = 3;
   }
 }

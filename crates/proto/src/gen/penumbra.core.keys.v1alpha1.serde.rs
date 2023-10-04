@@ -1,96 +1,3 @@
-impl serde::Serialize for AccountGroupId {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if !self.inner.is_empty() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.keys.v1alpha1.AccountGroupId", len)?;
-        if !self.inner.is_empty() {
-            struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for AccountGroupId {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "inner",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            Inner,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "inner" => Ok(GeneratedField::Inner),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = AccountGroupId;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.keys.v1alpha1.AccountGroupId")
-            }
-
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<AccountGroupId, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut inner__ = None;
-                while let Some(k) = map.next_key()? {
-                    match k {
-                        GeneratedField::Inner => {
-                            if inner__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("inner"));
-                            }
-                            inner__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
-                        }
-                    }
-                }
-                Ok(AccountGroupId {
-                    inner: inner__.unwrap_or_default(),
-                })
-            }
-        }
-        deserializer.deserialize_struct("penumbra.core.keys.v1alpha1.AccountGroupId", FIELDS, GeneratedVisitor)
-    }
-}
 impl serde::Serialize for Address {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -528,7 +435,7 @@ impl serde::Serialize for address_view::Visible {
         if self.index.is_some() {
             len += 1;
         }
-        if self.account_group_id.is_some() {
+        if self.wallet_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.keys.v1alpha1.AddressView.Visible", len)?;
@@ -538,8 +445,8 @@ impl serde::Serialize for address_view::Visible {
         if let Some(v) = self.index.as_ref() {
             struct_ser.serialize_field("index", v)?;
         }
-        if let Some(v) = self.account_group_id.as_ref() {
-            struct_ser.serialize_field("accountGroupId", v)?;
+        if let Some(v) = self.wallet_id.as_ref() {
+            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -553,15 +460,15 @@ impl<'de> serde::Deserialize<'de> for address_view::Visible {
         const FIELDS: &[&str] = &[
             "address",
             "index",
-            "account_group_id",
-            "accountGroupId",
+            "wallet_id",
+            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Address,
             Index,
-            AccountGroupId,
+            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -585,7 +492,7 @@ impl<'de> serde::Deserialize<'de> for address_view::Visible {
                         match value {
                             "address" => Ok(GeneratedField::Address),
                             "index" => Ok(GeneratedField::Index),
-                            "accountGroupId" | "account_group_id" => Ok(GeneratedField::AccountGroupId),
+                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -607,7 +514,7 @@ impl<'de> serde::Deserialize<'de> for address_view::Visible {
             {
                 let mut address__ = None;
                 let mut index__ = None;
-                let mut account_group_id__ = None;
+                let mut wallet_id__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Address => {
@@ -622,18 +529,18 @@ impl<'de> serde::Deserialize<'de> for address_view::Visible {
                             }
                             index__ = map.next_value()?;
                         }
-                        GeneratedField::AccountGroupId => {
-                            if account_group_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("accountGroupId"));
+                        GeneratedField::WalletId => {
+                            if wallet_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            account_group_id__ = map.next_value()?;
+                            wallet_id__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(address_view::Visible {
                     address: address__,
                     index: index__,
-                    account_group_id: account_group_id__,
+                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -1382,5 +1289,98 @@ impl<'de> serde::Deserialize<'de> for SpendVerificationKey {
             }
         }
         deserializer.deserialize_struct("penumbra.core.keys.v1alpha1.SpendVerificationKey", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for WalletId {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.inner.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.keys.v1alpha1.WalletId", len)?;
+        if !self.inner.is_empty() {
+            struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for WalletId {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "inner",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Inner,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "inner" => Ok(GeneratedField::Inner),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = WalletId;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.keys.v1alpha1.WalletId")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<WalletId, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut inner__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::Inner => {
+                            if inner__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("inner"));
+                            }
+                            inner__ = 
+                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(WalletId {
+                    inner: inner__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.keys.v1alpha1.WalletId", FIELDS, GeneratedVisitor)
     }
 }

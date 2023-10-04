@@ -83,7 +83,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
 
     // 4. Use the view protocol to wait for it to sync.
     let mut status_stream = (&mut view_client as &mut dyn ViewClient)
-        .status_stream(test_keys::FULL_VIEWING_KEY.account_group_id())
+        .status_stream(test_keys::FULL_VIEWING_KEY.wallet_id())
         .await?;
     while let Some(item) = status_stream.as_mut().next().await.transpose()? {
         tracing::debug!(?item);
@@ -220,7 +220,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
 
     // 4. Use the view protocol to wait for it to sync.
     let mut status_stream = (&mut view_client as &mut dyn ViewClient)
-        .status_stream(test_keys::FULL_VIEWING_KEY.account_group_id())
+        .status_stream(test_keys::FULL_VIEWING_KEY.wallet_id())
         .await?;
     while let Some(item) = status_stream.as_mut().next().await.transpose()? {
         tracing::debug!(?item);
@@ -317,7 +317,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
 
     // 6. Use the view protocol to wait for it to sync.
     let mut status_stream = (&mut view_client as &mut dyn ViewClient)
-        .status_stream(test_keys::FULL_VIEWING_KEY.account_group_id())
+        .status_stream(test_keys::FULL_VIEWING_KEY.wallet_id())
         .await?;
     while let Some(item) = status_stream.as_mut().next().await.transpose()? {
         tracing::debug!(?item);
@@ -326,7 +326,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
     // Ensure we can fetch the SwapRecord with the claimable swap.
     let _swap_record = (&mut view_client as &mut dyn ViewClient)
         .swap_by_commitment(
-            test_keys::FULL_VIEWING_KEY.account_group_id(),
+            test_keys::FULL_VIEWING_KEY.wallet_id(),
             swap_plaintext.swap_commitment(),
         )
         .await?;

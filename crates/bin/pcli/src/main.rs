@@ -49,7 +49,7 @@ impl App {
     async fn sync(&mut self) -> Result<()> {
         let mut status_stream = ViewClient::status_stream(
             self.view.as_mut().expect("view service initialized"),
-            self.fvk.account_group_id(),
+            self.fvk.wallet_id(),
         )
         .await?;
 

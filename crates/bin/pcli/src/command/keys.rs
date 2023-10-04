@@ -42,8 +42,8 @@ pub enum ImportCmd {
 pub enum ExportCmd {
     /// Export the full viewing key for the wallet.
     FullViewingKey,
-    /// Export the account group ID.
-    AccountGroupId,
+    /// Export the wallet ID.
+    WalletId,
 }
 
 impl KeysCmd {
@@ -122,10 +122,10 @@ impl KeysCmd {
                 let wallet = KeyStore::load(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                 println!("{}", wallet.spend_key.full_viewing_key());
             }
-            KeysCmd::Export(ExportCmd::AccountGroupId) => {
-                let wallet = KeyStore::load(data_dir.join(crate::CUSTODY_FILE_NAME))?;
-                let account_group_id = wallet.spend_key.full_viewing_key().account_group_id();
-                println!("{}", serde_json::to_string_pretty(&account_group_id)?);
+            KeysCmd::Export(ExportCmd::WalletId) => {
+                let key_store = KeyStore::load(data_dir.join(crate::CUSTODY_FILE_NAME))?;
+                let wallet_id = key_store.spend_key.full_viewing_key().wallet_id();
+                println!("{}", serde_json::to_string_pretty(&wallet_id)?);
             }
             KeysCmd::Delete => {
                 let wallet_path = data_dir.join(crate::CUSTODY_FILE_NAME);

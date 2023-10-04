@@ -62,11 +62,9 @@ pub struct TransactionPlannerRequest {
     /// If present, only spends funds from the given account.
     #[prost(message, optional, tag = "4")]
     pub source: ::core::option::Option<super::super::core::keys::v1alpha1::AddressIndex>,
-    /// Optionally identifies the account group to query.
+    /// Optionally identifies the wallet id to query.
     #[prost(message, optional, tag = "14")]
-    pub account_group_id: ::core::option::Option<
-        super::super::core::keys::v1alpha1::AccountGroupId,
-    >,
+    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
     /// Request contents
     #[prost(message, repeated, tag = "20")]
     pub outputs: ::prost::alloc::vec::Vec<transaction_planner_request::Output>,
@@ -314,11 +312,9 @@ pub struct ViewAuthResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusRequest {
-    /// Identifies the account group to query.
+    /// Identifies the wallet id to query.
     #[prost(message, optional, tag = "14")]
-    pub account_group_id: ::core::option::Option<
-        super::super::core::keys::v1alpha1::AccountGroupId,
-    >,
+    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 /// Returns the status of the view service and whether it is synchronized with the chain state.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -335,11 +331,9 @@ pub struct StatusResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusStreamRequest {
-    /// Identifies the account group to query.
+    /// Identifies the wallet id to query.
     #[prost(message, optional, tag = "14")]
-    pub account_group_id: ::core::option::Option<
-        super::super::core::keys::v1alpha1::AccountGroupId,
-    >,
+    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 /// A streaming sync status update
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -375,11 +369,9 @@ pub struct NotesRequest {
     pub amount_to_spend: ::core::option::Option<
         super::super::core::num::v1alpha1::Amount,
     >,
-    /// Identifies the account group to query.
+    /// Identifies the wallet id to query.
     #[prost(message, optional, tag = "14")]
-    pub account_group_id: ::core::option::Option<
-        super::super::core::keys::v1alpha1::AccountGroupId,
-    >,
+    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 /// A query for notes to be used for voting on a proposal.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -393,11 +385,9 @@ pub struct NotesForVotingRequest {
     pub address_index: ::core::option::Option<
         super::super::core::keys::v1alpha1::AddressIndex,
     >,
-    /// Identifies the account group to query.
+    /// Identifies the wallet id to query.
     #[prost(message, optional, tag = "14")]
-    pub account_group_id: ::core::option::Option<
-        super::super::core::keys::v1alpha1::AccountGroupId,
-    >,
+    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -412,11 +402,9 @@ pub struct WitnessRequest {
     pub transaction_plan: ::core::option::Option<
         super::super::core::transaction::v1alpha1::TransactionPlan,
     >,
-    /// Identifies the account group to query.
+    /// Identifies the wallet id to query.
     #[prost(message, optional, tag = "14")]
-    pub account_group_id: ::core::option::Option<
-        super::super::core::keys::v1alpha1::AccountGroupId,
-    >,
+    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -530,11 +518,9 @@ pub struct NoteByCommitmentRequest {
     /// If set to true, waits to return until the requested note is detected.
     #[prost(bool, tag = "3")]
     pub await_detection: bool,
-    /// Identifies the account group to query.
+    /// Identifies the wallet id to query.
     #[prost(message, optional, tag = "14")]
-    pub account_group_id: ::core::option::Option<
-        super::super::core::keys::v1alpha1::AccountGroupId,
-    >,
+    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -552,11 +538,9 @@ pub struct SwapByCommitmentRequest {
     /// If set to true, waits to return until the requested swap is detected.
     #[prost(bool, tag = "3")]
     pub await_detection: bool,
-    /// Identifies the account group to query.
+    /// Identifies the wallet id to query.
     #[prost(message, optional, tag = "14")]
-    pub account_group_id: ::core::option::Option<
-        super::super::core::keys::v1alpha1::AccountGroupId,
-    >,
+    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -567,11 +551,9 @@ pub struct SwapByCommitmentResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UnclaimedSwapsRequest {
-    /// Identifies the account group to query.
+    /// Identifies the wallet id to query.
     #[prost(message, optional, tag = "1")]
-    pub account_group_id: ::core::option::Option<
-        super::super::core::keys::v1alpha1::AccountGroupId,
-    >,
+    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -588,11 +570,9 @@ pub struct NullifierStatusRequest {
     >,
     #[prost(bool, tag = "3")]
     pub await_detection: bool,
-    /// Identifies the account group to query.
+    /// Identifies the wallet id to query.
     #[prost(message, optional, tag = "14")]
-    pub account_group_id: ::core::option::Option<
-        super::super::core::keys::v1alpha1::AccountGroupId,
-    >,
+    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -770,7 +750,7 @@ pub mod view_protocol_service_client {
     /// responsible for synchronizing and scanning the public chain state with one or
     /// more full viewing keys.
     ///
-    /// View protocol requests optionally include the account group ID, used to
+    /// View protocol requests optionally include the wallet id, used to
     /// identify which set of data to query.
     #[derive(Debug, Clone)]
     pub struct ViewProtocolServiceClient<T> {
@@ -1970,7 +1950,7 @@ pub mod view_protocol_service_server {
     /// responsible for synchronizing and scanning the public chain state with one or
     /// more full viewing keys.
     ///
-    /// View protocol requests optionally include the account group ID, used to
+    /// View protocol requests optionally include the wallet id, used to
     /// identify which set of data to query.
     #[derive(Debug)]
     pub struct ViewProtocolServiceServer<T: ViewProtocolService> {

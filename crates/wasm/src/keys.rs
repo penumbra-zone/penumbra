@@ -1,10 +1,13 @@
-use crate::error::WasmResult;
+use std::str::FromStr;
+
+use rand_core::OsRng;
+use wasm_bindgen::prelude::*;
+
 use penumbra_keys::keys::{SeedPhrase, SpendKey};
 use penumbra_keys::{Address, FullViewingKey};
 use penumbra_proto::{core::keys::v1alpha1 as pb, serializers::bech32str, DomainType};
-use rand_core::OsRng;
-use std::str::FromStr;
-use wasm_bindgen::prelude::*;
+
+use crate::error::WasmResult;
 
 /// generate a spend key from a seed phrase
 /// Arguments:
@@ -44,6 +47,16 @@ pub fn get_full_viewing_key(spend_key: &str) -> WasmResult<JsValue> {
         bech32str::Bech32m,
     );
     Ok(JsValue::from_str(&fvk_bech32))
+}
+
+/// Wallet id: the hash of a full viewing key, used as an account identifier
+/// Arguments:
+///     full_viewing_key: `bech32 string`
+/// Returns: `bech32 string`
+#[wasm_bindgen]
+pub fn get_wallet_id(full_viewing_key: &str) -> WasmResult<String> {
+    let fvk = FullViewingKey::from_str(full_viewing_key)?;
+    Ok(fvk.wallet_id().to_string())
 }
 
 /// get address by index using FVK

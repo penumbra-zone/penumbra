@@ -26,7 +26,7 @@ use penumbra_governance::{
 };
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_keys::{
-    keys::{AccountGroupId, AddressIndex},
+    keys::{AddressIndex, WalletId},
     Address,
 };
 use penumbra_num::Amount;
@@ -102,14 +102,14 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Get all the note requests necessary to fulfill the current [`Balance`].
     pub fn notes_requests(
         &self,
-        account_group_id: AccountGroupId,
+        wallet_id: WalletId,
         source: AddressIndex,
     ) -> (Vec<NotesRequest>, Vec<NotesForVotingRequest>) {
         (
             self.balance
                 .required()
                 .map(|Value { asset_id, amount }| NotesRequest {
-                    account_group_id: Some(account_group_id.into()),
+                    wallet_id: Some(wallet_id.into()),
                     asset_id: Some(asset_id.into()),
                     address_index: Some(source.into()),
                     amount_to_spend: Some(amount.into()),
@@ -125,7 +125,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                             start_block_height, ..
                         },
                     )| NotesForVotingRequest {
-                        account_group_id: Some(account_group_id.into()),
+                        wallet_id: Some(wallet_id.into()),
                         votable_at_height: *start_block_height,
                         address_index: Some(source.into()),
                     },
@@ -452,7 +452,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub async fn plan<V: ViewClient>(
         &mut self,
         view: &mut V,
-        account_group_id: AccountGroupId,
+        wallet_id: WalletId,
         source: AddressIndex,
     ) -> anyhow::Result<TransactionPlan> {
         // Gather all the information needed from the view service
@@ -467,7 +467,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         let mut spendable_notes = Vec::new();
         let mut voting_notes = Vec::new();
-        let (spendable_requests, voting_requests) = self.notes_requests(account_group_id, source);
+        let (spendable_requests, voting_requests) = self.notes_requests(wallet_id, source);
         for request in spendable_requests {
             let notes = view.notes(request).await?;
             spendable_notes.extend(notes);
