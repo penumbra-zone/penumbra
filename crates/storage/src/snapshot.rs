@@ -53,25 +53,17 @@ pub(crate) struct Inner {
 }
 
 impl Snapshot {
-    #[cfg(test)]
-    // TODO: hack to get a fast feedback loop on testing. we will consolidate
-    // the api and propagate the changes to the tests later in the pr.
-    pub(crate) fn new(db: Arc<rocksdb::DB>, version: jmt::Version) -> Self {
-        let default_store = Arc::new(store::substore::SubstoreConfig::transparent_store());
-        Self(Arc::new(Inner {
-            snapshot: RocksDbSnapshot::new(db.clone()),
-            version,
-            db,
-            multistore: Multistore::new(vec![default_store]),
-        }))
-    }
-
     /// Creates a new `Snapshot` with the given version and substore configs.
-    pub(crate) fn new_with_substores(
+    pub(crate) fn new(
         db: Arc<rocksdb::DB>,
         version: jmt::Version,
-        substore_configs: Vec<Arc<store::substore::SubstoreConfig>>,
+        mut substore_configs: Vec<Arc<store::substore::SubstoreConfig>>,
     ) -> Self {
+        if substore_configs.is_empty() {
+            let transparent_config = store::substore::SubstoreConfig::transparent_store();
+            substore_configs.push(Arc::new(transparent_config));
+        }
+
         Self(Arc::new(Inner {
             snapshot: RocksDbSnapshot::new(db.clone()),
             version,
