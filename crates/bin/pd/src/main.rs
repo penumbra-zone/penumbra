@@ -68,6 +68,7 @@ enum RootCommand {
             default_value = "127.0.0.1:26658",
             display_order = 400
         )]
+        // TODO: Add support for Unix domain sockets, available in tower-abci >=0.10.0
         abci_bind: SocketAddr,
         /// Bind the gRPC server to this socket.
         ///
@@ -325,7 +326,7 @@ async fn main() -> anyhow::Result<()> {
                         .info(info.clone())
                         .finish()
                         .context("failed to build abci server")?
-                        .listen(abci_bind),
+                        .listen_tcp(abci_bind),
                 )
                 .expect("failed to spawn abci server");
 

@@ -24,7 +24,7 @@ penumbra-chain = { path = "../../core/component/chain", features = [
 penumbra-app = { path = "../../core/app" }
 
 # Penumbra dependencies
-tower-abci = "0.9.0"
+tower-abci = "0.10.0"
 tower-actor = "0.1.0"
 
 # External dependencies
