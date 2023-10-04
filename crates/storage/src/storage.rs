@@ -12,7 +12,7 @@ use rocksdb::{Options, DB};
 use tokio::sync::watch;
 use tracing::Span;
 
-use crate::{cache::Cache, snapshot::Snapshot, EscapedByteSlice};
+use crate::{cache::Cache, snapshot::Snapshot, store::substore::SubstoreConfig, EscapedByteSlice};
 use crate::{snapshot_cache::SnapshotCache, StateDelta};
 
 mod temp;
@@ -43,6 +43,113 @@ struct Inner {
 }
 
 impl Storage {
+    /// Initializes a new storage instance at the given path, along with a substore
+    /// defined by each of the provided prefixes.
+    pub async fn init<T, I>(path: PathBuf, store_prefixes: T) -> Result<Self>
+    where
+        T: IntoIterator<Item = I>,
+        I: AsRef<str>,
+    {
+        let span = Span::current();
+        let substore_configs = store_prefixes
+            .into_iter()
+            .map(|substore_prefix| {
+                let substore_prefix = substore_prefix.as_ref();
+                tracing::info!(?substore_prefix, "initializing substore");
+                Arc::new(SubstoreConfig::new(substore_prefix.to_string()))
+            })
+            .collect::<Vec<_>>();
+        tokio::task::Builder::new()
+            .name("open_rocksdb")
+            .spawn_blocking(move || {
+                span.in_scope(|| {
+                    tracing::info!(?path, "opening rocksdb");
+                    let mut opts = Options::default();
+                    opts.create_if_missing(true);
+                    opts.create_missing_column_families(true);
+
+                    let main_store = [
+                        // jmt: maps `storage::DbNodeKey` to `jmt::Node`, persists the internal structure of the JMT.
+                        // Note: we need to use a newtype wrapper around `NodeKey` here, because
+                        // we want a lexicographical ordering that maps to ascending jmt::Version.
+                        "jmt",
+                        // nonverifiable: maps arbitrary keys to arbitrary values, persists
+                        // the nonverifiable state.
+                        "nonverifiable",
+                        // jmt_keys: index JMT keys (i.e. keyhash preimages).
+                        "jmt_keys",
+                        // jmt_keys_by_keyhash: index JMT keys by their hash.
+                        "jmt_keys_by_keyhash",
+                        // jmt_values: maps KeyHash || BE(version) to an `Option<Vec<u8>>`
+                        "jmt_values",
+                    ];
+
+                    let columns: Vec<&str> = main_store
+                        .into_iter()
+                        .map(AsRef::as_ref)
+                        .chain(
+                            substore_configs
+                                .iter()
+                                .flat_map(|s| s.columns().map(|string| string.as_str())), // Convert &String to &str
+                        )
+                        .collect();
+
+                    let db = Arc::new(DB::open_cf(&opts, path, columns)?);
+
+                    // Note: for compatibility reasons with Tendermint/CometBFT, we set the "pre-genesis"
+                    // jmt version to be u64::MAX, corresponding to -1 mod 2^64.
+                    let jmt_version = latest_version(db.as_ref())?.unwrap_or(u64::MAX);
+
+                    let latest_snapshot = Snapshot::new(db.clone(), jmt_version);
+
+                    // A concurrent-safe ring buffer of the latest 10 snapshots.
+                    let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot.clone(), 10));
+
+                    // Setup a dispatcher task that acts as an intermediary between the storage
+                    // and the rest of the system. Its purpose is to forward new snapshots to
+                    // subscribers.
+                    // If we were to send snapshots directly to subscribers, a slow subscriber could
+                    // hold a lock on the watch channel for too long, and block the consensus-critical
+                    // commit logic, which needs to acquire a write lock on the watch channel.
+                    // dispatcher channel (internal):
+                    // - `tx_dispatcher` is used by storage to signal that a new snapshot is available.
+                    // - `rx_dispatcher` is used by the dispatcher to receive new snapshots.
+                    // snapshot channel (external):
+                    // - `tx_state` is used by the dispatcher to signal new snapshots to the rest of the system.
+                    // - `rx_state` is used by various components to subscribe to new snapshots.
+                    let (tx_state, _) = watch::channel(latest_snapshot.clone());
+                    let (tx_dispatcher, mut rx_dispatcher) = watch::channel(latest_snapshot);
+
+                    let tx_state = Arc::new(tx_state);
+                    let tx_state2 = tx_state.clone();
+                    let jh_dispatcher = tokio::spawn(async move {
+                        tracing::info!("snapshot dispatcher task has started");
+                        // If the sender is dropped, the task will terminate.
+                        while rx_dispatcher.changed().await.is_ok() {
+                            tracing::debug!("dispatcher has received a new snapshot");
+                            let snapshot = rx_dispatcher.borrow_and_update().clone();
+                            // [`watch::Sender<T>::send`] only returns an error if there are no
+                            // receivers, so we can safely ignore the result here.
+                            let _ = tx_state2.send(snapshot);
+                        }
+                        tracing::info!("dispatcher task has terminated")
+                    });
+
+                    Ok(Self(Arc::new(Inner {
+                        // We don't need to wrap the task in a `CancelOnDrop<T>` because
+                        // the task will stop when the sender is dropped. However, certain
+                        // test scenarios require us to wait that all resources are released.
+                        jh_dispatcher: Some(jh_dispatcher),
+                        tx_dispatcher,
+                        tx_state,
+                        snapshots,
+                        db,
+                    })))
+                })
+            })?
+            .await?
+    }
+
     pub async fn load(path: PathBuf) -> Result<Self> {
         let span = Span::current();
         tokio::task::Builder::new()
