@@ -44,6 +44,7 @@ impl Multistore {
     pub fn route_key<'a>(&self, key: &'a str) -> (&'a str, Arc<SubstoreConfig>) {
         match self.find_substore(key) {
             Some(config) => (
+                // TODO: this is definitely incomplete, we need to include a path separator, revisit later in the pr
                 key.strip_prefix(&config.prefix)
                     .expect("key has the prefix of the matched substore"),
                 config,
