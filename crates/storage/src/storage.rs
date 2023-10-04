@@ -12,12 +12,7 @@ use rocksdb::{Options, DB};
 use tokio::sync::watch;
 use tracing::Span;
 
-use crate::{
-    cache::Cache,
-    snapshot::Snapshot,
-    store::substore::{self, SubstoreConfig},
-    EscapedByteSlice,
-};
+use crate::{cache::Cache, snapshot::Snapshot, store::substore::SubstoreConfig, EscapedByteSlice};
 use crate::{snapshot_cache::SnapshotCache, StateDelta};
 
 mod temp;

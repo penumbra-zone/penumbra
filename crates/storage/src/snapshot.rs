@@ -13,7 +13,7 @@ use tracing::Span;
 
 use crate::{
     storage::{DbNodeKey, VersionedKeyHash},
-    store::{self, multistore::Multistore},
+    store::{self, multistore::Multistore, substore::SubstoreSnapshot},
     utils, StateRead,
 };
 
@@ -157,6 +157,41 @@ impl Snapshot {
             Err(e) => Err(e),
         }
     }
+
+    /// Internal helper function used by `get_raw` and `prefix_raw`.
+    ///
+    /// Reads from the JMT will fail if the root is missing; this method
+    /// special-cases the empty tree case so that reads on an empty tree just
+    /// return None.
+    fn get_jmt_substore(
+        &self,
+        key: jmt::KeyHash,
+        substore: SubstoreSnapshot,
+    ) -> Result<Option<Vec<u8>>> {
+        let tree = Sha256Jmt::new(&substore);
+        match tree.get(key, self.0.version) {
+            Ok(Some(value)) => {
+                tracing::trace!(version = ?self.0.version, ?key, value = ?hex::encode(&value), "read from tree");
+                Ok(Some(value))
+            }
+            Ok(None) => {
+                tracing::trace!(version = ?self.0.version, ?key, "key not found in tree");
+                Ok(None)
+            }
+            // This allows for using the Overlay on an empty database without
+            // errors We only skip the `MissingRootError` if the `version` is
+            // `u64::MAX`, the pre-genesis version. Otherwise, a missing root
+            // actually does indicate a problem.
+            Err(e)
+                if e.downcast_ref::<jmt::MissingRootError>().is_some()
+                    && self.0.version == u64::MAX =>
+            {
+                tracing::trace!(version = ?self.0.version, "no data available at this version");
+                Ok(None)
+            }
+            Err(e) => Err(e),
+        }
+    }
 }
 
 #[async_trait]
@@ -180,6 +215,7 @@ impl StateRead for Snapshot {
             snapshot: self.clone(),
         };
         let key_hash = jmt::KeyHash::with::<sha2::Sha256>(key.as_bytes());
+        let snapshot = self.clone();
 
         crate::future::SnapshotFuture(
             tokio::task::Builder::new()
@@ -187,7 +223,7 @@ impl StateRead for Snapshot {
                 .spawn_blocking(move || {
                     span.in_scope(|| {
                         let _start = std::time::Instant::now();
-                        let rsp = substore.snapshot.get_jmt(key_hash);
+                        let rsp = snapshot.get_jmt_substore(key_hash, substore);
                         #[cfg(feature = "metrics")]
                         metrics::histogram!(metrics::STORAGE_GET_RAW_DURATION, _start.elapsed());
                         rsp
