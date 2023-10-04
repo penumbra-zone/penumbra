@@ -16,15 +16,30 @@ use crate::{
 
 #[derive(Debug)]
 pub struct SubstoreConfig {
+    /// The prefix of the substore. If empty, it is the transparent top-level store config.
     pub prefix: String,
+    /// name: "jmt"
+    /// role: persists the logical structure of the JMT
+    /// maps: `storage::DbNodeKey` to `jmt::Node`
+    // note: `DbNodeKey` is a newtype around `NodeKey` that serialize the key
+    // so that it maps to a lexicographical ordering with ascending jmt::Version.
     cf_jmt: String,
+    /// jmt_keys: JMT key index.
+    /// maps: key preimages to their keyhash.
     cf_jmt_keys: String,
+    /// jmt_values: the actual values that JMT leaves point to.
+    /// maps: KeyHash || BE(version) to an `Option<Vec<u8>>`
     cf_jmt_values: String,
+    /// jmt_keys_by_keyhash: JMT keyhash index.
+    /// maps: keyhashes to their preimage.
     cf_jmt_keys_by_keyhash: String,
+    /// nonverifiable: auxiliary data that is not part of our merkle tree,
+    /// and thus not strictly part of consensus (or verifiable).
+    /// maps: arbitrary keys to arbitrary values.
+    cf_nonverifiable: String,
     // This isn't part of the JMT, so the substore abstraction
     // isn't really necessary, but it's cleaner if we keep it
     // segmented by substore so that all reads can be dispached to a substore.
-    cf_nonverifiable: String,
 }
 
 impl SubstoreConfig {
@@ -36,6 +51,18 @@ impl SubstoreConfig {
             cf_jmt_keys_by_keyhash: format!("substore-{}-jmt-keys-by-keyhash", prefix),
             cf_nonverifiable: format!("substore-{}-nonverifiable", prefix),
             prefix,
+        }
+    }
+
+    pub fn transparent_store() -> Self {
+        Self {
+            // TODO: harmonize cf format throughout.
+            cf_jmt: "jmt".to_string(),
+            cf_jmt_keys: "jmt_keys".to_string(),
+            cf_jmt_values: "jmt_values".to_string(),
+            cf_jmt_keys_by_keyhash: "jmt_keys_by_keyhash".to_string(),
+            cf_nonverifiable: "nonverifiable".to_string(),
+            prefix: "".to_string(),
         }
     }
 
@@ -75,7 +102,7 @@ impl SubstoreConfig {
     // TODO: we can use a `rocksdb::OptimisticTransactionDB` since we know that
     // our write load is not contentious (definitionally), and we can use make
     // writing to every substore atomic.
-    pub fn commit(&self, changeset: ()) -> Result<()> {
+    pub fn _commit(&self, _changeset: ()) -> Result<()> {
         todo!("commit changeset to rocksdb")
     }
 }

@@ -2,7 +2,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use std::{path::PathBuf, sync::Arc};
 // use tokio_stream::wrappers::WatchStream;
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use jmt::{
     storage::{LeafNode, Node, NodeBatch, NodeKey, TreeWriter},
     KeyHash, Sha256Jmt,
@@ -12,7 +12,12 @@ use rocksdb::{Options, DB};
 use tokio::sync::watch;
 use tracing::Span;
 
-use crate::{cache::Cache, snapshot::Snapshot, store::substore::SubstoreConfig, EscapedByteSlice};
+use crate::{
+    cache::Cache,
+    snapshot::Snapshot,
+    store::substore::{self, SubstoreConfig},
+    EscapedByteSlice,
+};
 use crate::{snapshot_cache::SnapshotCache, StateDelta};
 
 mod temp;
@@ -46,20 +51,10 @@ struct Inner {
 impl Storage {
     /// Initializes a new storage instance at the given path, along with a substore
     /// defined by each of the provided prefixes.
-    pub async fn init<T, I>(path: PathBuf, store_prefixes: T) -> Result<Self>
-    where
-        T: IntoIterator<Item = I>,
-        I: AsRef<str>,
-    {
+    /// TODO: potentially restore the impl `IntoIterator` if it makes sense later in the pr.
+    pub async fn init(path: PathBuf, store_prefixes: Vec<String>) -> Result<Self> {
         let span = Span::current();
-        let substore_configs = store_prefixes
-            .into_iter()
-            .map(|substore_prefix| {
-                let substore_prefix = substore_prefix.as_ref();
-                tracing::info!(?substore_prefix, "initializing substore");
-                Arc::new(SubstoreConfig::new(substore_prefix.to_string()))
-            })
-            .collect::<Vec<_>>();
+
         tokio::task::Builder::new()
             .name("open_rocksdb")
             .spawn_blocking(move || {
@@ -69,30 +64,20 @@ impl Storage {
                     opts.create_if_missing(true);
                     opts.create_missing_column_families(true);
 
-                    let main_store = [
-                        // jmt: maps `storage::DbNodeKey` to `jmt::Node`, persists the internal structure of the JMT.
-                        // Note: we need to use a newtype wrapper around `NodeKey` here, because
-                        // we want a lexicographical ordering that maps to ascending jmt::Version.
-                        "jmt",
-                        // nonverifiable: maps arbitrary keys to arbitrary values, persists
-                        // the nonverifiable state.
-                        "nonverifiable",
-                        // jmt_keys: index JMT keys (i.e. keyhash preimages).
-                        "jmt_keys",
-                        // jmt_keys_by_keyhash: index JMT keys by their hash.
-                        "jmt_keys_by_keyhash",
-                        // jmt_values: maps KeyHash || BE(version) to an `Option<Vec<u8>>`
-                        "jmt_values",
-                    ];
+                    let mut store_configs = Vec::new();
+                    tracing::info!("initializing global store config");
+                    store_configs.push(Arc::new(SubstoreConfig::transparent_store()));
+                    for substore_prefix in store_prefixes {
+                        tracing::info!(?substore_prefix, "initializing substore");
+                        if substore_prefix.is_empty() {
+                            bail!("the empty prefix is reserved")
+                        }
+                        store_configs.push(Arc::new(SubstoreConfig::new(substore_prefix)));
+                    }
 
-                    let columns: Vec<&str> = main_store
-                        .into_iter()
-                        .map(AsRef::as_ref)
-                        .chain(
-                            substore_configs
-                                .iter()
-                                .flat_map(|s| s.columns().map(|string| string.as_str())), // Convert &String to &str
-                        )
+                    let columns: Vec<String> = store_configs
+                        .iter()
+                        .flat_map(|config| config.columns().map(Clone::clone))
                         .collect();
 
                     let db = Arc::new(DB::open_cf(&opts, path, columns)?);
@@ -104,7 +89,7 @@ impl Storage {
                     let latest_snapshot = Snapshot::new_with_substores(
                         db.clone(),
                         jmt_version,
-                        substore_configs.clone(),
+                        store_configs.clone(),
                     );
 
                     // A concurrent-safe ring buffer of the latest 10 snapshots.
@@ -148,7 +133,7 @@ impl Storage {
                         tx_dispatcher,
                         tx_state,
                         snapshots,
-                        substore_configs: substore_configs,
+                        substore_configs: store_configs,
                         db,
                     })))
                 })

@@ -173,14 +173,8 @@ impl StateRead for Snapshot {
     /// Fetch a key from the JMT column family.
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         let span = Span::current();
-        let substore_config = self
-            .0
-            .multistore
-            .find_substore(key)
-            .expect("TODO: decide if this is an ambient read");
-        let key = key.strip_prefix(substore_config.prefix.as_str()).expect(
-            "TODO: depending on how we define prefixes, this may require `/` concatenation",
-        );
+        let (key, substore_config) = self.0.multistore.route_key(key);
+
         let substore = store::substore::SubstoreSnapshot {
             config: substore_config,
             snapshot: self.clone(),
