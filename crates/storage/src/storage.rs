@@ -280,6 +280,17 @@ impl Storage {
             anyhow::bail!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, snapshot.version());
         }
 
+        /*
+
+        TODO:
+            Shard the set of changes into multiple sets of changes, one for each substore, and
+            strip the prefix from the keys in each set of changes.
+
+            For each set of changes, commit the changes to the corresponding substore via `SubstoreConfig::commit(changeset)`.
+
+            Collect the root hashes and store them in the jmt
+         */
+
         self.commit_inner(changes, new_version, true).await
     }
 
