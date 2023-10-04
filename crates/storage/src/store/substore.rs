@@ -14,8 +14,9 @@ use crate::{
     Snapshot,
 };
 
+#[derive(Debug)]
 pub struct SubstoreConfig {
-    prefix: String,
+    pub prefix: String,
     cf_jmt: String,
     cf_jmt_keys: String,
     cf_jmt_values: String,
@@ -61,11 +62,15 @@ impl SubstoreConfig {
             .cf_handle(self.cf_jmt_keys_by_keyhash.as_str())
             .expect("substore jmt-keys-by-keyhash column family not found")
     }
+
+    pub fn commit(&self, changeset: ()) -> Result<()> {
+        todo!("commit changeset to rocksdb")
+    }
 }
 
 pub struct SubstoreSnapshot {
-    config: Arc<SubstoreConfig>,
-    snapshot: Snapshot,
+    pub config: Arc<SubstoreConfig>,
+    pub snapshot: Snapshot,
 }
 
 impl SubstoreSnapshot {
