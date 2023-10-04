@@ -37,17 +37,17 @@ impl TestnetTendermintConfig {
         tm_rpc_bind: Option<SocketAddr>,
         tm_p2p_bind: Option<SocketAddr>,
     ) -> anyhow::Result<Self> {
-        tracing::debug!("List of TM peers: {:?}", peers);
+        tracing::debug!("List of CometBFT peers: {:?}", peers);
         let moniker: Moniker = Moniker::from_str(node_name)?;
         let mut tm_config = TendermintConfig::parse_toml(include_str!(
-            "../../../../../testnets/tm_config_template.toml"
+            "../../../../../testnets/cometbft_config_template.toml"
         ))
-        .context("Failed to parse the TOML config template for Tendermint")?;
+        .context("Failed to parse the TOML config template for CometBFT")?;
         tm_config.moniker = moniker;
         tm_config.p2p.seeds = peers;
         tracing::debug!("External address looks like: {:?}", external_address);
         tm_config.p2p.external_address = external_address;
-        // The Tendermint config wants URLs, not SocketAddrs, so we'll prepend protocol.
+        // The CometBFT config wants URLs, not SocketAddrs, so we'll prepend protocol.
         if let Some(rpc) = tm_rpc_bind {
             tm_config.rpc.laddr =
                 parse_tm_address(None, &Url::parse(format!("tcp://{}", rpc).as_str())?)?;
@@ -56,9 +56,6 @@ impl TestnetTendermintConfig {
             tm_config.p2p.laddr =
                 parse_tm_address(None, &Url::parse(format!("tcp://{}", p2p).as_str())?)?;
         }
-        // We don't use pprof_laddr, and tendermint-rs incorrectly prepends "tcp://" to it,
-        // which emits an error on service start, so let's remove it entirely.
-        tm_config.rpc.pprof_laddr = None;
 
         Ok(Self(tm_config))
     }
