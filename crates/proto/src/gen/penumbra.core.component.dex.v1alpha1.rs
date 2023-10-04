@@ -812,7 +812,7 @@ pub mod query_service_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -868,11 +868,30 @@ pub mod query_service_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         /// Get the batch clearing prices for a specific block height and trading pair.
         pub async fn batch_swap_output_data(
             &mut self,
             request: impl tonic::IntoRequest<super::BatchSwapOutputDataRequest>,
-        ) -> Result<tonic::Response<super::BatchSwapOutputDataResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::BatchSwapOutputDataResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -886,13 +905,24 @@ pub mod query_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.dex.v1alpha1.QueryService/BatchSwapOutputData",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.dex.v1alpha1.QueryService",
+                        "BatchSwapOutputData",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Get the precise swap execution used for a specific batch swap.
         pub async fn swap_execution(
             &mut self,
             request: impl tonic::IntoRequest<super::SwapExecutionRequest>,
-        ) -> Result<tonic::Response<super::SwapExecutionResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::SwapExecutionResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -906,13 +936,24 @@ pub mod query_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.dex.v1alpha1.QueryService/SwapExecution",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.dex.v1alpha1.QueryService",
+                        "SwapExecution",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Get the precise execution used to perform on-chain arbitrage.
         pub async fn arb_execution(
             &mut self,
             request: impl tonic::IntoRequest<super::ArbExecutionRequest>,
-        ) -> Result<tonic::Response<super::ArbExecutionResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::ArbExecutionResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -926,13 +967,21 @@ pub mod query_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.dex.v1alpha1.QueryService/ArbExecution",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.dex.v1alpha1.QueryService",
+                        "ArbExecution",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Stream all swap executions over a range of heights, optionally subscribing to future executions.
         pub async fn swap_executions(
             &mut self,
             request: impl tonic::IntoRequest<super::SwapExecutionsRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<tonic::codec::Streaming<super::SwapExecutionsResponse>>,
             tonic::Status,
         > {
@@ -949,13 +998,21 @@ pub mod query_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.dex.v1alpha1.QueryService/SwapExecutions",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.dex.v1alpha1.QueryService",
+                        "SwapExecutions",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
         /// Stream all arbitrage executions over a range of heights, optionally subscribing to future executions.
         pub async fn arb_executions(
             &mut self,
             request: impl tonic::IntoRequest<super::ArbExecutionsRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<tonic::codec::Streaming<super::ArbExecutionsResponse>>,
             tonic::Status,
         > {
@@ -972,13 +1029,21 @@ pub mod query_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.dex.v1alpha1.QueryService/ArbExecutions",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.dex.v1alpha1.QueryService",
+                        "ArbExecutions",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
         /// Query all liquidity positions on the DEX.
         pub async fn liquidity_positions(
             &mut self,
             request: impl tonic::IntoRequest<super::LiquidityPositionsRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<tonic::codec::Streaming<super::LiquidityPositionsResponse>>,
             tonic::Status,
         > {
@@ -995,7 +1060,15 @@ pub mod query_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.dex.v1alpha1.QueryService/LiquidityPositions",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.dex.v1alpha1.QueryService",
+                        "LiquidityPositions",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
         /// Query liquidity positions by ID.
         ///
@@ -1003,7 +1076,7 @@ pub mod query_service_client {
         pub async fn liquidity_position_by_id(
             &mut self,
             request: impl tonic::IntoRequest<super::LiquidityPositionByIdRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<super::LiquidityPositionByIdResponse>,
             tonic::Status,
         > {
@@ -1020,13 +1093,21 @@ pub mod query_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.dex.v1alpha1.QueryService/LiquidityPositionById",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.dex.v1alpha1.QueryService",
+                        "LiquidityPositionById",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Query multiple liquidity positions by ID.
         pub async fn liquidity_positions_by_id(
             &mut self,
             request: impl tonic::IntoRequest<super::LiquidityPositionsByIdRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<
                 tonic::codec::Streaming<super::LiquidityPositionsByIdResponse>,
             >,
@@ -1045,13 +1126,21 @@ pub mod query_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.dex.v1alpha1.QueryService/LiquidityPositionsById",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.dex.v1alpha1.QueryService",
+                        "LiquidityPositionsById",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
         /// Query liquidity positions on a specific pair, sorted by effective price.
         pub async fn liquidity_positions_by_price(
             &mut self,
             request: impl tonic::IntoRequest<super::LiquidityPositionsByPriceRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<
                 tonic::codec::Streaming<super::LiquidityPositionsByPriceResponse>,
             >,
@@ -1070,7 +1159,15 @@ pub mod query_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.dex.v1alpha1.QueryService/LiquidityPositionsByPrice",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.dex.v1alpha1.QueryService",
+                        "LiquidityPositionsByPrice",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
         /// Get the current (direct) spread on a trading pair.
         ///
@@ -1079,7 +1176,7 @@ pub mod query_service_client {
         pub async fn spread(
             &mut self,
             request: impl tonic::IntoRequest<super::SpreadRequest>,
-        ) -> Result<tonic::Response<super::SpreadResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::SpreadResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -1093,7 +1190,15 @@ pub mod query_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.dex.v1alpha1.QueryService/Spread",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.dex.v1alpha1.QueryService",
+                        "Spread",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
     }
 }
@@ -1116,7 +1221,7 @@ pub mod simulation_service_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -1172,11 +1277,30 @@ pub mod simulation_service_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         /// Simulate routing and trade execution.
         pub async fn simulate_trade(
             &mut self,
             request: impl tonic::IntoRequest<super::SimulateTradeRequest>,
-        ) -> Result<tonic::Response<super::SimulateTradeResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::SimulateTradeResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1190,7 +1314,15 @@ pub mod simulation_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.dex.v1alpha1.SimulationService/SimulateTrade",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.dex.v1alpha1.SimulationService",
+                        "SimulateTrade",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
     }
 }
@@ -1206,20 +1338,29 @@ pub mod query_service_server {
         async fn batch_swap_output_data(
             &self,
             request: tonic::Request<super::BatchSwapOutputDataRequest>,
-        ) -> Result<tonic::Response<super::BatchSwapOutputDataResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::BatchSwapOutputDataResponse>,
+            tonic::Status,
+        >;
         /// Get the precise swap execution used for a specific batch swap.
         async fn swap_execution(
             &self,
             request: tonic::Request<super::SwapExecutionRequest>,
-        ) -> Result<tonic::Response<super::SwapExecutionResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::SwapExecutionResponse>,
+            tonic::Status,
+        >;
         /// Get the precise execution used to perform on-chain arbitrage.
         async fn arb_execution(
             &self,
             request: tonic::Request<super::ArbExecutionRequest>,
-        ) -> Result<tonic::Response<super::ArbExecutionResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::ArbExecutionResponse>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the SwapExecutions method.
         type SwapExecutionsStream: futures_core::Stream<
-                Item = Result<super::SwapExecutionsResponse, tonic::Status>,
+                Item = std::result::Result<super::SwapExecutionsResponse, tonic::Status>,
             >
             + Send
             + 'static;
@@ -1227,10 +1368,13 @@ pub mod query_service_server {
         async fn swap_executions(
             &self,
             request: tonic::Request<super::SwapExecutionsRequest>,
-        ) -> Result<tonic::Response<Self::SwapExecutionsStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::SwapExecutionsStream>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the ArbExecutions method.
         type ArbExecutionsStream: futures_core::Stream<
-                Item = Result<super::ArbExecutionsResponse, tonic::Status>,
+                Item = std::result::Result<super::ArbExecutionsResponse, tonic::Status>,
             >
             + Send
             + 'static;
@@ -1238,10 +1382,16 @@ pub mod query_service_server {
         async fn arb_executions(
             &self,
             request: tonic::Request<super::ArbExecutionsRequest>,
-        ) -> Result<tonic::Response<Self::ArbExecutionsStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::ArbExecutionsStream>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the LiquidityPositions method.
         type LiquidityPositionsStream: futures_core::Stream<
-                Item = Result<super::LiquidityPositionsResponse, tonic::Status>,
+                Item = std::result::Result<
+                    super::LiquidityPositionsResponse,
+                    tonic::Status,
+                >,
             >
             + Send
             + 'static;
@@ -1249,20 +1399,26 @@ pub mod query_service_server {
         async fn liquidity_positions(
             &self,
             request: tonic::Request<super::LiquidityPositionsRequest>,
-        ) -> Result<tonic::Response<Self::LiquidityPositionsStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::LiquidityPositionsStream>,
+            tonic::Status,
+        >;
         /// Query liquidity positions by ID.
         ///
         /// To get multiple positions, use `LiquidityPositionsById`.
         async fn liquidity_position_by_id(
             &self,
             request: tonic::Request<super::LiquidityPositionByIdRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<super::LiquidityPositionByIdResponse>,
             tonic::Status,
         >;
         /// Server streaming response type for the LiquidityPositionsById method.
         type LiquidityPositionsByIdStream: futures_core::Stream<
-                Item = Result<super::LiquidityPositionsByIdResponse, tonic::Status>,
+                Item = std::result::Result<
+                    super::LiquidityPositionsByIdResponse,
+                    tonic::Status,
+                >,
             >
             + Send
             + 'static;
@@ -1270,10 +1426,16 @@ pub mod query_service_server {
         async fn liquidity_positions_by_id(
             &self,
             request: tonic::Request<super::LiquidityPositionsByIdRequest>,
-        ) -> Result<tonic::Response<Self::LiquidityPositionsByIdStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::LiquidityPositionsByIdStream>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the LiquidityPositionsByPrice method.
         type LiquidityPositionsByPriceStream: futures_core::Stream<
-                Item = Result<super::LiquidityPositionsByPriceResponse, tonic::Status>,
+                Item = std::result::Result<
+                    super::LiquidityPositionsByPriceResponse,
+                    tonic::Status,
+                >,
             >
             + Send
             + 'static;
@@ -1281,7 +1443,7 @@ pub mod query_service_server {
         async fn liquidity_positions_by_price(
             &self,
             request: tonic::Request<super::LiquidityPositionsByPriceRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<Self::LiquidityPositionsByPriceStream>,
             tonic::Status,
         >;
@@ -1292,7 +1454,7 @@ pub mod query_service_server {
         async fn spread(
             &self,
             request: tonic::Request<super::SpreadRequest>,
-        ) -> Result<tonic::Response<super::SpreadResponse>, tonic::Status>;
+        ) -> std::result::Result<tonic::Response<super::SpreadResponse>, tonic::Status>;
     }
     /// Query operations for the DEX component.
     #[derive(Debug)]
@@ -1300,6 +1462,8 @@ pub mod query_service_server {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
+        max_decoding_message_size: Option<usize>,
+        max_encoding_message_size: Option<usize>,
     }
     struct _Inner<T>(Arc<T>);
     impl<T: QueryService> QueryServiceServer<T> {
@@ -1312,6 +1476,8 @@ pub mod query_service_server {
                 inner,
                 accept_compression_encodings: Default::default(),
                 send_compression_encodings: Default::default(),
+                max_decoding_message_size: None,
+                max_encoding_message_size: None,
             }
         }
         pub fn with_interceptor<F>(
@@ -1335,6 +1501,22 @@ pub mod query_service_server {
             self.send_compression_encodings.enable(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.max_decoding_message_size = Some(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.max_encoding_message_size = Some(limit);
+            self
+        }
     }
     impl<T, B> tonic::codegen::Service<http::Request<B>> for QueryServiceServer<T>
     where
@@ -1348,7 +1530,7 @@ pub mod query_service_server {
         fn poll_ready(
             &mut self,
             _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        ) -> Poll<std::result::Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -1370,7 +1552,7 @@ pub mod query_service_server {
                             &mut self,
                             request: tonic::Request<super::BatchSwapOutputDataRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).batch_swap_output_data(request).await
                             };
@@ -1379,6 +1561,8 @@ pub mod query_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1388,6 +1572,10 @@ pub mod query_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -1410,7 +1598,7 @@ pub mod query_service_server {
                             &mut self,
                             request: tonic::Request<super::SwapExecutionRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).swap_execution(request).await
                             };
@@ -1419,6 +1607,8 @@ pub mod query_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1428,6 +1618,10 @@ pub mod query_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -1450,7 +1644,7 @@ pub mod query_service_server {
                             &mut self,
                             request: tonic::Request<super::ArbExecutionRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).arb_execution(request).await
                             };
@@ -1459,6 +1653,8 @@ pub mod query_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1468,6 +1664,10 @@ pub mod query_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -1491,7 +1691,7 @@ pub mod query_service_server {
                             &mut self,
                             request: tonic::Request<super::SwapExecutionsRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).swap_executions(request).await
                             };
@@ -1500,6 +1700,8 @@ pub mod query_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1509,6 +1711,10 @@ pub mod query_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
@@ -1532,7 +1738,7 @@ pub mod query_service_server {
                             &mut self,
                             request: tonic::Request<super::ArbExecutionsRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).arb_executions(request).await
                             };
@@ -1541,6 +1747,8 @@ pub mod query_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1550,6 +1758,10 @@ pub mod query_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
@@ -1574,7 +1786,7 @@ pub mod query_service_server {
                             &mut self,
                             request: tonic::Request<super::LiquidityPositionsRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).liquidity_positions(request).await
                             };
@@ -1583,6 +1795,8 @@ pub mod query_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1592,6 +1806,10 @@ pub mod query_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
@@ -1614,7 +1832,7 @@ pub mod query_service_server {
                             &mut self,
                             request: tonic::Request<super::LiquidityPositionByIdRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).liquidity_position_by_id(request).await
                             };
@@ -1623,6 +1841,8 @@ pub mod query_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1632,6 +1852,10 @@ pub mod query_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -1656,7 +1880,7 @@ pub mod query_service_server {
                             &mut self,
                             request: tonic::Request<super::LiquidityPositionsByIdRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).liquidity_positions_by_id(request).await
                             };
@@ -1665,6 +1889,8 @@ pub mod query_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1674,6 +1900,10 @@ pub mod query_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
@@ -1700,7 +1930,7 @@ pub mod query_service_server {
                                 super::LiquidityPositionsByPriceRequest,
                             >,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).liquidity_positions_by_price(request).await
                             };
@@ -1709,6 +1939,8 @@ pub mod query_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1718,6 +1950,10 @@ pub mod query_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
@@ -1740,13 +1976,15 @@ pub mod query_service_server {
                             &mut self,
                             request: tonic::Request<super::SpreadRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move { (*inner).spread(request).await };
                             Box::pin(fut)
                         }
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1756,6 +1994,10 @@ pub mod query_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -1784,12 +2026,14 @@ pub mod query_service_server {
                 inner,
                 accept_compression_encodings: self.accept_compression_encodings,
                 send_compression_encodings: self.send_compression_encodings,
+                max_decoding_message_size: self.max_decoding_message_size,
+                max_encoding_message_size: self.max_encoding_message_size,
             }
         }
     }
     impl<T: QueryService> Clone for _Inner<T> {
         fn clone(&self) -> Self {
-            Self(self.0.clone())
+            Self(Arc::clone(&self.0))
         }
     }
     impl<T: std::fmt::Debug> std::fmt::Debug for _Inner<T> {
@@ -1813,7 +2057,10 @@ pub mod simulation_service_server {
         async fn simulate_trade(
             &self,
             request: tonic::Request<super::SimulateTradeRequest>,
-        ) -> Result<tonic::Response<super::SimulateTradeResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::SimulateTradeResponse>,
+            tonic::Status,
+        >;
     }
     /// Simulation for the DEX component.
     ///
@@ -1825,6 +2072,8 @@ pub mod simulation_service_server {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
+        max_decoding_message_size: Option<usize>,
+        max_encoding_message_size: Option<usize>,
     }
     struct _Inner<T>(Arc<T>);
     impl<T: SimulationService> SimulationServiceServer<T> {
@@ -1837,6 +2086,8 @@ pub mod simulation_service_server {
                 inner,
                 accept_compression_encodings: Default::default(),
                 send_compression_encodings: Default::default(),
+                max_decoding_message_size: None,
+                max_encoding_message_size: None,
             }
         }
         pub fn with_interceptor<F>(
@@ -1860,6 +2111,22 @@ pub mod simulation_service_server {
             self.send_compression_encodings.enable(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.max_decoding_message_size = Some(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.max_encoding_message_size = Some(limit);
+            self
+        }
     }
     impl<T, B> tonic::codegen::Service<http::Request<B>> for SimulationServiceServer<T>
     where
@@ -1873,7 +2140,7 @@ pub mod simulation_service_server {
         fn poll_ready(
             &mut self,
             _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        ) -> Poll<std::result::Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -1895,7 +2162,7 @@ pub mod simulation_service_server {
                             &mut self,
                             request: tonic::Request<super::SimulateTradeRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).simulate_trade(request).await
                             };
@@ -1904,6 +2171,8 @@ pub mod simulation_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1913,6 +2182,10 @@ pub mod simulation_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -1941,12 +2214,14 @@ pub mod simulation_service_server {
                 inner,
                 accept_compression_encodings: self.accept_compression_encodings,
                 send_compression_encodings: self.send_compression_encodings,
+                max_decoding_message_size: self.max_decoding_message_size,
+                max_encoding_message_size: self.max_encoding_message_size,
             }
         }
     }
     impl<T: SimulationService> Clone for _Inner<T> {
         fn clone(&self) -> Self {
-            Self(self.0.clone())
+            Self(Arc::clone(&self.0))
         }
     }
     impl<T: std::fmt::Debug> std::fmt::Debug for _Inner<T> {
