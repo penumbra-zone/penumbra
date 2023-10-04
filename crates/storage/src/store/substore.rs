@@ -99,6 +99,14 @@ impl SubstoreConfig {
             .expect("substore jmt-keys-by-keyhash column family not found")
     }
 
+    pub fn cf_jmt_keys<'s>(&self, snapshot: &'s Snapshot) -> &'s ColumnFamily {
+        snapshot
+            .0
+            .db
+            .cf_handle(self.cf_jmt_keys.as_str())
+            .expect("substore jmt-keys column family not found")
+    }
+
     // TODO: we can use a `rocksdb::OptimisticTransactionDB` since we know that
     // our write load is not contentious (definitionally), and we can use make
     // writing to every substore atomic.

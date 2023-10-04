@@ -126,42 +126,7 @@ impl Snapshot {
     /// Reads from the JMT will fail if the root is missing; this method
     /// special-cases the empty tree case so that reads on an empty tree just
     /// return None.
-    fn get_jmt(&self, key: jmt::KeyHash) -> Result<Option<Vec<u8>>> {
-        let tree = Sha256Jmt::new(&*self.0);
-        match tree.get(key, self.0.version) {
-            Ok(Some(value)) => {
-                tracing::trace!(version = ?self.0.version, ?key, value = ?hex::encode(&value), "read from tree");
-                Ok(Some(value))
-            }
-            Ok(None) => {
-                tracing::trace!(version = ?self.0.version, ?key, "key not found in tree");
-                Ok(None)
-            }
-            // This allows for using the Overlay on an empty database without
-            // errors We only skip the `MissingRootError` if the `version` is
-            // `u64::MAX`, the pre-genesis version. Otherwise, a missing root
-            // actually does indicate a problem.
-            Err(e)
-                if e.downcast_ref::<jmt::MissingRootError>().is_some()
-                    && self.0.version == u64::MAX =>
-            {
-                tracing::trace!(version = ?self.0.version, "no data available at this version");
-                Ok(None)
-            }
-            Err(e) => Err(e),
-        }
-    }
-
-    /// Internal helper function used by `get_raw` and `prefix_raw`.
-    ///
-    /// Reads from the JMT will fail if the root is missing; this method
-    /// special-cases the empty tree case so that reads on an empty tree just
-    /// return None.
-    fn get_jmt_substore(
-        &self,
-        key: jmt::KeyHash,
-        substore: SubstoreSnapshot,
-    ) -> Result<Option<Vec<u8>>> {
+    fn get_jmt(&self, key: jmt::KeyHash, substore: SubstoreSnapshot) -> Result<Option<Vec<u8>>> {
         let tree = Sha256Jmt::new(&substore);
         match tree.get(key, self.0.version) {
             Ok(Some(value)) => {
@@ -217,7 +182,7 @@ impl StateRead for Snapshot {
                 .spawn_blocking(move || {
                     span.in_scope(|| {
                         let _start = std::time::Instant::now();
-                        let rsp = snapshot.get_jmt_substore(key_hash, substore);
+                        let rsp = snapshot.get_jmt(key_hash, substore);
                         #[cfg(feature = "metrics")]
                         metrics::histogram!(metrics::STORAGE_GET_RAW_DURATION, _start.elapsed());
                         rsp
@@ -259,13 +224,15 @@ impl StateRead for Snapshot {
 
     fn prefix_raw(&self, prefix: &str) -> Self::PrefixRawStream {
         let span = Span::current();
-        let self2 = self.clone();
 
         let mut options = rocksdb::ReadOptions::default();
         options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
         let mode = rocksdb::IteratorMode::Start;
 
-        let (tx, rx) = mpsc::channel(10);
+        let (_, substore_config) = self.0.multistore.route_key(prefix);
+        let snapshot = self.clone();
+
+        let (tx_prefix_item, rx_prefix_query) = mpsc::channel(10);
 
         // Since the JMT keys are hashed, we can't use a prefix iterator directly.
         // We need to first prefix range the key preimages column family, then use the hashed matches to fetch the values
@@ -274,14 +241,13 @@ impl StateRead for Snapshot {
             .name("Snapshot::prefix_raw")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let keys_cf = self2
-                        .0
-                        .db
-                        .cf_handle("jmt_keys")
-                        .expect("jmt_keys column family not found");
-
+                    let substore = store::substore::SubstoreSnapshot {
+                        config: substore_config.clone(),
+                        snapshot: snapshot.clone(),
+                    };
+                    let keys_cf = substore.config.cf_jmt_keys(&snapshot);
                     let jmt_keys_iterator =
-                        self2.0.snapshot.iterator_cf_opt(keys_cf, options, mode);
+                        snapshot.0.snapshot.iterator_cf_opt(keys_cf, options, mode);
 
                     for tuple in jmt_keys_iterator {
                         // For each key that matches the prefix, fetch the value from the JMT column family.
@@ -293,19 +259,23 @@ impl StateRead for Snapshot {
 
                         let key_hash = jmt::KeyHash::with::<sha2::Sha256>(k.as_bytes());
 
-                        let v = self2
-                            .get_jmt(key_hash)?
+                        let substore = store::substore::SubstoreSnapshot {
+                            config: substore_config.clone(),
+                            snapshot: snapshot.clone(),
+                        };
+                        let v = snapshot
+                            .get_jmt(key_hash, substore)?
                             .expect("keys in jmt_keys should have a corresponding value in jmt");
                         tracing::debug!(%k, "prefix_raw");
 
-                        tx.blocking_send(Ok((k, v)))?;
+                        tx_prefix_item.blocking_send(Ok((k, v)))?;
                     }
                     anyhow::Ok(())
                 })
             })
             .expect("should be able to spawn_blocking");
 
-        tokio_stream::wrappers::ReceiverStream::new(rx)
+        tokio_stream::wrappers::ReceiverStream::new(rx_prefix_query)
     }
 
     // NOTE: this implementation is almost the same as the above, but without
