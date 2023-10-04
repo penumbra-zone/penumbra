@@ -53,16 +53,28 @@ pub(crate) struct Inner {
 }
 
 impl Snapshot {
-    pub(crate) fn new(
+    /// TODO: We might consolidate this with `new_with_substores` once we have
+    /// made progress on the PR. This is to avoid rocking the boat with tests.
+    pub(crate) fn new(db: Arc<rocksdb::DB>, version: jmt::Version) -> Self {
+        Self(Arc::new(Inner {
+            snapshot: RocksDbSnapshot::new(db.clone()),
+            version,
+            db,
+            multistore: Multistore::new(vec![]),
+        }))
+    }
+
+    /// Creates a new `Snapshot` with the given version and substore configs.
+    pub(crate) fn new_with_substores(
         db: Arc<rocksdb::DB>,
-        version: jmt::Version, /*, a list of prefixes */
+        version: jmt::Version,
+        substore_configs: Vec<Arc<store::substore::SubstoreConfig>>,
     ) -> Self {
         Self(Arc::new(Inner {
             snapshot: RocksDbSnapshot::new(db.clone()),
             version,
             db,
-            // placeholder
-            multistore: todo!("TODO: replace this once the init storage is done"),
+            multistore: Multistore::new(substore_configs),
         }))
     }
 
