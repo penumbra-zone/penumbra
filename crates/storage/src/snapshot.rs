@@ -53,14 +53,16 @@ pub(crate) struct Inner {
 }
 
 impl Snapshot {
-    /// TODO: We might consolidate this with `new_with_substores` once we have
-    /// made progress on the PR. This is to avoid rocking the boat with tests.
+    #[cfg(test)]
+    // TODO: hack to get a fast feedback loop on testing. we will consolidate
+    // the api and propagate the changes to the tests later in the pr.
     pub(crate) fn new(db: Arc<rocksdb::DB>, version: jmt::Version) -> Self {
+        let default_store = Arc::new(store::substore::SubstoreConfig::transparent_store());
         Self(Arc::new(Inner {
             snapshot: RocksDbSnapshot::new(db.clone()),
             version,
             db,
-            multistore: Multistore::new(vec![]),
+            multistore: Multistore::new(vec![default_store]),
         }))
     }
 

@@ -11,6 +11,11 @@ pub struct Multistore {
 
 impl Multistore {
     pub fn new(mut substores: Vec<Arc<SubstoreConfig>>) -> Self {
+        assert!(
+            !substores.is_empty(),
+            "multistore must have at least one substore"
+        );
+
         Self {
             transparent_store: substores.swap_remove(0),
             substores,
