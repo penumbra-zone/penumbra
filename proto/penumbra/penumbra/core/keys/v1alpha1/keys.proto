@@ -22,7 +22,7 @@ message AddressView {
     message Visible {
         Address address = 1;
         AddressIndex index = 2;
-        AccountGroupId account_group_id = 3;
+        WalletId wallet_id = 3;
     }
     message Opaque {
         Address address = 1;
@@ -49,7 +49,7 @@ message FullViewingKey {
     bytes inner = 1;
 }
 
-message AccountGroupId {
+message WalletId {
     bytes inner = 1;
 }
 

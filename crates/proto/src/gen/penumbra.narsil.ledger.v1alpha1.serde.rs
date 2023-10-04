@@ -1,112 +1,3 @@
-impl serde::Serialize for AccountGroupInfo {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if self.full_viewing_key.is_some() {
-            len += 1;
-        }
-        if !self.participants.is_empty() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.narsil.ledger.v1alpha1.AccountGroupInfo", len)?;
-        if let Some(v) = self.full_viewing_key.as_ref() {
-            struct_ser.serialize_field("fullViewingKey", v)?;
-        }
-        if !self.participants.is_empty() {
-            struct_ser.serialize_field("participants", &self.participants)?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for AccountGroupInfo {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "full_viewing_key",
-            "fullViewingKey",
-            "participants",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            FullViewingKey,
-            Participants,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "fullViewingKey" | "full_viewing_key" => Ok(GeneratedField::FullViewingKey),
-                            "participants" => Ok(GeneratedField::Participants),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = AccountGroupInfo;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.narsil.ledger.v1alpha1.AccountGroupInfo")
-            }
-
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<AccountGroupInfo, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut full_viewing_key__ = None;
-                let mut participants__ = None;
-                while let Some(k) = map.next_key()? {
-                    match k {
-                        GeneratedField::FullViewingKey => {
-                            if full_viewing_key__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("fullViewingKey"));
-                            }
-                            full_viewing_key__ = map.next_value()?;
-                        }
-                        GeneratedField::Participants => {
-                            if participants__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("participants"));
-                            }
-                            participants__ = Some(map.next_value()?);
-                        }
-                    }
-                }
-                Ok(AccountGroupInfo {
-                    full_viewing_key: full_viewing_key__,
-                    participants: participants__.unwrap_or_default(),
-                })
-            }
-        }
-        deserializer.deserialize_struct("penumbra.narsil.ledger.v1alpha1.AccountGroupInfo", FIELDS, GeneratedVisitor)
-    }
-}
 impl serde::Serialize for AuthorizeCommitment {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -2387,7 +2278,7 @@ impl serde::Serialize for dkg_state::Finished {
         if !self.round_2_messages.is_empty() {
             len += 1;
         }
-        if self.account_group_info.is_some() {
+        if self.wallet_info.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.narsil.ledger.v1alpha1.DkgState.Finished", len)?;
@@ -2397,8 +2288,8 @@ impl serde::Serialize for dkg_state::Finished {
         if !self.round_2_messages.is_empty() {
             struct_ser.serialize_field("round2Messages", &self.round_2_messages)?;
         }
-        if let Some(v) = self.account_group_info.as_ref() {
-            struct_ser.serialize_field("accountGroupInfo", v)?;
+        if let Some(v) = self.wallet_info.as_ref() {
+            struct_ser.serialize_field("walletInfo", v)?;
         }
         struct_ser.end()
     }
@@ -2414,15 +2305,15 @@ impl<'de> serde::Deserialize<'de> for dkg_state::Finished {
             "round1Messages",
             "round_2_messages",
             "round2Messages",
-            "account_group_info",
-            "accountGroupInfo",
+            "wallet_info",
+            "walletInfo",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Round1Messages,
             Round2Messages,
-            AccountGroupInfo,
+            WalletInfo,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2446,7 +2337,7 @@ impl<'de> serde::Deserialize<'de> for dkg_state::Finished {
                         match value {
                             "round1Messages" | "round_1_messages" => Ok(GeneratedField::Round1Messages),
                             "round2Messages" | "round_2_messages" => Ok(GeneratedField::Round2Messages),
-                            "accountGroupInfo" | "account_group_info" => Ok(GeneratedField::AccountGroupInfo),
+                            "walletInfo" | "wallet_info" => Ok(GeneratedField::WalletInfo),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2468,7 +2359,7 @@ impl<'de> serde::Deserialize<'de> for dkg_state::Finished {
             {
                 let mut round_1_messages__ = None;
                 let mut round_2_messages__ = None;
-                let mut account_group_info__ = None;
+                let mut wallet_info__ = None;
                 while let Some(k) = map.next_key()? {
                     match k {
                         GeneratedField::Round1Messages => {
@@ -2483,18 +2374,18 @@ impl<'de> serde::Deserialize<'de> for dkg_state::Finished {
                             }
                             round_2_messages__ = Some(map.next_value()?);
                         }
-                        GeneratedField::AccountGroupInfo => {
-                            if account_group_info__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("accountGroupInfo"));
+                        GeneratedField::WalletInfo => {
+                            if wallet_info__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("walletInfo"));
                             }
-                            account_group_info__ = map.next_value()?;
+                            wallet_info__ = map.next_value()?;
                         }
                     }
                 }
                 Ok(dkg_state::Finished {
                     round_1_messages: round_1_messages__.unwrap_or_default(),
                     round_2_messages: round_2_messages__.unwrap_or_default(),
-                    account_group_info: account_group_info__,
+                    wallet_info: wallet_info__,
                 })
             }
         }
@@ -4317,5 +4208,114 @@ impl<'de> serde::Deserialize<'de> for ShardOperator {
             }
         }
         deserializer.deserialize_struct("penumbra.narsil.ledger.v1alpha1.ShardOperator", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for WalletInfo {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.full_viewing_key.is_some() {
+            len += 1;
+        }
+        if !self.participants.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.narsil.ledger.v1alpha1.WalletInfo", len)?;
+        if let Some(v) = self.full_viewing_key.as_ref() {
+            struct_ser.serialize_field("fullViewingKey", v)?;
+        }
+        if !self.participants.is_empty() {
+            struct_ser.serialize_field("participants", &self.participants)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for WalletInfo {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "full_viewing_key",
+            "fullViewingKey",
+            "participants",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            FullViewingKey,
+            Participants,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "fullViewingKey" | "full_viewing_key" => Ok(GeneratedField::FullViewingKey),
+                            "participants" => Ok(GeneratedField::Participants),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = WalletInfo;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.narsil.ledger.v1alpha1.WalletInfo")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> std::result::Result<WalletInfo, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut full_viewing_key__ = None;
+                let mut participants__ = None;
+                while let Some(k) = map.next_key()? {
+                    match k {
+                        GeneratedField::FullViewingKey => {
+                            if full_viewing_key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("fullViewingKey"));
+                            }
+                            full_viewing_key__ = map.next_value()?;
+                        }
+                        GeneratedField::Participants => {
+                            if participants__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("participants"));
+                            }
+                            participants__ = Some(map.next_value()?);
+                        }
+                    }
+                }
+                Ok(WalletInfo {
+                    full_viewing_key: full_viewing_key__,
+                    participants: participants__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.narsil.ledger.v1alpha1.WalletInfo", FIELDS, GeneratedVisitor)
     }
 }

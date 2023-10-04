@@ -8,9 +8,7 @@ pub struct AuthorizeRequest {
     >,
     /// Identifies the FVK (and hence the spend authorization key) to use for signing.
     #[prost(message, optional, tag = "2")]
-    pub account_group_id: ::core::option::Option<
-        super::super::core::keys::v1alpha1::AccountGroupId,
-    >,
+    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
     /// Optionally, pre-authorization data, if required by the custodian.
     ///
     /// Multiple `PreAuthorization` packets can be included in a single request,

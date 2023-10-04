@@ -1,7 +1,8 @@
-use penumbra_proto::{penumbra::core::keys::v1alpha1 as pb, DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
 
-use crate::keys::{AccountGroupId, AddressIndex};
+use penumbra_proto::{penumbra::core::keys::v1alpha1 as pb, DomainType, TypeUrl};
+
+use crate::keys::{AddressIndex, WalletId};
 
 use super::Address;
 
@@ -19,7 +20,7 @@ pub enum AddressView {
     Visible {
         address: Address,
         index: AddressIndex,
-        account_group_id: AccountGroupId,
+        wallet_id: WalletId,
     },
 }
 
@@ -53,13 +54,13 @@ impl From<AddressView> for pb::AddressView {
             AddressView::Visible {
                 address,
                 index,
-                account_group_id,
+                wallet_id,
             } => Self {
                 address_view: Some(pb::address_view::AddressView::Visible(
                     pb::address_view::Visible {
                         address: Some(address.into()),
                         index: Some(index.into()),
-                        account_group_id: Some(account_group_id.into()),
+                        wallet_id: Some(wallet_id.into()),
                     },
                 )),
             },
@@ -87,16 +88,14 @@ impl TryFrom<pb::AddressView> for AddressView {
                     .index
                     .ok_or_else(|| anyhow::anyhow!("AddressView::Visible missing index field"))?
                     .try_into()?;
-                let account_group_id = visible
-                    .account_group_id
-                    .ok_or_else(|| {
-                        anyhow::anyhow!("AddressView::Visible missing account_group_id field")
-                    })?
+                let wallet_id = visible
+                    .wallet_id
+                    .ok_or_else(|| anyhow::anyhow!("AddressView::Visible missing wallet_id field"))?
                     .try_into()?;
                 Ok(AddressView::Visible {
                     address,
                     index,
-                    account_group_id,
+                    wallet_id,
                 })
             }
             None => Err(anyhow::anyhow!("AddressView missing address_view field")),
@@ -106,9 +105,11 @@ impl TryFrom<pb::AddressView> for AddressView {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::keys::{SeedPhrase, SpendKey};
     use rand_core::OsRng;
+
+    use crate::keys::{SeedPhrase, SpendKey};
+
+    use super::*;
 
     #[test]
     fn address_view_basic() {
@@ -128,7 +129,7 @@ mod tests {
             AddressView::Visible {
                 address: addr1_0,
                 index: 0.into(),
-                account_group_id: fvk1.account_group_id(),
+                wallet_id: fvk1.wallet_id(),
             }
         );
         assert_eq!(
@@ -140,7 +141,7 @@ mod tests {
             AddressView::Visible {
                 address: addr1_1,
                 index: 1.into(),
-                account_group_id: fvk1.account_group_id(),
+                wallet_id: fvk1.wallet_id(),
             }
         );
         assert_eq!(
@@ -156,7 +157,7 @@ mod tests {
             AddressView::Visible {
                 address: addr2_0,
                 index: 0.into(),
-                account_group_id: fvk2.account_group_id(),
+                wallet_id: fvk2.wallet_id(),
             }
         );
         assert_eq!(
@@ -168,7 +169,7 @@ mod tests {
             AddressView::Visible {
                 address: addr2_1,
                 index: 1.into(),
-                account_group_id: fvk2.account_group_id(),
+                wallet_id: fvk2.wallet_id(),
             }
         );
     }

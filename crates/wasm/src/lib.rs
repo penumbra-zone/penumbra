@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 extern crate core;
 
-mod error;
-mod keys;
+pub use view_server::ViewServer;
+
+pub mod error;
+pub mod keys;
 mod note_record;
 mod planner;
 mod storage;
@@ -11,5 +13,3 @@ mod tx;
 mod utils;
 mod view_server;
 mod wasm_planner;
-
-pub use view_server::ViewServer;

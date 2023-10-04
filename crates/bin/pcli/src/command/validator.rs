@@ -4,6 +4,9 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use rand_core::OsRng;
+use serde_json::Value;
+
 use penumbra_fee::Fee;
 use penumbra_governance::{
     ValidatorVote, ValidatorVoteBody, ValidatorVoteReason, Vote, MAX_VALIDATOR_VOTE_REASON_LENGTH,
@@ -18,8 +21,6 @@ use penumbra_stake::{
     FundingStream, FundingStreams, GovernanceKey, IdentityKey,
 };
 use penumbra_wallet::plan;
-use rand_core::OsRng;
-use serde_json::Value;
 
 use crate::App;
 
@@ -149,9 +150,9 @@ impl ValidatorCmd {
                 };
                 // Construct a new transaction and include the validator definition.
 
-                let account_group_id = app.fvk.account_group_id();
+                let wallet_id = app.fvk.wallet_id();
                 let plan = plan::validator_definition(
-                    account_group_id,
+                    wallet_id,
                     app.view
                         .as_mut()
                         .context("view service must be initialized")?,
@@ -205,10 +206,10 @@ impl ValidatorCmd {
                 // Construct a new transaction and include the validator definition.
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
-                let account_group_id = app.fvk.account_group_id();
+                let wallet_id = app.fvk.wallet_id();
 
                 let plan = plan::validator_vote(
-                    account_group_id,
+                    wallet_id,
                     app.view
                         .as_mut()
                         .context("view service must be initialized")?,

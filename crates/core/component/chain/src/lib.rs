@@ -1,6 +1,12 @@
 #![deny(clippy::unwrap_used)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub use effect_hash::{EffectHash, EffectingData};
+pub use epoch::Epoch;
+pub use known_assets::KnownAssets;
+pub use note_source::{NoteSource, SpendInfo};
+pub use transaction::TransactionContext;
+
 mod epoch;
 mod known_assets;
 mod note_source;
@@ -13,15 +19,12 @@ pub mod genesis;
 pub mod params;
 pub mod state_key;
 
-pub use epoch::Epoch;
-pub use known_assets::KnownAssets;
-pub use note_source::{NoteSource, SpendInfo};
-
 /// Hardcoded test data used by the `Default` genesis state.
 pub mod test_keys {
     use once_cell::sync::Lazy;
+
     use penumbra_keys::{
-        keys::{AccountGroupId, SpendKey},
+        keys::{SpendKey, WalletId},
         Address, FullViewingKey,
     };
 
@@ -57,11 +60,9 @@ pub mod test_keys {
     pub static FULL_VIEWING_KEY: Lazy<FullViewingKey> =
         Lazy::new(|| SPEND_KEY.full_viewing_key().clone());
 
-    pub static ACCOUNT_ID: Lazy<AccountGroupId> = Lazy::new(|| FULL_VIEWING_KEY.account_group_id());
+    pub static WALLET_ID: Lazy<WalletId> = Lazy::new(|| FULL_VIEWING_KEY.wallet_id());
 }
 
 // Located here at the bottom of the dep tree for convenience
 mod effect_hash;
 mod transaction;
-pub use effect_hash::{EffectHash, EffectingData};
-pub use transaction::TransactionContext;
