@@ -113,6 +113,7 @@ impl ViewServer {
     }
 
     /// Get new notes, swaps, SCT state updates
+    ///
     /// Arguments:
     ///     last_position: `Option<StoredPosition>`
     ///     last_forgotten: `Option<Forgotten>`
@@ -183,10 +184,7 @@ impl ViewServer {
         Ok(result)
     }
 
-    pub async fn scan_block_inner(
-        &mut self,
-        compact_block: JsValue,
-    ) -> WasmResult<bool> {
+    pub async fn scan_block_inner(&mut self, compact_block: JsValue) -> WasmResult<bool> {
         let block_proto: penumbra_proto::core::component::compact_block::v1alpha1::CompactBlock =
             serde_wasm_bindgen::from_value(compact_block)?;
 
@@ -316,7 +314,6 @@ impl ViewServer {
                                 };
                                 e.insert(spendable_note.clone());
                                 found_new_data = true;
-
                             }
                         }
                     } else {
