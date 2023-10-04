@@ -39,7 +39,6 @@
 // Requires nightly.
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
-mod store;
 mod cache;
 mod delta;
 mod escaped_byte_slice;
@@ -48,6 +47,7 @@ mod read;
 mod snapshot;
 mod snapshot_cache;
 mod storage;
+mod store;
 #[cfg(test)]
 mod tests;
 mod utils;
