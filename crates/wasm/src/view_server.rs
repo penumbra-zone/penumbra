@@ -112,9 +112,7 @@ impl ViewServer {
         Ok(true)
     }
 
-    /// get SCT state updates
-    /// This method is necessary because we save SCT updates to indexedDB once every 1000 blocks
-    /// rather than after each block
+    /// Get new notes, swaps, SCT state updates
     /// Arguments:
     ///     last_position: `Option<StoredPosition>`
     ///     last_forgotten: `Option<Forgotten>`
@@ -181,6 +179,7 @@ impl ViewServer {
             new_notes: self.notes.clone().into_values().collect(),
             new_swaps: self.swaps.clone().into_values().collect(),
         };
+
         Ok(result)
     }
 
