@@ -82,7 +82,9 @@ async fn main() -> Result<()> {
         .with_ansi(atty::is(atty::Stream::Stdout))
         .with_target(true);
     // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
-    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))?
+        .add_directive("r1cs=off".parse().unwrap());
 
     let opt = Opt::parse();
 

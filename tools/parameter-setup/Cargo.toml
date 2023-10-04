@@ -10,7 +10,7 @@ penumbra-proof-setup = { path = "../../crates/crypto/proof-setup" }
 penumbra-dex = { path = "../../crates/core/component/dex/" }
 penumbra-dao = { path = "../../crates/core/component/dao/", features = ["component"] }
 penumbra-governance = { path = "../../crates/core/component/governance/" }
-penumbra-shielded-pool = { path = "../../crates/core/component/shielded-pool/" }
+penumbra-shielded-pool = { path = "../../crates/core/component/shielded-pool/", features = ["parallel"] }
 penumbra-stake = { path = "../../crates/core/component/stake/", features = ["component"] }
 ark-groth16 = "0.4"
 ark-serialize = "0.4"

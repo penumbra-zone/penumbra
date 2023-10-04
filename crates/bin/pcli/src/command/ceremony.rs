@@ -1,14 +1,10 @@
-use std::time::Duration;
-
 use crate::App;
 use anyhow::Result;
-use penumbra_proof_setup::all::{
-    Phase2CeremonyCRS, Phase2CeremonyContribution, Phase2RawCeremonyCRS,
-};
+use penumbra_proof_setup::all::{Phase2CeremonyContribution, Phase2RawCeremonyCRS};
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::ceremony_coordinator_service_client::CeremonyCoordinatorServiceClient,
     tools::summoning::v1alpha1::{
-        participate_request::{Contribution, Identify, Msg as RequestMsg},
+        participate_request::{Identify, Msg as RequestMsg},
         participate_response::{Confirm, ContributeNow, Msg as ResponseMsg},
         ParticipateRequest, ParticipateResponse,
     },
@@ -31,10 +27,7 @@ impl CeremonyCmd {
     #[tracing::instrument(skip(self, app))]
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
-            CeremonyCmd::Contribute {
-                coordinator_url,
-                seconds,
-            } => {
+            CeremonyCmd::Contribute { coordinator_url } => {
                 // TODO: Use a fixed address
                 let (address, _) = app.fvk.ephemeral_address(
                     &mut OsRng,
@@ -58,7 +51,7 @@ impl CeremonyCmd {
                     .participate(ReceiverStream::new(req_rx))
                     .await?
                     .into_inner();
-                let mut parent = loop {
+                let parent = loop {
                     match response_rx.message().await? {
                         None => anyhow::bail!("Coordinator closed connection"),
                         Some(ParticipateResponse {
