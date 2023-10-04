@@ -371,11 +371,11 @@ impl StateRead for Snapshot {
         range: impl std::ops::RangeBounds<Vec<u8>>,
     ) -> anyhow::Result<Self::NonconsensusRangeRawStream> {
         let span = Span::current();
-        let self2 = self.clone();
+        let snapshot = self.clone();
 
+        let (prefix, config) = self.0.multistore.route_key(prefix.unwrap_or_default());
         let (_range, (start, end)) = utils::convert_bounds(range)?;
         let mut options = rocksdb::ReadOptions::default();
-        let prefix = prefix.unwrap_or_default();
 
         let (start, end) = (start.unwrap_or_default(), end.unwrap_or_default());
         let end_is_empty = end.is_empty();
@@ -412,19 +412,23 @@ impl StateRead for Snapshot {
         }
 
         let mode = rocksdb::IteratorMode::Start;
-        let (tx, rx) = mpsc::channel::<Result<(Vec<u8>, Vec<u8>)>>(10);
         let prefix = prefix.to_vec();
 
+        let substore = store::substore::SubstoreSnapshot {
+            config: config.clone(),
+            snapshot: snapshot.clone(),
+        };
+
+        let (tx, rx) = mpsc::channel::<Result<(Vec<u8>, Vec<u8>)>>(10);
         tokio::task::Builder::new()
             .name("Snapshot::nonverifiable_range_raw")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let keys_cf = self2
+                    let cf_nonverifiable = substore.config.cf_nonverifiable(&snapshot);
+                    let iter = snapshot
                         .0
-                        .db
-                        .cf_handle("nonverifiable")
-                        .expect("nonverifiable column family not found");
-                    let iter = self2.0.snapshot.iterator_cf_opt(keys_cf, options, mode);
+                        .snapshot
+                        .iterator_cf_opt(cf_nonverifiable, options, mode);
                     for i in iter {
                         let (key, value) = i?;
 
