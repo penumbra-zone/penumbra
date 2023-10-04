@@ -13,6 +13,7 @@ use tracing::Span;
 
 use crate::{
     storage::{DbNodeKey, VersionedKeyHash},
+    store::{self, multistore::Multistore},
     utils, StateRead,
 };
 
@@ -44,6 +45,7 @@ impl std::fmt::Debug for Snapshot {
 // We don't want to expose the `TreeReader` implementation outside of this crate.
 #[derive(Debug)]
 pub(crate) struct Inner {
+    pub(crate) multistore: Multistore,
     pub(crate) snapshot: RocksDbSnapshot,
     pub(crate) version: jmt::Version,
     // Used to retrieve column family handles.
@@ -51,11 +53,16 @@ pub(crate) struct Inner {
 }
 
 impl Snapshot {
-    pub(crate) fn new(db: Arc<rocksdb::DB>, version: jmt::Version) -> Self {
+    pub(crate) fn new(
+        db: Arc<rocksdb::DB>,
+        version: jmt::Version, /*, a list of prefixes */
+    ) -> Self {
         Self(Arc::new(Inner {
             snapshot: RocksDbSnapshot::new(db.clone()),
             version,
             db,
+            // placeholder
+            multistore: todo!("TODO: replace this once the init storage is done"),
         }))
     }
 
@@ -154,16 +161,27 @@ impl StateRead for Snapshot {
     /// Fetch a key from the JMT column family.
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         let span = Span::current();
-        // convert a &str to a jmt::KeyHash
+        let substore_config = self
+            .0
+            .multistore
+            .find_substore(key)
+            .expect("TODO: decide if this is an ambient read");
+        let key = key.strip_prefix(substore_config.prefix.as_str()).expect(
+            "TODO: depending on how we define prefixes, this may require `/` concatenation",
+        );
+        let substore = store::substore::SubstoreSnapshot {
+            config: substore_config,
+            snapshot: self.clone(),
+        };
         let key_hash = jmt::KeyHash::with::<sha2::Sha256>(key.as_bytes());
-        let self2 = self.clone();
+
         crate::future::SnapshotFuture(
             tokio::task::Builder::new()
                 .name("Snapshot::get_raw")
                 .spawn_blocking(move || {
                     span.in_scope(|| {
                         let _start = std::time::Instant::now();
-                        let rsp = self2.get_jmt(key_hash);
+                        let rsp = substore.snapshot.get_jmt(key_hash);
                         #[cfg(feature = "metrics")]
                         metrics::histogram!(metrics::STORAGE_GET_RAW_DURATION, _start.elapsed());
                         rsp
