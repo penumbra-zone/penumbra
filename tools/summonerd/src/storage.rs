@@ -147,9 +147,9 @@ impl Storage {
             [],
             |row| row.get::<usize, Vec<u8>>(0),
         )?;
-        Ok(Phase2RawCeremonyCRS::try_from(pb::CeremonyCrs::decode(
-            data.as_slice(),
-        )?)?
-        .assume_valid())
+        Ok(
+            Phase2RawCeremonyCRS::try_from(pb::CeremonyCrs::decode(data.as_slice())?)?
+                .assume_valid(),
+        )
     }
 }
