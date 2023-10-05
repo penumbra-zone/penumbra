@@ -37,6 +37,11 @@ tower = "0.4"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 url = "2"
+r2d2 = "0.8"
+# Depending on our fork of r2d2-sqlite, which updates the rusqlite dependency to 0.29
+r2d2_sqlite = { version = "0.22", git = "https://github.com/penumbra-zone/r2d2-sqlite.git", features = [
+    "bundled",
+] }
 
 [build-dependencies]
 vergen = "5"

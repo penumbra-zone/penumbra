@@ -7590,6 +7590,8 @@ dependencies = [
  "penumbra-proof-setup",
  "penumbra-proto",
  "penumbra-view",
+ "r2d2",
+ "r2d2_sqlite",
  "rand 0.8.5",
  "tokio",
  "tokio-stream",
