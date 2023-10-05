@@ -15,3 +15,5 @@
 !deployments/config/
 # relayer container
 !deployments/relayer/
+# summonerd tool, for orchestrating contributions
+!tools/summonerd/
