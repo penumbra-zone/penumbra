@@ -965,6 +965,12 @@ impl Component for Staking {
                         .expect("should be able to add genesis validator to state");
                 }
 
+                // First, "prime" the state with an empty set, so the build_ function can read it.
+                state.put(
+                    state_key::current_consensus_keys().to_owned(),
+                    CurrentConsensusKeys::default(),
+                );
+
                 // Finally, record that there were no delegations in this block, so the data
                 // isn't missing when we process the first epoch transition.
                 state
@@ -979,11 +985,6 @@ impl Component for Staking {
             None => { /* perform upgrade specific check */ }
         }
         // Build the initial validator set update.
-        // First, "prime" the state with an empty set, so the build_ function can read it.
-        state.put(
-            state_key::current_consensus_keys().to_owned(),
-            CurrentConsensusKeys::default(),
-        );
         state
             .build_tendermint_validator_updates()
             .await
