@@ -17,22 +17,26 @@ use penumbra_governance::{proposal::ProposalToml, Vote};
 use penumbra_ibc::Ics20Withdrawal;
 use penumbra_keys::keys::AddressIndex;
 use penumbra_num::Amount;
-use penumbra_proto::core::component::{
-    chain::v1alpha1::{
-        query_service_client::QueryServiceClient as ChainQueryServiceClient, EpochByHeightRequest,
+use penumbra_proto::{
+    core::component::{
+        chain::v1alpha1::{
+            query_service_client::QueryServiceClient as ChainQueryServiceClient,
+            EpochByHeightRequest,
+        },
+        dex::v1alpha1::{
+            query_service_client::QueryServiceClient as DexQueryServiceClient,
+            LiquidityPositionByIdRequest, PositionId,
+        },
+        governance::v1alpha1::{
+            query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
+            ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
+        },
+        stake::v1alpha1::{
+            query_service_client::QueryServiceClient as StakeQueryServiceClient,
+            ValidatorPenaltyRequest,
+        },
     },
-    dex::v1alpha1::{
-        query_service_client::QueryServiceClient as DexQueryServiceClient,
-        LiquidityPositionByIdRequest, PositionId,
-    },
-    governance::v1alpha1::{
-        query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
-        ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
-    },
-    stake::v1alpha1::{
-        query_service_client::QueryServiceClient as StakeQueryServiceClient,
-        ValidatorPenaltyRequest,
-    },
+    view::v1alpha1::GasPricesRequest,
 };
 use penumbra_stake::rate::RateData;
 use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
@@ -240,14 +244,16 @@ impl TxCmd {
     }
 
     pub async fn exec(&self, app: &mut App) -> Result<()> {
-        let params = app
+        let gas_prices = app
             .view
             .as_mut()
             .context("view service must be initialized")?
-            .app_params()
-            .await?;
-
-        let gas_prices = params.fee_params.gas_prices;
+            .gas_prices(GasPricesRequest {})
+            .await?
+            .into_inner()
+            .gas_prices
+            .expect("gas prices must be available")
+            .try_into()?;
 
         match self {
             TxCmd::Send {
@@ -414,6 +420,13 @@ impl TxCmd {
 
                 let account_group_id = app.fvk.account_group_id();
 
+                let params = app
+                    .view
+                    .as_mut()
+                    .context("view service must be initialized")?
+                    .app_params()
+                    .await?;
+
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
                 let plan = planner
@@ -551,6 +564,13 @@ impl TxCmd {
                         let validator_identity = token.validator();
                         let start_epoch_index = token.start_epoch_index();
                         let end_epoch_index = current_epoch.index;
+
+                        let params = app
+                            .view
+                            .as_mut()
+                            .context("view service must be initialized")?
+                            .app_params()
+                            .await?;
 
                         let mut client = StakeQueryServiceClient::new(channel.clone());
                         let penalty: Penalty = client
@@ -977,10 +997,13 @@ impl TxCmd {
 
                 let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
 
-                let view: &mut dyn ViewClient = app
+                let params = app
                     .view
                     .as_mut()
-                    .context("view service must be initialized")?;
+                    .context("view service must be initialized")?
+                    .app_params()
+                    .await?;
+
                 for position_id in owned_position_ids {
                     // Withdraw the position
 
@@ -1032,10 +1055,12 @@ impl TxCmd {
             }) => {
                 let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
 
-                let view: &mut dyn ViewClient = app
+                let params = app
                     .view
                     .as_mut()
-                    .context("view service must be initialized")?;
+                    .context("view service must be initialized")?
+                    .app_params()
+                    .await?;
 
                 // Fetch the information regarding the position from the view service.
                 let position = client

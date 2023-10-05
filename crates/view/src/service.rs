@@ -35,8 +35,8 @@ use penumbra_proto::{
         self as pb,
         view_protocol_service_client::ViewProtocolServiceClient,
         view_protocol_service_server::{ViewProtocolService, ViewProtocolServiceServer},
-        AppParametersResponse, FmdParametersResponse, NoteByCommitmentResponse, StatusResponse,
-        SwapByCommitmentResponse, TransactionPlannerResponse, WitnessResponse,
+        AppParametersResponse, FmdParametersResponse, GasPricesResponse, NoteByCommitmentResponse,
+        StatusResponse, SwapByCommitmentResponse, TransactionPlannerResponse, WitnessResponse,
     },
     DomainType,
 };
@@ -1421,6 +1421,24 @@ impl ViewProtocolService for ViewService {
 
         let response = AppParametersResponse {
             parameters: Some(parameters.into()),
+        };
+
+        Ok(tonic::Response::new(response))
+    }
+
+    async fn gas_prices(
+        &self,
+        _request: tonic::Request<pb::GasPricesRequest>,
+    ) -> Result<tonic::Response<pb::GasPricesResponse>, tonic::Status> {
+        self.check_worker().await?;
+
+        let gas_prices =
+            self.storage.gas_prices().await.map_err(|e| {
+                tonic::Status::unavailable(format!("error getting gas prices: {e}"))
+            })?;
+
+        let response = GasPricesResponse {
+            gas_prices: Some(gas_prices.into()),
         };
 
         Ok(tonic::Response::new(response))

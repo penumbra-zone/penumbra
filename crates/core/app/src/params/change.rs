@@ -49,7 +49,7 @@ impl AppParameters {
                     proposal_pass_threshold,
                     proposal_slash_threshold,
                 },
-            fee_params: FeeParameters { gas_prices },
+            fee_params: FeeParameters {},
             dao_params:
                 DaoParameters {
                     dao_spend_proposals_enabled: _,
@@ -57,7 +57,6 @@ impl AppParameters {
         } = self;
 
         // Ensure that certain parameters are not changed by the update:
-        check_invariant([(gas_prices, &new.fee_params.gas_prices, "gas prices")])?;
         check_invariant([(chain_id, &new.chain_params.chain_id, "chain ID")])?;
         check_invariant([
             (
@@ -128,7 +127,7 @@ impl AppParameters {
                     proposal_pass_threshold,
                     proposal_slash_threshold,
                 },
-            fee_params: FeeParameters { gas_prices: _ },
+            fee_params: FeeParameters {},
             dao_params:
                 DaoParameters {
                     dao_spend_proposals_enabled: _,

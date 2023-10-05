@@ -3,6 +3,7 @@ use std::{collections::BTreeMap, convert::TryFrom};
 use anyhow::Result;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_dex::{BatchSwapOutputData, TradingPair};
+use penumbra_fee::GasPrices;
 use penumbra_proto::{
     core::component::compact_block::v1alpha1::CompactBlockRangeResponse,
     penumbra::core::component::compact_block::v1alpha1 as pb, DomainType, TypeUrl,
@@ -35,6 +36,8 @@ pub struct CompactBlock {
     pub swap_outputs: BTreeMap<TradingPair, BatchSwapOutputData>,
     /// Updated chain parameters, if any have changed.
     pub chain_parameters: Option<ChainParameters>,
+    /// Updated gas prices, if they have changed.
+    pub gas_prices: Option<GasPrices>,
     // **IMPORTANT NOTE FOR FUTURE HUMANS**: if you want to add new fields to the `CompactBlock`,
     // you must update `CompactBlock::requires_scanning` to check for the emptiness of those fields,
     // because the client will skip processing any compact block that is marked as not requiring
@@ -53,6 +56,7 @@ impl Default for CompactBlock {
             proposal_started: false,
             swap_outputs: BTreeMap::new(),
             chain_parameters: None,
+            gas_prices: None,
         }
     }
 }
@@ -65,11 +69,12 @@ impl CompactBlock {
             || self.fmd_parameters.is_some() // need to save latest FMD parameters
             || self.proposal_started // need to process proposal start
             || self.chain_parameters.is_some() // need to save latest chain parameters
+            || self.gas_prices.is_some() // need to save latest gas prices
     }
 }
 
 impl TypeUrl for CompactBlock {
-    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.CompactBlock";
+    const TYPE_URL: &'static str = "/penumbra.core.component.compact_block.v1alpha1.CompactBlock";
 }
 
 impl DomainType for CompactBlock {
@@ -93,6 +98,7 @@ impl From<CompactBlock> for pb::CompactBlock {
             proposal_started: cb.proposal_started,
             swap_outputs: cb.swap_outputs.into_values().map(Into::into).collect(),
             chain_parameters: cb.chain_parameters.map(Into::into),
+            gas_prices: cb.gas_prices.map(Into::into),
         }
     }
 }
@@ -129,6 +135,7 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
             fmd_parameters: value.fmd_parameters.map(TryInto::try_into).transpose()?,
             proposal_started: value.proposal_started,
             chain_parameters: value.chain_parameters.map(TryInto::try_into).transpose()?,
+            gas_prices: value.gas_prices.map(TryInto::try_into).transpose()?,
         })
     }
 }

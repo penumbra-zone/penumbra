@@ -38,6 +38,9 @@ pub struct CompactBlock {
     pub chain_parameters: ::core::option::Option<
         super::super::chain::v1alpha1::ChainParameters,
     >,
+    /// Updated gas prices, if they have changed.
+    #[prost(message, optional, tag = "7")]
+    pub gas_prices: ::core::option::Option<super::super::fee::v1alpha1::GasPrices>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

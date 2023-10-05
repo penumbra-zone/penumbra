@@ -44,7 +44,7 @@ impl Sum for Gas {
 }
 
 /// Expresses the price of each unit of gas in terms of the staking token.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct GasPrices {
     pub block_space_price: u64,
     pub compact_block_space_price: u64,

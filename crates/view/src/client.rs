@@ -9,6 +9,7 @@ use penumbra_dex::{
     lp::position::{self},
     TradingPair,
 };
+use penumbra_fee::GasPrices;
 use penumbra_keys::{
     keys::{AccountGroupId, AddressIndex},
     Address,
@@ -68,6 +69,9 @@ pub trait ViewClient {
     fn app_params(
         &mut self,
     ) -> Pin<Box<dyn Future<Output = Result<AppParameters>> + Send + 'static>>;
+
+    /// Get a copy of the gas prices.
+    fn gas_prices(&mut self) -> Pin<Box<dyn Future<Output = Result<GasPrices>> + Send + 'static>>;
 
     /// Get a copy of the FMD parameters.
     fn fmd_parameters(
@@ -344,6 +348,24 @@ where
                 tonic::Request::new(pb::AppParametersRequest {}),
             );
             rsp.await?.into_inner().try_into()
+        }
+        .boxed()
+    }
+
+    fn gas_prices(&mut self) -> Pin<Box<dyn Future<Output = Result<GasPrices>> + Send + 'static>> {
+        let mut self2 = self.clone();
+        async move {
+            // We have to manually invoke the method on the type, because it has the
+            // same name as the one we're implementing.
+            let rsp = ViewProtocolServiceClient::gas_prices(
+                &mut self2,
+                tonic::Request::new(pb::GasPricesRequest {}),
+            );
+            rsp.await?
+                .into_inner()
+                .gas_prices
+                .ok_or_else(|| anyhow::anyhow!("empty GasPricesResponse message"))?
+                .try_into()
         }
         .boxed()
     }

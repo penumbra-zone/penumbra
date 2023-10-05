@@ -5,6 +5,7 @@ import "penumbra/crypto/tct/v1alpha1/tct.proto";
 import "penumbra/core/component/sct/v1alpha1/sct.proto";
 import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/core/component/dex/v1alpha1/dex.proto";
+import "penumbra/core/component/fee/v1alpha1/fee.proto";
 import "penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto";
 
 // Contains the minimum data needed to update client state.
@@ -26,6 +27,8 @@ message CompactBlock {
   repeated dex.v1alpha1.BatchSwapOutputData swap_outputs = 5;
   // Updated chain parameters, if they have changed.
   chain.v1alpha1.ChainParameters chain_parameters = 6;
+  // Updated gas prices, if they have changed.
+  fee.v1alpha1.GasPrices gas_prices = 7;
 }
 
 message StatePayload {
