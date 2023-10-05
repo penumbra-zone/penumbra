@@ -3,6 +3,7 @@ use std::pin::Pin;
 use futures::{StreamExt, TryStreamExt};
 use penumbra_chain::component::{AppHashRead, StateReadExt as _};
 use penumbra_dao::StateReadExt as _;
+use penumbra_fee::component::StateReadExt as _;
 use penumbra_governance::StateReadExt as _;
 use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1alpha1::{
@@ -62,6 +63,9 @@ impl QueryService for Server {
         let dao_params = state.get_dao_params().await.map_err(|e| {
             tonic::Status::unavailable(format!("error getting dao parameters: {e}"))
         })?;
+        let fee_params = state.get_fee_params().await.map_err(|e| {
+            tonic::Status::unavailable(format!("error getting fee parameters: {e}"))
+        })?;
 
         Ok(tonic::Response::new(AppParametersResponse {
             app_parameters: Some(
@@ -71,6 +75,7 @@ impl QueryService for Server {
                     ibc_params,
                     governance_params,
                     dao_params,
+                    fee_params,
                 }
                 .into(),
             ),

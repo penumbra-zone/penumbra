@@ -9,8 +9,11 @@ use penumbra_asset::Value;
 use penumbra_dex::{lp::position::Position, DirectedUnitPair};
 use penumbra_keys::keys::AddressIndex;
 use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proto::core::component::dex::v1alpha1::{
-    query_service_client::QueryServiceClient as DexQueryServiceClient, SpreadRequest,
+use penumbra_proto::{
+    core::component::dex::v1alpha1::{
+        query_service_client::QueryServiceClient as DexQueryServiceClient, SpreadRequest,
+    },
+    view::v1alpha1::GasPricesRequest,
 };
 use penumbra_view::{Planner, ViewClient};
 use rand_core::OsRng;
@@ -143,7 +146,19 @@ impl ConstantProduct {
             return Ok(());
         }
 
+        let gas_prices = app
+            .view
+            .as_mut()
+            .context("view service must be initialized")?
+            .gas_prices(GasPricesRequest {})
+            .await?
+            .into_inner()
+            .gas_prices
+            .expect("gas prices must be available")
+            .try_into()?;
+
         let mut planner = Planner::new(OsRng);
+        planner.set_gas_prices(gas_prices);
         positions.iter().for_each(|position| {
             planner.position_open(position.clone());
         });

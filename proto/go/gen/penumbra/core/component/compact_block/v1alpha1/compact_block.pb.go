@@ -9,8 +9,9 @@ package compact_blockv1alpha1
 import (
 	v1alpha12 "github.com/penumbra-zone/penumbra/proto/go/gen/penumbra/core/component/chain/v1alpha1"
 	v1alpha13 "github.com/penumbra-zone/penumbra/proto/go/gen/penumbra/core/component/dex/v1alpha1"
+	v1alpha14 "github.com/penumbra-zone/penumbra/proto/go/gen/penumbra/core/component/fee/v1alpha1"
 	v1alpha1 "github.com/penumbra-zone/penumbra/proto/go/gen/penumbra/core/component/sct/v1alpha1"
-	v1alpha14 "github.com/penumbra-zone/penumbra/proto/go/gen/penumbra/core/component/shielded_pool/v1alpha1"
+	v1alpha15 "github.com/penumbra-zone/penumbra/proto/go/gen/penumbra/core/component/shielded_pool/v1alpha1"
 	v1alpha11 "github.com/penumbra-zone/penumbra/proto/go/gen/penumbra/crypto/tct/v1alpha1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -48,6 +49,8 @@ type CompactBlock struct {
 	SwapOutputs []*v1alpha13.BatchSwapOutputData `protobuf:"bytes,5,rep,name=swap_outputs,json=swapOutputs,proto3" json:"swap_outputs,omitempty"`
 	// Updated chain parameters, if they have changed.
 	ChainParameters *v1alpha12.ChainParameters `protobuf:"bytes,6,opt,name=chain_parameters,json=chainParameters,proto3" json:"chain_parameters,omitempty"`
+	// Updated gas prices, if they have changed.
+	GasPrices *v1alpha14.GasPrices `protobuf:"bytes,7,opt,name=gas_prices,json=gasPrices,proto3" json:"gas_prices,omitempty"`
 }
 
 func (x *CompactBlock) Reset() {
@@ -141,6 +144,13 @@ func (x *CompactBlock) GetSwapOutputs() []*v1alpha13.BatchSwapOutputData {
 func (x *CompactBlock) GetChainParameters() *v1alpha12.ChainParameters {
 	if x != nil {
 		return x.ChainParameters
+	}
+	return nil
+}
+
+func (x *CompactBlock) GetGasPrices() *v1alpha14.GasPrices {
+	if x != nil {
+		return x.GasPrices
 	}
 	return nil
 }
@@ -417,7 +427,7 @@ type StatePayload_Note struct {
 	unknownFields protoimpl.UnknownFields
 
 	Source *v1alpha12.NoteSource  `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`
-	Note   *v1alpha14.NotePayload `protobuf:"bytes,2,opt,name=note,proto3" json:"note,omitempty"`
+	Note   *v1alpha15.NotePayload `protobuf:"bytes,2,opt,name=note,proto3" json:"note,omitempty"`
 }
 
 func (x *StatePayload_Note) Reset() {
@@ -459,7 +469,7 @@ func (x *StatePayload_Note) GetSource() *v1alpha12.NoteSource {
 	return nil
 }
 
-func (x *StatePayload_Note) GetNote() *v1alpha14.NotePayload {
+func (x *StatePayload_Note) GetNote() *v1alpha15.NotePayload {
 	if x != nil {
 		return x.Note
 	}
@@ -543,11 +553,14 @@ var file_penumbra_core_component_compact_block_v1alpha1_compact_block_proto_rawD
 	0x1a, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f,
 	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2f, 0x64, 0x65, 0x78, 0x2f, 0x76, 0x31,
 	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x64, 0x65, 0x78, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x1a, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f,
+	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2f, 0x66, 0x65, 0x65, 0x2f, 0x76, 0x31,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2f, 0x66, 0x65, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x1a, 0x42, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f,
 	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2f, 0x73, 0x68, 0x69, 0x65, 0x6c, 0x64,
 	0x65, 0x64, 0x5f, 0x70, 0x6f, 0x6f, 0x6c, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
 	0x2f, 0x73, 0x68, 0x69, 0x65, 0x6c, 0x64, 0x65, 0x64, 0x5f, 0x70, 0x6f, 0x6f, 0x6c, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x22, 0xb9, 0x05, 0x0a, 0x0c, 0x43, 0x6f, 0x6d, 0x70, 0x61, 0x63, 0x74,
+	0x72, 0x6f, 0x74, 0x6f, 0x22, 0x89, 0x06, 0x0a, 0x0c, 0x43, 0x6f, 0x6d, 0x70, 0x61, 0x63, 0x74,
 	0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x63, 0x0a,
 	0x0e, 0x73, 0x74, 0x61, 0x74, 0x65, 0x5f, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x73, 0x18,
@@ -591,6 +604,11 @@ var file_penumbra_core_component_compact_block_v1alpha1_compact_block_proto_rawD
 	0x2e, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
 	0x43, 0x68, 0x61, 0x69, 0x6e, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x65, 0x74, 0x65, 0x72, 0x73, 0x52,
 	0x0f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x65, 0x74, 0x65, 0x72, 0x73,
+	0x12, 0x4e, 0x0a, 0x0a, 0x67, 0x61, 0x73, 0x5f, 0x70, 0x72, 0x69, 0x63, 0x65, 0x73, 0x18, 0x07,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x2f, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e,
+	0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x66,
+	0x65, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x47, 0x61, 0x73, 0x50,
+	0x72, 0x69, 0x63, 0x65, 0x73, 0x52, 0x09, 0x67, 0x61, 0x73, 0x50, 0x72, 0x69, 0x63, 0x65, 0x73,
 	0x22, 0xd4, 0x05, 0x0a, 0x0c, 0x53, 0x74, 0x61, 0x74, 0x65, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61,
 	0x64, 0x12, 0x64, 0x0a, 0x09, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x64, 0x5f, 0x75, 0x70, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x45, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e,
@@ -720,10 +738,11 @@ var file_penumbra_core_component_compact_block_v1alpha1_compact_block_proto_goTy
 	(*v1alpha12.FmdParameters)(nil),       // 9: penumbra.core.component.chain.v1alpha1.FmdParameters
 	(*v1alpha13.BatchSwapOutputData)(nil), // 10: penumbra.core.component.dex.v1alpha1.BatchSwapOutputData
 	(*v1alpha12.ChainParameters)(nil),     // 11: penumbra.core.component.chain.v1alpha1.ChainParameters
-	(*v1alpha11.StateCommitment)(nil),     // 12: penumbra.crypto.tct.v1alpha1.StateCommitment
-	(*v1alpha12.NoteSource)(nil),          // 13: penumbra.core.component.chain.v1alpha1.NoteSource
-	(*v1alpha14.NotePayload)(nil),         // 14: penumbra.core.component.shielded_pool.v1alpha1.NotePayload
-	(*v1alpha13.SwapPayload)(nil),         // 15: penumbra.core.component.dex.v1alpha1.SwapPayload
+	(*v1alpha14.GasPrices)(nil),           // 12: penumbra.core.component.fee.v1alpha1.GasPrices
+	(*v1alpha11.StateCommitment)(nil),     // 13: penumbra.crypto.tct.v1alpha1.StateCommitment
+	(*v1alpha12.NoteSource)(nil),          // 14: penumbra.core.component.chain.v1alpha1.NoteSource
+	(*v1alpha15.NotePayload)(nil),         // 15: penumbra.core.component.shielded_pool.v1alpha1.NotePayload
+	(*v1alpha13.SwapPayload)(nil),         // 16: penumbra.core.component.dex.v1alpha1.SwapPayload
 }
 var file_penumbra_core_component_compact_block_v1alpha1_compact_block_proto_depIdxs = []int32{
 	1,  // 0: penumbra.core.component.compact_block.v1alpha1.CompactBlock.state_payloads:type_name -> penumbra.core.component.compact_block.v1alpha1.StatePayload
@@ -733,22 +752,23 @@ var file_penumbra_core_component_compact_block_v1alpha1_compact_block_proto_depI
 	9,  // 4: penumbra.core.component.compact_block.v1alpha1.CompactBlock.fmd_parameters:type_name -> penumbra.core.component.chain.v1alpha1.FmdParameters
 	10, // 5: penumbra.core.component.compact_block.v1alpha1.CompactBlock.swap_outputs:type_name -> penumbra.core.component.dex.v1alpha1.BatchSwapOutputData
 	11, // 6: penumbra.core.component.compact_block.v1alpha1.CompactBlock.chain_parameters:type_name -> penumbra.core.component.chain.v1alpha1.ChainParameters
-	4,  // 7: penumbra.core.component.compact_block.v1alpha1.StatePayload.rolled_up:type_name -> penumbra.core.component.compact_block.v1alpha1.StatePayload.RolledUp
-	5,  // 8: penumbra.core.component.compact_block.v1alpha1.StatePayload.note:type_name -> penumbra.core.component.compact_block.v1alpha1.StatePayload.Note
-	6,  // 9: penumbra.core.component.compact_block.v1alpha1.StatePayload.swap:type_name -> penumbra.core.component.compact_block.v1alpha1.StatePayload.Swap
-	0,  // 10: penumbra.core.component.compact_block.v1alpha1.CompactBlockRangeResponse.compact_block:type_name -> penumbra.core.component.compact_block.v1alpha1.CompactBlock
-	12, // 11: penumbra.core.component.compact_block.v1alpha1.StatePayload.RolledUp.commitment:type_name -> penumbra.crypto.tct.v1alpha1.StateCommitment
-	13, // 12: penumbra.core.component.compact_block.v1alpha1.StatePayload.Note.source:type_name -> penumbra.core.component.chain.v1alpha1.NoteSource
-	14, // 13: penumbra.core.component.compact_block.v1alpha1.StatePayload.Note.note:type_name -> penumbra.core.component.shielded_pool.v1alpha1.NotePayload
-	13, // 14: penumbra.core.component.compact_block.v1alpha1.StatePayload.Swap.source:type_name -> penumbra.core.component.chain.v1alpha1.NoteSource
-	15, // 15: penumbra.core.component.compact_block.v1alpha1.StatePayload.Swap.swap:type_name -> penumbra.core.component.dex.v1alpha1.SwapPayload
-	2,  // 16: penumbra.core.component.compact_block.v1alpha1.QueryService.CompactBlockRange:input_type -> penumbra.core.component.compact_block.v1alpha1.CompactBlockRangeRequest
-	3,  // 17: penumbra.core.component.compact_block.v1alpha1.QueryService.CompactBlockRange:output_type -> penumbra.core.component.compact_block.v1alpha1.CompactBlockRangeResponse
-	17, // [17:18] is the sub-list for method output_type
-	16, // [16:17] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	12, // 7: penumbra.core.component.compact_block.v1alpha1.CompactBlock.gas_prices:type_name -> penumbra.core.component.fee.v1alpha1.GasPrices
+	4,  // 8: penumbra.core.component.compact_block.v1alpha1.StatePayload.rolled_up:type_name -> penumbra.core.component.compact_block.v1alpha1.StatePayload.RolledUp
+	5,  // 9: penumbra.core.component.compact_block.v1alpha1.StatePayload.note:type_name -> penumbra.core.component.compact_block.v1alpha1.StatePayload.Note
+	6,  // 10: penumbra.core.component.compact_block.v1alpha1.StatePayload.swap:type_name -> penumbra.core.component.compact_block.v1alpha1.StatePayload.Swap
+	0,  // 11: penumbra.core.component.compact_block.v1alpha1.CompactBlockRangeResponse.compact_block:type_name -> penumbra.core.component.compact_block.v1alpha1.CompactBlock
+	13, // 12: penumbra.core.component.compact_block.v1alpha1.StatePayload.RolledUp.commitment:type_name -> penumbra.crypto.tct.v1alpha1.StateCommitment
+	14, // 13: penumbra.core.component.compact_block.v1alpha1.StatePayload.Note.source:type_name -> penumbra.core.component.chain.v1alpha1.NoteSource
+	15, // 14: penumbra.core.component.compact_block.v1alpha1.StatePayload.Note.note:type_name -> penumbra.core.component.shielded_pool.v1alpha1.NotePayload
+	14, // 15: penumbra.core.component.compact_block.v1alpha1.StatePayload.Swap.source:type_name -> penumbra.core.component.chain.v1alpha1.NoteSource
+	16, // 16: penumbra.core.component.compact_block.v1alpha1.StatePayload.Swap.swap:type_name -> penumbra.core.component.dex.v1alpha1.SwapPayload
+	2,  // 17: penumbra.core.component.compact_block.v1alpha1.QueryService.CompactBlockRange:input_type -> penumbra.core.component.compact_block.v1alpha1.CompactBlockRangeRequest
+	3,  // 18: penumbra.core.component.compact_block.v1alpha1.QueryService.CompactBlockRange:output_type -> penumbra.core.component.compact_block.v1alpha1.CompactBlockRangeResponse
+	18, // [18:19] is the sub-list for method output_type
+	17, // [17:18] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_penumbra_core_component_compact_block_v1alpha1_compact_block_proto_init() }

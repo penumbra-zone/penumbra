@@ -4856,6 +4856,7 @@ dependencies = [
  "penumbra-chain",
  "penumbra-component",
  "penumbra-dex",
+ "penumbra-fee",
  "penumbra-proof-params",
  "penumbra-proto",
  "penumbra-sct",

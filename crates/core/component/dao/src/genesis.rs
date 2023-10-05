@@ -33,7 +33,7 @@ impl TryFrom<pb::GenesisContent> for Content {
 }
 
 impl TypeUrl for Content {
-    const TYPE_URL: &'static str = "/penumbra.dao.v1alpha1.GenesisContent";
+    const TYPE_URL: &'static str = "/penumbra.core.component.dao.v1alpha1.GenesisContent";
 }
 
 impl DomainType for Content {

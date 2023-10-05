@@ -1,5 +1,3 @@
-use std::ops::Add;
-
 use penumbra_chain::params::ChainParameters;
 use penumbra_compact_block::StatePayload;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
@@ -7,9 +5,8 @@ use penumbra_dex::{
     BatchSwapOutputData, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw, Swap,
     SwapClaim,
 };
+use penumbra_fee::Gas;
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
-use penumbra_num::Amount;
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{Output, Spend};
 use penumbra_stake::{
@@ -21,36 +18,252 @@ use penumbra_governance::{
     ValidatorVote,
 };
 
-use crate::Action;
-
-/// Represents the different resources that a transaction can consume,
-/// for purposes of calculating multidimensional fees based on real
-/// transaction resource consumption.
-pub struct Gas {
-    pub block_space: u64,
-    pub compact_block_space: u64,
-    pub verification: u64,
-    pub execution: u64,
-}
-
-impl Add for Gas {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self {
-            block_space: self.block_space + rhs.block_space,
-            compact_block_space: self.compact_block_space + rhs.compact_block_space,
-            verification: self.verification + rhs.verification,
-            execution: self.execution + rhs.execution,
-        }
-    }
-}
+use crate::{
+    plan::{ActionPlan, TransactionPlan},
+    Action, Transaction,
+};
 
 /// Allows [`Action`]s and [`Transaction`]s to statically indicate their relative resource consumption.
 /// Since the gas cost needs to be multiplied by a price, the values returned
 /// only need to be scaled relatively to each other.
 pub trait GasCost {
     fn gas_cost(&self) -> Gas;
+}
+
+fn spend_gas_cost() -> Gas {
+    Gas {
+        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
+        // will use the encoded size of the complete transaction to calculate the block space.
+        block_space: 0,
+        // The compact block space cost is based on the byte size of the data the [`Action`] adds
+        // to the compact block.
+        // For a Spend this is the byte size of a `Nullifier`.
+        compact_block_space: std::mem::size_of::<Nullifier>() as u64,
+        // Includes a zk-SNARK proof, so we include a constant verification cost.
+        verification: 1000,
+        // Execution cost is currently hardcoded at 10 for all Action variants.
+        execution: 10,
+    }
+}
+
+fn output_gas_cost() -> Gas {
+    Gas {
+        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
+        // will use the encoded size of the complete transaction to calculate the block space.
+        block_space: 0,
+        // The compact block space cost is based on the byte size of the data the [`Action`] adds
+        // to the compact block.
+        // For an Output this is the byte size of a [`StatePayload`].
+        compact_block_space: std::mem::size_of::<StatePayload>() as u64,
+        // Includes a zk-SNARK proof, so we include a constant verification cost.
+        verification: 1000,
+        // Execution cost is currently hardcoded at 10 for all Action variants.
+        execution: 10,
+    }
+}
+
+fn delegate_gas_cost() -> Gas {
+    Gas {
+        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
+        // will use the encoded size of the complete transaction to calculate the block space.
+        block_space: 0,
+        // The compact block space cost is based on the byte size of the data the [`Action`] adds
+        // to the compact block.
+        // For a Delegate, nothing is added to the compact block directly. The associated [`Action::Spend`]
+        // actions will add their costs, but there's nothing to add here.
+        compact_block_space: 0u64,
+        // Does not include a zk-SNARK proof, so there's no verification cost.
+        verification: 0,
+        // Execution cost is currently hardcoded at 10 for all Action variants.
+        execution: 10,
+    }
+}
+
+fn undelegate_gas_cost() -> Gas {
+    Gas {
+        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
+        // will use the encoded size of the complete transaction to calculate the block space.
+        block_space: 0,
+        // The compact block space cost is based on the byte size of the data the [`Action`] adds
+        // to the compact block.
+        // For an Undelegate, nothing is added to the compact block directly. The associated [`Action::Spend`]
+        // actions will add their costs, but there's nothing to add here.
+        compact_block_space: 0u64,
+        // Does not include a zk-SNARK proof, so there's no verification cost.
+        verification: 0,
+        // Execution cost is currently hardcoded at 10 for all Action variants.
+        execution: 10,
+    }
+}
+
+fn undelegate_claim_gas_cost() -> Gas {
+    Gas {
+        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
+        // will use the encoded size of the complete transaction to calculate the block space.
+        block_space: 0,
+        // The compact block space cost is based on the byte size of the data the [`Action`] adds
+        // to the compact block.
+        // For an UndelegateClaim, nothing is added to the compact block directly. The associated [`Action::Output`]
+        // actions will add their costs, but there's nothing to add here.
+        compact_block_space: std::mem::size_of::<Nullifier>() as u64,
+        // Includes a zk-SNARK proof, so we include a constant verification cost.
+        verification: 1000,
+        // Execution cost is currently hardcoded at 10 for all Action variants.
+        execution: 10,
+    }
+}
+
+fn validator_definition_gas_cost() -> Gas {
+    Gas {
+        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
+        // will use the encoded size of the complete transaction to calculate the block space.
+        block_space: 0,
+        // The compact block space cost is based on the byte size of the data the [`Action`] adds
+        // to the compact block.
+        // For a ValidatorDefinition the compact block is not modified.
+        compact_block_space: 0u64,
+        // Includes a signature verification, so we include a small constant verification cost.
+        verification: 200,
+        // Execution cost is currently hardcoded at 10 for all Action variants.
+        execution: 10,
+    }
+}
+
+fn swap_gas_cost() -> Gas {
+    Gas {
+        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
+        // will use the encoded size of the complete transaction to calculate the block space.
+        block_space: 0,
+        // The compact block space cost is based on the byte size of the data the [`Action`] adds
+        // to the compact block.
+        // For a Swap this is the byte size of a [`StatePayload`] and a [`BatchSwapOutputData`].
+        // Swaps batched so technically the cost of the `BatchSwapOutputData` is shared across
+        // multiple swaps, but if only one swap for a trading pair is performed in a block, that
+        // swap will add a `BatchSwapOutputData` all on its own.
+        compact_block_space: (std::mem::size_of::<StatePayload>()
+            + std::mem::size_of::<BatchSwapOutputData>()) as u64,
+        // Includes a zk-SNARK proof, so we include a constant verification cost.
+        verification: 1000,
+        // Execution cost is currently hardcoded at 10 for all Action variants.
+        execution: 10,
+    }
+}
+
+pub fn swap_claim_gas_cost() -> Gas {
+    Gas {
+        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
+        // will use the encoded size of the complete transaction to calculate the block space.
+        block_space: 0,
+        // The compact block space cost is based on the byte size of the data the [`Action`] adds
+        // to the compact block.
+        // For a SwapClaim, nothing is added to the compact block directly. The associated [`Action::Spend`]
+        // and [`Action::Output`] actions will add their costs, but there's nothing to add here.
+        compact_block_space: 0u64,
+        // Includes a zk-SNARK proof, so we include a constant verification cost.
+        verification: 1000,
+        // Execution cost is currently hardcoded at 10 for all Action variants.
+        execution: 10,
+    }
+}
+
+fn delegator_vote_gas_cost() -> Gas {
+    Gas {
+        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
+        // will use the encoded size of the complete transaction to calculate the block space.
+        block_space: 0,
+        // The compact block space cost is based on the byte size of the data the [`Action`] adds
+        // to the compact block.
+        // For a DelegatorVote the compact block is not modified.
+        compact_block_space: 0u64,
+        // Includes a zk-SNARK proof, so we include a constant verification cost.
+        verification: 1000,
+        // Execution cost is currently hardcoded at 10 for all Action variants.
+        execution: 10,
+    }
+}
+
+fn position_withdraw_gas_cost() -> Gas {
+    Gas {
+        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
+        // will use the encoded size of the complete transaction to calculate the block space.
+        block_space: 0,
+        // The compact block space cost is based on the byte size of the data the [`Action`] adds
+        // to the compact block.
+        // For a PositionWithdraw the compact block is not modified.
+        compact_block_space: 0u64,
+        // Does not include a zk-SNARK proof, so there's no verification cost.
+        verification: 0,
+        // Execution cost is currently hardcoded at 10 for all Action variants.
+        execution: 10,
+    }
+}
+
+fn position_reward_claim_gas_cost() -> Gas {
+    Gas {
+        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
+        // will use the encoded size of the complete transaction to calculate the block space.
+        block_space: 0,
+        // The compact block space cost is based on the byte size of the data the [`Action`] adds
+        // to the compact block.
+        // For a PositionRewardClaim the compact block is not modified.
+        compact_block_space: 0u64,
+        // Does not include a zk-SNARK proof, so there's no verification cost.
+        verification: 0,
+        // Execution cost is currently hardcoded at 10 for all Action variants.
+        execution: 10,
+    }
+}
+
+impl GasCost for Transaction {
+    fn gas_cost(&self) -> Gas {
+        self.actions().map(GasCost::gas_cost).sum()
+    }
+}
+
+impl GasCost for TransactionPlan {
+    fn gas_cost(&self) -> Gas {
+        self.actions.iter().map(GasCost::gas_cost).sum()
+    }
+}
+
+// The planner also needs to be able to calculate gas costs,
+// however until the transaction is finalized, the planner only
+// has access to `ActionPlan` variants.
+//
+// IMPORTANT: The results produced by this impl should always
+// match what the impl for the associated `Action` variant would
+// produce, otherwise the planner will not include proper gas in
+// transactions.
+impl GasCost for ActionPlan {
+    fn gas_cost(&self) -> Gas {
+        match self {
+            // Some variants use separate `*Plan` inners and need their
+            // own implementations; others encapsulate an `Action` variant
+            // and can call the `GasCost` impl on that.
+            ActionPlan::Spend(_) => spend_gas_cost(),
+            ActionPlan::Output(_) => output_gas_cost(),
+            ActionPlan::Delegate(d) => d.gas_cost(),
+            ActionPlan::Undelegate(u) => u.gas_cost(),
+            ActionPlan::UndelegateClaim(_) => undelegate_claim_gas_cost(),
+            ActionPlan::ValidatorDefinition(vd) => vd.gas_cost(),
+            ActionPlan::Swap(_) => swap_gas_cost(),
+            ActionPlan::SwapClaim(_) => swap_claim_gas_cost(),
+            ActionPlan::IbcAction(i) => i.gas_cost(),
+            ActionPlan::ProposalSubmit(ps) => ps.gas_cost(),
+            ActionPlan::ProposalWithdraw(pw) => pw.gas_cost(),
+            ActionPlan::DelegatorVote(_) => delegator_vote_gas_cost(),
+            ActionPlan::ValidatorVote(v) => v.gas_cost(),
+            ActionPlan::ProposalDepositClaim(pdc) => pdc.gas_cost(),
+            ActionPlan::PositionOpen(po) => po.gas_cost(),
+            ActionPlan::PositionClose(pc) => pc.gas_cost(),
+            ActionPlan::PositionWithdraw(_) => position_withdraw_gas_cost(),
+            ActionPlan::PositionRewardClaim(_) => position_reward_claim_gas_cost(),
+            ActionPlan::DaoSpend(ds) => ds.gas_cost(),
+            ActionPlan::DaoOutput(d) => d.gas_cost(),
+            ActionPlan::DaoDeposit(dd) => dd.gas_cost(),
+            ActionPlan::Withdrawal(w) => w.gas_cost(),
+        }
+    }
 }
 
 impl GasCost for Action {
@@ -84,136 +297,43 @@ impl GasCost for Action {
 
 impl GasCost for Output {
     fn gas_cost(&self) -> Gas {
-        Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
-            // The compact block space cost is based on the byte size of the data the [`Action`] adds
-            // to the compact block.
-            // For an Output this is the byte size of a [`StatePayload`].
-            compact_block_space: std::mem::size_of::<StatePayload>() as u64,
-            // Includes a zk-SNARK proof, so we include a constant verification cost.
-            verification: 1000,
-            // Execution cost is currently hardcoded at 10 for all Action variants.
-            execution: 10,
-        }
+        output_gas_cost()
     }
 }
 
 impl GasCost for Spend {
     fn gas_cost(&self) -> Gas {
-        Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
-            // The compact block space cost is based on the byte size of the data the [`Action`] adds
-            // to the compact block.
-            // For a Spend this is the byte size of a `Nullifier`.
-            compact_block_space: std::mem::size_of::<Nullifier>() as u64,
-            // Includes a zk-SNARK proof, so we include a constant verification cost.
-            verification: 1000,
-            // Execution cost is currently hardcoded at 10 for all Action variants.
-            execution: 10,
-        }
+        spend_gas_cost()
     }
 }
 
 impl GasCost for Delegate {
     fn gas_cost(&self) -> Gas {
-        Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
-            // The compact block space cost is based on the byte size of the data the [`Action`] adds
-            // to the compact block.
-            // For a Delegate, nothing is added to the compact block directly. The associated [`Action::Spend`]
-            // actions will add their costs, but there's nothing to add here.
-            compact_block_space: 0u64,
-            // Does not include a zk-SNARK proof, so there's no verification cost.
-            verification: 0,
-            // Execution cost is currently hardcoded at 10 for all Action variants.
-            execution: 10,
-        }
+        delegate_gas_cost()
     }
 }
 
 impl GasCost for Undelegate {
     fn gas_cost(&self) -> Gas {
-        Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
-            // The compact block space cost is based on the byte size of the data the [`Action`] adds
-            // to the compact block.
-            // For an Undelegate, nothing is added to the compact block directly. The associated [`Action::Spend`]
-            // actions will add their costs, but there's nothing to add here.
-            compact_block_space: 0u64,
-            // Does not include a zk-SNARK proof, so there's no verification cost.
-            verification: 0,
-            // Execution cost is currently hardcoded at 10 for all Action variants.
-            execution: 10,
-        }
+        undelegate_gas_cost()
     }
 }
 
 impl GasCost for UndelegateClaim {
     fn gas_cost(&self) -> Gas {
-        Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
-            // The compact block space cost is based on the byte size of the data the [`Action`] adds
-            // to the compact block.
-            // For an UndelegateClaim, nothing is added to the compact block directly. The associated [`Action::Output`]
-            // actions will add their costs, but there's nothing to add here.
-            compact_block_space: std::mem::size_of::<Nullifier>() as u64,
-            // Includes a zk-SNARK proof, so we include a constant verification cost.
-            verification: 1000,
-            // Execution cost is currently hardcoded at 10 for all Action variants.
-            execution: 10,
-        }
+        undelegate_claim_gas_cost()
     }
 }
 
 impl GasCost for Swap {
     fn gas_cost(&self) -> Gas {
-        Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
-            // The compact block space cost is based on the byte size of the data the [`Action`] adds
-            // to the compact block.
-            // For a Swap this is the byte size of a [`StatePayload`] and a [`BatchSwapOutputData`].
-            // Swaps batched so technically the cost of the `BatchSwapOutputData` is shared across
-            // multiple swaps, but if only one swap for a trading pair is performed in a block, that
-            // swap will add a `BatchSwapOutputData` all on its own.
-            compact_block_space: (std::mem::size_of::<StatePayload>()
-                + std::mem::size_of::<BatchSwapOutputData>())
-                as u64,
-            // Includes a zk-SNARK proof, so we include a constant verification cost.
-            verification: 1000,
-            // Execution cost is currently hardcoded at 10 for all Action variants.
-            execution: 10,
-        }
+        swap_gas_cost()
     }
 }
 
 impl GasCost for SwapClaim {
     fn gas_cost(&self) -> Gas {
-        Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
-            // The compact block space cost is based on the byte size of the data the [`Action`] adds
-            // to the compact block.
-            // For a SwapClaim, nothing is added to the compact block directly. The associated [`Action::Spend`]
-            // and [`Action::Output`] actions will add their costs, but there's nothing to add here.
-            compact_block_space: 0u64,
-            // Includes a zk-SNARK proof, so we include a constant verification cost.
-            verification: 1000,
-            // Execution cost is currently hardcoded at 10 for all Action variants.
-            execution: 10,
-        }
+        swap_claim_gas_cost()
     }
 }
 
@@ -259,19 +379,7 @@ impl GasCost for ProposalWithdraw {
 
 impl GasCost for DelegatorVote {
     fn gas_cost(&self) -> Gas {
-        Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
-            // The compact block space cost is based on the byte size of the data the [`Action`] adds
-            // to the compact block.
-            // For a DelegatorVote the compact block is not modified.
-            compact_block_space: 0u64,
-            // Includes a zk-SNARK proof, so we include a constant verification cost.
-            verification: 1000,
-            // Execution cost is currently hardcoded at 10 for all Action variants.
-            execution: 10,
-        }
+        delegator_vote_gas_cost()
     }
 }
 
@@ -349,37 +457,13 @@ impl GasCost for PositionClose {
 
 impl GasCost for PositionWithdraw {
     fn gas_cost(&self) -> Gas {
-        Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
-            // The compact block space cost is based on the byte size of the data the [`Action`] adds
-            // to the compact block.
-            // For a PositionWithdraw the compact block is not modified.
-            compact_block_space: 0u64,
-            // Does not include a zk-SNARK proof, so there's no verification cost.
-            verification: 0,
-            // Execution cost is currently hardcoded at 10 for all Action variants.
-            execution: 10,
-        }
+        position_withdraw_gas_cost()
     }
 }
 
 impl GasCost for PositionRewardClaim {
     fn gas_cost(&self) -> Gas {
-        Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
-            // The compact block space cost is based on the byte size of the data the [`Action`] adds
-            // to the compact block.
-            // For a PositionRewardClaim the compact block is not modified.
-            compact_block_space: 0u64,
-            // Does not include a zk-SNARK proof, so there's no verification cost.
-            verification: 0,
-            // Execution cost is currently hardcoded at 10 for all Action variants.
-            execution: 10,
-        }
+        position_reward_claim_gas_cost()
     }
 }
 
@@ -482,70 +566,6 @@ impl GasCost for IbcAction {
 
 impl GasCost for ValidatorDefinition {
     fn gas_cost(&self) -> Gas {
-        Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
-            // The compact block space cost is based on the byte size of the data the [`Action`] adds
-            // to the compact block.
-            // For a ValidatorDefinition the compact block is not modified.
-            compact_block_space: 0u64,
-            // Includes a signature verification, so we include a small constant verification cost.
-            verification: 200,
-            // Execution cost is currently hardcoded at 10 for all Action variants.
-            execution: 10,
-        }
-    }
-}
-
-/// Expresses the price of each unit of gas in terms of the staking token.
-#[derive(Clone, Debug)]
-pub struct GasPrices {
-    pub block_space_price: u64,
-    pub compact_block_space_price: u64,
-    pub verification_price: u64,
-    pub execution_price: u64,
-}
-
-impl GasPrices {
-    pub fn price(&self, gas: &Gas) -> Amount {
-        Amount::from(
-            self.block_space_price * gas.block_space
-                + self.compact_block_space_price * gas.compact_block_space
-                + self.verification_price * gas.verification
-                + self.execution_price * gas.execution,
-        )
-    }
-}
-
-impl TypeUrl for GasPrices {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.GasPrices";
-}
-
-impl DomainType for GasPrices {
-    type Proto = pb::GasPrices;
-}
-
-impl From<GasPrices> for pb::GasPrices {
-    fn from(prices: GasPrices) -> Self {
-        pb::GasPrices {
-            block_space_price: prices.block_space_price,
-            compact_block_space_price: prices.compact_block_space_price,
-            verification_price: prices.verification_price,
-            execution_price: prices.execution_price,
-        }
-    }
-}
-
-impl TryFrom<pb::GasPrices> for GasPrices {
-    type Error = anyhow::Error;
-
-    fn try_from(proto: pb::GasPrices) -> Result<Self, Self::Error> {
-        Ok(GasPrices {
-            block_space_price: proto.block_space_price,
-            compact_block_space_price: proto.compact_block_space_price,
-            verification_price: proto.verification_price,
-            execution_price: proto.execution_price,
-        })
+        validator_definition_gas_cost()
     }
 }

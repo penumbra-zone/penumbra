@@ -17,26 +17,30 @@ use penumbra_governance::{proposal::ProposalToml, Vote};
 use penumbra_ibc::Ics20Withdrawal;
 use penumbra_keys::keys::AddressIndex;
 use penumbra_num::Amount;
-use penumbra_proto::core::component::{
-    chain::v1alpha1::{
-        query_service_client::QueryServiceClient as ChainQueryServiceClient, EpochByHeightRequest,
+use penumbra_proto::{
+    core::component::{
+        chain::v1alpha1::{
+            query_service_client::QueryServiceClient as ChainQueryServiceClient,
+            EpochByHeightRequest,
+        },
+        dex::v1alpha1::{
+            query_service_client::QueryServiceClient as DexQueryServiceClient,
+            LiquidityPositionByIdRequest, PositionId,
+        },
+        governance::v1alpha1::{
+            query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
+            ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
+        },
+        stake::v1alpha1::{
+            query_service_client::QueryServiceClient as StakeQueryServiceClient,
+            ValidatorPenaltyRequest,
+        },
     },
-    dex::v1alpha1::{
-        query_service_client::QueryServiceClient as DexQueryServiceClient,
-        LiquidityPositionByIdRequest, PositionId,
-    },
-    governance::v1alpha1::{
-        query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
-        ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
-    },
-    stake::v1alpha1::{
-        query_service_client::QueryServiceClient as StakeQueryServiceClient,
-        ValidatorPenaltyRequest,
-    },
+    view::v1alpha1::GasPricesRequest,
 };
 use penumbra_stake::rate::RateData;
 use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
-use penumbra_transaction::memo::MemoPlaintext;
+use penumbra_transaction::{gas::swap_claim_gas_cost, memo::MemoPlaintext};
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};
 use rand_core::OsRng;
@@ -62,9 +66,6 @@ pub enum TxCmd {
         to: String,
         /// The amounts to send, written as typed values 1.87penumbra, 12cubes, etc.
         values: Vec<String>,
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0", display_order = 200)]
-        fee: u64,
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
@@ -80,9 +81,6 @@ pub enum TxCmd {
         to: String,
         /// The amount of stake to delegate.
         amount: String,
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0", display_order = 200)]
-        fee: u64,
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
@@ -92,20 +90,13 @@ pub enum TxCmd {
     Undelegate {
         /// The amount of delegation tokens to undelegate.
         amount: String,
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0", display_order = 200)]
-        fee: u64,
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
     },
     /// Claim any undelegations that have finished unbonding.
     #[clap(display_order = 200)]
-    UndelegateClaim {
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
-    },
+    UndelegateClaim {},
     /// Swap tokens of one denomination for another using the DEX.
     ///
     /// Swaps are batched and executed at the market-clearing price.
@@ -121,11 +112,6 @@ pub enum TxCmd {
         /// The denomination to swap the input into, e.g. `gm`
         #[clap(long, display_order = 100)]
         into: String,
-        /// The transaction fee (paid in upenumbra).
-        ///
-        /// A swap generates two transactions; the fee will be split equally over both.
-        #[clap(long, default_value = "0", display_order = 200)]
-        fee: u64,
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
@@ -133,9 +119,6 @@ pub enum TxCmd {
     /// Vote on a governance proposal in your role as a delegator (see also: `pcli validator vote`).
     #[clap(display_order = 400)]
     Vote {
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0", global = true, display_order = 200)]
-        fee: u64,
         /// Only spend funds and vote with staked delegation tokens originally received by the given
         /// account.
         #[clap(long, default_value = "0", global = true, display_order = 300)]
@@ -149,9 +132,6 @@ pub enum TxCmd {
     /// Deposit funds into the DAO.
     #[clap(display_order = 600)]
     DaoDeposit {
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0", global = true, display_order = 200)]
-        fee: u64,
         /// The amounts to send, written as typed values 1.87penumbra, 12cubes, etc.
         values: Vec<String>,
         /// Only spend funds originally received by the given account.
@@ -264,11 +244,21 @@ impl TxCmd {
     }
 
     pub async fn exec(&self, app: &mut App) -> Result<()> {
+        let gas_prices = app
+            .view
+            .as_mut()
+            .context("view service must be initialized")?
+            .gas_prices(GasPricesRequest {})
+            .await?
+            .into_inner()
+            .gas_prices
+            .expect("gas prices must be available")
+            .try_into()?;
+
         match self {
             TxCmd::Send {
                 values,
                 to,
-                fee,
                 source: from,
                 memo,
             } => {
@@ -277,7 +267,6 @@ impl TxCmd {
                     .iter()
                     .map(|v| v.parse())
                     .collect::<Result<Vec<Value>, _>>()?;
-                let fee = Fee::from_staking_token_amount((*fee).into());
                 let to = to
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
@@ -289,32 +278,32 @@ impl TxCmd {
                     text: memo.clone().unwrap_or_default(),
                 };
 
-                let plan = plan::send(
-                    app.fvk.account_group_id(),
-                    app.view.as_mut().context("view service initialized")?,
-                    OsRng,
-                    &values,
-                    fee,
-                    to,
-                    AddressIndex::new(*from),
-                    Some(memo_plaintext),
-                )
-                .await?;
+                let mut planner = Planner::new(OsRng);
+                planner.set_gas_prices(gas_prices);
+                for value in values.iter().cloned() {
+                    planner.output(value, to);
+                }
+                let plan = planner
+                    .memo(memo_plaintext)?
+                    .plan(
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
+                        app.fvk.account_group_id(),
+                        AddressIndex::new(*from),
+                    )
+                    .await
+                    .context("can't build send transaction")?;
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::DaoDeposit {
-                fee,
-                values,
-                source,
-            } => {
+            TxCmd::DaoDeposit { values, source } => {
                 let values = values
                     .iter()
                     .map(|v| v.parse())
                     .collect::<Result<Vec<Value>, _>>()?;
-                let fee = Fee::from_staking_token_amount((*fee).into());
 
                 let mut planner = Planner::new(OsRng);
-                planner.fee(fee);
+                planner.set_gas_prices(gas_prices);
                 for value in values {
                     planner.dao_deposit(value);
                 }
@@ -356,16 +345,10 @@ impl TxCmd {
             TxCmd::Swap {
                 input,
                 into,
-                fee,
                 source,
             } => {
                 let input = input.parse::<Value>()?;
                 let into = asset::REGISTRY.parse_unit(into.as_str()).base();
-
-                // Since the swap command consists of two transactions (the swap and the swap claim),
-                // the fee is split equally over both for now.
-                let swap_fee = Fee::from_staking_token_amount((fee / 2).into());
-                let swap_claim_fee = Fee::from_staking_token_amount((fee / 2).into());
 
                 let fvk = app.fvk.clone();
 
@@ -375,8 +358,21 @@ impl TxCmd {
                     fvk.incoming().payment_address(AddressIndex::new(*source));
 
                 let mut planner = Planner::new(OsRng);
-                planner.fee(swap_fee);
-                planner.swap(input, into.id(), swap_claim_fee.clone(), claim_address)?;
+                planner.set_gas_prices(gas_prices.clone());
+                // The swap claim requires a pre-paid fee, however gas costs might change in the meantime.
+                // This shouldn't be an issue, since the planner will account for the difference and add additional
+                // spends alongside the swap claim transaction as necessary.
+                //
+                // Regardless, we apply a gas adjustment factor of 2.0 up-front to reduce the likelihood of
+                // requiring an additional spend at the time of claim.
+                //
+                // Since the swap claim fee needs to be passed in to the planner to build the swap (it is
+                // part of the `SwapPlaintext`), we can't use the planner to estimate the fee and need to
+                // call the helper method directly.
+                let estimated_claim_fee = Fee::from_staking_token_amount(
+                    Amount::from(2u32) * gas_prices.price(&swap_claim_gas_cost()),
+                );
+                planner.swap(input, into.id(), estimated_claim_fee, claim_address)?;
 
                 let account_group_id = app.fvk.account_group_id();
                 let plan = planner
@@ -422,6 +418,8 @@ impl TxCmd {
                     .format(&asset_cache),
                 );
 
+                let account_group_id = app.fvk.account_group_id();
+
                 let params = app
                     .view
                     .as_mut()
@@ -429,9 +427,8 @@ impl TxCmd {
                     .app_params()
                     .await?;
 
-                let account_group_id = app.fvk.account_group_id();
-
                 let mut planner = Planner::new(OsRng);
+                planner.set_gas_prices(gas_prices);
                 let plan = planner
                     .swap_claim(SwapClaimPlan {
                         swap_plaintext,
@@ -450,12 +447,7 @@ impl TxCmd {
                 // https://github.com/penumbra-zone/penumbra/pull/2091/commits/128b24a6303c2f855a708e35f9342987f1dd34ec
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Delegate {
-                to,
-                amount,
-                fee,
-                source,
-            } => {
+            TxCmd::Delegate { to, amount, source } => {
                 let unbonded_amount = {
                     let Value { amount, asset_id } = amount.parse::<Value>()?;
                     if asset_id != *STAKING_TOKEN_ASSET_ID {
@@ -472,34 +464,23 @@ impl TxCmd {
                     .await?
                     .into_inner()
                     .try_into()?;
-                let fee = Fee::from_staking_token_amount((*fee).into());
 
-                let plan = plan::delegate(
-                    app.fvk.account_group_id(),
-                    app.view
-                        .as_mut()
-                        .context("view service must be initialized")?,
-                    OsRng,
-                    rate_data,
-                    // TODO: fix and also delete plan::delegate entirely!
-                    unbonded_amount.value(),
-                    fee,
-                    AddressIndex::new(*source),
-                )
-                .await?;
+                let mut planner = Planner::new(OsRng);
+                planner.set_gas_prices(gas_prices);
+                let account_group_id = app.fvk.account_group_id().clone();
+                let plan = planner
+                    .delegate(unbonded_amount.value(), rate_data)
+                    .plan(app.view(), account_group_id, AddressIndex::new(*source))
+                    .await
+                    .context("can't plan delegation")?;
 
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Undelegate {
-                amount,
-                fee,
-                source,
-            } => {
+            TxCmd::Undelegate { amount, source } => {
                 let delegation_value @ Value {
                     amount: _,
                     asset_id,
                 } = amount.parse::<Value>()?;
-                let fee = Fee::from_staking_token_amount((*fee).into());
 
                 // TODO: it's awkward that we can't just pull the denom out of the `amount` string we were already given
                 let delegation_token: DelegationToken = app
@@ -522,9 +503,9 @@ impl TxCmd {
                     .try_into()?;
 
                 let mut planner = Planner::new(OsRng);
+                planner.set_gas_prices(gas_prices);
 
                 let plan = planner
-                    .fee(fee)
                     .undelegate(delegation_value.amount, rate_data)
                     .plan(
                         app.view
@@ -538,9 +519,7 @@ impl TxCmd {
 
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::UndelegateClaim { fee } => {
-                let fee = Fee::from_staking_token_amount((*fee).into());
-
+            TxCmd::UndelegateClaim {} => {
                 let account_group_id = app.fvk.account_group_id(); // this should be optional? or saved in the client statefully?
 
                 let channel = app.pd_channel().await?;
@@ -549,7 +528,6 @@ impl TxCmd {
                     .as_mut()
                     .context("view service must be initialized")?;
 
-                let params = view.app_params().await?;
                 let current_height = view.status(account_group_id).await?.sync_height;
                 let mut client = ChainQueryServiceClient::new(channel.clone());
                 let current_epoch = client
@@ -587,6 +565,13 @@ impl TxCmd {
                         let start_epoch_index = token.start_epoch_index();
                         let end_epoch_index = current_epoch.index;
 
+                        let params = app
+                            .view
+                            .as_mut()
+                            .context("view service must be initialized")?
+                            .app_params()
+                            .await?;
+
                         let mut client = StakeQueryServiceClient::new(channel.clone());
                         let penalty: Penalty = client
                             .validator_penalty(tonic::Request::new(ValidatorPenaltyRequest {
@@ -607,6 +592,7 @@ impl TxCmd {
                             .try_into()?;
 
                         let mut planner = Planner::new(OsRng);
+                        planner.set_gas_prices(gas_prices.clone());
                         let unbonding_amount = notes.iter().map(|n| n.note.amount()).sum();
                         for note in notes {
                             planner.spend(note.note, note.position);
@@ -622,7 +608,6 @@ impl TxCmd {
                                 proof_blinding_r: Fq::rand(&mut OsRng),
                                 proof_blinding_s: Fq::rand(&mut OsRng),
                             })
-                            .fee(fee.clone())
                             .plan(
                                 app.view
                                     .as_mut()
@@ -635,7 +620,11 @@ impl TxCmd {
                     }
                 }
             }
-            TxCmd::Proposal(ProposalCmd::Submit { file, fee, source }) => {
+            TxCmd::Proposal(ProposalCmd::Submit {
+                file,
+                source,
+                deposit_amount,
+            }) => {
                 let mut proposal_file = File::open(file).context("can't open proposal file")?;
                 let mut proposal_string = String::new();
                 proposal_file
@@ -646,39 +635,38 @@ impl TxCmd {
                 let proposal = proposal_toml
                     .try_into()
                     .context("can't parse proposal file")?;
-                let fee = Fee::from_staking_token_amount((*fee).into());
-                let plan = plan::proposal_submit(
-                    app.fvk.account_group_id(),
-                    app.view
-                        .as_mut()
-                        .context("view service must be initialized")?,
-                    OsRng,
-                    proposal,
-                    fee,
-                    AddressIndex::new(*source),
-                )
-                .await?;
+
+                let mut planner = Planner::new(OsRng);
+                planner.set_gas_prices(gas_prices);
+                let plan = planner
+                    .proposal_submit(proposal, Amount::from(*deposit_amount))
+                    .plan(
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
+                        app.fvk.account_group_id(),
+                        AddressIndex::new(*source),
+                    )
+                    .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Proposal(ProposalCmd::Withdraw {
                 proposal_id,
-                fee,
                 reason,
                 source,
             }) => {
-                let fee = Fee::from_staking_token_amount((*fee).into());
-                let plan = plan::proposal_withdraw(
-                    app.fvk.account_group_id(),
-                    app.view
-                        .as_mut()
-                        .context("view service must be initialized")?,
-                    OsRng,
-                    *proposal_id,
-                    reason.clone(),
-                    fee,
-                    AddressIndex::new(*source),
-                )
-                .await?;
+                let mut planner = Planner::new(OsRng);
+                planner.set_gas_prices(gas_prices);
+                let plan = planner
+                    .proposal_withdraw(*proposal_id, reason.clone())
+                    .plan(
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
+                        app.fvk.account_group_id(),
+                        AddressIndex::new(*source),
+                    )
+                    .await?;
 
                 app.build_and_submit_transaction(plan).await?;
             }
@@ -763,7 +751,7 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
                 */
             }
-            TxCmd::Vote { vote, fee, source } => {
+            TxCmd::Vote { vote, source } => {
                 let (proposal_id, vote): (u64, Vote) = (*vote).into();
 
                 // Before we vote on the proposal, we have to gather some information about it so
@@ -808,9 +796,8 @@ impl TxCmd {
                     start_rate_data.insert(rate_data.identity_key.clone(), rate_data);
                 }
 
-                let fee = Fee::from_staking_token_amount((*fee).into());
-
                 let plan = Planner::new(OsRng)
+                    .set_gas_prices(gas_prices)
                     .delegator_vote(
                         proposal_id,
                         start_block_height,
@@ -818,7 +805,6 @@ impl TxCmd {
                         start_rate_data,
                         vote,
                     )
-                    .fee(fee)
                     .plan(
                         app.view
                             .as_mut()
@@ -965,14 +951,15 @@ impl TxCmd {
 
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
-                let mut plan = &mut Planner::new(OsRng);
+                let mut planner = Planner::new(OsRng);
+                planner.set_gas_prices(gas_prices);
 
                 for position_id in owned_position_ids {
                     // Close the position
-                    plan = plan.position_close(position_id);
+                    planner.position_close(position_id);
                 }
 
-                let final_plan = plan
+                let final_plan = planner
                     .fee(fee)
                     .plan(
                         app.view
@@ -1005,15 +992,18 @@ impl TxCmd {
 
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
-                let mut plan = &mut Planner::new(OsRng);
+                let mut planner = Planner::new(OsRng);
+                planner.set_gas_prices(gas_prices);
 
                 let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
 
-                let view: &mut dyn ViewClient = app
+                let params = app
                     .view
                     .as_mut()
-                    .context("view service must be initialized")?;
-                let params = view.app_params().await?;
+                    .context("view service must be initialized")?
+                    .app_params()
+                    .await?;
+
                 for position_id in owned_position_ids {
                     // Withdraw the position
 
@@ -1039,14 +1029,14 @@ impl TxCmd {
                         .expect("missing position trading function")
                         .pair
                         .expect("missing trading function pair");
-                    plan = plan.position_withdraw(
+                    planner.position_withdraw(
                         position_id,
                         reserves.try_into().expect("invalid reserves"),
                         pair.try_into().expect("invalid pair"),
                     );
                 }
 
-                let final_plan = plan
+                let final_plan = planner
                     .fee(fee)
                     .plan(
                         app.view
@@ -1065,11 +1055,12 @@ impl TxCmd {
             }) => {
                 let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
 
-                let view: &mut dyn ViewClient = app
+                let params = app
                     .view
                     .as_mut()
-                    .context("view service must be initialized")?;
-                let params = view.app_params().await?;
+                    .context("view service must be initialized")?
+                    .app_params()
+                    .await?;
 
                 // Fetch the information regarding the position from the view service.
                 let position = client
@@ -1097,6 +1088,7 @@ impl TxCmd {
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
                 let plan = Planner::new(OsRng)
+                    .set_gas_prices(gas_prices)
                     .position_withdraw(*position_id, reserves.try_into()?, pair.try_into()?)
                     .fee(fee)
                     .plan(

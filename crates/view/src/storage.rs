@@ -10,6 +10,7 @@ use penumbra_dex::{
     lp::position::{self, Position, State},
     TradingPair,
 };
+use penumbra_fee::GasPrices;
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::{
@@ -524,6 +525,21 @@ impl Storage {
                 .ok_or_else(|| anyhow!("missing app params"))?;
 
             AppParameters::decode(bytes.as_slice())
+        })
+        .await?
+    }
+
+    pub async fn gas_prices(&self) -> anyhow::Result<GasPrices> {
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            let bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM gas_prices LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing gas prices"))?;
+
+            GasPrices::decode(bytes.as_slice())
         })
         .await?
     }
@@ -1399,6 +1415,14 @@ impl Storage {
                     &FmdParameters::encode_to_vec(&filtered_block.fmd_parameters.ok_or_else(|| anyhow::anyhow!("missing fmd parameters in filtered block"))?)[..];
 
                 dbtx.execute("INSERT INTO fmd_parameters (bytes) VALUES (?1)", [&fmd_parameters_bytes])?;
+            }
+
+            // Update gas prices if they've changed.
+            if filtered_block.gas_prices.is_some() {
+                let gas_prices_bytes =
+                    &GasPrices::encode_to_vec(&filtered_block.gas_prices.ok_or_else(|| anyhow::anyhow!("missing gas prices in filtered block"))?)[..];
+
+                dbtx.execute("INSERT INTO gas_prices (bytes) VALUES (?1)", [&gas_prices_bytes])?;
             }
 
             // Record block height as latest synced height
