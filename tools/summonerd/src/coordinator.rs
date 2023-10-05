@@ -142,12 +142,10 @@ impl Coordinator {
                 return Ok(());
             }
         };
-        //if let Some(contribution) = contribution.validate(&mut OsRng, &self.storage.root().await?) {
-        if true {
-            let contribution = contribution.assume_valid();
+        if let Some(contribution) = contribution.validate(&mut OsRng, &self.storage.root().await?) {
             if contribution.is_linked_to(&parent) {
                 self.storage
-                    .commit_contribution(contributor, &contribution)
+                    .commit_contribution(contributor, contribution)
                     .await?;
                 participant
                     .confirm(self.storage.current_slot().await?)
