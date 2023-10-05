@@ -17,6 +17,9 @@ use tracing_subscriber::{prelude::*, EnvFilter};
 
 use crate::server::CoordinatorService;
 
+/// 100 MIB
+const MAX_MESSAGE_SIZE: usize = 100 * 1024 * 1024;
+
 #[derive(Debug, Parser)]
 #[clap(
     name = "psumcoordd",
@@ -55,7 +58,7 @@ impl Opt {
                         .accept_http1(true)
                         .add_service(tonic_web::enable(CeremonyCoordinatorServiceServer::new(
                             service,
-                        )));
+                        ).max_encoding_message_size(MAX_MESSAGE_SIZE).max_decoding_message_size(MAX_MESSAGE_SIZE)));
                 tracing::info!(?listen, "starting grpc server");
                 let server_handle = tokio::spawn(grpc_server.serve(listen));
                 // TODO: better error reporting
