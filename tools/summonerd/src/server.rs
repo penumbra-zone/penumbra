@@ -19,7 +19,7 @@ impl CoordinatorService {
     pub fn new(storage: Storage, participant_tx: mpsc::Sender<Participant>) -> Self {
         Self {
             storage,
-            participant_tx
+            participant_tx,
         }
     }
 }

@@ -49,7 +49,10 @@ impl CeremonyCmd {
                     })
                     .await?;
                 let mut client =
-                    CeremonyCoordinatorServiceClient::connect(coordinator_url.to_string()).await?.max_decoding_message_size(MAX_MESSAGE_SIZE).max_encoding_message_size(MAX_MESSAGE_SIZE);
+                    CeremonyCoordinatorServiceClient::connect(coordinator_url.to_string())
+                        .await?
+                        .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                        .max_encoding_message_size(MAX_MESSAGE_SIZE);
                 let mut response_rx = client
                     .participate(ReceiverStream::new(req_rx))
                     .await?
