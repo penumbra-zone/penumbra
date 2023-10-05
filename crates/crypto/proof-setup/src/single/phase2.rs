@@ -97,7 +97,7 @@ impl Hashable for CRSElements {
 }
 
 impl CRSElements {
-    // TODO: Remove this when no longer needed for testing in psumcoordd
+    // TODO: Remove this when no longer needed for testing in summonerd
     pub(crate) fn dummy_root(degree: usize) -> Self {
         Self {
             raw: RawCRSElements {

@@ -22,7 +22,7 @@ const MAX_MESSAGE_SIZE: usize = 100 * 1024 * 1024;
 
 #[derive(Debug, Parser)]
 #[clap(
-    name = "psumcoordd",
+    name = "summonerd",
     about = "Penumbra summoning ceremony coordinator",
     version = env!("VERGEN_GIT_SEMVER"),
 )]
@@ -56,9 +56,11 @@ impl Opt {
                 let grpc_server =
                     Server::builder()
                         .accept_http1(true)
-                        .add_service(tonic_web::enable(CeremonyCoordinatorServiceServer::new(
-                            service,
-                        ).max_encoding_message_size(MAX_MESSAGE_SIZE).max_decoding_message_size(MAX_MESSAGE_SIZE)));
+                        .add_service(tonic_web::enable(
+                            CeremonyCoordinatorServiceServer::new(service)
+                                .max_encoding_message_size(MAX_MESSAGE_SIZE)
+                                .max_decoding_message_size(MAX_MESSAGE_SIZE),
+                        ));
                 tracing::info!(?listen, "starting grpc server");
                 let server_handle = tokio::spawn(grpc_server.serve(listen));
                 // TODO: better error reporting
