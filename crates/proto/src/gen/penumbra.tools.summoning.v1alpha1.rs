@@ -159,7 +159,7 @@ pub mod ceremony_coordinator_service_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -217,6 +217,22 @@ pub mod ceremony_coordinator_service_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         /// The protocol used to participate in the ceremony.
         ///
         /// The message flow is
@@ -234,7 +250,7 @@ pub mod ceremony_coordinator_service_client {
             request: impl tonic::IntoStreamingRequest<
                 Message = super::ParticipateRequest,
             >,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<tonic::codec::Streaming<super::ParticipateResponse>>,
             tonic::Status,
         > {
@@ -251,7 +267,15 @@ pub mod ceremony_coordinator_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.tools.summoning.v1alpha1.CeremonyCoordinatorService/Participate",
             );
-            self.inner.streaming(request.into_streaming_request(), path, codec).await
+            let mut req = request.into_streaming_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.tools.summoning.v1alpha1.CeremonyCoordinatorService",
+                        "Participate",
+                    ),
+                );
+            self.inner.streaming(req, path, codec).await
         }
     }
 }
@@ -265,7 +289,7 @@ pub mod ceremony_coordinator_service_server {
     pub trait CeremonyCoordinatorService: Send + Sync + 'static {
         /// Server streaming response type for the Participate method.
         type ParticipateStream: futures_core::Stream<
-                Item = Result<super::ParticipateResponse, tonic::Status>,
+                Item = std::result::Result<super::ParticipateResponse, tonic::Status>,
             >
             + Send
             + 'static;
@@ -284,7 +308,10 @@ pub mod ceremony_coordinator_service_server {
         async fn participate(
             &self,
             request: tonic::Request<tonic::Streaming<super::ParticipateRequest>>,
-        ) -> Result<tonic::Response<Self::ParticipateStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::ParticipateStream>,
+            tonic::Status,
+        >;
     }
     /// Runs a Phase 2 MPC ceremony with dynamic slot allocation.
     #[derive(Debug)]
@@ -292,6 +319,8 @@ pub mod ceremony_coordinator_service_server {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
+        max_decoding_message_size: Option<usize>,
+        max_encoding_message_size: Option<usize>,
     }
     struct _Inner<T>(Arc<T>);
     impl<T: CeremonyCoordinatorService> CeremonyCoordinatorServiceServer<T> {
@@ -304,6 +333,8 @@ pub mod ceremony_coordinator_service_server {
                 inner,
                 accept_compression_encodings: Default::default(),
                 send_compression_encodings: Default::default(),
+                max_decoding_message_size: None,
+                max_encoding_message_size: None,
             }
         }
         pub fn with_interceptor<F>(
@@ -327,6 +358,22 @@ pub mod ceremony_coordinator_service_server {
             self.send_compression_encodings.enable(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.max_decoding_message_size = Some(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.max_encoding_message_size = Some(limit);
+            self
+        }
     }
     impl<T, B> tonic::codegen::Service<http::Request<B>>
     for CeremonyCoordinatorServiceServer<T>
@@ -341,7 +388,7 @@ pub mod ceremony_coordinator_service_server {
         fn poll_ready(
             &mut self,
             _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        ) -> Poll<std::result::Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -366,13 +413,15 @@ pub mod ceremony_coordinator_service_server {
                                 tonic::Streaming<super::ParticipateRequest>,
                             >,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move { (*inner).participate(request).await };
                             Box::pin(fut)
                         }
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -382,6 +431,10 @@ pub mod ceremony_coordinator_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.streaming(method, req).await;
                         Ok(res)
@@ -410,12 +463,14 @@ pub mod ceremony_coordinator_service_server {
                 inner,
                 accept_compression_encodings: self.accept_compression_encodings,
                 send_compression_encodings: self.send_compression_encodings,
+                max_decoding_message_size: self.max_decoding_message_size,
+                max_encoding_message_size: self.max_encoding_message_size,
             }
         }
     }
     impl<T: CeremonyCoordinatorService> Clone for _Inner<T> {
         fn clone(&self) -> Self {
-            Self(self.0.clone())
+            Self(Arc::clone(&self.0))
         }
     }
     impl<T: std::fmt::Debug> std::fmt::Debug for _Inner<T> {

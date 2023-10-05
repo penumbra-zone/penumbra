@@ -208,7 +208,7 @@ pub mod tendermint_proxy_service_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -266,11 +266,30 @@ pub mod tendermint_proxy_service_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         /// Status queries the current status.
         pub async fn get_status(
             &mut self,
             request: impl tonic::IntoRequest<super::GetStatusRequest>,
-        ) -> Result<tonic::Response<super::GetStatusResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::GetStatusResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -284,13 +303,24 @@ pub mod tendermint_proxy_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.util.tendermint_proxy.v1alpha1.TendermintProxyService/GetStatus",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.util.tendermint_proxy.v1alpha1.TendermintProxyService",
+                        "GetStatus",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Broadcast a transaction asynchronously.
         pub async fn broadcast_tx_async(
             &mut self,
             request: impl tonic::IntoRequest<super::BroadcastTxAsyncRequest>,
-        ) -> Result<tonic::Response<super::BroadcastTxAsyncResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::BroadcastTxAsyncResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -304,13 +334,24 @@ pub mod tendermint_proxy_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.util.tendermint_proxy.v1alpha1.TendermintProxyService/BroadcastTxAsync",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.util.tendermint_proxy.v1alpha1.TendermintProxyService",
+                        "BroadcastTxAsync",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Broadcast a transaction synchronously.
         pub async fn broadcast_tx_sync(
             &mut self,
             request: impl tonic::IntoRequest<super::BroadcastTxSyncRequest>,
-        ) -> Result<tonic::Response<super::BroadcastTxSyncResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::BroadcastTxSyncResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -324,13 +365,21 @@ pub mod tendermint_proxy_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.util.tendermint_proxy.v1alpha1.TendermintProxyService/BroadcastTxSync",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.util.tendermint_proxy.v1alpha1.TendermintProxyService",
+                        "BroadcastTxSync",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Fetch a transaction by hash.
         pub async fn get_tx(
             &mut self,
             request: impl tonic::IntoRequest<super::GetTxRequest>,
-        ) -> Result<tonic::Response<super::GetTxResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::GetTxResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -344,7 +393,15 @@ pub mod tendermint_proxy_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.util.tendermint_proxy.v1alpha1.TendermintProxyService/GetTx",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.util.tendermint_proxy.v1alpha1.TendermintProxyService",
+                        "GetTx",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// ABCIQuery defines a query handler that supports ABCI queries directly to the
         /// application, bypassing Tendermint completely. The ABCI query must contain
@@ -352,7 +409,10 @@ pub mod tendermint_proxy_service_client {
         pub async fn abci_query(
             &mut self,
             request: impl tonic::IntoRequest<super::AbciQueryRequest>,
-        ) -> Result<tonic::Response<super::AbciQueryResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::AbciQueryResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -366,13 +426,24 @@ pub mod tendermint_proxy_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.util.tendermint_proxy.v1alpha1.TendermintProxyService/ABCIQuery",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.util.tendermint_proxy.v1alpha1.TendermintProxyService",
+                        "ABCIQuery",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// GetBlockByHeight queries block for given height.
         pub async fn get_block_by_height(
             &mut self,
             request: impl tonic::IntoRequest<super::GetBlockByHeightRequest>,
-        ) -> Result<tonic::Response<super::GetBlockByHeightResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::GetBlockByHeightResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -386,7 +457,15 @@ pub mod tendermint_proxy_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.util.tendermint_proxy.v1alpha1.TendermintProxyService/GetBlockByHeight",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.util.tendermint_proxy.v1alpha1.TendermintProxyService",
+                        "GetBlockByHeight",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
     }
 }
@@ -402,34 +481,49 @@ pub mod tendermint_proxy_service_server {
         async fn get_status(
             &self,
             request: tonic::Request<super::GetStatusRequest>,
-        ) -> Result<tonic::Response<super::GetStatusResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::GetStatusResponse>,
+            tonic::Status,
+        >;
         /// Broadcast a transaction asynchronously.
         async fn broadcast_tx_async(
             &self,
             request: tonic::Request<super::BroadcastTxAsyncRequest>,
-        ) -> Result<tonic::Response<super::BroadcastTxAsyncResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::BroadcastTxAsyncResponse>,
+            tonic::Status,
+        >;
         /// Broadcast a transaction synchronously.
         async fn broadcast_tx_sync(
             &self,
             request: tonic::Request<super::BroadcastTxSyncRequest>,
-        ) -> Result<tonic::Response<super::BroadcastTxSyncResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::BroadcastTxSyncResponse>,
+            tonic::Status,
+        >;
         /// Fetch a transaction by hash.
         async fn get_tx(
             &self,
             request: tonic::Request<super::GetTxRequest>,
-        ) -> Result<tonic::Response<super::GetTxResponse>, tonic::Status>;
+        ) -> std::result::Result<tonic::Response<super::GetTxResponse>, tonic::Status>;
         /// ABCIQuery defines a query handler that supports ABCI queries directly to the
         /// application, bypassing Tendermint completely. The ABCI query must contain
         /// a valid and supported path, including app, custom, p2p, and store.
         async fn abci_query(
             &self,
             request: tonic::Request<super::AbciQueryRequest>,
-        ) -> Result<tonic::Response<super::AbciQueryResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::AbciQueryResponse>,
+            tonic::Status,
+        >;
         /// GetBlockByHeight queries block for given height.
         async fn get_block_by_height(
             &self,
             request: tonic::Request<super::GetBlockByHeightRequest>,
-        ) -> Result<tonic::Response<super::GetBlockByHeightResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::GetBlockByHeightResponse>,
+            tonic::Status,
+        >;
     }
     /// Defines the gRPC query service for proxying requests to an upstream Tendermint RPC.
     #[derive(Debug)]
@@ -437,6 +531,8 @@ pub mod tendermint_proxy_service_server {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
+        max_decoding_message_size: Option<usize>,
+        max_encoding_message_size: Option<usize>,
     }
     struct _Inner<T>(Arc<T>);
     impl<T: TendermintProxyService> TendermintProxyServiceServer<T> {
@@ -449,6 +545,8 @@ pub mod tendermint_proxy_service_server {
                 inner,
                 accept_compression_encodings: Default::default(),
                 send_compression_encodings: Default::default(),
+                max_decoding_message_size: None,
+                max_encoding_message_size: None,
             }
         }
         pub fn with_interceptor<F>(
@@ -472,6 +570,22 @@ pub mod tendermint_proxy_service_server {
             self.send_compression_encodings.enable(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.max_decoding_message_size = Some(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.max_encoding_message_size = Some(limit);
+            self
+        }
     }
     impl<T, B> tonic::codegen::Service<http::Request<B>>
     for TendermintProxyServiceServer<T>
@@ -486,7 +600,7 @@ pub mod tendermint_proxy_service_server {
         fn poll_ready(
             &mut self,
             _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        ) -> Poll<std::result::Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -508,13 +622,15 @@ pub mod tendermint_proxy_service_server {
                             &mut self,
                             request: tonic::Request<super::GetStatusRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move { (*inner).get_status(request).await };
                             Box::pin(fut)
                         }
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -524,6 +640,10 @@ pub mod tendermint_proxy_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -546,7 +666,7 @@ pub mod tendermint_proxy_service_server {
                             &mut self,
                             request: tonic::Request<super::BroadcastTxAsyncRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).broadcast_tx_async(request).await
                             };
@@ -555,6 +675,8 @@ pub mod tendermint_proxy_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -564,6 +686,10 @@ pub mod tendermint_proxy_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -586,7 +712,7 @@ pub mod tendermint_proxy_service_server {
                             &mut self,
                             request: tonic::Request<super::BroadcastTxSyncRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).broadcast_tx_sync(request).await
                             };
@@ -595,6 +721,8 @@ pub mod tendermint_proxy_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -604,6 +732,10 @@ pub mod tendermint_proxy_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -625,13 +757,15 @@ pub mod tendermint_proxy_service_server {
                             &mut self,
                             request: tonic::Request<super::GetTxRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move { (*inner).get_tx(request).await };
                             Box::pin(fut)
                         }
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -641,6 +775,10 @@ pub mod tendermint_proxy_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -663,13 +801,15 @@ pub mod tendermint_proxy_service_server {
                             &mut self,
                             request: tonic::Request<super::AbciQueryRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move { (*inner).abci_query(request).await };
                             Box::pin(fut)
                         }
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -679,6 +819,10 @@ pub mod tendermint_proxy_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -701,7 +845,7 @@ pub mod tendermint_proxy_service_server {
                             &mut self,
                             request: tonic::Request<super::GetBlockByHeightRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).get_block_by_height(request).await
                             };
@@ -710,6 +854,8 @@ pub mod tendermint_proxy_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -719,6 +865,10 @@ pub mod tendermint_proxy_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -747,12 +897,14 @@ pub mod tendermint_proxy_service_server {
                 inner,
                 accept_compression_encodings: self.accept_compression_encodings,
                 send_compression_encodings: self.send_compression_encodings,
+                max_decoding_message_size: self.max_decoding_message_size,
+                max_encoding_message_size: self.max_encoding_message_size,
             }
         }
     }
     impl<T: TendermintProxyService> Clone for _Inner<T> {
         fn clone(&self) -> Self {
-            Self(self.0.clone())
+            Self(Arc::clone(&self.0))
         }
     }
     impl<T: std::fmt::Debug> std::fmt::Debug for _Inner<T> {

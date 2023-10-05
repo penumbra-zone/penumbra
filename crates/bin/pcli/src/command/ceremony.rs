@@ -14,6 +14,9 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use url::Url;
 
+/// 100 MIB
+const MAX_MESSAGE_SIZE: usize = 100 * 1024 * 1024;
+
 #[derive(Debug, clap::Subcommand)]
 pub enum CeremonyCmd {
     /// Contribute to the ceremony
@@ -46,7 +49,7 @@ impl CeremonyCmd {
                     })
                     .await?;
                 let mut client =
-                    CeremonyCoordinatorServiceClient::connect(coordinator_url.to_string()).await?;
+                    CeremonyCoordinatorServiceClient::connect(coordinator_url.to_string()).await?.max_decoding_message_size(MAX_MESSAGE_SIZE).max_encoding_message_size(MAX_MESSAGE_SIZE);
                 let mut response_rx = client
                     .participate(ReceiverStream::new(req_rx))
                     .await?
