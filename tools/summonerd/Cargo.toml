@@ -1,5 +1,5 @@
 [package]
-name = "psumcoordd"
+name = "summonerd"
 version = "0.60.0"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"

@@ -6301,35 +6301,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "psumcoordd"
-version = "0.60.0"
-dependencies = [
- "anyhow",
- "atty",
- "bytes",
- "camino",
- "clap 3.2.25",
- "console-subscriber",
- "futures",
- "http-body",
- "metrics-tracing-context",
- "penumbra-keys",
- "penumbra-proof-setup",
- "penumbra-proto",
- "penumbra-view",
- "rand 0.8.5",
- "tokio",
- "tokio-stream",
- "tonic",
- "tonic-web",
- "tower",
- "tracing",
- "tracing-subscriber 0.3.17",
- "url",
- "vergen",
-]
-
-[[package]]
 name = "quanta"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7601,6 +7572,35 @@ name = "subtle-ng"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
+
+[[package]]
+name = "summonerd"
+version = "0.60.0"
+dependencies = [
+ "anyhow",
+ "atty",
+ "bytes",
+ "camino",
+ "clap 3.2.25",
+ "console-subscriber",
+ "futures",
+ "http-body",
+ "metrics-tracing-context",
+ "penumbra-keys",
+ "penumbra-proof-setup",
+ "penumbra-proto",
+ "penumbra-view",
+ "rand 0.8.5",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-web",
+ "tower",
+ "tracing",
+ "tracing-subscriber 0.3.17",
+ "url",
+ "vergen",
+]
 
 [[package]]
 name = "syn"

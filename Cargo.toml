@@ -48,7 +48,7 @@ members = [
   "crates/test/tct-property-test",
   "crates/misc/measure",
   "crates/misc/tct-visualize",
-  "tools/psumcoordd",
+  "tools/summonerd",
 ]
 
 # Optimize for small binaries in just the wasm crate.
