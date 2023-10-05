@@ -82,11 +82,11 @@ impl SnapshotCache {
 
 #[cfg(test)]
 mod test {
-    use std::vec;
 
     use crate::snapshot::Snapshot;
     use crate::snapshot_cache::SnapshotCache;
     use crate::storage::Storage;
+    use crate::store::multistore::MultistoreConfig;
 
     async fn create_storage_instance() -> Storage {
         use tempfile::tempdir;
@@ -109,7 +109,7 @@ mod test {
 
         // Check that the cache has a capacity at least 1
         assert!(cache.get(u64::MAX).is_some());
-        let new_snapshot = Snapshot::new(db, 0, vec![]);
+        let new_snapshot = Snapshot::new(db, 0, MultistoreConfig::default());
         cache
             .try_push(new_snapshot)
             .expect("should not fail to insert a new entry");
@@ -126,7 +126,7 @@ mod test {
         let db_handle = storage.db();
         let snapshot = storage.latest_snapshot();
         let mut cache = SnapshotCache::new(snapshot, 1);
-        let stale_snapshot = Snapshot::new(db_handle, 1, vec![]);
+        let stale_snapshot = Snapshot::new(db_handle, 1, MultistoreConfig::default());
         cache
             .try_push(stale_snapshot)
             .expect_err("should fail to insert a stale entry in the snapshot cache");
@@ -137,9 +137,9 @@ mod test {
     async fn fail_insert_gapped_snapshot() {
         let storage = create_storage_instance().await;
         let db_handle = storage.db();
-        let snapshot = Snapshot::new(db_handle.clone(), 0, vec![]);
+        let snapshot = Snapshot::new(db_handle.clone(), 0, MultistoreConfig::default());
         let mut cache = SnapshotCache::new(snapshot, 2);
-        let snapshot = Snapshot::new(db_handle, 2, vec![]);
+        let snapshot = Snapshot::new(db_handle, 2, MultistoreConfig::default());
         cache
             .try_push(snapshot)
             .expect_err("should fail to insert snapshot with skipped version number");
@@ -157,7 +157,7 @@ mod test {
 
         // Fill the entire cache by inserting 9 more entries.
         for i in 0..9 {
-            let snapshot = Snapshot::new(db_handle.clone(), i, vec![]);
+            let snapshot = Snapshot::new(db_handle.clone(), i, MultistoreConfig::default());
             cache
                 .try_push(snapshot)
                 .expect("should not fail to insert a new entry");
@@ -168,7 +168,7 @@ mod test {
 
         // Push another snapshot in the cache, this should cause eviction of the oldest entry
         // alone.
-        let new_snapshot = Snapshot::new(db_handle, 9, vec![]);
+        let new_snapshot = Snapshot::new(db_handle, 9, MultistoreConfig::default());
         cache
             .try_push(new_snapshot)
             .expect("should not fail to insert a new entry");
@@ -187,14 +187,14 @@ mod test {
     async fn drop_oldest_snapshot() {
         let storage = create_storage_instance().await;
         let db_handle = storage.db();
-        let snapshot = Snapshot::new(db_handle.clone(), 0, vec![]);
+        let snapshot = Snapshot::new(db_handle.clone(), 0, MultistoreConfig::default());
 
         // Create a cache of size 10, populated with a snapshot at version 0.
         let mut cache = SnapshotCache::new(snapshot, 10);
 
         // Saturate the cache by inserting 9 more entries.
         for i in 1..10 {
-            let snapshot = Snapshot::new(db_handle.clone(), i, vec![]);
+            let snapshot = Snapshot::new(db_handle.clone(), i, MultistoreConfig::default());
             cache
                 .try_push(snapshot)
                 .expect("should be able to insert new entries")
@@ -204,7 +204,7 @@ mod test {
         assert!(cache.get(0).is_some());
 
         // Insert a new value that should overflow the cache.
-        let snapshot = Snapshot::new(db_handle, 10, vec![]);
+        let snapshot = Snapshot::new(db_handle, 10, MultistoreConfig::default());
         cache
             .try_push(snapshot)
             .expect("should be able to insert a new entry");

@@ -13,7 +13,7 @@ use tracing::Span;
 
 use crate::{
     storage::{DbNodeKey, VersionedKeyHash},
-    store::{self, multistore::Multistore, substore::SubstoreSnapshot},
+    store::{self, multistore::MultistoreConfig, substore::SubstoreSnapshot},
     utils, StateRead,
 };
 
@@ -45,7 +45,7 @@ impl std::fmt::Debug for Snapshot {
 // We don't want to expose the `TreeReader` implementation outside of this crate.
 #[derive(Debug)]
 pub(crate) struct Inner {
-    pub(crate) multistore: Multistore,
+    pub(crate) multistore: MultistoreConfig,
     pub(crate) snapshot: RocksDbSnapshot,
     pub(crate) version: jmt::Version,
     // Used to retrieve column family handles.
@@ -57,18 +57,13 @@ impl Snapshot {
     pub(crate) fn new(
         db: Arc<rocksdb::DB>,
         version: jmt::Version,
-        mut substore_configs: Vec<Arc<store::substore::SubstoreConfig>>,
+        multistore: MultistoreConfig,
     ) -> Self {
-        if substore_configs.is_empty() {
-            let transparent_config = store::substore::SubstoreConfig::transparent_store();
-            substore_configs.push(Arc::new(transparent_config));
-        }
-
         Self(Arc::new(Inner {
             snapshot: RocksDbSnapshot::new(db.clone()),
             version,
             db,
-            multistore: Multistore::new(substore_configs),
+            multistore,
         }))
     }
 
@@ -196,7 +191,7 @@ impl StateRead for Snapshot {
         let span = Span::current();
         let inner = self.0.clone();
         let snapshot = self.clone();
-        let (key, substore_config) = inner.multistore.route_key(key);
+        let (key, substore_config) = inner.multistore.route_key_bytes(key);
         let substore = store::substore::SubstoreSnapshot {
             config: substore_config,
             snapshot: self.clone(),
@@ -234,7 +229,7 @@ impl StateRead for Snapshot {
         options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
         let mode = rocksdb::IteratorMode::Start;
 
-        let (_, substore_config) = self.0.multistore.route_key(prefix.as_bytes());
+        let (_, substore_config) = self.0.multistore.route_key_bytes(prefix.as_bytes());
         let snapshot = self.clone();
 
         let (tx_prefix_item, rx_prefix_query) = mpsc::channel(10);
@@ -330,7 +325,7 @@ impl StateRead for Snapshot {
         let span = Span::current();
         let snapshot = self.clone();
 
-        let (prefix, config) = self.0.multistore.route_key(prefix);
+        let (prefix, config) = self.0.multistore.route_key_bytes(prefix);
         let mut options = rocksdb::ReadOptions::default();
         options.set_iterate_range(rocksdb::PrefixRange(prefix));
         let mode = rocksdb::IteratorMode::Start;
@@ -373,7 +368,10 @@ impl StateRead for Snapshot {
         let span = Span::current();
         let snapshot = self.clone();
 
-        let (prefix, config) = self.0.multistore.route_key(prefix.unwrap_or_default());
+        let (prefix, config) = self
+            .0
+            .multistore
+            .route_key_bytes(prefix.unwrap_or_default());
         let (_range, (start, end)) = utils::convert_bounds(range)?;
         let mut options = rocksdb::ReadOptions::default();
 

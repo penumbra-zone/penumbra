@@ -12,7 +12,12 @@ use rocksdb::{Options, DB};
 use tokio::sync::watch;
 use tracing::Span;
 
-use crate::{cache::Cache, snapshot::Snapshot, store::substore::SubstoreConfig, EscapedByteSlice};
+use crate::{
+    cache::Cache,
+    snapshot::Snapshot,
+    store::{multistore::MultistoreConfig, substore::SubstoreConfig},
+    EscapedByteSlice,
+};
 use crate::{snapshot_cache::SnapshotCache, StateDelta};
 
 mod temp;
@@ -36,7 +41,7 @@ struct Inner {
     tx_dispatcher: watch::Sender<Snapshot>,
     tx_state: Arc<watch::Sender<Snapshot>>,
     snapshots: RwLock<SnapshotCache>,
-    substore_configs: Vec<Arc<SubstoreConfig>>,
+    multistore_config: MultistoreConfig,
     #[allow(dead_code)]
     /// A handle to the dispatcher task.
     jh_dispatcher: Option<tokio::task::JoinHandle<()>>,
@@ -47,7 +52,7 @@ impl Storage {
     /// Initializes a new storage instance at the given path, along with a substore
     /// defined by each of the provided prefixes.
     /// TODO: potentially restore the `impl IntoIterator` if it makes sense later in the pr.
-    pub async fn init(path: PathBuf, store_prefixes: Vec<String>) -> Result<Self> {
+    pub async fn init(path: PathBuf, substore_prefixes: Vec<String>) -> Result<Self> {
         let span = Span::current();
 
         tokio::task::Builder::new()
@@ -59,21 +64,31 @@ impl Storage {
                     opts.create_if_missing(true);
                     opts.create_missing_column_families(true);
 
-                    let mut store_configs = Vec::new();
+                    let mut substore_configs = Vec::new();
                     tracing::info!("initializing global store config");
-                    store_configs.push(Arc::new(SubstoreConfig::transparent_store()));
-                    for substore_prefix in store_prefixes {
+                    let root_store = SubstoreConfig::root_store();
+                    for substore_prefix in substore_prefixes {
                         tracing::info!(?substore_prefix, "initializing substore");
                         if substore_prefix.is_empty() {
                             bail!("the empty prefix is reserved")
                         }
-                        store_configs.push(Arc::new(SubstoreConfig::new(substore_prefix)));
+                        substore_configs.push(Arc::new(SubstoreConfig::new(substore_prefix)));
                     }
 
-                    let columns: Vec<String> = store_configs
+                    let multistore_config = MultistoreConfig {
+                        root_store: Arc::new(root_store),
+                        substores: substore_configs.clone(),
+                    };
+
+                    let mut columns: Vec<&String> =
+                        multistore_config.root_store.columns().collect();
+
+                    let mut substore_columns: Vec<&String> = substore_configs
                         .iter()
-                        .flat_map(|config| config.columns().map(Clone::clone))
+                        .flat_map(|config| config.columns())
                         .collect();
+
+                    columns.append(&mut substore_columns);
 
                     let db = Arc::new(DB::open_cf(&opts, path, columns)?);
 
@@ -82,7 +97,7 @@ impl Storage {
                     let jmt_version = latest_version(db.as_ref())?.unwrap_or(u64::MAX);
 
                     let latest_snapshot =
-                        Snapshot::new(db.clone(), jmt_version, store_configs.clone());
+                        Snapshot::new(db.clone(), jmt_version, MultistoreConfig::default());
 
                     // A concurrent-safe ring buffer of the latest 10 snapshots.
                     let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot.clone(), 10));
@@ -125,7 +140,7 @@ impl Storage {
                         tx_dispatcher,
                         tx_state,
                         snapshots,
-                        substore_configs: store_configs,
+                        multistore_config,
                         db,
                     })))
                 })
@@ -255,7 +270,7 @@ impl Storage {
                         return Ok(root_hash);
                     }
 
-                    let latest_snapshot = Snapshot::new(inner.db.clone(), new_version, inner.substore_configs.clone());
+                    let latest_snapshot = Snapshot::new(inner.db.clone(), new_version, inner.multistore_config.clone());
                     // Obtain a write lock to the snapshot cache, and push the latest snapshot
                     // available. The lock guard is implicitly dropped immediately.
                     inner

@@ -54,7 +54,7 @@ impl SubstoreConfig {
         }
     }
 
-    pub fn transparent_store() -> Self {
+    pub fn root_store() -> Self {
         Self {
             // TODO: harmonize cf format throughout.
             cf_jmt: "jmt".to_string(),
@@ -67,7 +67,7 @@ impl SubstoreConfig {
     }
 
     /// Returns an iterator over all column families in this substore.
-    /// This is verbose, but simple.
+    /// This is verbose, but very lightweight.
     pub fn columns(&self) -> impl Iterator<Item = &String> {
         std::iter::once(&self.cf_jmt)
             .chain(std::iter::once(&self.cf_jmt_keys))
