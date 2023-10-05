@@ -10,6 +10,7 @@ use penumbra_proto::DomainType;
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note};
 use serde::{Deserialize, Serialize};
+use web_sys::IdbTransactionMode::Readwrite;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IndexedDbConstants {
@@ -126,7 +127,14 @@ impl IndexedDBStorage {
     }
 
     pub async fn store_advice(&self, note: Note) -> WasmResult<()> {
-        let tx = self.db.transaction_on_one(&self.constants.tables.notes)?;
+        // Do not insert advice for zero amounts, simply return Ok because this is fine
+        if u128::from(note.amount()) == 0u128 {
+            return Ok(());
+        }
+
+        let tx = self
+            .db
+            .transaction_on_one_with_mode(&self.constants.tables.notes, Readwrite)?;
         let store = tx.object_store(&self.constants.tables.notes)?;
 
         let note_proto: penumbra_proto::core::component::shielded_pool::v1alpha1::Note =
@@ -135,9 +143,13 @@ impl IndexedDBStorage {
 
         let commitment_proto = note.commit().to_proto();
 
-        let commitment_js = serde_wasm_bindgen::to_value(&commitment_proto)?;
-
-        store.put_key_val_owned(commitment_js, &note_js)?;
+        store.put_key_val_owned(
+            base64::Engine::encode(
+                &base64::engine::general_purpose::STANDARD,
+                commitment_proto.inner,
+            ),
+            &note_js,
+        )?;
 
         Ok(())
     }
@@ -148,10 +160,11 @@ impl IndexedDBStorage {
 
         let commitment_proto = commitment.to_proto();
 
-        let commitment_js = serde_wasm_bindgen::to_value(&commitment_proto)?;
-
         Ok(store
-            .get_owned(commitment_js)?
+            .get_owned(base64::Engine::encode(
+                &base64::engine::general_purpose::STANDARD,
+                commitment_proto.inner,
+            ))?
             .await?
             .map(serde_wasm_bindgen::from_value)
             .transpose()?)
