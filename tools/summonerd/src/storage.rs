@@ -1,17 +1,22 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use camino::Utf8Path;
 use penumbra_keys::Address;
-use penumbra_proof_setup::all::{Phase2CeremonyCRS, Phase2CeremonyContribution};
+use penumbra_proof_setup::all::{
+    Phase2CeremonyCRS, Phase2CeremonyContribution, Phase2RawCeremonyCRS,
+    Phase2RawCeremonyContribution,
+};
+use penumbra_proto::{
+    penumbra::tools::summoning::v1alpha1::{
+        self as pb, participate_request::Contribution as PBContribution,
+    },
+    Message,
+};
 use r2d2_sqlite::{rusqlite::OpenFlags, SqliteConnectionManager};
-use tokio::sync::Mutex;
 use tokio::task::spawn_blocking;
 
 #[derive(Clone)]
 pub struct Storage {
     pool: r2d2::Pool<SqliteConnectionManager>,
-    crs: Arc<Mutex<Phase2CeremonyCRS>>,
 }
 
 impl Storage {
@@ -35,15 +40,16 @@ impl Storage {
 
             // Create the tables
             tx.execute_batch(include_str!("storage/schema.sql"))?;
+            // TODO: Remove this in favor of a specific command for initializing root
+            let root = Phase2CeremonyCRS::root()?;
+            tx.execute(
+                "INSERT INTO phase2_contributions VALUES (0, 1, ?1, NULL)",
+                [pb::CeremonyCrs::try_from(root)?.encode_to_vec()],
+            )?;
 
             tx.commit()?;
-            drop(conn);
 
-            let root = Phase2CeremonyCRS::root()?;
-            Ok(Storage {
-                pool,
-                crs: Arc::new(Mutex::new(root.clone())),
-            })
+            Ok(Storage { pool })
         })
         .await?
     }
@@ -65,10 +71,8 @@ impl Storage {
     }
 
     pub async fn load(path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
-        let root: Phase2CeremonyCRS = Phase2CeremonyCRS::root()?;
         let storage = Self {
             pool: Self::connect(path)?,
-            crs: Arc::new(Mutex::new(root.clone())),
         };
 
         Ok(storage)
@@ -83,22 +87,42 @@ impl Storage {
     }
 
     pub async fn current_crs(&self) -> Result<Phase2CeremonyCRS> {
-        Ok(self.crs.lock().await.clone())
+        let mut conn = self.pool.get()?;
+        let tx = conn.transaction()?;
+        let (is_root, contribution_or_crs) = tx.query_row(
+            "SELECT is_root, contribution_or_crs FROM phase2_contributions ORDER BY slot DESC LIMIT 1",
+            [],
+            |row| Ok((row.get::<usize, bool>(0)?, row.get::<usize, Vec<u8>>(1)?)),
+        )?;
+        let crs = if is_root {
+            Phase2RawCeremonyCRS::try_from(pb::CeremonyCrs::decode(
+                contribution_or_crs.as_slice(),
+            )?)?
+            .assume_valid()
+        } else {
+            Phase2RawCeremonyContribution::try_from(PBContribution::decode(
+                contribution_or_crs.as_slice(),
+            )?)?
+            .assume_valid()
+            .new_elements()
+        };
+        Ok(crs)
     }
 
-    // TODO: Add other stuff here
     pub async fn commit_contribution(
         &self,
         contributor: Address,
-        contribution: &Phase2CeremonyContribution,
+        contribution: Phase2CeremonyContribution,
     ) -> Result<()> {
-        *self.crs.lock().await = contribution.new_elements();
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let contributor_bytes = contributor.to_vec();
         tx.execute(
-            "INSERT INTO phase2_contributions VALUES(NULL, ?1)",
-            [contributor_bytes],
+            "INSERT INTO phase2_contributions VALUES(NULL, 0, ?1, ?2)",
+            [
+                PBContribution::try_from(contribution)?.encode_to_vec(),
+                contributor_bytes,
+            ],
         )?;
         tx.commit()?;
         Ok(())
@@ -113,5 +137,19 @@ impl Storage {
             })?
             .unwrap_or(0);
         Ok(out)
+    }
+
+    pub async fn root(&self) -> Result<Phase2CeremonyCRS> {
+        let mut conn = self.pool.get()?;
+        let tx = conn.transaction()?;
+        let data = tx.query_row(
+            "SELECT contribution_or_crs FROM phase2_contributions WHERE is_root LIMIT 1",
+            [],
+            |row| row.get::<usize, Vec<u8>>(0),
+        )?;
+        Ok(Phase2RawCeremonyCRS::try_from(pb::CeremonyCrs::decode(
+            data.as_slice(),
+        )?)?
+        .assume_valid())
     }
 }

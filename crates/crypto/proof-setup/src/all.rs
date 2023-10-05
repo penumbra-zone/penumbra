@@ -109,11 +109,11 @@ impl From<Phase2CeremonyCRS> for Phase2RawCeremonyCRS {
     }
 }
 
-impl TryInto<pb::CeremonyCrs> for Phase2CeremonyCRS {
+impl TryFrom<Phase2CeremonyCRS> for pb::CeremonyCrs {
     type Error = anyhow::Error;
 
-    fn try_into(self) -> Result<pb::CeremonyCrs> {
-        Phase2RawCeremonyCRS::from(self).try_into()
+    fn try_from(data: Phase2CeremonyCRS) -> Result<pb::CeremonyCrs> {
+        Phase2RawCeremonyCRS::from(data).try_into()
     }
 }
 
@@ -413,11 +413,11 @@ impl From<Phase2CeremonyContribution> for Phase2RawCeremonyContribution {
     }
 }
 
-impl TryInto<pb::participate_request::Contribution> for Phase2CeremonyContribution {
+impl TryFrom<Phase2CeremonyContribution> for pb::participate_request::Contribution {
     type Error = anyhow::Error;
 
-    fn try_into(self) -> Result<pb::participate_request::Contribution> {
-        Phase2RawCeremonyContribution::from(self).try_into()
+    fn try_from(data: Phase2CeremonyContribution) -> Result<pb::participate_request::Contribution> {
+        Phase2RawCeremonyContribution::from(data).try_into()
     }
 }
 
