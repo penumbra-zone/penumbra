@@ -36,18 +36,11 @@ releases:
           tag: latest
       # Communicate intra-cluster to the private validator rpc address.
       - penumbra_bootstrap_node_cometbft_rpc_url: "http://penumbra-testnet-val-0:26657"
-      - nodes:
-          # We intentionally exclude external IPs in this declaration, but include them
-          # in the external vars/ file, which is generated via `./scripts/get-lb-ips penumbra-devnet`.
-          - moniker: phobos
-          - moniker: deimos
-          - moniker: naiad
-          - moniker: thalassa
       - persistence:
           enabled: true
           size: 100G
       - part_of: penumbra-testnet
-      # empty vars file for storing external ips
+      # Node config info, including ip address, monikers, and seed-mode status.
       - vars/penumbra-testnet-nodes-ips.yml
 
   - name: penumbra-testnet-metrics

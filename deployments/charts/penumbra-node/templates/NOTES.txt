@@ -1,5 +1,7 @@
-Penumbra full node has been deployed!
-{{- if .Values.ingressRoute.enabled }}
+Penumbra full node config has been deployed!
+{{- $count := (.Values.nodes | len | int) }}
+Total count of fullnodes: {{ $count }}
+{{ if .Values.ingressRoute.enabled }}
 You can access the pd gRPC service here:
 
   https://{{.Values.ingressRoute.hosts.pd }}

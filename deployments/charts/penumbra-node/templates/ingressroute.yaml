@@ -15,19 +15,31 @@ spec:
   - kind: Rule
     match: Host(`{{ .Values.ingressRoute.hosts.pd }}`)
     services:
+{{- /*
+Skip nodes with seed_mode=true when looping over nodes, to exclude from LB RPCs.
+Otherwise, RPC can return surprising results, like very low numbers of peers.
+*/}}
 {{- range $i,$e := until $count }}
+{{- $seed_mode := (index $.Values.nodes $i).seed_mode | default false }}
+{{- if $seed_mode }}
+{{- else }}
 {{ $fn_name := printf "%s-fn-%d" $.Release.Name $i }}
     - name: {{ $fn_name }}
       port: 8080
       scheme: h2c
 {{- end }}
+{{- end }}
   - kind: Rule
     match: Host(`{{ .Values.ingressRoute.hosts.tm }}`)
     services:
 {{- range $i,$e := until $count }}
+{{- $seed_mode := (index $.Values.nodes $i).seed_mode | default false }}
+{{- if $seed_mode }}
+{{- else }}
 {{ $fn_name := printf "%s-fn-%d" $.Release.Name $i }}
     - name: {{ $fn_name }}
       port: 26657
+{{- end }}
 {{- end }}
   tls:
     domains:

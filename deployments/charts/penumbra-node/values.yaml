@@ -50,10 +50,13 @@ cometbft:
 #
 #   - moniker
 #   - external_address
+#   - seed_mode
 #
+# Nodes with seed_mode=true will be excluded from the ingress.
 nodes:
   - moniker: ididntedittheconfig
     external_address: ""
+    seed_mode: false
 
 # Custom label for aggregating network, nodes, and metrics into a cohesive deployment.
 # Maps to the 'app.kubernetes.io/part-of' label.
