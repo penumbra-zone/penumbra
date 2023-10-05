@@ -4,11 +4,11 @@ mod server;
 mod storage;
 
 use anyhow::Result;
+use camino::Utf8PathBuf;
 use clap::Parser;
 use console_subscriber::ConsoleLayer;
 use coordinator::Coordinator;
 use metrics_tracing_context::MetricsLayer;
-use penumbra_proof_setup::all::Phase2CeremonyCRS;
 use penumbra_proto::tools::summoning::v1alpha1::ceremony_coordinator_service_server::CeremonyCoordinatorServiceServer;
 use std::net::SocketAddr;
 use storage::Storage;
@@ -39,6 +39,8 @@ struct Opt {
 enum Command {
     /// Start the coordinator.
     Start {
+        #[clap(long, display_order = 800)]
+        storage_path: Utf8PathBuf,
         #[clap(long, display_order = 900, default_value = "127.0.0.1:8081")]
         listen: SocketAddr,
     },
@@ -47,9 +49,13 @@ enum Command {
 impl Opt {
     async fn exec(self) -> Result<()> {
         match self.cmd {
-            Command::Start { listen } => {
-                let root = Phase2CeremonyCRS::root()?;
-                let storage = Storage::new(root);
+            Command::Start {
+                listen,
+                storage_path,
+            } => {
+                //let root = Phase2CeremonyCRS::root()?;
+                //let storage = Storage::new(root);
+                let storage = Storage::load_or_initialize(storage_path).await?;
                 let (coordinator, participant_tx) = Coordinator::new(storage.clone());
                 let coordinator_handle = tokio::spawn(coordinator.run());
                 let service = CoordinatorService::new(storage, participant_tx);
