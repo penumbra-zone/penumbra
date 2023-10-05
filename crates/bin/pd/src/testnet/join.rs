@@ -155,9 +155,14 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
     // We'll look for a handful of peers and use those in our config.
     // We don't want to naively add all of the bootstrap node's peers,
     // instead trusting gossip to find peers dynamically over time.
+    // We'll also special-case nodes that contain the string "seed" in their moniker:
+    // those nodes should be assumed to seed nodes. This is optimistic, but should result
+    // in more solid peering behavior than the previous strategy of declaring all fullnodes
+    // as seeds within the joining node's CometBFT config.
     let threshold = 5;
-
     let mut peers = Vec::new();
+    let mut seeds = Vec::new();
+
     for raw_peer in net_info_peers {
         tracing::debug!(?raw_peer, "Analyzing whether to include candidate peer");
         let node_id: tendermint::node::Id = raw_peer
@@ -177,6 +182,14 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
             // Remove it so we can treat it as a SocketAddr when checking for internal/external.
             .replace("tcp://", "");
 
+        let moniker = raw_peer
+            .get("node_info")
+            .and_then(|v| v.get("moniker"))
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                anyhow::anyhow!("Could not parse node_info.moniker from JSON response")
+            })?;
+
         // Filter out addresses that are obviously not external addresses.
         if !address_could_be_external(&listen_addr) {
             tracing::debug!(
@@ -185,7 +198,6 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
             );
             continue;
         }
-
         // The API returns a str formatted as a SocketAddr; prepend protocol so we can handle
         // as a URL. The Tendermint config template already includes the tcp:// prefix.
         let laddr = format!("tcp://{}", listen_addr);
@@ -194,19 +206,30 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
             listen_addr
         ))?;
         let peer_tm_address = parse_tm_address(Some(&node_id), &listen_url)?;
-        peers.push(peer_tm_address);
-        if peers.len() >= threshold {
-            tracing::debug!(?threshold, "Found desired number of initial peers");
-            break;
+        // A bit of optimism: any node with "seed" in its moniker gets to be a seed.
+        if moniker.contains("seed") {
+            tracing::debug!(
+                ?peer_tm_address,
+                moniker,
+                "Found self-described seed node in candidate peers"
+            );
+            seeds.push(peer_tm_address)
+        // Otherwise, we check if we've found enough.
+        } else {
+            if peers.len() <= threshold {
+                peers.push(peer_tm_address)
+            }
         }
     }
-    if peers.len() < threshold {
+    if peers.len() < threshold && seeds.is_empty() {
         tracing::warn!(
-            "bootstrap node reported only {} peers; we may have trouble peering",
+            "bootstrap node reported only {} peers, and 0 seeds; we may have trouble peering",
             peers.len(),
         );
     }
-    Ok(peers)
+    // TODO handle seeds and peers differently. For now, all peers are used as seeds.
+    seeds.extend(peers);
+    Ok(seeds)
 }
 
 /// Check whether SocketAddress spec is likely to be externally-accessible.

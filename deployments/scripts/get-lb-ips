@@ -11,6 +11,11 @@ if [[ $# -lt 1 ]] ; then
     exit 1
 fi
 
+# Declare monikers for nodes on the network.
+# These monikers will be added to the generated vars file,
+# alongside the IP info.
+node_names=(phobos-seed deimos naid thalassa)
+
 HELM_RELEASE="${1:-}"
 shift 1
 vars_file="${PWD}/helmfile.d/vars/${HELM_RELEASE}-ips.yml"
@@ -42,8 +47,19 @@ printf ' done!\n'
 # This format is very specific to values format required by the given Helm chart.
 function generate_yaml_penumbra_nodes() {
     printf 'nodes:\n'
-    while read -r i ; do
-        printf '  - external_address: %s:26656\n' "$i"
+    counter=0
+    while read -r ip_addr ; do
+        node_name="${node_names[$counter]}"
+        cat <<EOF
+  - external_address: ${ip_addr}:26656
+    moniker: ${node_names[$counter]}
+EOF
+    # Special handling for seed nodes: if moniker declares it's a seed,
+    # it's a seed.
+    if [[ $node_name =~ seed ]] ; then
+        printf '    seed_mode: true\n'
+    fi
+    counter="$(( counter + 1 ))"
     done <<< "$ip_info"
 }
 

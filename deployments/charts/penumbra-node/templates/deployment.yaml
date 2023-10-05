@@ -32,8 +32,9 @@ spec:
         {{- end }}
         {{- include "penumbra-node.selectorLabels" $ | nindent 8 }}
     spec:
-      # Force the pods to different k8s nodes, so that egress ip is unique per Tendermint node.
+      # Force the pods to different k8s nodes, so that egress ip is unique per CometBFT node.
       # Effectively limits the number of Penumbra nodes to the number of k8s nodes in the cluster.
+      # Setting `allow_duplicate_ip=true` in CometBFT config removes this constraint.
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -115,6 +116,12 @@ spec:
               # configure peer settings
               sed -i -e 's/max_num_inbound_peers.*/max_num_inbound_peers = {{ $.Values.cometbft.config.p2p.max_num_inbound_peers | int }}/' /penumbra-config/testnet_data/node0/cometbft/config/config.toml
               sed -i -e 's/max_num_outbound_peers.*/max_num_outbound_peers = {{ $.Values.cometbft.config.p2p.max_num_outbound_peers | int }}/' /penumbra-config/testnet_data/node0/cometbft/config/config.toml
+
+              # configure seed node, defaulting to false if unspecified.
+              {{- $seed_mode := (index $.Values.nodes $i).seed_mode | default false -}}
+              {{- with $moniker }}
+              sed -i -e 's/^seed_mode.*/seed_mode = {{ $seed_mode }}/' /penumbra-config/testnet_data/node0/cometbft/config/config.toml
+              {{- end }}
 
               # set ownership for cometbft configs to match cometbft container "tmuser" uid/gid
               chown -R 100:1000 /penumbra-config/testnet_data/node0/cometbft
