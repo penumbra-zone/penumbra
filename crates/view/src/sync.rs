@@ -6,6 +6,7 @@ use penumbra_chain::{
 };
 use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_dex::swap::{SwapPayload, SwapPlaintext};
+use penumbra_fee::GasPrices;
 use penumbra_keys::FullViewingKey;
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{Note, NotePayload};
@@ -22,7 +23,9 @@ pub struct FilteredBlock {
     pub spent_nullifiers: Vec<Nullifier>,
     pub height: u64,
     pub fmd_parameters: Option<FmdParameters>,
+    // TODO: needs to be AppParameters see #3107
     pub chain_parameters: Option<ChainParameters>,
+    pub gas_prices: Option<GasPrices>,
 }
 
 impl FilteredBlock {
@@ -51,6 +54,7 @@ pub async fn scan_block(
         fmd_parameters,
         swap_outputs,
         chain_parameters,
+        gas_prices,
         // TODO: do we need this, or is there a bug in scan_block?
         // proposal_started,
         ..
@@ -241,6 +245,7 @@ pub async fn scan_block(
         height,
         fmd_parameters,
         chain_parameters,
+        gas_prices,
     };
 
     Ok(result)

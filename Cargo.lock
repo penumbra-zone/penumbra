@@ -4480,6 +4480,7 @@ dependencies = [
  "penumbra-keys",
  "penumbra-num",
  "penumbra-proof-params",
+ "penumbra-proof-setup",
  "penumbra-proto",
  "penumbra-sct",
  "penumbra-shielded-pool",
@@ -4855,6 +4856,7 @@ dependencies = [
  "penumbra-chain",
  "penumbra-component",
  "penumbra-dex",
+ "penumbra-fee",
  "penumbra-proof-params",
  "penumbra-proto",
  "penumbra-sct",
@@ -5315,8 +5317,13 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "criterion 0.4.0",
  "decaf377 0.5.0",
+ "penumbra-dao",
  "penumbra-dex",
+ "penumbra-governance",
  "penumbra-proof-params",
+ "penumbra-proto",
+ "penumbra-shielded-pool",
+ "penumbra-stake",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
 ]
@@ -7566,6 +7573,35 @@ name = "subtle-ng"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
+
+[[package]]
+name = "summonerd"
+version = "0.60.0"
+dependencies = [
+ "anyhow",
+ "atty",
+ "bytes",
+ "camino",
+ "clap 3.2.25",
+ "console-subscriber",
+ "futures",
+ "http-body",
+ "metrics-tracing-context",
+ "penumbra-keys",
+ "penumbra-proof-setup",
+ "penumbra-proto",
+ "penumbra-view",
+ "rand 0.8.5",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tonic-web",
+ "tower",
+ "tracing",
+ "tracing-subscriber 0.3.17",
+ "url",
+ "vergen",
+]
 
 [[package]]
 name = "syn"

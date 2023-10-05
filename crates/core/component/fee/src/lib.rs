@@ -9,5 +9,10 @@ pub mod event;
 pub mod state_key;
 
 mod fee;
+mod gas;
+pub mod genesis;
+mod params;
 
 pub use fee::Fee;
+pub use gas::{Gas, GasPrices};
+pub use params::FeeParameters;

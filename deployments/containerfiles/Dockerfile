@@ -14,11 +14,14 @@ WORKDIR /usr/src/penumbra
 # Add rust dependency lockfiles first, to cache downloads.
 COPY Cargo.lock Cargo.toml .
 COPY crates ./crates
+# Copy in summonerd contribution orchestrator.
+COPY tools ./tools
 RUN cargo fetch
 # Unfortunately, container layer cache is busted copying in the .git
 # dir, which is required for using vergen, so we rebuild the rust
 # code from source fresh.
 COPY . .
+# Build Penumbra binaries
 RUN cargo build --release
 
 # Runtime image.
@@ -41,6 +44,7 @@ COPY --from=build-env \
             /usr/src/penumbra/target/release/pcli \
             /usr/src/penumbra/target/release/pclientd \
             /usr/src/penumbra/target/release/pd \
+            /usr/src/penumbra/target/release/summonerd \
             /usr/src/penumbra/target/release/tct-live-edit \
             /usr/bin/
 

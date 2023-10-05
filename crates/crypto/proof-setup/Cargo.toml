@@ -14,6 +14,13 @@ ark-serialize = "0.4.2"
 blake2b_simd = "0.5"
 rand_core = { version = "0.6", features = ["getrandom"] }
 decaf377 = "0.5"
+penumbra-dex = { path = "../../core/component/dex/" }
+penumbra-dao = { path = "../../core/component/dao/", features = ["component"] }
+penumbra-governance = { path = "../../core/component/governance/" }
+penumbra-proof-params = { path = "../proof-params" }
+penumbra-proto = { path = "../../proto" }
+penumbra-shielded-pool = { path = "../../core/component/shielded-pool/" }
+penumbra-stake = { path = "../../core/component/stake/", features = ["component"] }
 
 [dev-dependencies]
 ark-r1cs-std = "0.4.0"

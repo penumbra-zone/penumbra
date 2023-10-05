@@ -1,3 +1,4 @@
+mod ceremony;
 mod debug;
 mod keys;
 mod query;
@@ -13,6 +14,8 @@ pub use tx::TxCmd;
 pub use validator::ValidatorCmd;
 pub use view::transaction_hashes::TransactionHashesCmd;
 pub use view::ViewCmd;
+
+use self::ceremony::CeremonyCmd;
 
 // Note on display_order:
 //
@@ -50,6 +53,9 @@ pub enum Command {
     /// Display information related to diagnosing problems running Penumbra
     #[clap(subcommand, display_order = 999)]
     Debug(DebugCmd),
+    /// Contribute to the setup ceremony.
+    #[clap(subcommand, display_order = 800)]
+    Ceremony(CeremonyCmd),
 }
 
 impl Command {
@@ -62,6 +68,7 @@ impl Command {
             Command::Validator(cmd) => cmd.offline(),
             Command::Query(cmd) => cmd.offline(),
             Command::Debug(cmd) => cmd.offline(),
+            Command::Ceremony(_) => false,
         }
     }
 }

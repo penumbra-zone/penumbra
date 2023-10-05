@@ -9,6 +9,7 @@ use penumbra_component::Component;
 use penumbra_dao::component::StateWriteExt as _;
 use penumbra_dex::component::{Dex, SwapManager};
 use penumbra_distributions::component::Distributions;
+use penumbra_fee::component::{Fee, StateReadExt, StateWriteExt as _};
 use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
 use penumbra_ibc::component::{IBCComponent, StateWriteExt as _};
@@ -95,6 +96,7 @@ impl App {
                 state_tx
                     .put_governance_params(app_state.governance_content.governance_params.clone());
                 state_tx.put_ibc_params(app_state.ibc_content.ibc_params.clone());
+                state_tx.put_fee_params(app_state.fee_content.fee_params.clone());
 
                 // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
                 state_tx.put_current_fmd_parameters(FmdParameters::default());
@@ -128,6 +130,7 @@ impl App {
                 IBCComponent::init_chain(&mut state_tx, Some(&())).await;
                 Dex::init_chain(&mut state_tx, Some(&())).await;
                 Governance::init_chain(&mut state_tx, Some(&())).await;
+                Fee::init_chain(&mut state_tx, Some(&app_state.fee_content)).await;
             }
             genesis::AppState::Checkpoint(_) => {
                 /* perform upgrade specific check */
@@ -137,6 +140,7 @@ impl App {
                 IBCComponent::init_chain(&mut state_tx, None).await;
                 Dex::init_chain(&mut state_tx, None).await;
                 Governance::init_chain(&mut state_tx, None).await;
+                Fee::init_chain(&mut state_tx, None).await;
             }
         };
 
@@ -174,6 +178,7 @@ impl App {
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
         ShieldedPool::begin_block(&mut arc_state_tx, begin_block).await;
         Staking::begin_block(&mut arc_state_tx, begin_block).await;
+        Fee::begin_block(&mut arc_state_tx, begin_block).await;
 
         let state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
@@ -279,6 +284,7 @@ impl App {
         Governance::end_block(&mut arc_state_tx, end_block).await;
         ShieldedPool::end_block(&mut arc_state_tx, end_block).await;
         Staking::end_block(&mut arc_state_tx, end_block).await;
+        Fee::end_block(&mut arc_state_tx, end_block).await;
         let mut state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
 
@@ -329,6 +335,9 @@ impl App {
             Staking::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on Staking component");
+            Fee::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on Fee component");
 
             let mut state_tx = Arc::try_unwrap(arc_state_tx)
                 .expect("components did not retain copies of shared state");
@@ -381,6 +390,19 @@ impl App {
                     .get_chain_params()
                     .await
                     .expect("able to get chain params"),
+            )
+        } else {
+            None
+        };
+
+        // Check to see if the gas prices have changed, and include them in the compact block
+        // if they have (this is signaled by `penumbra_fee::StateWriteExt::put_gas_prices`):
+        let gas_prices = if state.gas_prices_changed() || height == 0 {
+            Some(
+                state
+                    .get_gas_prices()
+                    .await
+                    .expect("able to get gas prices"),
             )
         } else {
             None
@@ -459,6 +481,7 @@ impl App {
             swap_outputs,
             fmd_parameters,
             chain_parameters,
+            gas_prices,
         });
     }
 

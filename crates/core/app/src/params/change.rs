@@ -3,6 +3,7 @@ use std::fmt::Display;
 use anyhow::Result;
 use penumbra_chain::params::{ChainParameters, Ratio};
 use penumbra_dao::params::DaoParameters;
+use penumbra_fee::FeeParameters;
 use penumbra_governance::params::GovernanceParameters;
 use penumbra_ibc::params::IBCParameters;
 use penumbra_stake::params::StakeParameters;
@@ -48,6 +49,7 @@ impl AppParameters {
                     proposal_pass_threshold,
                     proposal_slash_threshold,
                 },
+            fee_params: FeeParameters {},
             dao_params:
                 DaoParameters {
                     dao_spend_proposals_enabled: _,
@@ -125,6 +127,7 @@ impl AppParameters {
                     proposal_pass_threshold,
                     proposal_slash_threshold,
                 },
+            fee_params: FeeParameters {},
             dao_params:
                 DaoParameters {
                     dao_spend_proposals_enabled: _,

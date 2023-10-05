@@ -9,6 +9,7 @@ CREATE TABLE app_params (bytes BLOB NOT NULL);
 CREATE TABLE fmd_parameters (bytes BLOB NOT NULL);
 CREATE TABLE full_viewing_key (bytes BLOB NOT NULL);
 CREATE TABLE sync_height (height BIGINT NOT NULL);
+CREATE TABLE gas_prices (bytes BLOB NOT NULL);
 
 -- used for storing a cache of known assets
 CREATE TABLE assets (

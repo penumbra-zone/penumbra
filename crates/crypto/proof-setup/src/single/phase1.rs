@@ -1,12 +1,13 @@
 use ark_ec::Group;
 use ark_ff::{One, UniformRand, Zero};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand_core::{CryptoRngCore, OsRng};
 
-use crate::dlog;
-use crate::group::{
+use crate::single::dlog;
+use crate::single::group::{
     pairing, BatchedPairingChecker11, BatchedPairingChecker12, GroupHasher, F, G1, G2,
 };
-use crate::log::{ContributionHash, Hashable, Phase};
+use crate::single::log::{ContributionHash, Hashable, Phase};
 
 /// Check that a given degree is high enough.
 ///
@@ -31,7 +32,7 @@ const fn long_len(d: usize) -> usize {
 }
 
 /// Raw CRS elements, not yet validated for consistency.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize, PartialEq)]
 pub struct RawCRSElements {
     pub alpha_1: G1,
     pub beta_1: G1,
@@ -168,7 +169,7 @@ impl Hashable for RawCRSElements {
 /// The CRS elements we produce in phase 1.
 ///
 /// Not all elements of the final CRS are present here.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CRSElements {
     pub(crate) degree: usize,
     pub(crate) raw: RawCRSElements,
@@ -211,7 +212,7 @@ impl Hashable for CRSElements {
 /// 1. We show that we're actually building off of the previous elements.
 /// 2. We show that we know the secret elements we're using, avoiding rogue key chicanery.
 #[derive(Clone, Copy, Debug)]
-struct LinkingProof {
+pub(crate) struct LinkingProof {
     alpha_proof: dlog::Proof,
     beta_proof: dlog::Proof,
     x_proof: dlog::Proof,
@@ -274,7 +275,7 @@ impl From<Contribution> for RawContribution {
 pub struct Contribution {
     pub parent: ContributionHash,
     pub new_elements: CRSElements,
-    linking_proof: LinkingProof,
+    pub(crate) linking_proof: LinkingProof,
 }
 
 impl Hashable for Contribution {
@@ -446,8 +447,8 @@ mod test {
 
     use rand_core::OsRng;
 
-    use crate::group::F;
-    use crate::log::CONTRIBUTION_HASH_SIZE;
+    use crate::single::group::F;
+    use crate::single::log::CONTRIBUTION_HASH_SIZE;
 
     /// The degree we use for tests.
     ///

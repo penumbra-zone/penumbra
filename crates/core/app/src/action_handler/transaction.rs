@@ -13,7 +13,7 @@ use super::ActionHandler;
 mod stateful;
 mod stateless;
 
-use self::stateful::{claimed_anchor_is_valid, fmd_parameters_valid};
+use self::stateful::{claimed_anchor_is_valid, fee_greater_than_base_fee, fmd_parameters_valid};
 use stateless::{
     check_memo_exists_if_outputs_absent_if_not, no_duplicate_spends, no_duplicate_votes,
     num_clues_equal_to_num_outputs, valid_binding_signature,
@@ -61,6 +61,7 @@ impl ActionHandler for Transaction {
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         claimed_anchor_is_valid(state.clone(), self).await?;
         fmd_parameters_valid(state.clone(), self).await?;
+        fee_greater_than_base_fee(state.clone(), self).await?;
 
         // Currently, we need to clone the component actions so that the spawned
         // futures can have 'static lifetimes. In the future, we could try to

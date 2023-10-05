@@ -496,6 +496,18 @@ pub struct AppParametersResponse {
         super::super::core::app::v1alpha1::AppParameters,
     >,
 }
+/// Requests the current gas prices from the view service.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GasPricesRequest {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GasPricesResponse {
+    #[prost(message, optional, tag = "1")]
+    pub gas_prices: ::core::option::Option<
+        super::super::core::component::fee::v1alpha1::GasPrices,
+    >,
+}
 /// Requests the current FMD parameters from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -768,7 +780,7 @@ pub mod view_protocol_service_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -824,11 +836,27 @@ pub mod view_protocol_service_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         /// Get current status of chain sync
         pub async fn status(
             &mut self,
             request: impl tonic::IntoRequest<super::StatusRequest>,
-        ) -> Result<tonic::Response<super::StatusResponse>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::StatusResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -842,14 +870,22 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/Status",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "Status",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Stream sync status updates until the view service has caught up with the chain.
         /// Returns a stream of `StatusStreamResponse`s.
         pub async fn status_stream(
             &mut self,
             request: impl tonic::IntoRequest<super::StatusStreamRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<tonic::codec::Streaming<super::StatusStreamResponse>>,
             tonic::Status,
         > {
@@ -866,14 +902,22 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/StatusStream",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "StatusStream",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
         /// Queries for notes that have been accepted by the chain.
         /// Returns a stream of `NotesResponse`s.
         pub async fn notes(
             &mut self,
             request: impl tonic::IntoRequest<super::NotesRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<tonic::codec::Streaming<super::NotesResponse>>,
             tonic::Status,
         > {
@@ -890,13 +934,21 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/Notes",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "Notes",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
         /// Returns a stream of `NotesForVotingResponse`s.
         pub async fn notes_for_voting(
             &mut self,
             request: impl tonic::IntoRequest<super::NotesForVotingRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<tonic::codec::Streaming<super::NotesForVotingResponse>>,
             tonic::Status,
         > {
@@ -913,7 +965,15 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/NotesForVoting",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "NotesForVoting",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
         /// Returns authentication paths for the given note commitments.
         ///
@@ -924,7 +984,10 @@ pub mod view_protocol_service_client {
         pub async fn witness(
             &mut self,
             request: impl tonic::IntoRequest<super::WitnessRequest>,
-        ) -> Result<tonic::Response<super::WitnessResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::WitnessResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -938,12 +1001,23 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/Witness",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "Witness",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         pub async fn witness_and_build(
             &mut self,
             request: impl tonic::IntoRequest<super::WitnessAndBuildRequest>,
-        ) -> Result<tonic::Response<super::WitnessAndBuildResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::WitnessAndBuildResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -957,14 +1031,22 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/WitnessAndBuild",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "WitnessAndBuild",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Queries for assets.
         /// Returns a stream of `AssetsResponse`s.
         pub async fn assets(
             &mut self,
             request: impl tonic::IntoRequest<super::AssetsRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<tonic::codec::Streaming<super::AssetsResponse>>,
             tonic::Status,
         > {
@@ -981,13 +1063,24 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/Assets",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "Assets",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
         /// Query for the current app parameters.
         pub async fn app_parameters(
             &mut self,
             request: impl tonic::IntoRequest<super::AppParametersRequest>,
-        ) -> Result<tonic::Response<super::AppParametersResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::AppParametersResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1001,13 +1094,55 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/AppParameters",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "AppParameters",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// Query for the current gas prices.
+        pub async fn gas_prices(
+            &mut self,
+            request: impl tonic::IntoRequest<super::GasPricesRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GasPricesResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/GasPrices",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "GasPrices",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Query for the current FMD parameters.
         pub async fn fmd_parameters(
             &mut self,
             request: impl tonic::IntoRequest<super::FmdParametersRequest>,
-        ) -> Result<tonic::Response<super::FmdParametersResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::FmdParametersResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1021,13 +1156,24 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/FMDParameters",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "FMDParameters",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Query for an address given an address index
         pub async fn address_by_index(
             &mut self,
             request: impl tonic::IntoRequest<super::AddressByIndexRequest>,
-        ) -> Result<tonic::Response<super::AddressByIndexResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::AddressByIndexResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1041,13 +1187,24 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/AddressByIndex",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "AddressByIndex",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Query for an address given an address index
         pub async fn index_by_address(
             &mut self,
             request: impl tonic::IntoRequest<super::IndexByAddressRequest>,
-        ) -> Result<tonic::Response<super::IndexByAddressResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::IndexByAddressResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1061,13 +1218,24 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/IndexByAddress",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "IndexByAddress",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Query for an ephemeral address
         pub async fn ephemeral_address(
             &mut self,
             request: impl tonic::IntoRequest<super::EphemeralAddressRequest>,
-        ) -> Result<tonic::Response<super::EphemeralAddressResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::EphemeralAddressResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1081,14 +1249,22 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/EphemeralAddress",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "EphemeralAddress",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Query for balance of a given address.
         /// Returns a stream of `BalancesResponses`.
         pub async fn balances(
             &mut self,
             request: impl tonic::IntoRequest<super::BalancesRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<tonic::codec::Streaming<super::BalancesResponse>>,
             tonic::Status,
         > {
@@ -1105,13 +1281,24 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/Balances",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "Balances",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
         /// Query for a note by its note commitment, optionally waiting until the note is detected.
         pub async fn note_by_commitment(
             &mut self,
             request: impl tonic::IntoRequest<super::NoteByCommitmentRequest>,
-        ) -> Result<tonic::Response<super::NoteByCommitmentResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::NoteByCommitmentResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1125,13 +1312,24 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/NoteByCommitment",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "NoteByCommitment",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Query for a swap by its swap commitment, optionally waiting until the swap is detected.
         pub async fn swap_by_commitment(
             &mut self,
             request: impl tonic::IntoRequest<super::SwapByCommitmentRequest>,
-        ) -> Result<tonic::Response<super::SwapByCommitmentResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::SwapByCommitmentResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1145,13 +1343,21 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/SwapByCommitment",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "SwapByCommitment",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Query for all unclaimed swaps.
         pub async fn unclaimed_swaps(
             &mut self,
             request: impl tonic::IntoRequest<super::UnclaimedSwapsRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<tonic::codec::Streaming<super::UnclaimedSwapsResponse>>,
             tonic::Status,
         > {
@@ -1168,13 +1374,24 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/UnclaimedSwaps",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "UnclaimedSwaps",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
         /// Query for whether a nullifier has been spent, optionally waiting until it is spent.
         pub async fn nullifier_status(
             &mut self,
             request: impl tonic::IntoRequest<super::NullifierStatusRequest>,
-        ) -> Result<tonic::Response<super::NullifierStatusResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::NullifierStatusResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1188,13 +1405,21 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/NullifierStatus",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "NullifierStatus",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Query for a given transaction by its hash.
         pub async fn transaction_info_by_hash(
             &mut self,
             request: impl tonic::IntoRequest<super::TransactionInfoByHashRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<super::TransactionInfoByHashResponse>,
             tonic::Status,
         > {
@@ -1211,14 +1436,22 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/TransactionInfoByHash",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "TransactionInfoByHash",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Query for the full transactions in the given range of blocks.
         /// Returns a stream of `TransactionInfoResponse`s.
         pub async fn transaction_info(
             &mut self,
             request: impl tonic::IntoRequest<super::TransactionInfoRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<tonic::codec::Streaming<super::TransactionInfoResponse>>,
             tonic::Status,
         > {
@@ -1235,13 +1468,24 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/TransactionInfo",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "TransactionInfo",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
         /// Query for a transaction plan
         pub async fn transaction_planner(
             &mut self,
             request: impl tonic::IntoRequest<super::TransactionPlannerRequest>,
-        ) -> Result<tonic::Response<super::TransactionPlannerResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::TransactionPlannerResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1255,13 +1499,21 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/TransactionPlanner",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "TransactionPlanner",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Broadcast a transaction to the network, optionally waiting for full confirmation.
         pub async fn broadcast_transaction(
             &mut self,
             request: impl tonic::IntoRequest<super::BroadcastTransactionRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<super::BroadcastTransactionResponse>,
             tonic::Status,
         > {
@@ -1278,13 +1530,21 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/BroadcastTransaction",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "BroadcastTransaction",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Query for owned position IDs for the given trading pair and in the given position state.
         pub async fn owned_position_ids(
             &mut self,
             request: impl tonic::IntoRequest<super::OwnedPositionIdsRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<tonic::codec::Streaming<super::OwnedPositionIdsResponse>>,
             tonic::Status,
         > {
@@ -1301,13 +1561,24 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/OwnedPositionIds",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "OwnedPositionIds",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
         /// Authorize a transaction plan and build the transaction.
         pub async fn authorize_and_build(
             &mut self,
             request: impl tonic::IntoRequest<super::AuthorizeAndBuildRequest>,
-        ) -> Result<tonic::Response<super::AuthorizeAndBuildResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::AuthorizeAndBuildResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1321,7 +1592,15 @@ pub mod view_protocol_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewProtocolService/AuthorizeAndBuild",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "AuthorizeAndBuild",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
     }
 }
@@ -1339,7 +1618,7 @@ pub mod view_auth_service_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -1395,10 +1674,29 @@ pub mod view_auth_service_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         pub async fn view_auth(
             &mut self,
             request: impl tonic::IntoRequest<super::ViewAuthRequest>,
-        ) -> Result<tonic::Response<super::ViewAuthResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::ViewAuthResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -1412,7 +1710,12 @@ pub mod view_auth_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.view.v1alpha1.ViewAuthService/ViewAuth",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.view.v1alpha1.ViewAuthService", "ViewAuth"),
+                );
+            self.inner.unary(req, path, codec).await
         }
     }
 }
@@ -1428,10 +1731,10 @@ pub mod view_protocol_service_server {
         async fn status(
             &self,
             request: tonic::Request<super::StatusRequest>,
-        ) -> Result<tonic::Response<super::StatusResponse>, tonic::Status>;
+        ) -> std::result::Result<tonic::Response<super::StatusResponse>, tonic::Status>;
         /// Server streaming response type for the StatusStream method.
         type StatusStreamStream: futures_core::Stream<
-                Item = Result<super::StatusStreamResponse, tonic::Status>,
+                Item = std::result::Result<super::StatusStreamResponse, tonic::Status>,
             >
             + Send
             + 'static;
@@ -1440,10 +1743,13 @@ pub mod view_protocol_service_server {
         async fn status_stream(
             &self,
             request: tonic::Request<super::StatusStreamRequest>,
-        ) -> Result<tonic::Response<Self::StatusStreamStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::StatusStreamStream>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the Notes method.
         type NotesStream: futures_core::Stream<
-                Item = Result<super::NotesResponse, tonic::Status>,
+                Item = std::result::Result<super::NotesResponse, tonic::Status>,
             >
             + Send
             + 'static;
@@ -1452,10 +1758,10 @@ pub mod view_protocol_service_server {
         async fn notes(
             &self,
             request: tonic::Request<super::NotesRequest>,
-        ) -> Result<tonic::Response<Self::NotesStream>, tonic::Status>;
+        ) -> std::result::Result<tonic::Response<Self::NotesStream>, tonic::Status>;
         /// Server streaming response type for the NotesForVoting method.
         type NotesForVotingStream: futures_core::Stream<
-                Item = Result<super::NotesForVotingResponse, tonic::Status>,
+                Item = std::result::Result<super::NotesForVotingResponse, tonic::Status>,
             >
             + Send
             + 'static;
@@ -1463,7 +1769,10 @@ pub mod view_protocol_service_server {
         async fn notes_for_voting(
             &self,
             request: tonic::Request<super::NotesForVotingRequest>,
-        ) -> Result<tonic::Response<Self::NotesForVotingStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::NotesForVotingStream>,
+            tonic::Status,
+        >;
         /// Returns authentication paths for the given note commitments.
         ///
         /// This method takes a batch of input commitments, rather than just one, so
@@ -1473,14 +1782,17 @@ pub mod view_protocol_service_server {
         async fn witness(
             &self,
             request: tonic::Request<super::WitnessRequest>,
-        ) -> Result<tonic::Response<super::WitnessResponse>, tonic::Status>;
+        ) -> std::result::Result<tonic::Response<super::WitnessResponse>, tonic::Status>;
         async fn witness_and_build(
             &self,
             request: tonic::Request<super::WitnessAndBuildRequest>,
-        ) -> Result<tonic::Response<super::WitnessAndBuildResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::WitnessAndBuildResponse>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the Assets method.
         type AssetsStream: futures_core::Stream<
-                Item = Result<super::AssetsResponse, tonic::Status>,
+                Item = std::result::Result<super::AssetsResponse, tonic::Status>,
             >
             + Send
             + 'static;
@@ -1489,35 +1801,58 @@ pub mod view_protocol_service_server {
         async fn assets(
             &self,
             request: tonic::Request<super::AssetsRequest>,
-        ) -> Result<tonic::Response<Self::AssetsStream>, tonic::Status>;
+        ) -> std::result::Result<tonic::Response<Self::AssetsStream>, tonic::Status>;
         /// Query for the current app parameters.
         async fn app_parameters(
             &self,
             request: tonic::Request<super::AppParametersRequest>,
-        ) -> Result<tonic::Response<super::AppParametersResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::AppParametersResponse>,
+            tonic::Status,
+        >;
+        /// Query for the current gas prices.
+        async fn gas_prices(
+            &self,
+            request: tonic::Request<super::GasPricesRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GasPricesResponse>,
+            tonic::Status,
+        >;
         /// Query for the current FMD parameters.
         async fn fmd_parameters(
             &self,
             request: tonic::Request<super::FmdParametersRequest>,
-        ) -> Result<tonic::Response<super::FmdParametersResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::FmdParametersResponse>,
+            tonic::Status,
+        >;
         /// Query for an address given an address index
         async fn address_by_index(
             &self,
             request: tonic::Request<super::AddressByIndexRequest>,
-        ) -> Result<tonic::Response<super::AddressByIndexResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::AddressByIndexResponse>,
+            tonic::Status,
+        >;
         /// Query for an address given an address index
         async fn index_by_address(
             &self,
             request: tonic::Request<super::IndexByAddressRequest>,
-        ) -> Result<tonic::Response<super::IndexByAddressResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::IndexByAddressResponse>,
+            tonic::Status,
+        >;
         /// Query for an ephemeral address
         async fn ephemeral_address(
             &self,
             request: tonic::Request<super::EphemeralAddressRequest>,
-        ) -> Result<tonic::Response<super::EphemeralAddressResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::EphemeralAddressResponse>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the Balances method.
         type BalancesStream: futures_core::Stream<
-                Item = Result<super::BalancesResponse, tonic::Status>,
+                Item = std::result::Result<super::BalancesResponse, tonic::Status>,
             >
             + Send
             + 'static;
@@ -1526,20 +1861,26 @@ pub mod view_protocol_service_server {
         async fn balances(
             &self,
             request: tonic::Request<super::BalancesRequest>,
-        ) -> Result<tonic::Response<Self::BalancesStream>, tonic::Status>;
+        ) -> std::result::Result<tonic::Response<Self::BalancesStream>, tonic::Status>;
         /// Query for a note by its note commitment, optionally waiting until the note is detected.
         async fn note_by_commitment(
             &self,
             request: tonic::Request<super::NoteByCommitmentRequest>,
-        ) -> Result<tonic::Response<super::NoteByCommitmentResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::NoteByCommitmentResponse>,
+            tonic::Status,
+        >;
         /// Query for a swap by its swap commitment, optionally waiting until the swap is detected.
         async fn swap_by_commitment(
             &self,
             request: tonic::Request<super::SwapByCommitmentRequest>,
-        ) -> Result<tonic::Response<super::SwapByCommitmentResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::SwapByCommitmentResponse>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the UnclaimedSwaps method.
         type UnclaimedSwapsStream: futures_core::Stream<
-                Item = Result<super::UnclaimedSwapsResponse, tonic::Status>,
+                Item = std::result::Result<super::UnclaimedSwapsResponse, tonic::Status>,
             >
             + Send
             + 'static;
@@ -1547,23 +1888,29 @@ pub mod view_protocol_service_server {
         async fn unclaimed_swaps(
             &self,
             request: tonic::Request<super::UnclaimedSwapsRequest>,
-        ) -> Result<tonic::Response<Self::UnclaimedSwapsStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::UnclaimedSwapsStream>,
+            tonic::Status,
+        >;
         /// Query for whether a nullifier has been spent, optionally waiting until it is spent.
         async fn nullifier_status(
             &self,
             request: tonic::Request<super::NullifierStatusRequest>,
-        ) -> Result<tonic::Response<super::NullifierStatusResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::NullifierStatusResponse>,
+            tonic::Status,
+        >;
         /// Query for a given transaction by its hash.
         async fn transaction_info_by_hash(
             &self,
             request: tonic::Request<super::TransactionInfoByHashRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<super::TransactionInfoByHashResponse>,
             tonic::Status,
         >;
         /// Server streaming response type for the TransactionInfo method.
         type TransactionInfoStream: futures_core::Stream<
-                Item = Result<super::TransactionInfoResponse, tonic::Status>,
+                Item = std::result::Result<super::TransactionInfoResponse, tonic::Status>,
             >
             + Send
             + 'static;
@@ -1572,20 +1919,32 @@ pub mod view_protocol_service_server {
         async fn transaction_info(
             &self,
             request: tonic::Request<super::TransactionInfoRequest>,
-        ) -> Result<tonic::Response<Self::TransactionInfoStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::TransactionInfoStream>,
+            tonic::Status,
+        >;
         /// Query for a transaction plan
         async fn transaction_planner(
             &self,
             request: tonic::Request<super::TransactionPlannerRequest>,
-        ) -> Result<tonic::Response<super::TransactionPlannerResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::TransactionPlannerResponse>,
+            tonic::Status,
+        >;
         /// Broadcast a transaction to the network, optionally waiting for full confirmation.
         async fn broadcast_transaction(
             &self,
             request: tonic::Request<super::BroadcastTransactionRequest>,
-        ) -> Result<tonic::Response<super::BroadcastTransactionResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::BroadcastTransactionResponse>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the OwnedPositionIds method.
         type OwnedPositionIdsStream: futures_core::Stream<
-                Item = Result<super::OwnedPositionIdsResponse, tonic::Status>,
+                Item = std::result::Result<
+                    super::OwnedPositionIdsResponse,
+                    tonic::Status,
+                >,
             >
             + Send
             + 'static;
@@ -1593,12 +1952,18 @@ pub mod view_protocol_service_server {
         async fn owned_position_ids(
             &self,
             request: tonic::Request<super::OwnedPositionIdsRequest>,
-        ) -> Result<tonic::Response<Self::OwnedPositionIdsStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::OwnedPositionIdsStream>,
+            tonic::Status,
+        >;
         /// Authorize a transaction plan and build the transaction.
         async fn authorize_and_build(
             &self,
             request: tonic::Request<super::AuthorizeAndBuildRequest>,
-        ) -> Result<tonic::Response<super::AuthorizeAndBuildResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::AuthorizeAndBuildResponse>,
+            tonic::Status,
+        >;
     }
     /// The view protocol is used by a view client, who wants to do some
     /// transaction-related actions, to request data from a view service, which is
@@ -1612,6 +1977,8 @@ pub mod view_protocol_service_server {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
+        max_decoding_message_size: Option<usize>,
+        max_encoding_message_size: Option<usize>,
     }
     struct _Inner<T>(Arc<T>);
     impl<T: ViewProtocolService> ViewProtocolServiceServer<T> {
@@ -1624,6 +1991,8 @@ pub mod view_protocol_service_server {
                 inner,
                 accept_compression_encodings: Default::default(),
                 send_compression_encodings: Default::default(),
+                max_decoding_message_size: None,
+                max_encoding_message_size: None,
             }
         }
         pub fn with_interceptor<F>(
@@ -1647,6 +2016,22 @@ pub mod view_protocol_service_server {
             self.send_compression_encodings.enable(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.max_decoding_message_size = Some(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.max_encoding_message_size = Some(limit);
+            self
+        }
     }
     impl<T, B> tonic::codegen::Service<http::Request<B>> for ViewProtocolServiceServer<T>
     where
@@ -1660,7 +2045,7 @@ pub mod view_protocol_service_server {
         fn poll_ready(
             &mut self,
             _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        ) -> Poll<std::result::Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -1682,13 +2067,15 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::StatusRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move { (*inner).status(request).await };
                             Box::pin(fut)
                         }
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1698,6 +2085,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -1721,7 +2112,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::StatusStreamRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).status_stream(request).await
                             };
@@ -1730,6 +2121,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1739,6 +2132,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
@@ -1762,13 +2159,15 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::NotesRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move { (*inner).notes(request).await };
                             Box::pin(fut)
                         }
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1778,6 +2177,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
@@ -1801,7 +2204,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::NotesForVotingRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).notes_for_voting(request).await
                             };
@@ -1810,6 +2213,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1819,6 +2224,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
@@ -1841,13 +2250,15 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::WitnessRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move { (*inner).witness(request).await };
                             Box::pin(fut)
                         }
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1857,6 +2268,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -1879,7 +2294,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::WitnessAndBuildRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).witness_and_build(request).await
                             };
@@ -1888,6 +2303,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1897,6 +2314,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -1920,13 +2341,15 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::AssetsRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move { (*inner).assets(request).await };
                             Box::pin(fut)
                         }
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1936,6 +2359,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
@@ -1958,7 +2385,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::AppParametersRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).app_parameters(request).await
                             };
@@ -1967,6 +2394,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -1976,6 +2405,54 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/GasPrices" => {
+                    #[allow(non_camel_case_types)]
+                    struct GasPricesSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::UnaryService<super::GasPricesRequest>
+                    for GasPricesSvc<T> {
+                        type Response = super::GasPricesResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GasPricesRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move { (*inner).gas_prices(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GasPricesSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -1998,7 +2475,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::FmdParametersRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).fmd_parameters(request).await
                             };
@@ -2007,6 +2484,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2016,6 +2495,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -2038,7 +2521,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::AddressByIndexRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).address_by_index(request).await
                             };
@@ -2047,6 +2530,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2056,6 +2541,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -2078,7 +2567,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::IndexByAddressRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).index_by_address(request).await
                             };
@@ -2087,6 +2576,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2096,6 +2587,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -2118,7 +2613,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::EphemeralAddressRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).ephemeral_address(request).await
                             };
@@ -2127,6 +2622,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2136,6 +2633,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -2159,13 +2660,15 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::BalancesRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move { (*inner).balances(request).await };
                             Box::pin(fut)
                         }
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2175,6 +2678,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
@@ -2197,7 +2704,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::NoteByCommitmentRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).note_by_commitment(request).await
                             };
@@ -2206,6 +2713,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2215,6 +2724,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -2237,7 +2750,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::SwapByCommitmentRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).swap_by_commitment(request).await
                             };
@@ -2246,6 +2759,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2255,6 +2770,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -2278,7 +2797,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::UnclaimedSwapsRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).unclaimed_swaps(request).await
                             };
@@ -2287,6 +2806,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2296,6 +2817,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
@@ -2318,7 +2843,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::NullifierStatusRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).nullifier_status(request).await
                             };
@@ -2327,6 +2852,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2336,6 +2863,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -2358,7 +2889,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::TransactionInfoByHashRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).transaction_info_by_hash(request).await
                             };
@@ -2367,6 +2898,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2376,6 +2909,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -2400,7 +2937,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::TransactionInfoRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).transaction_info(request).await
                             };
@@ -2409,6 +2946,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2418,6 +2957,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
@@ -2440,7 +2983,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::TransactionPlannerRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).transaction_planner(request).await
                             };
@@ -2449,6 +2992,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2458,6 +3003,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -2480,7 +3029,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::BroadcastTransactionRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).broadcast_transaction(request).await
                             };
@@ -2489,6 +3038,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2498,6 +3049,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -2522,7 +3077,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::OwnedPositionIdsRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).owned_position_ids(request).await
                             };
@@ -2531,6 +3086,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2540,6 +3097,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
@@ -2562,7 +3123,7 @@ pub mod view_protocol_service_server {
                             &mut self,
                             request: tonic::Request<super::AuthorizeAndBuildRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
                                 (*inner).authorize_and_build(request).await
                             };
@@ -2571,6 +3132,8 @@ pub mod view_protocol_service_server {
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2580,6 +3143,10 @@ pub mod view_protocol_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -2608,12 +3175,14 @@ pub mod view_protocol_service_server {
                 inner,
                 accept_compression_encodings: self.accept_compression_encodings,
                 send_compression_encodings: self.send_compression_encodings,
+                max_decoding_message_size: self.max_decoding_message_size,
+                max_encoding_message_size: self.max_encoding_message_size,
             }
         }
     }
     impl<T: ViewProtocolService> Clone for _Inner<T> {
         fn clone(&self) -> Self {
-            Self(self.0.clone())
+            Self(Arc::clone(&self.0))
         }
     }
     impl<T: std::fmt::Debug> std::fmt::Debug for _Inner<T> {
@@ -2637,13 +3206,18 @@ pub mod view_auth_service_server {
         async fn view_auth(
             &self,
             request: tonic::Request<super::ViewAuthRequest>,
-        ) -> Result<tonic::Response<super::ViewAuthResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::ViewAuthResponse>,
+            tonic::Status,
+        >;
     }
     #[derive(Debug)]
     pub struct ViewAuthServiceServer<T: ViewAuthService> {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
+        max_decoding_message_size: Option<usize>,
+        max_encoding_message_size: Option<usize>,
     }
     struct _Inner<T>(Arc<T>);
     impl<T: ViewAuthService> ViewAuthServiceServer<T> {
@@ -2656,6 +3230,8 @@ pub mod view_auth_service_server {
                 inner,
                 accept_compression_encodings: Default::default(),
                 send_compression_encodings: Default::default(),
+                max_decoding_message_size: None,
+                max_encoding_message_size: None,
             }
         }
         pub fn with_interceptor<F>(
@@ -2679,6 +3255,22 @@ pub mod view_auth_service_server {
             self.send_compression_encodings.enable(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.max_decoding_message_size = Some(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.max_encoding_message_size = Some(limit);
+            self
+        }
     }
     impl<T, B> tonic::codegen::Service<http::Request<B>> for ViewAuthServiceServer<T>
     where
@@ -2692,7 +3284,7 @@ pub mod view_auth_service_server {
         fn poll_ready(
             &mut self,
             _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        ) -> Poll<std::result::Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -2714,13 +3306,15 @@ pub mod view_auth_service_server {
                             &mut self,
                             request: tonic::Request<super::ViewAuthRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move { (*inner).view_auth(request).await };
                             Box::pin(fut)
                         }
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -2730,6 +3324,10 @@ pub mod view_auth_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -2758,12 +3356,14 @@ pub mod view_auth_service_server {
                 inner,
                 accept_compression_encodings: self.accept_compression_encodings,
                 send_compression_encodings: self.send_compression_encodings,
+                max_decoding_message_size: self.max_decoding_message_size,
+                max_encoding_message_size: self.max_encoding_message_size,
             }
         }
     }
     impl<T: ViewAuthService> Clone for _Inner<T> {
         fn clone(&self) -> Self {
-            Self(self.0.clone())
+            Self(Arc::clone(&self.0))
         }
     }
     impl<T: std::fmt::Debug> std::fmt::Debug for _Inner<T> {

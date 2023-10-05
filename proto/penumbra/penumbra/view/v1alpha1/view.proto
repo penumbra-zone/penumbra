@@ -55,6 +55,9 @@ service ViewProtocolService {
   // Query for the current app parameters.
   rpc AppParameters(AppParametersRequest) returns (AppParametersResponse);
 
+  // Query for the current gas prices.
+  rpc GasPrices(GasPricesRequest) returns (GasPricesResponse);
+
   // Query for the current FMD parameters.
   rpc FMDParameters(FMDParametersRequest) returns (FMDParametersResponse);
 
@@ -381,6 +384,13 @@ message AppParametersRequest {}
 
 message AppParametersResponse {
   core.app.v1alpha1.AppParameters parameters = 1;
+}
+
+// Requests the current gas prices from the view service.
+message GasPricesRequest {}
+
+message GasPricesResponse {
+  core.component.fee.v1alpha1.GasPrices gas_prices = 1;
 }
 
 // Requests the current FMD parameters from the view service.

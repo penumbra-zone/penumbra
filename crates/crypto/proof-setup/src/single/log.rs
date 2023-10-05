@@ -7,9 +7,29 @@ pub const CONTRIBUTION_HASH_SIZE: usize = 32;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ContributionHash(pub [u8; CONTRIBUTION_HASH_SIZE]);
 
+impl ContributionHash {
+    pub(crate) fn dummy() -> Self {
+        Self([0x1; CONTRIBUTION_HASH_SIZE])
+    }
+}
+
 impl AsRef<[u8]> for ContributionHash {
     fn as_ref(&self) -> &[u8] {
         &self.0
+    }
+}
+
+impl TryFrom<&[u8]> for ContributionHash {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        if value.len() != CONTRIBUTION_HASH_SIZE {
+            anyhow::bail!(
+                "Failed to read ContributionHash from slice of len {}",
+                value.len()
+            );
+        }
+        Ok(Self(value.try_into()?))
     }
 }
 

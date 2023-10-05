@@ -1,16 +1,17 @@
 //! This module is very similar to the one for phase1, so reading that one might be useful.
 use ark_ec::Group;
 use ark_ff::{fields::Field, UniformRand, Zero};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand_core::{CryptoRngCore, OsRng};
 
-use crate::log::{ContributionHash, Hashable, Phase};
-use crate::{
+use crate::single::log::{ContributionHash, Hashable, Phase};
+use crate::single::{
     dlog,
     group::{BatchedPairingChecker11, GroupHasher, F, G1, G2},
 };
 
 /// Raw CRS elements, not yet validated for consistency.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize, PartialEq)]
 pub struct RawCRSElements {
     pub delta_1: G1,
     pub delta_2: G2,
@@ -53,6 +54,11 @@ impl RawCRSElements {
 
         Some(CRSElements { raw: self })
     }
+
+    /// Convert without checking validity.
+    pub(crate) fn assume_valid(self) -> CRSElements {
+        CRSElements { raw: self }
+    }
 }
 
 impl Hashable for RawCRSElements {
@@ -79,7 +85,7 @@ impl Hashable for RawCRSElements {
 /// The CRS elements we produce in phase 2.
 ///
 /// When combined with the elements of phase 1, the entire CRS will be present.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CRSElements {
     pub(crate) raw: RawCRSElements,
 }
@@ -90,12 +96,26 @@ impl Hashable for CRSElements {
     }
 }
 
+impl CRSElements {
+    // TODO: Remove this when no longer needed for testing in summonerd
+    pub(crate) fn dummy_root(degree: usize) -> Self {
+        Self {
+            raw: RawCRSElements {
+                delta_1: G1::generator(),
+                delta_2: G2::generator(),
+                inv_delta_p_1: vec![G1::generator(); degree],
+                inv_delta_t_1: vec![G1::generator(); degree],
+            },
+        }
+    }
+}
+
 /// Represents a raw, unvalidatedontribution.
 #[derive(Clone, Debug)]
 pub struct RawContribution {
     pub parent: ContributionHash,
     pub new_elements: RawCRSElements,
-    linking_proof: dlog::Proof,
+    pub(crate) linking_proof: dlog::Proof,
 }
 
 impl RawContribution {
@@ -113,6 +133,17 @@ impl RawContribution {
                 new_elements,
                 linking_proof: self.linking_proof,
             })
+    }
+
+    /// Skip validation, and perform a conversion anyways.
+    ///
+    /// Can be useful when parsing data that's known to be good.
+    pub(crate) fn assume_valid(self) -> Contribution {
+        Contribution {
+            parent: self.parent,
+            new_elements: self.new_elements.assume_valid(),
+            linking_proof: self.linking_proof,
+        }
     }
 }
 
@@ -147,7 +178,7 @@ impl From<Contribution> for RawContribution {
 pub struct Contribution {
     pub parent: ContributionHash,
     pub new_elements: CRSElements,
-    linking_proof: dlog::Proof,
+    pub(crate) linking_proof: dlog::Proof,
 }
 
 impl Hashable for Contribution {
@@ -255,7 +286,7 @@ impl Phase for Phase2 {
 mod test {
     use super::*;
 
-    use crate::log::CONTRIBUTION_HASH_SIZE;
+    use crate::single::log::CONTRIBUTION_HASH_SIZE;
 
     use rand_core::OsRng;
 
