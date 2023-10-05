@@ -14,6 +14,7 @@ WORKDIR /usr/src/penumbra
 # Add rust dependency lockfiles first, to cache downloads.
 COPY Cargo.lock Cargo.toml .
 COPY crates ./crates
+COPY tools/ ./tools
 RUN cargo fetch
 # Unfortunately, container layer cache is busted copying in the .git
 # dir, which is required for using vergen, so we rebuild the rust
