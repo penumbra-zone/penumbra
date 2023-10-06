@@ -26,9 +26,10 @@ pub enum KeysCmd {
 #[derive(Debug, clap::Subcommand)]
 pub enum ImportCmd {
     /// Import wallet from an existing 24-word seed phrase. Will prompt for input interactively.
-    /// Also accepts input from stdin, for use with pipes.
+    /// Also accepts input from stdin, for use with pipes. Use `--legacy-raw-bip39-derivation` if
+    /// you generated your wallet prior to Testnet 62.
     Phrase {
-        /// If set, will use legacy BIP39 derivation.
+        /// If set, will use legacy BIP39 derivation. Use this if you generated your wallet prior to Testnet 62.
         #[clap(long, action)]
         legacy_raw_bip39_derivation: bool,
     },
@@ -103,7 +104,7 @@ impl KeysCmd {
                 }
 
                 let seed_phrase = SeedPhrase::from_str(&seed_phrase)?;
-                let wallet = if *bip39_derivation {
+                let wallet = if *legacy_raw_bip39_derivation {
                     KeyStore::from_seed_phrase_bip39(seed_phrase)
                 } else {
                     let path = Bip44Path::new(0);
