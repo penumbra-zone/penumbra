@@ -8,3 +8,10 @@ CREATE TABLE phase2_contributions (
     -- NULL in the specific case that this is the root 
     address BLOB
 );
+
+-- Used to store metadata about specific addresses that participated.
+CREATE TABLE participant_metadata (
+  address BLOB PRIMARY KEY NOT NULL,
+  -- The number of strikes that have been received.
+  strikes INTEGER NOT NULL
+);

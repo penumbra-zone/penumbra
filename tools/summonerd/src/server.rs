@@ -7,17 +7,23 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{async_trait, Request, Response, Status, Streaming};
 
-use crate::{participant::Participant, storage::Storage};
+use crate::{participant::Participant, penumbra_knower::PenumbraKnower, storage::Storage};
 
 #[derive(Clone)]
 pub struct CoordinatorService {
+    knower: PenumbraKnower,
     storage: Storage,
     participant_tx: mpsc::Sender<Participant>,
 }
 
 impl CoordinatorService {
-    pub fn new(storage: Storage, participant_tx: mpsc::Sender<Participant>) -> Self {
+    pub fn new(
+        knower: PenumbraKnower,
+        storage: Storage,
+        participant_tx: mpsc::Sender<Participant>,
+    ) -> Self {
         Self {
+            knower,
             storage,
             participant_tx,
         }
@@ -51,9 +57,21 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
         };
         let address = Address::try_from(address)
             .map_err(|e| Status::invalid_argument(format!("Bad address format: {:#}", e)))?;
-        self.storage.can_contribute(address).await.map_err(|e| {
-            Status::permission_denied(format!("nyo contwibution *cries* fow you {:#}", e))
-        })?;
+        // Errors are on our end, None is on their end
+        let _amount = match self
+            .storage
+            .can_contribute(&self.knower, &address)
+            .await
+            .map_err(|e| {
+                Status::internal(format!("failed to look up contributor metadata {:#}", e))
+            })? {
+            Some(amount) => amount,
+            None => {
+                return Err(Status::permission_denied(format!(
+                    "nyo contwibution *cries* fow you"
+                )))
+            }
+        };
         let (participant, response_rx) = Participant::new(address, streaming);
         // TODO: Check if this is what we want to do
         self.participant_tx

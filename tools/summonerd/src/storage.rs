@@ -1,6 +1,7 @@
 use anyhow::Result;
 use camino::Utf8Path;
 use penumbra_keys::Address;
+use penumbra_num::Amount;
 use penumbra_proof_setup::all::{
     Phase2CeremonyCRS, Phase2CeremonyContribution, Phase2RawCeremonyCRS,
     Phase2RawCeremonyContribution,
@@ -13,6 +14,10 @@ use penumbra_proto::{
 };
 use r2d2_sqlite::{rusqlite::OpenFlags, SqliteConnectionManager};
 use tokio::task::spawn_blocking;
+
+use crate::penumbra_knower::PenumbraKnower;
+
+const MIN_BID_AMOUNT_U64: u64 = 1u64;
 
 #[derive(Clone)]
 pub struct Storage {
@@ -78,12 +83,24 @@ impl Storage {
         Ok(storage)
     }
 
-    pub async fn can_contribute(&self, _address: Address) -> Result<()> {
+    /// Check if a participant can contribute.
+    ///
+    /// If they can't, None will be returned, otherwise we'll have Some(amount),
+    /// with the amount indicating their bid, which can be useful for ranking.
+    pub async fn can_contribute(
+        &self,
+        knower: &PenumbraKnower,
+        address: &Address,
+    ) -> Result<Option<Amount>> {
         // Criteria:
-        // - Not banned
+        // - Not banned TODO
         // - Bid more than min amount
-        // - Hasn't already contributed
-        Ok(())
+        // - Hasn't already contributed TODO
+        let amount = knower.total_amount_sent_to_me(&address).await?;
+        if amount < Amount::from(MIN_BID_AMOUNT_U64) {
+            return Ok(None);
+        }
+        Ok(Some(amount))
     }
 
     pub async fn current_crs(&self) -> Result<Phase2CeremonyCRS> {
