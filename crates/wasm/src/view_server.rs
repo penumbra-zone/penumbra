@@ -254,10 +254,7 @@ impl ViewServer {
     /// Function also clears state
     /// Returns: `ScanBlockResult`
     #[wasm_bindgen]
-    pub fn flush_updates(
-        &mut self,
-    ) -> WasmResult<JsValue> {
-
+    pub fn flush_updates(&mut self) -> WasmResult<JsValue> {
         let nct_updates: Updates = self
             .nct
             .updates(
@@ -276,7 +273,7 @@ impl ViewServer {
         self.notes = Default::default();
         self.swaps = Default::default();
 
-        self.last_position= nct_updates.set_position;
+        self.last_position = nct_updates.set_position;
         self.last_forgotten = nct_updates.set_forgotten;
 
         let result = serde_wasm_bindgen::to_value(&updates)?;
