@@ -14,6 +14,7 @@ mod misbehavior;
 mod recv_packet;
 mod timeout;
 mod update_client;
+mod upgrade_client;
 
 use anyhow::Result;
 use async_trait::async_trait;

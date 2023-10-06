@@ -14,6 +14,7 @@ impl ActionHandler for IbcAction {
         match self {
             IbcAction::CreateClient(msg) => msg.check_stateless().await?,
             IbcAction::UpdateClient(msg) => msg.check_stateless().await?,
+            IbcAction::UpgradeClient(msg) => msg.check_stateless().await?,
             IbcAction::SubmitMisbehavior(msg) => msg.check_stateless().await?,
             IbcAction::ConnectionOpenInit(msg) => msg.check_stateless().await?,
             IbcAction::ConnectionOpenTry(msg) => msg.check_stateless().await?,
@@ -51,6 +52,10 @@ impl ActionHandler for IbcAction {
                 .try_execute(state)
                 .await
                 .with_context(|| "Failed to execute UpdateClient message")?,
+            IbcAction::UpgradeClient(msg) => msg
+                .try_execute(state)
+                .await
+                .with_context(|| "Failed to execute UpgradeClient message")?,
             IbcAction::SubmitMisbehavior(msg) => msg
                 .try_execute(state)
                 .await
