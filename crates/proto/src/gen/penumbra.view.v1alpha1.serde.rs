@@ -4776,6 +4776,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.ibc_actions.is_empty() {
             len += 1;
         }
+        if !self.ics20_withdrawals.is_empty() {
+            len += 1;
+        }
         if !self.position_opens.is_empty() {
             len += 1;
         }
@@ -4819,6 +4822,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.ibc_actions.is_empty() {
             struct_ser.serialize_field("ibcActions", &self.ibc_actions)?;
         }
+        if !self.ics20_withdrawals.is_empty() {
+            struct_ser.serialize_field("ics20Withdrawals", &self.ics20_withdrawals)?;
+        }
         if !self.position_opens.is_empty() {
             struct_ser.serialize_field("positionOpens", &self.position_opens)?;
         }
@@ -4853,6 +4859,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "undelegations",
             "ibc_actions",
             "ibcActions",
+            "ics20_withdrawals",
+            "ics20Withdrawals",
             "position_opens",
             "positionOpens",
             "position_closes",
@@ -4874,6 +4882,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             Delegations,
             Undelegations,
             IbcActions,
+            Ics20Withdrawals,
             PositionOpens,
             PositionCloses,
             PositionWithdraws,
@@ -4909,6 +4918,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "delegations" => Ok(GeneratedField::Delegations),
                             "undelegations" => Ok(GeneratedField::Undelegations),
                             "ibcActions" | "ibc_actions" => Ok(GeneratedField::IbcActions),
+                            "ics20Withdrawals" | "ics20_withdrawals" => Ok(GeneratedField::Ics20Withdrawals),
                             "positionOpens" | "position_opens" => Ok(GeneratedField::PositionOpens),
                             "positionCloses" | "position_closes" => Ok(GeneratedField::PositionCloses),
                             "positionWithdraws" | "position_withdraws" => Ok(GeneratedField::PositionWithdraws),
@@ -4942,6 +4952,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut delegations__ = None;
                 let mut undelegations__ = None;
                 let mut ibc_actions__ = None;
+                let mut ics20_withdrawals__ = None;
                 let mut position_opens__ = None;
                 let mut position_closes__ = None;
                 let mut position_withdraws__ = None;
@@ -5015,6 +5026,12 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             }
                             ibc_actions__ = Some(map.next_value()?);
                         }
+                        GeneratedField::Ics20Withdrawals => {
+                            if ics20_withdrawals__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("ics20Withdrawals"));
+                            }
+                            ics20_withdrawals__ = Some(map.next_value()?);
+                        }
                         GeneratedField::PositionOpens => {
                             if position_opens__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("positionOpens"));
@@ -5047,6 +5064,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     delegations: delegations__.unwrap_or_default(),
                     undelegations: undelegations__.unwrap_or_default(),
                     ibc_actions: ibc_actions__.unwrap_or_default(),
+                    ics20_withdrawals: ics20_withdrawals__.unwrap_or_default(),
                     position_opens: position_opens__.unwrap_or_default(),
                     position_closes: position_closes__.unwrap_or_default(),
                     position_withdraws: position_withdraws__.unwrap_or_default(),

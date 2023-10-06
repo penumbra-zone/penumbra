@@ -154,6 +154,7 @@ message TransactionPlannerRequest {
   repeated Delegate delegations = 40;
   repeated Undelegate undelegations = 50;
   repeated penumbra.core.component.ibc.v1alpha1.IbcAction ibc_actions = 60;
+  repeated penumbra.core.component.ibc.v1alpha1.Ics20Withdrawal ics20_withdrawals = 61;
   repeated PositionOpen position_opens = 70;
   repeated PositionClose position_closes = 71;
   repeated PositionWithdraw position_withdraws = 72;
