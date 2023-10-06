@@ -8,7 +8,7 @@ use clap::Parser;
 use directories::ProjectDirs;
 use penumbra_custody::policy::{AuthPolicy, PreAuthorizationPolicy};
 use penumbra_custody::soft_kms::{self, SoftKms};
-use penumbra_keys::keys::{SeedPhrase, SpendKey};
+use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     core::app::v1alpha1::{
@@ -214,9 +214,9 @@ impl Opt {
 
                 let (spend_key, full_viewing_key) = match (seed_phrase, view) {
                     (Some(seed_phrase), None) => {
-                        let spend_key = SpendKey::from_seed_phrase_bip39(
+                        let spend_key = SpendKey::from_seed_phrase_bip44(
                             SeedPhrase::from_str(seed_phrase.as_str())?,
-                            0,
+                            &Bip44Path::new(0),
                         );
                         let full_viewing_key = spend_key.full_viewing_key().clone();
                         (Some(spend_key), full_viewing_key)
