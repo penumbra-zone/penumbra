@@ -80,6 +80,10 @@ pub struct TransactionPlannerRequest {
     pub ibc_actions: ::prost::alloc::vec::Vec<
         super::super::core::component::ibc::v1alpha1::IbcAction,
     >,
+    #[prost(message, repeated, tag = "61")]
+    pub ics20_withdrawals: ::prost::alloc::vec::Vec<
+        super::super::core::component::ibc::v1alpha1::Ics20Withdrawal,
+    >,
     #[prost(message, repeated, tag = "70")]
     pub position_opens: ::prost::alloc::vec::Vec<
         transaction_planner_request::PositionOpen,
