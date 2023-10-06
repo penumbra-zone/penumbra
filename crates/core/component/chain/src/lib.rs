@@ -24,18 +24,20 @@ pub mod test_keys {
     use once_cell::sync::Lazy;
 
     use penumbra_keys::{
-        keys::{SpendKey, WalletId},
+        keys::{Bip44Path, SpendKey, WalletId},
         Address, FullViewingKey,
     };
 
     /// This address is for test purposes, allocations were added beginning with
+    /// the 062-Iapetus testnet.
+    /// Previously the test data was generated using BIP39 derivation starting with
     /// the 016-Pandia testnet.
-    pub const SEED_PHRASE: &str = "benefit cherry cannon tooth exhibit law avocado spare tooth that amount pumpkin scene foil tape mobile shine apology add crouch situate sun business explain";
+    pub const SEED_PHRASE: &str = "comfort ten front cycle churn burger oak absent rice ice urge result art couple benefit cabbage frequent obscure hurry trick segment cool job debate";
 
     /// These addresses both correspond to the test wallet above.
-    pub const ADDRESS_0_STR: &str = "penumbrav2t13vh0fkf3qkqjacpm59g23ufea9n5us45e4p5h6hty8vg73r2t8g5l3kynad87u0n9eragf3hhkgkhqe5vhngq2cw493k48c9qg9ms4epllcmndd6ly4v4dw2jcnxaxzjqnlvnw";
+    pub const ADDRESS_0_STR: &str = "penumbrav2t147mfall0zr6am5r45qkwht7xqqrdsp50czde7empv7yq2nk3z8yyfh9k9520ddgswkmzar22vhz9dwtuem7uxw0qytfpv7lk3q9dp8ccaw2fn5c838rfackazmgf3ahhvhypxd";
     /// These addresses both correspond to the test wallet above.
-    pub const ADDRESS_1_STR: &str = "penumbrav2t1gl609fq6xzjcqn3hz3crysw2s0nkt330lyhaq403ztmrm3yygsgdklt9uxfs0gedwp6sypp5k5ln9t62lvs9t0a990q832wnxak8r939g5u6uz5aessd8saxvv7ewlz4hhqnws";
+    pub const ADDRESS_1_STR: &str = "penumbrav2t1vmmz304hjlkjq6xv4al5dqumvgk3ek82rneagj07vdqkudjvl6y7zxzr5k6qq24yc7yyyekpu9qm7ef3acg2u8p950hs6hu3e73guq5pfmmvm63qudfx4qmg8h7fdweydr93ku";
 
     pub static ADDRESS_0: Lazy<Address> = Lazy::new(|| {
         ADDRESS_0_STR
@@ -49,11 +51,11 @@ pub mod test_keys {
     });
 
     pub static SPEND_KEY: Lazy<SpendKey> = Lazy::new(|| {
-        SpendKey::from_seed_phrase_bip39(
+        SpendKey::from_seed_phrase_bip44(
             SEED_PHRASE
                 .parse()
                 .expect("hardcoded test seed phrase should be valid"),
-            0,
+            &Bip44Path::new(0),
         )
     });
 
