@@ -147,9 +147,8 @@ impl Info {
                         format!("failed to get key {}", String::from_utf8_lossy(&key))
                     })?;
 
-                let Some((value, proof_ops)) = rsp else {
-                    anyhow::bail!("key not found")
-                };
+                let (value, proof_ops) = rsp;
+                let value = value.unwrap_or_else(Vec::new);
 
                 Ok(response::Query {
                     code: 0.into(),
