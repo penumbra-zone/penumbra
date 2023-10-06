@@ -3,11 +3,10 @@ use std::str::FromStr;
 use rand_core::OsRng;
 use wasm_bindgen::prelude::*;
 
-use penumbra_keys::keys::{SeedPhrase, SpendKey};
+use crate::error::WasmResult;
+use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use penumbra_keys::{Address, FullViewingKey};
 use penumbra_proto::{core::keys::v1alpha1 as pb, serializers::bech32str, DomainType};
-
-use crate::error::WasmResult;
 
 /// generate a spend key from a seed phrase
 /// Arguments:
@@ -16,7 +15,8 @@ use crate::error::WasmResult;
 #[wasm_bindgen]
 pub fn generate_spend_key(seed_phrase: &str) -> WasmResult<JsValue> {
     let seed = SeedPhrase::from_str(seed_phrase)?;
-    let spend_key = SpendKey::from_seed_phrase_bip39(seed, 0);
+    let path = Bip44Path::new(0);
+    let spend_key = SpendKey::from_seed_phrase_bip44(seed, &path);
 
     let proto = spend_key.to_proto();
 
