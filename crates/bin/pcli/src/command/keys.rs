@@ -18,11 +18,7 @@ pub enum KeysCmd {
     #[clap(subcommand)]
     Export(ExportCmd),
     /// Generate a new seed phrase and import its corresponding key.
-    Generate {
-        /// If set, will use legacy BIP39 derivation.
-        #[clap(long, action)]
-        legacy_raw_bip39_derivation: bool,
-    },
+    Generate,
     /// Delete the entire wallet permanently.
     Delete,
 }
@@ -75,21 +71,15 @@ impl KeysCmd {
     pub fn exec(&self, data_dir: impl AsRef<camino::Utf8Path>) -> Result<()> {
         let data_dir = data_dir.as_ref();
         match self {
-            KeysCmd::Generate {
-                legacy_raw_bip39_derivation,
-            } => {
+            KeysCmd::Generate => {
                 let seed_phrase: SeedPhrase = SeedPhrase::generate(OsRng);
 
                 // xxx: Something better should be done here, this is in danger of being
                 // shared by users accidentally in log output.
                 println!("YOUR PRIVATE SEED PHRASE: {seed_phrase}\nDO NOT SHARE WITH ANYONE!");
 
-                let wallet = if *bip39_derivation {
-                    KeyStore::from_seed_phrase_bip39(seed_phrase)
-                } else {
-                    let path = Bip44Path::new(0);
-                    KeyStore::from_seed_phrase_bip44(seed_phrase, &path)
-                };
+                let path = Bip44Path::new(0);
+                let wallet = KeyStore::from_seed_phrase_bip44(seed_phrase, &path);
                 wallet.save(data_dir.join(crate::CUSTODY_FILE_NAME))?;
                 self.archive_wallet(&wallet)?;
             }
