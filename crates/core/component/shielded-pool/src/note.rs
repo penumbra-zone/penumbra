@@ -559,14 +559,14 @@ mod tests {
     use rand_core::OsRng;
 
     use super::*;
-    use penumbra_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 
     #[test]
     fn note_encryption_and_decryption() {
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::generate(rng);
-        let sk = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
         let (dest, _dtk_d) = ivk.payment_address(0u32.into());
@@ -589,7 +589,7 @@ mod tests {
         assert_eq!(plaintext, note);
 
         let seed_phrase = SeedPhrase::generate(rng);
-        let sk2 = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk2 = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk2 = sk2.full_viewing_key();
         let ivk2 = fvk2.incoming();
 
@@ -601,7 +601,7 @@ mod tests {
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::generate(rng);
-        let sk = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
         let ovk = fvk.outgoing();
@@ -636,7 +636,7 @@ mod tests {
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::generate(rng);
-        let sk = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
         let (dest, _dtk_d) = ivk.payment_address(0u32.into());

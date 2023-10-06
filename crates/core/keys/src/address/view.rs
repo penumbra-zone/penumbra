@@ -107,14 +107,14 @@ impl TryFrom<pb::AddressView> for AddressView {
 mod tests {
     use rand_core::OsRng;
 
-    use crate::keys::{SeedPhrase, SpendKey};
+    use crate::keys::{Bip44Path, SeedPhrase, SpendKey};
 
     use super::*;
 
     #[test]
     fn address_view_basic() {
-        let sk1 = SpendKey::from_seed_phrase_bip39(SeedPhrase::generate(OsRng), 0);
-        let sk2 = SpendKey::from_seed_phrase_bip39(SeedPhrase::generate(OsRng), 0);
+        let sk1 = SpendKey::from_seed_phrase_bip44(SeedPhrase::generate(OsRng), &Bip44Path::new(0));
+        let sk2 = SpendKey::from_seed_phrase_bip44(SeedPhrase::generate(OsRng), &Bip44Path::new(0));
 
         let fvk1 = sk1.full_viewing_key();
         let fvk2 = sk2.full_viewing_key();

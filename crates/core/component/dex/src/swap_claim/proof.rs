@@ -16,7 +16,7 @@ use penumbra_asset::{
     asset::{self},
     Value, ValueVar,
 };
-use penumbra_keys::keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
+use penumbra_keys::keys::{Bip44Path, NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
 use penumbra_num::{Amount, AmountVar};
 use penumbra_sct::{Nullifier, NullifierVar};
 use penumbra_shielded_pool::{
@@ -217,7 +217,7 @@ impl DummyWitness for SwapClaimCircuit {
         };
 
         let seed_phrase = SeedPhrase::from_randomness(&[b'f'; 32]);
-        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -450,7 +450,7 @@ mod tests {
 
 
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-        let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
@@ -537,7 +537,7 @@ mod tests {
         let (pk, vk) = generate_prepared_test_parameters::<SwapClaimCircuit>(&mut rng);
 
         let seed_phrase = SeedPhrase::generate(rng);
-        let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());

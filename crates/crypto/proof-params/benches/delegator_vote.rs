@@ -8,7 +8,7 @@ use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_asset::{balance, Value};
 use penumbra_governance::{DelegatorVoteCircuit, DelegatorVoteProof};
-use penumbra_keys::keys::{NullifierKey, SeedPhrase, SpendKey};
+use penumbra_keys::keys::{Bip44Path, NullifierKey, SeedPhrase, SpendKey};
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::Note;
@@ -54,7 +54,7 @@ fn delegator_vote_proving_time(c: &mut Criterion) {
     let value_to_send = Value::from_str("1upenumbra").expect("valid value");
 
     let seed_phrase = SeedPhrase::generate(OsRng);
-    let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+    let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
     let fvk_sender = sk_sender.full_viewing_key();
     let ivk_sender = fvk_sender.incoming();
     let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());

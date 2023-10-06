@@ -413,7 +413,7 @@ mod tests {
 
     use super::*;
     use penumbra_asset::{asset, Value};
-    use penumbra_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 
     #[test]
     /// Check the swap plaintext can be encrypted and decrypted with the OVK.
@@ -421,7 +421,7 @@ mod tests {
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::generate(rng);
-        let sk = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
         let ovk = fvk.outgoing();

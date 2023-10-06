@@ -262,7 +262,7 @@ mod tests {
     use super::*;
     use ark_ff::{PrimeField, UniformRand};
     use penumbra_asset::{Balance, Value};
-    use penumbra_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
     use penumbra_num::Amount;
     use penumbra_proof_params::generate_prepared_test_parameters;
     use proptest::prelude::*;
@@ -283,7 +283,7 @@ mod tests {
 
 
         let seed_phrase = SeedPhrase::generate(rng);
-        let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());

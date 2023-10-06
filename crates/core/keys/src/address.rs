@@ -277,13 +277,13 @@ mod tests {
     use rand_core::OsRng;
 
     use super::*;
-    use crate::keys::{SeedPhrase, SpendKey};
+    use crate::keys::{Bip44Path, SeedPhrase, SpendKey};
 
     #[test]
     fn test_address_encoding() {
         let rng = OsRng;
         let seed_phrase = SeedPhrase::generate(rng);
-        let sk = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
         let (dest, _dtk_d) = ivk.payment_address(0u32.into());
@@ -318,7 +318,7 @@ mod tests {
     fn test_bytes_roundtrip() {
         let rng = OsRng;
         let seed_phrase = SeedPhrase::generate(rng);
-        let sk = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
         let (dest, _dtk_d) = ivk.payment_address(0u32.into());
@@ -333,7 +333,7 @@ mod tests {
     fn test_address_keys_are_diversified() {
         let rng = OsRng;
         let seed_phrase = SeedPhrase::generate(rng);
-        let sk = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk = sk.full_viewing_key();
         let ivk = fvk.incoming();
         let (dest1, dtk_d1) = ivk.payment_address(0u32.into());

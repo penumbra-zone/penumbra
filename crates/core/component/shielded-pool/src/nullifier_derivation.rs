@@ -19,7 +19,7 @@ use tct::StateCommitment;
 
 use crate::{Note, Rseed};
 use penumbra_asset::Value;
-use penumbra_keys::keys::{NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
+use penumbra_keys::keys::{Bip44Path, NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
 use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 use penumbra_sct::{Nullifier, NullifierVar};
 
@@ -76,7 +76,7 @@ impl ConstraintSynthesizer<Fq> for NullifierDerivationCircuit {
 impl DummyWitness for NullifierDerivationCircuit {
     fn with_dummy_witness() -> Self {
         let seed_phrase = SeedPhrase::from_randomness(&[b'f'; 32]);
-        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -221,9 +221,8 @@ mod tests {
             let mut rng = OsRng;
             let (pk, vk) = generate_prepared_test_parameters::<NullifierDerivationCircuit>(&mut rng);
 
-
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-            let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+            let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
             let fvk_sender = sk_sender.full_viewing_key();
             let ivk_sender = fvk_sender.incoming();
             let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());

@@ -527,7 +527,7 @@ mod tests {
     use penumbra_dex::{swap::SwapPlaintext, swap::SwapPlan, TradingPair};
     use penumbra_fee::Fee;
     use penumbra_keys::{
-        keys::{SeedPhrase, SpendKey},
+        keys::{Bip44Path, SeedPhrase, SpendKey},
         Address,
     };
     use penumbra_shielded_pool::Note;
@@ -550,7 +550,7 @@ mod tests {
     fn plan_effect_hash_matches_transaction_effect_hash() {
         let rng = OsRng;
         let seed_phrase = SeedPhrase::generate(rng);
-        let sk = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk = sk.full_viewing_key();
         let (addr, _dtk) = fvk.incoming().payment_address(0u32.into());
 

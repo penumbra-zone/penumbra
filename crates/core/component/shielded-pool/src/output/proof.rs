@@ -229,7 +229,7 @@ mod tests {
     use ark_ff::UniformRand;
     use decaf377::{Fq, Fr};
     use penumbra_asset::{asset, Balance, Value};
-    use penumbra_keys::keys::{SeedPhrase, SpendKey};
+    use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
     use penumbra_proof_params::generate_prepared_test_parameters;
     use proptest::prelude::*;
 
@@ -261,7 +261,7 @@ mod tests {
 
 
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-            let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+            let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
             let fvk_recipient = sk_recipient.full_viewing_key();
             let ivk_recipient = fvk_recipient.incoming();
             let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
@@ -304,7 +304,7 @@ mod tests {
         let (pk, vk) = generate_prepared_test_parameters::<OutputCircuit>(&mut rng);
 
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-        let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
@@ -353,7 +353,7 @@ mod tests {
         let (pk, vk) = generate_prepared_test_parameters::<OutputCircuit>(&mut rng);
 
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-        let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
