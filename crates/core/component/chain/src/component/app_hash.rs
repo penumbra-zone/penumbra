@@ -76,7 +76,7 @@ pub trait AppHashRead {
     async fn get_with_proof_to_apphash_tm(
         &self,
         key: Vec<u8>,
-    ) -> anyhow::Result<Option<(Vec<u8>, tendermint::merkle::proof::ProofOps)>>;
+    ) -> anyhow::Result<(Option<Vec<u8>>, tendermint::merkle::proof::ProofOps)>;
 
     async fn app_hash(&self) -> anyhow::Result<AppHash>;
 }
@@ -126,10 +126,8 @@ impl AppHashRead for Snapshot {
     async fn get_with_proof_to_apphash_tm(
         &self,
         key: Vec<u8>,
-    ) -> Result<Option<(Vec<u8>, TendermintMerkleProof)>> {
-        let (Some(value), ics23_proof) = self.get_with_proof_to_apphash(key.to_vec()).await? else {
-            return Ok(None);
-        };
+    ) -> Result<(Option<Vec<u8>>, TendermintMerkleProof)> {
+        let (value, ics23_proof) = self.get_with_proof_to_apphash(key.to_vec()).await?;
 
         let jmt_op = tendermint::merkle::proof::ProofOp {
             field_type: "jmt:v".to_string(),
@@ -146,7 +144,7 @@ impl AppHashRead for Snapshot {
             ops: vec![jmt_op, root_op],
         };
 
-        Ok(Some((value, proof)))
+        Ok((value, proof))
     }
 }
 
