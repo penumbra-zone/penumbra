@@ -3,7 +3,7 @@ use ibc_types::core::{
         MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
         MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket, MsgTimeout,
     },
-    client::msgs::{MsgCreateClient, MsgSubmitMisbehaviour, MsgUpdateClient},
+    client::msgs::{MsgCreateClient, MsgSubmitMisbehaviour, MsgUpdateClient, MsgUpgradeClient},
     connection::msgs::{
         MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry,
     },
@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 pub enum IbcAction {
     CreateClient(MsgCreateClient),
     UpdateClient(MsgUpdateClient),
+    UpgradeClient(MsgUpgradeClient),
     SubmitMisbehavior(MsgSubmitMisbehaviour),
     ConnectionOpenInit(MsgConnectionOpenInit),
     ConnectionOpenTry(MsgConnectionOpenTry),
@@ -58,6 +59,9 @@ impl IbcAction {
             }
             IbcAction::UpdateClient(msg) => {
                 tracing::info_span!(parent: parent, "UpdateClient", client_id = %msg.client_id)
+            }
+            IbcAction::UpgradeClient(msg) => {
+                tracing::info_span!(parent: parent, "UpgradeClient", client_id = %msg.client_id)
             }
             IbcAction::SubmitMisbehavior(msg) => {
                 tracing::info_span!(parent: parent, "SubmitMisbehavior", client_id = %msg.client_id)
@@ -135,6 +139,10 @@ impl TryFrom<pb::IbcAction> for IbcAction {
                 let msg = MsgUpdateClient::decode(raw_action_bytes)?;
                 IbcAction::UpdateClient(msg)
             }
+            MsgUpgradeClient::TYPE_URL => {
+                let msg = MsgUpgradeClient::decode(raw_action_bytes)?;
+                IbcAction::UpgradeClient(msg)
+            }
             MsgConnectionOpenInit::TYPE_URL => {
                 let msg = MsgConnectionOpenInit::decode(raw_action_bytes)?;
                 IbcAction::ConnectionOpenInit(msg)
@@ -201,6 +209,10 @@ impl From<IbcAction> for pb::IbcAction {
             },
             IbcAction::UpdateClient(msg) => pbjson_types::Any {
                 type_url: MsgUpdateClient::TYPE_URL.to_string(),
+                value: msg.encode_to_vec().into(),
+            },
+            IbcAction::UpgradeClient(msg) => pbjson_types::Any {
+                type_url: MsgUpgradeClient::TYPE_URL.to_string(),
                 value: msg.encode_to_vec().into(),
             },
             IbcAction::SubmitMisbehavior(msg) => pbjson_types::Any {
