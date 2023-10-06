@@ -580,6 +580,24 @@ impl ViewProtocolService for ViewService {
             planner.position_withdraw(position_id, reserves, trading_pair);
         }
 
+        // Insert any ICS20 withdrawals.
+        for ics20_withdrawal in prq.ics20_withdrawals {
+            planner.ics20_withdrawal(
+                ics20_withdrawal
+                    .try_into()
+                    .map_err(|e| tonic::Status::invalid_argument(format!("{e:#}")))?,
+            );
+        }
+
+        // Finally, insert all the requested IBC actions.
+        for ibc_action in prq.ibc_actions {
+            planner.ibc_action(
+                ibc_action
+                    .try_into()
+                    .map_err(|e| tonic::Status::invalid_argument(format!("{e:#}")))?,
+            );
+        }
+
         let fvk = self.storage.full_viewing_key().await.map_err(|e| {
             tonic::Status::failed_precondition(format!("Error retrieving full viewing key: {e:#}"))
         })?;
@@ -598,15 +616,6 @@ impl ViewProtocolService for ViewService {
             .await
             .context("could not plan requested transaction")
             .map_err(|e| tonic::Status::invalid_argument(format!("{e:#}")))?;
-
-        // Finally, insert all the requested IBC actions.
-        for ibc_action in prq.ibc_actions {
-            planner.ibc_action(
-                ibc_action
-                    .try_into()
-                    .map_err(|e| tonic::Status::invalid_argument(format!("{e:#}")))?,
-            );
-        }
 
         Ok(tonic::Response::new(TransactionPlannerResponse {
             plan: Some(plan.into()),
