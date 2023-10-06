@@ -106,7 +106,7 @@ impl ViewServer {
     /// Returns true if the block contains new notes, swaps or false if the block is empty for us
     ///     compact_block: `v1alpha1::CompactBlock`
     /// Scan results are saved in-memory rather than returned
-    /// Use `get_updates()` to get the scan results
+    /// Use `flush_updates()` to get the scan results
     /// Returns: `bool`
     #[wasm_bindgen]
     pub async fn scan_block(&mut self, compact_block: JsValue) -> WasmResult<bool> {
