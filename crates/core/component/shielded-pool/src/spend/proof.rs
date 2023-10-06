@@ -26,7 +26,7 @@ use penumbra_tct::r1cs::StateCommitmentVar;
 use crate::{note, Note, Rseed};
 use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
 use penumbra_keys::keys::{
-    AuthorizationKeyVar, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
+    AuthorizationKeyVar, Bip44Path, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
 };
 use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
@@ -173,7 +173,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
 impl DummyWitness for SpendCircuit {
     fn with_dummy_witness() -> Self {
         let seed_phrase = SeedPhrase::from_randomness(&[b'f'; 32]);
-        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -343,7 +343,7 @@ mod tests {
     use decaf377::{Fq, Fr};
     use penumbra_asset::{asset, Value};
     use penumbra_keys::{
-        keys::{SeedPhrase, SpendKey},
+        keys::{Bip44Path, SeedPhrase, SpendKey},
         Address,
     };
     use penumbra_proof_params::generate_prepared_test_parameters;
@@ -374,7 +374,7 @@ mod tests {
         let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
 
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -439,7 +439,7 @@ mod tests {
         let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
 
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -497,10 +497,10 @@ mod tests {
             let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
 
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-            let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+            let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
 
             let wrong_seed_phrase = SeedPhrase::from_randomness(&incorrect_seed_phrase_randomness);
-            let wrong_sk_sender = SpendKey::from_seed_phrase_bip39(wrong_seed_phrase, 0);
+            let wrong_sk_sender = SpendKey::from_seed_phrase_bip44(wrong_seed_phrase, &Bip44Path::new(0));
             let wrong_fvk_sender = wrong_sk_sender.full_viewing_key();
             let wrong_ivk_sender = wrong_fvk_sender.incoming();
             let (wrong_sender, _dtk_d) = wrong_ivk_sender.payment_address(1u32.into());
@@ -559,7 +559,7 @@ mod tests {
             let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
 
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-            let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+            let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
             let fvk_sender = sk_sender.full_viewing_key();
             let ivk_sender = fvk_sender.incoming();
             let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -618,7 +618,7 @@ mod tests {
         let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
 
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -676,7 +676,7 @@ mod tests {
             let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
 
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-            let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+            let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
             let fvk_sender = sk_sender.full_viewing_key();
             let ivk_sender = fvk_sender.incoming();
             let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -737,7 +737,7 @@ mod tests {
             let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
 
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-            let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+            let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
             let fvk_sender = sk_sender.full_viewing_key();
             let ivk_sender = fvk_sender.incoming();
             let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -841,7 +841,7 @@ mod tests {
     impl DummyWitness for MerkleProofCircuit {
         fn with_dummy_witness() -> Self {
             let seed_phrase = SeedPhrase::from_randomness(&[b'f'; 32]);
-            let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+            let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
             let fvk_sender = sk_sender.full_viewing_key();
             let ivk_sender = fvk_sender.incoming();
             let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
@@ -891,7 +891,7 @@ mod tests {
         let (pk, vk) = generate_prepared_test_parameters::<MerkleProofCircuit>(&mut rng);
 
         let seed_phrase = SeedPhrase::from_randomness(&[b'f'; 32]);
-        let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());

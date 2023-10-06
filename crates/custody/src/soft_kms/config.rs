@@ -38,7 +38,7 @@ fn is_default<T: Default + Eq>(value: &T) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use penumbra_keys::keys::SeedPhrase;
+    use penumbra_keys::keys::{Bip44Path, SeedPhrase};
 
     use crate::policy::PreAuthorizationPolicy;
 
@@ -47,7 +47,7 @@ mod tests {
     #[test]
     fn toml_config_round_trip() {
         let seed_phrase = SeedPhrase::generate(rand_core::OsRng);
-        let spend_key = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let spend_key = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
 
         let pak = ed25519_consensus::SigningKey::new(rand_core::OsRng);
         let pvk = pak.verification_key();

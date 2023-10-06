@@ -176,7 +176,7 @@ mod test {
     use super::OutputPlan;
     use penumbra_asset::Value;
     use penumbra_keys::{
-        keys::{SeedPhrase, SpendKey},
+        keys::{Bip44Path, SeedPhrase, SpendKey},
         PayloadKey,
     };
     use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
@@ -189,7 +189,7 @@ mod test {
     fn check_output_proof_verification() {
         let mut rng = OsRng;
         let seed_phrase = SeedPhrase::generate(rng);
-        let sk = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let ovk = sk.full_viewing_key().outgoing();
         let dummy_memo_key: PayloadKey = [0; 32].into();
 

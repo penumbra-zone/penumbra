@@ -10,7 +10,7 @@ use penumbra_dex::{
     BatchSwapOutputData, TradingPair,
 };
 use penumbra_fee::Fee;
-use penumbra_keys::keys::{NullifierKey, SeedPhrase, SpendKey};
+use penumbra_keys::keys::{Bip44Path, NullifierKey, SeedPhrase, SpendKey};
 use penumbra_num::Amount;
 use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
 use penumbra_sct::Nullifier;
@@ -58,7 +58,7 @@ fn prove(
 
 fn swap_claim_proving_time(c: &mut Criterion) {
     let seed_phrase = SeedPhrase::generate(OsRng);
-    let sk_recipient = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+    let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
     let fvk_recipient = sk_recipient.full_viewing_key();
     let ivk_recipient = fvk_recipient.incoming();
     let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());

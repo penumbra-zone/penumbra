@@ -5,7 +5,7 @@ use ark_relations::r1cs::{
 };
 use decaf377::Fq;
 use penumbra_asset::Value;
-use penumbra_keys::keys::{NullifierKey, SeedPhrase, SpendKey};
+use penumbra_keys::keys::{Bip44Path, NullifierKey, SeedPhrase, SpendKey};
 use penumbra_proof_params::NULLIFIER_DERIVATION_PROOF_PROVING_KEY;
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{Note, Rseed};
@@ -29,7 +29,7 @@ fn prove(position: tct::Position, note: Note, nk: NullifierKey, nullifier: Nulli
 
 fn nullifier_derivation_proving_time(c: &mut Criterion) {
     let seed_phrase = SeedPhrase::generate(OsRng);
-    let sk_sender = SpendKey::from_seed_phrase_bip39(seed_phrase, 0);
+    let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
     let fvk_sender = sk_sender.full_viewing_key();
     let ivk_sender = fvk_sender.incoming();
     let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
