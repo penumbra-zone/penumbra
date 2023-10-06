@@ -62,6 +62,8 @@ pub struct ViewServer {
     denoms: BTreeMap<Id, DenomMetadata>,
     nct: Tree,
     storage: IndexedDBStorage,
+    last_position: Option<StoredPosition>,
+    last_forgotten: Option<Forgotten>,
 }
 
 #[wasm_bindgen]
@@ -94,6 +96,8 @@ impl ViewServer {
             nct: tree,
             swaps: Default::default(),
             storage: IndexedDBStorage::new(constants).await?,
+            last_position: None,
+            last_forgotten: None,
         };
         Ok(view_server)
     }
@@ -248,34 +252,32 @@ impl ViewServer {
 
     /// Get new notes, swaps, SCT state updates
     /// Function also clears state
-    /// Arguments:
-    ///     last_position: `Option<StoredPosition>`
-    ///     last_forgotten: `Option<Forgotten>`
     /// Returns: `ScanBlockResult`
     #[wasm_bindgen]
     pub fn flush_updates(
         &mut self,
-        last_position: JsValue,
-        last_forgotten: JsValue,
     ) -> WasmResult<JsValue> {
-        let stored_position: Option<StoredPosition> =
-            serde_wasm_bindgen::from_value(last_position)?;
-        let stored_forgotten: Option<Forgotten> = serde_wasm_bindgen::from_value(last_forgotten)?;
 
         let nct_updates: Updates = self
             .nct
             .updates(
-                stored_position.unwrap_or_default(),
-                stored_forgotten.unwrap_or_default(),
+                self.last_position.unwrap_or_default(),
+                self.last_forgotten.unwrap_or_default(),
             )
             .collect::<Updates>();
 
         let updates = ScanBlockResult {
             height: self.latest_height,
-            nct_updates,
+            nct_updates: nct_updates.clone(),
             new_notes: self.notes.clone().into_values().collect(),
             new_swaps: self.swaps.clone().into_values().collect(),
         };
+
+        self.notes = Default::default();
+        self.swaps = Default::default();
+
+        self.last_position= nct_updates.set_position;
+        self.last_forgotten = nct_updates.set_forgotten;
 
         let result = serde_wasm_bindgen::to_value(&updates)?;
         Ok(result)
