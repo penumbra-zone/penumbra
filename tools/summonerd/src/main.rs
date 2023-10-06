@@ -1,5 +1,6 @@
 mod coordinator;
 mod participant;
+mod penumbra_knower;
 mod server;
 mod storage;
 
@@ -9,13 +10,15 @@ use clap::Parser;
 use console_subscriber::ConsoleLayer;
 use coordinator::Coordinator;
 use metrics_tracing_context::MetricsLayer;
+use penumbra_keys::FullViewingKey;
 use penumbra_proto::tools::summoning::v1alpha1::ceremony_coordinator_service_server::CeremonyCoordinatorServiceServer;
 use std::net::SocketAddr;
 use storage::Storage;
 use tonic::transport::Server;
 use tracing_subscriber::{prelude::*, EnvFilter};
+use url::Url;
 
-use crate::server::CoordinatorService;
+use crate::{penumbra_knower::PenumbraKnower, server::CoordinatorService};
 
 /// 100 MIB
 const MAX_MESSAGE_SIZE: usize = 100 * 1024 * 1024;
@@ -39,9 +42,13 @@ struct Opt {
 enum Command {
     /// Start the coordinator.
     Start {
+        #[clap(long, display_order = 700)]
+        storage_dir: Utf8PathBuf,
         #[clap(long, display_order = 800)]
-        storage_path: Utf8PathBuf,
-        #[clap(long, display_order = 900, default_value = "127.0.0.1:8081")]
+        fvk: FullViewingKey,
+        #[clap(long, display_order = 900)]
+        node: Url,
+        #[clap(long, display_order = 901, default_value = "127.0.0.1:8081")]
         listen: SocketAddr,
     },
 }
@@ -50,15 +57,18 @@ impl Opt {
     async fn exec(self) -> Result<()> {
         match self.cmd {
             Command::Start {
+                storage_dir,
+                fvk,
+                node,
                 listen,
-                storage_path,
             } => {
-                //let root = Phase2CeremonyCRS::root()?;
-                //let storage = Storage::new(root);
-                let storage = Storage::load_or_initialize(storage_path).await?;
+                let storage = Storage::load_or_initialize(storage_dir.join("ceremony.db")).await?;
+                let knower =
+                    PenumbraKnower::load_or_initialize(storage_dir.join("penumbra.db"), &fvk, node)
+                        .await?;
                 let (coordinator, participant_tx) = Coordinator::new(storage.clone());
                 let coordinator_handle = tokio::spawn(coordinator.run());
-                let service = CoordinatorService::new(storage, participant_tx);
+                let service = CoordinatorService::new(knower, storage, participant_tx);
                 let grpc_server =
                     Server::builder()
                         .accept_http1(true)
