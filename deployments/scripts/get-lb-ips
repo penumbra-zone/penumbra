@@ -14,7 +14,7 @@ fi
 # Declare monikers for nodes on the network.
 # These monikers will be added to the generated vars file,
 # alongside the IP info.
-node_names=(phobos-seed deimos naid thalassa)
+node_names=(phobos-seed deimos naiad thalassa)
 
 HELM_RELEASE="${1:-}"
 shift 1

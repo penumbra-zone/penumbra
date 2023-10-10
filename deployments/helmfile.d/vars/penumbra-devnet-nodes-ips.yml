@@ -5,4 +5,4 @@ nodes:
   - external_address: 34.16.34.194:26656
     moniker: deimos
   - external_address: 34.173.166.32:26656
-    moniker: naid
+    moniker: naiad
