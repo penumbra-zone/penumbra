@@ -5,6 +5,6 @@ nodes:
   - external_address: 34.28.180.178:26656
     moniker: deimos
   - external_address: 34.42.196.153:26656
-    moniker: naid
+    moniker: naiad
   - external_address: 35.239.76.154:26656
     moniker: thalassa
