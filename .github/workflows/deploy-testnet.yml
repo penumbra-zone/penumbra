@@ -77,7 +77,7 @@ jobs:
         run: |-
           # Set the exact version for the current testnet for Osiris, so deps match.
           kubectl set image deployments \
-              -l "app.kubernetes.io/instance=osiris-testnet"
+              -l "app.kubernetes.io/instance=osiris-testnet" \
               "osiris=ghcr.io/penumbra-zone/osiris:penumbra-${PENUMBRA_VERSION}"
           # Wait for rollout to complete. Will block until pods are marked Ready.
           kubectl rollout status deployment \
@@ -88,7 +88,7 @@ jobs:
         run: |-
           # Set the exact version for the current testnet for Galileo, so deps match.
           kubectl set image deployments \
-              -l "app.kubernetes.io/instance=galileo"
+              -l "app.kubernetes.io/instance=galileo" \
               "galileo=ghcr.io/penumbra-zone/galileo:penumbra-${PENUMBRA_VERSION}"
           # Wait for rollout to complete. Will block until pods are marked Ready.
           kubectl rollout status deployment \
