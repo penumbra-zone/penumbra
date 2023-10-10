@@ -29,7 +29,11 @@ use tonic::transport::Server;
 use url::Url;
 
 mod proxy;
-pub use proxy::{ObliviousQueryProxy, SpecificQueryProxy, TendermintProxyProxy};
+pub use proxy::{
+    AppQueryProxy, ChainQueryProxy, CompactBlockQueryProxy, DexQueryProxy, DexSimulationProxy,
+    GovernanceQueryProxy, SctQueryProxy, ShieldedPoolQueryProxy, StakeQueryProxy,
+    TendermintProxyProxy,
+};
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -303,8 +307,15 @@ impl Opt {
                         .connect()
                         .await?;
 
-                let oblivious_query_proxy = ObliviousQueryProxy(proxy_channel.clone());
-                let specific_query_proxy = SpecificQueryProxy(proxy_channel.clone());
+                let app_query_proxy = AppQueryProxy(proxy_channel.clone());
+                let governance_query_proxy = GovernanceQueryProxy(proxy_channel.clone());
+                let dex_query_proxy = DexQueryProxy(proxy_channel.clone());
+                let dex_simulation_proxy = DexSimulationProxy(proxy_channel.clone());
+                let sct_query_proxy = SctQueryProxy(proxy_channel.clone());
+                let shielded_pool_query_proxy = ShieldedPoolQueryProxy(proxy_channel.clone());
+                let chain_query_proxy = ChainQueryProxy(proxy_channel.clone());
+                let stake_query_proxy = StakeQueryProxy(proxy_channel.clone());
+                let compact_block_query_proxy = CompactBlockQueryProxy(proxy_channel.clone());
                 let tendermint_proxy_proxy = TendermintProxyProxy(proxy_channel.clone());
 
                 let view_service = ViewProtocolServiceServer::new(
@@ -320,8 +331,15 @@ impl Opt {
                     .accept_http1(true)
                     .add_service(tonic_web::enable(view_service))
                     .add_optional_service(custody_service.map(tonic_web::enable))
-                    .add_service(tonic_web::enable(oblivious_query_proxy))
-                    .add_service(tonic_web::enable(specific_query_proxy))
+                    .add_service(tonic_web::enable(app_query_proxy))
+                    .add_service(tonic_web::enable(governance_query_proxy))
+                    .add_service(tonic_web::enable(dex_query_proxy))
+                    .add_service(tonic_web::enable(dex_simulation_proxy))
+                    .add_service(tonic_web::enable(sct_query_proxy))
+                    .add_service(tonic_web::enable(shielded_pool_query_proxy))
+                    .add_service(tonic_web::enable(chain_query_proxy))
+                    .add_service(tonic_web::enable(stake_query_proxy))
+                    .add_service(tonic_web::enable(compact_block_query_proxy))
                     .add_service(tonic_web::enable(tendermint_proxy_proxy))
                     .add_service(tonic_web::enable(
                         tonic_reflection::server::Builder::configure()
