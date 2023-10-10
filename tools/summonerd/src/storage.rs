@@ -21,6 +21,7 @@ use tokio::task::spawn_blocking;
 use crate::penumbra_knower::PenumbraKnower;
 
 const MIN_BID_AMOUNT_U64: u64 = 1u64;
+const MAX_STRIKES: u64 = 3u64;
 
 /// Represents the possible outcomes of checking contribution eligibility.
 #[derive(Clone, Debug)]
@@ -95,6 +96,33 @@ impl Storage {
         Ok(storage)
     }
 
+    pub async fn strike(&self, address: &Address) -> Result<()> {
+        let mut conn = self.pool.get()?;
+        let tx = conn.transaction()?;
+        tx.execute(
+        "INSERT INTO participant_metadata VALUES(?1, 1) ON CONFLICT(address) DO UPDATE SET strikes = strikes + 1;",
+            [
+            address.to_vec()
+            ],
+        )?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    async fn get_strikes(&self, address: &Address) -> Result<u64> {
+        let mut conn = self.pool.get()?;
+        let tx = conn.transaction()?;
+        let out = tx
+            .query_row(
+                "SELECT strikes FROM participant_metadata WHERE address = ?1",
+                [address.to_vec()],
+                |row| Ok(row.get::<usize, u64>(0)?),
+            )
+            .optional()?
+            .unwrap_or(0);
+        Ok(out)
+    }
+
     /// Check if a participant can contribute.
     ///
     /// If they can't, None will be returned, otherwise we'll have Some(amount),
@@ -105,9 +133,9 @@ impl Storage {
         address: &Address,
     ) -> Result<ContributionAllowed> {
         // Criteria:
-        // - Not banned TODO
         // - Bid more than min amount
         // - Hasn't already contributed
+        // - Not banned
         let amount = knower.total_amount_sent_to_me(&address).await?;
         if amount < Amount::from(MIN_BID_AMOUNT_U64) {
             return Ok(ContributionAllowed::DidntBidEnough(amount));
@@ -125,6 +153,9 @@ impl Storage {
         };
         if has_contributed {
             return Ok(ContributionAllowed::AlreadyContributed);
+        }
+        if self.get_strikes(address).await? >= MAX_STRIKES {
+            return Ok(ContributionAllowed::Banned);
         }
         Ok(ContributionAllowed::Yes(amount))
     }
