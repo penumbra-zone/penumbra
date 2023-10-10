@@ -58,7 +58,7 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
         let address = Address::try_from(address)
             .map_err(|e| Status::invalid_argument(format!("Bad address format: {:#}", e)))?;
         // Errors are on our end, None is on their end
-        let _amount = match self
+        let amount = match self
             .storage
             .can_contribute(&self.knower, &address)
             .await
@@ -72,6 +72,7 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
                 )))
             }
         };
+        tracing::info!(?amount, "bid");
         let (participant, response_rx) = Participant::new(address, streaming);
         // TODO: Check if this is what we want to do
         self.participant_tx
