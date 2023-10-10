@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 use penumbra_keys::Address;
+use penumbra_num::Amount;
 use penumbra_proof_setup::all::{Phase2CeremonyCRS, Phase2RawCeremonyContribution};
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::{
@@ -41,13 +42,19 @@ impl Participant {
         !self.tx.is_closed()
     }
 
-    pub fn try_notify(&self, position: u32, connected_participants: u32) -> Result<()> {
+    pub fn try_notify(
+        &self,
+        position: u32,
+        connected_participants: u32,
+        last_slot_bid: Amount,
+        their_bid: Amount,
+    ) -> Result<()> {
         let response = ParticipateResponse {
             msg: Some(ResponseMsg::Position(Position {
                 position,
                 connected_participants,
-                last_slot_bid: None,
-                your_bid: None,
+                last_slot_bid: Some(last_slot_bid.into()),
+                your_bid: Some(their_bid.into()),
             })),
         };
         self.tx.try_send(Ok(response)).with_context(|| {
