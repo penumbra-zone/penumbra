@@ -5,22 +5,19 @@ services are available.
 
 To interactively explore requests and responses, try running [GRPCUI] locally or
 using [Buf Studio][buf-studio] in the browser. Buf Studio has a nicer user
-interface but does not (currently) support streaming requests.
+interface but does not (currently) support streaming requests.  The Buf Studio
+link is preconfigured to make requests against a local `pclientd` instance with
+the default `bind_addr`, but can be aimed at any endpoint.
 
 [GRPCUI]: https://github.com/fullstorydev/grpcui
-[buf-studio]: https://buf.build/studio/penumbra-zone/penumbra/penumbra.client.v1alpha1.ObliviousQueryService/ChainParameters?selectedProtocol=grpc-web&target=http%3A%2F%2Flocalhost%3A8081
+[buf-studio]: https://buf.build/studio/penumbra-zone/penumbra/penumbra.core.app.v1alpha1.QueryService/AppParameters?selectedProtocol=grpc-web&target=http%3A%2F%2Flocalhost%3A8081
 
 ## Accessing public chain state
 
 `pclientd` has an integrated GRPC proxy, routing requests about public chain
 state to the fullnode it's connected to.
 
-Documentation on these RPCs is available here:
-- [`SpecificQueryService`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.client.v1alpha1#penumbra.client.v1alpha1.SpecificQueryService)
-- [`ObliviousQueryService`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.client.v1alpha1#penumbra.client.v1alpha1.ObliviousQueryService)
-- [`TendermintProxyService`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.client.v1alpha1#penumbra.client.v1alpha1.TendermintProxyService)
-
-Note: in the future, these RPCs will be refactored by component (e.g., DEX queries through a `DexQuery`), etc.
+Documentation on these RPCs is available on Buf.build; follow the links in Buf Studio for more information.
 
 ## Accessing private chain state
 
