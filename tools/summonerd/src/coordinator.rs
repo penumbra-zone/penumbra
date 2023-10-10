@@ -2,7 +2,8 @@ use std::{collections::HashMap, time::Duration};
 
 use anyhow::{anyhow, Context, Result};
 use penumbra_keys::Address;
-use rand::{rngs::OsRng, seq::SliceRandom};
+use penumbra_num::Amount;
+use rand::rngs::OsRng;
 use tokio::sync::mpsc::{self, error::TryRecvError};
 
 use crate::{participant::Participant, storage::Storage};
@@ -12,12 +13,12 @@ const CONTRIBUTION_TIME_SECS: u64 = 10 * 60;
 
 pub struct Coordinator {
     storage: Storage,
-    participants: HashMap<Address, Participant>,
-    new_participant_rx: mpsc::Receiver<Participant>,
+    participants: HashMap<Address, (Participant, Amount)>,
+    new_participant_rx: mpsc::Receiver<(Participant, Amount)>,
 }
 
 impl Coordinator {
-    pub fn new(storage: Storage) -> (Self, mpsc::Sender<Participant>) {
+    pub fn new(storage: Storage) -> (Self, mpsc::Sender<(Participant, Amount)>) {
         let (new_participant_tx, new_participant_rx) = mpsc::channel(9001);
         (
             Self {
@@ -44,14 +45,16 @@ impl Coordinator {
             // 2. Score connections
             self.prune_participants();
             let ranked = self.score_participants();
-            // 3. Update everyone on status.
-            self.inform_participants_of_status(&ranked).await;
             // In theory ranked could've become empty for some reason in the meantime
             if ranked.is_empty() {
                 continue;
             }
-            // 5. Get contribution, or error if they don't respond quickly enough
+            // 3. Update everyone on status.
             let contributor = ranked[0];
+            let contributor_bid = self.participants[&contributor].1;
+            self.inform_participants_of_status(&ranked, contributor_bid)
+                .await;
+            // 5. Get contribution, or error if they don't respond quickly enough
             self.contribute(contributor).await?;
             // 6. Remove from pool regardless of what happened
             self.participants.remove(&contributor);
@@ -61,10 +64,10 @@ impl Coordinator {
 
 impl Coordinator {
     async fn wait_for_participant(&mut self) -> Result<()> {
-        if let Some(participant) = self.new_participant_rx.recv().await {
+        if let Some((participant, bid)) = self.new_participant_rx.recv().await {
             let address = participant.address();
             tracing::info!(?address, "has been added as a participant");
-            self.participants.insert(address, participant);
+            self.participants.insert(address, (participant, bid));
             Ok(())
         } else {
             Err(anyhow!("Participant queue was closed"))
@@ -74,10 +77,10 @@ impl Coordinator {
     fn dequeue_participants(&mut self) -> Result<()> {
         loop {
             match self.new_participant_rx.try_recv() {
-                Ok(participant) => {
+                Ok((participant, bid)) => {
                     let address = participant.address();
                     tracing::info!(?address, "has been added as a participant");
-                    self.participants.insert(address, participant);
+                    self.participants.insert(address, (participant, bid));
                 }
                 Err(TryRecvError::Empty) => return Ok(()),
                 Err(e @ TryRecvError::Disconnected) => {
@@ -89,22 +92,24 @@ impl Coordinator {
 
     fn prune_participants(&mut self) {
         self.participants
-            .retain(|_, connection| connection.is_live());
+            .retain(|_, (connection, _)| connection.is_live());
     }
 
     fn score_participants(&self) -> Vec<Address> {
         let mut out: Vec<Address> = self.participants.keys().cloned().collect();
-        out.shuffle(&mut OsRng);
+        out.sort_by_cached_key(|addr| self.participants[addr].1);
         out
     }
 
-    async fn inform_participants_of_status(&mut self, ranked: &[Address]) {
+    async fn inform_participants_of_status(&mut self, ranked: &[Address], contributor_bid: Amount) {
         for (i, address) in ranked.iter().enumerate() {
-            let connection = self
+            let (connection, bid) = self
                 .participants
                 .get(address)
                 .expect("Ranked participants are chosen from the set of connections");
-            if let Err(e) = connection.try_notify(i as u32, ranked.len() as u32) {
+            if let Err(e) =
+                connection.try_notify(i as u32, ranked.len() as u32, contributor_bid, *bid)
+            {
                 tracing::info!(?e, ?address, "pruning connection that we failed to notify");
                 self.participants.remove(address);
             };
@@ -131,7 +136,7 @@ impl Coordinator {
     #[tracing::instrument(skip(self))]
     async fn contribute_inner(&mut self, contributor: Address) -> Result<()> {
         let parent = self.storage.current_crs().await?;
-        let participant = self
+        let (participant, _) = self
             .participants
             .get_mut(&contributor)
             .expect("We ask for the contributions of participants we're connected to");

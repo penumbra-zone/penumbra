@@ -1,4 +1,5 @@
 use penumbra_keys::Address;
+use penumbra_num::Amount;
 use penumbra_proto::penumbra::tools::summoning::v1alpha1::{
     self as pb, ceremony_coordinator_service_server as server,
     participate_request::{Identify, Msg},
@@ -13,14 +14,14 @@ use crate::{participant::Participant, penumbra_knower::PenumbraKnower, storage::
 pub struct CoordinatorService {
     knower: PenumbraKnower,
     storage: Storage,
-    participant_tx: mpsc::Sender<Participant>,
+    participant_tx: mpsc::Sender<(Participant, Amount)>,
 }
 
 impl CoordinatorService {
     pub fn new(
         knower: PenumbraKnower,
         storage: Storage,
-        participant_tx: mpsc::Sender<Participant>,
+        participant_tx: mpsc::Sender<(Participant, Amount)>,
     ) -> Self {
         Self {
             knower,
@@ -76,7 +77,7 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
         let (participant, response_rx) = Participant::new(address, streaming);
         // TODO: Check if this is what we want to do
         self.participant_tx
-            .send(participant)
+            .send((participant, amount))
             .await
             .map_err(|e| Status::internal(format!("cannot register participant {:#}", e)))?;
 
