@@ -140,24 +140,23 @@ impl Coordinator {
             .participants
             .get_mut(&contributor)
             .expect("We ask for the contributions of participants we're connected to");
-        let contribution = match participant.contribute(&parent).await {
-            Ok(crs) => crs,
-            Err(e) => {
-                tracing::info!(?e, "Made a bad contribution");
-                return Ok(());
-            }
-        };
-        if let Some(contribution) = contribution.validate(&mut OsRng, &self.storage.root().await?) {
-            if contribution.is_linked_to(&parent) {
-                self.storage
-                    .commit_contribution(contributor, contribution)
-                    .await?;
-                participant
-                    .confirm(self.storage.current_slot().await?)
-                    .await?;
+        let maybe = participant.contribute(&parent).await?;
+        if let Some(unvalidated) = maybe {
+            if let Some(contribution) =
+                unvalidated.validate(&mut OsRng, &self.storage.root().await?)
+            {
+                if contribution.is_linked_to(&parent) {
+                    self.storage
+                        .commit_contribution(contributor, contribution)
+                        .await?;
+                    participant
+                        .confirm(self.storage.current_slot().await?)
+                        .await?;
+                    return Ok(());
+                }
             }
         }
-        // TODO: Strike if bad contribution
-        Ok(())
+        self.storage.strike(&contributor).await?;
+        return Ok(());
     }
 }

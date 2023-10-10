@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proof_setup::all::{Phase2CeremonyCRS, Phase2RawCeremonyContribution};
@@ -66,7 +66,7 @@ impl Participant {
     pub async fn contribute(
         &mut self,
         parent: &Phase2CeremonyCRS,
-    ) -> Result<Phase2RawCeremonyContribution> {
+    ) -> Result<Option<Phase2RawCeremonyContribution>> {
         self.tx
             .send(Ok(ParticipateResponse {
                 msg: Some(ResponseMsg::ContributeNow(ContributeNow {
@@ -79,11 +79,9 @@ impl Participant {
             msg: Some(RequestMsg::Contribution(contribution)),
         }) = msg
         {
-            Ok(Phase2RawCeremonyContribution::try_from(contribution)?)
+            Ok(Some(Phase2RawCeremonyContribution::try_from(contribution)?))
         } else {
-            Err(anyhow!(
-                "Participant sent a different message than a contribution message when asked"
-            ))
+            Ok(None)
         }
     }
 
