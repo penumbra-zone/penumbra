@@ -1,5 +1,7 @@
 use crate::App;
-use anyhow::Result;
+use anyhow::{Context, Result};
+use penumbra_asset::Value;
+use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_proof_setup::all::{Phase2CeremonyContribution, Phase2RawCeremonyCRS};
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::ceremony_coordinator_service_client::CeremonyCoordinatorServiceClient,
@@ -8,7 +10,10 @@ use penumbra_proto::{
         participate_response::{Confirm, ContributeNow, Msg as ResponseMsg},
         ParticipateRequest, ParticipateResponse,
     },
+    view::v1alpha1::GasPricesRequest,
 };
+use penumbra_transaction::memo::MemoPlaintext;
+use penumbra_view::Planner;
 use rand_core::OsRng;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
@@ -17,12 +22,54 @@ use url::Url;
 /// 100 MIB
 const MAX_MESSAGE_SIZE: usize = 100 * 1024 * 1024;
 
+#[tracing::instrument(skip(app))]
+async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -> Result<()> {
+    let gas_prices = app
+        .view
+        .as_mut()
+        .context("view service must be initialized")?
+        .gas_prices(GasPricesRequest {})
+        .await?
+        .into_inner()
+        .gas_prices
+        .expect("gas prices must be available")
+        .try_into()?;
+
+    let value = bid.parse::<Value>()?;
+
+    let memo_plaintext = MemoPlaintext {
+        sender: app.fvk.payment_address(from).0,
+        text: "E PLURIBUS UNUM".to_owned(),
+    };
+
+    let mut planner = Planner::new(OsRng);
+    planner.set_gas_prices(gas_prices);
+    planner.output(value, to);
+    let plan = planner
+        .memo(memo_plaintext)?
+        .plan(
+            app.view
+                .as_mut()
+                .context("view service must be initialized")?,
+            app.fvk.wallet_id(),
+            from,
+        )
+        .await
+        .context("can't build send transaction")?;
+    app.build_and_submit_transaction(plan).await?;
+    Ok(())
+}
+
 #[derive(Debug, clap::Subcommand)]
 pub enum CeremonyCmd {
     /// Contribute to the ceremony
     Contribute {
         #[clap(long)]
         coordinator_url: Url,
+        #[clap(long)]
+        coordinator_address: Address,
+        #[clap(long)]
+        bid: String,
     },
 }
 
@@ -30,15 +77,18 @@ impl CeremonyCmd {
     #[tracing::instrument(skip(self, app))]
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
-            CeremonyCmd::Contribute { coordinator_url } => {
-                // TODO: Use a fixed address
-                let (address, _) = app.fvk.ephemeral_address(
-                    &mut OsRng,
-                    penumbra_keys::keys::AddressIndex {
-                        account: 0,
-                        randomizer: b"ceremonyaddr".as_slice().try_into().unwrap(),
-                    },
-                );
+            CeremonyCmd::Contribute {
+                coordinator_url,
+                coordinator_address,
+                bid,
+            } => {
+                let index = AddressIndex {
+                    account: 0,
+                    randomizer: b"ceremonyaddr".as_slice().try_into().unwrap(),
+                };
+                handle_bid(app, *coordinator_address, index, bid).await?;
+                let address = app.fvk.payment_address(index).0;
+
                 let (req_tx, req_rx) = mpsc::channel::<ParticipateRequest>(10);
                 tracing::debug!(?address, "participate request");
                 req_tx
