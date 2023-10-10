@@ -12,12 +12,24 @@ use penumbra_proto::{
     },
     Message,
 };
-use r2d2_sqlite::{rusqlite::OpenFlags, SqliteConnectionManager};
+use r2d2_sqlite::{
+    rusqlite::{OpenFlags, OptionalExtension},
+    SqliteConnectionManager,
+};
 use tokio::task::spawn_blocking;
 
 use crate::penumbra_knower::PenumbraKnower;
 
 const MIN_BID_AMOUNT_U64: u64 = 1u64;
+
+/// Represents the possible outcomes of checking contribution eligibility.
+#[derive(Clone, Debug)]
+pub enum ContributionAllowed {
+    Yes(Amount),
+    DidntBidEnough(Amount),
+    AlreadyContributed,
+    Banned,
+}
 
 #[derive(Clone)]
 pub struct Storage {
@@ -91,16 +103,30 @@ impl Storage {
         &self,
         knower: &PenumbraKnower,
         address: &Address,
-    ) -> Result<Option<Amount>> {
+    ) -> Result<ContributionAllowed> {
         // Criteria:
         // - Not banned TODO
         // - Bid more than min amount
-        // - Hasn't already contributed TODO
+        // - Hasn't already contributed
         let amount = knower.total_amount_sent_to_me(&address).await?;
         if amount < Amount::from(MIN_BID_AMOUNT_U64) {
-            return Ok(None);
+            return Ok(ContributionAllowed::DidntBidEnough(amount));
         }
-        Ok(Some(amount))
+        let has_contributed = {
+            let mut conn = self.pool.get()?;
+            let tx = conn.transaction()?;
+            tx.query_row(
+                "SELECT 1 FROM phase2_contributions WHERE address = ?1",
+                [address.to_vec()],
+                |_| Ok(()),
+            )
+            .optional()?
+            .is_some()
+        };
+        if has_contributed {
+            return Ok(ContributionAllowed::AlreadyContributed);
+        }
+        Ok(ContributionAllowed::Yes(amount))
     }
 
     pub async fn current_crs(&self) -> Result<Phase2CeremonyCRS> {
