@@ -8,7 +8,11 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{async_trait, Request, Response, Status, Streaming};
 
-use crate::{participant::Participant, penumbra_knower::PenumbraKnower, storage::Storage};
+use crate::{
+    participant::Participant,
+    penumbra_knower::PenumbraKnower,
+    storage::{ContributionAllowed, Storage},
+};
 
 #[derive(Clone)]
 pub struct CoordinatorService {
@@ -66,10 +70,21 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
             .map_err(|e| {
                 Status::internal(format!("failed to look up contributor metadata {:#}", e))
             })? {
-            Some(amount) => amount,
-            None => {
+            ContributionAllowed::Yes(amount) => amount,
+            ContributionAllowed::DidntBidEnough(amount) => {
+                return Err(Status::permission_denied(format!(
+                    "Bid amount {} is not large enough",
+                    amount
+                )))
+            }
+            ContributionAllowed::Banned => {
                 return Err(Status::permission_denied(format!(
                     "nyo contwibution *cries* fow you"
+                )))
+            }
+            ContributionAllowed::AlreadyContributed => {
+                return Err(Status::permission_denied(format!(
+                    "Thanks again for your contribution! (No double dipping, unfortunately)"
                 )))
             }
         };
