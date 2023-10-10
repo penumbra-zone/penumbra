@@ -17,4 +17,9 @@ pub use metrics::*;
 pub fn register_metrics() {
     penumbra_storage::register_metrics();
     penumbra_stake::component::register_metrics();
+    penumbra_dex::component::register_metrics();
+    // TODO: this should be under component::
+    penumbra_governance::register_metrics();
+    penumbra_ibc::component::register_metrics();
+    penumbra_shielded_pool::component::register_metrics();
 }
