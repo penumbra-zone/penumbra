@@ -3,7 +3,7 @@ use camino::Utf8Path;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proof_setup::all::{
-    Phase2CeremonyCRS, Phase2CeremonyContribution, Phase2RawCeremonyCRS,
+    Phase1CeremonyCRS, Phase2CeremonyCRS, Phase2CeremonyContribution, Phase2RawCeremonyCRS,
     Phase2RawCeremonyContribution,
 };
 use penumbra_proto::{
@@ -58,7 +58,9 @@ impl Storage {
 
             // Create the tables
             tx.execute_batch(include_str!("storage/schema.sql"))?;
-            // TODO: Remove this in favor of a specific command for initializing root
+            // TODO(jen): Remove this in favor of a specific command for initializing phase 1 root
+            let phase_1_root = Phase1CeremonyCRS::root()?;
+            // TODO(jen): Transition between phase 1 and phase 2, storing deets in the database
             let root = Phase2CeremonyCRS::root()?;
             tx.execute(
                 "INSERT INTO phase2_contributions VALUES (0, 1, ?1, NULL)",

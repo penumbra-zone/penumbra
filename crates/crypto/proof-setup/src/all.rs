@@ -5,8 +5,9 @@
 use std::array;
 
 use crate::single::{
-    circuit_degree, group::F, log::ContributionHash, DLogProof, Phase2CRSElements,
-    Phase2Contribution, Phase2RawCRSElements, Phase2RawContribution,
+    circuit_degree, group::F, log::ContributionHash, DLogProof, Phase1CRSElements,
+    Phase1RawCRSElements, Phase2CRSElements, Phase2Contribution, Phase2RawCRSElements,
+    Phase2RawContribution,
 };
 use anyhow::{anyhow, Result};
 use ark_relations::r1cs::ConstraintMatrices;
@@ -440,5 +441,96 @@ impl Phase2CeremonyContribution {
         Self(array::from_fn(|i| {
             Phase2Contribution::make(rng, ContributionHash::dummy(), &old.0.as_ref()[i])
         }))
+    }
+}
+
+// TODO: Make the phase 1 and phase 2 functionality generic
+
+/// Holds all of the CRS elements for phase1 in one struct, before validation.
+#[derive(Clone, Debug)]
+pub struct Phase1RawCeremonyCRS([Phase1RawCRSElements; NUM_CIRCUITS]);
+
+impl Phase1RawCeremonyCRS {
+    /// Skip validation, performing the conversion anyways.
+    ///
+    /// Useful when parsing known good data.
+    pub fn assume_valid(self) -> Phase1CeremonyCRS {
+        match self.0 {
+            [x0, x1, x2, x3, x4, x5, x6] => Phase1CeremonyCRS([
+                x0.assume_valid(),
+                x1.assume_valid(),
+                x2.assume_valid(),
+                x3.assume_valid(),
+                x4.assume_valid(),
+                x5.assume_valid(),
+                x6.assume_valid(),
+            ]),
+        }
+    }
+}
+
+impl TryInto<pb::CeremonyCrs> for Phase1CeremonyCRS {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<pb::CeremonyCrs> {
+        Ok(pb::CeremonyCrs {
+            spend: to_bytes(&self.0[0])?,
+            output: to_bytes(&self.0[1])?,
+            delegator_vote: to_bytes(&self.0[2])?,
+            undelegate_claim: to_bytes(&self.0[3])?,
+            swap: to_bytes(&self.0[4])?,
+            swap_claim: to_bytes(&self.0[5])?,
+            nullifer_derivation_crs: to_bytes(&self.0[6])?,
+        })
+    }
+}
+
+impl TryFrom<pb::CeremonyCrs> for Phase1RawCeremonyCRS {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::CeremonyCrs) -> std::result::Result<Self, Self::Error> {
+        Ok(Self([
+            Phase1RawCRSElements::deserialize_compressed(value.spend.as_slice())?,
+            Phase1RawCRSElements::deserialize_compressed(value.output.as_slice())?,
+            Phase1RawCRSElements::deserialize_compressed(value.delegator_vote.as_slice())?,
+            Phase1RawCRSElements::deserialize_compressed(value.undelegate_claim.as_slice())?,
+            Phase1RawCRSElements::deserialize_compressed(value.swap.as_slice())?,
+            Phase1RawCRSElements::deserialize_compressed(value.swap_claim.as_slice())?,
+            Phase1RawCRSElements::deserialize_compressed(value.nullifer_derivation_crs.as_slice())?,
+        ]))
+    }
+}
+
+/// Holds all of the CRS elements for phase1 in one struct.
+#[derive(Clone, Debug)]
+pub struct Phase1CeremonyCRS([Phase1CRSElements; NUM_CIRCUITS]);
+
+impl From<Phase1CeremonyCRS> for Phase1RawCeremonyCRS {
+    fn from(value: Phase1CeremonyCRS) -> Self {
+        Self(array::from_fn(|i| value.0[i].raw.clone()))
+    }
+}
+
+// impl TryFrom<Phase1CeremonyCRS> for pb::CeremonyCrs {
+//     type Error = anyhow::Error;
+
+//     fn try_from(data: Phase1CeremonyCRS) -> Result<pb::CeremonyCrs> {
+//         Phase1RawCeremonyCRS::from(data).try_into()
+//     }
+// }
+
+impl Phase1CeremonyCRS {
+    pub fn root() -> Result<Self> {
+        let [c0, c1, c2, c3, c4, c5, c6] = circuits();
+        println!("GENERATED CIRCUITS");
+        Ok(Self([
+            Phase1CRSElements::root(circuit_degree(&c0)?),
+            Phase1CRSElements::root(circuit_degree(&c1)?),
+            Phase1CRSElements::root(circuit_degree(&c2)?),
+            Phase1CRSElements::root(circuit_degree(&c3)?),
+            Phase1CRSElements::root(circuit_degree(&c4)?),
+            Phase1CRSElements::root(circuit_degree(&c5)?),
+            Phase1CRSElements::root(circuit_degree(&c6)?),
+        ]))
     }
 }
