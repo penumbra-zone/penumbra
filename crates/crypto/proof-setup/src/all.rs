@@ -33,7 +33,6 @@ pub const NUM_CIRCUITS: usize = 7;
 
 /// Generate all of the circuits as matrices.
 fn circuits() -> [ConstraintMatrices<F>; NUM_CIRCUITS] {
-    println!("GENERATING CIRCUITS?");
     [
         generate_constraint_matrices::<SpendCircuit>(),
         generate_constraint_matrices::<OutputCircuit>(),
@@ -121,7 +120,6 @@ impl TryFrom<Phase2CeremonyCRS> for pb::CeremonyCrs {
 impl Phase2CeremonyCRS {
     pub fn root() -> Result<Self> {
         let [c0, c1, c2, c3, c4, c5, c6] = circuits();
-        println!("GENERATED CIRCUITS");
         Ok(Self([
             Phase2CRSElements::dummy_root(circuit_degree(&c0)?),
             Phase2CRSElements::dummy_root(circuit_degree(&c1)?),
@@ -469,7 +467,7 @@ impl Phase1RawCeremonyCRS {
     }
 }
 
-impl TryInto<pb::CeremonyCrs> for Phase1CeremonyCRS {
+impl TryInto<pb::CeremonyCrs> for Phase1RawCeremonyCRS {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<pb::CeremonyCrs> {
@@ -502,7 +500,7 @@ impl TryFrom<pb::CeremonyCrs> for Phase1RawCeremonyCRS {
 }
 
 /// Holds all of the CRS elements for phase1 in one struct.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Phase1CeremonyCRS([Phase1CRSElements; NUM_CIRCUITS]);
 
 impl From<Phase1CeremonyCRS> for Phase1RawCeremonyCRS {
@@ -511,18 +509,17 @@ impl From<Phase1CeremonyCRS> for Phase1RawCeremonyCRS {
     }
 }
 
-// impl TryFrom<Phase1CeremonyCRS> for pb::CeremonyCrs {
-//     type Error = anyhow::Error;
+impl TryFrom<Phase1CeremonyCRS> for pb::CeremonyCrs {
+    type Error = anyhow::Error;
 
-//     fn try_from(data: Phase1CeremonyCRS) -> Result<pb::CeremonyCrs> {
-//         Phase1RawCeremonyCRS::from(data).try_into()
-//     }
-// }
+    fn try_from(data: Phase1CeremonyCRS) -> Result<pb::CeremonyCrs> {
+        Phase1RawCeremonyCRS::from(data).try_into()
+    }
+}
 
 impl Phase1CeremonyCRS {
     pub fn root() -> Result<Self> {
         let [c0, c1, c2, c3, c4, c5, c6] = circuits();
-        println!("GENERATED CIRCUITS");
         Ok(Self([
             Phase1CRSElements::root(circuit_degree(&c0)?),
             Phase1CRSElements::root(circuit_degree(&c1)?),

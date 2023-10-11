@@ -19,6 +19,7 @@ use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
 
 use crate::{penumbra_knower::PenumbraKnower, server::CoordinatorService};
+use penumbra_proof_setup::all::Phase1CeremonyCRS;
 
 /// 100 MIB
 const MAX_MESSAGE_SIZE: usize = 100 * 1024 * 1024;
@@ -62,7 +63,11 @@ impl Opt {
                 node,
                 listen,
             } => {
-                let storage = Storage::load_or_initialize(storage_dir.join("ceremony.db")).await?;
+                // TODO: Later we will load the phase 1 root from a file passed in via a command line argument above.
+                let phase_1_root = Phase1CeremonyCRS::root()?;
+                let storage =
+                    Storage::load_or_initialize(storage_dir.join("ceremony.db"), phase_1_root)
+                        .await?;
                 let knower =
                     PenumbraKnower::load_or_initialize(storage_dir.join("penumbra.db"), &fvk, node)
                         .await?;

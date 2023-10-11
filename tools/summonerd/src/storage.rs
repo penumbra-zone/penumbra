@@ -3,8 +3,8 @@ use camino::Utf8Path;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proof_setup::all::{
-    Phase1CeremonyCRS, Phase2CeremonyCRS, Phase2CeremonyContribution, Phase2RawCeremonyCRS,
-    Phase2RawCeremonyContribution,
+    Phase1CeremonyCRS, Phase1RawCeremonyCRS, Phase2CeremonyCRS, Phase2CeremonyContribution,
+    Phase2RawCeremonyCRS, Phase2RawCeremonyContribution,
 };
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::{
@@ -39,15 +39,21 @@ pub struct Storage {
 
 impl Storage {
     /// If the database at `storage_path` exists, [`Self::load`] it, otherwise, [`Self::initialize`] it.
-    pub async fn load_or_initialize(storage_path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
+    pub async fn load_or_initialize(
+        storage_path: impl AsRef<Utf8Path>,
+        phase_1_root: Phase1CeremonyCRS,
+    ) -> anyhow::Result<Self> {
         if storage_path.as_ref().exists() {
-            return Self::load(storage_path).await;
+            return Self::load(storage_path, phase_1_root).await;
         }
 
-        Self::initialize(storage_path).await
+        Self::initialize(storage_path, phase_1_root).await
     }
 
-    pub async fn initialize(storage_path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
+    pub async fn initialize(
+        storage_path: impl AsRef<Utf8Path>,
+        phase_1_root: Phase1CeremonyCRS,
+    ) -> anyhow::Result<Self> {
         // Connect to the database (or create it)
         let pool = Self::connect(storage_path)?;
 
@@ -58,13 +64,17 @@ impl Storage {
 
             // Create the tables
             tx.execute_batch(include_str!("storage/schema.sql"))?;
-            // TODO(jen): Remove this in favor of a specific command for initializing phase 1 root
-            let phase_1_root = Phase1CeremonyCRS::root()?;
+
+            tx.execute(
+                "INSERT INTO phase1_contributions VALUES (0, 1, ?1, NULL)",
+                [pb::CeremonyCrs::try_from(phase_1_root)?.encode_to_vec()],
+            )?;
             // TODO(jen): Transition between phase 1 and phase 2, storing deets in the database
-            let root = Phase2CeremonyCRS::root()?;
+            // using `phase_1_root`
+            let phase_2_root = Phase2CeremonyCRS::root()?;
             tx.execute(
                 "INSERT INTO phase2_contributions VALUES (0, 1, ?1, NULL)",
-                [pb::CeremonyCrs::try_from(root)?.encode_to_vec()],
+                [pb::CeremonyCrs::try_from(phase_2_root)?.encode_to_vec()],
             )?;
 
             tx.commit()?;
@@ -90,10 +100,22 @@ impl Storage {
         Ok(r2d2::Pool::new(manager)?)
     }
 
-    pub async fn load(path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
+    pub async fn load(
+        path: impl AsRef<Utf8Path>,
+        phase_1_root: Phase1CeremonyCRS,
+    ) -> anyhow::Result<Self> {
         let storage = Self {
             pool: Self::connect(path)?,
         };
+
+        let current_phase_1_root = storage.phase_1_root().await?;
+        if current_phase_1_root != phase_1_root {
+            anyhow::bail!(
+                "Phase 1 root in database ({:?}) does not match expected root ({:?})",
+                current_phase_1_root,
+                phase_1_root
+            );
+        }
 
         Ok(storage)
     }
@@ -215,7 +237,23 @@ impl Storage {
         Ok(out)
     }
 
-    pub async fn root(&self) -> Result<Phase2CeremonyCRS> {
+    /// Get Phase 1 root.
+    pub async fn phase_1_root(&self) -> Result<Phase1CeremonyCRS> {
+        let mut conn = self.pool.get()?;
+        let tx = conn.transaction()?;
+        let data = tx.query_row(
+            "SELECT contribution_or_crs FROM phase1_contributions WHERE is_root LIMIT 1",
+            [],
+            |row| row.get::<usize, Vec<u8>>(0),
+        )?;
+        Ok(
+            Phase1RawCeremonyCRS::try_from(pb::CeremonyCrs::decode(data.as_slice())?)?
+                .assume_valid(),
+        )
+    }
+
+    /// Get Phase 2 root.
+    pub async fn phase_2_root(&self) -> Result<Phase2CeremonyCRS> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let data = tx.query_row(

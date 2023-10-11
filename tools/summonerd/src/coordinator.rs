@@ -84,7 +84,7 @@ impl ContributionHandler {
         if let Some(unvalidated) = maybe {
             tracing::debug!("validating contribution");
             if let Some(contribution) =
-                unvalidated.validate(&mut OsRng, &self.storage.root().await?)
+                unvalidated.validate(&mut OsRng, &self.storage.phase_2_root().await?)
             {
                 if contribution.is_linked_to(&parent) {
                     self.storage
