@@ -84,7 +84,7 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
             }
             ContributionAllowed::AlreadyContributed => {
                 return Err(Status::permission_denied(format!(
-                    "Thanks again for your contribution! (No double dipping, unfortunately)"
+                    "Thanks again for your contribution! Participating once is enough to guarantee security, and we'd like to allow other people to participate as well."
                 )))
             }
         };
