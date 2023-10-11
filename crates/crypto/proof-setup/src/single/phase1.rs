@@ -133,6 +133,18 @@ impl RawCRSElements {
             raw: self,
         })
     }
+
+    /// Convert without checking validity.
+    pub(crate) fn assume_valid(self) -> CRSElements {
+        let d = self
+            .get_degree()
+            .expect("can get degree from valid elements");
+
+        CRSElements {
+            degree: d,
+            raw: self,
+        }
+    }
 }
 
 impl Hashable for RawCRSElements {
@@ -169,7 +181,7 @@ impl Hashable for RawCRSElements {
 /// The CRS elements we produce in phase 1.
 ///
 /// Not all elements of the final CRS are present here.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, CanonicalSerialize, CanonicalDeserialize)]
 pub struct CRSElements {
     pub(crate) degree: usize,
     pub(crate) raw: RawCRSElements,
