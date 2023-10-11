@@ -1,7 +1,12 @@
-use crate::error::WasmResult;
-use crate::note_record::SpendableNoteRecord;
-use crate::storage::IndexedDBStorage;
-use crate::swap_record::SwapRecord;
+use std::convert::TryInto;
+use std::{collections::BTreeMap, str::FromStr};
+
+use serde::{Deserialize, Serialize};
+use serde_wasm_bindgen::Error;
+use serde_wasm_bindgen::Serializer;
+use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::JsValue;
+
 use penumbra_asset::asset::{DenomMetadata, Id};
 use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_dex::lp::position::Position;
@@ -11,14 +16,13 @@ use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::note;
 use penumbra_tct as tct;
 use penumbra_tct::Witness::*;
-use serde::{Deserialize, Serialize};
-use serde_wasm_bindgen::Error;
-use std::convert::TryInto;
-use std::{collections::BTreeMap, str::FromStr};
 use tct::storage::{StoreCommitment, StoreHash, StoredPosition, Updates};
 use tct::{Forgotten, Tree};
-use wasm_bindgen::prelude::wasm_bindgen;
-use wasm_bindgen::JsValue;
+
+use crate::error::WasmResult;
+use crate::note_record::SpendableNoteRecord;
+use crate::storage::IndexedDBStorage;
+use crate::swap_record::SwapRecord;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StoredTree {
@@ -276,7 +280,8 @@ impl ViewServer {
         self.last_position = nct_updates.set_position;
         self.last_forgotten = nct_updates.set_forgotten;
 
-        let result = serde_wasm_bindgen::to_value(&updates)?;
+        let serializer = Serializer::new().serialize_large_number_types_as_bigints(true);
+        let result = updates.serialize(&serializer)?;
         Ok(result)
     }
 
