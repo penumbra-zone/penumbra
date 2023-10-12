@@ -38,18 +38,6 @@ pub struct Storage {
 }
 
 impl Storage {
-    /// If the database at `storage_path` exists, [`Self::load`] it, otherwise, [`Self::initialize`] it.
-    pub async fn load_or_initialize(
-        storage_path: impl AsRef<Utf8Path>,
-        phase_1_root: Phase1CeremonyCRS,
-    ) -> anyhow::Result<Self> {
-        if storage_path.as_ref().exists() {
-            return Self::load(storage_path, phase_1_root).await;
-        }
-
-        Self::initialize(storage_path, phase_1_root).await
-    }
-
     pub async fn initialize(
         storage_path: impl AsRef<Utf8Path>,
         phase_1_root: Phase1CeremonyCRS,
@@ -100,22 +88,10 @@ impl Storage {
         Ok(r2d2::Pool::new(manager)?)
     }
 
-    pub async fn load(
-        path: impl AsRef<Utf8Path>,
-        phase_1_root: Phase1CeremonyCRS,
-    ) -> anyhow::Result<Self> {
+    pub async fn load(path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
         let storage = Self {
             pool: Self::connect(path)?,
         };
-
-        let current_phase_1_root = storage.phase_1_root().await?;
-        if current_phase_1_root != phase_1_root {
-            anyhow::bail!(
-                "Phase 1 root in database ({:?}) does not match expected root ({:?})",
-                current_phase_1_root,
-                phase_1_root
-            );
-        }
 
         Ok(storage)
     }
@@ -238,6 +214,7 @@ impl Storage {
     }
 
     /// Get Phase 1 root.
+    #[allow(dead_code)]
     pub async fn phase_1_root(&self) -> Result<Phase1CeremonyCRS> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
