@@ -10,6 +10,14 @@ use async_stream::try_stream;
 use camino::Utf8Path;
 use decaf377::Fq;
 use futures::stream::{StreamExt, TryStreamExt};
+use rand::Rng;
+use rand_core::OsRng;
+use tokio::sync::{watch, RwLock};
+use tokio_stream::wrappers::WatchStream;
+use tonic::{async_trait, transport::Channel, Request, Response, Status};
+use tracing::instrument;
+use url::Url;
+
 use penumbra_asset::{asset, Value};
 use penumbra_dex::{
     lp::{
@@ -25,6 +33,7 @@ use penumbra_keys::{
     Address,
 };
 use penumbra_num::Amount;
+use penumbra_proto::view::v1alpha1::{WalletIdRequest, WalletIdResponse};
 use penumbra_proto::{
     core::keys::v1alpha1 as pbc,
     util::tendermint_proxy::v1alpha1::{
@@ -45,13 +54,6 @@ use penumbra_tct::{Proof, StateCommitment};
 use penumbra_transaction::{
     plan::TransactionPlan, AuthorizationData, Transaction, TransactionPerspective, WitnessData,
 };
-use rand::Rng;
-use rand_core::OsRng;
-use tokio::sync::{watch, RwLock};
-use tokio_stream::wrappers::WatchStream;
-use tonic::{async_trait, transport::Channel};
-use tracing::instrument;
-use url::Url;
 
 use crate::{Planner, Storage, Worker};
 
@@ -1548,5 +1550,18 @@ impl ViewProtocolService for ViewService {
                 })
                 .boxed(),
         ))
+    }
+
+    async fn wallet_id(
+        &self,
+        _: Request<WalletIdRequest>,
+    ) -> Result<Response<WalletIdResponse>, Status> {
+        let fvk = self.storage.full_viewing_key().await.map_err(|e| {
+            Status::failed_precondition(format!("Error retrieving full viewing key: {e}"))
+        })?;
+
+        Ok(Response::new(WalletIdResponse {
+            wallet_id: Some(fvk.wallet_id().into()),
+        }))
     }
 }

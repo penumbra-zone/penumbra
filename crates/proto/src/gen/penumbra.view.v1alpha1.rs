@@ -240,6 +240,15 @@ pub struct AddressByIndexResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct WalletIdRequest {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct WalletIdResponse {
+    #[prost(message, optional, tag = "1")]
+    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IndexByAddressRequest {
     #[prost(message, optional, tag = "1")]
     pub address: ::core::option::Option<super::super::core::keys::v1alpha1::Address>,
@@ -1181,6 +1190,37 @@ pub mod view_protocol_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        /// Query for wallet id
+        pub async fn wallet_id(
+            &mut self,
+            request: impl tonic::IntoRequest<super::WalletIdRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::WalletIdResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/WalletId",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "WalletId",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
         /// Query for an address given an address index
         pub async fn index_by_address(
             &mut self,
@@ -1816,6 +1856,14 @@ pub mod view_protocol_service_server {
             request: tonic::Request<super::AddressByIndexRequest>,
         ) -> std::result::Result<
             tonic::Response<super::AddressByIndexResponse>,
+            tonic::Status,
+        >;
+        /// Query for wallet id
+        async fn wallet_id(
+            &self,
+            request: tonic::Request<super::WalletIdRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::WalletIdResponse>,
             tonic::Status,
         >;
         /// Query for an address given an address index
@@ -2520,6 +2568,50 @@ pub mod view_protocol_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = AddressByIndexSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/WalletId" => {
+                    #[allow(non_camel_case_types)]
+                    struct WalletIdSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::UnaryService<super::WalletIdRequest>
+                    for WalletIdSvc<T> {
+                        type Response = super::WalletIdResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::WalletIdRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move { (*inner).wallet_id(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = WalletIdSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

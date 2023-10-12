@@ -64,6 +64,9 @@ service ViewProtocolService {
   // Query for an address given an address index
   rpc AddressByIndex(AddressByIndexRequest) returns (AddressByIndexResponse);
 
+  // Query for wallet id
+  rpc WalletId(WalletIdRequest) returns (WalletIdResponse);
+
     // Query for an address given an address index
   rpc IndexByAddress(IndexByAddressRequest) returns (IndexByAddressResponse);
 
@@ -223,6 +226,13 @@ message AddressByIndexRequest {
 message AddressByIndexResponse {
   core.keys.v1alpha1.Address address = 1;
 }
+
+message WalletIdRequest {}
+
+message WalletIdResponse {
+  core.keys.v1alpha1.WalletId wallet_id = 1;
+}
+
 
 message IndexByAddressRequest {
   core.keys.v1alpha1.Address address = 1;
