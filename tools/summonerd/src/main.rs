@@ -122,12 +122,11 @@ impl Opt {
                     }
                     phase_1_bytes.extend_from_slice(&buffer[..bytes_read]);
                 }
-                dbg!("loaded the file");
 
-                let phase_1_raw_root =
-                    Phase1RawCeremonyCRS::try_from(CeremonyCrs::decode(&phase_1_bytes[..])?)?;
+                let phase_1_raw_root = Phase1RawCeremonyCRS::unchecked_from_protobuf(
+                    CeremonyCrs::decode(&phase_1_bytes[..])?,
+                )?;
 
-                dbg!("got phase 1 root");
                 // This is assumed to be valid as it's the starting point for the ceremony.
                 let phase_1_root = phase_1_raw_root.assume_valid();
 
