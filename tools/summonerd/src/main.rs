@@ -113,15 +113,7 @@ impl Opt {
                 let mut reader = BufReader::new(file);
 
                 let mut phase_1_bytes = Vec::new();
-                let mut buffer = [0; 4096 * 10]; // 40 KB chunks
-
-                loop {
-                    let bytes_read = reader.read(&mut buffer)?;
-                    if bytes_read == 0 {
-                        break;
-                    }
-                    phase_1_bytes.extend_from_slice(&buffer[..bytes_read]);
-                }
+                reader.read_to_end(&mut phase_1_bytes)?;
 
                 let phase_1_raw_root = Phase1RawCeremonyCRS::unchecked_from_protobuf(
                     CeremonyCrs::decode(&phase_1_bytes[..])?,
