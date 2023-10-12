@@ -471,6 +471,25 @@ impl Phase1RawCeremonyCRS {
             ]),
         }
     }
+
+    /// This should only be used when the data is known to be from a trusted source.
+    pub fn unchecked_from_protobuf(value: pb::CeremonyCrs) -> anyhow::Result<Self> {
+        Ok(Self([
+            Phase1RawCRSElements::deserialize_uncompressed_unchecked(value.spend.as_slice())?,
+            Phase1RawCRSElements::deserialize_uncompressed_unchecked(value.output.as_slice())?,
+            Phase1RawCRSElements::deserialize_uncompressed_unchecked(
+                value.delegator_vote.as_slice(),
+            )?,
+            Phase1RawCRSElements::deserialize_uncompressed_unchecked(
+                value.undelegate_claim.as_slice(),
+            )?,
+            Phase1RawCRSElements::deserialize_uncompressed_unchecked(value.swap.as_slice())?,
+            Phase1RawCRSElements::deserialize_uncompressed_unchecked(value.swap_claim.as_slice())?,
+            Phase1RawCRSElements::deserialize_uncompressed_unchecked(
+                value.nullifer_derivation_crs.as_slice(),
+            )?,
+        ]))
+    }
 }
 
 impl TryInto<pb::CeremonyCrs> for Phase1RawCeremonyCRS {
