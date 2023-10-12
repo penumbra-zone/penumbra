@@ -1556,11 +1556,9 @@ impl ViewProtocolService for ViewService {
         &self,
         _: Request<WalletIdRequest>,
     ) -> Result<Response<WalletIdResponse>, Status> {
-        let fvk = self
-            .storage
-            .full_viewing_key()
-            .await
-            .map_err(|_| Status::failed_precondition("Error retrieving full viewing key"))?;
+        let fvk = self.storage.full_viewing_key().await.map_err(|e| {
+            Status::failed_precondition(format!("Error retrieving full viewing key: {e}"))
+        })?;
 
         Ok(Response::new(WalletIdResponse {
             wallet_id: Some(fvk.wallet_id().into()),
