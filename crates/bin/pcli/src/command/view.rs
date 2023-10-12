@@ -1,21 +1,26 @@
 use anyhow::Result;
 
-mod balance;
-use balance::BalanceCmd;
-mod address;
 use address::AddressCmd;
-mod staked;
-
+use balance::BalanceCmd;
 use staked::StakedCmd;
-pub mod transaction_hashes;
 use transaction_hashes::TransactionHashesCmd;
-mod tx;
 use tx::TxCmd;
+use wallet_id::WalletIdCmd;
 
 use crate::App;
 
+mod address;
+mod balance;
+mod staked;
+mod wallet_id;
+
+pub mod transaction_hashes;
+mod tx;
+
 #[derive(Debug, clap::Subcommand)]
 pub enum ViewCmd {
+    /// View your wallet id
+    WalletId(WalletIdCmd),
     /// View one of your addresses, either by numerical index, or a random ephemeral one.
     Address(AddressCmd),
     /// View your account balances.
@@ -39,6 +44,7 @@ pub enum ViewCmd {
 impl ViewCmd {
     pub fn offline(&self) -> bool {
         match self {
+            ViewCmd::WalletId(wallet_id_cmd) => wallet_id_cmd.offline(),
             ViewCmd::Address(address_cmd) => address_cmd.offline(),
             ViewCmd::Balance(balance_cmd) => balance_cmd.offline(),
             ViewCmd::Staked(staked_cmd) => staked_cmd.offline(),
@@ -54,6 +60,9 @@ impl ViewCmd {
         let full_viewing_key = app.fvk.clone();
 
         match self {
+            ViewCmd::WalletId(wallet_id_cmd) => {
+                wallet_id_cmd.exec(&full_viewing_key)?;
+            }
             ViewCmd::Tx(tx_cmd) => {
                 tx_cmd.exec(app).await?;
             }
