@@ -12,6 +12,11 @@ use coordinator::Coordinator;
 use metrics_tracing_context::MetricsLayer;
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::tools::summoning::v1alpha1::ceremony_coordinator_service_server::CeremonyCoordinatorServiceServer;
+use penumbra_proto::tools::summoning::v1alpha1::CeremonyCrs;
+use penumbra_proto::Message;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::Read;
 use std::net::SocketAddr;
 use storage::Storage;
 use tonic::transport::Server;
@@ -19,7 +24,7 @@ use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
 
 use crate::{penumbra_knower::PenumbraKnower, server::CoordinatorService};
-use penumbra_proof_setup::all::Phase1CeremonyCRS;
+use penumbra_proof_setup::all::{Phase1CeremonyCRS, Phase1RawCeremonyCRS};
 
 /// 100 MIB
 const MAX_MESSAGE_SIZE: usize = 100 * 1024 * 1024;
@@ -41,6 +46,18 @@ struct Opt {
 
 #[derive(Debug, clap::Subcommand)]
 enum Command {
+    /// Generate a phase 1 root (for testing purposes).
+    GeneratePhase1 {
+        #[clap(long, display_order = 100)]
+        output: Utf8PathBuf,
+    },
+    /// Initialize the coordinator.
+    Init {
+        #[clap(long, display_order = 100)]
+        storage_dir: Utf8PathBuf,
+        #[clap(long, display_order = 200)]
+        phase1_root: Utf8PathBuf,
+    },
     /// Start the coordinator.
     Start {
         #[clap(long, display_order = 700)]
@@ -63,11 +80,7 @@ impl Opt {
                 node,
                 listen,
             } => {
-                // TODO: Later we will load the phase 1 root from a file passed in via a command line argument above.
-                let phase_1_root = Phase1CeremonyCRS::root()?;
-                let storage =
-                    Storage::load_or_initialize(storage_dir.join("ceremony.db"), phase_1_root)
-                        .await?;
+                let storage = Storage::load(storage_dir.join("ceremony.db")).await?;
                 let knower =
                     PenumbraKnower::load_or_initialize(storage_dir.join("penumbra.db"), &fvk, node)
                         .await?;
@@ -90,6 +103,41 @@ impl Opt {
                     x = coordinator_handle => x?.map_err(|e| anyhow::anyhow!(e))?,
                     x = server_handle => x?.map_err(|e| anyhow::anyhow!(e))?,
                 };
+                Ok(())
+            }
+            Command::Init {
+                storage_dir,
+                phase1_root,
+            } => {
+                let file = File::open(phase1_root)?;
+                let mut reader = BufReader::new(file);
+
+                let mut phase_1_bytes = Vec::new();
+                let mut buffer = [0; 4096 * 10]; // 40 KB chunks
+
+                loop {
+                    let bytes_read = reader.read(&mut buffer)?;
+                    if bytes_read == 0 {
+                        break;
+                    }
+                    phase_1_bytes.extend_from_slice(&buffer[..bytes_read]);
+                }
+                dbg!("loaded the file");
+
+                let phase_1_raw_root =
+                    Phase1RawCeremonyCRS::try_from(CeremonyCrs::decode(&phase_1_bytes[..])?)?;
+
+                dbg!("got phase 1 root");
+                // This is assumed to be valid as it's the starting point for the ceremony.
+                let phase_1_root = phase_1_raw_root.assume_valid();
+
+                Storage::initialize(storage_dir.join("ceremony.db"), phase_1_root).await?;
+                Ok(())
+            }
+            Command::GeneratePhase1 { output } => {
+                let phase_1_root = Phase1CeremonyCRS::root()?;
+                let proto_encoded_phase_1_root: CeremonyCrs = phase_1_root.try_into()?;
+                std::fs::write(output, proto_encoded_phase_1_root.encode_to_vec())?;
                 Ok(())
             }
         }

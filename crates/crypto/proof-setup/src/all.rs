@@ -29,6 +29,12 @@ fn to_bytes<T: CanonicalSerialize>(t: &T) -> Result<Vec<u8>> {
     Ok(out)
 }
 
+fn to_bytes_uncompressed<T: CanonicalSerialize>(t: &T) -> Result<Vec<u8>> {
+    let mut out = Vec::new();
+    t.serialize_uncompressed(&mut out)?;
+    Ok(out)
+}
+
 pub const NUM_CIRCUITS: usize = 7;
 
 /// Generate all of the circuits as matrices.
@@ -472,13 +478,13 @@ impl TryInto<pb::CeremonyCrs> for Phase1RawCeremonyCRS {
 
     fn try_into(self) -> Result<pb::CeremonyCrs> {
         Ok(pb::CeremonyCrs {
-            spend: to_bytes(&self.0[0])?,
-            output: to_bytes(&self.0[1])?,
-            delegator_vote: to_bytes(&self.0[2])?,
-            undelegate_claim: to_bytes(&self.0[3])?,
-            swap: to_bytes(&self.0[4])?,
-            swap_claim: to_bytes(&self.0[5])?,
-            nullifer_derivation_crs: to_bytes(&self.0[6])?,
+            spend: to_bytes_uncompressed(&self.0[0])?,
+            output: to_bytes_uncompressed(&self.0[1])?,
+            delegator_vote: to_bytes_uncompressed(&self.0[2])?,
+            undelegate_claim: to_bytes_uncompressed(&self.0[3])?,
+            swap: to_bytes_uncompressed(&self.0[4])?,
+            swap_claim: to_bytes_uncompressed(&self.0[5])?,
+            nullifer_derivation_crs: to_bytes_uncompressed(&self.0[6])?,
         })
     }
 }
@@ -488,13 +494,15 @@ impl TryFrom<pb::CeremonyCrs> for Phase1RawCeremonyCRS {
 
     fn try_from(value: pb::CeremonyCrs) -> std::result::Result<Self, Self::Error> {
         Ok(Self([
-            Phase1RawCRSElements::deserialize_compressed(value.spend.as_slice())?,
-            Phase1RawCRSElements::deserialize_compressed(value.output.as_slice())?,
-            Phase1RawCRSElements::deserialize_compressed(value.delegator_vote.as_slice())?,
-            Phase1RawCRSElements::deserialize_compressed(value.undelegate_claim.as_slice())?,
-            Phase1RawCRSElements::deserialize_compressed(value.swap.as_slice())?,
-            Phase1RawCRSElements::deserialize_compressed(value.swap_claim.as_slice())?,
-            Phase1RawCRSElements::deserialize_compressed(value.nullifer_derivation_crs.as_slice())?,
+            Phase1RawCRSElements::deserialize_uncompressed(value.spend.as_slice())?,
+            Phase1RawCRSElements::deserialize_uncompressed(value.output.as_slice())?,
+            Phase1RawCRSElements::deserialize_uncompressed(value.delegator_vote.as_slice())?,
+            Phase1RawCRSElements::deserialize_uncompressed(value.undelegate_claim.as_slice())?,
+            Phase1RawCRSElements::deserialize_uncompressed(value.swap.as_slice())?,
+            Phase1RawCRSElements::deserialize_uncompressed(value.swap_claim.as_slice())?,
+            Phase1RawCRSElements::deserialize_uncompressed(
+                value.nullifer_derivation_crs.as_slice(),
+            )?,
         ]))
     }
 }
