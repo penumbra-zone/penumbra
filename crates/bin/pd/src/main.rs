@@ -428,7 +428,10 @@ async fn main() -> anyhow::Result<()> {
                         .parse()
                         .context("failed to parse grpc_bind address")?,
                 );
-                let listener = TcpListenerStream::new(TcpListener::bind(grpc_bind).await?);
+                let bound_listener = TcpListener::bind(grpc_bind)
+                    .await
+                    .context(format!("Failed to bind HTTPS listener on {}", grpc_bind))?;
+                let listener = TcpListenerStream::new(bound_listener);
                 // Configure HTTP2 support for the TLS negotiation; we also permit HTTP1.1
                 // for backwards-compatibility, specifically for grpc-web.
                 let alpn_config = vec!["h2".into(), "http/1.1".into()];
