@@ -33,11 +33,9 @@ pub struct CompactBlock {
     pub swap_outputs: ::prost::alloc::vec::Vec<
         super::super::dex::v1alpha1::BatchSwapOutputData,
     >,
-    /// Updated chain parameters, if they have changed.
-    #[prost(message, optional, tag = "6")]
-    pub chain_parameters: ::core::option::Option<
-        super::super::chain::v1alpha1::ChainParameters,
-    >,
+    /// Indicates updated app parameters.
+    #[prost(bool, tag = "6")]
+    pub app_parameters_updated: bool,
     /// Updated gas prices, if they have changed.
     #[prost(message, optional, tag = "7")]
     pub gas_prices: ::core::option::Option<super::super::fee::v1alpha1::GasPrices>,

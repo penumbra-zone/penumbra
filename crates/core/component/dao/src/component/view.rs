@@ -49,10 +49,8 @@ impl<T> StateReadExt for T where T: StateRead + ?Sized {}
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided DAO parameters to the JMT.
     fn put_dao_params(&mut self, params: DaoParameters) {
-        // TODO: this needs to be handled on a per-component basis or possibly removed from the compact block
-        // entirely, currently disabled, see https://github.com/penumbra-zone/penumbra/issues/3107
-        // Note to the shielded pool to include the chain parameters in the next compact block:
-        // self.object_put(state_key::chain_params_changed(), ());
+        // Note that the dao params have been updated:
+        self.object_put(state_key::dao_params_updated(), ());
 
         // Change the DAO parameters:
         self.put(state_key::dao_params().into(), params)

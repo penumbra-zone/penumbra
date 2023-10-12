@@ -1,3 +1,185 @@
+impl serde::Serialize for ChangedAppParameters {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.chain_params.is_some() {
+            len += 1;
+        }
+        if self.dao_params.is_some() {
+            len += 1;
+        }
+        if self.governance_params.is_some() {
+            len += 1;
+        }
+        if self.ibc_params.is_some() {
+            len += 1;
+        }
+        if self.stake_params.is_some() {
+            len += 1;
+        }
+        if self.fee_params.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ChangedAppParameters", len)?;
+        if let Some(v) = self.chain_params.as_ref() {
+            struct_ser.serialize_field("chainParams", v)?;
+        }
+        if let Some(v) = self.dao_params.as_ref() {
+            struct_ser.serialize_field("daoParams", v)?;
+        }
+        if let Some(v) = self.governance_params.as_ref() {
+            struct_ser.serialize_field("governanceParams", v)?;
+        }
+        if let Some(v) = self.ibc_params.as_ref() {
+            struct_ser.serialize_field("ibcParams", v)?;
+        }
+        if let Some(v) = self.stake_params.as_ref() {
+            struct_ser.serialize_field("stakeParams", v)?;
+        }
+        if let Some(v) = self.fee_params.as_ref() {
+            struct_ser.serialize_field("feeParams", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "chain_params",
+            "chainParams",
+            "dao_params",
+            "daoParams",
+            "governance_params",
+            "governanceParams",
+            "ibc_params",
+            "ibcParams",
+            "stake_params",
+            "stakeParams",
+            "fee_params",
+            "feeParams",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ChainParams,
+            DaoParams,
+            GovernanceParams,
+            IbcParams,
+            StakeParams,
+            FeeParams,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "chainParams" | "chain_params" => Ok(GeneratedField::ChainParams),
+                            "daoParams" | "dao_params" => Ok(GeneratedField::DaoParams),
+                            "governanceParams" | "governance_params" => Ok(GeneratedField::GovernanceParams),
+                            "ibcParams" | "ibc_params" => Ok(GeneratedField::IbcParams),
+                            "stakeParams" | "stake_params" => Ok(GeneratedField::StakeParams),
+                            "feeParams" | "fee_params" => Ok(GeneratedField::FeeParams),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = ChangedAppParameters;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ChangedAppParameters")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ChangedAppParameters, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut chain_params__ = None;
+                let mut dao_params__ = None;
+                let mut governance_params__ = None;
+                let mut ibc_params__ = None;
+                let mut stake_params__ = None;
+                let mut fee_params__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ChainParams => {
+                            if chain_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("chainParams"));
+                            }
+                            chain_params__ = map_.next_value()?;
+                        }
+                        GeneratedField::DaoParams => {
+                            if dao_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("daoParams"));
+                            }
+                            dao_params__ = map_.next_value()?;
+                        }
+                        GeneratedField::GovernanceParams => {
+                            if governance_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("governanceParams"));
+                            }
+                            governance_params__ = map_.next_value()?;
+                        }
+                        GeneratedField::IbcParams => {
+                            if ibc_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("ibcParams"));
+                            }
+                            ibc_params__ = map_.next_value()?;
+                        }
+                        GeneratedField::StakeParams => {
+                            if stake_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("stakeParams"));
+                            }
+                            stake_params__ = map_.next_value()?;
+                        }
+                        GeneratedField::FeeParams => {
+                            if fee_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("feeParams"));
+                            }
+                            fee_params__ = map_.next_value()?;
+                        }
+                    }
+                }
+                Ok(ChangedAppParameters {
+                    chain_params: chain_params__,
+                    dao_params: dao_params__,
+                    governance_params: governance_params__,
+                    ibc_params: ibc_params__,
+                    stake_params: stake_params__,
+                    fee_params: fee_params__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.ChangedAppParameters", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for DaoDeposit {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

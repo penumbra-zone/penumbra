@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
+use async_trait::async_trait;
 use penumbra_chain::component::{AppHash, StateReadExt as _, StateWriteExt as _};
 use penumbra_chain::params::FmdParameters;
 use penumbra_compact_block::component::StateWriteExt as _;
@@ -9,7 +10,7 @@ use penumbra_component::Component;
 use penumbra_dao::component::StateWriteExt as _;
 use penumbra_dex::component::{Dex, SwapManager};
 use penumbra_distributions::component::Distributions;
-use penumbra_fee::component::{Fee, StateReadExt, StateWriteExt as _};
+use penumbra_fee::component::{Fee, StateReadExt as _, StateWriteExt as _};
 use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
 use penumbra_ibc::component::{IBCComponent, StateWriteExt as _};
@@ -17,7 +18,7 @@ use penumbra_proto::DomainType;
 use penumbra_sct::component::SctManager;
 use penumbra_shielded_pool::component::{NoteManager, ShieldedPool};
 use penumbra_stake::component::{Staking, StateWriteExt as _, ValidatorUpdates};
-use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
+use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, Event};
 use tendermint::validator::Update;
@@ -382,17 +383,12 @@ impl App {
             .await
             .expect("height of block is always set");
 
-        // Check to see if the chain parameters have changed, and include them in the compact block
-        // if they have (this is signaled by `penumbra_chain::StateWriteExt::put_chain_params`):
-        let chain_parameters = if state.chain_params_changed() || height == 0 {
-            Some(
-                state
-                    .get_chain_params()
-                    .await
-                    .expect("able to get chain params"),
-            )
+        // Check to see if the app parameters have changed, and include a flag in the compact block
+        // if they have (this is signaled by the various `penumbra_*::StateWriteExt::put_*_params` methods):
+        let app_parameters_updated = if state.app_params_updated() || height == 0 {
+            true
         } else {
-            None
+            false
         };
 
         // Check to see if the gas prices have changed, and include them in the compact block
@@ -480,7 +476,7 @@ impl App {
             proposal_started,
             swap_outputs,
             fmd_parameters,
-            chain_parameters,
+            app_parameters_updated,
             gas_prices,
         });
     }
@@ -559,3 +555,29 @@ impl App {
 /// Increment this manually after fixing the root cause for a chain halt: updated nodes will then be
 /// able to proceed past the block height of the halt.
 const TOTAL_HALT_COUNT: u64 = 0;
+
+#[async_trait]
+pub trait StateReadExt: StateRead {
+    /// Returns true if the app parameters have been changed in this block.
+    fn app_params_updated(&self) -> bool {
+        self.object_get::<()>(state_key_fee::fee_params_updated())
+            .is_some()
+            || self
+                .object_get::<()>(state_key_governance::governance_params_updated())
+                .is_some()
+            || self
+                .object_get::<()>(state_key_ibc::ibc_params_updated())
+                .is_some()
+            || self
+                .object_get::<()>(state_key_dao::dao_params_updated())
+                .is_some()
+            || self
+                .object_get::<()>(state_key_stake::stake_params_updated())
+                .is_some()
+            || self
+                .object_get::<()>(state_key_chain::chain_params_updated())
+                .is_some()
+    }
+}
+
+impl<T: StateRead + ?Sized> StateReadExt for T {}

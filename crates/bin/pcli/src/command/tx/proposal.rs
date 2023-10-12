@@ -1,7 +1,8 @@
 use anyhow::{Context, Result};
 
+use penumbra_app::params::AppParameters;
 use penumbra_chain::params::ChainParameters;
-use penumbra_governance::{Proposal, ProposalPayload};
+use penumbra_governance::{proposal::ChangedAppParameters, Proposal, ProposalPayload};
 use penumbra_proto::DomainType;
 use penumbra_transaction::plan::TransactionPlan;
 
@@ -78,15 +79,22 @@ pub enum ProposalKindCmd {
 impl ProposalKindCmd {
     /// Generate a default proposal of a particular kind.
     #[allow(dead_code)] // remove me after implementing governance rpcs
-    pub fn template_proposal(&self, chain_params: &ChainParameters, id: u64) -> Result<Proposal> {
+    pub fn template_proposal(&self, app_params: &AppParameters, id: u64) -> Result<Proposal> {
         let title = "A short title (at most 80 characters)".to_string();
         let description = "A longer description (at most 10,000 characters)".to_string();
         let payload = match self {
             ProposalKindCmd::Signaling => ProposalPayload::Signaling { commit: None },
             ProposalKindCmd::Emergency => ProposalPayload::Emergency { halt_chain: false },
             ProposalKindCmd::ParameterChange => ProposalPayload::ParameterChange {
-                old: Box::new(chain_params.clone()),
-                new: Box::new(chain_params.clone()),
+                old: Box::new(app_params.as_changed_params()),
+                new: Box::new(ChangedAppParameters {
+                    chain_params: None,
+                    dao_params: None,
+                    ibc_params: None,
+                    stake_params: None,
+                    fee_params: None,
+                    governance_params: None,
+                }),
             },
             ProposalKindCmd::DaoSpend { transaction_plan } => {
                 if let Some(file) = transaction_plan {

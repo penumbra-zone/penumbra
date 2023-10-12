@@ -126,3 +126,7 @@ pub fn change_chain_params_at_height(block_height: u64) -> String {
 pub fn proposal_started() -> &'static str {
     "governance/proposal_started"
 }
+
+pub fn governance_params_updated() -> &'static str {
+    "governance/governance_params_updated"
+}

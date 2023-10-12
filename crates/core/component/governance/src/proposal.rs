@@ -3,8 +3,13 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
+use crate::params::GovernanceParameters;
 use penumbra_chain::params::ChainParameters;
+use penumbra_dao::params::DaoParameters;
+use penumbra_fee::params::FeeParameters;
+use penumbra_ibc::params::IBCParameters;
 use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_stake::params::StakeParameters;
 
 /// A governance proposal.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -237,20 +242,20 @@ pub enum ProposalPayload {
         /// passed.
         halt_chain: bool,
     },
-    /// A parameter change proposal describes a replacement of the chain parameters, which should
+    /// A parameter change proposal describes a replacement of the app parameters, which should
     /// take effect when the proposal is passed.
     ParameterChange {
-        /// The old chain parameters to be replaced.
+        /// The old app parameters to be replaced.
         ///
-        /// Even if the proposal passes, the update will not be applied if the chain parameters have
-        /// changed *at all* from these chain parameters. Usually, this should be set to the current
-        /// chain parameters at time of proposal.
-        old: Box<ChainParameters>,
-        /// The new chain parameters to be set.
+        /// Even if the proposal passes, the update will not be applied if the app parameters have
+        /// changed *at all* from these app parameters. Usually, this should be set to the current
+        /// app parameters at time of proposal.
+        old: Box<ChangedAppParameters>,
+        /// The new app parameters to be set.
         ///
-        /// The *entire* chain parameters will be replaced with these at the time the proposal is
+        /// The *entire* app parameters will be replaced with these at the time the proposal is
         /// passed.
-        new: Box<ChainParameters>,
+        new: Box<ChangedAppParameters>,
     },
     /// A DAO spend proposal describes proposed transaction(s) to be executed or cancelled at
     /// specific heights, with the spend authority of the DAO.
@@ -278,8 +283,8 @@ pub enum ProposalPayloadToml {
         halt_chain: bool,
     },
     ParameterChange {
-        old: Box<ChainParameters>,
-        new: Box<ChainParameters>,
+        old: Box<ChangedAppParameters>,
+        new: Box<ChangedAppParameters>,
     },
     DaoSpend {
         transaction: String,
@@ -349,5 +354,61 @@ impl ProposalPayload {
 
     pub fn is_dao_spend(&self) -> bool {
         matches!(self, ProposalPayload::DaoSpend { .. })
+    }
+}
+
+/// Indicates which app parameters have changed during the
+/// current block.
+///
+/// Note: must be kept in sync with
+/// `penumbra_app::params::AppParameters`.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(
+    try_from = "pb::ChangedAppParameters",
+    into = "pb::ChangedAppParameters"
+)]
+pub struct ChangedAppParameters {
+    pub chain_params: Option<ChainParameters>,
+    pub dao_params: Option<DaoParameters>,
+    pub ibc_params: Option<IBCParameters>,
+    pub stake_params: Option<StakeParameters>,
+    pub fee_params: Option<FeeParameters>,
+    pub governance_params: Option<GovernanceParameters>,
+}
+
+impl TypeUrl for ChangedAppParameters {
+    const TYPE_URL: &'static str =
+        "/penumbra.core.component.compact_block.v1alpha1.ChangedAppParameters";
+}
+
+impl DomainType for ChangedAppParameters {
+    type Proto = pb::ChangedAppParameters;
+}
+
+impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::ChangedAppParameters) -> anyhow::Result<Self> {
+        Ok(ChangedAppParameters {
+            chain_params: msg.chain_params.map(TryInto::try_into).transpose()?,
+            stake_params: msg.stake_params.map(TryInto::try_into).transpose()?,
+            ibc_params: msg.ibc_params.map(TryInto::try_into).transpose()?,
+            governance_params: msg.governance_params.map(TryInto::try_into).transpose()?,
+            dao_params: msg.dao_params.map(TryInto::try_into).transpose()?,
+            fee_params: msg.fee_params.map(TryInto::try_into).transpose()?,
+        })
+    }
+}
+
+impl From<ChangedAppParameters> for pb::ChangedAppParameters {
+    fn from(params: ChangedAppParameters) -> Self {
+        pb::ChangedAppParameters {
+            chain_params: params.chain_params.map(Into::into),
+            stake_params: params.stake_params.map(Into::into),
+            ibc_params: params.ibc_params.map(Into::into),
+            governance_params: params.governance_params.map(Into::into),
+            dao_params: params.dao_params.map(Into::into),
+            fee_params: params.fee_params.map(Into::into),
+        }
     }
 }

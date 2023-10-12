@@ -2,13 +2,17 @@ use std::{collections::BTreeMap, convert::TryFrom};
 
 use anyhow::Result;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
+use penumbra_dao::params::DaoParameters;
 use penumbra_dex::{BatchSwapOutputData, TradingPair};
-use penumbra_fee::GasPrices;
+use penumbra_fee::{FeeParameters, GasPrices};
+use penumbra_governance::params::GovernanceParameters;
+use penumbra_ibc::params::IBCParameters;
 use penumbra_proto::{
     core::component::compact_block::v1alpha1::CompactBlockRangeResponse,
     penumbra::core::component::compact_block::v1alpha1 as pb, DomainType, TypeUrl,
 };
 use penumbra_sct::Nullifier;
+use penumbra_stake::params::StakeParameters;
 use penumbra_tct::builder::{block, epoch};
 use serde::{Deserialize, Serialize};
 
@@ -34,8 +38,8 @@ pub struct CompactBlock {
     pub proposal_started: bool,
     /// Output prices for batch swaps occurring in this block.
     pub swap_outputs: BTreeMap<TradingPair, BatchSwapOutputData>,
-    /// Updated chain parameters, if any have changed.
-    pub chain_parameters: Option<ChainParameters>,
+    /// Set if the app parameters have been updated. Notifies the client that it should re-sync from the fullnode RPC.
+    pub app_parameters_updated: bool,
     /// Updated gas prices, if they have changed.
     pub gas_prices: Option<GasPrices>,
     // **IMPORTANT NOTE FOR FUTURE HUMANS**: if you want to add new fields to the `CompactBlock`,
@@ -55,7 +59,7 @@ impl Default for CompactBlock {
             fmd_parameters: None,
             proposal_started: false,
             swap_outputs: BTreeMap::new(),
-            chain_parameters: None,
+            app_parameters_updated: false,
             gas_prices: None,
         }
     }
@@ -68,7 +72,7 @@ impl CompactBlock {
             || !self.nullifiers.is_empty() // need to collect nullifiers
             || self.fmd_parameters.is_some() // need to save latest FMD parameters
             || self.proposal_started // need to process proposal start
-            || self.chain_parameters.is_some() // need to save latest chain parameters
+            || self.app_parameters_updated // need to save latest app parameters
             || self.gas_prices.is_some() // need to save latest gas prices
     }
 }
@@ -97,7 +101,7 @@ impl From<CompactBlock> for pb::CompactBlock {
             fmd_parameters: cb.fmd_parameters.map(Into::into),
             proposal_started: cb.proposal_started,
             swap_outputs: cb.swap_outputs.into_values().map(Into::into).collect(),
-            chain_parameters: cb.chain_parameters.map(Into::into),
+            app_parameters_updated: cb.app_parameters_updated,
             gas_prices: cb.gas_prices.map(Into::into),
         }
     }
@@ -134,7 +138,7 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
             epoch_root: value.epoch_root.map(TryInto::try_into).transpose()?,
             fmd_parameters: value.fmd_parameters.map(TryInto::try_into).transpose()?,
             proposal_started: value.proposal_started,
-            chain_parameters: value.chain_parameters.map(TryInto::try_into).transpose()?,
+            app_parameters_updated: value.app_parameters_updated,
             gas_prices: value.gas_prices.map(TryInto::try_into).transpose()?,
         })
     }

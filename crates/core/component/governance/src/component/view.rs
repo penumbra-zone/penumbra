@@ -551,10 +551,8 @@ impl<T: StateRead + penumbra_stake::StateReadExt + ?Sized> StateReadExt for T {}
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided governance parameters to the JMT.
     fn put_governance_params(&mut self, params: GovernanceParameters) {
-        // TODO: this needs to be handled on a per-component basis or possibly removed from the compact block
-        // entirely, currently disabled, see https://github.com/penumbra-zone/penumbra/issues/3107
-        // Note to the shielded pool to include the chain parameters in the next compact block:
-        // self.object_put(state_key::chain_params_changed(), ());
+        // Note that the governance params have been updated:
+        self.object_put(state_key::governance_params_updated(), ());
 
         // Change the governance parameters:
         self.put(state_key::governance_params().into(), params)
@@ -845,45 +843,52 @@ pub trait StateWriteExt: StateWrite {
                     self.signal_halt().await?;
                 }
             }
-            ProposalPayload::ParameterChange { old: _, new: _ } => {
-                // TODO: Renable (#3107)
-                tracing::info!("Parameter change proposal passed, however parameter change is currently disabled. See issue #3107");
-                // tracing::info!(
-                //     "parameter change proposal passed, attempting to update chain parameters"
-                // );
+            ProposalPayload::ParameterChange { old, new } => {
+                tracing::info!(
+                    "parameter change proposal passed, attempting to update chain parameters"
+                );
 
-                // // If there has been a chain upgrade while the proposal was pending, the stateless
-                // // verification criteria for the parameter change proposal could have changed, so we
-                // // should check them again here, just to be sure:
-                // old.check_valid_update(new)
-                //     .context("final check for validity of chain parameter update failed")?;
+                // If there has been a chain upgrade while the proposal was pending, the stateless
+                // verification criteria for the parameter change proposal could have changed, so we
+                // should check them again here, just to be sure:
+                // `old_app_params` should be complete and represent the state of all app parameters
+                // at the time the proposal was created.
+                let old_app_params = AppParameters::from_changed_params(old, None)?;
+                // `new_app_params` should be sparse and only the components whose parameters were changed
+                // by the proposal should be `Some`.
+                let new_app_params =
+                    AppParameters::from_changed_params(new, Some(&old_app_params))?;
+                old_app_params
+                    .check_valid_update(new_app_params)
+                    .context("final check for validity of chain parameter update failed")?;
 
-                // // Check that the old parameters are an exact match for the current parameters, or
-                // // else abort the update.
-                // let current =
-                //     // If there is a pending parameter change, sequence the update on top of that
-                //     // one (i.e., pretend that those new parameters are the old parameters, since
-                //     // chain parameter updates must be sequentially consistent)
-                //     if let Some(params) = self.next_block_pending_chain_parameters().await? {
-                //         params
-                //     } else {
-                //         // If no pending parameter change, use the current parameters
-                //         self.get_chain_params().await?
-                //     };
+                // Check that the old parameters are an exact match for the current parameters, or
+                // else abort the update.
+                let current =
+                    // If there is a pending parameter change, sequence the update on top of that
+                    // one (i.e., pretend that those new parameters are the old parameters, since
+                    // chain parameter updates must be sequentially consistent)
+                    if let Some(params) = self.next_block_pending_chain_parameters().await? {
+                        params
+                    } else {
+                        // If no pending parameter change, use the current parameters
+                        self.get_chain_params().await?
+                    };
 
-                // // The current parameters (whether pending from a previous passed proposal or just the
-                // // current ones, unchanged) have to match the old parameters specified in the
-                // // proposal, exactly. This prevents updates from clashing.
-                // if **old != current {
-                //     return Ok(Err(anyhow::anyhow!(
-                //         "current chain parameters do not match the old parameters in the proposal"
-                //     )));
-                // }
+                // The current parameters (whether pending from a previous passed proposal or just the
+                // current ones, unchanged) have to match the old parameters specified in the
+                // proposal, exactly. This prevents updates from clashing.
+                if **old_app_params != current {
+                    return Ok(Err(anyhow::anyhow!(
+                        "current chain parameters do not match the old parameters in the proposal"
+                    )));
+                }
 
-                // // Tell the app to update the chain parameters in the next block
-                // self.schedule_chain_params_change((**new).clone()).await?;
+                // Tell the app to update the chain parameters in the next block
+                self.schedule_chain_params_change((**new_app_params).clone())
+                    .await?;
 
-                // tracing::info!("chain parameters updated successfully");
+                tracing::info!("chain parameters updated successfully");
             }
             ProposalPayload::DaoSpend {
                 transaction_plan: _,

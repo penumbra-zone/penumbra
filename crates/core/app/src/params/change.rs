@@ -4,9 +4,11 @@ use anyhow::Result;
 use penumbra_chain::params::{ChainParameters, Ratio};
 use penumbra_dao::params::DaoParameters;
 use penumbra_fee::FeeParameters;
-use penumbra_governance::params::GovernanceParameters;
+use penumbra_governance::{params::GovernanceParameters, proposal::ChangedAppParameters};
 use penumbra_ibc::params::IBCParameters;
 use penumbra_stake::params::StakeParameters;
+
+use crate::app::App;
 
 use super::AppParameters;
 
@@ -202,6 +204,72 @@ impl AppParameters {
                 "proposal slash threshold must be greater than 1/2",
             ),
         ])
+    }
+
+    /// Converts an `AppParameters` instance to a complete `ChangedAppParameters`.
+    pub fn as_changed_params(&self) -> ChangedAppParameters {
+        ChangedAppParameters {
+            chain_params: Some(self.chain_params.clone()),
+            dao_params: Some(self.dao_params.clone()),
+            ibc_params: Some(self.ibc_params.clone()),
+            stake_params: Some(self.stake_params.clone()),
+            fee_params: Some(self.fee_params.clone()),
+            governance_params: Some(self.governance_params.clone()),
+        }
+    }
+
+    /// Converts a sparse ChangedAppParameters into a complete AppParameters, filling
+    /// in any `None` values from the old parameters.
+    ///
+    /// Throws an error if `old` is `None` and any of the component parameters in `new` are
+    /// `None`, i.e. all fields in `new` must be `Some` if `old` is not provided.
+    pub fn from_changed_params(
+        new: &ChangedAppParameters,
+        old: Option<&AppParameters>,
+    ) -> Result<AppParameters> {
+        if old.is_none()
+            && (new.chain_params.is_none()
+                || new.stake_params.is_none()
+                || new.ibc_params.is_none()
+                || new.governance_params.is_none()
+                || new.fee_params.is_none()
+                || new.dao_params.is_none())
+        {
+            anyhow::bail!("all parameters must be specified if no old parameters are provided");
+        }
+
+        Ok(AppParameters {
+            stake_params: new.stake_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .stake_params
+                    .clone()
+            }),
+            ibc_params: new.ibc_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .ibc_params
+                    .clone()
+            }),
+            governance_params: new.governance_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .governance_params
+                    .clone()
+            }),
+            chain_params: new.chain_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .chain_params
+                    .clone()
+            }),
+            dao_params: new.dao_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .dao_params
+                    .clone()
+            }),
+            fee_params: new.fee_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .fee_params
+                    .clone()
+            }),
+        })
     }
 }
 

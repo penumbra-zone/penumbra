@@ -5,12 +5,15 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use penumbra_app::params::AppParameters;
 use penumbra_asset::{asset, asset::DenomMetadata, asset::Id, Value};
-use penumbra_chain::params::FmdParameters;
+use penumbra_chain::params::{ChainParameters, FmdParameters};
+use penumbra_dao::params::DaoParameters;
 use penumbra_dex::{
     lp::position::{self, Position, State},
     TradingPair,
 };
-use penumbra_fee::GasPrices;
+use penumbra_fee::{FeeParameters, GasPrices};
+use penumbra_governance::params::GovernanceParameters;
+use penumbra_ibc::params::IBCParameters;
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::{
@@ -21,7 +24,7 @@ use penumbra_proto::{
 };
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note, Rseed};
-use penumbra_stake::{DelegationToken, IdentityKey};
+use penumbra_stake::{params::StakeParameters, DelegationToken, IdentityKey};
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
 use r2d2_sqlite::{
@@ -186,10 +189,41 @@ impl Storage {
             // Create the tables
             tx.execute_batch(include_str!("storage/schema.sql"))?;
 
-            let app_params_bytes = &AppParameters::encode_to_vec(&params)[..];
+            let chain_params_bytes = &ChainParameters::encode_to_vec(&params.chain_params)[..];
             tx.execute(
-                "INSERT INTO app_params (bytes) VALUES (?1)",
-                [app_params_bytes],
+                "INSERT INTO chain_params (bytes) VALUES (?1)",
+                [chain_params_bytes],
+            )?;
+
+            let stake_params_bytes = &StakeParameters::encode_to_vec(&params.stake_params)[..];
+            tx.execute(
+                "INSERT INTO stake_params (bytes) VALUES (?1)",
+                [stake_params_bytes],
+            )?;
+
+            let ibc_params_bytes = &IBCParameters::encode_to_vec(&params.ibc_params)[..];
+            tx.execute(
+                "INSERT INTO ibc_params (bytes) VALUES (?1)",
+                [ibc_params_bytes],
+            )?;
+
+            let fee_params_bytes = &FeeParameters::encode_to_vec(&params.fee_params)[..];
+            tx.execute(
+                "INSERT INTO fee_params (bytes) VALUES (?1)",
+                [fee_params_bytes],
+            )?;
+
+            let dao_params_bytes = &DaoParameters::encode_to_vec(&params.dao_params)[..];
+            tx.execute(
+                "INSERT INTO dao_params (bytes) VALUES (?1)",
+                [dao_params_bytes],
+            )?;
+
+            let governance_params_bytes =
+                &GovernanceParameters::encode_to_vec(&params.governance_params)[..];
+            tx.execute(
+                "INSERT INTO governance_params (bytes) VALUES (?1)",
+                [governance_params_bytes],
             )?;
 
             let fvk_bytes = &FullViewingKey::encode_to_vec(&fvk)[..];
@@ -1249,7 +1283,7 @@ impl Storage {
             let mut lock = pool.get()?;
             let mut dbtx = lock.transaction()?;
 
-            // If the chain parameters have changed, update them.
+            // If the app parameters have changed, update them.
             // TODO: disabled for now, see https://github.com/penumbra-zone/penumbra/issues/3107
             // if let Some(params) = filtered_block.chain_parameters {
             //     let chain_params_bytes = &ChainParameters::encode_to_vec(&params)[..];
