@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::Duration};
+use std::{cmp, collections::HashMap, time::Duration};
 
 use anyhow::{anyhow, Result};
 use penumbra_keys::Address;
@@ -42,6 +42,7 @@ impl ContributionHandler {
     #[tracing::instrument(skip(self))]
     pub async fn run(mut self) -> Result<()> {
         loop {
+            tracing::debug!("start of contribution handler loop");
             let (who, participant) = match self.start_contribution_rx.recv().await {
                 None => {
                     tracing::debug!("start channel closed.");
@@ -49,6 +50,7 @@ impl ContributionHandler {
                 }
                 Some((w, p)) => (w, p),
             };
+            tracing::debug!(?who, "waiting for contribution");
             self.contribute(who, participant).await?;
             self.done_contribution_tx.send(()).await?;
         }
@@ -80,6 +82,7 @@ impl ContributionHandler {
         let parent = self.storage.current_crs().await?;
         let maybe = participant.contribute(&parent).await?;
         if let Some(unvalidated) = maybe {
+            tracing::debug!("validating contribution");
             if let Some(contribution) =
                 unvalidated.validate(&mut OsRng, &self.storage.root().await?)
             {
@@ -131,7 +134,7 @@ impl ParticipantQueue {
 
     fn score(&self) -> Vec<Address> {
         let mut out: Vec<Address> = self.participants.keys().cloned().collect();
-        out.sort_by_cached_key(|addr| self.participants[addr].1);
+        out.sort_by_cached_key(|addr| cmp::Reverse(self.participants[addr].1));
         out
     }
 
@@ -146,7 +149,7 @@ impl ParticipantQueue {
                 .get(address)
                 .expect("Ranked participants are chosen from the set of connections");
             if let Err(e) =
-                connection.try_notify(i as u32, ranked.len() as u32, contributor_bid, *bid)
+                connection.try_notify((i + 1) as u32, ranked.len() as u32, contributor_bid, *bid)
             {
                 tracing::info!(?e, ?address, "pruning connection that we failed to notify");
                 self.participants.remove(address);
