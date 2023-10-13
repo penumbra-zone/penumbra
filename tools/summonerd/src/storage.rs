@@ -3,8 +3,9 @@ use camino::Utf8Path;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proof_setup::all::{
-    Phase1CeremonyCRS, Phase1RawCeremonyCRS, Phase2CeremonyCRS, Phase2CeremonyContribution,
-    Phase2RawCeremonyCRS, Phase2RawCeremonyContribution,
+    AllExtraTransitionInformation, Phase1CeremonyCRS,
+    Phase1RawCeremonyCRS, Phase1RawCeremonyContribution, Phase2CeremonyCRS,
+    Phase2CeremonyContribution, Phase2RawCeremonyCRS, Phase2RawCeremonyContribution,
 };
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::{
@@ -80,9 +81,6 @@ impl Storage {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
 
-        // Create the tables
-        tx.execute_batch(include_str!("storage/schema.sql"))?;
-
         tx.execute(
             "INSERT INTO phase1_contributions VALUES (0, 1, ?1, NULL)",
             [pb::CeremonyCrs::try_from(phase_1_root)?.encode_to_vec()],
@@ -93,19 +91,22 @@ impl Storage {
         Ok(())
     }
 
-    // TODO: Modify this to take in aux information, once we have the structs for that.
     /// Set the transition information we need.
-    #[allow(dead_code)]
-    pub async fn set_transition(&mut self, phase_2_root: Phase2CeremonyCRS) -> anyhow::Result<()> {
+    pub async fn set_transition(
+        &mut self,
+        phase_2_root: Phase2CeremonyCRS,
+        extra_information: AllExtraTransitionInformation,
+    ) -> anyhow::Result<()> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
-
-        // Create the tables
-        tx.execute_batch(include_str!("storage/schema.sql"))?;
 
         tx.execute(
             "INSERT INTO phase2_contributions VALUES (0, 1, ?1, NULL)",
             [pb::CeremonyCrs::try_from(phase_2_root)?.encode_to_vec()],
+        )?;
+        tx.execute(
+            "INSERT INTO transition_aux VALUES (0, ?1)",
+            [extra_information.to_bytes()?],
         )?;
 
         tx.commit()?;
@@ -193,7 +194,30 @@ impl Storage {
         Ok(ContributionAllowed::Yes(amount))
     }
 
-    pub async fn current_crs(&self) -> Result<Phase2CeremonyCRS> {
+    pub async fn phase1_current_crs(&self) -> Result<Phase1CeremonyCRS> {
+        let mut conn = self.pool.get()?;
+        let tx = conn.transaction()?;
+        let (is_root, contribution_or_crs) = tx.query_row(
+            "SELECT is_root, contribution_or_crs FROM phase1_contributions ORDER BY slot DESC LIMIT 1",
+            [],
+            |row| Ok((row.get::<usize, bool>(0)?, row.get::<usize, Vec<u8>>(1)?)),
+        )?;
+        let crs = if is_root {
+            Phase1RawCeremonyCRS::try_from(pb::CeremonyCrs::decode(
+                contribution_or_crs.as_slice(),
+            )?)?
+            .assume_valid()
+        } else {
+            Phase1RawCeremonyContribution::try_from(PBContribution::decode(
+                contribution_or_crs.as_slice(),
+            )?)?
+            .assume_valid()
+            .new_elements()
+        };
+        Ok(crs)
+    }
+
+    pub async fn phase2_current_crs(&self) -> Result<Phase2CeremonyCRS> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let (is_root, contribution_or_crs) = tx.query_row(

@@ -15,6 +15,8 @@ use ark_poly::EvaluationDomain;
 use ark_poly::Radix2EvaluationDomain;
 use ark_relations::r1cs::ConstraintMatrices;
 
+use ark_serialize::CanonicalDeserialize;
+use ark_serialize::CanonicalSerialize;
 use decaf377::Bls12_377;
 
 pub use dlog::Proof as DLogProof;
@@ -23,6 +25,7 @@ pub use phase1::CRSElements as Phase1CRSElements;
 pub use phase1::Contribution as Phase1Contribution;
 pub use phase1::RawCRSElements as Phase1RawCRSElements;
 pub use phase1::RawContribution as Phase1RawContribution;
+pub(crate) use phase1::LinkingProof as LinkingProof;
 
 pub use phase2::CRSElements as Phase2CRSElements;
 pub use phase2::Contribution as Phase2Contribution;
@@ -33,6 +36,7 @@ use group::{F, G1, G2};
 
 use anyhow::{anyhow, Result};
 
+#[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
 pub struct ExtraTransitionInformation {
     /// The u polynomials evaluated at [x].
     u_1: Vec<G1>,

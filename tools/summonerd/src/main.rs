@@ -5,12 +5,14 @@ mod server;
 mod storage;
 
 use anyhow::Result;
+use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use clap::Parser;
 use console_subscriber::ConsoleLayer;
 use coordinator::Coordinator;
 use metrics_tracing_context::MetricsLayer;
 use penumbra_keys::FullViewingKey;
+use penumbra_proof_setup::all::transition;
 use penumbra_proto::tools::summoning::v1alpha1::ceremony_coordinator_service_server::CeremonyCoordinatorServiceServer;
 use penumbra_proto::tools::summoning::v1alpha1::CeremonyCrs;
 use penumbra_proto::Message;
@@ -28,6 +30,11 @@ use penumbra_proof_setup::all::{Phase1CeremonyCRS, Phase1RawCeremonyCRS};
 
 /// 100 MIB
 const MAX_MESSAGE_SIZE: usize = 100 * 1024 * 1024;
+
+// To avoid repeating the constant
+fn ceremony_db(path: &Utf8Path) -> Utf8PathBuf {
+    path.join("ceremony.db")
+}
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -58,6 +65,11 @@ enum Command {
         #[clap(long, display_order = 200)]
         phase1_root: Utf8PathBuf,
     },
+    /// Transition between phases
+    Transition {
+        #[clap(long, display_order = 100)]
+        storage_dir: Utf8PathBuf,
+    },
     /// Start the coordinator.
     Start {
         #[clap(long, display_order = 700)]
@@ -80,7 +92,7 @@ impl Opt {
                 node,
                 listen,
             } => {
-                let storage = Storage::load_or_initialize(storage_dir.join("ceremony.db")).await?;
+                let storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
                 let knower =
                     PenumbraKnower::load_or_initialize(storage_dir.join("penumbra.db"), &fvk, node)
                         .await?;
@@ -122,9 +134,17 @@ impl Opt {
                 // This is assumed to be valid as it's the starting point for the ceremony.
                 let phase_1_root = phase_1_raw_root.assume_valid();
 
-                let mut storage =
-                    Storage::load_or_initialize(storage_dir.join("ceremony.db")).await?;
+                let mut storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
                 storage.set_root(phase_1_root).await?;
+
+                Ok(())
+            }
+            Command::Transition { storage_dir } => {
+                let mut storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
+
+                let phase1_crs = storage.phase1_current_crs().await?;
+                let (aux, phase2_root) = transition(&phase1_crs)?;
+                storage.set_transition(phase2_root, aux).await?;
 
                 Ok(())
             }

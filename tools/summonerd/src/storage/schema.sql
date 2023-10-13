@@ -26,3 +26,9 @@ CREATE TABLE participant_metadata (
   -- The number of strikes that have been received.
   strikes INTEGER NOT NULL
 );
+
+CREATE TABLE transition_aux (
+  id INTEGER PRIMARY KEY,
+  data BLOB NOT NULL
+);
+
