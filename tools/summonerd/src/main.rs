@@ -142,7 +142,12 @@ impl Opt {
             Command::Transition { storage_dir } => {
                 let mut storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
 
-                let phase1_crs = storage.phase1_current_crs().await?;
+                let phase1_crs = match storage.phase1_current_crs().await? {
+                    Some(x) => x,
+                    None => {
+                        anyhow::bail!("Please run phase1 before this command 8^)");
+                    }
+                };
                 let (aux, phase2_root) = transition(&phase1_crs)?;
                 storage.set_transition(phase2_root, aux).await?;
 

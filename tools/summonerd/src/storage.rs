@@ -3,9 +3,9 @@ use camino::Utf8Path;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proof_setup::all::{
-    AllExtraTransitionInformation, Phase1CeremonyCRS,
-    Phase1RawCeremonyCRS, Phase1RawCeremonyContribution, Phase2CeremonyCRS,
-    Phase2CeremonyContribution, Phase2RawCeremonyCRS, Phase2RawCeremonyContribution,
+    AllExtraTransitionInformation, Phase1CeremonyCRS, Phase1RawCeremonyCRS,
+    Phase1RawCeremonyContribution, Phase2CeremonyCRS, Phase2CeremonyContribution,
+    Phase2RawCeremonyCRS, Phase2RawCeremonyContribution,
 };
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::{
@@ -194,14 +194,18 @@ impl Storage {
         Ok(ContributionAllowed::Yes(amount))
     }
 
-    pub async fn phase1_current_crs(&self) -> Result<Phase1CeremonyCRS> {
+    pub async fn phase1_current_crs(&self) -> Result<Option<Phase1CeremonyCRS>> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
-        let (is_root, contribution_or_crs) = tx.query_row(
+        let maybe_data = tx.query_row(
             "SELECT is_root, contribution_or_crs FROM phase1_contributions ORDER BY slot DESC LIMIT 1",
             [],
             |row| Ok((row.get::<usize, bool>(0)?, row.get::<usize, Vec<u8>>(1)?)),
-        )?;
+        ).optional()?;
+        let (is_root, contribution_or_crs) = match maybe_data {
+            None => return Ok(None),
+            Some(x) => x,
+        };
         let crs = if is_root {
             Phase1RawCeremonyCRS::try_from(pb::CeremonyCrs::decode(
                 contribution_or_crs.as_slice(),
@@ -214,17 +218,21 @@ impl Storage {
             .assume_valid()
             .new_elements()
         };
-        Ok(crs)
+        Ok(Some(crs))
     }
 
-    pub async fn phase2_current_crs(&self) -> Result<Phase2CeremonyCRS> {
+    pub async fn phase2_current_crs(&self) -> Result<Option<Phase2CeremonyCRS>> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
-        let (is_root, contribution_or_crs) = tx.query_row(
+        let maybe_data = tx.query_row(
             "SELECT is_root, contribution_or_crs FROM phase2_contributions ORDER BY slot DESC LIMIT 1",
             [],
             |row| Ok((row.get::<usize, bool>(0)?, row.get::<usize, Vec<u8>>(1)?)),
-        )?;
+        ).optional()?;
+        let (is_root, contribution_or_crs) = match maybe_data {
+            None => return Ok(None),
+            Some(x) => x,
+        };
         let crs = if is_root {
             Phase2RawCeremonyCRS::try_from(pb::CeremonyCrs::decode(
                 contribution_or_crs.as_slice(),
@@ -237,7 +245,7 @@ impl Storage {
             .assume_valid()
             .new_elements()
         };
-        Ok(crs)
+        Ok(Some(crs))
     }
 
     pub async fn commit_contribution(
