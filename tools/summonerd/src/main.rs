@@ -80,7 +80,7 @@ impl Opt {
                 node,
                 listen,
             } => {
-                let storage = Storage::load(storage_dir.join("ceremony.db")).await?;
+                let storage = Storage::load_or_initialize(storage_dir.join("ceremony.db")).await?;
                 let knower =
                     PenumbraKnower::load_or_initialize(storage_dir.join("penumbra.db"), &fvk, node)
                         .await?;
@@ -122,7 +122,10 @@ impl Opt {
                 // This is assumed to be valid as it's the starting point for the ceremony.
                 let phase_1_root = phase_1_raw_root.assume_valid();
 
-                Storage::initialize(storage_dir.join("ceremony.db"), phase_1_root).await?;
+                let mut storage =
+                    Storage::load_or_initialize(storage_dir.join("ceremony.db")).await?;
+                storage.set_root(phase_1_root).await?;
+
                 Ok(())
             }
             Command::GeneratePhase1 { output } => {

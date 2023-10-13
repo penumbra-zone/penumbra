@@ -38,10 +38,17 @@ pub struct Storage {
 }
 
 impl Storage {
-    pub async fn initialize(
-        storage_path: impl AsRef<Utf8Path>,
-        phase_1_root: Phase1CeremonyCRS,
-    ) -> anyhow::Result<Self> {
+    /// If the database at `storage_path` exists, [`Self::load`] it, otherwise, [`Self::initialize`] it.
+    pub async fn load_or_initialize(storage_path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
+        if storage_path.as_ref().exists() {
+            return Self::load(storage_path).await;
+        }
+
+        Self::initialize(storage_path).await
+    }
+
+    /// Initialize creates the database, but does not insert anything into it.
+    async fn initialize(storage_path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
         // Connect to the database (or create it)
         let pool = Self::connect(storage_path)?;
 
@@ -53,23 +60,57 @@ impl Storage {
             // Create the tables
             tx.execute_batch(include_str!("storage/schema.sql"))?;
 
-            tx.execute(
-                "INSERT INTO phase1_contributions VALUES (0, 1, ?1, NULL)",
-                [pb::CeremonyCrs::try_from(phase_1_root)?.encode_to_vec()],
-            )?;
-            // TODO(jen): Transition between phase 1 and phase 2, storing deets in the database
-            // using `phase_1_root`
-            let phase_2_root = Phase2CeremonyCRS::root()?;
-            tx.execute(
-                "INSERT INTO phase2_contributions VALUES (0, 1, ?1, NULL)",
-                [pb::CeremonyCrs::try_from(phase_2_root)?.encode_to_vec()],
-            )?;
-
             tx.commit()?;
 
             Ok(Storage { pool })
         })
         .await?
+    }
+
+    async fn load(path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
+        let storage = Self {
+            pool: Self::connect(path)?,
+        };
+
+        Ok(storage)
+    }
+
+    /// Set the root we need for phase1.
+    pub async fn set_root(&mut self, phase_1_root: Phase1CeremonyCRS) -> anyhow::Result<()> {
+        let mut conn = self.pool.get()?;
+        let tx = conn.transaction()?;
+
+        // Create the tables
+        tx.execute_batch(include_str!("storage/schema.sql"))?;
+
+        tx.execute(
+            "INSERT INTO phase1_contributions VALUES (0, 1, ?1, NULL)",
+            [pb::CeremonyCrs::try_from(phase_1_root)?.encode_to_vec()],
+        )?;
+
+        tx.commit()?;
+
+        Ok(())
+    }
+
+    // TODO: Modify this to take in aux information, once we have the structs for that.
+    /// Set the transition information we need.
+    #[allow(dead_code)]
+    pub async fn set_transition(&mut self, phase_2_root: Phase2CeremonyCRS) -> anyhow::Result<()> {
+        let mut conn = self.pool.get()?;
+        let tx = conn.transaction()?;
+
+        // Create the tables
+        tx.execute_batch(include_str!("storage/schema.sql"))?;
+
+        tx.execute(
+            "INSERT INTO phase2_contributions VALUES (0, 1, ?1, NULL)",
+            [pb::CeremonyCrs::try_from(phase_2_root)?.encode_to_vec()],
+        )?;
+
+        tx.commit()?;
+
+        Ok(())
     }
 
     fn connect(path: impl AsRef<Utf8Path>) -> anyhow::Result<r2d2::Pool<SqliteConnectionManager>> {
@@ -86,14 +127,6 @@ impl Storage {
                 Ok(())
             });
         Ok(r2d2::Pool::new(manager)?)
-    }
-
-    pub async fn load(path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
-        let storage = Self {
-            pool: Self::connect(path)?,
-        };
-
-        Ok(storage)
     }
 
     pub async fn strike(&self, address: &Address) -> Result<()> {
