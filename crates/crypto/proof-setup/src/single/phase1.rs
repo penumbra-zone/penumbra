@@ -223,7 +223,7 @@ impl Hashable for CRSElements {
 /// This pets two cats with one hand:
 /// 1. We show that we're actually building off of the previous elements.
 /// 2. We show that we know the secret elements we're using, avoiding rogue key chicanery.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, CanonicalSerialize, CanonicalDeserialize)]
 pub(crate) struct LinkingProof {
     alpha_proof: dlog::Proof,
     beta_proof: dlog::Proof,
@@ -235,7 +235,7 @@ pub(crate) struct LinkingProof {
 pub struct RawContribution {
     pub parent: ContributionHash,
     pub new_elements: RawCRSElements,
-    linking_proof: LinkingProof,
+    pub(crate) linking_proof: LinkingProof,
 }
 
 impl RawContribution {
@@ -249,6 +249,14 @@ impl RawContribution {
                 new_elements,
                 linking_proof: self.linking_proof,
             })
+    }
+
+    pub(crate) fn assume_valid(self) -> Contribution {
+        Contribution {
+            parent: self.parent,
+            new_elements: self.new_elements.assume_valid(),
+            linking_proof: self.linking_proof,
+        }
     }
 }
 
