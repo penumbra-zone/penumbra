@@ -79,7 +79,11 @@ impl ContributionHandler {
         contributor: Address,
         mut participant: Participant,
     ) -> Result<()> {
-        let parent = self.storage.phase2_current_crs().await?.expect("phase2 should've been initialized by now");
+        let parent = self
+            .storage
+            .phase2_current_crs()
+            .await?
+            .expect("phase2 should've been initialized by now");
         let maybe = participant.contribute(&parent).await?;
         if let Some(unvalidated) = maybe {
             tracing::debug!("validating contribution");

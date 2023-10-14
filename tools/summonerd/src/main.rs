@@ -5,19 +5,26 @@ mod server;
 mod storage;
 
 use anyhow::Result;
+use ark_groth16::{ProvingKey, VerifyingKey};
+use ark_serialize::CanonicalSerialize;
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use clap::Parser;
 use console_subscriber::ConsoleLayer;
 use coordinator::Coordinator;
+use decaf377::Bls12_377;
 use metrics_tracing_context::MetricsLayer;
 use penumbra_keys::FullViewingKey;
+use penumbra_proof_params::{ProvingKeyExt, VerifyingKeyExt};
+use penumbra_proof_setup::all::combine;
 use penumbra_proof_setup::all::transition;
 use penumbra_proto::tools::summoning::v1alpha1::ceremony_coordinator_service_server::CeremonyCoordinatorServiceServer;
 use penumbra_proto::tools::summoning::v1alpha1::CeremonyCrs;
 use penumbra_proto::Message;
+use std::fs;
 use std::fs::File;
 use std::io::BufReader;
+use std::io::BufWriter;
 use std::io::Read;
 use std::net::SocketAddr;
 use storage::Storage;
@@ -81,11 +88,24 @@ enum Command {
         #[clap(long, display_order = 901, default_value = "127.0.0.1:8081")]
         listen: SocketAddr,
     },
+    /// Export the output of the ceremony
+    Export {
+        #[clap(long, display_order = 100)]
+        storage_dir: Utf8PathBuf,
+        #[clap(long, display_order = 200)]
+        target_dir: Utf8PathBuf,
+    },
 }
 
 impl Opt {
     async fn exec(self) -> Result<()> {
         match self.cmd {
+            Command::GeneratePhase1 { output } => {
+                let phase_1_root = Phase1CeremonyCRS::root()?;
+                let proto_encoded_phase_1_root: CeremonyCrs = phase_1_root.try_into()?;
+                std::fs::write(output, proto_encoded_phase_1_root.encode_to_vec())?;
+                Ok(())
+            }
             Command::Start {
                 storage_dir,
                 fvk,
@@ -144,23 +164,84 @@ impl Opt {
 
                 let phase1_crs = match storage.phase1_current_crs().await? {
                     Some(x) => x,
-                    None => {
-                        anyhow::bail!("Please run phase1 before this command 8^)");
-                    }
+                    None => anyhow::bail!("Please run phase1 before this command 8^)"),
                 };
                 let (aux, phase2_root) = transition(&phase1_crs)?;
                 storage.set_transition(phase2_root, aux).await?;
 
                 Ok(())
             }
-            Command::GeneratePhase1 { output } => {
-                let phase_1_root = Phase1CeremonyCRS::root()?;
-                let proto_encoded_phase_1_root: CeremonyCrs = phase_1_root.try_into()?;
-                std::fs::write(output, proto_encoded_phase_1_root.encode_to_vec())?;
+            Command::Export {
+                storage_dir,
+                target_dir,
+            } => {
+                let storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
+                // Grab phase1 output
+                let phase1_crs = match storage.phase1_current_crs().await? {
+                    Some(x) => x,
+                    None => anyhow::bail!("Please run phase1 before this command 8^)"),
+                };
+                // Grab phase2 output
+                let phase2_crs = match storage.phase2_current_crs().await? {
+                    Some(x) => x,
+                    None => anyhow::bail!("Please run phase2 before this command 8^)"),
+                };
+                // Grab aux information
+                let aux = match storage.transition_extra_information().await? {
+                    Some(x) => x,
+                    None => anyhow::bail!("Please run phase2 before this command 8^)"),
+                };
+                let pks = combine(&phase1_crs, &phase2_crs, &aux);
+                let names = [
+                    "spend",
+                    "output",
+                    "delegator_vote",
+                    "undelegateclaim",
+                    "swap",
+                    "swapclaim",
+                    "nullifier_derivation",
+                ];
+                for i in 0..7 {
+                    write_params(target_dir.as_path(), names[i], &pks[i], &pks[i].vk)?;
+                }
                 Ok(())
             }
         }
     }
+}
+
+fn write_params(
+    target_dir: &Utf8Path,
+    name: &str,
+    pk: &ProvingKey<Bls12_377>,
+    vk: &VerifyingKey<Bls12_377>,
+) -> Result<()> {
+    let pk_location = target_dir.join(format!("{}_pk.bin", name));
+    let vk_location = target_dir.join(format!("{}_vk.param", name));
+    let id_location = target_dir.join(format!("{}_id.rs", name));
+
+    let pk_file = fs::File::create(&pk_location)?;
+    let vk_file = fs::File::create(&vk_location)?;
+
+    let pk_writer = BufWriter::new(pk_file);
+    let vk_writer = BufWriter::new(vk_file);
+
+    ProvingKey::serialize_uncompressed(pk, pk_writer).expect("can serialize ProvingKey");
+    VerifyingKey::serialize_uncompressed(vk, vk_writer).expect("can serialize VerifyingKey");
+
+    let pk_id = pk.debug_id();
+    let vk_id = vk.debug_id();
+    std::fs::write(
+        id_location,
+        format!(
+            r#"
+pub const PROVING_KEY_ID: &'static str = "{pk_id}";
+pub const VERIFICATION_KEY_ID: &'static str = "{vk_id}";
+"#,
+        ),
+    )?;
+
+    Ok(())
 }
 
 #[tokio::main]

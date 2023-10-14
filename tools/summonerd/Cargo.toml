@@ -16,17 +16,21 @@ rust-version = "1.65"
 
 [dependencies]
 anyhow = "1"
+ark-groth16 = "0.4"
+ark-serialize = "0.4"
 atty = "0.2"
 bytes = "1"
 camino = "1"
 clap = { version = "3", features = ["derive", "env"] }
 console-subscriber = "0.2"
+decaf377 = "0.5"
 futures = "0.3.28"
 http-body = "0.4.5"
 metrics-tracing-context = "0.11.0"
 penumbra-asset = { path = "../../crates/core/asset/" }
 penumbra-keys = { path = "../../crates/core/keys/" }
 penumbra-num = { path = "../../crates/core/num/" }
+penumbra-proof-params = { path = "../../crates/crypto/proof-params" }
 penumbra-proof-setup = { path = "../../crates/crypto/proof-setup/" }
 penumbra-proto = { path = "../../crates/proto/" } 
 penumbra-view = { path = "../../crates/view/" }

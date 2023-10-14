@@ -308,4 +308,21 @@ impl Storage {
                 .assume_valid(),
         )
     }
+
+    pub async fn transition_extra_information(
+        &self,
+    ) -> Result<Option<AllExtraTransitionInformation>> {
+        let mut conn = self.pool.get()?;
+        let tx = conn.transaction()?;
+        let maybe_data = tx
+            .query_row("SELECT data FROM transition_aux WHERE id = 0", [], |row| {
+                Ok(row.get::<usize, Vec<u8>>(0)?)
+            })
+            .optional()?;
+        if let Some(data) = maybe_data {
+            Ok(Some(AllExtraTransitionInformation::from_bytes(&data)?))
+        } else {
+            return Ok(None);
+        }
+    }
 }

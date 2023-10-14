@@ -23,9 +23,9 @@ pub use dlog::Proof as DLogProof;
 
 pub use phase1::CRSElements as Phase1CRSElements;
 pub use phase1::Contribution as Phase1Contribution;
+pub(crate) use phase1::LinkingProof;
 pub use phase1::RawCRSElements as Phase1RawCRSElements;
 pub use phase1::RawContribution as Phase1RawContribution;
-pub(crate) use phase1::LinkingProof as LinkingProof;
 
 pub use phase2::CRSElements as Phase2CRSElements;
 pub use phase2::Contribution as Phase2Contribution;

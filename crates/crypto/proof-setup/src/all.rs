@@ -11,8 +11,10 @@ use crate::single::{
     Phase2RawContribution,
 };
 use anyhow::{anyhow, Result};
+use ark_groth16::ProvingKey;
 use ark_relations::r1cs::ConstraintMatrices;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use decaf377::Bls12_377;
 use penumbra_dex::{swap::proof::SwapCircuit, swap_claim::proof::SwapClaimCircuit};
 use penumbra_governance::DelegatorVoteCircuit;
 use penumbra_proof_params::generate_constraint_matrices;
@@ -897,4 +899,21 @@ pub fn transition(
         AllExtraTransitionInformation([e0, e1, e2, e3, e4, e5, e6]),
         Phase2CeremonyCRS([p0, p1, p2, p3, p4, p5, p6]),
     ))
+}
+
+pub fn combine(
+    phase1out: &Phase1CeremonyCRS,
+    phase2out: &Phase2CeremonyCRS,
+    extra: &AllExtraTransitionInformation,
+) -> [ProvingKey<Bls12_377>; NUM_CIRCUITS] {
+    let [c0, c1, c2, c3, c4, c5, c6] = circuits();
+    [
+        single::combine(&c0, &phase1out.0[0], &phase2out.0[0], &extra.0[0]),
+        single::combine(&c1, &phase1out.0[1], &phase2out.0[1], &extra.0[1]),
+        single::combine(&c2, &phase1out.0[2], &phase2out.0[2], &extra.0[2]),
+        single::combine(&c3, &phase1out.0[3], &phase2out.0[3], &extra.0[3]),
+        single::combine(&c4, &phase1out.0[4], &phase2out.0[4], &extra.0[4]),
+        single::combine(&c5, &phase1out.0[5], &phase2out.0[5], &extra.0[5]),
+        single::combine(&c6, &phase1out.0[6], &phase2out.0[6], &extra.0[6]),
+    ]
 }
