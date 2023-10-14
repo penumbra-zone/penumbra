@@ -113,6 +113,10 @@ impl Opt {
                 listen,
             } => {
                 let storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
+                // Check if we've transitioned, for a nice error message
+                if storage.transition_extra_information().await?.is_none() {
+                    anyhow::bail!("Please run the transition command before this command 8^)");
+                }
                 let knower =
                     PenumbraKnower::load_or_initialize(storage_dir.join("penumbra.db"), &fvk, node)
                         .await?;
