@@ -63,9 +63,8 @@ impl From<State> for pb::BondingState {
 impl TryFrom<pb::BondingState> for State {
     type Error = anyhow::Error;
     fn try_from(v: pb::BondingState) -> Result<Self, Self::Error> {
-        let Some(bonding_state) = pb::bonding_state::BondingStateEnum::from_i32(v.state) else {
-            anyhow::bail!("invalid bonding state!")
-        };
+        let bonding_state = pb::bonding_state::BondingStateEnum::try_from(v.state)
+            .map_err(|e| anyhow::anyhow!("invalid bonding state, error: {e}"))?;
 
         match bonding_state {
             pb::bonding_state::BondingStateEnum::Bonded => Ok(State::Bonded),
