@@ -799,7 +799,7 @@ pub mod query_service_server {
     #[async_trait]
     pub trait QueryService: Send + Sync + 'static {
         /// Server streaming response type for the ValidatorInfo method.
-        type ValidatorInfoStream: futures_core::Stream<
+        type ValidatorInfoStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::ValidatorInfoResponse, tonic::Status>,
             >
             + Send
@@ -940,7 +940,7 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).validator_info(request).await
+                                <T as QueryService>::validator_info(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -986,7 +986,7 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).validator_status(request).await
+                                <T as QueryService>::validator_status(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -1032,7 +1032,8 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).validator_penalty(request).await
+                                <T as QueryService>::validator_penalty(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -1078,7 +1079,8 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).current_validator_rate(request).await
+                                <T as QueryService>::current_validator_rate(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -1124,7 +1126,8 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).next_validator_rate(request).await
+                                <T as QueryService>::next_validator_rate(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }

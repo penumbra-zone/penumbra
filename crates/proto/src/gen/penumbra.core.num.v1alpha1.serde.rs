@@ -14,9 +14,11 @@ impl serde::Serialize for Amount {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.num.v1alpha1.Amount", len)?;
         if self.lo != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("lo", ToString::to_string(&self.lo).as_str())?;
         }
         if self.hi != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("hi", ToString::to_string(&self.hi).as_str())?;
         }
         struct_ser.end()
@@ -75,20 +77,20 @@ impl<'de> serde::Deserialize<'de> for Amount {
                 formatter.write_str("struct penumbra.core.num.v1alpha1.Amount")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<Amount, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Amount, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut lo__ = None;
                 let mut hi__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Lo => {
                             if lo__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("lo"));
                             }
                             lo__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Hi => {
@@ -96,7 +98,7 @@ impl<'de> serde::Deserialize<'de> for Amount {
                                 return Err(serde::de::Error::duplicate_field("hi"));
                             }
                             hi__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }

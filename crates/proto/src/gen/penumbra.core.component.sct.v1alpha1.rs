@@ -256,7 +256,8 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).transaction_by_note(request).await
+                                <T as QueryService>::transaction_by_note(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }

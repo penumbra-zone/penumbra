@@ -28,10 +28,10 @@ pub struct InfoResponse {
     /// The application protocol version.
     #[prost(uint64, tag = "3")]
     pub app_version: u64,
-    /// The latest block for which the app has called \[`Commit`\](super::super::Request::Commit).
+    /// The latest block for which the app has called [`Commit`](super::super::Request::Commit).
     #[prost(uint64, tag = "4")]
     pub last_block_height: u64,
-    /// The latest result of \[`Commit`\](super::super::Request::Commit).
+    /// The latest result of [`Commit`](super::super::Request::Commit).
     #[prost(bytes = "vec", tag = "5")]
     pub last_block_app_hash: ::prost::alloc::vec::Vec<u8>,
 }
@@ -752,7 +752,9 @@ pub mod ledger_service_server {
                             request: tonic::Request<super::InfoRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).info(request).await };
+                            let fut = async move {
+                                <T as LedgerService>::info(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }

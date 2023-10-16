@@ -86,32 +86,32 @@ impl<'de> serde::Deserialize<'de> for AuthorizeRequest {
                 formatter.write_str("struct penumbra.custody.v1alpha1.AuthorizeRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<AuthorizeRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AuthorizeRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut plan__ = None;
                 let mut wallet_id__ = None;
                 let mut pre_authorizations__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Plan => {
                             if plan__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("plan"));
                             }
-                            plan__ = map.next_value()?;
+                            plan__ = map_.next_value()?;
                         }
                         GeneratedField::WalletId => {
                             if wallet_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            wallet_id__ = map.next_value()?;
+                            wallet_id__ = map_.next_value()?;
                         }
                         GeneratedField::PreAuthorizations => {
                             if pre_authorizations__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("preAuthorizations"));
                             }
-                            pre_authorizations__ = Some(map.next_value()?);
+                            pre_authorizations__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -193,18 +193,18 @@ impl<'de> serde::Deserialize<'de> for AuthorizeResponse {
                 formatter.write_str("struct penumbra.custody.v1alpha1.AuthorizeResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<AuthorizeResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AuthorizeResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut data__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Data => {
                             if data__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("data"));
                             }
-                            data__ = map.next_value()?;
+                            data__ = map_.next_value()?;
                         }
                     }
                 }
@@ -288,18 +288,18 @@ impl<'de> serde::Deserialize<'de> for PreAuthorization {
                 formatter.write_str("struct penumbra.custody.v1alpha1.PreAuthorization")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<PreAuthorization, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<PreAuthorization, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut pre_authorization__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Ed25519 => {
                             if pre_authorization__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("ed25519"));
                             }
-                            pre_authorization__ = map.next_value::<::std::option::Option<_>>()?.map(pre_authorization::PreAuthorization::Ed25519)
+                            pre_authorization__ = map_.next_value::<::std::option::Option<_>>()?.map(pre_authorization::PreAuthorization::Ed25519)
 ;
                         }
                     }
@@ -328,9 +328,11 @@ impl serde::Serialize for pre_authorization::Ed25519 {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.custody.v1alpha1.PreAuthorization.Ed25519", len)?;
         if !self.vk.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("vk", pbjson::private::base64::encode(&self.vk).as_str())?;
         }
         if !self.sig.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("sig", pbjson::private::base64::encode(&self.sig).as_str())?;
         }
         struct_ser.end()
@@ -389,20 +391,20 @@ impl<'de> serde::Deserialize<'de> for pre_authorization::Ed25519 {
                 formatter.write_str("struct penumbra.custody.v1alpha1.PreAuthorization.Ed25519")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<pre_authorization::Ed25519, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<pre_authorization::Ed25519, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut vk__ = None;
                 let mut sig__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Vk => {
                             if vk__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("vk"));
                             }
                             vk__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Sig => {
@@ -410,7 +412,7 @@ impl<'de> serde::Deserialize<'de> for pre_authorization::Ed25519 {
                                 return Err(serde::de::Error::duplicate_field("sig"));
                             }
                             sig__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }

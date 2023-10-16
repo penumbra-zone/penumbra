@@ -288,7 +288,7 @@ pub mod ceremony_coordinator_service_server {
     #[async_trait]
     pub trait CeremonyCoordinatorService: Send + Sync + 'static {
         /// Server streaming response type for the Participate method.
-        type ParticipateStream: futures_core::Stream<
+        type ParticipateStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::ParticipateResponse, tonic::Status>,
             >
             + Send
@@ -414,7 +414,13 @@ pub mod ceremony_coordinator_service_server {
                             >,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).participate(request).await };
+                            let fut = async move {
+                                <T as CeremonyCoordinatorService>::participate(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
                             Box::pin(fut)
                         }
                     }

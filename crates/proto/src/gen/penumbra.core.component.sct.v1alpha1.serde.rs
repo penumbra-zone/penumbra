@@ -11,6 +11,7 @@ impl serde::Serialize for Nullifier {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1alpha1.Nullifier", len)?;
         if !self.inner.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -66,19 +67,19 @@ impl<'de> serde::Deserialize<'de> for Nullifier {
                 formatter.write_str("struct penumbra.core.component.sct.v1alpha1.Nullifier")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<Nullifier, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Nullifier, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut inner__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Inner => {
                             if inner__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("inner"));
                             }
                             inner__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -170,25 +171,25 @@ impl<'de> serde::Deserialize<'de> for TransactionByNoteRequest {
                 formatter.write_str("struct penumbra.core.component.sct.v1alpha1.TransactionByNoteRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<TransactionByNoteRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<TransactionByNoteRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut chain_id__ = None;
                 let mut note_commitment__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ChainId => {
                             if chain_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("chainId"));
                             }
-                            chain_id__ = Some(map.next_value()?);
+                            chain_id__ = Some(map_.next_value()?);
                         }
                         GeneratedField::NoteCommitment => {
                             if note_commitment__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("noteCommitment"));
                             }
-                            note_commitment__ = map.next_value()?;
+                            note_commitment__ = map_.next_value()?;
                         }
                     }
                 }
@@ -270,18 +271,18 @@ impl<'de> serde::Deserialize<'de> for TransactionByNoteResponse {
                 formatter.write_str("struct penumbra.core.component.sct.v1alpha1.TransactionByNoteResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<TransactionByNoteResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<TransactionByNoteResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut note_source__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::NoteSource => {
                             if note_source__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("noteSource"));
                             }
-                            note_source__ = map.next_value()?;
+                            note_source__ = map_.next_value()?;
                         }
                     }
                 }

@@ -623,7 +623,10 @@ pub mod tendermint_proxy_service_server {
                             request: tonic::Request<super::GetStatusRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).get_status(request).await };
+                            let fut = async move {
+                                <T as TendermintProxyService>::get_status(&inner, request)
+                                    .await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -668,7 +671,11 @@ pub mod tendermint_proxy_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).broadcast_tx_async(request).await
+                                <T as TendermintProxyService>::broadcast_tx_async(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -714,7 +721,11 @@ pub mod tendermint_proxy_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).broadcast_tx_sync(request).await
+                                <T as TendermintProxyService>::broadcast_tx_sync(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -758,7 +769,9 @@ pub mod tendermint_proxy_service_server {
                             request: tonic::Request<super::GetTxRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).get_tx(request).await };
+                            let fut = async move {
+                                <T as TendermintProxyService>::get_tx(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -802,7 +815,10 @@ pub mod tendermint_proxy_service_server {
                             request: tonic::Request<super::AbciQueryRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).abci_query(request).await };
+                            let fut = async move {
+                                <T as TendermintProxyService>::abci_query(&inner, request)
+                                    .await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -847,7 +863,11 @@ pub mod tendermint_proxy_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).get_block_by_height(request).await
+                                <T as TendermintProxyService>::get_block_by_height(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }

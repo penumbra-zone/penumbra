@@ -38,6 +38,7 @@ impl serde::Serialize for CompactBlock {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.compact_block.v1alpha1.CompactBlock", len)?;
         if self.height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if !self.state_payloads.is_empty() {
@@ -155,7 +156,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                 formatter.write_str("struct penumbra.core.component.compact_block.v1alpha1.CompactBlock")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<CompactBlock, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CompactBlock, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -169,69 +170,69 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                 let mut swap_outputs__ = None;
                 let mut chain_parameters__ = None;
                 let mut gas_prices__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Height => {
                             if height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("height"));
                             }
                             height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::StatePayloads => {
                             if state_payloads__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("statePayloads"));
                             }
-                            state_payloads__ = Some(map.next_value()?);
+                            state_payloads__ = Some(map_.next_value()?);
                         }
                         GeneratedField::Nullifiers => {
                             if nullifiers__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("nullifiers"));
                             }
-                            nullifiers__ = Some(map.next_value()?);
+                            nullifiers__ = Some(map_.next_value()?);
                         }
                         GeneratedField::BlockRoot => {
                             if block_root__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("blockRoot"));
                             }
-                            block_root__ = map.next_value()?;
+                            block_root__ = map_.next_value()?;
                         }
                         GeneratedField::EpochRoot => {
                             if epoch_root__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("epochRoot"));
                             }
-                            epoch_root__ = map.next_value()?;
+                            epoch_root__ = map_.next_value()?;
                         }
                         GeneratedField::ProposalStarted => {
                             if proposal_started__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalStarted"));
                             }
-                            proposal_started__ = Some(map.next_value()?);
+                            proposal_started__ = Some(map_.next_value()?);
                         }
                         GeneratedField::FmdParameters => {
                             if fmd_parameters__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("fmdParameters"));
                             }
-                            fmd_parameters__ = map.next_value()?;
+                            fmd_parameters__ = map_.next_value()?;
                         }
                         GeneratedField::SwapOutputs => {
                             if swap_outputs__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("swapOutputs"));
                             }
-                            swap_outputs__ = Some(map.next_value()?);
+                            swap_outputs__ = Some(map_.next_value()?);
                         }
                         GeneratedField::ChainParameters => {
                             if chain_parameters__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("chainParameters"));
                             }
-                            chain_parameters__ = map.next_value()?;
+                            chain_parameters__ = map_.next_value()?;
                         }
                         GeneratedField::GasPrices => {
                             if gas_prices__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("gasPrices"));
                             }
-                            gas_prices__ = map.next_value()?;
+                            gas_prices__ = map_.next_value()?;
                         }
                     }
                 }
@@ -277,9 +278,11 @@ impl serde::Serialize for CompactBlockRangeRequest {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
         }
         if self.start_height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
         }
         if self.end_height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("endHeight", ToString::to_string(&self.end_height).as_str())?;
         }
         if self.keep_alive {
@@ -351,7 +354,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeRequest {
                 formatter.write_str("struct penumbra.core.component.compact_block.v1alpha1.CompactBlockRangeRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<CompactBlockRangeRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CompactBlockRangeRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -359,20 +362,20 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeRequest {
                 let mut start_height__ = None;
                 let mut end_height__ = None;
                 let mut keep_alive__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ChainId => {
                             if chain_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("chainId"));
                             }
-                            chain_id__ = Some(map.next_value()?);
+                            chain_id__ = Some(map_.next_value()?);
                         }
                         GeneratedField::StartHeight => {
                             if start_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("startHeight"));
                             }
                             start_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::EndHeight => {
@@ -380,14 +383,14 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeRequest {
                                 return Err(serde::de::Error::duplicate_field("endHeight"));
                             }
                             end_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::KeepAlive => {
                             if keep_alive__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("keepAlive"));
                             }
-                            keep_alive__ = Some(map.next_value()?);
+                            keep_alive__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -471,18 +474,18 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeResponse {
                 formatter.write_str("struct penumbra.core.component.compact_block.v1alpha1.CompactBlockRangeResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<CompactBlockRangeResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CompactBlockRangeResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut compact_block__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::CompactBlock => {
                             if compact_block__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("compactBlock"));
                             }
-                            compact_block__ = map.next_value()?;
+                            compact_block__ = map_.next_value()?;
                         }
                     }
                 }
@@ -579,32 +582,32 @@ impl<'de> serde::Deserialize<'de> for StatePayload {
                 formatter.write_str("struct penumbra.core.component.compact_block.v1alpha1.StatePayload")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<StatePayload, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<StatePayload, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut state_payload__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::RolledUp => {
                             if state_payload__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("rolledUp"));
                             }
-                            state_payload__ = map.next_value::<::std::option::Option<_>>()?.map(state_payload::StatePayload::RolledUp)
+                            state_payload__ = map_.next_value::<::std::option::Option<_>>()?.map(state_payload::StatePayload::RolledUp)
 ;
                         }
                         GeneratedField::Note => {
                             if state_payload__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("note"));
                             }
-                            state_payload__ = map.next_value::<::std::option::Option<_>>()?.map(state_payload::StatePayload::Note)
+                            state_payload__ = map_.next_value::<::std::option::Option<_>>()?.map(state_payload::StatePayload::Note)
 ;
                         }
                         GeneratedField::Swap => {
                             if state_payload__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("swap"));
                             }
-                            state_payload__ = map.next_value::<::std::option::Option<_>>()?.map(state_payload::StatePayload::Swap)
+                            state_payload__ = map_.next_value::<::std::option::Option<_>>()?.map(state_payload::StatePayload::Swap)
 ;
                         }
                     }
@@ -694,25 +697,25 @@ impl<'de> serde::Deserialize<'de> for state_payload::Note {
                 formatter.write_str("struct penumbra.core.component.compact_block.v1alpha1.StatePayload.Note")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<state_payload::Note, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<state_payload::Note, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut source__ = None;
                 let mut note__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Source => {
                             if source__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("source"));
                             }
-                            source__ = map.next_value()?;
+                            source__ = map_.next_value()?;
                         }
                         GeneratedField::Note => {
                             if note__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("note"));
                             }
-                            note__ = map.next_value()?;
+                            note__ = map_.next_value()?;
                         }
                     }
                 }
@@ -793,18 +796,18 @@ impl<'de> serde::Deserialize<'de> for state_payload::RolledUp {
                 formatter.write_str("struct penumbra.core.component.compact_block.v1alpha1.StatePayload.RolledUp")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<state_payload::RolledUp, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<state_payload::RolledUp, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut commitment__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Commitment => {
                             if commitment__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("commitment"));
                             }
-                            commitment__ = map.next_value()?;
+                            commitment__ = map_.next_value()?;
                         }
                     }
                 }
@@ -893,25 +896,25 @@ impl<'de> serde::Deserialize<'de> for state_payload::Swap {
                 formatter.write_str("struct penumbra.core.component.compact_block.v1alpha1.StatePayload.Swap")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<state_payload::Swap, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<state_payload::Swap, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut source__ = None;
                 let mut swap__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Source => {
                             if source__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("source"));
                             }
-                            source__ = map.next_value()?;
+                            source__ = map_.next_value()?;
                         }
                         GeneratedField::Swap => {
                             if swap__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("swap"));
                             }
-                            swap__ = map.next_value()?;
+                            swap__ = map_.next_value()?;
                         }
                     }
                 }

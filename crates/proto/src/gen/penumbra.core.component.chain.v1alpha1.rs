@@ -323,7 +323,7 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).epoch_by_height(request).await
+                                <T as QueryService>::epoch_by_height(&inner, request).await
                             };
                             Box::pin(fut)
                         }

@@ -312,7 +312,10 @@ pub mod custody_protocol_service_server {
                             request: tonic::Request<super::AuthorizeRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).authorize(request).await };
+                            let fut = async move {
+                                <T as CustodyProtocolService>::authorize(&inner, request)
+                                    .await
+                            };
                             Box::pin(fut)
                         }
                     }

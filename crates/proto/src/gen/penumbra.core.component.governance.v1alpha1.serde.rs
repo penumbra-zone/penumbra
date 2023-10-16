@@ -66,18 +66,18 @@ impl<'de> serde::Deserialize<'de> for DaoDeposit {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.DaoDeposit")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<DaoDeposit, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DaoDeposit, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut value__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Value => {
                             if value__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("value"));
                             }
-                            value__ = map.next_value()?;
+                            value__ = map_.next_value()?;
                         }
                     }
                 }
@@ -166,25 +166,25 @@ impl<'de> serde::Deserialize<'de> for DaoOutput {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.DaoOutput")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<DaoOutput, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DaoOutput, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut value__ = None;
                 let mut address__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Value => {
                             if value__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("value"));
                             }
-                            value__ = map.next_value()?;
+                            value__ = map_.next_value()?;
                         }
                         GeneratedField::Address => {
                             if address__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("address"));
                             }
-                            address__ = map.next_value()?;
+                            address__ = map_.next_value()?;
                         }
                     }
                 }
@@ -265,18 +265,18 @@ impl<'de> serde::Deserialize<'de> for DaoSpend {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.DaoSpend")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<DaoSpend, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DaoSpend, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut value__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Value => {
                             if value__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("value"));
                             }
-                            value__ = map.next_value()?;
+                            value__ = map_.next_value()?;
                         }
                     }
                 }
@@ -375,32 +375,32 @@ impl<'de> serde::Deserialize<'de> for DelegatorVote {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.DelegatorVote")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<DelegatorVote, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DelegatorVote, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut body__ = None;
                 let mut auth_sig__ = None;
                 let mut proof__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Body => {
                             if body__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("body"));
                             }
-                            body__ = map.next_value()?;
+                            body__ = map_.next_value()?;
                         }
                         GeneratedField::AuthSig => {
                             if auth_sig__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("authSig"));
                             }
-                            auth_sig__ = map.next_value()?;
+                            auth_sig__ = map_.next_value()?;
                         }
                         GeneratedField::Proof => {
                             if proof__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proof"));
                             }
-                            proof__ = map.next_value()?;
+                            proof__ = map_.next_value()?;
                         }
                     }
                 }
@@ -445,9 +445,11 @@ impl serde::Serialize for DelegatorVoteBody {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.DelegatorVoteBody", len)?;
         if self.proposal != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
         if self.start_position != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("startPosition", ToString::to_string(&self.start_position).as_str())?;
         }
         if let Some(v) = self.vote.as_ref() {
@@ -460,9 +462,11 @@ impl serde::Serialize for DelegatorVoteBody {
             struct_ser.serialize_field("unbondedAmount", v)?;
         }
         if !self.nullifier.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("nullifier", pbjson::private::base64::encode(&self.nullifier).as_str())?;
         }
         if !self.rk.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("rk", pbjson::private::base64::encode(&self.rk).as_str())?;
         }
         struct_ser.end()
@@ -538,7 +542,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.DelegatorVoteBody")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<DelegatorVoteBody, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DelegatorVoteBody, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -549,14 +553,14 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                 let mut unbonded_amount__ = None;
                 let mut nullifier__ = None;
                 let mut rk__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Proposal => {
                             if proposal__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposal"));
                             }
                             proposal__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::StartPosition => {
@@ -564,33 +568,33 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                                 return Err(serde::de::Error::duplicate_field("startPosition"));
                             }
                             start_position__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Vote => {
                             if vote__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("vote"));
                             }
-                            vote__ = map.next_value()?;
+                            vote__ = map_.next_value()?;
                         }
                         GeneratedField::Value => {
                             if value__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("value"));
                             }
-                            value__ = map.next_value()?;
+                            value__ = map_.next_value()?;
                         }
                         GeneratedField::UnbondedAmount => {
                             if unbonded_amount__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("unbondedAmount"));
                             }
-                            unbonded_amount__ = map.next_value()?;
+                            unbonded_amount__ = map_.next_value()?;
                         }
                         GeneratedField::Nullifier => {
                             if nullifier__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("nullifier"));
                             }
                             nullifier__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Rk => {
@@ -598,7 +602,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                                 return Err(serde::de::Error::duplicate_field("rk"));
                             }
                             rk__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -654,9 +658,11 @@ impl serde::Serialize for DelegatorVotePlan {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.DelegatorVotePlan", len)?;
         if self.proposal != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
         if self.start_position != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("startPosition", ToString::to_string(&self.start_position).as_str())?;
         }
         if let Some(v) = self.vote.as_ref() {
@@ -666,18 +672,22 @@ impl serde::Serialize for DelegatorVotePlan {
             struct_ser.serialize_field("stakedNote", v)?;
         }
         if self.staked_note_position != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("stakedNotePosition", ToString::to_string(&self.staked_note_position).as_str())?;
         }
         if let Some(v) = self.unbonded_amount.as_ref() {
             struct_ser.serialize_field("unbondedAmount", v)?;
         }
         if !self.randomizer.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("randomizer", pbjson::private::base64::encode(&self.randomizer).as_str())?;
         }
         if !self.proof_blinding_r.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proofBlindingR", pbjson::private::base64::encode(&self.proof_blinding_r).as_str())?;
         }
         if !self.proof_blinding_s.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
         }
         struct_ser.end()
@@ -763,7 +773,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.DelegatorVotePlan")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<DelegatorVotePlan, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DelegatorVotePlan, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -776,14 +786,14 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                 let mut randomizer__ = None;
                 let mut proof_blinding_r__ = None;
                 let mut proof_blinding_s__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Proposal => {
                             if proposal__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposal"));
                             }
                             proposal__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::StartPosition => {
@@ -791,41 +801,41 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                                 return Err(serde::de::Error::duplicate_field("startPosition"));
                             }
                             start_position__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Vote => {
                             if vote__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("vote"));
                             }
-                            vote__ = map.next_value()?;
+                            vote__ = map_.next_value()?;
                         }
                         GeneratedField::StakedNote => {
                             if staked_note__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("stakedNote"));
                             }
-                            staked_note__ = map.next_value()?;
+                            staked_note__ = map_.next_value()?;
                         }
                         GeneratedField::StakedNotePosition => {
                             if staked_note_position__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("stakedNotePosition"));
                             }
                             staked_note_position__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::UnbondedAmount => {
                             if unbonded_amount__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("unbondedAmount"));
                             }
-                            unbonded_amount__ = map.next_value()?;
+                            unbonded_amount__ = map_.next_value()?;
                         }
                         GeneratedField::Randomizer => {
                             if randomizer__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("randomizer"));
                             }
                             randomizer__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::ProofBlindingR => {
@@ -833,7 +843,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                                 return Err(serde::de::Error::duplicate_field("proofBlindingR"));
                             }
                             proof_blinding_r__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::ProofBlindingS => {
@@ -841,7 +851,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVotePlan {
                                 return Err(serde::de::Error::duplicate_field("proofBlindingS"));
                             }
                             proof_blinding_s__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -940,25 +950,25 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteView {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.DelegatorVoteView")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<DelegatorVoteView, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DelegatorVoteView, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut delegator_vote__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Visible => {
                             if delegator_vote__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("visible"));
                             }
-                            delegator_vote__ = map.next_value::<::std::option::Option<_>>()?.map(delegator_vote_view::DelegatorVote::Visible)
+                            delegator_vote__ = map_.next_value::<::std::option::Option<_>>()?.map(delegator_vote_view::DelegatorVote::Visible)
 ;
                         }
                         GeneratedField::Opaque => {
                             if delegator_vote__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("opaque"));
                             }
-                            delegator_vote__ = map.next_value::<::std::option::Option<_>>()?.map(delegator_vote_view::DelegatorVote::Opaque)
+                            delegator_vote__ = map_.next_value::<::std::option::Option<_>>()?.map(delegator_vote_view::DelegatorVote::Opaque)
 ;
                         }
                     }
@@ -1040,18 +1050,18 @@ impl<'de> serde::Deserialize<'de> for delegator_vote_view::Opaque {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Opaque")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<delegator_vote_view::Opaque, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<delegator_vote_view::Opaque, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut delegator_vote__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::DelegatorVote => {
                             if delegator_vote__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("delegatorVote"));
                             }
-                            delegator_vote__ = map.next_value()?;
+                            delegator_vote__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1141,25 +1151,25 @@ impl<'de> serde::Deserialize<'de> for delegator_vote_view::Visible {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Visible")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<delegator_vote_view::Visible, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<delegator_vote_view::Visible, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut delegator_vote__ = None;
                 let mut note__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::DelegatorVote => {
                             if delegator_vote__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("delegatorVote"));
                             }
-                            delegator_vote__ = map.next_value()?;
+                            delegator_vote__ = map_.next_value()?;
                         }
                         GeneratedField::Note => {
                             if note__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("note"));
                             }
-                            note__ = map.next_value()?;
+                            note__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1241,18 +1251,18 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.GenesisContent")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<GenesisContent, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<GenesisContent, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut governance_params__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::GovernanceParams => {
                             if governance_params__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("governanceParams"));
                             }
-                            governance_params__ = map.next_value()?;
+                            governance_params__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1289,6 +1299,7 @@ impl serde::Serialize for GovernanceParameters {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.GovernanceParameters", len)?;
         if self.proposal_voting_blocks != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proposalVotingBlocks", ToString::to_string(&self.proposal_voting_blocks).as_str())?;
         }
         if let Some(v) = self.proposal_deposit_amount.as_ref() {
@@ -1373,7 +1384,7 @@ impl<'de> serde::Deserialize<'de> for GovernanceParameters {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.GovernanceParameters")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<GovernanceParameters, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<GovernanceParameters, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -1382,39 +1393,39 @@ impl<'de> serde::Deserialize<'de> for GovernanceParameters {
                 let mut proposal_valid_quorum__ = None;
                 let mut proposal_pass_threshold__ = None;
                 let mut proposal_slash_threshold__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ProposalVotingBlocks => {
                             if proposal_voting_blocks__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalVotingBlocks"));
                             }
                             proposal_voting_blocks__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::ProposalDepositAmount => {
                             if proposal_deposit_amount__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalDepositAmount"));
                             }
-                            proposal_deposit_amount__ = map.next_value()?;
+                            proposal_deposit_amount__ = map_.next_value()?;
                         }
                         GeneratedField::ProposalValidQuorum => {
                             if proposal_valid_quorum__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalValidQuorum"));
                             }
-                            proposal_valid_quorum__ = Some(map.next_value()?);
+                            proposal_valid_quorum__ = Some(map_.next_value()?);
                         }
                         GeneratedField::ProposalPassThreshold => {
                             if proposal_pass_threshold__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalPassThreshold"));
                             }
-                            proposal_pass_threshold__ = Some(map.next_value()?);
+                            proposal_pass_threshold__ = Some(map_.next_value()?);
                         }
                         GeneratedField::ProposalSlashThreshold => {
                             if proposal_slash_threshold__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalSlashThreshold"));
                             }
-                            proposal_slash_threshold__ = Some(map.next_value()?);
+                            proposal_slash_threshold__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -1464,6 +1475,7 @@ impl serde::Serialize for Proposal {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.Proposal", len)?;
         if self.id != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("id", ToString::to_string(&self.id).as_str())?;
         }
         if !self.title.is_empty() {
@@ -1564,7 +1576,7 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Proposal")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<Proposal, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Proposal, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -1576,57 +1588,57 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                 let mut parameter_change__ = None;
                 let mut dao_spend__ = None;
                 let mut upgrade_plan__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Id => {
                             if id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("id"));
                             }
                             id__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Title => {
                             if title__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("title"));
                             }
-                            title__ = Some(map.next_value()?);
+                            title__ = Some(map_.next_value()?);
                         }
                         GeneratedField::Description => {
                             if description__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("description"));
                             }
-                            description__ = Some(map.next_value()?);
+                            description__ = Some(map_.next_value()?);
                         }
                         GeneratedField::Signaling => {
                             if signaling__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("signaling"));
                             }
-                            signaling__ = map.next_value()?;
+                            signaling__ = map_.next_value()?;
                         }
                         GeneratedField::Emergency => {
                             if emergency__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("emergency"));
                             }
-                            emergency__ = map.next_value()?;
+                            emergency__ = map_.next_value()?;
                         }
                         GeneratedField::ParameterChange => {
                             if parameter_change__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("parameterChange"));
                             }
-                            parameter_change__ = map.next_value()?;
+                            parameter_change__ = map_.next_value()?;
                         }
                         GeneratedField::DaoSpend => {
                             if dao_spend__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("daoSpend"));
                             }
-                            dao_spend__ = map.next_value()?;
+                            dao_spend__ = map_.next_value()?;
                         }
                         GeneratedField::UpgradePlan => {
                             if upgrade_plan__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("upgradePlan"));
                             }
-                            upgrade_plan__ = map.next_value()?;
+                            upgrade_plan__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1714,18 +1726,18 @@ impl<'de> serde::Deserialize<'de> for proposal::DaoSpend {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Proposal.DaoSpend")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal::DaoSpend, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal::DaoSpend, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut transaction_plan__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::TransactionPlan => {
                             if transaction_plan__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("transactionPlan"));
                             }
-                            transaction_plan__ = map.next_value()?;
+                            transaction_plan__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1806,18 +1818,18 @@ impl<'de> serde::Deserialize<'de> for proposal::Emergency {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Proposal.Emergency")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal::Emergency, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal::Emergency, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut halt_chain__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::HaltChain => {
                             if halt_chain__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("haltChain"));
                             }
-                            halt_chain__ = Some(map.next_value()?);
+                            halt_chain__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -1908,25 +1920,25 @@ impl<'de> serde::Deserialize<'de> for proposal::ParameterChange {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Proposal.ParameterChange")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal::ParameterChange, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal::ParameterChange, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut old_parameters__ = None;
                 let mut new_parameters__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::OldParameters => {
                             if old_parameters__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("oldParameters"));
                             }
-                            old_parameters__ = map.next_value()?;
+                            old_parameters__ = map_.next_value()?;
                         }
                         GeneratedField::NewParameters => {
                             if new_parameters__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("newParameters"));
                             }
-                            new_parameters__ = map.next_value()?;
+                            new_parameters__ = map_.next_value()?;
                         }
                     }
                 }
@@ -2007,18 +2019,18 @@ impl<'de> serde::Deserialize<'de> for proposal::Signaling {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Proposal.Signaling")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal::Signaling, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal::Signaling, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut commit__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Commit => {
                             if commit__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("commit"));
                             }
-                            commit__ = Some(map.next_value()?);
+                            commit__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -2043,6 +2055,7 @@ impl serde::Serialize for proposal::UpgradePlan {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.UpgradePlan", len)?;
         if self.height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         struct_ser.end()
@@ -2098,19 +2111,19 @@ impl<'de> serde::Deserialize<'de> for proposal::UpgradePlan {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Proposal.UpgradePlan")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal::UpgradePlan, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal::UpgradePlan, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut height__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Height => {
                             if height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("height"));
                             }
                             height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -2142,6 +2155,7 @@ impl serde::Serialize for ProposalDepositClaim {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ProposalDepositClaim", len)?;
         if self.proposal != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
         if let Some(v) = self.deposit_amount.as_ref() {
@@ -2210,34 +2224,34 @@ impl<'de> serde::Deserialize<'de> for ProposalDepositClaim {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalDepositClaim")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ProposalDepositClaim, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ProposalDepositClaim, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut proposal__ = None;
                 let mut deposit_amount__ = None;
                 let mut outcome__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Proposal => {
                             if proposal__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposal"));
                             }
                             proposal__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::DepositAmount => {
                             if deposit_amount__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("depositAmount"));
                             }
-                            deposit_amount__ = map.next_value()?;
+                            deposit_amount__ = map_.next_value()?;
                         }
                         GeneratedField::Outcome => {
                             if outcome__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("outcome"));
                             }
-                            outcome__ = map.next_value()?;
+                            outcome__ = map_.next_value()?;
                         }
                     }
                 }
@@ -2270,6 +2284,7 @@ impl serde::Serialize for ProposalInfoRequest {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
         }
         if self.proposal_id != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proposalId", ToString::to_string(&self.proposal_id).as_str())?;
         }
         struct_ser.end()
@@ -2330,26 +2345,26 @@ impl<'de> serde::Deserialize<'de> for ProposalInfoRequest {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalInfoRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ProposalInfoRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ProposalInfoRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut chain_id__ = None;
                 let mut proposal_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ChainId => {
                             if chain_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("chainId"));
                             }
-                            chain_id__ = Some(map.next_value()?);
+                            chain_id__ = Some(map_.next_value()?);
                         }
                         GeneratedField::ProposalId => {
                             if proposal_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalId"));
                             }
                             proposal_id__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -2379,9 +2394,11 @@ impl serde::Serialize for ProposalInfoResponse {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ProposalInfoResponse", len)?;
         if self.start_block_height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("startBlockHeight", ToString::to_string(&self.start_block_height).as_str())?;
         }
         if self.start_position != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("startPosition", ToString::to_string(&self.start_position).as_str())?;
         }
         struct_ser.end()
@@ -2442,20 +2459,20 @@ impl<'de> serde::Deserialize<'de> for ProposalInfoResponse {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalInfoResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ProposalInfoResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ProposalInfoResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut start_block_height__ = None;
                 let mut start_position__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::StartBlockHeight => {
                             if start_block_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("startBlockHeight"));
                             }
                             start_block_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::StartPosition => {
@@ -2463,7 +2480,7 @@ impl<'de> serde::Deserialize<'de> for ProposalInfoResponse {
                                 return Err(serde::de::Error::duplicate_field("startPosition"));
                             }
                             start_position__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -2561,32 +2578,32 @@ impl<'de> serde::Deserialize<'de> for ProposalOutcome {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalOutcome")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ProposalOutcome, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ProposalOutcome, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut outcome__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Passed => {
                             if outcome__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("passed"));
                             }
-                            outcome__ = map.next_value::<::std::option::Option<_>>()?.map(proposal_outcome::Outcome::Passed)
+                            outcome__ = map_.next_value::<::std::option::Option<_>>()?.map(proposal_outcome::Outcome::Passed)
 ;
                         }
                         GeneratedField::Failed => {
                             if outcome__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("failed"));
                             }
-                            outcome__ = map.next_value::<::std::option::Option<_>>()?.map(proposal_outcome::Outcome::Failed)
+                            outcome__ = map_.next_value::<::std::option::Option<_>>()?.map(proposal_outcome::Outcome::Failed)
 ;
                         }
                         GeneratedField::Slashed => {
                             if outcome__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("slashed"));
                             }
-                            outcome__ = map.next_value::<::std::option::Option<_>>()?.map(proposal_outcome::Outcome::Slashed)
+                            outcome__ = map_.next_value::<::std::option::Option<_>>()?.map(proposal_outcome::Outcome::Slashed)
 ;
                         }
                     }
@@ -2667,18 +2684,18 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Failed {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalOutcome.Failed")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal_outcome::Failed, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal_outcome::Failed, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut withdrawn__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Withdrawn => {
                             if withdrawn__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("withdrawn"));
                             }
-                            withdrawn__ = map.next_value()?;
+                            withdrawn__ = map_.next_value()?;
                         }
                     }
                 }
@@ -2747,12 +2764,12 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Passed {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalOutcome.Passed")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal_outcome::Passed, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal_outcome::Passed, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                while map.next_key::<GeneratedField>()?.is_some() {
-                    let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
                 Ok(proposal_outcome::Passed {
                 })
@@ -2829,18 +2846,18 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Slashed {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalOutcome.Slashed")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal_outcome::Slashed, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal_outcome::Slashed, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut withdrawn__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Withdrawn => {
                             if withdrawn__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("withdrawn"));
                             }
-                            withdrawn__ = map.next_value()?;
+                            withdrawn__ = map_.next_value()?;
                         }
                     }
                 }
@@ -2920,18 +2937,18 @@ impl<'de> serde::Deserialize<'de> for proposal_outcome::Withdrawn {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalOutcome.Withdrawn")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal_outcome::Withdrawn, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal_outcome::Withdrawn, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut reason__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Reason => {
                             if reason__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("reason"));
                             }
-                            reason__ = Some(map.next_value()?);
+                            reason__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -2962,6 +2979,7 @@ impl serde::Serialize for ProposalRateDataRequest {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
         }
         if self.proposal_id != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proposalId", ToString::to_string(&self.proposal_id).as_str())?;
         }
         struct_ser.end()
@@ -3022,26 +3040,26 @@ impl<'de> serde::Deserialize<'de> for ProposalRateDataRequest {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalRateDataRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ProposalRateDataRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ProposalRateDataRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut chain_id__ = None;
                 let mut proposal_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ChainId => {
                             if chain_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("chainId"));
                             }
-                            chain_id__ = Some(map.next_value()?);
+                            chain_id__ = Some(map_.next_value()?);
                         }
                         GeneratedField::ProposalId => {
                             if proposal_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalId"));
                             }
                             proposal_id__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -3124,18 +3142,18 @@ impl<'de> serde::Deserialize<'de> for ProposalRateDataResponse {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalRateDataResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ProposalRateDataResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ProposalRateDataResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut rate_data__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::RateData => {
                             if rate_data__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("rateData"));
                             }
-                            rate_data__ = map.next_value()?;
+                            rate_data__ = map_.next_value()?;
                         }
                     }
                 }
@@ -3237,39 +3255,39 @@ impl<'de> serde::Deserialize<'de> for ProposalState {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalState")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ProposalState, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ProposalState, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut state__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Voting => {
                             if state__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("voting"));
                             }
-                            state__ = map.next_value::<::std::option::Option<_>>()?.map(proposal_state::State::Voting)
+                            state__ = map_.next_value::<::std::option::Option<_>>()?.map(proposal_state::State::Voting)
 ;
                         }
                         GeneratedField::Withdrawn => {
                             if state__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("withdrawn"));
                             }
-                            state__ = map.next_value::<::std::option::Option<_>>()?.map(proposal_state::State::Withdrawn)
+                            state__ = map_.next_value::<::std::option::Option<_>>()?.map(proposal_state::State::Withdrawn)
 ;
                         }
                         GeneratedField::Finished => {
                             if state__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("finished"));
                             }
-                            state__ = map.next_value::<::std::option::Option<_>>()?.map(proposal_state::State::Finished)
+                            state__ = map_.next_value::<::std::option::Option<_>>()?.map(proposal_state::State::Finished)
 ;
                         }
                         GeneratedField::Claimed => {
                             if state__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("claimed"));
                             }
-                            state__ = map.next_value::<::std::option::Option<_>>()?.map(proposal_state::State::Claimed)
+                            state__ = map_.next_value::<::std::option::Option<_>>()?.map(proposal_state::State::Claimed)
 ;
                         }
                     }
@@ -3350,18 +3368,18 @@ impl<'de> serde::Deserialize<'de> for proposal_state::Claimed {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalState.Claimed")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal_state::Claimed, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal_state::Claimed, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut outcome__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Outcome => {
                             if outcome__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("outcome"));
                             }
-                            outcome__ = map.next_value()?;
+                            outcome__ = map_.next_value()?;
                         }
                     }
                 }
@@ -3441,18 +3459,18 @@ impl<'de> serde::Deserialize<'de> for proposal_state::Finished {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalState.Finished")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal_state::Finished, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal_state::Finished, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut outcome__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Outcome => {
                             if outcome__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("outcome"));
                             }
-                            outcome__ = map.next_value()?;
+                            outcome__ = map_.next_value()?;
                         }
                     }
                 }
@@ -3521,12 +3539,12 @@ impl<'de> serde::Deserialize<'de> for proposal_state::Voting {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalState.Voting")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal_state::Voting, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal_state::Voting, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                while map.next_key::<GeneratedField>()?.is_some() {
-                    let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
                 Ok(proposal_state::Voting {
                 })
@@ -3603,18 +3621,18 @@ impl<'de> serde::Deserialize<'de> for proposal_state::Withdrawn {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalState.Withdrawn")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<proposal_state::Withdrawn, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal_state::Withdrawn, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut reason__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Reason => {
                             if reason__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("reason"));
                             }
-                            reason__ = Some(map.next_value()?);
+                            reason__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -3704,25 +3722,25 @@ impl<'de> serde::Deserialize<'de> for ProposalSubmit {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalSubmit")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ProposalSubmit, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ProposalSubmit, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut proposal__ = None;
                 let mut deposit_amount__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Proposal => {
                             if proposal__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposal"));
                             }
-                            proposal__ = map.next_value()?;
+                            proposal__ = map_.next_value()?;
                         }
                         GeneratedField::DepositAmount => {
                             if deposit_amount__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("depositAmount"));
                             }
-                            deposit_amount__ = map.next_value()?;
+                            deposit_amount__ = map_.next_value()?;
                         }
                     }
                 }
@@ -3751,6 +3769,7 @@ impl serde::Serialize for ProposalWithdraw {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ProposalWithdraw", len)?;
         if self.proposal != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
         if !self.reason.is_empty() {
@@ -3812,27 +3831,27 @@ impl<'de> serde::Deserialize<'de> for ProposalWithdraw {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalWithdraw")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ProposalWithdraw, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ProposalWithdraw, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut proposal__ = None;
                 let mut reason__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Proposal => {
                             if proposal__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposal"));
                             }
                             proposal__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Reason => {
                             if reason__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("reason"));
                             }
-                            reason__ = Some(map.next_value()?);
+                            reason__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -3864,12 +3883,15 @@ impl serde::Serialize for Tally {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.Tally", len)?;
         if self.yes != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("yes", ToString::to_string(&self.yes).as_str())?;
         }
         if self.no != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("no", ToString::to_string(&self.no).as_str())?;
         }
         if self.abstain != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("abstain", ToString::to_string(&self.abstain).as_str())?;
         }
         struct_ser.end()
@@ -3931,21 +3953,21 @@ impl<'de> serde::Deserialize<'de> for Tally {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Tally")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<Tally, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Tally, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut yes__ = None;
                 let mut no__ = None;
                 let mut abstain__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Yes => {
                             if yes__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("yes"));
                             }
                             yes__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::No => {
@@ -3953,7 +3975,7 @@ impl<'de> serde::Deserialize<'de> for Tally {
                                 return Err(serde::de::Error::duplicate_field("no"));
                             }
                             no__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Abstain => {
@@ -3961,7 +3983,7 @@ impl<'de> serde::Deserialize<'de> for Tally {
                                 return Err(serde::de::Error::duplicate_field("abstain"));
                             }
                             abstain__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -4054,25 +4076,25 @@ impl<'de> serde::Deserialize<'de> for ValidatorVote {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ValidatorVote")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ValidatorVote, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ValidatorVote, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut body__ = None;
                 let mut auth_sig__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Body => {
                             if body__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("body"));
                             }
-                            body__ = map.next_value()?;
+                            body__ = map_.next_value()?;
                         }
                         GeneratedField::AuthSig => {
                             if auth_sig__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("authSig"));
                             }
-                            auth_sig__ = map.next_value()?;
+                            auth_sig__ = map_.next_value()?;
                         }
                     }
                 }
@@ -4110,6 +4132,7 @@ impl serde::Serialize for ValidatorVoteBody {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ValidatorVoteBody", len)?;
         if self.proposal != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proposal", ToString::to_string(&self.proposal).as_str())?;
         }
         if let Some(v) = self.vote.as_ref() {
@@ -4191,7 +4214,7 @@ impl<'de> serde::Deserialize<'de> for ValidatorVoteBody {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ValidatorVoteBody")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ValidatorVoteBody, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ValidatorVoteBody, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -4200,39 +4223,39 @@ impl<'de> serde::Deserialize<'de> for ValidatorVoteBody {
                 let mut identity_key__ = None;
                 let mut governance_key__ = None;
                 let mut reason__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Proposal => {
                             if proposal__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposal"));
                             }
                             proposal__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Vote => {
                             if vote__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("vote"));
                             }
-                            vote__ = map.next_value()?;
+                            vote__ = map_.next_value()?;
                         }
                         GeneratedField::IdentityKey => {
                             if identity_key__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("identityKey"));
                             }
-                            identity_key__ = map.next_value()?;
+                            identity_key__ = map_.next_value()?;
                         }
                         GeneratedField::GovernanceKey => {
                             if governance_key__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("governanceKey"));
                             }
-                            governance_key__ = map.next_value()?;
+                            governance_key__ = map_.next_value()?;
                         }
                         GeneratedField::Reason => {
                             if reason__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("reason"));
                             }
-                            reason__ = map.next_value()?;
+                            reason__ = map_.next_value()?;
                         }
                     }
                 }
@@ -4316,18 +4339,18 @@ impl<'de> serde::Deserialize<'de> for ValidatorVoteReason {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ValidatorVoteReason")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ValidatorVoteReason, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ValidatorVoteReason, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut reason__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Reason => {
                             if reason__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("reason"));
                             }
-                            reason__ = Some(map.next_value()?);
+                            reason__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -4352,8 +4375,8 @@ impl serde::Serialize for Vote {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.Vote", len)?;
         if self.vote != 0 {
-            let v = vote::Vote::from_i32(self.vote)
-                .ok_or_else(|| serde::ser::Error::custom(format!("Invalid variant {}", self.vote)))?;
+            let v = vote::Vote::try_from(self.vote)
+                .map_err(|_| serde::ser::Error::custom(format!("Invalid variant {}", self.vote)))?;
             struct_ser.serialize_field("vote", &v)?;
         }
         struct_ser.end()
@@ -4409,18 +4432,18 @@ impl<'de> serde::Deserialize<'de> for Vote {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Vote")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<Vote, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Vote, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut vote__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Vote => {
                             if vote__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("vote"));
                             }
-                            vote__ = Some(map.next_value::<vote::Vote>()? as i32);
+                            vote__ = Some(map_.next_value::<vote::Vote>()? as i32);
                         }
                     }
                 }
@@ -4473,10 +4496,9 @@ impl<'de> serde::Deserialize<'de> for vote::Vote {
             where
                 E: serde::de::Error,
             {
-                use std::convert::TryFrom;
                 i32::try_from(v)
                     .ok()
-                    .and_then(vote::Vote::from_i32)
+                    .and_then(|x| x.try_into().ok())
                     .ok_or_else(|| {
                         serde::de::Error::invalid_value(serde::de::Unexpected::Signed(v), &self)
                     })
@@ -4486,10 +4508,9 @@ impl<'de> serde::Deserialize<'de> for vote::Vote {
             where
                 E: serde::de::Error,
             {
-                use std::convert::TryFrom;
                 i32::try_from(v)
                     .ok()
-                    .and_then(vote::Vote::from_i32)
+                    .and_then(|x| x.try_into().ok())
                     .ok_or_else(|| {
                         serde::de::Error::invalid_value(serde::de::Unexpected::Unsigned(v), &self)
                     })
@@ -4524,6 +4545,7 @@ impl serde::Serialize for ZkDelegatorVoteProof {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ZKDelegatorVoteProof", len)?;
         if !self.inner.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -4579,19 +4601,19 @@ impl<'de> serde::Deserialize<'de> for ZkDelegatorVoteProof {
                 formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ZKDelegatorVoteProof")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ZkDelegatorVoteProof, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ZkDelegatorVoteProof, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut inner__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Inner => {
                             if inner__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("inner"));
                             }
                             inner__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }

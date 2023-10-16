@@ -1757,7 +1757,7 @@ pub mod view_protocol_service_server {
             request: tonic::Request<super::StatusRequest>,
         ) -> std::result::Result<tonic::Response<super::StatusResponse>, tonic::Status>;
         /// Server streaming response type for the StatusStream method.
-        type StatusStreamStream: futures_core::Stream<
+        type StatusStreamStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::StatusStreamResponse, tonic::Status>,
             >
             + Send
@@ -1772,7 +1772,7 @@ pub mod view_protocol_service_server {
             tonic::Status,
         >;
         /// Server streaming response type for the Notes method.
-        type NotesStream: futures_core::Stream<
+        type NotesStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::NotesResponse, tonic::Status>,
             >
             + Send
@@ -1784,7 +1784,7 @@ pub mod view_protocol_service_server {
             request: tonic::Request<super::NotesRequest>,
         ) -> std::result::Result<tonic::Response<Self::NotesStream>, tonic::Status>;
         /// Server streaming response type for the NotesForVoting method.
-        type NotesForVotingStream: futures_core::Stream<
+        type NotesForVotingStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::NotesForVotingResponse, tonic::Status>,
             >
             + Send
@@ -1815,7 +1815,7 @@ pub mod view_protocol_service_server {
             tonic::Status,
         >;
         /// Server streaming response type for the Assets method.
-        type AssetsStream: futures_core::Stream<
+        type AssetsStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::AssetsResponse, tonic::Status>,
             >
             + Send
@@ -1883,7 +1883,7 @@ pub mod view_protocol_service_server {
             tonic::Status,
         >;
         /// Server streaming response type for the Balances method.
-        type BalancesStream: futures_core::Stream<
+        type BalancesStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::BalancesResponse, tonic::Status>,
             >
             + Send
@@ -1911,7 +1911,7 @@ pub mod view_protocol_service_server {
             tonic::Status,
         >;
         /// Server streaming response type for the UnclaimedSwaps method.
-        type UnclaimedSwapsStream: futures_core::Stream<
+        type UnclaimedSwapsStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::UnclaimedSwapsResponse, tonic::Status>,
             >
             + Send
@@ -1941,7 +1941,7 @@ pub mod view_protocol_service_server {
             tonic::Status,
         >;
         /// Server streaming response type for the TransactionInfo method.
-        type TransactionInfoStream: futures_core::Stream<
+        type TransactionInfoStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::TransactionInfoResponse, tonic::Status>,
             >
             + Send
@@ -1972,7 +1972,7 @@ pub mod view_protocol_service_server {
             tonic::Status,
         >;
         /// Server streaming response type for the OwnedPositionIds method.
-        type OwnedPositionIdsStream: futures_core::Stream<
+        type OwnedPositionIdsStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<
                     super::OwnedPositionIdsResponse,
                     tonic::Status,
@@ -2100,7 +2100,9 @@ pub mod view_protocol_service_server {
                             request: tonic::Request<super::StatusRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).status(request).await };
+                            let fut = async move {
+                                <T as ViewProtocolService>::status(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -2146,7 +2148,8 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).status_stream(request).await
+                                <T as ViewProtocolService>::status_stream(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -2192,7 +2195,9 @@ pub mod view_protocol_service_server {
                             request: tonic::Request<super::NotesRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).notes(request).await };
+                            let fut = async move {
+                                <T as ViewProtocolService>::notes(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -2238,7 +2243,11 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).notes_for_voting(request).await
+                                <T as ViewProtocolService>::notes_for_voting(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -2283,7 +2292,9 @@ pub mod view_protocol_service_server {
                             request: tonic::Request<super::WitnessRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).witness(request).await };
+                            let fut = async move {
+                                <T as ViewProtocolService>::witness(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -2328,7 +2339,11 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).witness_and_build(request).await
+                                <T as ViewProtocolService>::witness_and_build(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -2374,7 +2389,9 @@ pub mod view_protocol_service_server {
                             request: tonic::Request<super::AssetsRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).assets(request).await };
+                            let fut = async move {
+                                <T as ViewProtocolService>::assets(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -2419,7 +2436,8 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).app_parameters(request).await
+                                <T as ViewProtocolService>::app_parameters(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -2464,7 +2482,10 @@ pub mod view_protocol_service_server {
                             request: tonic::Request<super::GasPricesRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).gas_prices(request).await };
+                            let fut = async move {
+                                <T as ViewProtocolService>::gas_prices(&inner, request)
+                                    .await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -2509,7 +2530,8 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).fmd_parameters(request).await
+                                <T as ViewProtocolService>::fmd_parameters(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -2555,7 +2577,11 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).address_by_index(request).await
+                                <T as ViewProtocolService>::address_by_index(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -2645,7 +2671,11 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).index_by_address(request).await
+                                <T as ViewProtocolService>::index_by_address(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -2691,7 +2721,11 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).ephemeral_address(request).await
+                                <T as ViewProtocolService>::ephemeral_address(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -2737,7 +2771,9 @@ pub mod view_protocol_service_server {
                             request: tonic::Request<super::BalancesRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).balances(request).await };
+                            let fut = async move {
+                                <T as ViewProtocolService>::balances(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -2782,7 +2818,11 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).note_by_commitment(request).await
+                                <T as ViewProtocolService>::note_by_commitment(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -2828,7 +2868,11 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).swap_by_commitment(request).await
+                                <T as ViewProtocolService>::swap_by_commitment(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -2875,7 +2919,8 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).unclaimed_swaps(request).await
+                                <T as ViewProtocolService>::unclaimed_swaps(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -2921,7 +2966,11 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).nullifier_status(request).await
+                                <T as ViewProtocolService>::nullifier_status(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -2967,7 +3016,11 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).transaction_info_by_hash(request).await
+                                <T as ViewProtocolService>::transaction_info_by_hash(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -3015,7 +3068,11 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).transaction_info(request).await
+                                <T as ViewProtocolService>::transaction_info(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -3061,7 +3118,11 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).transaction_planner(request).await
+                                <T as ViewProtocolService>::transaction_planner(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -3107,7 +3168,11 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).broadcast_transaction(request).await
+                                <T as ViewProtocolService>::broadcast_transaction(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -3155,7 +3220,11 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).owned_position_ids(request).await
+                                <T as ViewProtocolService>::owned_position_ids(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -3201,7 +3270,11 @@ pub mod view_protocol_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).authorize_and_build(request).await
+                                <T as ViewProtocolService>::authorize_and_build(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -3383,7 +3456,9 @@ pub mod view_auth_service_server {
                             request: tonic::Request<super::ViewAuthRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).view_auth(request).await };
+                            let fut = async move {
+                                <T as ViewAuthService>::view_auth(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
