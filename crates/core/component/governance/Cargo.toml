@@ -69,7 +69,7 @@ rand = "0.8"
 im = "15.1"
 regex = "1.5"
 futures = "0.3"
-pbjson-types = "0.5"
+pbjson-types = "0.6"
 once_cell = "1.8"
 rand_chacha = "0.3"
 
