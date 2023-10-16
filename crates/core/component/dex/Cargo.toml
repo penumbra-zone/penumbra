@@ -67,7 +67,7 @@ tracing = "0.1"
 prost = "0.12"
 serde = { version = "1", features = ["derive"] }
 metrics = "0.19.0"
-pbjson-types = "0.5.1"
+pbjson-types = "0.6.0"
 tendermint = "0.34.0"
 tendermint-light-client-verifier = "0.34.0"
 sha2 = "0.10.6"
