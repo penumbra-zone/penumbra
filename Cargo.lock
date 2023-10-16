@@ -8151,31 +8151,31 @@ dependencies = [
 
 [[package]]
 name = "tonic-reflection"
-version = "0.9.2"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0543d7092032041fbeac1f2c84304537553421a11a623c2301b12ef0264862c7"
+checksum = "3fa37c513df1339d197f4ba21d28c918b9ef1ac1768265f11ecb6b7f1cba1b76"
 dependencies = [
- "prost 0.11.9",
- "prost-types 0.11.9",
+ "prost 0.12.1",
+ "prost-types 0.12.1",
  "tokio",
  "tokio-stream",
- "tonic 0.9.2",
+ "tonic 0.10.2",
 ]
 
 [[package]]
 name = "tonic-web"
-version = "0.9.2"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21b00ec4842256d1fe0a46176e2ef5bc357664c66e7d91aff5a7d43d83a65f47"
+checksum = "0fddb2a37b247e6adcb9f239f4e5cefdcc5ed526141a416b943929f13aea2cce"
 dependencies = [
  "base64 0.21.4",
  "bytes",
- "futures-core",
  "http",
  "http-body",
  "hyper",
  "pin-project",
- "tonic 0.9.2",
+ "tokio-stream",
+ "tonic 0.10.2",
  "tower-http 0.4.4",
  "tower-layer",
  "tower-service",
