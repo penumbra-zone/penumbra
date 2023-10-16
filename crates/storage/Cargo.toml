@@ -11,7 +11,7 @@ default = ["metrics"]
 rpc = ["dep:tonic", "dep:prost", "dep:serde", "dep:pbjson"]
 
 [dependencies]
-jmt = "0.8"
+jmt = "0.9"
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 tokio-stream = { version = "0.1.11" }
 tempfile = "3.3.0"
