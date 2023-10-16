@@ -246,7 +246,7 @@ pub mod query_service_server {
     #[async_trait]
     pub trait QueryService: Send + Sync + 'static {
         /// Server streaming response type for the CompactBlockRange method.
-        type CompactBlockRangeStream: futures_core::Stream<
+        type CompactBlockRangeStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<
                     super::CompactBlockRangeResponse,
                     tonic::Status,
@@ -363,7 +363,8 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).compact_block_range(request).await
+                                <T as QueryService>::compact_block_range(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }

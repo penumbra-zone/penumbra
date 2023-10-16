@@ -369,7 +369,7 @@ pub mod query_service_server {
             tonic::Status,
         >;
         /// Server streaming response type for the PrefixValue method.
-        type PrefixValueStream: futures_core::Stream<
+        type PrefixValueStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::PrefixValueResponse, tonic::Status>,
             >
             + Send
@@ -483,7 +483,7 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).app_parameters(request).await
+                                <T as QueryService>::app_parameters(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -528,7 +528,9 @@ pub mod query_service_server {
                             request: tonic::Request<super::KeyValueRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).key_value(request).await };
+                            let fut = async move {
+                                <T as QueryService>::key_value(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -574,7 +576,7 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).prefix_value(request).await
+                                <T as QueryService>::prefix_value(&inner, request).await
                             };
                             Box::pin(fut)
                         }

@@ -526,7 +526,8 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).denom_metadata_by_id(request).await
+                                <T as QueryService>::denom_metadata_by_id(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }

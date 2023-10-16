@@ -67,18 +67,18 @@ impl<'de> serde::Deserialize<'de> for DaoParameters {
                 formatter.write_str("struct penumbra.core.component.dao.v1alpha1.DaoParameters")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<DaoParameters, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DaoParameters, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut dao_spend_proposals_enabled__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::DaoSpendProposalsEnabled => {
                             if dao_spend_proposals_enabled__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("daoSpendProposalsEnabled"));
                             }
-                            dao_spend_proposals_enabled__ = Some(map.next_value()?);
+                            dao_spend_proposals_enabled__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -159,18 +159,18 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 formatter.write_str("struct penumbra.core.component.dao.v1alpha1.GenesisContent")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<GenesisContent, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<GenesisContent, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut dao_params__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::DaoParams => {
                             if dao_params__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("daoParams"));
                             }
-                            dao_params__ = map.next_value()?;
+                            dao_params__ = map_.next_value()?;
                         }
                     }
                 }

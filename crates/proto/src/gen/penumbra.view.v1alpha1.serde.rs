@@ -77,25 +77,25 @@ impl<'de> serde::Deserialize<'de> for AddressByIndexRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.AddressByIndexRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<AddressByIndexRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AddressByIndexRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut address_index__ = None;
                 let mut display_confirm__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::AddressIndex => {
                             if address_index__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("addressIndex"));
                             }
-                            address_index__ = map.next_value()?;
+                            address_index__ = map_.next_value()?;
                         }
                         GeneratedField::DisplayConfirm => {
                             if display_confirm__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("displayConfirm"));
                             }
-                            display_confirm__ = Some(map.next_value()?);
+                            display_confirm__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -176,18 +176,18 @@ impl<'de> serde::Deserialize<'de> for AddressByIndexResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.AddressByIndexResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<AddressByIndexResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AddressByIndexResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut address__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Address => {
                             if address__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("address"));
                             }
-                            address__ = map.next_value()?;
+                            address__ = map_.next_value()?;
                         }
                     }
                 }
@@ -256,12 +256,12 @@ impl<'de> serde::Deserialize<'de> for AppParametersRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.AppParametersRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<AppParametersRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AppParametersRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                while map.next_key::<GeneratedField>()?.is_some() {
-                    let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
                 Ok(AppParametersRequest {
                 })
@@ -338,18 +338,18 @@ impl<'de> serde::Deserialize<'de> for AppParametersResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.AppParametersResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<AppParametersResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AppParametersResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut parameters__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Parameters => {
                             if parameters__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("parameters"));
                             }
-                            parameters__ = map.next_value()?;
+                            parameters__ = map_.next_value()?;
                         }
                     }
                 }
@@ -489,7 +489,7 @@ impl<'de> serde::Deserialize<'de> for AssetsRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.AssetsRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<AssetsRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AssetsRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -500,49 +500,49 @@ impl<'de> serde::Deserialize<'de> for AssetsRequest {
                 let mut include_lp_nfts__ = None;
                 let mut include_proposal_nfts__ = None;
                 let mut include_voting_receipt_tokens__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Filtered => {
                             if filtered__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("filtered"));
                             }
-                            filtered__ = Some(map.next_value()?);
+                            filtered__ = Some(map_.next_value()?);
                         }
                         GeneratedField::IncludeSpecificDenominations => {
                             if include_specific_denominations__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("includeSpecificDenominations"));
                             }
-                            include_specific_denominations__ = Some(map.next_value()?);
+                            include_specific_denominations__ = Some(map_.next_value()?);
                         }
                         GeneratedField::IncludeDelegationTokens => {
                             if include_delegation_tokens__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("includeDelegationTokens"));
                             }
-                            include_delegation_tokens__ = Some(map.next_value()?);
+                            include_delegation_tokens__ = Some(map_.next_value()?);
                         }
                         GeneratedField::IncludeUnbondingTokens => {
                             if include_unbonding_tokens__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("includeUnbondingTokens"));
                             }
-                            include_unbonding_tokens__ = Some(map.next_value()?);
+                            include_unbonding_tokens__ = Some(map_.next_value()?);
                         }
                         GeneratedField::IncludeLpNfts => {
                             if include_lp_nfts__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("includeLpNfts"));
                             }
-                            include_lp_nfts__ = Some(map.next_value()?);
+                            include_lp_nfts__ = Some(map_.next_value()?);
                         }
                         GeneratedField::IncludeProposalNfts => {
                             if include_proposal_nfts__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("includeProposalNfts"));
                             }
-                            include_proposal_nfts__ = Some(map.next_value()?);
+                            include_proposal_nfts__ = Some(map_.next_value()?);
                         }
                         GeneratedField::IncludeVotingReceiptTokens => {
                             if include_voting_receipt_tokens__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("includeVotingReceiptTokens"));
                             }
-                            include_voting_receipt_tokens__ = Some(map.next_value()?);
+                            include_voting_receipt_tokens__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -629,18 +629,18 @@ impl<'de> serde::Deserialize<'de> for AssetsResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.AssetsResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<AssetsResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AssetsResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut denom_metadata__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::DenomMetadata => {
                             if denom_metadata__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("denomMetadata"));
                             }
-                            denom_metadata__ = map.next_value()?;
+                            denom_metadata__ = map_.next_value()?;
                         }
                     }
                 }
@@ -731,25 +731,25 @@ impl<'de> serde::Deserialize<'de> for AuthorizeAndBuildRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.AuthorizeAndBuildRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<AuthorizeAndBuildRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AuthorizeAndBuildRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut transaction_plan__ = None;
                 let mut authorization_data__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::TransactionPlan => {
                             if transaction_plan__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("transactionPlan"));
                             }
-                            transaction_plan__ = map.next_value()?;
+                            transaction_plan__ = map_.next_value()?;
                         }
                         GeneratedField::AuthorizationData => {
                             if authorization_data__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("authorizationData"));
                             }
-                            authorization_data__ = map.next_value()?;
+                            authorization_data__ = map_.next_value()?;
                         }
                     }
                 }
@@ -830,18 +830,18 @@ impl<'de> serde::Deserialize<'de> for AuthorizeAndBuildResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.AuthorizeAndBuildResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<AuthorizeAndBuildResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AuthorizeAndBuildResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut transaction__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Transaction => {
                             if transaction__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("transaction"));
                             }
-                            transaction__ = map.next_value()?;
+                            transaction__ = map_.next_value()?;
                         }
                     }
                 }
@@ -932,25 +932,25 @@ impl<'de> serde::Deserialize<'de> for BalancesRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.BalancesRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<BalancesRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<BalancesRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut account_filter__ = None;
                 let mut asset_id_filter__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::AccountFilter => {
                             if account_filter__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("accountFilter"));
                             }
-                            account_filter__ = map.next_value()?;
+                            account_filter__ = map_.next_value()?;
                         }
                         GeneratedField::AssetIdFilter => {
                             if asset_id_filter__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("assetIdFilter"));
                             }
-                            asset_id_filter__ = map.next_value()?;
+                            asset_id_filter__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1040,25 +1040,25 @@ impl<'de> serde::Deserialize<'de> for BalancesResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.BalancesResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<BalancesResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<BalancesResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut account__ = None;
                 let mut balance__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Account => {
                             if account__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("account"));
                             }
-                            account__ = map.next_value()?;
+                            account__ = map_.next_value()?;
                         }
                         GeneratedField::Balance => {
                             if balance__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("balance"));
                             }
-                            balance__ = map.next_value()?;
+                            balance__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1149,25 +1149,25 @@ impl<'de> serde::Deserialize<'de> for BroadcastTransactionRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.BroadcastTransactionRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<BroadcastTransactionRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<BroadcastTransactionRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut transaction__ = None;
                 let mut await_detection__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Transaction => {
                             if transaction__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("transaction"));
                             }
-                            transaction__ = map.next_value()?;
+                            transaction__ = map_.next_value()?;
                         }
                         GeneratedField::AwaitDetection => {
                             if await_detection__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("awaitDetection"));
                             }
-                            await_detection__ = Some(map.next_value()?);
+                            await_detection__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -1199,6 +1199,7 @@ impl serde::Serialize for BroadcastTransactionResponse {
             struct_ser.serialize_field("id", v)?;
         }
         if self.detection_height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("detectionHeight", ToString::to_string(&self.detection_height).as_str())?;
         }
         struct_ser.end()
@@ -1258,26 +1259,26 @@ impl<'de> serde::Deserialize<'de> for BroadcastTransactionResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.BroadcastTransactionResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<BroadcastTransactionResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<BroadcastTransactionResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut id__ = None;
                 let mut detection_height__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Id => {
                             if id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("id"));
                             }
-                            id__ = map.next_value()?;
+                            id__ = map_.next_value()?;
                         }
                         GeneratedField::DetectionHeight => {
                             if detection_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("detectionHeight"));
                             }
                             detection_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -1370,25 +1371,25 @@ impl<'de> serde::Deserialize<'de> for EphemeralAddressRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.EphemeralAddressRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<EphemeralAddressRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EphemeralAddressRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut address_index__ = None;
                 let mut display_confirm__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::AddressIndex => {
                             if address_index__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("addressIndex"));
                             }
-                            address_index__ = map.next_value()?;
+                            address_index__ = map_.next_value()?;
                         }
                         GeneratedField::DisplayConfirm => {
                             if display_confirm__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("displayConfirm"));
                             }
-                            display_confirm__ = Some(map.next_value()?);
+                            display_confirm__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -1469,18 +1470,18 @@ impl<'de> serde::Deserialize<'de> for EphemeralAddressResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.EphemeralAddressResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<EphemeralAddressResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EphemeralAddressResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut address__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Address => {
                             if address__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("address"));
                             }
-                            address__ = map.next_value()?;
+                            address__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1549,12 +1550,12 @@ impl<'de> serde::Deserialize<'de> for FmdParametersRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.FMDParametersRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<FmdParametersRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<FmdParametersRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                while map.next_key::<GeneratedField>()?.is_some() {
-                    let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
                 Ok(FmdParametersRequest {
                 })
@@ -1631,18 +1632,18 @@ impl<'de> serde::Deserialize<'de> for FmdParametersResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.FMDParametersResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<FmdParametersResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<FmdParametersResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut parameters__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Parameters => {
                             if parameters__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("parameters"));
                             }
-                            parameters__ = map.next_value()?;
+                            parameters__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1711,12 +1712,12 @@ impl<'de> serde::Deserialize<'de> for GasPricesRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.GasPricesRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<GasPricesRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<GasPricesRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                while map.next_key::<GeneratedField>()?.is_some() {
-                    let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
                 Ok(GasPricesRequest {
                 })
@@ -1794,18 +1795,18 @@ impl<'de> serde::Deserialize<'de> for GasPricesResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.GasPricesResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<GasPricesResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<GasPricesResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut gas_prices__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::GasPrices => {
                             if gas_prices__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("gasPrices"));
                             }
-                            gas_prices__ = map.next_value()?;
+                            gas_prices__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1885,18 +1886,18 @@ impl<'de> serde::Deserialize<'de> for IndexByAddressRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.IndexByAddressRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<IndexByAddressRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<IndexByAddressRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut address__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Address => {
                             if address__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("address"));
                             }
-                            address__ = map.next_value()?;
+                            address__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1977,18 +1978,18 @@ impl<'de> serde::Deserialize<'de> for IndexByAddressResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.IndexByAddressResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<IndexByAddressResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<IndexByAddressResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut address_index__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::AddressIndex => {
                             if address_index__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("addressIndex"));
                             }
-                            address_index__ = map.next_value()?;
+                            address_index__ = map_.next_value()?;
                         }
                     }
                 }
@@ -2089,32 +2090,32 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.NoteByCommitmentRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<NoteByCommitmentRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<NoteByCommitmentRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut note_commitment__ = None;
                 let mut await_detection__ = None;
                 let mut wallet_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::NoteCommitment => {
                             if note_commitment__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("noteCommitment"));
                             }
-                            note_commitment__ = map.next_value()?;
+                            note_commitment__ = map_.next_value()?;
                         }
                         GeneratedField::AwaitDetection => {
                             if await_detection__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("awaitDetection"));
                             }
-                            await_detection__ = Some(map.next_value()?);
+                            await_detection__ = Some(map_.next_value()?);
                         }
                         GeneratedField::WalletId => {
                             if wallet_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            wallet_id__ = map.next_value()?;
+                            wallet_id__ = map_.next_value()?;
                         }
                     }
                 }
@@ -2197,18 +2198,18 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.NoteByCommitmentResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<NoteByCommitmentResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<NoteByCommitmentResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut spendable_note__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::SpendableNote => {
                             if spendable_note__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("spendableNote"));
                             }
-                            spendable_note__ = map.next_value()?;
+                            spendable_note__ = map_.next_value()?;
                         }
                     }
                 }
@@ -2239,6 +2240,7 @@ impl serde::Serialize for NotesForVotingRequest {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NotesForVotingRequest", len)?;
         if self.votable_at_height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("votableAtHeight", ToString::to_string(&self.votable_at_height).as_str())?;
         }
         if let Some(v) = self.address_index.as_ref() {
@@ -2309,34 +2311,34 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.NotesForVotingRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<NotesForVotingRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<NotesForVotingRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut votable_at_height__ = None;
                 let mut address_index__ = None;
                 let mut wallet_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::VotableAtHeight => {
                             if votable_at_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("votableAtHeight"));
                             }
                             votable_at_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::AddressIndex => {
                             if address_index__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("addressIndex"));
                             }
-                            address_index__ = map.next_value()?;
+                            address_index__ = map_.next_value()?;
                         }
                         GeneratedField::WalletId => {
                             if wallet_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            wallet_id__ = map.next_value()?;
+                            wallet_id__ = map_.next_value()?;
                         }
                     }
                 }
@@ -2429,25 +2431,25 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.NotesForVotingResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<NotesForVotingResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<NotesForVotingResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut note_record__ = None;
                 let mut identity_key__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::NoteRecord => {
                             if note_record__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("noteRecord"));
                             }
-                            note_record__ = map.next_value()?;
+                            note_record__ = map_.next_value()?;
                         }
                         GeneratedField::IdentityKey => {
                             if identity_key__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("identityKey"));
                             }
-                            identity_key__ = map.next_value()?;
+                            identity_key__ = map_.next_value()?;
                         }
                     }
                 }
@@ -2569,7 +2571,7 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.NotesRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<NotesRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<NotesRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -2578,37 +2580,37 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                 let mut address_index__ = None;
                 let mut amount_to_spend__ = None;
                 let mut wallet_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::IncludeSpent => {
                             if include_spent__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("includeSpent"));
                             }
-                            include_spent__ = Some(map.next_value()?);
+                            include_spent__ = Some(map_.next_value()?);
                         }
                         GeneratedField::AssetId => {
                             if asset_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("assetId"));
                             }
-                            asset_id__ = map.next_value()?;
+                            asset_id__ = map_.next_value()?;
                         }
                         GeneratedField::AddressIndex => {
                             if address_index__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("addressIndex"));
                             }
-                            address_index__ = map.next_value()?;
+                            address_index__ = map_.next_value()?;
                         }
                         GeneratedField::AmountToSpend => {
                             if amount_to_spend__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("amountToSpend"));
                             }
-                            amount_to_spend__ = map.next_value()?;
+                            amount_to_spend__ = map_.next_value()?;
                         }
                         GeneratedField::WalletId => {
                             if wallet_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            wallet_id__ = map.next_value()?;
+                            wallet_id__ = map_.next_value()?;
                         }
                     }
                 }
@@ -2693,18 +2695,18 @@ impl<'de> serde::Deserialize<'de> for NotesResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.NotesResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<NotesResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<NotesResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut note_record__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::NoteRecord => {
                             if note_record__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("noteRecord"));
                             }
-                            note_record__ = map.next_value()?;
+                            note_record__ = map_.next_value()?;
                         }
                     }
                 }
@@ -2804,32 +2806,32 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.NullifierStatusRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<NullifierStatusRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<NullifierStatusRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut nullifier__ = None;
                 let mut await_detection__ = None;
                 let mut wallet_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Nullifier => {
                             if nullifier__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("nullifier"));
                             }
-                            nullifier__ = map.next_value()?;
+                            nullifier__ = map_.next_value()?;
                         }
                         GeneratedField::AwaitDetection => {
                             if await_detection__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("awaitDetection"));
                             }
-                            await_detection__ = Some(map.next_value()?);
+                            await_detection__ = Some(map_.next_value()?);
                         }
                         GeneratedField::WalletId => {
                             if wallet_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            wallet_id__ = map.next_value()?;
+                            wallet_id__ = map_.next_value()?;
                         }
                     }
                 }
@@ -2911,18 +2913,18 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.NullifierStatusResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<NullifierStatusResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<NullifierStatusResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut spent__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Spent => {
                             if spent__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("spent"));
                             }
-                            spent__ = Some(map.next_value()?);
+                            spent__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -3013,25 +3015,25 @@ impl<'de> serde::Deserialize<'de> for OwnedPositionIdsRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.OwnedPositionIdsRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<OwnedPositionIdsRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<OwnedPositionIdsRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut position_state__ = None;
                 let mut trading_pair__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::PositionState => {
                             if position_state__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("positionState"));
                             }
-                            position_state__ = map.next_value()?;
+                            position_state__ = map_.next_value()?;
                         }
                         GeneratedField::TradingPair => {
                             if trading_pair__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("tradingPair"));
                             }
-                            trading_pair__ = map.next_value()?;
+                            trading_pair__ = map_.next_value()?;
                         }
                     }
                 }
@@ -3113,18 +3115,18 @@ impl<'de> serde::Deserialize<'de> for OwnedPositionIdsResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.OwnedPositionIdsResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<OwnedPositionIdsResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<OwnedPositionIdsResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut position_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::PositionId => {
                             if position_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("positionId"));
                             }
-                            position_id__ = map.next_value()?;
+                            position_id__ = map_.next_value()?;
                         }
                     }
                 }
@@ -3182,12 +3184,15 @@ impl serde::Serialize for SpendableNoteRecord {
             struct_ser.serialize_field("nullifier", v)?;
         }
         if self.height_created != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("heightCreated", ToString::to_string(&self.height_created).as_str())?;
         }
         if self.height_spent != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("heightSpent", ToString::to_string(&self.height_spent).as_str())?;
         }
         if self.position != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("position", ToString::to_string(&self.position).as_str())?;
         }
         if let Some(v) = self.source.as_ref() {
@@ -3271,7 +3276,7 @@ impl<'de> serde::Deserialize<'de> for SpendableNoteRecord {
                 formatter.write_str("struct penumbra.view.v1alpha1.SpendableNoteRecord")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<SpendableNoteRecord, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<SpendableNoteRecord, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -3283,38 +3288,38 @@ impl<'de> serde::Deserialize<'de> for SpendableNoteRecord {
                 let mut height_spent__ = None;
                 let mut position__ = None;
                 let mut source__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::NoteCommitment => {
                             if note_commitment__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("noteCommitment"));
                             }
-                            note_commitment__ = map.next_value()?;
+                            note_commitment__ = map_.next_value()?;
                         }
                         GeneratedField::Note => {
                             if note__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("note"));
                             }
-                            note__ = map.next_value()?;
+                            note__ = map_.next_value()?;
                         }
                         GeneratedField::AddressIndex => {
                             if address_index__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("addressIndex"));
                             }
-                            address_index__ = map.next_value()?;
+                            address_index__ = map_.next_value()?;
                         }
                         GeneratedField::Nullifier => {
                             if nullifier__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("nullifier"));
                             }
-                            nullifier__ = map.next_value()?;
+                            nullifier__ = map_.next_value()?;
                         }
                         GeneratedField::HeightCreated => {
                             if height_created__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("heightCreated"));
                             }
                             height_created__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::HeightSpent => {
@@ -3322,7 +3327,7 @@ impl<'de> serde::Deserialize<'de> for SpendableNoteRecord {
                                 return Err(serde::de::Error::duplicate_field("heightSpent"));
                             }
                             height_spent__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Position => {
@@ -3330,14 +3335,14 @@ impl<'de> serde::Deserialize<'de> for SpendableNoteRecord {
                                 return Err(serde::de::Error::duplicate_field("position"));
                             }
                             position__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Source => {
                             if source__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("source"));
                             }
-                            source__ = map.next_value()?;
+                            source__ = map_.next_value()?;
                         }
                     }
                 }
@@ -3425,18 +3430,18 @@ impl<'de> serde::Deserialize<'de> for StatusRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.StatusRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<StatusRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<StatusRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut wallet_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::WalletId => {
                             if wallet_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            wallet_id__ = map.next_value()?;
+                            wallet_id__ = map_.next_value()?;
                         }
                     }
                 }
@@ -3464,6 +3469,7 @@ impl serde::Serialize for StatusResponse {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.StatusResponse", len)?;
         if self.sync_height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("syncHeight", ToString::to_string(&self.sync_height).as_str())?;
         }
         if self.catching_up {
@@ -3527,27 +3533,27 @@ impl<'de> serde::Deserialize<'de> for StatusResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.StatusResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<StatusResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<StatusResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut sync_height__ = None;
                 let mut catching_up__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::SyncHeight => {
                             if sync_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("syncHeight"));
                             }
                             sync_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::CatchingUp => {
                             if catching_up__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("catchingUp"));
                             }
-                            catching_up__ = Some(map.next_value()?);
+                            catching_up__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -3629,18 +3635,18 @@ impl<'de> serde::Deserialize<'de> for StatusStreamRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.StatusStreamRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<StatusStreamRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<StatusStreamRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut wallet_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::WalletId => {
                             if wallet_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            wallet_id__ = map.next_value()?;
+                            wallet_id__ = map_.next_value()?;
                         }
                     }
                 }
@@ -3668,9 +3674,11 @@ impl serde::Serialize for StatusStreamResponse {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.StatusStreamResponse", len)?;
         if self.latest_known_block_height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("latestKnownBlockHeight", ToString::to_string(&self.latest_known_block_height).as_str())?;
         }
         if self.sync_height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("syncHeight", ToString::to_string(&self.sync_height).as_str())?;
         }
         struct_ser.end()
@@ -3731,20 +3739,20 @@ impl<'de> serde::Deserialize<'de> for StatusStreamResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.StatusStreamResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<StatusStreamResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<StatusStreamResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut latest_known_block_height__ = None;
                 let mut sync_height__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::LatestKnownBlockHeight => {
                             if latest_known_block_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("latestKnownBlockHeight"));
                             }
                             latest_known_block_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::SyncHeight => {
@@ -3752,7 +3760,7 @@ impl<'de> serde::Deserialize<'de> for StatusStreamResponse {
                                 return Err(serde::de::Error::duplicate_field("syncHeight"));
                             }
                             sync_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -3855,32 +3863,32 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.SwapByCommitmentRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<SwapByCommitmentRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<SwapByCommitmentRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut swap_commitment__ = None;
                 let mut await_detection__ = None;
                 let mut wallet_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::SwapCommitment => {
                             if swap_commitment__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("swapCommitment"));
                             }
-                            swap_commitment__ = map.next_value()?;
+                            swap_commitment__ = map_.next_value()?;
                         }
                         GeneratedField::AwaitDetection => {
                             if await_detection__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("awaitDetection"));
                             }
-                            await_detection__ = Some(map.next_value()?);
+                            await_detection__ = Some(map_.next_value()?);
                         }
                         GeneratedField::WalletId => {
                             if wallet_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            wallet_id__ = map.next_value()?;
+                            wallet_id__ = map_.next_value()?;
                         }
                     }
                 }
@@ -3962,18 +3970,18 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.SwapByCommitmentResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<SwapByCommitmentResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<SwapByCommitmentResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut swap__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Swap => {
                             if swap__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("swap"));
                             }
-                            swap__ = map.next_value()?;
+                            swap__ = map_.next_value()?;
                         }
                     }
                 }
@@ -4022,6 +4030,7 @@ impl serde::Serialize for SwapRecord {
             struct_ser.serialize_field("swap", v)?;
         }
         if self.position != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("position", ToString::to_string(&self.position).as_str())?;
         }
         if let Some(v) = self.nullifier.as_ref() {
@@ -4031,6 +4040,7 @@ impl serde::Serialize for SwapRecord {
             struct_ser.serialize_field("outputData", v)?;
         }
         if self.height_claimed != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("heightClaimed", ToString::to_string(&self.height_claimed).as_str())?;
         }
         if let Some(v) = self.source.as_ref() {
@@ -4110,7 +4120,7 @@ impl<'de> serde::Deserialize<'de> for SwapRecord {
                 formatter.write_str("struct penumbra.view.v1alpha1.SwapRecord")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<SwapRecord, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<SwapRecord, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -4121,53 +4131,53 @@ impl<'de> serde::Deserialize<'de> for SwapRecord {
                 let mut output_data__ = None;
                 let mut height_claimed__ = None;
                 let mut source__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::SwapCommitment => {
                             if swap_commitment__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("swapCommitment"));
                             }
-                            swap_commitment__ = map.next_value()?;
+                            swap_commitment__ = map_.next_value()?;
                         }
                         GeneratedField::Swap => {
                             if swap__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("swap"));
                             }
-                            swap__ = map.next_value()?;
+                            swap__ = map_.next_value()?;
                         }
                         GeneratedField::Position => {
                             if position__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("position"));
                             }
                             position__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Nullifier => {
                             if nullifier__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("nullifier"));
                             }
-                            nullifier__ = map.next_value()?;
+                            nullifier__ = map_.next_value()?;
                         }
                         GeneratedField::OutputData => {
                             if output_data__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("outputData"));
                             }
-                            output_data__ = map.next_value()?;
+                            output_data__ = map_.next_value()?;
                         }
                         GeneratedField::HeightClaimed => {
                             if height_claimed__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("heightClaimed"));
                             }
                             height_claimed__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Source => {
                             if source__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("source"));
                             }
-                            source__ = map.next_value()?;
+                            source__ = map_.next_value()?;
                         }
                     }
                 }
@@ -4210,6 +4220,7 @@ impl serde::Serialize for TransactionInfo {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionInfo", len)?;
         if self.height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         if let Some(v) = self.id.as_ref() {
@@ -4289,7 +4300,7 @@ impl<'de> serde::Deserialize<'de> for TransactionInfo {
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionInfo")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<TransactionInfo, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<TransactionInfo, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -4298,39 +4309,39 @@ impl<'de> serde::Deserialize<'de> for TransactionInfo {
                 let mut transaction__ = None;
                 let mut perspective__ = None;
                 let mut view__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Height => {
                             if height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("height"));
                             }
                             height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Id => {
                             if id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("id"));
                             }
-                            id__ = map.next_value()?;
+                            id__ = map_.next_value()?;
                         }
                         GeneratedField::Transaction => {
                             if transaction__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("transaction"));
                             }
-                            transaction__ = map.next_value()?;
+                            transaction__ = map_.next_value()?;
                         }
                         GeneratedField::Perspective => {
                             if perspective__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("perspective"));
                             }
-                            perspective__ = map.next_value()?;
+                            perspective__ = map_.next_value()?;
                         }
                         GeneratedField::View => {
                             if view__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("view"));
                             }
-                            view__ = map.next_value()?;
+                            view__ = map_.next_value()?;
                         }
                     }
                 }
@@ -4414,18 +4425,18 @@ impl<'de> serde::Deserialize<'de> for TransactionInfoByHashRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionInfoByHashRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<TransactionInfoByHashRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<TransactionInfoByHashRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Id => {
                             if id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("id"));
                             }
-                            id__ = map.next_value()?;
+                            id__ = map_.next_value()?;
                         }
                     }
                 }
@@ -4506,18 +4517,18 @@ impl<'de> serde::Deserialize<'de> for TransactionInfoByHashResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionInfoByHashResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<TransactionInfoByHashResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<TransactionInfoByHashResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut tx_info__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::TxInfo => {
                             if tx_info__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("txInfo"));
                             }
-                            tx_info__ = map.next_value()?;
+                            tx_info__ = map_.next_value()?;
                         }
                     }
                 }
@@ -4545,9 +4556,11 @@ impl serde::Serialize for TransactionInfoRequest {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionInfoRequest", len)?;
         if self.start_height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
         }
         if self.end_height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("endHeight", ToString::to_string(&self.end_height).as_str())?;
         }
         struct_ser.end()
@@ -4608,20 +4621,20 @@ impl<'de> serde::Deserialize<'de> for TransactionInfoRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionInfoRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<TransactionInfoRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<TransactionInfoRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut start_height__ = None;
                 let mut end_height__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::StartHeight => {
                             if start_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("startHeight"));
                             }
                             start_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::EndHeight => {
@@ -4629,7 +4642,7 @@ impl<'de> serde::Deserialize<'de> for TransactionInfoRequest {
                                 return Err(serde::de::Error::duplicate_field("endHeight"));
                             }
                             end_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -4712,18 +4725,18 @@ impl<'de> serde::Deserialize<'de> for TransactionInfoResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionInfoResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<TransactionInfoResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<TransactionInfoResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut tx_info__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::TxInfo => {
                             if tx_info__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("txInfo"));
                             }
-                            tx_info__ = map.next_value()?;
+                            tx_info__ = map_.next_value()?;
                         }
                     }
                 }
@@ -4790,6 +4803,7 @@ impl serde::Serialize for TransactionPlannerRequest {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest", len)?;
         if self.expiry_height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("expiryHeight", ToString::to_string(&self.expiry_height).as_str())?;
         }
         if let Some(v) = self.fee.as_ref() {
@@ -4937,7 +4951,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionPlannerRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<TransactionPlannerRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<TransactionPlannerRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -4956,99 +4970,99 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut position_opens__ = None;
                 let mut position_closes__ = None;
                 let mut position_withdraws__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ExpiryHeight => {
                             if expiry_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("expiryHeight"));
                             }
                             expiry_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Fee => {
                             if fee__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("fee"));
                             }
-                            fee__ = map.next_value()?;
+                            fee__ = map_.next_value()?;
                         }
                         GeneratedField::Memo => {
                             if memo__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("memo"));
                             }
-                            memo__ = map.next_value()?;
+                            memo__ = map_.next_value()?;
                         }
                         GeneratedField::Source => {
                             if source__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("source"));
                             }
-                            source__ = map.next_value()?;
+                            source__ = map_.next_value()?;
                         }
                         GeneratedField::WalletId => {
                             if wallet_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            wallet_id__ = map.next_value()?;
+                            wallet_id__ = map_.next_value()?;
                         }
                         GeneratedField::Outputs => {
                             if outputs__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("outputs"));
                             }
-                            outputs__ = Some(map.next_value()?);
+                            outputs__ = Some(map_.next_value()?);
                         }
                         GeneratedField::Swaps => {
                             if swaps__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("swaps"));
                             }
-                            swaps__ = Some(map.next_value()?);
+                            swaps__ = Some(map_.next_value()?);
                         }
                         GeneratedField::SwapClaims => {
                             if swap_claims__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("swapClaims"));
                             }
-                            swap_claims__ = Some(map.next_value()?);
+                            swap_claims__ = Some(map_.next_value()?);
                         }
                         GeneratedField::Delegations => {
                             if delegations__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("delegations"));
                             }
-                            delegations__ = Some(map.next_value()?);
+                            delegations__ = Some(map_.next_value()?);
                         }
                         GeneratedField::Undelegations => {
                             if undelegations__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("undelegations"));
                             }
-                            undelegations__ = Some(map.next_value()?);
+                            undelegations__ = Some(map_.next_value()?);
                         }
                         GeneratedField::IbcActions => {
                             if ibc_actions__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("ibcActions"));
                             }
-                            ibc_actions__ = Some(map.next_value()?);
+                            ibc_actions__ = Some(map_.next_value()?);
                         }
                         GeneratedField::Ics20Withdrawals => {
                             if ics20_withdrawals__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("ics20Withdrawals"));
                             }
-                            ics20_withdrawals__ = Some(map.next_value()?);
+                            ics20_withdrawals__ = Some(map_.next_value()?);
                         }
                         GeneratedField::PositionOpens => {
                             if position_opens__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("positionOpens"));
                             }
-                            position_opens__ = Some(map.next_value()?);
+                            position_opens__ = Some(map_.next_value()?);
                         }
                         GeneratedField::PositionCloses => {
                             if position_closes__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("positionCloses"));
                             }
-                            position_closes__ = Some(map.next_value()?);
+                            position_closes__ = Some(map_.next_value()?);
                         }
                         GeneratedField::PositionWithdraws => {
                             if position_withdraws__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("positionWithdraws"));
                             }
-                            position_withdraws__ = Some(map.next_value()?);
+                            position_withdraws__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -5152,25 +5166,25 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Delegate {
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionPlannerRequest.Delegate")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<transaction_planner_request::Delegate, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_planner_request::Delegate, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut amount__ = None;
                 let mut rate_data__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Amount => {
                             if amount__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("amount"));
                             }
-                            amount__ = map.next_value()?;
+                            amount__ = map_.next_value()?;
                         }
                         GeneratedField::RateData => {
                             if rate_data__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("rateData"));
                             }
-                            rate_data__ = map.next_value()?;
+                            rate_data__ = map_.next_value()?;
                         }
                     }
                 }
@@ -5260,25 +5274,25 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Output {
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionPlannerRequest.Output")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<transaction_planner_request::Output, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_planner_request::Output, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut value__ = None;
                 let mut address__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Value => {
                             if value__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("value"));
                             }
-                            value__ = map.next_value()?;
+                            value__ = map_.next_value()?;
                         }
                         GeneratedField::Address => {
                             if address__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("address"));
                             }
-                            address__ = map.next_value()?;
+                            address__ = map_.next_value()?;
                         }
                     }
                 }
@@ -5360,18 +5374,18 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::PositionClose
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionPlannerRequest.PositionClose")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<transaction_planner_request::PositionClose, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_planner_request::PositionClose, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut position_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::PositionId => {
                             if position_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("positionId"));
                             }
-                            position_id__ = map.next_value()?;
+                            position_id__ = map_.next_value()?;
                         }
                     }
                 }
@@ -5451,18 +5465,18 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::PositionOpen 
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionPlannerRequest.PositionOpen")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<transaction_planner_request::PositionOpen, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_planner_request::PositionOpen, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut position__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Position => {
                             if position__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("position"));
                             }
-                            position__ = map.next_value()?;
+                            position__ = map_.next_value()?;
                         }
                     }
                 }
@@ -5562,32 +5576,32 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::PositionWithd
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionPlannerRequest.PositionWithdraw")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<transaction_planner_request::PositionWithdraw, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_planner_request::PositionWithdraw, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut position_id__ = None;
                 let mut reserves__ = None;
                 let mut trading_pair__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::PositionId => {
                             if position_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("positionId"));
                             }
-                            position_id__ = map.next_value()?;
+                            position_id__ = map_.next_value()?;
                         }
                         GeneratedField::Reserves => {
                             if reserves__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("reserves"));
                             }
-                            reserves__ = map.next_value()?;
+                            reserves__ = map_.next_value()?;
                         }
                         GeneratedField::TradingPair => {
                             if trading_pair__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("tradingPair"));
                             }
-                            trading_pair__ = map.next_value()?;
+                            trading_pair__ = map_.next_value()?;
                         }
                     }
                 }
@@ -5698,7 +5712,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Swap {
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionPlannerRequest.Swap")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<transaction_planner_request::Swap, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_planner_request::Swap, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -5706,31 +5720,31 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Swap {
                 let mut target_asset__ = None;
                 let mut fee__ = None;
                 let mut claim_address__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Value => {
                             if value__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("value"));
                             }
-                            value__ = map.next_value()?;
+                            value__ = map_.next_value()?;
                         }
                         GeneratedField::TargetAsset => {
                             if target_asset__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("targetAsset"));
                             }
-                            target_asset__ = map.next_value()?;
+                            target_asset__ = map_.next_value()?;
                         }
                         GeneratedField::Fee => {
                             if fee__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("fee"));
                             }
-                            fee__ = map.next_value()?;
+                            fee__ = map_.next_value()?;
                         }
                         GeneratedField::ClaimAddress => {
                             if claim_address__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("claimAddress"));
                             }
-                            claim_address__ = map.next_value()?;
+                            claim_address__ = map_.next_value()?;
                         }
                     }
                 }
@@ -5814,18 +5828,18 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::SwapClaim {
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionPlannerRequest.SwapClaim")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<transaction_planner_request::SwapClaim, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_planner_request::SwapClaim, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut swap_commitment__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::SwapCommitment => {
                             if swap_commitment__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("swapCommitment"));
                             }
-                            swap_commitment__ = map.next_value()?;
+                            swap_commitment__ = map_.next_value()?;
                         }
                     }
                 }
@@ -5915,25 +5929,25 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Undelegate {
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionPlannerRequest.Undelegate")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<transaction_planner_request::Undelegate, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_planner_request::Undelegate, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut value__ = None;
                 let mut rate_data__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Value => {
                             if value__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("value"));
                             }
-                            value__ = map.next_value()?;
+                            value__ = map_.next_value()?;
                         }
                         GeneratedField::RateData => {
                             if rate_data__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("rateData"));
                             }
-                            rate_data__ = map.next_value()?;
+                            rate_data__ = map_.next_value()?;
                         }
                     }
                 }
@@ -6014,18 +6028,18 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.TransactionPlannerResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<TransactionPlannerResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<TransactionPlannerResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut plan__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Plan => {
                             if plan__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("plan"));
                             }
-                            plan__ = map.next_value()?;
+                            plan__ = map_.next_value()?;
                         }
                     }
                 }
@@ -6106,18 +6120,18 @@ impl<'de> serde::Deserialize<'de> for UnclaimedSwapsRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.UnclaimedSwapsRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<UnclaimedSwapsRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<UnclaimedSwapsRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut wallet_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::WalletId => {
                             if wallet_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            wallet_id__ = map.next_value()?;
+                            wallet_id__ = map_.next_value()?;
                         }
                     }
                 }
@@ -6197,18 +6211,18 @@ impl<'de> serde::Deserialize<'de> for UnclaimedSwapsResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.UnclaimedSwapsResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<UnclaimedSwapsResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<UnclaimedSwapsResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut swap__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Swap => {
                             if swap__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("swap"));
                             }
-                            swap__ = map.next_value()?;
+                            swap__ = map_.next_value()?;
                         }
                     }
                 }
@@ -6288,18 +6302,18 @@ impl<'de> serde::Deserialize<'de> for ViewAuthRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.ViewAuthRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ViewAuthRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ViewAuthRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut fvk__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Fvk => {
                             if fvk__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("fvk"));
                             }
-                            fvk__ = map.next_value()?;
+                            fvk__ = map_.next_value()?;
                         }
                     }
                 }
@@ -6379,18 +6393,18 @@ impl<'de> serde::Deserialize<'de> for ViewAuthResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.ViewAuthResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ViewAuthResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ViewAuthResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut token__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Token => {
                             if token__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("token"));
                             }
-                            token__ = map.next_value()?;
+                            token__ = map_.next_value()?;
                         }
                     }
                 }
@@ -6415,6 +6429,7 @@ impl serde::Serialize for ViewAuthToken {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.ViewAuthToken", len)?;
         if !self.inner.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -6470,19 +6485,19 @@ impl<'de> serde::Deserialize<'de> for ViewAuthToken {
                 formatter.write_str("struct penumbra.view.v1alpha1.ViewAuthToken")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ViewAuthToken, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ViewAuthToken, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut inner__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Inner => {
                             if inner__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("inner"));
                             }
                             inner__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -6574,25 +6589,25 @@ impl<'de> serde::Deserialize<'de> for WitnessAndBuildRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.WitnessAndBuildRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<WitnessAndBuildRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<WitnessAndBuildRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut transaction_plan__ = None;
                 let mut authorization_data__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::TransactionPlan => {
                             if transaction_plan__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("transactionPlan"));
                             }
-                            transaction_plan__ = map.next_value()?;
+                            transaction_plan__ = map_.next_value()?;
                         }
                         GeneratedField::AuthorizationData => {
                             if authorization_data__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("authorizationData"));
                             }
-                            authorization_data__ = map.next_value()?;
+                            authorization_data__ = map_.next_value()?;
                         }
                     }
                 }
@@ -6673,18 +6688,18 @@ impl<'de> serde::Deserialize<'de> for WitnessAndBuildResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.WitnessAndBuildResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<WitnessAndBuildResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<WitnessAndBuildResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut transaction__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Transaction => {
                             if transaction__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("transaction"));
                             }
-                            transaction__ = map.next_value()?;
+                            transaction__ = map_.next_value()?;
                         }
                     }
                 }
@@ -6785,32 +6800,32 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.WitnessRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<WitnessRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<WitnessRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut note_commitments__ = None;
                 let mut transaction_plan__ = None;
                 let mut wallet_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::NoteCommitments => {
                             if note_commitments__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("noteCommitments"));
                             }
-                            note_commitments__ = Some(map.next_value()?);
+                            note_commitments__ = Some(map_.next_value()?);
                         }
                         GeneratedField::TransactionPlan => {
                             if transaction_plan__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("transactionPlan"));
                             }
-                            transaction_plan__ = map.next_value()?;
+                            transaction_plan__ = map_.next_value()?;
                         }
                         GeneratedField::WalletId => {
                             if wallet_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            wallet_id__ = map.next_value()?;
+                            wallet_id__ = map_.next_value()?;
                         }
                     }
                 }
@@ -6893,18 +6908,18 @@ impl<'de> serde::Deserialize<'de> for WitnessResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.WitnessResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<WitnessResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<WitnessResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut witness_data__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::WitnessData => {
                             if witness_data__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("witnessData"));
                             }
-                            witness_data__ = map.next_value()?;
+                            witness_data__ = map_.next_value()?;
                         }
                     }
                 }

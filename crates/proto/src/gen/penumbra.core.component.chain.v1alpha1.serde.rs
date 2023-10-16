@@ -17,6 +17,7 @@ impl serde::Serialize for ChainParameters {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
         }
         if self.epoch_duration != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("epochDuration", ToString::to_string(&self.epoch_duration).as_str())?;
         }
         struct_ser.end()
@@ -77,26 +78,26 @@ impl<'de> serde::Deserialize<'de> for ChainParameters {
                 formatter.write_str("struct penumbra.core.component.chain.v1alpha1.ChainParameters")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ChainParameters, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ChainParameters, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut chain_id__ = None;
                 let mut epoch_duration__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ChainId => {
                             if chain_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("chainId"));
                             }
-                            chain_id__ = Some(map.next_value()?);
+                            chain_id__ = Some(map_.next_value()?);
                         }
                         GeneratedField::EpochDuration => {
                             if epoch_duration__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("epochDuration"));
                             }
                             epoch_duration__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -123,6 +124,7 @@ impl serde::Serialize for EffectHash {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.chain.v1alpha1.EffectHash", len)?;
         if !self.inner.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -178,19 +180,19 @@ impl<'de> serde::Deserialize<'de> for EffectHash {
                 formatter.write_str("struct penumbra.core.component.chain.v1alpha1.EffectHash")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<EffectHash, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EffectHash, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut inner__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Inner => {
                             if inner__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("inner"));
                             }
                             inner__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -219,9 +221,11 @@ impl serde::Serialize for Epoch {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.chain.v1alpha1.Epoch", len)?;
         if self.index != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("index", ToString::to_string(&self.index).as_str())?;
         }
         if self.start_height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
         }
         struct_ser.end()
@@ -281,20 +285,20 @@ impl<'de> serde::Deserialize<'de> for Epoch {
                 formatter.write_str("struct penumbra.core.component.chain.v1alpha1.Epoch")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<Epoch, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Epoch, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut index__ = None;
                 let mut start_height__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Index => {
                             if index__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("index"));
                             }
                             index__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::StartHeight => {
@@ -302,7 +306,7 @@ impl<'de> serde::Deserialize<'de> for Epoch {
                                 return Err(serde::de::Error::duplicate_field("startHeight"));
                             }
                             start_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -329,6 +333,7 @@ impl serde::Serialize for EpochByHeightRequest {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.chain.v1alpha1.EpochByHeightRequest", len)?;
         if self.height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
         }
         struct_ser.end()
@@ -384,19 +389,19 @@ impl<'de> serde::Deserialize<'de> for EpochByHeightRequest {
                 formatter.write_str("struct penumbra.core.component.chain.v1alpha1.EpochByHeightRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<EpochByHeightRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EpochByHeightRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut height__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Height => {
                             if height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("height"));
                             }
                             height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -477,18 +482,18 @@ impl<'de> serde::Deserialize<'de> for EpochByHeightResponse {
                 formatter.write_str("struct penumbra.core.component.chain.v1alpha1.EpochByHeightResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<EpochByHeightResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EpochByHeightResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut epoch__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Epoch => {
                             if epoch__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("epoch"));
                             }
-                            epoch__ = map.next_value()?;
+                            epoch__ = map_.next_value()?;
                         }
                     }
                 }
@@ -519,6 +524,7 @@ impl serde::Serialize for FmdParameters {
             struct_ser.serialize_field("precisionBits", &self.precision_bits)?;
         }
         if self.as_of_block_height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("asOfBlockHeight", ToString::to_string(&self.as_of_block_height).as_str())?;
         }
         struct_ser.end()
@@ -579,20 +585,20 @@ impl<'de> serde::Deserialize<'de> for FmdParameters {
                 formatter.write_str("struct penumbra.core.component.chain.v1alpha1.FmdParameters")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<FmdParameters, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<FmdParameters, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut precision_bits__ = None;
                 let mut as_of_block_height__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::PrecisionBits => {
                             if precision_bits__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("precisionBits"));
                             }
                             precision_bits__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::AsOfBlockHeight => {
@@ -600,7 +606,7 @@ impl<'de> serde::Deserialize<'de> for FmdParameters {
                                 return Err(serde::de::Error::duplicate_field("asOfBlockHeight"));
                             }
                             as_of_block_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -683,18 +689,18 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 formatter.write_str("struct penumbra.core.component.chain.v1alpha1.GenesisContent")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<GenesisContent, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<GenesisContent, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut chain_params__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ChainParams => {
                             if chain_params__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("chainParams"));
                             }
-                            chain_params__ = map.next_value()?;
+                            chain_params__ = map_.next_value()?;
                         }
                     }
                 }
@@ -774,18 +780,18 @@ impl<'de> serde::Deserialize<'de> for KnownAssets {
                 formatter.write_str("struct penumbra.core.component.chain.v1alpha1.KnownAssets")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<KnownAssets, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<KnownAssets, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut assets__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Assets => {
                             if assets__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("assets"));
                             }
-                            assets__ = Some(map.next_value()?);
+                            assets__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -810,6 +816,7 @@ impl serde::Serialize for NoteSource {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.chain.v1alpha1.NoteSource", len)?;
         if !self.inner.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -865,19 +872,19 @@ impl<'de> serde::Deserialize<'de> for NoteSource {
                 formatter.write_str("struct penumbra.core.component.chain.v1alpha1.NoteSource")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<NoteSource, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<NoteSource, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut inner__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Inner => {
                             if inner__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("inner"));
                             }
                             inner__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -906,9 +913,11 @@ impl serde::Serialize for Ratio {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.chain.v1alpha1.Ratio", len)?;
         if self.numerator != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("numerator", ToString::to_string(&self.numerator).as_str())?;
         }
         if self.denominator != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("denominator", ToString::to_string(&self.denominator).as_str())?;
         }
         struct_ser.end()
@@ -967,20 +976,20 @@ impl<'de> serde::Deserialize<'de> for Ratio {
                 formatter.write_str("struct penumbra.core.component.chain.v1alpha1.Ratio")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<Ratio, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Ratio, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut numerator__ = None;
                 let mut denominator__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Numerator => {
                             if numerator__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("numerator"));
                             }
                             numerator__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Denominator => {
@@ -988,7 +997,7 @@ impl<'de> serde::Deserialize<'de> for Ratio {
                                 return Err(serde::de::Error::duplicate_field("denominator"));
                             }
                             denominator__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -1021,6 +1030,7 @@ impl serde::Serialize for SpendInfo {
             struct_ser.serialize_field("noteSource", v)?;
         }
         if self.spend_height != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("spendHeight", ToString::to_string(&self.spend_height).as_str())?;
         }
         struct_ser.end()
@@ -1081,26 +1091,26 @@ impl<'de> serde::Deserialize<'de> for SpendInfo {
                 formatter.write_str("struct penumbra.core.component.chain.v1alpha1.SpendInfo")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<SpendInfo, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<SpendInfo, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut note_source__ = None;
                 let mut spend_height__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::NoteSource => {
                             if note_source__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("noteSource"));
                             }
-                            note_source__ = map.next_value()?;
+                            note_source__ = map_.next_value()?;
                         }
                         GeneratedField::SpendHeight => {
                             if spend_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("spendHeight"));
                             }
                             spend_height__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }

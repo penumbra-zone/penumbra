@@ -1359,7 +1359,7 @@ pub mod query_service_server {
             tonic::Status,
         >;
         /// Server streaming response type for the SwapExecutions method.
-        type SwapExecutionsStream: futures_core::Stream<
+        type SwapExecutionsStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::SwapExecutionsResponse, tonic::Status>,
             >
             + Send
@@ -1373,7 +1373,7 @@ pub mod query_service_server {
             tonic::Status,
         >;
         /// Server streaming response type for the ArbExecutions method.
-        type ArbExecutionsStream: futures_core::Stream<
+        type ArbExecutionsStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::ArbExecutionsResponse, tonic::Status>,
             >
             + Send
@@ -1387,7 +1387,7 @@ pub mod query_service_server {
             tonic::Status,
         >;
         /// Server streaming response type for the LiquidityPositions method.
-        type LiquidityPositionsStream: futures_core::Stream<
+        type LiquidityPositionsStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<
                     super::LiquidityPositionsResponse,
                     tonic::Status,
@@ -1414,7 +1414,7 @@ pub mod query_service_server {
             tonic::Status,
         >;
         /// Server streaming response type for the LiquidityPositionsById method.
-        type LiquidityPositionsByIdStream: futures_core::Stream<
+        type LiquidityPositionsByIdStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<
                     super::LiquidityPositionsByIdResponse,
                     tonic::Status,
@@ -1431,7 +1431,7 @@ pub mod query_service_server {
             tonic::Status,
         >;
         /// Server streaming response type for the LiquidityPositionsByPrice method.
-        type LiquidityPositionsByPriceStream: futures_core::Stream<
+        type LiquidityPositionsByPriceStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<
                     super::LiquidityPositionsByPriceResponse,
                     tonic::Status,
@@ -1554,7 +1554,8 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).batch_swap_output_data(request).await
+                                <T as QueryService>::batch_swap_output_data(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -1600,7 +1601,7 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).swap_execution(request).await
+                                <T as QueryService>::swap_execution(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -1646,7 +1647,7 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).arb_execution(request).await
+                                <T as QueryService>::arb_execution(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -1693,7 +1694,7 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).swap_executions(request).await
+                                <T as QueryService>::swap_executions(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -1740,7 +1741,7 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).arb_executions(request).await
+                                <T as QueryService>::arb_executions(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -1788,7 +1789,8 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).liquidity_positions(request).await
+                                <T as QueryService>::liquidity_positions(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -1834,7 +1836,11 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).liquidity_position_by_id(request).await
+                                <T as QueryService>::liquidity_position_by_id(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -1882,7 +1888,11 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).liquidity_positions_by_id(request).await
+                                <T as QueryService>::liquidity_positions_by_id(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -1932,7 +1942,11 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).liquidity_positions_by_price(request).await
+                                <T as QueryService>::liquidity_positions_by_price(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -1977,7 +1991,9 @@ pub mod query_service_server {
                             request: tonic::Request<super::SpreadRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).spread(request).await };
+                            let fut = async move {
+                                <T as QueryService>::spread(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
@@ -2164,7 +2180,8 @@ pub mod simulation_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).simulate_trade(request).await
+                                <T as SimulationService>::simulate_trade(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }

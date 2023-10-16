@@ -76,25 +76,25 @@ impl<'de> serde::Deserialize<'de> for Fee {
                 formatter.write_str("struct penumbra.core.component.fee.v1alpha1.Fee")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<Fee, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Fee, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut amount__ = None;
                 let mut asset_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Amount => {
                             if amount__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("amount"));
                             }
-                            amount__ = map.next_value()?;
+                            amount__ = map_.next_value()?;
                         }
                         GeneratedField::AssetId => {
                             if asset_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("assetId"));
                             }
-                            asset_id__ = map.next_value()?;
+                            asset_id__ = map_.next_value()?;
                         }
                     }
                 }
@@ -164,12 +164,12 @@ impl<'de> serde::Deserialize<'de> for FeeParameters {
                 formatter.write_str("struct penumbra.core.component.fee.v1alpha1.FeeParameters")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<FeeParameters, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<FeeParameters, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                while map.next_key::<GeneratedField>()?.is_some() {
-                    let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
                 Ok(FeeParameters {
                 })
@@ -200,15 +200,19 @@ impl serde::Serialize for GasPrices {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.fee.v1alpha1.GasPrices", len)?;
         if self.block_space_price != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("blockSpacePrice", ToString::to_string(&self.block_space_price).as_str())?;
         }
         if self.compact_block_space_price != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("compactBlockSpacePrice", ToString::to_string(&self.compact_block_space_price).as_str())?;
         }
         if self.verification_price != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("verificationPrice", ToString::to_string(&self.verification_price).as_str())?;
         }
         if self.execution_price != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("executionPrice", ToString::to_string(&self.execution_price).as_str())?;
         }
         struct_ser.end()
@@ -277,7 +281,7 @@ impl<'de> serde::Deserialize<'de> for GasPrices {
                 formatter.write_str("struct penumbra.core.component.fee.v1alpha1.GasPrices")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<GasPrices, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<GasPrices, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -285,14 +289,14 @@ impl<'de> serde::Deserialize<'de> for GasPrices {
                 let mut compact_block_space_price__ = None;
                 let mut verification_price__ = None;
                 let mut execution_price__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::BlockSpacePrice => {
                             if block_space_price__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("blockSpacePrice"));
                             }
                             block_space_price__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::CompactBlockSpacePrice => {
@@ -300,7 +304,7 @@ impl<'de> serde::Deserialize<'de> for GasPrices {
                                 return Err(serde::de::Error::duplicate_field("compactBlockSpacePrice"));
                             }
                             compact_block_space_price__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::VerificationPrice => {
@@ -308,7 +312,7 @@ impl<'de> serde::Deserialize<'de> for GasPrices {
                                 return Err(serde::de::Error::duplicate_field("verificationPrice"));
                             }
                             verification_price__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::ExecutionPrice => {
@@ -316,7 +320,7 @@ impl<'de> serde::Deserialize<'de> for GasPrices {
                                 return Err(serde::de::Error::duplicate_field("executionPrice"));
                             }
                             execution_price__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -411,25 +415,25 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 formatter.write_str("struct penumbra.core.component.fee.v1alpha1.GenesisContent")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<GenesisContent, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<GenesisContent, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut fee_params__ = None;
                 let mut gas_prices__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::FeeParams => {
                             if fee_params__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("feeParams"));
                             }
-                            fee_params__ = map.next_value()?;
+                            fee_params__ = map_.next_value()?;
                         }
                         GeneratedField::GasPrices => {
                             if gas_prices__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("gasPrices"));
                             }
-                            gas_prices__ = map.next_value()?;
+                            gas_prices__ = map_.next_value()?;
                         }
                     }
                 }

@@ -707,7 +707,7 @@ pub mod query_service_server {
             tonic::Status,
         >;
         /// Server streaming response type for the ProposalRateData method.
-        type ProposalRateDataStream: futures_core::Stream<
+        type ProposalRateDataStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<
                     super::ProposalRateDataResponse,
                     tonic::Status,
@@ -822,7 +822,7 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).proposal_info(request).await
+                                <T as QueryService>::proposal_info(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -870,7 +870,8 @@ pub mod query_service_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).proposal_rate_data(request).await
+                                <T as QueryService>::proposal_rate_data(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }

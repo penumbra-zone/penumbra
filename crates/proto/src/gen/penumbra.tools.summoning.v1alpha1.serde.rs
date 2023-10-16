@@ -29,24 +29,31 @@ impl serde::Serialize for CeremonyCrs {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.tools.summoning.v1alpha1.CeremonyCrs", len)?;
         if !self.spend.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("spend", pbjson::private::base64::encode(&self.spend).as_str())?;
         }
         if !self.output.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("output", pbjson::private::base64::encode(&self.output).as_str())?;
         }
         if !self.delegator_vote.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("delegatorVote", pbjson::private::base64::encode(&self.delegator_vote).as_str())?;
         }
         if !self.undelegate_claim.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("undelegateClaim", pbjson::private::base64::encode(&self.undelegate_claim).as_str())?;
         }
         if !self.swap.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("swap", pbjson::private::base64::encode(&self.swap).as_str())?;
         }
         if !self.swap_claim.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("swapClaim", pbjson::private::base64::encode(&self.swap_claim).as_str())?;
         }
         if !self.nullifer_derivation_crs.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("nulliferDerivationCrs", pbjson::private::base64::encode(&self.nullifer_derivation_crs).as_str())?;
         }
         struct_ser.end()
@@ -124,7 +131,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyCrs {
                 formatter.write_str("struct penumbra.tools.summoning.v1alpha1.CeremonyCrs")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<CeremonyCrs, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CeremonyCrs, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -135,14 +142,14 @@ impl<'de> serde::Deserialize<'de> for CeremonyCrs {
                 let mut swap__ = None;
                 let mut swap_claim__ = None;
                 let mut nullifer_derivation_crs__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Spend => {
                             if spend__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("spend"));
                             }
                             spend__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Output => {
@@ -150,7 +157,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyCrs {
                                 return Err(serde::de::Error::duplicate_field("output"));
                             }
                             output__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::DelegatorVote => {
@@ -158,7 +165,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyCrs {
                                 return Err(serde::de::Error::duplicate_field("delegatorVote"));
                             }
                             delegator_vote__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::UndelegateClaim => {
@@ -166,7 +173,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyCrs {
                                 return Err(serde::de::Error::duplicate_field("undelegateClaim"));
                             }
                             undelegate_claim__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Swap => {
@@ -174,7 +181,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyCrs {
                                 return Err(serde::de::Error::duplicate_field("swap"));
                             }
                             swap__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::SwapClaim => {
@@ -182,7 +189,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyCrs {
                                 return Err(serde::de::Error::duplicate_field("swapClaim"));
                             }
                             swap_claim__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::NulliferDerivationCrs => {
@@ -190,7 +197,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyCrs {
                                 return Err(serde::de::Error::duplicate_field("nulliferDerivationCrs"));
                             }
                             nullifer_derivation_crs__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -240,24 +247,31 @@ impl serde::Serialize for CeremonyLinkingProof {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.tools.summoning.v1alpha1.CeremonyLinkingProof", len)?;
         if !self.spend.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("spend", pbjson::private::base64::encode(&self.spend).as_str())?;
         }
         if !self.output.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("output", pbjson::private::base64::encode(&self.output).as_str())?;
         }
         if !self.delegator_vote.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("delegatorVote", pbjson::private::base64::encode(&self.delegator_vote).as_str())?;
         }
         if !self.undelegate_claim.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("undelegateClaim", pbjson::private::base64::encode(&self.undelegate_claim).as_str())?;
         }
         if !self.swap.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("swap", pbjson::private::base64::encode(&self.swap).as_str())?;
         }
         if !self.swap_claim.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("swapClaim", pbjson::private::base64::encode(&self.swap_claim).as_str())?;
         }
         if !self.nullifer_derivation_crs.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("nulliferDerivationCrs", pbjson::private::base64::encode(&self.nullifer_derivation_crs).as_str())?;
         }
         struct_ser.end()
@@ -335,7 +349,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyLinkingProof {
                 formatter.write_str("struct penumbra.tools.summoning.v1alpha1.CeremonyLinkingProof")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<CeremonyLinkingProof, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CeremonyLinkingProof, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -346,14 +360,14 @@ impl<'de> serde::Deserialize<'de> for CeremonyLinkingProof {
                 let mut swap__ = None;
                 let mut swap_claim__ = None;
                 let mut nullifer_derivation_crs__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Spend => {
                             if spend__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("spend"));
                             }
                             spend__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Output => {
@@ -361,7 +375,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyLinkingProof {
                                 return Err(serde::de::Error::duplicate_field("output"));
                             }
                             output__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::DelegatorVote => {
@@ -369,7 +383,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyLinkingProof {
                                 return Err(serde::de::Error::duplicate_field("delegatorVote"));
                             }
                             delegator_vote__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::UndelegateClaim => {
@@ -377,7 +391,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyLinkingProof {
                                 return Err(serde::de::Error::duplicate_field("undelegateClaim"));
                             }
                             undelegate_claim__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Swap => {
@@ -385,7 +399,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyLinkingProof {
                                 return Err(serde::de::Error::duplicate_field("swap"));
                             }
                             swap__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::SwapClaim => {
@@ -393,7 +407,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyLinkingProof {
                                 return Err(serde::de::Error::duplicate_field("swapClaim"));
                             }
                             swap_claim__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::NulliferDerivationCrs => {
@@ -401,7 +415,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyLinkingProof {
                                 return Err(serde::de::Error::duplicate_field("nulliferDerivationCrs"));
                             }
                             nullifer_derivation_crs__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -451,24 +465,31 @@ impl serde::Serialize for CeremonyParentHashes {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.tools.summoning.v1alpha1.CeremonyParentHashes", len)?;
         if !self.spend.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("spend", pbjson::private::base64::encode(&self.spend).as_str())?;
         }
         if !self.output.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("output", pbjson::private::base64::encode(&self.output).as_str())?;
         }
         if !self.delegator_vote.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("delegatorVote", pbjson::private::base64::encode(&self.delegator_vote).as_str())?;
         }
         if !self.undelegate_claim.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("undelegateClaim", pbjson::private::base64::encode(&self.undelegate_claim).as_str())?;
         }
         if !self.swap.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("swap", pbjson::private::base64::encode(&self.swap).as_str())?;
         }
         if !self.swap_claim.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("swapClaim", pbjson::private::base64::encode(&self.swap_claim).as_str())?;
         }
         if !self.nullifer_derivation_crs.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("nulliferDerivationCrs", pbjson::private::base64::encode(&self.nullifer_derivation_crs).as_str())?;
         }
         struct_ser.end()
@@ -546,7 +567,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyParentHashes {
                 formatter.write_str("struct penumbra.tools.summoning.v1alpha1.CeremonyParentHashes")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<CeremonyParentHashes, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CeremonyParentHashes, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -557,14 +578,14 @@ impl<'de> serde::Deserialize<'de> for CeremonyParentHashes {
                 let mut swap__ = None;
                 let mut swap_claim__ = None;
                 let mut nullifer_derivation_crs__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Spend => {
                             if spend__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("spend"));
                             }
                             spend__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Output => {
@@ -572,7 +593,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyParentHashes {
                                 return Err(serde::de::Error::duplicate_field("output"));
                             }
                             output__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::DelegatorVote => {
@@ -580,7 +601,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyParentHashes {
                                 return Err(serde::de::Error::duplicate_field("delegatorVote"));
                             }
                             delegator_vote__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::UndelegateClaim => {
@@ -588,7 +609,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyParentHashes {
                                 return Err(serde::de::Error::duplicate_field("undelegateClaim"));
                             }
                             undelegate_claim__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::Swap => {
@@ -596,7 +617,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyParentHashes {
                                 return Err(serde::de::Error::duplicate_field("swap"));
                             }
                             swap__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::SwapClaim => {
@@ -604,7 +625,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyParentHashes {
                                 return Err(serde::de::Error::duplicate_field("swapClaim"));
                             }
                             swap_claim__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::NulliferDerivationCrs => {
@@ -612,7 +633,7 @@ impl<'de> serde::Deserialize<'de> for CeremonyParentHashes {
                                 return Err(serde::de::Error::duplicate_field("nulliferDerivationCrs"));
                             }
                             nullifer_derivation_crs__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -709,25 +730,25 @@ impl<'de> serde::Deserialize<'de> for ParticipateRequest {
                 formatter.write_str("struct penumbra.tools.summoning.v1alpha1.ParticipateRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ParticipateRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ParticipateRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut msg__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Identify => {
                             if msg__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("identify"));
                             }
-                            msg__ = map.next_value::<::std::option::Option<_>>()?.map(participate_request::Msg::Identify)
+                            msg__ = map_.next_value::<::std::option::Option<_>>()?.map(participate_request::Msg::Identify)
 ;
                         }
                         GeneratedField::Contribution => {
                             if msg__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("contribution"));
                             }
-                            msg__ = map.next_value::<::std::option::Option<_>>()?.map(participate_request::Msg::Contribution)
+                            msg__ = map_.next_value::<::std::option::Option<_>>()?.map(participate_request::Msg::Contribution)
 ;
                         }
                     }
@@ -828,32 +849,32 @@ impl<'de> serde::Deserialize<'de> for participate_request::Contribution {
                 formatter.write_str("struct penumbra.tools.summoning.v1alpha1.ParticipateRequest.Contribution")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<participate_request::Contribution, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<participate_request::Contribution, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut updated__ = None;
                 let mut update_proofs__ = None;
                 let mut parent_hashes__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Updated => {
                             if updated__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("updated"));
                             }
-                            updated__ = map.next_value()?;
+                            updated__ = map_.next_value()?;
                         }
                         GeneratedField::UpdateProofs => {
                             if update_proofs__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("updateProofs"));
                             }
-                            update_proofs__ = map.next_value()?;
+                            update_proofs__ = map_.next_value()?;
                         }
                         GeneratedField::ParentHashes => {
                             if parent_hashes__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("parentHashes"));
                             }
-                            parent_hashes__ = map.next_value()?;
+                            parent_hashes__ = map_.next_value()?;
                         }
                     }
                 }
@@ -935,18 +956,18 @@ impl<'de> serde::Deserialize<'de> for participate_request::Identify {
                 formatter.write_str("struct penumbra.tools.summoning.v1alpha1.ParticipateRequest.Identify")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<participate_request::Identify, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<participate_request::Identify, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut address__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Address => {
                             if address__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("address"));
                             }
-                            address__ = map.next_value()?;
+                            address__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1043,32 +1064,32 @@ impl<'de> serde::Deserialize<'de> for ParticipateResponse {
                 formatter.write_str("struct penumbra.tools.summoning.v1alpha1.ParticipateResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<ParticipateResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ParticipateResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut msg__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Position => {
                             if msg__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("position"));
                             }
-                            msg__ = map.next_value::<::std::option::Option<_>>()?.map(participate_response::Msg::Position)
+                            msg__ = map_.next_value::<::std::option::Option<_>>()?.map(participate_response::Msg::Position)
 ;
                         }
                         GeneratedField::ContributeNow => {
                             if msg__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("contributeNow"));
                             }
-                            msg__ = map.next_value::<::std::option::Option<_>>()?.map(participate_response::Msg::ContributeNow)
+                            msg__ = map_.next_value::<::std::option::Option<_>>()?.map(participate_response::Msg::ContributeNow)
 ;
                         }
                         GeneratedField::Confirm => {
                             if msg__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("confirm"));
                             }
-                            msg__ = map.next_value::<::std::option::Option<_>>()?.map(participate_response::Msg::Confirm)
+                            msg__ = map_.next_value::<::std::option::Option<_>>()?.map(participate_response::Msg::Confirm)
 ;
                         }
                     }
@@ -1094,6 +1115,7 @@ impl serde::Serialize for participate_response::Confirm {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.tools.summoning.v1alpha1.ParticipateResponse.Confirm", len)?;
         if self.slot != 0 {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("slot", ToString::to_string(&self.slot).as_str())?;
         }
         struct_ser.end()
@@ -1149,19 +1171,19 @@ impl<'de> serde::Deserialize<'de> for participate_response::Confirm {
                 formatter.write_str("struct penumbra.tools.summoning.v1alpha1.ParticipateResponse.Confirm")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<participate_response::Confirm, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<participate_response::Confirm, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut slot__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Slot => {
                             if slot__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("slot"));
                             }
                             slot__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -1242,18 +1264,18 @@ impl<'de> serde::Deserialize<'de> for participate_response::ContributeNow {
                 formatter.write_str("struct penumbra.tools.summoning.v1alpha1.ParticipateResponse.ContributeNow")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<participate_response::ContributeNow, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<participate_response::ContributeNow, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut parent__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Parent => {
                             if parent__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("parent"));
                             }
-                            parent__ = map.next_value()?;
+                            parent__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1363,7 +1385,7 @@ impl<'de> serde::Deserialize<'de> for participate_response::Position {
                 formatter.write_str("struct penumbra.tools.summoning.v1alpha1.ParticipateResponse.Position")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<participate_response::Position, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<participate_response::Position, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -1371,14 +1393,14 @@ impl<'de> serde::Deserialize<'de> for participate_response::Position {
                 let mut connected_participants__ = None;
                 let mut last_slot_bid__ = None;
                 let mut your_bid__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Position => {
                             if position__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("position"));
                             }
                             position__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::ConnectedParticipants => {
@@ -1386,20 +1408,20 @@ impl<'de> serde::Deserialize<'de> for participate_response::Position {
                                 return Err(serde::de::Error::duplicate_field("connectedParticipants"));
                             }
                             connected_participants__ = 
-                                Some(map.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
                         GeneratedField::LastSlotBid => {
                             if last_slot_bid__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("lastSlotBid"));
                             }
-                            last_slot_bid__ = map.next_value()?;
+                            last_slot_bid__ = map_.next_value()?;
                         }
                         GeneratedField::YourBid => {
                             if your_bid__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("yourBid"));
                             }
-                            your_bid__ = map.next_value()?;
+                            your_bid__ = map_.next_value()?;
                         }
                     }
                 }

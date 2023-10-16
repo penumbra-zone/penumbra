@@ -11,6 +11,7 @@ impl serde::Serialize for Clue {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.crypto.decaf377_fmd.v1alpha1.Clue", len)?;
         if !self.inner.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
@@ -66,19 +67,19 @@ impl<'de> serde::Deserialize<'de> for Clue {
                 formatter.write_str("struct penumbra.crypto.decaf377_fmd.v1alpha1.Clue")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<Clue, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Clue, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut inner__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Inner => {
                             if inner__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("inner"));
                             }
                             inner__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
