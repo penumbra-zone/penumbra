@@ -12,7 +12,7 @@ penumbra-app = { path = "../../core/app" }
 penumbra-compact-block = { path = "../../core/component/compact-block", default-features = false }
 
 tokio = { version = "1.21.1", features = ["full"] }
-tonic = "0.9"
+tonic = "0.10"
 anyhow = "1"
 clap = { version = "3", features = ["derive", "env"] }
 tracing = "0.1"

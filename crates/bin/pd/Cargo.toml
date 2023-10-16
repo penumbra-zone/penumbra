@@ -84,7 +84,7 @@ regex = "1.5"
 reqwest = { version = "0.11", features = ["json"] }
 prost-types = "0.12"
 pbjson-types = "0.5"
-tonic = "0.9"
+tonic = "0.10"
 tonic-web = "0.9.0"
 tonic-reflection = "0.9.0"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "ansi"] }

@@ -38,7 +38,7 @@ url = { version = "2", features = ["serde"] }
 http = "0.2.9"
 http-body = "0.4.5"
 tower = "0.4.0"
-tonic = "0.9"
+tonic = "0.10"
 tonic-web = "0.9.0"
 tonic-reflection = "0.9.0"
 bytes = { version = "1", features = ["serde"] }

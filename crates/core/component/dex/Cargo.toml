@@ -82,7 +82,7 @@ regex = "1.8.1"
 
 # Component dependencies
 tokio = { version = "1.3", features = ["full"], optional = true }
-tonic = { version = "0.9", optional = true }
+tonic = { version = "0.10", optional = true }
 
 [dev-dependencies]
 proptest = "1"

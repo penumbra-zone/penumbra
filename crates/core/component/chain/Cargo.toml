@@ -33,7 +33,7 @@ async-trait = "0.1.52"
 tracing = "0.1"
 
 # Component dependencies
-tonic = { version = "0.9", optional = true }
+tonic = { version = "0.10", optional = true }
 tokio = { version = "1", optional = true }
 
 [features]
