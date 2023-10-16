@@ -1,5 +1,28 @@
 # Transaction Signing
 
+In a transparent blockchain, a signer can inspect the transaction to be signed to
+validate the contents are what the signer expects. However, in a shielded
+blockchain, the contents of the transaction are opaque. Ideally, using a private
+blockchain would enable a user to sign a transaction while also understanding
+what they are signing.
+
+To avoid the blind signing problem, in the Penumbra protocol we allow the user
+to review a description of the transaction - the `TransactionPlan` - prior to
+signing. The `TransactionPlan` contains a description of all details of the proposed transaction, including a plan of each action in a transparent
+form, the fee specified, the chain ID, and so on. From this plan, we authorize the and build the transaction. This has the additional advantage of allowing the signer to authorize the
+transaction while the computationally-intensive Zero-Knowledge
+Proofs (ZKPs) are generated as part of the transaction build process.
+
+The signing process first takes a `TransactionPlan` and returns
+the `AuthorizationData`, essentially a bundle of signatures over
+the *effect hash*, which can be computed directly from the plan data. You can
+read more about the details of the effect hash computation below. 
+
+The building process takes the `TransactionPlan`, generates the proofs, and puts the `Transaction` together with dummy signatures, that can be filled in once the
+signatures from the `AuthorizationData` are ready[^1]. The Penumbra
+protocol was designed to only require the custodian, e.g. the hardware wallet
+environment, to do signing, as the generation of ZKPs can be done without access to signing keys, requiring only witness data and viewing keys.
+
 Transactions are signed used the [`decaf377-rdsa` construction](../crypto/decaf377-rdsa.md). As described briefly in that section, there are two signature domains used in Penumbra: `SpendAuth` signatures and `Binding` signatures.
 
 ## `SpendAuth` Signatures
@@ -17,7 +40,7 @@ where the message to be signed is the *effect hash* of the entire transaction
 ## Effect Hash
 
 The effect hash is computed over the *effecting data* of the transaction, which following
-the terminology used in Zcash[^1]:
+the terminology used in Zcash[^2]:
 
 > "Effecting data" is any data within a transaction that contributes to the effects of applying the transaction to the global state (results in previously-spendable coins or notes becoming spent, creates newly-spendable coins or notes, causes the root of a commitment tree to change, etc.).
 
@@ -109,4 +132,7 @@ The `Binding` signature is computed using the `decaf377-rdsa` `Sign` algorithm
 where the message to be signed is the *auth hash* as described above, and the
 `decaf377-rdsa` domain is `Binding`. The binding signing key is computed using the random blinding factors for each balance commitment.
 
-[1]: https://github.com/zcash/zips/issues/651
+[^1]: At this final stage we also generate the last signature: the binding signature, which can only be added
+once the rest of the transaction is ready since it is computed over the proto-encoded `TransactionBody`. 
+
+[^2]: https://github.com/zcash/zips/issues/651
