@@ -32,10 +32,12 @@ fn to_bytes<T: CanonicalSerialize>(t: &T) -> Result<Vec<u8>> {
     Ok(out)
 }
 
-fn to_bytes_uncompressed<T: CanonicalSerialize>(t: &T) -> Result<Vec<u8>> {
-    let mut out = Vec::new();
-    t.serialize_uncompressed(&mut out)?;
-    Ok(out)
+fn from_bytes<T: CanonicalDeserialize>(data: &[u8]) -> Result<T> {
+    Ok(T::deserialize_uncompressed(data)?)
+}
+
+fn from_bytes_unchecked<T: CanonicalDeserialize>(data: &[u8]) -> Result<T> {
+    Ok(T::deserialize_uncompressed_unchecked(data)?)
 }
 
 pub const NUM_CIRCUITS: usize = 7;
@@ -97,13 +99,13 @@ impl TryFrom<pb::CeremonyCrs> for Phase2RawCeremonyCRS {
 
     fn try_from(value: pb::CeremonyCrs) -> std::result::Result<Self, Self::Error> {
         Ok(Self([
-            Phase2RawCRSElements::deserialize_compressed(value.spend.as_slice())?,
-            Phase2RawCRSElements::deserialize_compressed(value.output.as_slice())?,
-            Phase2RawCRSElements::deserialize_compressed(value.delegator_vote.as_slice())?,
-            Phase2RawCRSElements::deserialize_compressed(value.undelegate_claim.as_slice())?,
-            Phase2RawCRSElements::deserialize_compressed(value.swap.as_slice())?,
-            Phase2RawCRSElements::deserialize_compressed(value.swap_claim.as_slice())?,
-            Phase2RawCRSElements::deserialize_compressed(value.nullifer_derivation_crs.as_slice())?,
+            from_bytes::<Phase2RawCRSElements>(value.spend.as_slice())?,
+            from_bytes::<Phase2RawCRSElements>(value.output.as_slice())?,
+            from_bytes::<Phase2RawCRSElements>(value.delegator_vote.as_slice())?,
+            from_bytes::<Phase2RawCRSElements>(value.undelegate_claim.as_slice())?,
+            from_bytes::<Phase2RawCRSElements>(value.swap.as_slice())?,
+            from_bytes::<Phase2RawCRSElements>(value.swap_claim.as_slice())?,
+            from_bytes::<Phase2RawCRSElements>(value.nullifer_derivation_crs.as_slice())?,
         ]))
     }
 }
@@ -195,7 +197,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
                         .spend
                         .as_slice(),
                 )?,
-                new_elements: Phase2RawCRSElements::deserialize_compressed(
+                new_elements: from_bytes::<Phase2RawCRSElements>(
                     value
                         .updated
                         .as_ref()
@@ -203,7 +205,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
                         .spend
                         .as_slice(),
                 )?,
-                linking_proof: DLogProof::deserialize_compressed(
+                linking_proof: from_bytes::<DLogProof>(
                     value
                         .update_proofs
                         .as_ref()
@@ -221,7 +223,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
                         .output
                         .as_slice(),
                 )?,
-                new_elements: Phase2RawCRSElements::deserialize_compressed(
+                new_elements: from_bytes::<Phase2RawCRSElements>(
                     value
                         .updated
                         .as_ref()
@@ -229,7 +231,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
                         .output
                         .as_slice(),
                 )?,
-                linking_proof: DLogProof::deserialize_compressed(
+                linking_proof: from_bytes::<DLogProof>(
                     value
                         .update_proofs
                         .as_ref()
@@ -247,7 +249,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
                         .delegator_vote
                         .as_slice(),
                 )?,
-                new_elements: Phase2RawCRSElements::deserialize_compressed(
+                new_elements: from_bytes::<Phase2RawCRSElements>(
                     value
                         .updated
                         .as_ref()
@@ -255,7 +257,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
                         .delegator_vote
                         .as_slice(),
                 )?,
-                linking_proof: DLogProof::deserialize_compressed(
+                linking_proof: from_bytes::<DLogProof>(
                     value
                         .update_proofs
                         .as_ref()
@@ -273,7 +275,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
                         .undelegate_claim
                         .as_slice(),
                 )?,
-                new_elements: Phase2RawCRSElements::deserialize_compressed(
+                new_elements: from_bytes::<Phase2RawCRSElements>(
                     value
                         .updated
                         .as_ref()
@@ -281,7 +283,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
                         .undelegate_claim
                         .as_slice(),
                 )?,
-                linking_proof: DLogProof::deserialize_compressed(
+                linking_proof: from_bytes::<DLogProof>(
                     value
                         .update_proofs
                         .as_ref()
@@ -299,7 +301,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
                         .swap
                         .as_slice(),
                 )?,
-                new_elements: Phase2RawCRSElements::deserialize_compressed(
+                new_elements: from_bytes::<Phase2RawCRSElements>(
                     value
                         .updated
                         .as_ref()
@@ -307,7 +309,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
                         .swap
                         .as_slice(),
                 )?,
-                linking_proof: DLogProof::deserialize_compressed(
+                linking_proof: from_bytes::<DLogProof>(
                     value
                         .update_proofs
                         .as_ref()
@@ -325,7 +327,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
                         .swap_claim
                         .as_slice(),
                 )?,
-                new_elements: Phase2RawCRSElements::deserialize_compressed(
+                new_elements: from_bytes::<Phase2RawCRSElements>(
                     value
                         .updated
                         .as_ref()
@@ -333,7 +335,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
                         .swap_claim
                         .as_slice(),
                 )?,
-                linking_proof: DLogProof::deserialize_compressed(
+                linking_proof: from_bytes::<DLogProof>(
                     value
                         .update_proofs
                         .as_ref()
@@ -351,7 +353,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
                         .nullifer_derivation_crs
                         .as_slice(),
                 )?,
-                new_elements: Phase2RawCRSElements::deserialize_compressed(
+                new_elements: from_bytes::<Phase2RawCRSElements>(
                     value
                         .updated
                         .as_ref()
@@ -359,7 +361,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
                         .nullifer_derivation_crs
                         .as_slice(),
                 )?,
-                linking_proof: DLogProof::deserialize_compressed(
+                linking_proof: from_bytes::<DLogProof>(
                     value
                         .update_proofs
                         .as_ref()
@@ -478,19 +480,13 @@ impl Phase1RawCeremonyCRS {
     /// This should only be used when the data is known to be from a trusted source.
     pub fn unchecked_from_protobuf(value: pb::CeremonyCrs) -> anyhow::Result<Self> {
         Ok(Self([
-            Phase1RawCRSElements::deserialize_uncompressed_unchecked(value.spend.as_slice())?,
-            Phase1RawCRSElements::deserialize_uncompressed_unchecked(value.output.as_slice())?,
-            Phase1RawCRSElements::deserialize_uncompressed_unchecked(
-                value.delegator_vote.as_slice(),
-            )?,
-            Phase1RawCRSElements::deserialize_uncompressed_unchecked(
-                value.undelegate_claim.as_slice(),
-            )?,
-            Phase1RawCRSElements::deserialize_uncompressed_unchecked(value.swap.as_slice())?,
-            Phase1RawCRSElements::deserialize_uncompressed_unchecked(value.swap_claim.as_slice())?,
-            Phase1RawCRSElements::deserialize_uncompressed_unchecked(
-                value.nullifer_derivation_crs.as_slice(),
-            )?,
+            from_bytes_unchecked::<Phase1RawCRSElements>(value.spend.as_slice())?,
+            from_bytes_unchecked::<Phase1RawCRSElements>(value.output.as_slice())?,
+            from_bytes_unchecked::<Phase1RawCRSElements>(value.delegator_vote.as_slice())?,
+            from_bytes_unchecked::<Phase1RawCRSElements>(value.undelegate_claim.as_slice())?,
+            from_bytes_unchecked::<Phase1RawCRSElements>(value.swap.as_slice())?,
+            from_bytes_unchecked::<Phase1RawCRSElements>(value.swap_claim.as_slice())?,
+            from_bytes_unchecked::<Phase1RawCRSElements>(value.nullifer_derivation_crs.as_slice())?,
         ]))
     }
 }
@@ -500,13 +496,13 @@ impl TryInto<pb::CeremonyCrs> for Phase1RawCeremonyCRS {
 
     fn try_into(self) -> Result<pb::CeremonyCrs> {
         Ok(pb::CeremonyCrs {
-            spend: to_bytes_uncompressed(&self.0[0])?,
-            output: to_bytes_uncompressed(&self.0[1])?,
-            delegator_vote: to_bytes_uncompressed(&self.0[2])?,
-            undelegate_claim: to_bytes_uncompressed(&self.0[3])?,
-            swap: to_bytes_uncompressed(&self.0[4])?,
-            swap_claim: to_bytes_uncompressed(&self.0[5])?,
-            nullifer_derivation_crs: to_bytes_uncompressed(&self.0[6])?,
+            spend: to_bytes(&self.0[0])?,
+            output: to_bytes(&self.0[1])?,
+            delegator_vote: to_bytes(&self.0[2])?,
+            undelegate_claim: to_bytes(&self.0[3])?,
+            swap: to_bytes(&self.0[4])?,
+            swap_claim: to_bytes(&self.0[5])?,
+            nullifer_derivation_crs: to_bytes(&self.0[6])?,
         })
     }
 }
@@ -516,15 +512,13 @@ impl TryFrom<pb::CeremonyCrs> for Phase1RawCeremonyCRS {
 
     fn try_from(value: pb::CeremonyCrs) -> std::result::Result<Self, Self::Error> {
         Ok(Self([
-            Phase1RawCRSElements::deserialize_uncompressed(value.spend.as_slice())?,
-            Phase1RawCRSElements::deserialize_uncompressed(value.output.as_slice())?,
-            Phase1RawCRSElements::deserialize_uncompressed(value.delegator_vote.as_slice())?,
-            Phase1RawCRSElements::deserialize_uncompressed(value.undelegate_claim.as_slice())?,
-            Phase1RawCRSElements::deserialize_uncompressed(value.swap.as_slice())?,
-            Phase1RawCRSElements::deserialize_uncompressed(value.swap_claim.as_slice())?,
-            Phase1RawCRSElements::deserialize_uncompressed(
-                value.nullifer_derivation_crs.as_slice(),
-            )?,
+            from_bytes::<Phase1RawCRSElements>(value.spend.as_slice())?,
+            from_bytes::<Phase1RawCRSElements>(value.output.as_slice())?,
+            from_bytes::<Phase1RawCRSElements>(value.delegator_vote.as_slice())?,
+            from_bytes::<Phase1RawCRSElements>(value.undelegate_claim.as_slice())?,
+            from_bytes::<Phase1RawCRSElements>(value.swap.as_slice())?,
+            from_bytes::<Phase1RawCRSElements>(value.swap_claim.as_slice())?,
+            from_bytes::<Phase1RawCRSElements>(value.nullifer_derivation_crs.as_slice())?,
         ]))
     }
 }
@@ -616,7 +610,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
                         .spend
                         .as_slice(),
                 )?,
-                new_elements: Phase1RawCRSElements::deserialize_compressed(
+                new_elements: from_bytes::<Phase1RawCRSElements>(
                     value
                         .updated
                         .as_ref()
@@ -624,7 +618,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
                         .spend
                         .as_slice(),
                 )?,
-                linking_proof: LinkingProof::deserialize_compressed(
+                linking_proof: from_bytes::<LinkingProof>(
                     value
                         .update_proofs
                         .as_ref()
@@ -642,7 +636,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
                         .output
                         .as_slice(),
                 )?,
-                new_elements: Phase1RawCRSElements::deserialize_compressed(
+                new_elements: from_bytes::<Phase1RawCRSElements>(
                     value
                         .updated
                         .as_ref()
@@ -650,7 +644,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
                         .output
                         .as_slice(),
                 )?,
-                linking_proof: LinkingProof::deserialize_compressed(
+                linking_proof: from_bytes::<LinkingProof>(
                     value
                         .update_proofs
                         .as_ref()
@@ -668,7 +662,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
                         .delegator_vote
                         .as_slice(),
                 )?,
-                new_elements: Phase1RawCRSElements::deserialize_compressed(
+                new_elements: from_bytes::<Phase1RawCRSElements>(
                     value
                         .updated
                         .as_ref()
@@ -676,7 +670,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
                         .delegator_vote
                         .as_slice(),
                 )?,
-                linking_proof: LinkingProof::deserialize_compressed(
+                linking_proof: from_bytes::<LinkingProof>(
                     value
                         .update_proofs
                         .as_ref()
@@ -694,7 +688,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
                         .undelegate_claim
                         .as_slice(),
                 )?,
-                new_elements: Phase1RawCRSElements::deserialize_compressed(
+                new_elements: from_bytes::<Phase1RawCRSElements>(
                     value
                         .updated
                         .as_ref()
@@ -702,7 +696,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
                         .undelegate_claim
                         .as_slice(),
                 )?,
-                linking_proof: LinkingProof::deserialize_compressed(
+                linking_proof: from_bytes::<LinkingProof>(
                     value
                         .update_proofs
                         .as_ref()
@@ -720,7 +714,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
                         .swap
                         .as_slice(),
                 )?,
-                new_elements: Phase1RawCRSElements::deserialize_compressed(
+                new_elements: from_bytes::<Phase1RawCRSElements>(
                     value
                         .updated
                         .as_ref()
@@ -728,7 +722,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
                         .swap
                         .as_slice(),
                 )?,
-                linking_proof: LinkingProof::deserialize_compressed(
+                linking_proof: from_bytes::<LinkingProof>(
                     value
                         .update_proofs
                         .as_ref()
@@ -746,7 +740,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
                         .swap_claim
                         .as_slice(),
                 )?,
-                new_elements: Phase1RawCRSElements::deserialize_compressed(
+                new_elements: from_bytes::<Phase1RawCRSElements>(
                     value
                         .updated
                         .as_ref()
@@ -754,7 +748,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
                         .swap_claim
                         .as_slice(),
                 )?,
-                linking_proof: LinkingProof::deserialize_compressed(
+                linking_proof: from_bytes::<LinkingProof>(
                     value
                         .update_proofs
                         .as_ref()
@@ -772,7 +766,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
                         .nullifer_derivation_crs
                         .as_slice(),
                 )?,
-                new_elements: Phase1RawCRSElements::deserialize_compressed(
+                new_elements: from_bytes::<Phase1RawCRSElements>(
                     value
                         .updated
                         .as_ref()
@@ -780,7 +774,7 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
                         .nullifer_derivation_crs
                         .as_slice(),
                 )?,
-                linking_proof: LinkingProof::deserialize_compressed(
+                linking_proof: from_bytes::<LinkingProof>(
                     value
                         .update_proofs
                         .as_ref()
@@ -873,11 +867,11 @@ pub struct AllExtraTransitionInformation([ExtraTransitionInformation; NUM_CIRCUI
 
 impl AllExtraTransitionInformation {
     pub fn to_bytes(&self) -> Result<Vec<u8>> {
-        to_bytes_uncompressed(self)
+        to_bytes(self)
     }
 
     pub fn from_bytes(data: &[u8]) -> Result<Self> {
-        Ok(Self::deserialize_uncompressed_unchecked(data)?)
+        Ok(from_bytes_unchecked::<Self>(data)?)
     }
 }
 
