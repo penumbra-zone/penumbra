@@ -312,10 +312,14 @@ impl From<State> for pb::PositionState {
 impl TryFrom<pb::PositionState> for State {
     type Error = anyhow::Error;
     fn try_from(v: pb::PositionState) -> Result<Self, Self::Error> {
-        let Some(position_state) = pb::position_state::PositionStateEnum::from_i32(v.state) else {
-            // maps to an invalid position state
-            anyhow::bail!("invalid position state!")
-        };
+        let position_state =
+            pb::position_state::PositionStateEnum::try_from(v.state).map_err(|e| {
+                anyhow::anyhow!(
+                    "invalid position state enum value: {}, error: {}",
+                    v.state,
+                    e
+                )
+            })?;
 
         match position_state {
             pb::position_state::PositionStateEnum::Opened => Ok(State::Opened),
