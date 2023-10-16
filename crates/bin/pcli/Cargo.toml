@@ -49,7 +49,7 @@ tendermint = { version = "0.34.0", features = ["rust-crypto"] }
 jmt = "0.9"
 
 # External dependencies
-ibc-types = { version = "0.6.3", features = ["std", "with_serde"] }
+ibc-types = { version = "0.7.0", features = ["std", "with_serde"] }
 
 ibc-proto = { version = "0.37.0" }
 ark-ff = { version = "0.4", default-features = false }
