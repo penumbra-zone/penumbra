@@ -58,7 +58,7 @@ tendermint-light-client-verifier = "0.34.0"
 ibc-types = { version = "0.7.0" }
 
 ibc-proto = { version = "0.37.0", default-features = false, features = ["server"] }
-prost = "0.11"
+prost = "0.12"
 toml = "0.5"
 # We don't need this crate at all, but its upstream published a breaking change as
 # 0.7.1 (also prost-related), and depending on an exact version here will exclude
@@ -82,7 +82,7 @@ tower-service = "0.3.2"
 tracing = "0.1"
 regex = "1.5"
 reqwest = { version = "0.11", features = ["json"] }
-prost-types = "0.11"
+prost-types = "0.12"
 pbjson-types = "0.5"
 tonic = "0.9"
 tonic-web = "0.9.0"
