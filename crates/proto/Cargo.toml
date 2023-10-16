@@ -26,10 +26,10 @@ futures = "0.3"
 pbjson = "0.5"
 pbjson-types = "0.5"
 
-ibc-proto = { version = "0.33.0", default-features = false, features = ["std"] }
+ibc-proto = { version = "0.37.0", default-features = false, features = ["std"] }
 
 ics23 = "0.10.1"
-tendermint = "0.33.0"
+tendermint = "0.34.0"
 
 [build-dependencies]
 anyhow = "1"

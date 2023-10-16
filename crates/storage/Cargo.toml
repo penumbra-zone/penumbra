@@ -28,7 +28,7 @@ smallvec = { version = "1.10", features = ["union", "const_generics"] }
 
 # Tendermint/IBC crates 
 ics23 = "0.10.1"
-tendermint = { version = "0.33.0", default-features = false }
+tendermint = { version = "0.34.0", default-features = false }
 borsh = "0.10.3"
 sha2 = "0.10.6"
 
@@ -37,7 +37,7 @@ tonic = { version = "0.9", optional = true }
 prost = { version = "0.11", optional = true }
 serde = { version = "1", optional = true }
 pbjson = { version = "0.5", optional = true }
-ibc-proto = { version = "0.33.0", default-features = false, optional = true }
+ibc-proto = { version = "0.37.0", default-features = false, optional = true }
 
 [dev-dependencies]
 tempfile = "3.3.0"
