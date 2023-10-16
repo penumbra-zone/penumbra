@@ -51,7 +51,7 @@ parking_lot = "0.12"
 clap = { version = "3", features = ["derive", "env"] }
 camino = "1"
 async-trait = "0.1"
-tendermint = "0.33.0"
+tendermint = "0.34.0"
 sha2 = "0.10.1"
 toml = "0.5"
 ed25519-consensus = "2.1"
@@ -63,7 +63,7 @@ tempfile = "3.3.0"
 assert_cmd = "2.0"
 base64 = "0.20"
 ibc-types = { version = "0.6.3" }
-ibc-proto = { version = "0.33.0", default-features = false, features = ["server"] }
+ibc-proto = { version = "0.37.0", default-features = false, features = ["server"] }
 
 [build-dependencies]
 vergen = "5"
