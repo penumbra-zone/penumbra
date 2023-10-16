@@ -45,7 +45,8 @@ impl MsgHandler for MsgUpdateClient {
 
             let trusted_client_state = client_state;
 
-            let untrusted_header = ics02_validation::get_tendermint_header(self.header.clone())?;
+            let untrusted_header =
+                ics02_validation::get_tendermint_header(self.client_message.clone())?;
 
             header_revision_matches_client_state(&trusted_client_state, &untrusted_header)?;
             header_height_is_consistent(&untrusted_header)?;
@@ -159,7 +160,7 @@ impl MsgHandler for MsgUpdateClient {
 }
 
 fn header_is_tendermint(msg: &MsgUpdateClient) -> anyhow::Result<()> {
-    if ics02_validation::is_tendermint_header_state(&msg.header) {
+    if ics02_validation::is_tendermint_header_state(&msg.client_message) {
         Ok(())
     } else {
         Err(anyhow::anyhow!("MsgUpdateClient: not a tendermint header"))
@@ -170,7 +171,7 @@ async fn update_is_already_committed<S: StateRead>(
     state: S,
     msg: &MsgUpdateClient,
 ) -> anyhow::Result<bool> {
-    let untrusted_header = ics02_validation::get_tendermint_header(msg.header.clone())?;
+    let untrusted_header = ics02_validation::get_tendermint_header(msg.client_message.clone())?;
     let client_id = msg.client_id.clone();
 
     // check if we already have a consensus state for this height, if we do, check that it is
