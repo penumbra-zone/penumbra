@@ -33,7 +33,7 @@ penumbra-view = { path = "../../crates/view/" }
 rand = "0.8"
 tokio = { version = "1.22", features = ["full"] }
 tokio-stream = "0.1"
-tonic = "0.9"
+tonic = "0.10"
 tonic-web = "0.9"
 tower = "0.4"
 tracing = "0.1"

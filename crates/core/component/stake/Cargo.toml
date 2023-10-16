@@ -78,7 +78,7 @@ rand_chacha = "0.3"
 # Used by component implementation
 async-trait = { version = "0.1.52", optional = true }
 tokio = { version = "1.21.1", features = ["full", "tracing"], optional = true }
-tonic = { version = "0.9", optional = true }
+tonic = { version = "0.10", optional = true }
 im = { version = "15.1.0", optional = true }
 futures = { version = "0.3", optional = true }
 metrics = { version = "0.19.0", optional = true }

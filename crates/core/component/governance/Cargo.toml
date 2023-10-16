@@ -75,7 +75,7 @@ rand_chacha = "0.3"
 
 # Component dependencies
 tokio = { version = "1.21.1", features = ["full", "tracing"], optional = true }
-tonic = { version = "0.9", optional = true }
+tonic = { version = "0.10", optional = true }
 
 
 [dev-dependencies]

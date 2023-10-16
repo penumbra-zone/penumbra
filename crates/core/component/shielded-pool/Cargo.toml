@@ -73,7 +73,7 @@ once_cell = "1.8"
 hex = "0.4"
 
 # Component dependencies
-tonic = { version = "0.9", optional = true }
+tonic = { version = "0.10", optional = true }
 
 
 [dev-dependencies]
