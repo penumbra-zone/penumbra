@@ -3,9 +3,9 @@ use camino::Utf8Path;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proof_setup::all::{
-    AllExtraTransitionInformation, Phase1CeremonyCRS, Phase1RawCeremonyCRS,
-    Phase1RawCeremonyContribution, Phase2CeremonyCRS, Phase2CeremonyContribution,
-    Phase2RawCeremonyCRS, Phase2RawCeremonyContribution,
+    AllExtraTransitionInformation, Phase1CeremonyCRS, Phase1CeremonyContribution,
+    Phase1RawCeremonyCRS, Phase1RawCeremonyContribution, Phase2CeremonyCRS,
+    Phase2CeremonyContribution, Phase2RawCeremonyCRS, Phase2RawCeremonyContribution,
 };
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::{
@@ -19,7 +19,7 @@ use r2d2_sqlite::{
 };
 use tokio::task::spawn_blocking;
 
-use crate::penumbra_knower::PenumbraKnower;
+use crate::{penumbra_knower::PenumbraKnower, phase::PhaseMarker};
 
 const MIN_BID_AMOUNT_U64: u64 = 1u64;
 const MAX_STRIKES: u64 = 3u64;
@@ -165,6 +165,7 @@ impl Storage {
         &self,
         knower: &PenumbraKnower,
         address: &Address,
+        marker: PhaseMarker,
     ) -> Result<ContributionAllowed> {
         // Criteria:
         // - Bid more than min amount
@@ -177,13 +178,13 @@ impl Storage {
         let has_contributed = {
             let mut conn = self.pool.get()?;
             let tx = conn.transaction()?;
-            tx.query_row(
-                "SELECT 1 FROM phase2_contributions WHERE address = ?1",
-                [address.to_vec()],
-                |_| Ok(()),
-            )
-            .optional()?
-            .is_some()
+            let query = match marker {
+                PhaseMarker::P1 => "SELECT 1 FROM phase1_contributions WHERE address = ?1",
+                PhaseMarker::P2 => "SELECT 1 FROM phase2_contributions WHERE address = ?1",
+            };
+            tx.query_row(query, [address.to_vec()], |_| Ok(()))
+                .optional()?
+                .is_some()
         };
         if has_contributed {
             return Ok(ContributionAllowed::AlreadyContributed);
@@ -248,7 +249,26 @@ impl Storage {
         Ok(Some(crs))
     }
 
-    pub async fn commit_contribution(
+    pub async fn phase1_commit_contribution(
+        &self,
+        contributor: Address,
+        contribution: Phase1CeremonyContribution,
+    ) -> Result<()> {
+        let mut conn = self.pool.get()?;
+        let tx = conn.transaction()?;
+        let contributor_bytes = contributor.to_vec();
+        tx.execute(
+            "INSERT INTO phase1_contributions VALUES(NULL, 0, ?1, ?2)",
+            [
+                PBContribution::try_from(contribution)?.encode_to_vec(),
+                contributor_bytes,
+            ],
+        )?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub async fn phase2_commit_contribution(
         &self,
         contributor: Address,
         contribution: Phase2CeremonyContribution,
@@ -267,20 +287,22 @@ impl Storage {
         Ok(())
     }
 
-    pub async fn current_slot(&self) -> Result<u64> {
+    pub async fn current_slot(&self, marker: PhaseMarker) -> Result<u64> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
+        let query = match marker {
+            PhaseMarker::P1 => "SELECT MAX(slot) from phase1_contributions",
+            PhaseMarker::P2 => "SELECT MAX(slot) from phase2_contributions",
+        };
         let out = tx
-            .query_row("SELECT MAX(slot) FROM phase2_contributions", [], |row| {
-                row.get::<usize, Option<u64>>(0)
-            })?
+            .query_row(query, [], |row| row.get::<usize, Option<u64>>(0))?
             .unwrap_or(0);
         Ok(out)
     }
 
     /// Get Phase 1 root.
     #[allow(dead_code)]
-    pub async fn phase_1_root(&self) -> Result<Phase1CeremonyCRS> {
+    pub async fn phase1_root(&self) -> Result<Phase1CeremonyCRS> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let data = tx.query_row(
@@ -295,7 +317,7 @@ impl Storage {
     }
 
     /// Get Phase 2 root.
-    pub async fn phase_2_root(&self) -> Result<Phase2CeremonyCRS> {
+    pub async fn phase2_root(&self) -> Result<Phase2CeremonyCRS> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let data = tx.query_row(

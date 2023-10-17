@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
-use penumbra_proof_setup::all::{Phase2CeremonyCRS, Phase2RawCeremonyContribution};
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::{
         self as pb,
@@ -14,6 +13,8 @@ use penumbra_proto::{
 };
 use tokio::sync::mpsc;
 use tonic::{Status, Streaming};
+
+use crate::phase::Phase;
 
 pub struct Participant {
     address: Address,
@@ -63,14 +64,14 @@ impl Participant {
     }
 
     #[tracing::instrument(skip(self, parent))]
-    pub async fn contribute(
+    pub async fn contribute<P: Phase>(
         &mut self,
-        parent: &Phase2CeremonyCRS,
-    ) -> Result<Option<Phase2RawCeremonyContribution>> {
+        parent: &P::CRS,
+    ) -> Result<Option<P::RawContribution>> {
         self.tx
             .send(Ok(ParticipateResponse {
                 msg: Some(ResponseMsg::ContributeNow(ContributeNow {
-                    parent: Some(parent.clone().try_into()?),
+                    parent: Some(P::serialize_crs(parent.clone())?),
                 })),
             }))
             .await?;
@@ -79,7 +80,7 @@ impl Participant {
             msg: Some(RequestMsg::Contribution(contribution)),
         }) = msg
         {
-            Ok(Some(Phase2RawCeremonyContribution::try_from(contribution)?))
+            Ok(Some(P::deserialize_contribution(contribution)?))
         } else {
             Ok(None)
         }

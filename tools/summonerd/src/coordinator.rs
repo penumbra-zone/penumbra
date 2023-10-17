@@ -7,10 +7,7 @@ use rand::rngs::OsRng;
 use tokio::sync::mpsc::{self};
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 
-use crate::{participant::Participant, storage::Storage};
-
-/// Wait time of 10 minutes
-const CONTRIBUTION_TIME_SECS: u64 = 10 * 60;
+use crate::{participant::Participant, phase::Phase, storage::Storage};
 
 struct ContributionHandler {
     storage: Storage,
@@ -40,7 +37,7 @@ impl ContributionHandler {
     }
 
     #[tracing::instrument(skip(self))]
-    pub async fn run(mut self) -> Result<()> {
+    pub async fn run<P: Phase>(mut self) -> Result<()> {
         loop {
             tracing::debug!("start of contribution handler loop");
             let (who, participant) = match self.start_contribution_rx.recv().await {
@@ -51,16 +48,20 @@ impl ContributionHandler {
                 Some((w, p)) => (w, p),
             };
             tracing::debug!(?who, "waiting for contribution");
-            self.contribute(who, participant).await?;
+            self.contribute::<P>(who, participant).await?;
             self.done_contribution_tx.send(()).await?;
         }
     }
 
     #[tracing::instrument(skip(self, participant))]
-    async fn contribute(&mut self, contributor: Address, participant: Participant) -> Result<()> {
+    async fn contribute<P: Phase>(
+        &mut self,
+        contributor: Address,
+        participant: Participant,
+    ) -> Result<()> {
         match tokio::time::timeout(
-            Duration::from_secs(CONTRIBUTION_TIME_SECS),
-            self.contribute_inner(contributor, participant),
+            Duration::from_secs(P::CONTRIBUTION_TIME_SECS),
+            self.contribute_inner::<P>(contributor, participant),
         )
         .await
         {
@@ -74,28 +75,26 @@ impl ContributionHandler {
     }
 
     #[tracing::instrument(skip(self, participant))]
-    async fn contribute_inner(
+    async fn contribute_inner<P: Phase>(
         &mut self,
         contributor: Address,
         mut participant: Participant,
     ) -> Result<()> {
-        let parent = self
-            .storage
-            .phase2_current_crs()
+        let parent = P::current_crs(&self.storage)
             .await?
-            .expect("phase2 should've been initialized by now");
-        let maybe = participant.contribute(&parent).await?;
+            .expect("the phase should've been initialized by now");
+        let maybe = participant.contribute::<P>(&parent).await?;
         if let Some(unvalidated) = maybe {
             tracing::debug!("validating contribution");
-            if let Some(contribution) =
-                unvalidated.validate(&mut OsRng, &self.storage.phase_2_root().await?)
-            {
-                if contribution.is_linked_to(&parent) {
-                    self.storage
-                        .commit_contribution(contributor, contribution)
-                        .await?;
+            if let Some(contribution) = P::validate(
+                &mut OsRng,
+                &P::fetch_root(&self.storage).await?,
+                unvalidated,
+            ) {
+                if P::is_linked_to(&contribution, &parent) {
+                    P::commit_contribution(&self.storage, contributor, contribution).await?;
                     participant
-                        .confirm(self.storage.current_slot().await?)
+                        .confirm(self.storage.current_slot(P::MARKER).await?)
                         .await?;
                     return Ok(());
                 }
@@ -181,7 +180,7 @@ impl Coordinator {
         )
     }
 
-    pub async fn run(mut self) -> Result<()> {
+    pub async fn run<P: Phase + 'static>(mut self) -> Result<()> {
         enum Event {
             NewParticipant(Participant, Amount),
             ContributionDone,
@@ -189,7 +188,7 @@ impl Coordinator {
 
         let (contribution_handler, start_contribution_tx, done_contribution_rx) =
             ContributionHandler::new(self.storage);
-        tokio::spawn(contribution_handler.run());
+        tokio::spawn(contribution_handler.run::<P>());
         // Merge the events from both being notified of new participants, and of completed
         // contributions.
         let mut stream = ReceiverStream::new(self.new_participant_rx)
