@@ -8,7 +8,8 @@ use decaf377::Fq;
 use penumbra_dex::swap_claim::SwapClaimPlan;
 use penumbra_proto::core::asset::v1alpha1::{DenomMetadata, Value};
 use penumbra_proto::core::component::chain::v1alpha1::{ChainParameters, FmdParameters};
-use penumbra_proto::core::component::fee::v1alpha1::Fee;
+use penumbra_proto::core::component::fee::v1alpha1::{Fee, GasPrices};
+use penumbra_proto::core::component::ibc::v1alpha1::Ics20Withdrawal;
 use penumbra_proto::core::keys::v1alpha1::Address;
 use penumbra_proto::core::transaction::v1alpha1::{MemoPlaintext, TransactionPlan};
 use penumbra_proto::crypto::tct::v1alpha1::StateCommitment;
@@ -48,6 +49,15 @@ impl WasmPlanner {
     pub fn expiry_height(&mut self, expiry_height: JsValue) -> Result<(), Error> {
         self.planner
             .expiry_height(serde_wasm_bindgen::from_value(expiry_height)?);
+        Ok(())
+    }
+
+    /// Set gas price
+    /// Arguments:
+    ///     gas_prices: `GasPrices`
+    pub fn set_gas_prices(&mut self, gas_prices: JsValue) -> WasmResult<()> {
+        let gas_prices_proto: GasPrices = serde_wasm_bindgen::from_value(gas_prices)?;
+        self.planner.set_gas_prices(gas_prices_proto.try_into()?);
         Ok(())
     }
 
@@ -145,19 +155,22 @@ impl WasmPlanner {
         Ok(())
     }
 
+    /// Add ICS20 withdrawal to plan
+    /// Arguments:
+    ///     withdrawal: `Ics20Withdrawal`
+    pub fn ics20_withdrawal(&mut self, withdrawal: JsValue) -> WasmResult<()> {
+        let withdrawal_proto: Ics20Withdrawal = serde_wasm_bindgen::from_value(withdrawal)?;
+        self.planner.ics20_withdrawal(withdrawal_proto.try_into()?);
+        Ok(())
+    }
+
     /// Build transaction plan
     /// Arguments:
     ///     self_address: `Address`
     /// Returns: `TransactionPlan`
-    pub async fn plan(&mut self, self_address: JsValue) -> Result<JsValue, Error> {
+    pub async fn plan(&mut self, self_address: JsValue) -> WasmResult<JsValue> {
         let self_address_proto: Address = serde_wasm_bindgen::from_value(self_address)?;
-        let plan = self.plan_inner(self_address_proto).await?;
-        serde_wasm_bindgen::to_value(&plan)
-    }
-}
 
-impl WasmPlanner {
-    async fn plan_inner(&mut self, self_address: Address) -> WasmResult<TransactionPlan> {
         let chain_params_proto: ChainParameters = self
             .storage
             .get_chain_parameters()
@@ -168,6 +181,12 @@ impl WasmPlanner {
             .get_fmd_parameters()
             .await?
             .expect("No found fmd");
+
+        // Calculate the gas that needs to be paid for the transaction based on the configured gas prices.
+        // Note that _paying the fee might incur an additional `Spend` action_, thus increasing the fee,
+        // so we slightly overpay here and then capture the excess as change later during `plan_with_spendable_and_votable_notes`.
+        // Add the fee to the planner's internal balance.
+        self.planner.add_gas_fees();
 
         let mut spendable_notes = Vec::new();
 
@@ -186,11 +205,11 @@ impl WasmPlanner {
                 &fmd_params_proto.try_into()?,
                 spendable_notes,
                 Vec::new(),
-                self_address.try_into()?,
+                self_address_proto.try_into()?,
             )?;
 
         let plan_proto: TransactionPlan = plan.to_proto();
-
-        Ok(plan_proto)
+        let result = serde_wasm_bindgen::to_value(&plan_proto)?;
+        Ok(result)
     }
 }

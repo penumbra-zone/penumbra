@@ -5789,6 +5789,7 @@ dependencies = [
  "penumbra-dex",
  "penumbra-fee",
  "penumbra-governance",
+ "penumbra-ibc",
  "penumbra-keys",
  "penumbra-num",
  "penumbra-proto",
