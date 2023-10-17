@@ -6567,12 +6567,12 @@ impl<'de> serde::Deserialize<'de> for WalletIdRequest {
                 formatter.write_str("struct penumbra.view.v1alpha1.WalletIdRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<WalletIdRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<WalletIdRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                while map.next_key::<GeneratedField>()?.is_some() {
-                    let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
                 Ok(WalletIdRequest {
                 })
@@ -6650,18 +6650,18 @@ impl<'de> serde::Deserialize<'de> for WalletIdResponse {
                 formatter.write_str("struct penumbra.view.v1alpha1.WalletIdResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<WalletIdResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<WalletIdResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut wallet_id__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::WalletId => {
                             if wallet_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("walletId"));
                             }
-                            wallet_id__ = map.next_value()?;
+                            wallet_id__ = map_.next_value()?;
                         }
                     }
                 }
