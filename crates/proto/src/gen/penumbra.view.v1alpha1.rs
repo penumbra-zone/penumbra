@@ -2626,7 +2626,9 @@ pub mod view_protocol_service_server {
                             request: tonic::Request<super::WalletIdRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
-                            let fut = async move { (*inner).wallet_id(request).await };
+                            let fut = async move {
+                                <T as ViewProtocolService>::wallet_id(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
