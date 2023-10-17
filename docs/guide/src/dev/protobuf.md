@@ -17,12 +17,18 @@ The Rust code files are generated with our own tooling, located at `tools/proto-
 
 The `protoc` tool is required to generate our protobuf specs via `tools/proto-compiler`.
 We mandate the use of a specific major version of the `protoc` tool, to make outputs
-predictable. Currently, the supported version is `23.x`. Obtain the most recent
+predictable. Currently, the supported version is `24.x`. Obtain the most recent
 pre-compiled binary from the [`protoc` website] for that major version.
 After installing, run `protoc --version` and confirm you're running
-at least `23.3` (or newer). Don't install `protoc` from package managers
+at least `24.4` (or newer). Don't install `protoc` from package managers
 such as `apt`, as those versions are often outdated, and will not work
 with Penumbra.
+
+To install the protoc tool from the zip file, extract it to a directory on your PATH:
+
+```shell
+unzip protoc-24.4-linux-x86_64.zip -d ~/.local/
+```
 
 ## Installing buf
 
@@ -30,7 +36,7 @@ The `buf` tool is required to update lockfiles used for version management in
 the [Buf Schema Registry](https://buf.build.penumbra-zone/penumbra). Visit
 the [buf download page](https://buf.build/docs/installation/) to obtain a version.
 After installing, run `buf --version` and confirm you're running at least
-`1.17.0` (or newer).
+`1.27.0` (or newer).
 
 ## Building protos
 
