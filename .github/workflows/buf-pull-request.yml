@@ -55,7 +55,7 @@ jobs:
           toolchain: stable
           override: false
 
-      - uses: bufbuild/buf-setup-action@v1
+      - uses: bufbuild/buf-setup-action@v1.27.1
         with:
           buf_api_token: ${{ secrets.BUF_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -68,7 +68,7 @@ jobs:
           curl -sSfL -O https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
           unzip protoc-${PROTOC_VERSION}-linux-x86_64.zip -d $HOME/.local
         env:
-          PROTOC_VERSION: "23.3"
+          PROTOC_VERSION: "24.4"
 
       # We exclude the proto_descriptor file from diff inspection, since
       # different versions of `protoc` can generate non-substantive changes,
