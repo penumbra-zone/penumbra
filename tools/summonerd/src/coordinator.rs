@@ -145,8 +145,20 @@ impl ParticipantQueue {
         self.participants.remove(address)
     }
 
-    async fn inform(&mut self, ranked: &[Address], contributor_bid: Amount) {
+    /// Inform participants of their position in the queue.
+    ///
+    /// If filter is not None, only one participant will be informed.
+    async fn inform(
+        &mut self,
+        ranked: &[Address],
+        contributor_bid: Amount,
+        filter: Option<Address>,
+    ) {
         for (i, address) in ranked.iter().enumerate() {
+            match filter {
+                Some(filter) if filter == *address => continue,
+                _ => {}
+            }
             let (connection, bid) = self
                 .participants
                 .get(address)
@@ -203,16 +215,19 @@ impl Coordinator {
                 "top of coordinator loop"
             );
             // 1. Wait for a new event
-            match stream.next().await {
+            let maybe_new_address = match stream.next().await {
                 None => anyhow::bail!("coordinator event stream closed unexpectedly."),
                 Some(Event::NewParticipant(participant, bid)) => {
+                    let addr = participant.address();
                     self.participants.add(participant, bid);
+                    Some(addr)
                 }
                 Some(Event::ContributionDone) => {
                     // We always want a new contribution now.
                     want_contribution = true;
+                    None
                 }
-            }
+            };
             // 2. Score connections
             self.participants.prune();
             let ranked = self.participants.score();
@@ -220,13 +235,20 @@ impl Coordinator {
             if ranked.is_empty() {
                 continue;
             }
-            // 3. Update everyone on status.
+            // 3. Update people on their status in the queue.
+            //
+            // The intention of this loop is that when someone joins, they get a message with their
+            // position in the queue, but other people don't receive updates, to avoid
+            // amplification attacks when repeatedly connecting and disconnecting. However, we want
+            // to inform everyone when a new "round" starts.
             let contributor = ranked[0];
             let contributor_bid = self
                 .participants
                 .bid(&contributor)
                 .expect("contributor should be in participant queue");
-            self.participants.inform(&ranked, contributor_bid).await;
+            self.participants
+                .inform(&ranked, contributor_bid, maybe_new_address)
+                .await;
             // 4. If we want a new contribution, get that process going.
             if want_contribution {
                 // 5. Remove from pool regardless of what will happen
