@@ -354,7 +354,7 @@ impl Worker {
 
     pub async fn run(mut self) -> anyhow::Result<()> {
         self.run_inner().await.map_err(|e| {
-            tracing::info!(?e, "view worker error");
+            tracing::error!(?e, "view worker error");
             self.error_slot
                 .lock()
                 .expect("no race conditions on worker error slot lock")
