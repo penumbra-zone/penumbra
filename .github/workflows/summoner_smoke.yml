@@ -1,0 +1,29 @@
+name: Summoner smoke Test
+on:
+  pull_request: # Temp: for testing only, this will be slow so will run on demand
+  push:
+    branches:
+      - main
+
+jobs:
+  smoke_test:
+    runs-on: buildjet-16vcpu-ubuntu-2004
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    environment: smoke-test
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          lfs: true
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: Load rust cache
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
+
+      - name: Run e2e test of summoner
+        run: |
+          export PATH="$HOME/bin:$PATH"
+          ./deployments/scripts/smoke-summoner.sh
