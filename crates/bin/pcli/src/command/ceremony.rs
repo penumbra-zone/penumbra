@@ -2,7 +2,10 @@ use crate::App;
 use anyhow::{Context, Result};
 use penumbra_asset::Value;
 use penumbra_keys::{keys::AddressIndex, Address};
-use penumbra_proof_setup::all::{Phase2CeremonyContribution, Phase2RawCeremonyCRS};
+use penumbra_proof_setup::all::{
+    Phase1CeremonyContribution, Phase1RawCeremonyCRS, Phase2CeremonyContribution,
+    Phase2RawCeremonyCRS,
+};
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::ceremony_coordinator_service_client::CeremonyCoordinatorServiceClient,
     tools::summoning::v1alpha1::{
@@ -65,6 +68,8 @@ pub enum CeremonyCmd {
     /// Contribute to the ceremony
     Contribute {
         #[clap(long)]
+        phase: u8,
+        #[clap(long)]
         coordinator_url: Url,
         #[clap(long)]
         coordinator_address: Address,
@@ -78,10 +83,14 @@ impl CeremonyCmd {
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
             CeremonyCmd::Contribute {
+                phase,
                 coordinator_url,
                 coordinator_address,
                 bid,
             } => {
+                if *phase != 1 && *phase != 2 {
+                    anyhow::bail!("phase must be 1 or 2.");
+                }
                 let index = AddressIndex {
                     account: 0,
                     randomizer: b"ceremonyaddr".as_slice().try_into().unwrap(),
@@ -107,7 +116,7 @@ impl CeremonyCmd {
                     .participate(ReceiverStream::new(req_rx))
                     .await?
                     .into_inner();
-                let parent = loop {
+                let unparsed_parent = loop {
                     match response_rx.message().await? {
                         None => anyhow::bail!("Coordinator closed connection"),
                         Some(ParticipateResponse {
@@ -122,7 +131,6 @@ impl CeremonyCmd {
                                 })),
                         }) => {
                             tracing::debug!("contribute now");
-                            let parent = Phase2RawCeremonyCRS::try_from(parent)?.assume_valid();
                             break parent;
                         }
                         m => {
@@ -130,10 +138,19 @@ impl CeremonyCmd {
                         }
                     }
                 };
-                let contribution = Phase2CeremonyContribution::make(&mut OsRng, &parent);
+                let contribution = if *phase == 1 {
+                    let parent = Phase1RawCeremonyCRS::try_from(unparsed_parent)?.assume_valid();
+                    let contribution = Phase1CeremonyContribution::make(&mut OsRng, &parent);
+                    contribution.try_into()?
+                } else {
+                    let parent = Phase2RawCeremonyCRS::try_from(unparsed_parent)?.assume_valid();
+                    let contribution = Phase2CeremonyContribution::make(&mut OsRng, &parent);
+                    contribution.try_into()?
+                };
+
                 req_tx
                     .send(ParticipateRequest {
-                        msg: Some(RequestMsg::Contribution(contribution.try_into()?)),
+                        msg: Some(RequestMsg::Contribution(contribution)),
                     })
                     .await?;
                 match response_rx.message().await? {
