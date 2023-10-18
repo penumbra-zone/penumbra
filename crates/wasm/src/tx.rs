@@ -1,7 +1,13 @@
-use crate::error::WasmResult;
-use crate::storage::IndexedDBStorage;
-use crate::storage::IndexedDbConstants;
-use crate::view_server::{load_tree, StoredTree};
+use std::collections::{BTreeMap, BTreeSet};
+use std::convert::TryInto;
+use std::str::FromStr;
+
+use rand_core::OsRng;
+use serde::{Deserialize, Serialize};
+use serde_wasm_bindgen::Error;
+use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::JsValue;
+
 use penumbra_keys::keys::SpendKey;
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::core::transaction::v1alpha1 as pb;
@@ -10,14 +16,12 @@ use penumbra_proto::DomainType;
 use penumbra_tct::{Proof, StateCommitment};
 use penumbra_transaction::plan::TransactionPlan;
 use penumbra_transaction::{AuthorizationData, Transaction, WitnessData};
-use rand_core::OsRng;
-use serde::{Deserialize, Serialize};
-use serde_wasm_bindgen::Error;
-use std::collections::{BTreeMap, BTreeSet};
-use std::convert::TryInto;
-use std::str::FromStr;
-use wasm_bindgen::prelude::wasm_bindgen;
-use wasm_bindgen::JsValue;
+
+use crate::error::WasmResult;
+use crate::storage::IndexedDBStorage;
+use crate::storage::IndexedDbConstants;
+use crate::utils;
+use crate::view_server::{load_tree, StoredTree};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TxInfoResponse {
@@ -37,6 +41,8 @@ impl TxInfoResponse {
 /// Returns: `<Vec<u8>`
 #[wasm_bindgen]
 pub fn encode_tx(transaction: JsValue) -> WasmResult<JsValue> {
+    utils::set_panic_hook();
+
     let tx: Transaction = serde_wasm_bindgen::from_value(transaction)?;
     let tx_encoding: Vec<u8> = tx.try_into()?;
     let result = serde_wasm_bindgen::to_value(&tx_encoding)?;
@@ -49,6 +55,8 @@ pub fn encode_tx(transaction: JsValue) -> WasmResult<JsValue> {
 /// Returns: `penumbra_transaction::Transaction`
 #[wasm_bindgen]
 pub fn decode_tx(tx_bytes: &str) -> WasmResult<JsValue> {
+    utils::set_panic_hook();
+
     let tx_vec: Vec<u8> =
         base64::Engine::decode(&base64::engine::general_purpose::STANDARD, tx_bytes)?;
     let transaction: Transaction = Transaction::try_from(tx_vec)?;
@@ -63,6 +71,8 @@ pub fn decode_tx(tx_bytes: &str) -> WasmResult<JsValue> {
 /// Returns: `pb::AuthorizationData`
 #[wasm_bindgen]
 pub fn authorize(spend_key_str: &str, transaction_plan: JsValue) -> WasmResult<JsValue> {
+    utils::set_panic_hook();
+
     let plan_proto: pb::TransactionPlan = serde_wasm_bindgen::from_value(transaction_plan)?;
     let spend_key = SpendKey::from_str(spend_key_str)?;
     let plan: TransactionPlan = plan_proto.try_into()?;
@@ -80,6 +90,8 @@ pub fn authorize(spend_key_str: &str, transaction_plan: JsValue) -> WasmResult<J
 /// Returns: `pb::WitnessData`
 #[wasm_bindgen]
 pub fn witness(transaction_plan: JsValue, stored_tree: JsValue) -> WasmResult<JsValue> {
+    utils::set_panic_hook();
+
     let plan_proto: pb::TransactionPlan = serde_wasm_bindgen::from_value(transaction_plan)?;
 
     let plan: TransactionPlan = plan_proto.try_into()?;
@@ -149,6 +161,8 @@ pub fn build(
     witness_data: JsValue,
     auth_data: JsValue,
 ) -> WasmResult<JsValue> {
+    utils::set_panic_hook();
+
     let plan_proto: pb::TransactionPlan = serde_wasm_bindgen::from_value(transaction_plan)?;
     let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
     let auth_data_proto: pb::AuthorizationData = serde_wasm_bindgen::from_value(auth_data)?;
@@ -178,6 +192,8 @@ pub async fn transaction_info(
     tx: JsValue,
     idb_constants: JsValue,
 ) -> Result<JsValue, Error> {
+    utils::set_panic_hook();
+
     let transaction = serde_wasm_bindgen::from_value(tx)?;
     let constants = serde_wasm_bindgen::from_value(idb_constants)?;
     let response = transaction_info_inner(full_viewing_key, transaction, constants).await?;

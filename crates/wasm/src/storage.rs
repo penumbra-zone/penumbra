@@ -1,16 +1,17 @@
-use crate::error::WasmResult;
-use crate::note_record::SpendableNoteRecord;
 use indexed_db_futures::prelude::OpenDbRequest;
 use indexed_db_futures::{IdbDatabase, IdbQuerySource};
+use serde::{Deserialize, Serialize};
+use web_sys::IdbTransactionMode::Readwrite;
+
 use penumbra_asset::asset::{DenomMetadata, Id};
-use penumbra_proto::core::component::chain::v1alpha1::{ChainParameters, FmdParameters};
 use penumbra_proto::crypto::tct::v1alpha1::StateCommitment;
 use penumbra_proto::view::v1alpha1::{NotesRequest, SwapRecord};
 use penumbra_proto::DomainType;
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note};
-use serde::{Deserialize, Serialize};
-use web_sys::IdbTransactionMode::Readwrite;
+
+use crate::error::WasmResult;
+use crate::note_record::SpendableNoteRecord;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IndexedDbConstants {
@@ -22,8 +23,6 @@ pub struct IndexedDbConstants {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Tables {
     assets: String,
-    chain_parameters: String,
-    fmd_parameters: String,
     notes: String,
     spendable_notes: String,
     swaps: String,
@@ -37,9 +36,7 @@ pub struct IndexedDBStorage {
 impl IndexedDBStorage {
     pub async fn new(constants: IndexedDbConstants) -> WasmResult<Self> {
         let db_req: OpenDbRequest = IdbDatabase::open_u32(&constants.name, constants.version)?;
-
         let db: IdbDatabase = db_req.into_future().await?;
-
         Ok(IndexedDBStorage { db, constants })
     }
 
@@ -165,32 +162,6 @@ impl IndexedDBStorage {
                 &base64::engine::general_purpose::STANDARD,
                 commitment_proto.inner,
             ))?
-            .await?
-            .map(serde_wasm_bindgen::from_value)
-            .transpose()?)
-    }
-
-    pub async fn get_chain_parameters(&self) -> WasmResult<Option<ChainParameters>> {
-        let tx = self
-            .db
-            .transaction_on_one(&self.constants.tables.chain_parameters)?;
-        let store = tx.object_store(&self.constants.tables.chain_parameters)?;
-
-        Ok(store
-            .get_owned("chain_parameters")?
-            .await?
-            .map(serde_wasm_bindgen::from_value)
-            .transpose()?)
-    }
-
-    pub async fn get_fmd_parameters(&self) -> WasmResult<Option<FmdParameters>> {
-        let tx = self
-            .db
-            .transaction_on_one(&self.constants.tables.fmd_parameters)?;
-        let store = tx.object_store(&self.constants.tables.fmd_parameters)?;
-
-        Ok(store
-            .get_owned("fmd")?
             .await?
             .map(serde_wasm_bindgen::from_value)
             .transpose()?)
