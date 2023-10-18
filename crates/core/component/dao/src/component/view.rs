@@ -15,6 +15,12 @@ use super::state_key;
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
+    /// Indicates if the DAO parameters have been updated in this block.
+    fn dao_params_updated(&self) -> bool {
+        self.object_get::<()>(state_key::dao_params_updated())
+            .is_some()
+    }
+
     /// Gets the DAO parameters from the JMT.
     async fn get_dao_params(&self) -> Result<DaoParameters> {
         self.get(state_key::dao_params())
@@ -49,10 +55,8 @@ impl<T> StateReadExt for T where T: StateRead + ?Sized {}
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided DAO parameters to the JMT.
     fn put_dao_params(&mut self, params: DaoParameters) {
-        // TODO: this needs to be handled on a per-component basis or possibly removed from the compact block
-        // entirely, currently disabled, see https://github.com/penumbra-zone/penumbra/issues/3107
-        // Note to the shielded pool to include the chain parameters in the next compact block:
-        // self.object_put(state_key::chain_params_changed(), ());
+        // Note that the dao params have been updated:
+        self.object_put(state_key::dao_params_updated(), ());
 
         // Change the DAO parameters:
         self.put(state_key::dao_params().into(), params)

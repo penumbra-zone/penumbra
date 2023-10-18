@@ -1,29 +1,33 @@
 use std::sync::Arc;
 
 use anyhow::Result;
+use async_trait::async_trait;
 use penumbra_chain::component::{AppHash, StateReadExt as _, StateWriteExt as _};
 use penumbra_chain::params::FmdParameters;
 use penumbra_compact_block::component::StateWriteExt as _;
 use penumbra_compact_block::CompactBlock;
 use penumbra_component::Component;
 use penumbra_dao::component::StateWriteExt as _;
+use penumbra_dao::StateReadExt as _;
 use penumbra_dex::component::{Dex, SwapManager};
 use penumbra_distributions::component::Distributions;
-use penumbra_fee::component::{Fee, StateReadExt, StateWriteExt as _};
+use penumbra_fee::component::{Fee, StateReadExt as _, StateWriteExt as _};
 use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
 use penumbra_ibc::component::{IBCComponent, StateWriteExt as _};
+use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::DomainType;
 use penumbra_sct::component::SctManager;
 use penumbra_shielded_pool::component::{NoteManager, ShieldedPool};
-use penumbra_stake::component::{Staking, StateWriteExt as _, ValidatorUpdates};
-use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateWrite, Storage};
+use penumbra_stake::component::{Staking, StateReadExt as _, StateWriteExt as _, ValidatorUpdates};
+use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use penumbra_transaction::Transaction;
 use tendermint::abci::{self, Event};
 use tendermint::validator::Update;
 use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
+use crate::params::AppParameters;
 use crate::{genesis, DaoStateReadExt};
 
 pub mod state_key;
@@ -159,16 +163,35 @@ impl App {
         // store the block time
         state_tx.put_block_timestamp(begin_block.header.time);
 
-        // If a chain parameter change is scheduled for this block, apply it here, before any other
-        // component has executed. This ensures that chain parameter changes are consistently
+        // If a app parameter change is scheduled for this block, apply it here, before any other
+        // component has executed. This ensures that app parameter changes are consistently
         // applied precisely at the boundary between blocks:
-        if let Some(chain_params) = state_tx
-            .pending_chain_parameters()
+        if let Some(app_params) = state_tx
+            .pending_app_parameters()
             .await
-            .expect("chain params should always be readable")
+            .expect("app params should always be readable")
         {
-            tracing::info!(?chain_params, "applying pending chain parameters");
-            state_tx.put_chain_params(chain_params);
+            tracing::info!(?app_params, "applying pending app parameters");
+            // The app parameters are sparse so only those which are `Some` need
+            // updating here
+            if let Some(chain_params) = app_params.new.chain_params {
+                state_tx.put_chain_params(chain_params);
+            }
+            if let Some(dao_params) = app_params.new.dao_params {
+                state_tx.put_dao_params(dao_params);
+            }
+            if let Some(ibc_params) = app_params.new.ibc_params {
+                state_tx.put_ibc_params(ibc_params);
+            }
+            if let Some(stake_params) = app_params.new.stake_params {
+                state_tx.put_stake_params(stake_params);
+            }
+            if let Some(fee_params) = app_params.new.fee_params {
+                state_tx.put_fee_params(fee_params);
+            }
+            if let Some(governance_params) = app_params.new.governance_params {
+                state_tx.put_governance_params(governance_params);
+            }
         }
 
         // Run each of the begin block handlers for each component, in sequence:
@@ -288,6 +311,65 @@ impl App {
         let mut state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
 
+        // Since governance proposals can affect the entirety of application state, and the governance component
+        // does not have access to the types defined in this crate so we need to handle validating them here.
+        //
+        // If a proposal was passed in this block, then `schedule_app_params_change` was called which will set `next_block_pending_app_parameters`.
+        //
+        // If any validation here fails, the `next_block_pending_app_parameters` will be cleared, and no change will be enacted during the next
+        // block's `begin_block`.
+        if let Some(params) = self
+            .state
+            .next_block_pending_app_parameters()
+            .await
+            .expect("should be able to read next block pending app parameters")
+        {
+            // If there has been a chain upgrade while the proposal was pending, the stateless
+            // verification criteria for the parameter change proposal could have changed, so we
+            // should check them again here, just to be sure:
+            // `old_app_params` should be complete and represent the state of all app parameters
+            // at the time the proposal was created.
+            let old_app_params = AppParameters::from_changed_params(&params.old, None)
+                .expect("should be able to parse old app params");
+            // `new_app_params` should be sparse and only the components whose parameters were changed
+            // by the proposal should be `Some`.
+            let new_app_params =
+                AppParameters::from_changed_params(&params.new, Some(&old_app_params))
+                    .expect("should be able to parse new app params");
+            if old_app_params.check_valid_update(&new_app_params).is_err() {
+                // An error occurred validating the parameter change, we do not want to enact it.
+                // Wipe the next block pending app parameters so the change doesn't get applied.
+                tracing::warn!(
+                    ?new_app_params,
+                    "parameter change proposal failed validation, wiping pending parameters"
+                );
+                state_tx
+                    .cancel_next_block_pending_app_parameters()
+                    .await
+                    .expect("able to cancel next block pending app parameters");
+            } else {
+                // This was a valid change.
+                //
+                // Check that the old parameters are an exact match for the current parameters, or
+                // else abort the update.
+                let current = self
+                    .state
+                    .get_app_params()
+                    .await
+                    .expect("able to fetch app params");
+
+                // The current parameters have to match the old parameters specified in the
+                // proposal, exactly. This prevents updates from clashing.
+                if old_app_params != current {
+                    tracing::warn!("current chain parameters do not match the old parameters in the proposal, canceling proposal enactment");
+                    state_tx
+                        .cancel_next_block_pending_app_parameters()
+                        .await
+                        .expect("able to cancel next block pending app parameters");
+                }
+            }
+        }
+
         let current_height = state_tx
             .get_block_height()
             .await
@@ -382,18 +464,12 @@ impl App {
             .await
             .expect("height of block is always set");
 
-        // Check to see if the chain parameters have changed, and include them in the compact block
-        // if they have (this is signaled by `penumbra_chain::StateWriteExt::put_chain_params`):
-        let chain_parameters = if state.chain_params_changed() || height == 0 {
-            Some(
-                state
-                    .get_chain_params()
-                    .await
-                    .expect("able to get chain params"),
-            )
-        } else {
-            None
-        };
+        // Check to see if the app parameters have changed, and include a flag in the compact block
+        // if they have (this is signaled by the various `penumbra_*::StateWriteExt::put_*_params` methods).
+        //
+        // Since the flag is stored in the ephemeral object store, it will be forgotten next block so we don't
+        // need to wipe it.
+        let app_parameters_updated = state.app_params_updated() || height == 0;
 
         // Check to see if the gas prices have changed, and include them in the compact block
         // if they have (this is signaled by `penumbra_fee::StateWriteExt::put_gas_prices`):
@@ -480,7 +556,7 @@ impl App {
             proposal_started,
             swap_outputs,
             fmd_parameters,
-            chain_parameters,
+            app_parameters_updated,
             gas_prices,
         });
     }
@@ -559,3 +635,48 @@ impl App {
 /// Increment this manually after fixing the root cause for a chain halt: updated nodes will then be
 /// able to proceed past the block height of the halt.
 const TOTAL_HALT_COUNT: u64 = 0;
+
+#[async_trait]
+pub trait StateReadExt: StateRead {
+    /// Returns true if the app parameters have been changed in this block.
+    fn app_params_updated(&self) -> bool {
+        self.fee_params_updated()
+            || self.governance_params_updated()
+            || self.ibc_params_updated()
+            || self.dao_params_updated()
+            || self.stake_params_updated()
+            || self.chain_params_updated()
+    }
+
+    /// Returns the set of app parameters
+    async fn get_app_params(&self) -> Result<AppParameters> {
+        let chain_params = self.get_chain_params().await?;
+        let stake_params = self.get_stake_params().await?;
+        let ibc_params = self.get_ibc_params().await?;
+        let governance_params = self.get_governance_params().await?;
+        let dao_params = self.get_dao_params().await?;
+        let fee_params = self.get_fee_params().await?;
+
+        Ok(AppParameters {
+            chain_params,
+            stake_params,
+            ibc_params,
+            governance_params,
+            dao_params,
+            fee_params,
+        })
+    }
+}
+
+impl<
+        T: StateRead
+            + penumbra_stake::StateReadExt
+            + penumbra_governance::component::StateReadExt
+            + penumbra_fee::component::StateReadExt
+            + penumbra_dao::component::StateReadExt
+            + penumbra_chain::component::StateReadExt
+            + penumbra_ibc::component::StateReadExt
+            + ?Sized,
+    > StateReadExt for T
+{
+}

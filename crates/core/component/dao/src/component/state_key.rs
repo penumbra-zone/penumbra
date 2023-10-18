@@ -4,6 +4,10 @@ pub fn dao_params() -> &'static str {
     "dao/params"
 }
 
+pub fn dao_params_updated() -> &'static str {
+    "dao/dao_params_updated"
+}
+
 pub fn balance_for_asset(asset_id: asset::Id) -> String {
     format!("dao/asset/{asset_id}")
 }

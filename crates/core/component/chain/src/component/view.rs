@@ -20,6 +20,12 @@ use crate::{
 //#[async_trait(?Send)]
 #[async_trait]
 pub trait StateReadExt: StateRead {
+    /// Indicates if the chain parameters have been updated in this block.
+    fn chain_params_updated(&self) -> bool {
+        self.object_get::<()>(state_key::chain_params_updated())
+            .is_some()
+    }
+
     /// Gets the app chain parameters from the JMT.
     async fn get_chain_params(&self) -> Result<ChainParameters> {
         self.get(state_key::chain_params())
@@ -152,12 +158,6 @@ pub trait StateReadExt: StateRead {
         Ok(current_height.saturating_add(1) == next_upgrade_height)
     }
 
-    /// Returns true if the chain parameters have been changed in this block.
-    fn chain_params_changed(&self) -> bool {
-        self.object_get::<()>(state_key::chain_params_changed())
-            .is_some()
-    }
-
     async fn epoch_by_height(&self, height: u64) -> Result<Epoch> {
         self.get(&state_key::epoch_by_height(height))
             .await?
@@ -191,10 +191,8 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided chain parameters to the JMT.
     fn put_chain_params(&mut self, params: ChainParameters) {
-        // TODO: this needs to be handled on a per-component basis or possibly removed from the compact block
-        // entirely, currently disabled, see https://github.com/penumbra-zone/penumbra/issues/3107
-        // Note to the shielded pool to include the chain parameters in the next compact block:
-        self.object_put(state_key::chain_params_changed(), ());
+        // Note that the chain parameters have been updated:
+        self.object_put(state_key::chain_params_updated(), ());
 
         // Change the chain parameters:
         self.put(state_key::chain_params().into(), params)

@@ -1051,6 +1051,12 @@ impl Component for Staking {
 /// Extension trait providing read access to staking data.
 #[async_trait]
 pub trait StateReadExt: StateRead {
+    /// Indicates if the stake parameters have been updated in this block.
+    fn stake_params_updated(&self) -> bool {
+        self.object_get::<()>(state_key::stake_params_updated())
+            .is_some()
+    }
+
     /// Gets the stake parameters from the JMT.
     async fn get_stake_params(&self) -> Result<StakeParameters> {
         self.get(state_key::stake_params())
@@ -1325,10 +1331,8 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided stake parameters to the JMT.
     fn put_stake_params(&mut self, params: StakeParameters) {
-        // TODO: this needs to be handled on a per-component basis or possibly removed from the compact block
-        // entirely, currently disabled, see https://github.com/penumbra-zone/penumbra/issues/3107
-        // Note to the shielded pool to include the chain parameters in the next compact block:
-        // self.object_put(state_key::chain_params_changed(), ());
+        // Note that the stake params have been updated:
+        self.object_put(state_key::stake_params_updated(), ());
 
         // Change the stake parameters:
         self.put(state_key::stake_params().into(), params)

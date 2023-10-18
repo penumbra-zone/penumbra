@@ -6,6 +6,10 @@ import "penumbra/core/component/sct/v1alpha1/sct.proto";
 import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/core/component/dex/v1alpha1/dex.proto";
 import "penumbra/core/component/fee/v1alpha1/fee.proto";
+import "penumbra/core/component/governance/v1alpha1/governance.proto";
+import "penumbra/core/component/dao/v1alpha1/dao.proto";
+import "penumbra/core/component/ibc/v1alpha1/ibc.proto";
+import "penumbra/core/component/stake/v1alpha1/stake.proto";
 import "penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto";
 
 // Contains the minimum data needed to update client state.
@@ -25,8 +29,8 @@ message CompactBlock {
   chain.v1alpha1.FmdParameters fmd_parameters = 100;
   // Price data for swaps executed in this block.
   repeated dex.v1alpha1.BatchSwapOutputData swap_outputs = 5;
-  // Updated chain parameters, if they have changed.
-  chain.v1alpha1.ChainParameters chain_parameters = 6;
+  // Indicates updated app parameters.
+  bool app_parameters_updated = 6;
   // Updated gas prices, if they have changed.
   fee.v1alpha1.GasPrices gas_prices = 7;
 }

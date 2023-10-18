@@ -1,9 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use penumbra_chain::{
-    params::{ChainParameters, FmdParameters},
-    NoteSource,
-};
+use penumbra_chain::{params::FmdParameters, NoteSource};
 use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_dex::swap::{SwapPayload, SwapPlaintext};
 use penumbra_fee::GasPrices;
@@ -23,8 +20,7 @@ pub struct FilteredBlock {
     pub spent_nullifiers: Vec<Nullifier>,
     pub height: u64,
     pub fmd_parameters: Option<FmdParameters>,
-    // TODO: needs to be AppParameters see #3107
-    pub chain_parameters: Option<ChainParameters>,
+    pub app_parameters_updated: bool,
     pub gas_prices: Option<GasPrices>,
 }
 
@@ -53,7 +49,7 @@ pub async fn scan_block(
         epoch_root,
         fmd_parameters,
         swap_outputs,
-        chain_parameters,
+        app_parameters_updated,
         gas_prices,
         // TODO: do we need this, or is there a bug in scan_block?
         // proposal_started,
@@ -244,7 +240,7 @@ pub async fn scan_block(
         spent_nullifiers: filtered_nullifiers,
         height,
         fmd_parameters,
-        chain_parameters,
+        app_parameters_updated,
         gas_prices,
     };
 
