@@ -22,25 +22,19 @@ cargo run --quiet --release --bin summonerd -- init --storage-dir /tmp/summonerd
 echo "Starting phase 1 run..."
 cargo run --quiet --release --bin summonerd -- start --phase 1 --storage-dir /tmp/summonerd --fvk $SUMMONER_FVK --node https://grpc.testnet-preview.penumbra.zone &
 phase1_pid="$!"
-echo $phase1_pid
 # If script ends early, ensure phase 1 is halted.
 trap 'kill -9 "$phase1_pid"' EXIT
 
 echo "Setting up test accounts..."
 # We are returning 0 always here because the backup wallet file does not respect the location of
-# the home directory.
+# the home directory, and so if there is already a backup wallet, we refuse to overwrite it,
+# and will exit non-zero. We don't care about the backup wallet for this test, so we ignore the
+# exit code.
 echo $SEED_PHRASE | cargo run --quiet --release --bin pcli -- --home /tmp/account1 keys import phrase || true
 export ACCOUNT1_ADDRESS=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/account1 --node https://grpc.testnet-preview.penumbra.zone view address 0 2>&1)
 
-cargo run --quiet --release --bin pcli -- --home /tmp/account2 --node https://grpc.testnet-preview.penumbra.zone keys generate || true
-export ACCOUNT2_ADDRESS=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/account2 --node https://grpc.testnet-preview.penumbra.zone view address 0 2>&1)
-cargo run --quiet --release --bin pcli -- --home /tmp/account3 --node https://grpc.testnet-preview.penumbra.zone keys generate || true
-export ACCOUNT3_ADDRESS=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/account3 --node https://grpc.testnet-preview.penumbra.zone view address 0 2>&1)
-# TODO: Send tokens to test accounts 2 and 3
-
 echo "Phase 1 contributions..."
 cargo run --quiet --release --bin pcli -- --node https://grpc.testnet-preview.penumbra.zone --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8081 --coordinator-address $SUMMONER_ADDRESS --phase 1 --bid 10penumbra
-# TODO: Accounts 2, 3 contribution
 
 echo "Stopping phase 1 run..."
 if ! kill -0 "$phase1_pid" ; then
@@ -57,13 +51,11 @@ cargo run --quiet --release --bin summonerd -- transition --storage-dir /tmp/sum
 echo "Starting phase 2 run..."
 cargo run --quiet --release --bin summonerd -- start --phase 2 --storage-dir /tmp/summonerd --fvk $SUMMONER_FVK --node https://grpc.testnet-preview.penumbra.zone &
 phase2_pid="$!"
-echo $phase2_pid
 # If script ends early, ensure phase 2 is halted.
 trap 'kill -9 "$phase2_pid"' EXIT
 
 echo "Phase 2 contributions..."
 cargo run --quiet --release --bin pcli -- --node https://grpc.testnet-preview.penumbra.zone --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8081 --coordinator-address $SUMMONER_ADDRESS --phase 2 --bid 10penumbra
-# TODO: Accounts 2, 3 contribution
 
 # TODO: Export keys
 
@@ -78,6 +70,4 @@ fi
 
 rm -rf /tmp/summonerd
 rm -rf /tmp/account1
-rm -rf /tmp/account2
-rm -rf /tmp/account3
 exit 0

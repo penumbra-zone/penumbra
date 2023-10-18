@@ -1,6 +1,6 @@
 name: Summoner smoke Test
 on:
-  pull_request: # Temp: for testing only, this will be slow so will run on demand
+  pull_request:
   push:
     branches:
       - main
