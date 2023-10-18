@@ -5774,7 +5774,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-wasm"
-version = "0.63.0-preview-2"
+version = "0.62.0"
 dependencies = [
  "anyhow",
  "ark-ff",

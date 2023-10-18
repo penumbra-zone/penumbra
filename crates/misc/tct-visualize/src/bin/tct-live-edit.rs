@@ -42,7 +42,7 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+    let _ = tracing_subscriber::fmt::try_init();
     let args = Args::parse();
     let rng = rand::rngs::OsRng;
 
