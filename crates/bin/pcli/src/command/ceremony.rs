@@ -22,8 +22,12 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use url::Url;
 
-/// 100 MIB
-const MAX_MESSAGE_SIZE: usize = 100 * 1024 * 1024;
+fn max_message_size(phase: u8) -> usize {
+    match phase {
+        1 => 200 * 1024 * 1024,
+        _ => 100 * 1024 * 1024,
+    }
+}
 
 #[tracing::instrument(skip(app))]
 async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -> Result<()> {
@@ -110,8 +114,8 @@ impl CeremonyCmd {
                 let mut client =
                     CeremonyCoordinatorServiceClient::connect(coordinator_url.to_string())
                         .await?
-                        .max_decoding_message_size(MAX_MESSAGE_SIZE)
-                        .max_encoding_message_size(MAX_MESSAGE_SIZE);
+                        .max_decoding_message_size(max_message_size(*phase))
+                        .max_encoding_message_size(max_message_size(*phase));
                 let mut response_rx = client
                     .participate(ReceiverStream::new(req_rx))
                     .await?
