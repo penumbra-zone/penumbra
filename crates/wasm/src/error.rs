@@ -1,11 +1,13 @@
+use std::convert::Infallible;
+
 use base64::DecodeError;
 use hex::FromHexError;
-use penumbra_tct::error::{InsertBlockError, InsertEpochError, InsertError};
 use serde_wasm_bindgen::Error;
-use std::convert::Infallible;
 use thiserror::Error;
 use wasm_bindgen::{JsError, JsValue};
 use web_sys::DomException;
+
+use penumbra_tct::error::{InsertBlockError, InsertEpochError, InsertError};
 
 pub type WasmResult<T> = Result<T, WasmError>;
 

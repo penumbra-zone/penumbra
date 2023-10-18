@@ -23,6 +23,7 @@ use crate::error::WasmResult;
 use crate::note_record::SpendableNoteRecord;
 use crate::storage::IndexedDBStorage;
 use crate::swap_record::SwapRecord;
+use crate::utils;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StoredTree {
@@ -87,6 +88,8 @@ impl ViewServer {
         stored_tree: JsValue,
         idb_constants: JsValue,
     ) -> WasmResult<ViewServer> {
+        utils::set_panic_hook();
+
         let fvk = FullViewingKey::from_str(full_viewing_key)?;
         let stored_tree: StoredTree = serde_wasm_bindgen::from_value(stored_tree)?;
         let tree = load_tree(stored_tree);
@@ -114,6 +117,8 @@ impl ViewServer {
     /// Returns: `bool`
     #[wasm_bindgen]
     pub async fn scan_block(&mut self, compact_block: JsValue) -> WasmResult<bool> {
+        utils::set_panic_hook();
+
         let block_proto: penumbra_proto::core::component::compact_block::v1alpha1::CompactBlock =
             serde_wasm_bindgen::from_value(compact_block)?;
 
@@ -259,6 +264,8 @@ impl ViewServer {
     /// Returns: `ScanBlockResult`
     #[wasm_bindgen]
     pub fn flush_updates(&mut self) -> WasmResult<JsValue> {
+        utils::set_panic_hook();
+
         let nct_updates: Updates = self
             .nct
             .updates(
@@ -290,6 +297,8 @@ impl ViewServer {
     /// Returns: `Root`
     #[wasm_bindgen]
     pub fn get_nct_root(&mut self) -> Result<JsValue, Error> {
+        utils::set_panic_hook();
+
         let root = self.nct.root();
         serde_wasm_bindgen::to_value(&root)
     }
@@ -305,6 +314,8 @@ impl ViewServer {
         position_value: JsValue,
         position_state_value: JsValue,
     ) -> Result<JsValue, Error> {
+        utils::set_panic_hook();
+
         let position: Position = serde_wasm_bindgen::from_value(position_value)?;
         let position_state = serde_wasm_bindgen::from_value(position_state_value)?;
         let lp_nft = LpNft::new(position.id(), position_state);
