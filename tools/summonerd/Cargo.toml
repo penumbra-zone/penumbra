@@ -32,7 +32,7 @@ penumbra-asset = { path = "../../crates/core/asset/" }
 penumbra-keys = { path = "../../crates/core/keys/" }
 penumbra-num = { path = "../../crates/core/num/" }
 penumbra-proof-params = { path = "../../crates/crypto/proof-params" }
-penumbra-proof-setup = { path = "../../crates/crypto/proof-setup/" }
+penumbra-proof-setup = { path = "../../crates/crypto/proof-setup/", features = ["parallel"] }
 penumbra-proto = { path = "../../crates/proto/" } 
 penumbra-view = { path = "../../crates/view/" }
 rand = "0.8"
