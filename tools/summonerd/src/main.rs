@@ -40,7 +40,12 @@ use crate::{penumbra_knower::PenumbraKnower, server::CoordinatorService};
 use penumbra_proof_setup::all::{Phase1CeremonyCRS, Phase1RawCeremonyCRS};
 
 /// 100 MIB
-const MAX_MESSAGE_SIZE: usize = 100 * 1024 * 1024;
+fn max_message_size(phase: PhaseMarker) -> usize {
+    match phase {
+        PhaseMarker::P1 => 200 * 1024 * 1024,
+        PhaseMarker::P2 => 100 * 1024 * 1024,
+    }
+}
 
 // To avoid repeating the constant
 fn ceremony_db(path: &Utf8Path) -> Utf8PathBuf {
@@ -145,8 +150,8 @@ impl Opt {
                         .accept_http1(true)
                         .add_service(tonic_web::enable(
                             CeremonyCoordinatorServiceServer::new(service)
-                                .max_encoding_message_size(MAX_MESSAGE_SIZE)
-                                .max_decoding_message_size(MAX_MESSAGE_SIZE),
+                                .max_encoding_message_size(max_message_size(marker))
+                                .max_decoding_message_size(max_message_size(marker)),
                         ));
                 tracing::info!(?listen, "starting grpc server");
                 let server_handle = tokio::spawn(grpc_server.serve(listen));
