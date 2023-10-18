@@ -102,6 +102,11 @@ impl CeremonyCmd {
                 handle_bid(app, *coordinator_address, index, bid).await?;
                 let address = app.fvk.payment_address(index).0;
 
+                // After we bid, we need to wait a couple of seconds just for the transaction to be
+                // picked up by the coordinator. Else, there is a race wherein the coordinator will kick the
+                // client out of the queue because it doesn't see the transaction yet.
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
                 let (req_tx, req_rx) = mpsc::channel::<ParticipateRequest>(10);
                 tracing::debug!(?address, "participate request");
                 req_tx
