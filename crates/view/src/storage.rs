@@ -552,13 +552,45 @@ impl Storage {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            let bytes = pool
+            let chain_bytes = pool
                 .get()?
-                .prepare_cached("SELECT bytes FROM app_params LIMIT 1")?
+                .prepare_cached("SELECT bytes FROM chain_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing app params"))?;
+                .ok_or_else(|| anyhow!("missing chain params"))?;
+            let stake_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM stake_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing stake params"))?;
+            let ibc_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM ibc_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing ibc params"))?;
+            let governance_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM governance_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing governance params"))?;
+            let dao_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM dao_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing dao params"))?;
+            let fee_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM fee_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing fee params"))?;
 
-            AppParameters::decode(bytes.as_slice())
+            Ok(AppParameters {
+                chain_params: ChainParameters::decode(chain_bytes.as_slice())?,
+                stake_params: StakeParameters::decode(stake_bytes.as_slice())?,
+                ibc_params: IBCParameters::decode(ibc_bytes.as_slice())?,
+                governance_params: GovernanceParameters::decode(governance_bytes.as_slice())?,
+                dao_params: DaoParameters::decode(dao_bytes.as_slice())?,
+                fee_params: FeeParameters::decode(fee_bytes.as_slice())?,
+            })
         })
         .await?
     }
