@@ -10,6 +10,7 @@ use std::future::Future;
 use tonic::transport::{Channel, ClientTlsConfig};
 use tracing::instrument;
 
+use crate::opt::MAX_MESSAGE_SIZE;
 use crate::App;
 
 impl App {
@@ -29,6 +30,9 @@ impl App {
         let start = std::time::Instant::now();
         let tx = penumbra_wallet::build_transaction(
             &self.fvk,
+            // TODO: convert to `self.view()`. This is the last remaining call to the raw
+            // attribute, rather than using the accessor method, but the pile of mutable
+            // references is tricky.
             self.view.as_mut().expect("view service initialized"),
             &mut self.custody,
             OsRng,
@@ -101,6 +105,9 @@ impl App {
         &self,
     ) -> anyhow::Result<TendermintProxyServiceClient<Channel>> {
         let channel = self.pd_channel().await?;
-        Ok(TendermintProxyServiceClient::new(channel))
+        let tc = TendermintProxyServiceClient::new(channel)
+            .max_decoding_message_size(MAX_MESSAGE_SIZE)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE);
+        Ok(tc)
     }
 }

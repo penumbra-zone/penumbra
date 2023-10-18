@@ -18,9 +18,9 @@ use penumbra_proto::{
 };
 use penumbra_stake::validator;
 
-// TODO: remove this subcommand and merge into `pcli q`
-
+use crate::opt::MAX_MESSAGE_SIZE;
 use crate::App;
+use tonic::transport::Channel;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ChainCmd {
@@ -46,8 +46,15 @@ pub struct Stats {
 }
 
 impl ChainCmd {
+    /// Creates a gRPC query client for handling app-related queries.
+    pub async fn app_client(&self, app: &mut App) -> Result<AppQueryServiceClient<Channel>> {
+        let c = AppQueryServiceClient::new(app.pd_channel().await?)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE)
+            .max_decoding_message_size(MAX_MESSAGE_SIZE);
+        Ok(c)
+    }
     pub async fn print_app_params(&self, app: &mut App) -> Result<()> {
-        let mut client = AppQueryServiceClient::new(app.pd_channel().await?);
+        let mut client = self.app_client(app).await?;
         let params: AppParameters = client
             .app_parameters(tonic::Request::new(AppParametersRequest {
                 chain_id: "".to_string(),
@@ -121,7 +128,9 @@ impl ChainCmd {
     pub async fn get_stats(&self, app: &mut App) -> Result<Stats> {
         let channel = app.pd_channel().await?;
 
-        let mut client = TendermintProxyServiceClient::new(channel.clone());
+        let mut client = TendermintProxyServiceClient::new(channel.clone())
+            .max_decoding_message_size(MAX_MESSAGE_SIZE)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE);
         let current_block_height = client
             .get_status(GetStatusRequest::default())
             .await?
@@ -141,7 +150,7 @@ impl ChainCmd {
             .context("failed to find EpochByHeight message")?
             .index;
 
-        let mut client = AppQueryServiceClient::new(channel.clone());
+        let mut client = self.app_client(app).await?;
         let app_params = client
             .app_parameters(tonic::Request::new(AppParametersRequest {
                 chain_id: "".to_string(),

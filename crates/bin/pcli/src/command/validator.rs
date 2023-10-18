@@ -153,9 +153,7 @@ impl ValidatorCmd {
                 let wallet_id = app.fvk.wallet_id();
                 let plan = plan::validator_definition(
                     wallet_id,
-                    app.view
-                        .as_mut()
-                        .context("view service must be initialized")?,
+                    app.view(),
                     OsRng,
                     vd,
                     fee,
@@ -210,9 +208,7 @@ impl ValidatorCmd {
 
                 let plan = plan::validator_vote(
                     wallet_id,
-                    app.view
-                        .as_mut()
-                        .context("view service must be initialized")?,
+                    app.view(),
                     OsRng,
                     vote,
                     fee,

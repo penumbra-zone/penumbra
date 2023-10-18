@@ -55,6 +55,7 @@ use penumbra_transaction::{
     plan::TransactionPlan, AuthorizationData, Transaction, TransactionPerspective, WitnessData,
 };
 
+use crate::MAX_MESSAGE_SIZE;
 use crate::{Planner, Storage, Worker};
 
 /// A service that synchronizes private chain state and responds to queries
@@ -239,7 +240,10 @@ impl ViewService {
     async fn tendermint_proxy_client(
         &self,
     ) -> anyhow::Result<TendermintProxyServiceClient<Channel>> {
-        let client = TendermintProxyServiceClient::connect(self.node.to_string()).await?;
+        let client = TendermintProxyServiceClient::connect(self.node.to_string())
+            .await?
+            .max_decoding_message_size(MAX_MESSAGE_SIZE)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE);
 
         Ok(client)
     }
@@ -603,8 +607,13 @@ impl ViewProtocolService for ViewService {
         let fvk = self.storage.full_viewing_key().await.map_err(|e| {
             tonic::Status::failed_precondition(format!("Error retrieving full viewing key: {e:#}"))
         })?;
-        let mut client_of_self =
-            ViewProtocolServiceClient::new(ViewProtocolServiceServer::new(self.clone()));
+        let mut client_of_self = ViewProtocolServiceClient::new(
+            ViewProtocolServiceServer::new(self.clone())
+                .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                .max_encoding_message_size(MAX_MESSAGE_SIZE),
+        )
+        .max_decoding_message_size(MAX_MESSAGE_SIZE)
+        .max_encoding_message_size(MAX_MESSAGE_SIZE);
 
         let source = prq
             .source

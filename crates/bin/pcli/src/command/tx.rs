@@ -21,26 +21,22 @@ use penumbra_governance::{proposal::ProposalToml, Vote};
 use penumbra_ibc::Ics20Withdrawal;
 use penumbra_keys::keys::AddressIndex;
 use penumbra_num::Amount;
-use penumbra_proto::{
-    core::component::{
-        chain::v1alpha1::{
-            query_service_client::QueryServiceClient as ChainQueryServiceClient,
-            EpochByHeightRequest,
-        },
-        dex::v1alpha1::{
-            query_service_client::QueryServiceClient as DexQueryServiceClient,
-            LiquidityPositionByIdRequest, PositionId,
-        },
-        governance::v1alpha1::{
-            query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
-            ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
-        },
-        stake::v1alpha1::{
-            query_service_client::QueryServiceClient as StakeQueryServiceClient,
-            ValidatorPenaltyRequest,
-        },
+use penumbra_proto::core::component::{
+    chain::v1alpha1::{
+        query_service_client::QueryServiceClient as ChainQueryServiceClient, EpochByHeightRequest,
     },
-    view::v1alpha1::GasPricesRequest,
+    dex::v1alpha1::{
+        query_service_client::QueryServiceClient as DexQueryServiceClient,
+        LiquidityPositionByIdRequest, PositionId,
+    },
+    governance::v1alpha1::{
+        query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
+        ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
+    },
+    stake::v1alpha1::{
+        query_service_client::QueryServiceClient as StakeQueryServiceClient,
+        ValidatorPenaltyRequest,
+    },
 };
 use penumbra_stake::rate::RateData;
 use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
@@ -48,7 +44,9 @@ use penumbra_transaction::{gas::swap_claim_gas_cost, memo::MemoPlaintext};
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan::{self, Planner};
 use proposal::ProposalCmd;
+use tonic::transport::Channel;
 
+use crate::opt::MAX_MESSAGE_SIZE;
 use crate::App;
 
 mod liquidity_position;
@@ -245,17 +243,24 @@ impl TxCmd {
         }
     }
 
+    /// Creates a gRPC query client for handling DEX queries.
+    pub async fn dex_client(&self, app: &mut App) -> Result<DexQueryServiceClient<Channel>> {
+        let c = DexQueryServiceClient::new(app.pd_channel().await?)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE)
+            .max_decoding_message_size(MAX_MESSAGE_SIZE);
+        Ok(c)
+    }
+
+    /// Creates a gRPC query client for handling stake-related queries.
+    pub async fn stake_client(&self, app: &mut App) -> Result<StakeQueryServiceClient<Channel>> {
+        let c = StakeQueryServiceClient::new(app.pd_channel().await?)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE)
+            .max_decoding_message_size(MAX_MESSAGE_SIZE);
+        Ok(c)
+    }
+
     pub async fn exec(&self, app: &mut App) -> Result<()> {
-        let gas_prices = app
-            .view
-            .as_mut()
-            .context("view service must be initialized")?
-            .gas_prices(GasPricesRequest {})
-            .await?
-            .into_inner()
-            .gas_prices
-            .expect("gas prices must be available")
-            .try_into()?;
+        let gas_prices = app.view().gas_prices().await?;
 
         match self {
             TxCmd::Send {
@@ -285,15 +290,10 @@ impl TxCmd {
                 for value in values.iter().cloned() {
                     planner.output(value, to);
                 }
+                let wallet_id = app.fvk.wallet_id();
                 let plan = planner
                     .memo(memo_plaintext)?
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
-                        AddressIndex::new(*from),
-                    )
+                    .plan(app.view(), wallet_id, AddressIndex::new(*from))
                     .await
                     .context("can't build send transaction")?;
                 app.build_and_submit_transaction(plan).await?;
@@ -309,26 +309,14 @@ impl TxCmd {
                 for value in values {
                     planner.dao_deposit(value);
                 }
+                let wallet_id = app.fvk.wallet_id();
                 let plan = planner
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
-                        AddressIndex::new(*source),
-                    )
+                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Sweep => loop {
-                let plans = plan::sweep(
-                    app.fvk.wallet_id(),
-                    app.view
-                        .as_mut()
-                        .context("view service must be initialized")?,
-                    OsRng,
-                )
-                .await?;
+                let plans = plan::sweep(app.fvk.wallet_id(), app.view(), OsRng).await?;
                 let num_plans = plans.len();
 
                 for (i, plan) in plans.into_iter().enumerate() {
@@ -422,12 +410,7 @@ impl TxCmd {
 
                 let wallet_id = app.fvk.wallet_id();
 
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
+                let params = app.view().app_params().await?;
 
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
@@ -460,7 +443,7 @@ impl TxCmd {
 
                 let to = to.parse::<IdentityKey>()?;
 
-                let mut client = StakeQueryServiceClient::new(app.pd_channel().await?);
+                let mut client = self.stake_client(app).await?;
                 let rate_data: RateData = client
                     .current_validator_rate(tonic::Request::new(to.into()))
                     .await?
@@ -497,7 +480,7 @@ impl TxCmd {
 
                 let from = delegation_token.validator();
 
-                let mut client = StakeQueryServiceClient::new(app.pd_channel().await?);
+                let mut client = self.stake_client(app).await?;
                 let rate_data: RateData = client
                     .current_validator_rate(tonic::Request::new(from.into()))
                     .await?
@@ -507,15 +490,10 @@ impl TxCmd {
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
 
+                let wallet_id = app.fvk.wallet_id();
                 let plan = planner
                     .undelegate(delegation_value.amount, rate_data)
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
-                        AddressIndex::new(*source),
-                    )
+                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
                     .await
                     .context("can't build undelegate plan")?;
 
@@ -525,13 +503,13 @@ impl TxCmd {
                 let wallet_id = app.fvk.wallet_id(); // this should be optional? or saved in the client statefully?
 
                 let channel = app.pd_channel().await?;
-                let view: &mut dyn ViewClient = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?;
+                let view: &mut dyn ViewClient = app.view();
 
                 let current_height = view.status(wallet_id).await?.sync_height;
-                let mut client = ChainQueryServiceClient::new(channel.clone());
+                let mut client = ChainQueryServiceClient::new(channel.clone())
+                    .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                    .max_encoding_message_size(MAX_MESSAGE_SIZE);
+
                 let current_epoch = client
                     .epoch_by_height(EpochByHeightRequest {
                         height: current_height,
@@ -565,14 +543,9 @@ impl TxCmd {
                         let start_epoch_index = token.start_epoch_index();
                         let end_epoch_index = current_epoch.index;
 
-                        let params = app
-                            .view
-                            .as_mut()
-                            .context("view service must be initialized")?
-                            .app_params()
-                            .await?;
+                        let params = app.view().app_params().await?;
 
-                        let mut client = StakeQueryServiceClient::new(channel.clone());
+                        let mut client = self.stake_client(app).await?;
                         let penalty: Penalty = client
                             .validator_penalty(tonic::Request::new(ValidatorPenaltyRequest {
                                 chain_id: params.chain_params.chain_id.to_string(),
@@ -598,6 +571,7 @@ impl TxCmd {
                             planner.spend(note.note, note.position);
                         }
 
+                        let wallet_id = app.fvk.wallet_id();
                         let plan = planner
                             .undelegate_claim(UndelegateClaimPlan {
                                 validator_identity,
@@ -608,13 +582,7 @@ impl TxCmd {
                                 proof_blinding_r: Fq::rand(&mut OsRng),
                                 proof_blinding_s: Fq::rand(&mut OsRng),
                             })
-                            .plan(
-                                app.view
-                                    .as_mut()
-                                    .context("view service must be initialized")?,
-                                app.fvk.wallet_id(),
-                                address_index,
-                            )
+                            .plan(app.view(), wallet_id, address_index)
                             .await?;
                         app.build_and_submit_transaction(plan).await?;
                     }
@@ -638,15 +606,10 @@ impl TxCmd {
 
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
+                let wallet_id = app.fvk.wallet_id();
                 let plan = planner
                     .proposal_submit(proposal, Amount::from(*deposit_amount))
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
-                        AddressIndex::new(*source),
-                    )
+                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
@@ -657,15 +620,10 @@ impl TxCmd {
             }) => {
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
+                let wallet_id = app.fvk.wallet_id();
                 let plan = planner
                     .proposal_withdraw(*proposal_id, reason.clone())
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
-                        AddressIndex::new(*source),
-                    )
+                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
                     .await?;
 
                 app.build_and_submit_transaction(plan).await?;
@@ -736,14 +694,13 @@ impl TxCmd {
                         proposal_id
                     ))?;
 
+                let wallet_id = app.fvk.wallet_id();
                 let plan = Planner::new(OsRng)
                     .proposal_deposit_claim(*proposal_id, deposit_amount, outcome)
                     .fee(fee)
                     .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
+                        app.view(),
+                        wallet_id,
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -763,7 +720,9 @@ impl TxCmd {
                 //   convert staked notes into voting power and mint the correct amount of voting
                 //   receipt tokens to ourselves
 
-                let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
+                let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?)
+                    .max_encoding_message_size(MAX_MESSAGE_SIZE)
+                    .max_decoding_message_size(MAX_MESSAGE_SIZE);
                 let ProposalInfoResponse {
                     start_block_height,
                     start_position,
@@ -796,6 +755,7 @@ impl TxCmd {
                     start_rate_data.insert(rate_data.identity_key.clone(), rate_data);
                 }
 
+                let wallet_id = app.fvk.wallet_id();
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
                     .delegator_vote(
@@ -805,13 +765,7 @@ impl TxCmd {
                         start_rate_data,
                         vote,
                     )
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
-                        AddressIndex::new(*source),
-                    )
+                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
                     .await?;
 
                 app.build_and_submit_transaction(plan).await?;
@@ -825,16 +779,11 @@ impl TxCmd {
                 let position = order.as_position(&asset_cache, OsRng)?;
                 tracing::info!(?position);
 
+                let wallet_id = app.fvk.wallet_id();
                 let plan = Planner::new(OsRng)
                     .position_open(position)
                     .fee(fee)
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
-                        source,
-                    )
+                    .plan(app.view(), wallet_id, source)
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
@@ -897,16 +846,11 @@ impl TxCmd {
                     source_channel: ChannelId::from_str(format!("channel-{}", channel).as_ref())?,
                 };
 
+                let wallet_id = app.fvk.wallet_id();
                 let plan = Planner::new(OsRng)
                     .ics20_withdrawal(withdrawal)
                     .fee(fee)
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
-                        AddressIndex::new(*source),
-                    )
+                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
@@ -917,16 +861,11 @@ impl TxCmd {
             }) => {
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
+                let wallet_id = app.fvk.wallet_id();
                 let plan = Planner::new(OsRng)
                     .position_close(*position_id)
                     .fee(fee)
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
-                        AddressIndex::new(*source),
-                    )
+                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
@@ -935,10 +874,7 @@ impl TxCmd {
                 source,
                 trading_pair,
             }) => {
-                let view: &mut dyn ViewClient = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?;
+                let view: &mut dyn ViewClient = app.view();
 
                 let owned_position_ids = view
                     .owned_position_ids(Some(position::State::Opened), *trading_pair)
@@ -959,15 +895,10 @@ impl TxCmd {
                     planner.position_close(position_id);
                 }
 
+                let wallet_id = app.fvk.wallet_id();
                 let final_plan = planner
                     .fee(fee)
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
-                        AddressIndex::new(*source),
-                    )
+                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
                     .await?;
                 app.build_and_submit_transaction(final_plan).await?;
             }
@@ -976,10 +907,7 @@ impl TxCmd {
                 source,
                 trading_pair,
             }) => {
-                let view: &mut dyn ViewClient = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?;
+                let view: &mut dyn ViewClient = app.view();
 
                 let owned_position_ids = view
                     .owned_position_ids(Some(position::State::Closed), *trading_pair)
@@ -995,14 +923,9 @@ impl TxCmd {
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
 
-                let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
+                let mut client = self.dex_client(app).await?;
 
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
+                let params = app.view().app_params().await?;
 
                 for position_id in owned_position_ids {
                     // Withdraw the position
@@ -1036,15 +959,10 @@ impl TxCmd {
                     );
                 }
 
+                let wallet_id = app.fvk.wallet_id();
                 let final_plan = planner
                     .fee(fee)
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
-                        AddressIndex::new(*source),
-                    )
+                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
                     .await?;
                 app.build_and_submit_transaction(final_plan).await?;
             }
@@ -1053,14 +971,9 @@ impl TxCmd {
                 source,
                 position_id,
             }) => {
-                let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
+                let mut client = self.dex_client(app).await?;
 
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
+                let params = app.view().app_params().await?;
 
                 // Fetch the information regarding the position from the view service.
                 let position = client
@@ -1087,17 +1000,12 @@ impl TxCmd {
 
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
+                let wallet_id = app.fvk.wallet_id();
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
                     .position_withdraw(*position_id, reserves.try_into()?, pair.try_into()?)
                     .fee(fee)
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
-                        AddressIndex::new(*source),
-                    )
+                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }

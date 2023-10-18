@@ -30,6 +30,8 @@ use tracing::instrument;
 
 use crate::{SpendableNoteRecord, StatusStreamResponse, SwapRecord, TransactionInfo};
 
+// use crate::MAX_MESSAGE_SIZE;
+
 /// The view protocol is used by a view client, who wants to do some
 /// transaction-related actions, to request data from a view service, which is
 /// responsible for synchronizing and scanning the public chain state with one
@@ -357,15 +359,26 @@ where
         async move {
             // We have to manually invoke the method on the type, because it has the
             // same name as the one we're implementing.
+            tracing::warn!("ASKING FOR GAS 1");
             let rsp = ViewProtocolServiceClient::gas_prices(
                 &mut self2,
                 tonic::Request::new(pb::GasPricesRequest {}),
             );
-            rsp.await?
-                .into_inner()
-                .gas_prices
+            tracing::warn!("ASKING FOR GAS 2");
+            // This is as far as we get when tracing
+            let r0 = rsp.await;
+            tracing::warn!("Here's the resp we got for gasprices: {:?}", r0);
+
+            let r0 = r0?;
+            tracing::warn!("ASKING FOR GAS 2.5");
+            let r1 = r0.into_inner().gas_prices;
+            tracing::warn!("ASKING FOR GAS 3");
+            let r2 = r1
                 .ok_or_else(|| anyhow::anyhow!("empty GasPricesResponse message"))?
-                .try_into()
+                .try_into();
+            tracing::warn!("ASKING FOR GAS 4");
+            tracing::warn!("ASKING FOR GAS 4, r2 is: {:?}", r2);
+            r2
         }
         .boxed()
     }

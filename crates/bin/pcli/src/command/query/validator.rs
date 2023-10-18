@@ -11,7 +11,9 @@ use penumbra_stake::{
     IdentityKey,
 };
 
+use crate::opt::MAX_MESSAGE_SIZE;
 use crate::App;
+use tonic::transport::Channel;
 
 // TODO: replace this with something more standard for the `query` subcommand
 #[derive(Debug, clap::Subcommand)]
@@ -36,13 +38,21 @@ pub enum ValidatorCmd {
 }
 
 impl ValidatorCmd {
+    /// Creates a gRPC query client for handling stake-related queries.
+    pub async fn stake_client(&self, app: &mut App) -> Result<StakeQueryServiceClient<Channel>> {
+        let c = StakeQueryServiceClient::new(app.pd_channel().await?)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE)
+            .max_decoding_message_size(MAX_MESSAGE_SIZE);
+        Ok(c)
+    }
+
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         match self {
             ValidatorCmd::List {
                 show_inactive,
                 detailed,
             } => {
-                let mut client = StakeQueryServiceClient::new(app.pd_channel().await?);
+                let mut client = self.stake_client(app).await?;
 
                 let mut validators = client
                     .validator_info(ValidatorInfoRequest {
@@ -175,7 +185,7 @@ impl ValidatorCmd {
                 */
 
                 // Intsead just download everything
-                let mut client = StakeQueryServiceClient::new(app.pd_channel().await?);
+                let mut client = self.stake_client(app).await?;
 
                 let validators = client
                     .validator_info(ValidatorInfoRequest {

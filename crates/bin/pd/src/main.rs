@@ -36,6 +36,10 @@ use url::Url;
 use penumbra_tower_trace::v037::RequestExt;
 use tendermint::v0_37::abci::{ConsensusRequest, MempoolRequest};
 
+/// Raise the gRPC max message size limit 4MB -> 20MB,
+/// to support large genesis files.
+pub const MAX_MESSAGE_SIZE: usize = 20 * 1024 * 1024;
+
 #[derive(Debug, Parser)]
 #[clap(
     name = "pd",
@@ -383,36 +387,62 @@ async fn main() -> anyhow::Result<()> {
                 // Wrap each of the gRPC services in a tonic-web proxy:
                 .add_service(we(AppQueryServiceServer::new(AppServer::new(
                     storage.clone(),
-                ))))
+                ))
+                .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                .max_encoding_message_size(MAX_MESSAGE_SIZE)))
                 .add_service(we(ChainQueryServiceServer::new(ChainServer::new(
                     storage.clone(),
-                ))))
+                ))
+                .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                .max_encoding_message_size(MAX_MESSAGE_SIZE)))
                 .add_service(we(CompactBlockQueryServiceServer::new(
                     CompactBlockServer::new(storage.clone()),
-                )))
+                )
+                .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                .max_encoding_message_size(MAX_MESSAGE_SIZE)))
                 .add_service(we(DexQueryServiceServer::new(DexServer::new(
                     storage.clone(),
-                ))))
+                ))
+                .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                .max_encoding_message_size(MAX_MESSAGE_SIZE)))
                 .add_service(we(GovernanceQueryServiceServer::new(
                     GovernanceServer::new(storage.clone()),
-                )))
+                )
+                .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                .max_encoding_message_size(MAX_MESSAGE_SIZE)))
                 .add_service(we(SctQueryServiceServer::new(SctServer::new(
                     storage.clone(),
-                ))))
+                ))
+                .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                .max_encoding_message_size(MAX_MESSAGE_SIZE)))
                 .add_service(we(ShieldedPoolQueryServiceServer::new(
                     ShieldedPoolServer::new(storage.clone()),
-                )))
+                )
+                .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                .max_encoding_message_size(MAX_MESSAGE_SIZE)))
                 .add_service(we(StakeQueryServiceServer::new(StakeServer::new(
                     storage.clone(),
-                ))))
-                .add_service(we(ClientQueryServer::new(ibc.clone())))
-                .add_service(we(ChannelQueryServer::new(ibc.clone())))
-                .add_service(we(ConnectionQueryServer::new(ibc.clone())))
-                .add_service(we(TendermintProxyServiceServer::new(tm_proxy.clone())))
+                ))
+                .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                .max_encoding_message_size(MAX_MESSAGE_SIZE)))
+                .add_service(we(ClientQueryServer::new(ibc.clone())
+                    .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                    .max_encoding_message_size(MAX_MESSAGE_SIZE)))
+                .add_service(we(ChannelQueryServer::new(ibc.clone())
+                    .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                    .max_encoding_message_size(MAX_MESSAGE_SIZE)))
+                .add_service(we(ConnectionQueryServer::new(ibc.clone())
+                    .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                    .max_encoding_message_size(MAX_MESSAGE_SIZE)))
+                .add_service(we(TendermintProxyServiceServer::new(tm_proxy.clone())
+                    .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                    .max_encoding_message_size(MAX_MESSAGE_SIZE)))
                 .add_service(we(tonic_reflection::server::Builder::configure()
                     .register_encoded_file_descriptor_set(penumbra_proto::FILE_DESCRIPTOR_SET)
                     .build()
-                    .with_context(|| "could not configure grpc reflection service")?));
+                    .with_context(|| "could not configure grpc reflection service")?
+                    .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                    .max_encoding_message_size(MAX_MESSAGE_SIZE)));
 
             let grpc_server = if let Some(domain) = grpc_auto_https {
                 use pd::auto_https::Wrapper;

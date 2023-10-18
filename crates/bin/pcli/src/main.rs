@@ -47,11 +47,8 @@ impl App {
     }
 
     async fn sync(&mut self) -> Result<()> {
-        let mut status_stream = ViewClient::status_stream(
-            self.view.as_mut().expect("view service initialized"),
-            self.fvk.wallet_id(),
-        )
-        .await?;
+        let wallet_id = self.fvk.wallet_id();
+        let mut status_stream = self.view().status_stream(wallet_id).await?;
 
         // Pull out the first message from the stream, which has the current state, and use
         // it to set up a progress bar.

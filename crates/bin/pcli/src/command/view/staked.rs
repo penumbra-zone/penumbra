@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::opt::MAX_MESSAGE_SIZE;
 use anyhow::Result;
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
@@ -28,7 +29,9 @@ impl StakedCmd {
     ) -> Result<()> {
         let asset_cache = view_client.assets().await?;
 
-        let mut client = StakeQueryServiceClient::new(pd_channel);
+        let mut client = StakeQueryServiceClient::new(pd_channel)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE)
+            .max_decoding_message_size(MAX_MESSAGE_SIZE);
 
         let validators = client
             .validator_info(ValidatorInfoRequest {

@@ -28,6 +28,8 @@ use crate::{
     App,
 };
 
+use crate::opt::MAX_MESSAGE_SIZE;
+
 #[derive(Debug, clap::Subcommand)]
 pub enum DexCmd {
     /// Display information about a specific trading pair & height's batch swap.
@@ -93,6 +95,22 @@ pub enum DexCmd {
 }
 
 impl DexCmd {
+    /// Creates a gRPC query client for handling DEX queries.
+    pub async fn dex_client(&self, app: &mut App) -> Result<DexQueryServiceClient<Channel>> {
+        let c = DexQueryServiceClient::new(app.pd_channel().await?)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE)
+            .max_decoding_message_size(MAX_MESSAGE_SIZE);
+        Ok(c)
+    }
+
+    /// Creates a gRPC client for simulating DEX trades.
+    pub async fn sim_client(&self, app: &mut App) -> Result<SimulationServiceClient<Channel>> {
+        let c = SimulationServiceClient::new(app.pd_channel().await?)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE)
+            .max_decoding_message_size(MAX_MESSAGE_SIZE);
+        Ok(c)
+    }
+
     pub async fn get_batch_outputs(
         &self,
         app: &mut App,
@@ -100,7 +118,7 @@ impl DexCmd {
         height: &u64,
         trading_pair: &TradingPair,
     ) -> Result<BatchSwapOutputData> {
-        let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
+        let mut client = self.dex_client(app).await?;
         client
             .batch_swap_output_data(BatchSwapOutputDataRequest {
                 height: *height,
@@ -119,7 +137,7 @@ impl DexCmd {
         height: &u64,
         trading_pair: &DirectedTradingPair,
     ) -> Result<SwapExecution> {
-        let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
+        let mut client = self.dex_client(app).await?;
 
         client
             .swap_execution(SwapExecutionRequest {
@@ -136,7 +154,7 @@ impl DexCmd {
     }
 
     pub async fn get_arb_execution(&self, app: &mut App, height: &u64) -> Result<SwapExecution> {
-        let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
+        let mut client = self.dex_client(app).await?;
         client
             .arb_execution(ArbExecutionRequest {
                 height: *height,
@@ -159,7 +177,7 @@ impl DexCmd {
         use penumbra_proto::core::component::dex::v1alpha1::simulate_trade_request::{
             routing::Setting, Routing,
         };
-        let mut client = SimulationServiceClient::new(app.pd_channel().await?);
+        let mut client = self.sim_client(app).await?;
         client
             .simulate_trade(SimulateTradeRequest {
                 input: Some(input.into()),
@@ -310,7 +328,9 @@ impl DexCmd {
         height: &u64,
         trading_pair: &TradingPair,
     ) -> Result<()> {
-        let mut client = ShieldedPoolQueryServiceClient::new(app.pd_channel().await?);
+        let mut client = ShieldedPoolQueryServiceClient::new(app.pd_channel().await?)
+            .max_decoding_message_size(MAX_MESSAGE_SIZE)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE);
 
         let chain_id = app.view().app_params().await?.chain_params.chain_id;
 
@@ -407,7 +427,7 @@ impl DexCmd {
                 self.print_swap_execution(app, &swap_execution).await?;
             }
             DexCmd::AllPositions { include_closed } => {
-                let client = DexQueryServiceClient::new(app.pd_channel().await?);
+                let client = self.dex_client(app).await?;
                 let chain_id = app.view().app_params().await?.chain_params.chain_id;
 
                 let positions_stream = self
@@ -424,7 +444,7 @@ impl DexCmd {
                 trading_pair,
                 limit,
             } => {
-                let client = DexQueryServiceClient::new(app.pd_channel().await?);
+                let client = self.dex_client(app).await?;
                 let positions = self
                     .get_liquidity_positions_by_price(client, *trading_pair, *limit)
                     .await?
@@ -434,7 +454,7 @@ impl DexCmd {
                 println!("{}", render_positions(&asset_cache, &positions));
             }
             DexCmd::Position { id, raw } => {
-                let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
+                let mut client = self.dex_client(app).await?;
                 let position: Position = client
                     .liquidity_position_by_id(LiquidityPositionByIdRequest {
                         position_id: Some((*id).into()),

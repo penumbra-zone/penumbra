@@ -36,6 +36,8 @@ use crate::{
     Storage,
 };
 
+use crate::MAX_MESSAGE_SIZE;
+
 pub struct Worker {
     storage: Storage,
     sct: Arc<RwLock<penumbra_tct::Tree>>,
@@ -164,7 +166,9 @@ impl Worker {
             .map(|h| h + 1)
             .unwrap_or(0);
 
-        let mut client = CompactBlockQueryServiceClient::new(self.channel.clone());
+        let mut client = CompactBlockQueryServiceClient::new(self.channel.clone())
+            .max_decoding_message_size(MAX_MESSAGE_SIZE)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE);
         let mut stream = client
             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
                 chain_id: chain_id.clone(),
@@ -298,7 +302,9 @@ impl Worker {
                     } else {
                         // If the asset is unknown, we may be able to query for its denom metadata and store that.
 
-                        let mut client = ShieldedPoolQueryServiceClient::new(self.channel.clone());
+                        let mut client = ShieldedPoolQueryServiceClient::new(self.channel.clone())
+                            .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                            .max_encoding_message_size(MAX_MESSAGE_SIZE);
                         if let Some(denom_metadata) = client
                             .denom_metadata_by_id(DenomMetadataByIdRequest {
                                 asset_id: Some(note_record.note.asset_id().into()),
@@ -376,7 +382,9 @@ async fn fetch_block(
     channel: Channel,
     height: i64,
 ) -> anyhow::Result<proto::tendermint::types::Block> {
-    let mut client = TendermintProxyServiceClient::new(channel);
+    let mut client = TendermintProxyServiceClient::new(channel)
+        .max_encoding_message_size(MAX_MESSAGE_SIZE)
+        .max_decoding_message_size(MAX_MESSAGE_SIZE);
     Ok(client
         .get_block_by_height(GetBlockByHeightRequest { height })
         .await?
@@ -394,7 +402,9 @@ async fn sct_divergence_check(
     use penumbra_proto::core::app::v1alpha1::query_service_client::QueryServiceClient;
     use penumbra_sct::state_key as sct_state_key;
 
-    let mut client = QueryServiceClient::new(channel);
+    let mut client = QueryServiceClient::new(channel)
+        .max_decoding_message_size(MAX_MESSAGE_SIZE)
+        .max_encoding_message_size(MAX_MESSAGE_SIZE);
 
     let value = client
         .key_value(penumbra_proto::core::app::v1alpha1::KeyValueRequest {

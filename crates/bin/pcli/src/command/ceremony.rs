@@ -14,10 +14,9 @@ use penumbra_proto::{
         participate_response::{Confirm, ContributeNow, Msg as ResponseMsg},
         ParticipateRequest, ParticipateResponse,
     },
-    view::v1alpha1::GasPricesRequest,
 };
 use penumbra_transaction::memo::MemoPlaintext;
-use penumbra_view::Planner;
+use penumbra_view::{Planner, ViewClient};
 use rand_core::OsRng;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
@@ -32,16 +31,7 @@ fn max_message_size(phase: u8) -> usize {
 
 #[tracing::instrument(skip(app))]
 async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -> Result<()> {
-    let gas_prices = app
-        .view
-        .as_mut()
-        .context("view service must be initialized")?
-        .gas_prices(GasPricesRequest {})
-        .await?
-        .into_inner()
-        .gas_prices
-        .expect("gas prices must be available")
-        .try_into()?;
+    let gas_prices = app.view().gas_prices().await?.try_into()?;
 
     let value = bid.parse::<Value>()?;
 
@@ -53,15 +43,10 @@ async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -
     let mut planner = Planner::new(OsRng);
     planner.set_gas_prices(gas_prices);
     planner.output(value, to);
+    let wallet_id = app.fvk.wallet_id();
     let plan = planner
         .memo(memo_plaintext)?
-        .plan(
-            app.view
-                .as_mut()
-                .context("view service must be initialized")?,
-            app.fvk.wallet_id(),
-            from,
-        )
+        .plan(app.view(), wallet_id, from)
         .await
         .context("can't build send transaction")?;
     app.build_and_submit_transaction(plan).await?;

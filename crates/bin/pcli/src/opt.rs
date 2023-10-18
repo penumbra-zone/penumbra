@@ -23,6 +23,10 @@ use penumbra_wallet::KeyStore;
 use tracing_subscriber::EnvFilter;
 use url::Url;
 
+/// Raise the gRPC max message size limit 4MB -> 20MB,
+/// to support large genesis files.
+pub const MAX_MESSAGE_SIZE: usize = 20 * 1024 * 1024;
+
 #[derive(Debug, Parser)]
 #[clap(
     name = "pcli",
@@ -79,8 +83,12 @@ impl Opt {
         // Build the custody service...
         let wallet = KeyStore::load(custody_path)?;
         let soft_kms = SoftKms::new(wallet.spend_key.clone().into());
-        let custody_svc = CustodyProtocolServiceServer::new(soft_kms);
-        let custody = CustodyProtocolServiceClient::new(box_grpc_svc::local(custody_svc));
+        let custody_svc = CustodyProtocolServiceServer::new(soft_kms)
+            .max_decoding_message_size(MAX_MESSAGE_SIZE)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE);
+        let custody = CustodyProtocolServiceClient::new(box_grpc_svc::local(custody_svc))
+            .max_decoding_message_size(MAX_MESSAGE_SIZE)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE);
 
         let fvk = wallet.spend_key.full_viewing_key().clone();
 
@@ -122,11 +130,16 @@ impl Opt {
             let svc = ViewService::load_or_initialize(Some(path), fvk, self.node.clone()).await?;
 
             // Now build the view and custody clients, doing gRPC with ourselves
-            let svc = ViewProtocolServiceServer::new(svc);
+            let svc = ViewProtocolServiceServer::new(svc)
+                .max_decoding_message_size(MAX_MESSAGE_SIZE)
+                .max_encoding_message_size(MAX_MESSAGE_SIZE);
             box_grpc_svc::local(svc)
         };
 
-        Ok(ViewProtocolServiceClient::new(svc))
+        let vc = ViewProtocolServiceClient::new(svc)
+            .max_decoding_message_size(MAX_MESSAGE_SIZE)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE);
+        Ok(vc)
     }
 }
 

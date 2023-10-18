@@ -23,3 +23,7 @@ pub use status::StatusStreamResponse;
 pub use storage::Storage;
 pub use swap_record::SwapRecord;
 pub use transaction_info::TransactionInfo;
+
+/// Raise the gRPC max message size limit 4MB -> 20MB,
+/// to support large genesis files.
+pub const MAX_MESSAGE_SIZE: usize = 20 * 1024 * 1024;

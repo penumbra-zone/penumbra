@@ -27,7 +27,7 @@ if ! hash cometbft > /dev/null 2>&1 ; then
     exit 1
 fi
 
-export RUST_LOG="pclientd=info,pcli=info,pd=info,penumbra=info"
+export RUST_LOG="pclientd=info,pcli=debug,pd=info,penumbra=info"
 
 # Duration that the network will be left running before script exits.
 TESTNET_RUNTIME="${TESTNET_RUNTIME:-120}"
