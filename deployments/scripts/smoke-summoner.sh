@@ -17,6 +17,7 @@ mkdir /tmp/summonerd
 cargo run --quiet --release --bin pcli -- --home /tmp/summonerd --node https://grpc.testnet-preview.penumbra.zone keys generate
 export SUMMONER_ADDRESS=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/summonerd --node https://grpc.testnet-preview.penumbra.zone view address 0 2>&1)
 export SUMMONER_FVK=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/summonerd --node https://grpc.testnet-preview.penumbra.zone keys export full-viewing-key 2>&1)
+cargo run --quiet --release --bin summonerd -- init --storage-dir /tmp/summonerd --phase1-root phase1.bin
 
 echo "Starting phase 1 run..."
 cargo run --quiet --release --bin summonerd -- start --phase 1 --storage-dir /tmp/summonerd --fvk $SUMMONER_FVK --node https://grpc.testnet-preview.penumbra.zone &
