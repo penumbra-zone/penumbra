@@ -1243,6 +1243,8 @@ impl Storage {
         filtered_block: FilteredBlock,
         transactions: Vec<Transaction>,
         sct: &mut tct::Tree,
+        // TODO: sucks passing this around, figure something better out
+        node: Url,
     ) -> anyhow::Result<()> {
         //Check that the incoming block height follows the latest recorded height
         let last_sync_height = self.last_sync_height().await?;
@@ -1270,6 +1272,23 @@ impl Storage {
 
         let fvk = self.full_viewing_key().await?;
 
+        // If the app parameters have changed, update them.
+        let new_app_parameters: Option<AppParameters> = if filtered_block.app_parameters_updated {
+            // Fetch the latest parameters
+            let mut client = AppQueryServiceClient::connect(node.to_string()).await?;
+            Some(
+                client
+                    .app_parameters(tonic::Request::new(AppParametersRequest {
+                        chain_id: String::new(),
+                    }))
+                    .await?
+                    .into_inner()
+                    .try_into()?,
+            )
+        } else {
+            None
+        };
+
         // Cloning the SCT is cheap because it's a copy-on-write structure, so we move an owned copy
         // into the spawned thread. This means that if for any reason the thread panics or throws an
         // error, the changes to the SCT will be discarded, just like any changes to the database,
@@ -1283,15 +1302,45 @@ impl Storage {
             let mut lock = pool.get()?;
             let mut dbtx = lock.transaction()?;
 
-            // If the app parameters have changed, update them.
-            // TODO: disabled for now, see https://github.com/penumbra-zone/penumbra/issues/3107
-            // if let Some(params) = filtered_block.chain_parameters {
-            //     let chain_params_bytes = &ChainParameters::encode_to_vec(&params)[..];
-            //     dbtx.execute(
-            //         "INSERT INTO chain_params (bytes) VALUES (?1)",
-            //         [chain_params_bytes],
-            //     )?;
-            // }
+            if let Some(params) = new_app_parameters {
+               // Update the various parameter structures.
+                let chain_params_bytes = &ChainParameters::encode_to_vec(&params.chain_params)[..];
+                dbtx.execute(
+                    "UPDATE chain_params SET bytes = ?1",
+                    [chain_params_bytes],
+                )?;
+
+                let stake_params_bytes = &StakeParameters::encode_to_vec(&params.stake_params)[..];
+                dbtx.execute(
+                    "UPDATE stake_params SET bytes = ?1",
+                    [stake_params_bytes],
+                )?;
+
+                let ibc_params_bytes = &IBCParameters::encode_to_vec(&params.ibc_params)[..];
+                dbtx.execute(
+                    "UPDATE ibc_params SET bytes = ?1",
+                    [ibc_params_bytes],
+                )?;
+
+                let fee_params_bytes = &FeeParameters::encode_to_vec(&params.fee_params)[..];
+                dbtx.execute(
+                    "UPDATE fee_params SET bytes = ?1",
+                    [fee_params_bytes],
+                )?;
+
+                let dao_params_bytes = &DaoParameters::encode_to_vec(&params.dao_params)[..];
+                dbtx.execute(
+                    "UPDATE dao_params SET bytes = ?1",
+                    [dao_params_bytes],
+                )?;
+
+                let governance_params_bytes =
+                    &GovernanceParameters::encode_to_vec(&params.governance_params)[..];
+                dbtx.execute(
+                    "UPDATE governance_params SET bytes = ?1",
+                    [governance_params_bytes],
+                )?;
+            }
 
             // Insert new note records into storage
             for note_record in &filtered_block.new_notes {
