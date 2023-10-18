@@ -1051,6 +1051,12 @@ impl Component for Staking {
 /// Extension trait providing read access to staking data.
 #[async_trait]
 pub trait StateReadExt: StateRead {
+    /// Indicates if the stake parameters have been updated in this block.
+    fn stake_params_updated(&self) -> bool {
+        self.object_get::<()>(state_key::stake_params_updated())
+            .is_some()
+    }
+
     /// Gets the stake parameters from the JMT.
     async fn get_stake_params(&self) -> Result<StakeParameters> {
         self.get(state_key::stake_params())

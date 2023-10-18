@@ -371,3 +371,10 @@ message ChangedAppParameters {
     // Fee module parameters.
     core.component.fee.v1alpha1.FeeParameters fee_params = 6;
 }
+
+message ChangedAppParametersSet {
+  // The set of app parameters at the time the proposal was submitted.
+  ChangedAppParameters old = 1;
+  // The new set of parameters the proposal is trying to enact.
+  ChangedAppParameters new = 2;
+}

@@ -8,8 +8,6 @@ use penumbra_governance::{params::GovernanceParameters, proposal::ChangedAppPara
 use penumbra_ibc::params::IBCParameters;
 use penumbra_stake::params::StakeParameters;
 
-use crate::app::App;
-
 use super::AppParameters;
 
 // The checks below validate that a parameter change is valid, since some parameter settings or

@@ -180,6 +180,114 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
         deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.ChangedAppParameters", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for ChangedAppParametersSet {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.old.is_some() {
+            len += 1;
+        }
+        if self.new.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ChangedAppParametersSet", len)?;
+        if let Some(v) = self.old.as_ref() {
+            struct_ser.serialize_field("old", v)?;
+        }
+        if let Some(v) = self.new.as_ref() {
+            struct_ser.serialize_field("new", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for ChangedAppParametersSet {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "old",
+            "new",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Old,
+            New,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "old" => Ok(GeneratedField::Old),
+                            "new" => Ok(GeneratedField::New),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = ChangedAppParametersSet;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ChangedAppParametersSet")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ChangedAppParametersSet, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut old__ = None;
+                let mut new__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Old => {
+                            if old__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("old"));
+                            }
+                            old__ = map_.next_value()?;
+                        }
+                        GeneratedField::New => {
+                            if new__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("new"));
+                            }
+                            new__ = map_.next_value()?;
+                        }
+                    }
+                }
+                Ok(ChangedAppParametersSet {
+                    old: old__,
+                    new: new__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.ChangedAppParametersSet", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for DaoDeposit {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

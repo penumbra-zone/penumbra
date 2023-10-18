@@ -2,21 +2,16 @@ use std::pin::Pin;
 
 use futures::{StreamExt, TryStreamExt};
 use penumbra_chain::component::{AppHashRead, StateReadExt as _};
-use penumbra_dao::StateReadExt as _;
-use penumbra_fee::component::StateReadExt as _;
-use penumbra_governance::StateReadExt as _;
-use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1alpha1::{
     key_value_response::Value, query_service_server::QueryService, AppParametersRequest,
     AppParametersResponse, KeyValueRequest, KeyValueResponse, PrefixValueRequest,
     PrefixValueResponse,
 };
-use penumbra_stake::StateReadExt as _;
 use penumbra_storage::{StateRead, Storage};
 use tonic::Status;
 use tracing::instrument;
 
-use crate::params::AppParameters;
+use crate::app::StateReadExt as _;
 
 // TODO: Hide this and only expose a Router?
 pub struct Server {
@@ -48,37 +43,12 @@ impl QueryService for Server {
                 ))
             })?;
 
-        let chain_params = state.get_chain_params().await.map_err(|e| {
-            tonic::Status::unavailable(format!("error getting chain parameters: {e}"))
-        })?;
-        let stake_params = state.get_stake_params().await.map_err(|e| {
-            tonic::Status::unavailable(format!("error getting stake parameters: {e}"))
-        })?;
-        let ibc_params = state.get_ibc_params().await.map_err(|e| {
-            tonic::Status::unavailable(format!("error getting ibc parameters: {e}"))
-        })?;
-        let governance_params = state.get_governance_params().await.map_err(|e| {
-            tonic::Status::unavailable(format!("error getting governance parameters: {e}"))
-        })?;
-        let dao_params = state.get_dao_params().await.map_err(|e| {
-            tonic::Status::unavailable(format!("error getting dao parameters: {e}"))
-        })?;
-        let fee_params = state.get_fee_params().await.map_err(|e| {
-            tonic::Status::unavailable(format!("error getting fee parameters: {e}"))
+        let app_parameters = state.get_app_params().await.map_err(|e| {
+            tonic::Status::unavailable(format!("error getting app parameters: {e}"))
         })?;
 
         Ok(tonic::Response::new(AppParametersResponse {
-            app_parameters: Some(
-                AppParameters {
-                    chain_params,
-                    stake_params,
-                    ibc_params,
-                    governance_params,
-                    dao_params,
-                    fee_params,
-                }
-                .into(),
-            ),
+            app_parameters: Some(app_parameters.into()),
         }))
     }
 

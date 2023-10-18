@@ -1,18 +1,14 @@
 use std::{collections::BTreeMap, convert::TryFrom};
 
 use anyhow::Result;
-use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_dao::params::DaoParameters;
+use penumbra_chain::params::FmdParameters;
 use penumbra_dex::{BatchSwapOutputData, TradingPair};
-use penumbra_fee::{FeeParameters, GasPrices};
-use penumbra_governance::params::GovernanceParameters;
-use penumbra_ibc::params::IBCParameters;
+use penumbra_fee::GasPrices;
 use penumbra_proto::{
     core::component::compact_block::v1alpha1::CompactBlockRangeResponse,
     penumbra::core::component::compact_block::v1alpha1 as pb, DomainType, TypeUrl,
 };
 use penumbra_sct::Nullifier;
-use penumbra_stake::params::StakeParameters;
 use penumbra_tct::builder::{block, epoch};
 use serde::{Deserialize, Serialize};
 

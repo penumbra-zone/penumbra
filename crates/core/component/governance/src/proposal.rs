@@ -378,7 +378,7 @@ pub struct ChangedAppParameters {
 
 impl TypeUrl for ChangedAppParameters {
     const TYPE_URL: &'static str =
-        "/penumbra.core.component.compact_block.v1alpha1.ChangedAppParameters";
+        "/penumbra.core.component.governance.v1alpha1.ChangedAppParameters";
 }
 
 impl DomainType for ChangedAppParameters {
@@ -409,6 +409,53 @@ impl From<ChangedAppParameters> for pb::ChangedAppParameters {
             governance_params: params.governance_params.map(Into::into),
             dao_params: params.dao_params.map(Into::into),
             fee_params: params.fee_params.map(Into::into),
+        }
+    }
+}
+
+/// Bundles together an "old" and "new" `ChangedAppParameters`
+/// for storing in the JMT.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(
+    try_from = "pb::ChangedAppParametersSet",
+    into = "pb::ChangedAppParametersSet"
+)]
+pub struct ChangedAppParametersSet {
+    pub old: ChangedAppParameters,
+    pub new: ChangedAppParameters,
+}
+
+impl TypeUrl for ChangedAppParametersSet {
+    const TYPE_URL: &'static str =
+        "/penumbra.core.component.governance.v1alpha1.ChangedAppParametersSet";
+}
+
+impl DomainType for ChangedAppParametersSet {
+    type Proto = pb::ChangedAppParametersSet;
+}
+
+impl TryFrom<pb::ChangedAppParametersSet> for ChangedAppParametersSet {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::ChangedAppParametersSet) -> anyhow::Result<Self> {
+        Ok(ChangedAppParametersSet {
+            old: msg
+                .old
+                .ok_or_else(|| anyhow::anyhow!("missing old parameters"))?
+                .try_into()?,
+            new: msg
+                .new
+                .ok_or_else(|| anyhow::anyhow!("missing new parameters"))?
+                .try_into()?,
+        })
+    }
+}
+
+impl From<ChangedAppParametersSet> for pb::ChangedAppParametersSet {
+    fn from(params: ChangedAppParametersSet) -> Self {
+        pb::ChangedAppParametersSet {
+            old: Some(params.old.into()),
+            new: Some(params.new.into()),
         }
     }
 }

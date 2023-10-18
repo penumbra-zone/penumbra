@@ -1,9 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use penumbra_chain::{
-    params::{ChainParameters, FmdParameters},
-    NoteSource,
-};
+use penumbra_chain::{params::FmdParameters, NoteSource};
 use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_dex::swap::{SwapPayload, SwapPlaintext};
 use penumbra_fee::GasPrices;

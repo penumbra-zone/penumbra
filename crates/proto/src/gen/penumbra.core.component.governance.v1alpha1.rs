@@ -566,6 +566,16 @@ pub struct ChangedAppParameters {
     #[prost(message, optional, tag = "6")]
     pub fee_params: ::core::option::Option<super::super::fee::v1alpha1::FeeParameters>,
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ChangedAppParametersSet {
+    /// The set of app parameters at the time the proposal was submitted.
+    #[prost(message, optional, tag = "1")]
+    pub old: ::core::option::Option<ChangedAppParameters>,
+    /// The new set of parameters the proposal is trying to enact.
+    #[prost(message, optional, tag = "2")]
+    pub new: ::core::option::Option<ChangedAppParameters>,
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

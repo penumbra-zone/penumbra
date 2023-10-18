@@ -15,6 +15,12 @@ use super::state_key;
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
+    /// Indicates if the DAO parameters have been updated in this block.
+    fn dao_params_updated(&self) -> bool {
+        self.object_get::<()>(state_key::dao_params_updated())
+            .is_some()
+    }
+
     /// Gets the DAO parameters from the JMT.
     async fn get_dao_params(&self) -> Result<DaoParameters> {
         self.get(state_key::dao_params())
