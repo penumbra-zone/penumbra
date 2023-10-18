@@ -76,6 +76,18 @@ impl Phase2RawCeremonyCRS {
             ]),
         }
     }
+
+    pub fn unchecked_from_protobuf(value: pb::CeremonyCrs) -> anyhow::Result<Self> {
+        Ok(Self([
+            from_bytes_unchecked::<Phase2RawCRSElements>(value.spend.as_slice())?,
+            from_bytes_unchecked::<Phase2RawCRSElements>(value.output.as_slice())?,
+            from_bytes_unchecked::<Phase2RawCRSElements>(value.delegator_vote.as_slice())?,
+            from_bytes_unchecked::<Phase2RawCRSElements>(value.undelegate_claim.as_slice())?,
+            from_bytes_unchecked::<Phase2RawCRSElements>(value.swap.as_slice())?,
+            from_bytes_unchecked::<Phase2RawCRSElements>(value.swap_claim.as_slice())?,
+            from_bytes_unchecked::<Phase2RawCRSElements>(value.nullifer_derivation_crs.as_slice())?,
+        ]))
+    }
 }
 
 impl TryInto<pb::CeremonyCrs> for Phase2RawCeremonyCRS {
@@ -408,6 +420,193 @@ impl Phase2RawCeremonyContribution {
                 x6.assume_valid(),
             ]),
         }
+    }
+
+    pub fn unchecked_from_protobuf(value: pb::participate_request::Contribution) -> Result<Self> {
+        Ok(Self([
+            Phase2RawContribution {
+                parent: ContributionHash::try_from(
+                    value
+                        .parent_hashes
+                        .as_ref()
+                        .ok_or(anyhow!("no parent hashes"))?
+                        .spend
+                        .as_slice(),
+                )?,
+                new_elements: from_bytes_unchecked::<Phase2RawCRSElements>(
+                    value
+                        .updated
+                        .as_ref()
+                        .ok_or(anyhow!("no updated"))?
+                        .spend
+                        .as_slice(),
+                )?,
+                linking_proof: from_bytes_unchecked::<DLogProof>(
+                    value
+                        .update_proofs
+                        .as_ref()
+                        .ok_or(anyhow!("no update proofs"))?
+                        .spend
+                        .as_slice(),
+                )?,
+            },
+            Phase2RawContribution {
+                parent: ContributionHash::try_from(
+                    value
+                        .parent_hashes
+                        .as_ref()
+                        .ok_or(anyhow!("no parent hashes"))?
+                        .output
+                        .as_slice(),
+                )?,
+                new_elements: from_bytes_unchecked::<Phase2RawCRSElements>(
+                    value
+                        .updated
+                        .as_ref()
+                        .ok_or(anyhow!("no updated"))?
+                        .output
+                        .as_slice(),
+                )?,
+                linking_proof: from_bytes_unchecked::<DLogProof>(
+                    value
+                        .update_proofs
+                        .as_ref()
+                        .ok_or(anyhow!("no update proofs"))?
+                        .output
+                        .as_slice(),
+                )?,
+            },
+            Phase2RawContribution {
+                parent: ContributionHash::try_from(
+                    value
+                        .parent_hashes
+                        .as_ref()
+                        .ok_or(anyhow!("no parent hashes"))?
+                        .delegator_vote
+                        .as_slice(),
+                )?,
+                new_elements: from_bytes_unchecked::<Phase2RawCRSElements>(
+                    value
+                        .updated
+                        .as_ref()
+                        .ok_or(anyhow!("no updated"))?
+                        .delegator_vote
+                        .as_slice(),
+                )?,
+                linking_proof: from_bytes_unchecked::<DLogProof>(
+                    value
+                        .update_proofs
+                        .as_ref()
+                        .ok_or(anyhow!("no update proofs"))?
+                        .delegator_vote
+                        .as_slice(),
+                )?,
+            },
+            Phase2RawContribution {
+                parent: ContributionHash::try_from(
+                    value
+                        .parent_hashes
+                        .as_ref()
+                        .ok_or(anyhow!("no parent hashes"))?
+                        .undelegate_claim
+                        .as_slice(),
+                )?,
+                new_elements: from_bytes_unchecked::<Phase2RawCRSElements>(
+                    value
+                        .updated
+                        .as_ref()
+                        .ok_or(anyhow!("no updated"))?
+                        .undelegate_claim
+                        .as_slice(),
+                )?,
+                linking_proof: from_bytes_unchecked::<DLogProof>(
+                    value
+                        .update_proofs
+                        .as_ref()
+                        .ok_or(anyhow!("no update proofs"))?
+                        .undelegate_claim
+                        .as_slice(),
+                )?,
+            },
+            Phase2RawContribution {
+                parent: ContributionHash::try_from(
+                    value
+                        .parent_hashes
+                        .as_ref()
+                        .ok_or(anyhow!("no parent hashes"))?
+                        .swap
+                        .as_slice(),
+                )?,
+                new_elements: from_bytes_unchecked::<Phase2RawCRSElements>(
+                    value
+                        .updated
+                        .as_ref()
+                        .ok_or(anyhow!("no updated"))?
+                        .swap
+                        .as_slice(),
+                )?,
+                linking_proof: from_bytes_unchecked::<DLogProof>(
+                    value
+                        .update_proofs
+                        .as_ref()
+                        .ok_or(anyhow!("no update proofs"))?
+                        .swap
+                        .as_slice(),
+                )?,
+            },
+            Phase2RawContribution {
+                parent: ContributionHash::try_from(
+                    value
+                        .parent_hashes
+                        .as_ref()
+                        .ok_or(anyhow!("no parent hashes"))?
+                        .swap_claim
+                        .as_slice(),
+                )?,
+                new_elements: from_bytes_unchecked::<Phase2RawCRSElements>(
+                    value
+                        .updated
+                        .as_ref()
+                        .ok_or(anyhow!("no updated"))?
+                        .swap_claim
+                        .as_slice(),
+                )?,
+                linking_proof: from_bytes_unchecked::<DLogProof>(
+                    value
+                        .update_proofs
+                        .as_ref()
+                        .ok_or(anyhow!("no update proofs"))?
+                        .swap_claim
+                        .as_slice(),
+                )?,
+            },
+            Phase2RawContribution {
+                parent: ContributionHash::try_from(
+                    value
+                        .parent_hashes
+                        .as_ref()
+                        .ok_or(anyhow!("no parent hashes"))?
+                        .nullifer_derivation_crs
+                        .as_slice(),
+                )?,
+                new_elements: from_bytes_unchecked::<Phase2RawCRSElements>(
+                    value
+                        .updated
+                        .as_ref()
+                        .ok_or(anyhow!("no updated"))?
+                        .nullifer_derivation_crs
+                        .as_slice(),
+                )?,
+                linking_proof: from_bytes_unchecked::<DLogProof>(
+                    value
+                        .update_proofs
+                        .as_ref()
+                        .ok_or(anyhow!("no update proofs"))?
+                        .nullifer_derivation_crs
+                        .as_slice(),
+                )?,
+            },
+        ]))
     }
 }
 
@@ -817,6 +1016,193 @@ impl Phase1RawCeremonyContribution {
                 x6.assume_valid(),
             ]),
         }
+    }
+
+    pub fn unchecked_from_protobuf(value: pb::participate_request::Contribution) -> Result<Self> {
+        Ok(Self([
+            Phase1RawContribution {
+                parent: ContributionHash::try_from(
+                    value
+                        .parent_hashes
+                        .as_ref()
+                        .ok_or(anyhow!("no parent hashes"))?
+                        .spend
+                        .as_slice(),
+                )?,
+                new_elements: from_bytes_unchecked::<Phase1RawCRSElements>(
+                    value
+                        .updated
+                        .as_ref()
+                        .ok_or(anyhow!("no updated"))?
+                        .spend
+                        .as_slice(),
+                )?,
+                linking_proof: from_bytes_unchecked::<LinkingProof>(
+                    value
+                        .update_proofs
+                        .as_ref()
+                        .ok_or(anyhow!("no update proofs"))?
+                        .spend
+                        .as_slice(),
+                )?,
+            },
+            Phase1RawContribution {
+                parent: ContributionHash::try_from(
+                    value
+                        .parent_hashes
+                        .as_ref()
+                        .ok_or(anyhow!("no parent hashes"))?
+                        .output
+                        .as_slice(),
+                )?,
+                new_elements: from_bytes_unchecked::<Phase1RawCRSElements>(
+                    value
+                        .updated
+                        .as_ref()
+                        .ok_or(anyhow!("no updated"))?
+                        .output
+                        .as_slice(),
+                )?,
+                linking_proof: from_bytes_unchecked::<LinkingProof>(
+                    value
+                        .update_proofs
+                        .as_ref()
+                        .ok_or(anyhow!("no update proofs"))?
+                        .output
+                        .as_slice(),
+                )?,
+            },
+            Phase1RawContribution {
+                parent: ContributionHash::try_from(
+                    value
+                        .parent_hashes
+                        .as_ref()
+                        .ok_or(anyhow!("no parent hashes"))?
+                        .delegator_vote
+                        .as_slice(),
+                )?,
+                new_elements: from_bytes_unchecked::<Phase1RawCRSElements>(
+                    value
+                        .updated
+                        .as_ref()
+                        .ok_or(anyhow!("no updated"))?
+                        .delegator_vote
+                        .as_slice(),
+                )?,
+                linking_proof: from_bytes_unchecked::<LinkingProof>(
+                    value
+                        .update_proofs
+                        .as_ref()
+                        .ok_or(anyhow!("no update proofs"))?
+                        .delegator_vote
+                        .as_slice(),
+                )?,
+            },
+            Phase1RawContribution {
+                parent: ContributionHash::try_from(
+                    value
+                        .parent_hashes
+                        .as_ref()
+                        .ok_or(anyhow!("no parent hashes"))?
+                        .undelegate_claim
+                        .as_slice(),
+                )?,
+                new_elements: from_bytes_unchecked::<Phase1RawCRSElements>(
+                    value
+                        .updated
+                        .as_ref()
+                        .ok_or(anyhow!("no updated"))?
+                        .undelegate_claim
+                        .as_slice(),
+                )?,
+                linking_proof: from_bytes_unchecked::<LinkingProof>(
+                    value
+                        .update_proofs
+                        .as_ref()
+                        .ok_or(anyhow!("no update proofs"))?
+                        .undelegate_claim
+                        .as_slice(),
+                )?,
+            },
+            Phase1RawContribution {
+                parent: ContributionHash::try_from(
+                    value
+                        .parent_hashes
+                        .as_ref()
+                        .ok_or(anyhow!("no parent hashes"))?
+                        .swap
+                        .as_slice(),
+                )?,
+                new_elements: from_bytes_unchecked::<Phase1RawCRSElements>(
+                    value
+                        .updated
+                        .as_ref()
+                        .ok_or(anyhow!("no updated"))?
+                        .swap
+                        .as_slice(),
+                )?,
+                linking_proof: from_bytes_unchecked::<LinkingProof>(
+                    value
+                        .update_proofs
+                        .as_ref()
+                        .ok_or(anyhow!("no update proofs"))?
+                        .swap
+                        .as_slice(),
+                )?,
+            },
+            Phase1RawContribution {
+                parent: ContributionHash::try_from(
+                    value
+                        .parent_hashes
+                        .as_ref()
+                        .ok_or(anyhow!("no parent hashes"))?
+                        .swap_claim
+                        .as_slice(),
+                )?,
+                new_elements: from_bytes_unchecked::<Phase1RawCRSElements>(
+                    value
+                        .updated
+                        .as_ref()
+                        .ok_or(anyhow!("no updated"))?
+                        .swap_claim
+                        .as_slice(),
+                )?,
+                linking_proof: from_bytes_unchecked::<LinkingProof>(
+                    value
+                        .update_proofs
+                        .as_ref()
+                        .ok_or(anyhow!("no update proofs"))?
+                        .swap_claim
+                        .as_slice(),
+                )?,
+            },
+            Phase1RawContribution {
+                parent: ContributionHash::try_from(
+                    value
+                        .parent_hashes
+                        .as_ref()
+                        .ok_or(anyhow!("no parent hashes"))?
+                        .nullifer_derivation_crs
+                        .as_slice(),
+                )?,
+                new_elements: from_bytes_unchecked::<Phase1RawCRSElements>(
+                    value
+                        .updated
+                        .as_ref()
+                        .ok_or(anyhow!("no updated"))?
+                        .nullifer_derivation_crs
+                        .as_slice(),
+                )?,
+                linking_proof: from_bytes_unchecked::<LinkingProof>(
+                    value
+                        .update_proofs
+                        .as_ref()
+                        .ok_or(anyhow!("no update proofs"))?
+                        .nullifer_derivation_crs
+                        .as_slice(),
+                )?,
+            },
+        ]))
     }
 }
 
