@@ -66,7 +66,7 @@ impl WasmPlanner {
         Ok(())
     }
 
-    /// Set gas price
+    /// Set gas prices
     /// Arguments:
     ///     gas_prices: `GasPrices`
     pub fn set_gas_prices(&mut self, gas_prices: JsValue) -> WasmResult<()> {
