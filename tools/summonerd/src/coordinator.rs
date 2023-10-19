@@ -3,7 +3,6 @@ use std::{cmp, collections::HashMap, time::Duration};
 use anyhow::{anyhow, Result};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
-use rand::rngs::OsRng;
 use tokio::sync::mpsc::{self};
 use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 
@@ -86,18 +85,22 @@ impl ContributionHandler {
         let maybe = participant.contribute::<P>(&parent).await?;
         if let Some(unvalidated) = maybe {
             tracing::debug!("validating contribution");
-            if let Some(contribution) = P::validate(
-                &mut OsRng,
-                &P::fetch_root(&self.storage).await?,
-                unvalidated,
-            ) {
-                if P::is_linked_to(&contribution, &parent) {
-                    P::commit_contribution(&self.storage, contributor, contribution).await?;
-                    participant
-                        .confirm(self.storage.current_slot(P::MARKER).await?)
-                        .await?;
-                    return Ok(());
+            let root = P::fetch_root(&self.storage).await?;
+            let maybe_contribution = tokio::task::spawn_blocking(move || {
+                if let Some(contribution) = P::validate(&root, unvalidated) {
+                    if P::is_linked_to(&contribution, &parent) {
+                        return Some(contribution);
+                    }
                 }
+                None
+            })
+            .await?;
+            if let Some(contribution) = maybe_contribution {
+                P::commit_contribution(&self.storage, contributor, contribution).await?;
+                participant
+                    .confirm(self.storage.current_slot(P::MARKER).await?)
+                    .await?;
+                return Ok(());
             }
         }
         self.storage.strike(&contributor).await?;

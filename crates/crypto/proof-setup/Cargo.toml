@@ -21,6 +21,7 @@ penumbra-proof-params = { path = "../proof-params" }
 penumbra-proto = { path = "../../proto" }
 penumbra-shielded-pool = { path = "../../core/component/shielded-pool/" }
 penumbra-stake = { path = "../../core/component/stake/", features = ["component"] }
+rayon = { version = "1.8.0", optional = true }
 
 [dev-dependencies]
 ark-r1cs-std = "0.4.0"
@@ -36,4 +37,4 @@ harness = false
 
 [features]
 default = []
-parallel = ["ark-ec/parallel", "ark-ff/parallel", "ark-groth16/parallel", "decaf377/parallel"]
+parallel = ["ark-ec/parallel", "ark-ff/parallel", "ark-groth16/parallel", "decaf377/parallel", "rayon"]

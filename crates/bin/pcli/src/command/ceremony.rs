@@ -144,11 +144,11 @@ impl CeremonyCmd {
                 };
                 let contribution = if *phase == 1 {
                     let parent = Phase1RawCeremonyCRS::try_from(unparsed_parent)?.assume_valid();
-                    let contribution = Phase1CeremonyContribution::make(&mut OsRng, &parent);
+                    let contribution = Phase1CeremonyContribution::make(&parent);
                     contribution.try_into()?
                 } else {
                     let parent = Phase2RawCeremonyCRS::try_from(unparsed_parent)?.assume_valid();
-                    let contribution = Phase2CeremonyContribution::make(&mut OsRng, &parent);
+                    let contribution = Phase2CeremonyContribution::make(&parent);
                     contribution.try_into()?
                 };
 

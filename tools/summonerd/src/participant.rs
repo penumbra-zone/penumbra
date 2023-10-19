@@ -80,7 +80,10 @@ impl Participant {
             msg: Some(RequestMsg::Contribution(contribution)),
         }) = msg
         {
-            Ok(Some(P::deserialize_contribution(contribution)?))
+            let deserialized =
+                tokio::task::spawn_blocking(move || P::deserialize_contribution(contribution))
+                    .await??;
+            Ok(Some(deserialized))
         } else {
             Ok(None)
         }
