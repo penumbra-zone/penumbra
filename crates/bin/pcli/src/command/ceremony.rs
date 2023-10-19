@@ -143,11 +143,13 @@ impl CeremonyCmd {
                     }
                 };
                 let contribution = if *phase == 1 {
-                    let parent = Phase1RawCeremonyCRS::unchecked_from_protobuf(unparsed_parent)?.assume_valid();
+                    let parent = Phase1RawCeremonyCRS::unchecked_from_protobuf(unparsed_parent)?
+                        .assume_valid();
                     let contribution = Phase1CeremonyContribution::make(&parent);
                     contribution.try_into()?
                 } else {
-                    let parent = Phase2RawCeremonyCRS::unchecked_from_protobuf(unparsed_parent)?.assume_valid();
+                    let parent = Phase2RawCeremonyCRS::unchecked_from_protobuf(unparsed_parent)?
+                        .assume_valid();
                     let contribution = Phase2CeremonyContribution::make(&parent);
                     contribution.try_into()?
                 };
