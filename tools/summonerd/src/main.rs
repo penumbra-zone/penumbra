@@ -1,6 +1,7 @@
 mod coordinator;
 mod participant;
 mod penumbra_knower;
+mod phase;
 mod server;
 mod storage;
 
@@ -32,11 +33,19 @@ use tonic::transport::Server;
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
 
+use crate::phase::Phase1;
+use crate::phase::Phase2;
+use crate::phase::PhaseMarker;
 use crate::{penumbra_knower::PenumbraKnower, server::CoordinatorService};
 use penumbra_proof_setup::all::{Phase1CeremonyCRS, Phase1RawCeremonyCRS};
 
 /// 100 MIB
-const MAX_MESSAGE_SIZE: usize = 100 * 1024 * 1024;
+fn max_message_size(phase: PhaseMarker) -> usize {
+    match phase {
+        PhaseMarker::P1 => 200 * 1024 * 1024,
+        PhaseMarker::P2 => 100 * 1024 * 1024,
+    }
+}
 
 // To avoid repeating the constant
 fn ceremony_db(path: &Utf8Path) -> Utf8PathBuf {
@@ -79,6 +88,8 @@ enum Command {
     },
     /// Start the coordinator.
     Start {
+        #[clap(long, display_order = 100)]
+        phase: u8,
         #[clap(long, display_order = 700)]
         storage_dir: Utf8PathBuf,
         #[clap(long, display_order = 800)]
@@ -107,29 +118,40 @@ impl Opt {
                 Ok(())
             }
             Command::Start {
+                phase,
                 storage_dir,
                 fvk,
                 node,
                 listen,
             } => {
+                let marker = match phase {
+                    1 => PhaseMarker::P1,
+                    2 => PhaseMarker::P2,
+                    _ => anyhow::bail!("Phase must be 1 or 2."),
+                };
                 let storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
                 // Check if we've transitioned, for a nice error message
-                if storage.transition_extra_information().await?.is_none() {
+                if marker == PhaseMarker::P2
+                    && storage.transition_extra_information().await?.is_none()
+                {
                     anyhow::bail!("Please run the transition command before this command 8^)");
                 }
                 let knower =
                     PenumbraKnower::load_or_initialize(storage_dir.join("penumbra.db"), &fvk, node)
                         .await?;
                 let (coordinator, participant_tx) = Coordinator::new(storage.clone());
-                let coordinator_handle = tokio::spawn(coordinator.run());
-                let service = CoordinatorService::new(knower, storage, participant_tx);
+                let coordinator_handle = match marker {
+                    PhaseMarker::P1 => tokio::spawn(coordinator.run::<Phase1>()),
+                    PhaseMarker::P2 => tokio::spawn(coordinator.run::<Phase2>()),
+                };
+                let service = CoordinatorService::new(knower, storage, participant_tx, marker);
                 let grpc_server =
                     Server::builder()
                         .accept_http1(true)
                         .add_service(tonic_web::enable(
                             CeremonyCoordinatorServiceServer::new(service)
-                                .max_encoding_message_size(MAX_MESSAGE_SIZE)
-                                .max_decoding_message_size(MAX_MESSAGE_SIZE),
+                                .max_encoding_message_size(max_message_size(marker))
+                                .max_decoding_message_size(max_message_size(marker)),
                         ));
                 tracing::info!(?listen, "starting grpc server");
                 let server_handle = tokio::spawn(grpc_server.serve(listen));

@@ -28,7 +28,7 @@ use rand_core::CryptoRngCore;
 
 fn to_bytes<T: CanonicalSerialize>(t: &T) -> Result<Vec<u8>> {
     let mut out = Vec::new();
-    t.serialize_compressed(&mut out)?;
+    t.serialize_uncompressed(&mut out)?;
     Ok(out)
 }
 

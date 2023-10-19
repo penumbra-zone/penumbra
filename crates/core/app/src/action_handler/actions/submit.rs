@@ -22,6 +22,7 @@ use penumbra_transaction::{AuthorizationData, WitnessData};
 
 use crate::action_handler::ActionHandler;
 use crate::dao_ext::DaoStateWriteExt;
+use crate::params::AppParameters;
 use penumbra_governance::{
     component::{StateReadExt as _, StateWriteExt as _},
     proposal::{Proposal, ProposalPayload},
@@ -71,11 +72,20 @@ impl ActionHandler for ProposalSubmit {
         match payload {
             Signaling { commit: _ } => { /* all signaling proposals are valid */ }
             Emergency { halt_chain: _ } => { /* all emergency proposals are valid */ }
-            ParameterChange { old: _, new: _ } => {
-                // TODO: re-enable (https://github.com/penumbra-zone/penumbra/issues/3107)
-                tracing::warn!("parameter change proposals are currently disabled (see #3107)");
-                // old.check_valid_update(new)
-                //     .context("invalid change to chain parameters")?;
+            ParameterChange { old, new } => {
+                // Since the changed app parameters is a differential, we need to construct
+                // a complete AppParameters:
+                //
+                // `old_app_params` should be complete and represent the state of all app parameters
+                // at the time the proposal was created.
+                let old_app_params = AppParameters::from_changed_params(old, None)?;
+                // `new_app_params` should be sparse and only the components whose parameters were changed
+                // by the proposal should be `Some`.
+                let new_app_params =
+                    AppParameters::from_changed_params(new, Some(&old_app_params))?;
+                old_app_params
+                    .check_valid_update(&new_app_params)
+                    .context("invalid change to app parameters")?;
             }
             DaoSpend { transaction_plan } => {
                 // Check to make sure that the transaction plan contains only valid actions for the

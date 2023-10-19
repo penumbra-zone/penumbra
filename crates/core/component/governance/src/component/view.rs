@@ -7,10 +7,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use futures::StreamExt;
 use penumbra_asset::{asset, Value, STAKING_TOKEN_DENOM};
-use penumbra_chain::{
-    component::{StateReadExt as _, StateWriteExt as _},
-    params::ChainParameters,
-};
+use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_sct::Nullifier;
@@ -25,7 +22,7 @@ use penumbra_stake::{rate::RateData, validator, StateReadExt as _};
 
 use crate::{
     params::GovernanceParameters,
-    proposal::{Proposal, ProposalPayload},
+    proposal::{ChangedAppParameters, ChangedAppParametersSet, Proposal, ProposalPayload},
     proposal_state::State as ProposalState,
     validator_vote::action::ValidatorVoteReason,
     vote::Vote,
@@ -34,6 +31,12 @@ use crate::{state_key, tally::Tally};
 
 #[async_trait]
 pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
+    /// Indicates if the governance parameters have been updated in this block.
+    fn governance_params_updated(&self) -> bool {
+        self.object_get::<()>(state_key::governance_params_updated())
+            .is_some()
+    }
+
     /// Gets the governance parameters from the JMT.
     async fn get_governance_params(&self) -> Result<GovernanceParameters> {
         self.get(state_key::governance_params())
@@ -520,19 +523,19 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
         Ok(tally)
     }
 
-    /// Get the pending chain parameters, if any.
-    async fn pending_chain_parameters(&self) -> Result<Option<ChainParameters>> {
+    /// Get the pending app parameters, if any.
+    async fn pending_app_parameters(&self) -> Result<Option<ChangedAppParametersSet>> {
         Ok(self
-            .get(&state_key::change_chain_params_at_height(
+            .get(&state_key::change_app_params_at_height(
                 self.get_block_height().await?,
             ))
             .await?)
     }
 
-    /// Get the next block's pending chain parameters, if any.
-    async fn next_block_pending_chain_parameters(&self) -> Result<Option<ChainParameters>> {
+    /// Get the next block's pending app parameters, if any.
+    async fn next_block_pending_app_parameters(&self) -> Result<Option<ChangedAppParametersSet>> {
         Ok(self
-            .get(&state_key::change_chain_params_at_height(
+            .get(&state_key::change_app_params_at_height(
                 self.get_block_height().await? + 1,
             ))
             .await?)
@@ -551,10 +554,8 @@ impl<T: StateRead + penumbra_stake::StateReadExt + ?Sized> StateReadExt for T {}
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided governance parameters to the JMT.
     fn put_governance_params(&mut self, params: GovernanceParameters) {
-        // TODO: this needs to be handled on a per-component basis or possibly removed from the compact block
-        // entirely, currently disabled, see https://github.com/penumbra-zone/penumbra/issues/3107
-        // Note to the shielded pool to include the chain parameters in the next compact block:
-        // self.object_put(state_key::chain_params_changed(), ());
+        // Note that the governance params have been updated:
+        self.object_put(state_key::governance_params_updated(), ());
 
         // Change the governance parameters:
         self.put(state_key::governance_params().into(), params)
@@ -845,45 +846,16 @@ pub trait StateWriteExt: StateWrite {
                     self.signal_halt().await?;
                 }
             }
-            ProposalPayload::ParameterChange { old: _, new: _ } => {
-                // TODO: Renable (#3107)
-                tracing::info!("Parameter change proposal passed, however parameter change is currently disabled. See issue #3107");
-                // tracing::info!(
-                //     "parameter change proposal passed, attempting to update chain parameters"
-                // );
+            ProposalPayload::ParameterChange { old, new } => {
+                tracing::info!(
+                    "parameter change proposal passed, attempting to schedule app parameters update"
+                );
 
-                // // If there has been a chain upgrade while the proposal was pending, the stateless
-                // // verification criteria for the parameter change proposal could have changed, so we
-                // // should check them again here, just to be sure:
-                // old.check_valid_update(new)
-                //     .context("final check for validity of chain parameter update failed")?;
+                // Signal that the app should validate the parameter change.
+                self.schedule_app_param_update(*old.clone(), *new.clone())
+                    .await?;
 
-                // // Check that the old parameters are an exact match for the current parameters, or
-                // // else abort the update.
-                // let current =
-                //     // If there is a pending parameter change, sequence the update on top of that
-                //     // one (i.e., pretend that those new parameters are the old parameters, since
-                //     // chain parameter updates must be sequentially consistent)
-                //     if let Some(params) = self.next_block_pending_chain_parameters().await? {
-                //         params
-                //     } else {
-                //         // If no pending parameter change, use the current parameters
-                //         self.get_chain_params().await?
-                //     };
-
-                // // The current parameters (whether pending from a previous passed proposal or just the
-                // // current ones, unchanged) have to match the old parameters specified in the
-                // // proposal, exactly. This prevents updates from clashing.
-                // if **old != current {
-                //     return Ok(Err(anyhow::anyhow!(
-                //         "current chain parameters do not match the old parameters in the proposal"
-                //     )));
-                // }
-
-                // // Tell the app to update the chain parameters in the next block
-                // self.schedule_chain_params_change((**new).clone()).await?;
-
-                // tracing::info!("chain parameters updated successfully");
+                tracing::info!("app parameters update scheduled successfully");
             }
             ProposalPayload::DaoSpend {
                 transaction_plan: _,
@@ -914,16 +886,34 @@ pub trait StateWriteExt: StateWrite {
         Ok(())
     }
 
-    async fn schedule_chain_params_change(&mut self, chain_params: ChainParameters) -> Result<()> {
-        // Schedule for beginning of next block
-        let delivery_height = self.get_block_height().await? + 1;
+    async fn schedule_app_param_update(
+        &mut self,
+        old_chain_params: ChangedAppParameters,
+        new_chain_params: ChangedAppParameters,
+    ) -> Result<()> {
+        // Schedule the validation for this block
+        let validation_height = self.get_block_height().await?;
 
-        tracing::info!(%delivery_height, "scheduling chain parameters change at next block");
+        tracing::info!(%validation_height, "scheduling app parameters to be validated by app at end of this block and enacted at the beginning of next block");
 
         self.put(
-            state_key::change_chain_params_at_height(delivery_height),
-            chain_params,
+            // Validation happens in this block, and the change height is the next block.
+            state_key::change_app_params_at_height(validation_height + 1),
+            ChangedAppParametersSet {
+                old: old_chain_params,
+                new: new_chain_params,
+            },
         );
+        Ok(())
+    }
+
+    /// Cancel the next block's pending app parameters.
+    async fn cancel_next_block_pending_app_parameters(&mut self) -> Result<()> {
+        let next_height = self.get_block_height().await? + 1;
+
+        tracing::info!(%next_height, "canceling pending app parameters for next block");
+
+        self.delete(state_key::change_app_params_at_height(next_height));
         Ok(())
     }
 }

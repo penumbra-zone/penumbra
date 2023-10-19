@@ -173,8 +173,11 @@ pub enum TxCmd {
         #[clap(long)]
         channel: u64,
 
-        /// Block height on the current chain, after which the withdrawal will be considered
-        /// invalid if not already relayed.
+        /// Block height on the counterparty chain, after which the withdrawal will be considered
+        /// invalid if not already relayed. Must be specified as a tuple of revision number and block
+        /// height, e.g. `5-1000000` means "chain revision 5, block height of 1000000".
+        /// You must know the chain id of the counterparty chain beforehand, e.g. `osmosis-testnet-5`,
+        /// to know the revision number.
         #[clap(long, default_value = "0-0", display_order = 100)]
         timeout_height: IbcHeight,
         /// Timestamp, specified in epoch time, after which the withdrawal will be considered

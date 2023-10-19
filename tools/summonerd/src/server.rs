@@ -11,6 +11,7 @@ use tonic::{async_trait, Request, Response, Status, Streaming};
 use crate::{
     participant::Participant,
     penumbra_knower::PenumbraKnower,
+    phase::PhaseMarker,
     storage::{ContributionAllowed, Storage},
 };
 
@@ -19,6 +20,7 @@ pub struct CoordinatorService {
     knower: PenumbraKnower,
     storage: Storage,
     participant_tx: mpsc::Sender<(Participant, Amount)>,
+    marker: PhaseMarker,
 }
 
 impl CoordinatorService {
@@ -26,11 +28,13 @@ impl CoordinatorService {
         knower: PenumbraKnower,
         storage: Storage,
         participant_tx: mpsc::Sender<(Participant, Amount)>,
+        marker: PhaseMarker,
     ) -> Self {
         Self {
             knower,
             storage,
             participant_tx,
+            marker,
         }
     }
 }
@@ -65,7 +69,7 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
         // Errors are on our end, None is on their end
         let amount = match self
             .storage
-            .can_contribute(&self.knower, &address)
+            .can_contribute(&self.knower, &address, self.marker)
             .await
             .map_err(|e| {
                 Status::internal(format!("failed to look up contributor metadata {:#}", e))

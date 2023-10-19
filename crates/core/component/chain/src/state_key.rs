@@ -36,10 +36,6 @@ pub fn next_upgrade() -> &'static str {
 }
 
 // These are used for the object store:
-pub fn chain_params_changed() -> &'static str {
-    "chain/chain_params_changed"
-}
-
 pub fn epoch_by_height(height: u64) -> String {
     format!("chain/epoch_by_height/{}", height)
 }
@@ -50,4 +46,8 @@ pub fn epoch_change_at_height(height: u64) -> String {
 
 pub fn end_epoch_early() -> &'static str {
     "chain/end_epoch_early"
+}
+
+pub fn chain_params_updated() -> &'static str {
+    "chain/chain_params_updated"
 }

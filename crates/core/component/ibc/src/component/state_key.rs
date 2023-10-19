@@ -8,6 +8,10 @@ pub fn ibc_params() -> &'static str {
     "ibc/params"
 }
 
+pub fn ibc_params_updated() -> &'static str {
+    "ibc/ibc_params_updated"
+}
+
 // these are internal helpers that are used by penumbra-ibc, but not part of the IBC spec (that is,
 // counterparties don't expect to verify proofs about them)
 pub fn client_processed_heights(client_id: &ClientId, height: &Height) -> String {

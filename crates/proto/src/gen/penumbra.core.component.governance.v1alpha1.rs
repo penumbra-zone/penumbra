@@ -431,24 +431,21 @@ pub mod proposal {
         #[prost(bool, tag = "1")]
         pub halt_chain: bool,
     }
-    /// A parameter change proposal describes a replacement of the chain parameters, which should take
+    /// A parameter change proposal describes a replacement of the app parameters, which should take
     /// effect when the proposal is passed.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ParameterChange {
-        /// The old chain parameters to be replaced: even if the proposal passes, the update will not be
-        /// applied if the chain parameters have changed *at all* from these chain parameters. Usually,
-        /// this should be set to the current chain parameters at time of proposal.
+        /// The old app parameters to be replaced: even if the proposal passes, the update will not be
+        /// applied if the app parameters have changed *at all* from these app parameters. Usually,
+        /// this should be set to the current app parameters at time of proposal.
         #[prost(message, optional, tag = "1")]
-        pub old_parameters: ::core::option::Option<
-            super::super::super::chain::v1alpha1::ChainParameters,
-        >,
-        /// The new chain parameters to be set: the *entire* chain parameters will be replaced with these
-        /// at the time the proposal is passed.
+        pub old_parameters: ::core::option::Option<super::ChangedAppParameters>,
+        /// The new app parameters to be set: the *entire* app parameters will be replaced with these
+        /// at the time the proposal is passed, for every component's parameters that is set. If a component's
+        /// parameters are not set, then they were not changed by the proposal, and will not be updated.
         #[prost(message, optional, tag = "2")]
-        pub new_parameters: ::core::option::Option<
-            super::super::super::chain::v1alpha1::ChainParameters,
-        >,
+        pub new_parameters: ::core::option::Option<super::ChangedAppParameters>,
     }
     /// A DAO spend proposal describes zero or more transactions to execute on behalf of the DAO, with
     /// access to its funds, and zero or more scheduled transactions from previous passed proposals to
@@ -540,6 +537,44 @@ pub struct GenesisContent {
     /// Governance parameters.
     #[prost(message, optional, tag = "1")]
     pub governance_params: ::core::option::Option<GovernanceParameters>,
+}
+/// Note: must be kept in sync with AppParameters.
+/// Each field here is optional.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ChangedAppParameters {
+    /// Chain module parameters.
+    #[prost(message, optional, tag = "1")]
+    pub chain_params: ::core::option::Option<
+        super::super::chain::v1alpha1::ChainParameters,
+    >,
+    /// DAO module parameters.
+    #[prost(message, optional, tag = "2")]
+    pub dao_params: ::core::option::Option<super::super::dao::v1alpha1::DaoParameters>,
+    /// Governance module parameters.
+    #[prost(message, optional, tag = "3")]
+    pub governance_params: ::core::option::Option<GovernanceParameters>,
+    /// IBC module parameters.
+    #[prost(message, optional, tag = "4")]
+    pub ibc_params: ::core::option::Option<super::super::ibc::v1alpha1::IbcParameters>,
+    /// Stake module parameters.
+    #[prost(message, optional, tag = "5")]
+    pub stake_params: ::core::option::Option<
+        super::super::stake::v1alpha1::StakeParameters,
+    >,
+    /// Fee module parameters.
+    #[prost(message, optional, tag = "6")]
+    pub fee_params: ::core::option::Option<super::super::fee::v1alpha1::FeeParameters>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ChangedAppParametersSet {
+    /// The set of app parameters at the time the proposal was submitted.
+    #[prost(message, optional, tag = "1")]
+    pub old: ::core::option::Option<ChangedAppParameters>,
+    /// The new set of parameters the proposal is trying to enact.
+    #[prost(message, optional, tag = "2")]
+    pub new: ::core::option::Option<ChangedAppParameters>,
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]

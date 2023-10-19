@@ -174,61 +174,50 @@ There are other pairs available that you can try this tool on, for example `gm:g
 ## IBC withdrawals
 
 <!--
-N.B. These steps were written based on a local relayer setup, transferring packets
-between a local devnet and preview. The plan is to run a public relayer between
-testnet & preview again, starting with Testnet 59 Enceladus. We cannot run the relayer
-until 59, due to pcli incompatibilities between the branches.
+N.B. These steps require a running Hermes deployment, specifically one that
+has been configured between the Osmosis testnet and the *current* Penumbra testnet.
 -->
 
 Penumbra aims to implement full IBC support for cross-chain asset transfers. For now, however,
-we're only running a relayer between Penumbra testnet chains. To exercise the IBC withdrawal logic,
-you'll need wallet identities on the two Penumbra chains. It's OK to reuse a wallet address between chains,
-but you must be able to interact with both chains independently.
-
-First, on the primary chain, the public testnet, find the channel that maps to preview:
+we're only running a relayer between the Penumbra testnet and the [Osmosis testnet] chains.
+For Testnet 62 Iapetus, the channel information is:
 
 <!--
-It's somewhat absurd to recommend a gnarly one-liner like this, but I'm documenting
-the actual steps I take when exercising this functionality. We have an issue for
-a real query command: https://github.com/penumbra-zone/penumbra/issues/2937
+To update the information below, update the Hermes config, then run:
+`pcli q ibc channels | jq '.[0]'` and confirm that output matches what Hermes emitted
+during setup.
 -->
+
+```
+{
+  "state": 3,
+  "ordering": 1,
+  "counterparty": {
+    "port_id": "transfer",
+    "channel_id": "channel-3909"
+  },
+  "connection_hops": [
+    "connection-0"
+  ],
+  "version": "ics20-1",
+  "port_id": "transfer",
+  "channel_id": "channel-0"
+}
+```
+
+The output above shows that the IBC channel id on Penumbra is 0, and on Osmosis it's 3909.
+There's one more piece of information we need to make an IBC withdrawal: the appropriate IBC
+timeout height, which is composed of two values: `<counterparty_chain_id_revision>-<counterparty_chain_block_height>`.
+For the Osmosis testnet, as of 2023Q3, the chain id is `osmo-test-5`, meaning the chain id revision is `5`.
+So a value like `5-5000000` (i.e. revision 5 at height 5 million) will work.
+
+To initiate an IBC withdrawal from Penumbra testnet to Osmosis testnet:
+
 ```bash
-while read -r i ; do
-    if ! pcli query ibc channel --channel-id $i ; then
-        echo "Most recently active channel is: $(( i - 1))" ;
-        break ;
-    fi ;
-done <<< "$(seq 0 100)"
+cargo run --release --bin pcli -- tx withdraw --to <OSMOSIS_ADDRESS> --channel <CHANNEL_ID> 5gm --timeout-height 5-5000000
 ```
 
-You should see output like "Most recently active channel is: 0". Make note of that number,
-as we'll need it for the withdrawal command. Next, create a second wallet identity:
+Unfortunately the CLI tooling for Osmosis is cumbersome. For now, use `rly` as a user agent
+for the Osmosis testnet, as described in the [IBC dev docs](../dev/ibc.md).
 
-```bash
-cargo run --release --bin pcli -- --home /tmp/pcli-ibc-test keys generate
-cargo run --release --bin pcli -- --home /tmp/pcli-ibc-test view address
-```
-
-Make note of that address, as we'll also need that information. Now we're ready to initiate
-an IBC withdrawal. Using the primary wallet identity (by not overriding `--home`, as done above):
-
-```bash
-cargo run --release --bin pcli -- tx withdraw --to <PENUMBRA_ADDRESS> 10penumbra --channel <CHANNEL_ID>
-```
-
-Wait a moment, then check for receipt of the withdrawal on the counterparty chain:
-
-```bash
-cargo run --release --bin pcli -- --home /tmp/pcli-ibc-test --node https://grpc.testnet-preview.penumbra.zone view balance
-```
-
-You should see output in the format of:
-
-```
-Account  Amount
-0        10000000transfer/channel-0/upenumbra
-```
-
-Congratulations: you've now successfully bridged assets between two chains, via Penumbra.\
-Remember that the channel id will change frequently, as it's reconfigured
-every time the `main` branch on the Penumbra git repository changes.
+[Osmosis testnet]: https://docs.osmosis.zone/networks/join-testnet/

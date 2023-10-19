@@ -7,6 +7,10 @@ pub fn stake_params() -> &'static str {
     "staking/params"
 }
 
+pub fn stake_params_updated() -> &'static str {
+    "staking/stake_params_updated"
+}
+
 pub fn current_base_rate() -> &'static str {
     "staking/base_rate/current"
 }

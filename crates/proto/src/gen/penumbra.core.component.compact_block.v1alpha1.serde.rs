@@ -30,7 +30,7 @@ impl serde::Serialize for CompactBlock {
         if !self.swap_outputs.is_empty() {
             len += 1;
         }
-        if self.chain_parameters.is_some() {
+        if self.app_parameters_updated {
             len += 1;
         }
         if self.gas_prices.is_some() {
@@ -62,8 +62,8 @@ impl serde::Serialize for CompactBlock {
         if !self.swap_outputs.is_empty() {
             struct_ser.serialize_field("swapOutputs", &self.swap_outputs)?;
         }
-        if let Some(v) = self.chain_parameters.as_ref() {
-            struct_ser.serialize_field("chainParameters", v)?;
+        if self.app_parameters_updated {
+            struct_ser.serialize_field("appParametersUpdated", &self.app_parameters_updated)?;
         }
         if let Some(v) = self.gas_prices.as_ref() {
             struct_ser.serialize_field("gasPrices", v)?;
@@ -92,8 +92,8 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
             "fmdParameters",
             "swap_outputs",
             "swapOutputs",
-            "chain_parameters",
-            "chainParameters",
+            "app_parameters_updated",
+            "appParametersUpdated",
             "gas_prices",
             "gasPrices",
         ];
@@ -108,7 +108,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
             ProposalStarted,
             FmdParameters,
             SwapOutputs,
-            ChainParameters,
+            AppParametersUpdated,
             GasPrices,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -139,7 +139,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                             "proposalStarted" | "proposal_started" => Ok(GeneratedField::ProposalStarted),
                             "fmdParameters" | "fmd_parameters" => Ok(GeneratedField::FmdParameters),
                             "swapOutputs" | "swap_outputs" => Ok(GeneratedField::SwapOutputs),
-                            "chainParameters" | "chain_parameters" => Ok(GeneratedField::ChainParameters),
+                            "appParametersUpdated" | "app_parameters_updated" => Ok(GeneratedField::AppParametersUpdated),
                             "gasPrices" | "gas_prices" => Ok(GeneratedField::GasPrices),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -168,7 +168,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                 let mut proposal_started__ = None;
                 let mut fmd_parameters__ = None;
                 let mut swap_outputs__ = None;
-                let mut chain_parameters__ = None;
+                let mut app_parameters_updated__ = None;
                 let mut gas_prices__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
@@ -222,11 +222,11 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                             }
                             swap_outputs__ = Some(map_.next_value()?);
                         }
-                        GeneratedField::ChainParameters => {
-                            if chain_parameters__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainParameters"));
+                        GeneratedField::AppParametersUpdated => {
+                            if app_parameters_updated__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("appParametersUpdated"));
                             }
-                            chain_parameters__ = map_.next_value()?;
+                            app_parameters_updated__ = Some(map_.next_value()?);
                         }
                         GeneratedField::GasPrices => {
                             if gas_prices__.is_some() {
@@ -245,7 +245,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                     proposal_started: proposal_started__.unwrap_or_default(),
                     fmd_parameters: fmd_parameters__,
                     swap_outputs: swap_outputs__.unwrap_or_default(),
-                    chain_parameters: chain_parameters__,
+                    app_parameters_updated: app_parameters_updated__.unwrap_or_default(),
                     gas_prices: gas_prices__,
                 })
             }

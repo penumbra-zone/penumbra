@@ -5,12 +5,15 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use penumbra_app::params::AppParameters;
 use penumbra_asset::{asset, asset::DenomMetadata, asset::Id, Value};
-use penumbra_chain::params::FmdParameters;
+use penumbra_chain::params::{ChainParameters, FmdParameters};
+use penumbra_dao::params::DaoParameters;
 use penumbra_dex::{
     lp::position::{self, Position, State},
     TradingPair,
 };
-use penumbra_fee::GasPrices;
+use penumbra_fee::{FeeParameters, GasPrices};
+use penumbra_governance::params::GovernanceParameters;
+use penumbra_ibc::params::IBCParameters;
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::{
@@ -21,7 +24,7 @@ use penumbra_proto::{
 };
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note, Rseed};
-use penumbra_stake::{DelegationToken, IdentityKey};
+use penumbra_stake::{params::StakeParameters, DelegationToken, IdentityKey};
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
 use r2d2_sqlite::{
@@ -186,10 +189,41 @@ impl Storage {
             // Create the tables
             tx.execute_batch(include_str!("storage/schema.sql"))?;
 
-            let app_params_bytes = &AppParameters::encode_to_vec(&params)[..];
+            let chain_params_bytes = &ChainParameters::encode_to_vec(&params.chain_params)[..];
             tx.execute(
-                "INSERT INTO app_params (bytes) VALUES (?1)",
-                [app_params_bytes],
+                "INSERT INTO chain_params (bytes) VALUES (?1)",
+                [chain_params_bytes],
+            )?;
+
+            let stake_params_bytes = &StakeParameters::encode_to_vec(&params.stake_params)[..];
+            tx.execute(
+                "INSERT INTO stake_params (bytes) VALUES (?1)",
+                [stake_params_bytes],
+            )?;
+
+            let ibc_params_bytes = &IBCParameters::encode_to_vec(&params.ibc_params)[..];
+            tx.execute(
+                "INSERT INTO ibc_params (bytes) VALUES (?1)",
+                [ibc_params_bytes],
+            )?;
+
+            let fee_params_bytes = &FeeParameters::encode_to_vec(&params.fee_params)[..];
+            tx.execute(
+                "INSERT INTO fee_params (bytes) VALUES (?1)",
+                [fee_params_bytes],
+            )?;
+
+            let dao_params_bytes = &DaoParameters::encode_to_vec(&params.dao_params)[..];
+            tx.execute(
+                "INSERT INTO dao_params (bytes) VALUES (?1)",
+                [dao_params_bytes],
+            )?;
+
+            let governance_params_bytes =
+                &GovernanceParameters::encode_to_vec(&params.governance_params)[..];
+            tx.execute(
+                "INSERT INTO governance_params (bytes) VALUES (?1)",
+                [governance_params_bytes],
             )?;
 
             let fvk_bytes = &FullViewingKey::encode_to_vec(&fvk)[..];
@@ -518,13 +552,45 @@ impl Storage {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            let bytes = pool
+            let chain_bytes = pool
                 .get()?
-                .prepare_cached("SELECT bytes FROM app_params LIMIT 1")?
+                .prepare_cached("SELECT bytes FROM chain_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing app params"))?;
+                .ok_or_else(|| anyhow!("missing chain params"))?;
+            let stake_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM stake_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing stake params"))?;
+            let ibc_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM ibc_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing ibc params"))?;
+            let governance_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM governance_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing governance params"))?;
+            let dao_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM dao_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing dao params"))?;
+            let fee_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM fee_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing fee params"))?;
 
-            AppParameters::decode(bytes.as_slice())
+            Ok(AppParameters {
+                chain_params: ChainParameters::decode(chain_bytes.as_slice())?,
+                stake_params: StakeParameters::decode(stake_bytes.as_slice())?,
+                ibc_params: IBCParameters::decode(ibc_bytes.as_slice())?,
+                governance_params: GovernanceParameters::decode(governance_bytes.as_slice())?,
+                dao_params: DaoParameters::decode(dao_bytes.as_slice())?,
+                fee_params: FeeParameters::decode(fee_bytes.as_slice())?,
+            })
         })
         .await?
     }
@@ -1209,6 +1275,8 @@ impl Storage {
         filtered_block: FilteredBlock,
         transactions: Vec<Transaction>,
         sct: &mut tct::Tree,
+        // TODO: sucks passing this around, figure something better out
+        node: Url,
     ) -> anyhow::Result<()> {
         //Check that the incoming block height follows the latest recorded height
         let last_sync_height = self.last_sync_height().await?;
@@ -1236,6 +1304,23 @@ impl Storage {
 
         let fvk = self.full_viewing_key().await?;
 
+        // If the app parameters have changed, update them.
+        let new_app_parameters: Option<AppParameters> = if filtered_block.app_parameters_updated {
+            // Fetch the latest parameters
+            let mut client = AppQueryServiceClient::connect(node.to_string()).await?;
+            Some(
+                client
+                    .app_parameters(tonic::Request::new(AppParametersRequest {
+                        chain_id: String::new(),
+                    }))
+                    .await?
+                    .into_inner()
+                    .try_into()?,
+            )
+        } else {
+            None
+        };
+
         // Cloning the SCT is cheap because it's a copy-on-write structure, so we move an owned copy
         // into the spawned thread. This means that if for any reason the thread panics or throws an
         // error, the changes to the SCT will be discarded, just like any changes to the database,
@@ -1249,15 +1334,45 @@ impl Storage {
             let mut lock = pool.get()?;
             let mut dbtx = lock.transaction()?;
 
-            // If the chain parameters have changed, update them.
-            // TODO: disabled for now, see https://github.com/penumbra-zone/penumbra/issues/3107
-            // if let Some(params) = filtered_block.chain_parameters {
-            //     let chain_params_bytes = &ChainParameters::encode_to_vec(&params)[..];
-            //     dbtx.execute(
-            //         "INSERT INTO chain_params (bytes) VALUES (?1)",
-            //         [chain_params_bytes],
-            //     )?;
-            // }
+            if let Some(params) = new_app_parameters {
+               // Update the various parameter structures.
+                let chain_params_bytes = &ChainParameters::encode_to_vec(&params.chain_params)[..];
+                dbtx.execute(
+                    "UPDATE chain_params SET bytes = ?1",
+                    [chain_params_bytes],
+                )?;
+
+                let stake_params_bytes = &StakeParameters::encode_to_vec(&params.stake_params)[..];
+                dbtx.execute(
+                    "UPDATE stake_params SET bytes = ?1",
+                    [stake_params_bytes],
+                )?;
+
+                let ibc_params_bytes = &IBCParameters::encode_to_vec(&params.ibc_params)[..];
+                dbtx.execute(
+                    "UPDATE ibc_params SET bytes = ?1",
+                    [ibc_params_bytes],
+                )?;
+
+                let fee_params_bytes = &FeeParameters::encode_to_vec(&params.fee_params)[..];
+                dbtx.execute(
+                    "UPDATE fee_params SET bytes = ?1",
+                    [fee_params_bytes],
+                )?;
+
+                let dao_params_bytes = &DaoParameters::encode_to_vec(&params.dao_params)[..];
+                dbtx.execute(
+                    "UPDATE dao_params SET bytes = ?1",
+                    [dao_params_bytes],
+                )?;
+
+                let governance_params_bytes =
+                    &GovernanceParameters::encode_to_vec(&params.governance_params)[..];
+                dbtx.execute(
+                    "UPDATE governance_params SET bytes = ?1",
+                    [governance_params_bytes],
+                )?;
+            }
 
             // Insert new note records into storage
             for note_record in &filtered_block.new_notes {
