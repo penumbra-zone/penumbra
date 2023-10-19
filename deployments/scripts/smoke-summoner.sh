@@ -82,10 +82,10 @@ cargo run --quiet --release --bin pcli -- --node http://127.0.0.1:8080 --home /t
 echo "Stopping phase 1 run..."
 if ! kill -0 "$phase1_pid" ; then
     >&2 echo "ERROR: phase 1 exited early"
-    kill -9 "$phase1_pid"
     exit 1
 else
-    echo "Phase 1 complete."
+    echo "Phase 1 complete. Stopping phase 1 run..."
+    kill -9 "$phase1_pid"
 fi
 
 echo "Transitioning..."
@@ -105,10 +105,10 @@ cargo run --quiet --release --bin pcli -- --node http://127.0.0.1:8080 --home /t
 echo "Stopping phase 2 run..."
 if ! kill -0 "$phase2_pid" ; then
     >&2 echo "ERROR: phase 2 exited early"
-    kill -9 "$phase2_pid"
     exit 1
 else
-    echo "Phase 2 complete."
+    echo "Phase 2 complete. Stopping phase 2 run..."
+    kill -9 "$phase2_pid"
 fi
 
 rm -rf /tmp/summonerd
