@@ -56,6 +56,8 @@ pub struct Opt {
 impl Opt {
     pub fn init_tracing(&mut self) {
         tracing_subscriber::fmt()
+            .with_ansi(atty::is(atty::Stream::Stdout))
+            .with_target(true)
             .with_env_filter(
                 std::mem::take(&mut self.tracing_filter)
                     // Without explicitly disabling the `r1cs` target, the ZK proof implementations
