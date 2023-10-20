@@ -4,6 +4,7 @@
 //! along with the corresponding protobufs.
 use std::array;
 
+use crate::parallel_utils::{flatten_results, transform, transform_parallel};
 use crate::single::{
     self, circuit_degree, group::F, log::ContributionHash, DLogProof, ExtraTransitionInformation,
     LinkingProof, Phase1CRSElements, Phase1Contribution, Phase1RawCRSElements,
@@ -41,43 +42,6 @@ fn from_bytes_unchecked<T: CanonicalDeserialize>(data: &[u8]) -> Result<T> {
 }
 
 pub const NUM_CIRCUITS: usize = 7;
-
-fn transform<A, B>(data: [A; NUM_CIRCUITS], f: impl Fn(A) -> B) -> [B; NUM_CIRCUITS] {
-    match data.into_iter().map(f).collect::<Vec<B>>().try_into() {
-        Ok(x) => x,
-        _ => panic!("The size of the iterator should not have changed"),
-    }
-}
-
-#[cfg(not(feature = "parallel"))]
-fn transform_parallel<A, B>(data: [A; NUM_CIRCUITS], f: impl Fn(A) -> B) -> [B; NUM_CIRCUITS] {
-    transform(data, f)
-}
-
-#[cfg(feature = "parallel")]
-fn transform_parallel<A: Send, B: Sync + Send, const N: usize>(
-    data: [A; N],
-    f: impl Fn(A) -> B + Sync + Send,
-) -> [B; N] {
-    use rayon::prelude::*;
-    let out: Vec<B> = data.into_par_iter().map(f).collect();
-    // Note: we do it this way because we don't have a Debug implementation for B
-    match out.try_into() {
-        Ok(x) => x,
-        _ => panic!("The size of the iterator should not have changed"),
-    }
-}
-
-fn flatten_results<A, const N: usize>(data: [Result<A>; N]) -> Result<[A; N]> {
-    let mut buf = Vec::with_capacity(N);
-    for x in data {
-        buf.push(x?);
-    }
-    match buf.try_into() {
-        Ok(x) => Ok(x),
-        _ => panic!("The size of the iterator should not have changed"),
-    }
-}
 
 /// Generate all of the circuits as matrices.
 fn circuits() -> [ConstraintMatrices<F>; NUM_CIRCUITS] {
@@ -596,7 +560,7 @@ impl Phase1RawCeremonyContribution {
     /// step you want to do.
     pub fn validate(self) -> Option<Phase1CeremonyContribution> {
         let out = transform_parallel(self.0, |x| {
-            x.validate(&mut OsRng).ok_or(anyhow!("failed to validate"))
+            x.validate().ok_or(anyhow!("failed to validate"))
         });
         Some(Phase1CeremonyContribution(flatten_results(out).ok()?))
     }
