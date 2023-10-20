@@ -1,6 +1,9 @@
+# Since the summoner smoke test takes ~18m to run, we don't want
+# to run it on every PR. Instead, we want to run it on demand,
+# and for now on merges into `main`.
 name: Summoner smoke Test
 on:
-  pull_request:
+  workflow_dispatch:
   push:
     branches:
       - main
