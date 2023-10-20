@@ -57,7 +57,6 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
                 })),
         }) = msg
         {
-            tracing::info!(?address, "server connection");
             address
         } else {
             return Err(Status::invalid_argument(
@@ -66,6 +65,10 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
         };
         let address = Address::try_from(address)
             .map_err(|e| Status::invalid_argument(format!("Bad address format: {:#}", e)))?;
+
+        // TODO: create a span for the connection.
+        tracing::info!(?address, "server connection");
+
         // Errors are on our end, None is on their end
         let amount = match self
             .storage
