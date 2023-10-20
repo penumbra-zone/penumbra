@@ -92,6 +92,8 @@ impl CeremonyCmd {
                 coordinator_address,
                 bid,
             } => {
+                println!("¸,ø¤º°` initiating summoning participation `°º¤ø,¸");
+                println!("submitting bid for contribution slot: {}", bid);
                 if *phase != 1 && *phase != 2 {
                     anyhow::bail!("phase must be 1 or 2.");
                 }
@@ -102,6 +104,7 @@ impl CeremonyCmd {
                 handle_bid(app, *coordinator_address, index, bid).await?;
                 let address = app.fvk.payment_address(index).0;
 
+                println!("connecting to coordinator...");
                 // After we bid, we need to wait a couple of seconds just for the transaction to be
                 // picked up by the coordinator. Else, there is a race wherein the coordinator will kick the
                 // client out of the queue because it doesn't see the transaction yet.
@@ -121,17 +124,33 @@ impl CeremonyCmd {
                         .await?
                         .max_decoding_message_size(max_message_size(*phase))
                         .max_encoding_message_size(max_message_size(*phase));
+                println!("connected to coordinator...");
+
+                use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
+                let progress_bar = ProgressBar::with_draw_target(1, ProgressDrawTarget::stdout())
+                    .with_style(ProgressStyle::default_bar().template(
+                        "[{elapsed}] {bar:50.cyan/blue} {pos:>7}/{len:7} {per_sec} ETA: {eta}",
+                    ));
+                progress_bar.set_position(0);
+
                 let mut response_rx = client
                     .participate(ReceiverStream::new(req_rx))
                     .await?
                     .into_inner();
                 let unparsed_parent = loop {
                     match response_rx.message().await? {
-                        None => anyhow::bail!("Coordinator closed connection"),
+                        None => {
+                            progress_bar.abandon();
+                            anyhow::bail!("Coordinator closed connection")
+                        }
                         Some(ParticipateResponse {
                             msg: Some(ResponseMsg::Position(p)),
                         }) => {
-                            println!("{:?}", p);
+                            // This makes the progress bar go to 100% at the moment we're ready.
+                            let len = p.connected_participants;
+                            let pos = p.connected_participants - p.position;
+                            progress_bar.set_length(len as u64);
+                            progress_bar.set_position(pos as u64);
                         }
                         Some(ParticipateResponse {
                             msg:
@@ -139,14 +158,16 @@ impl CeremonyCmd {
                                     parent: Some(parent),
                                 })),
                         }) => {
-                            tracing::debug!("contribute now");
+                            progress_bar.finish();
                             break parent;
                         }
                         m => {
+                            progress_bar.abandon();
                             anyhow::bail!("Received unexpected  message from coordinator: {:?}", m)
                         }
                     }
                 };
+                println!("preparing contribution...");
                 let contribution = if *phase == 1 {
                     let parent = Phase1RawCeremonyCRS::unchecked_from_protobuf(unparsed_parent)?
                         .assume_valid();
@@ -158,6 +179,7 @@ impl CeremonyCmd {
                     let contribution = Phase2CeremonyContribution::make(&parent);
                     contribution.try_into()?
                 };
+                println!("submitting contribution...");
 
                 req_tx
                     .send(ParticipateRequest {
@@ -169,10 +191,11 @@ impl CeremonyCmd {
                     Some(ParticipateResponse {
                         msg: Some(ResponseMsg::Confirm(Confirm { slot })),
                     }) => {
-                        println!("Contribution confirmed at slot {slot}");
+                        println!("contribution confirmed at slot {slot}");
+                        println!("thank you for your help summoning penumbra <3");
                     }
                     m => {
-                        anyhow::bail!("Received unexpected  message from coordinator: {:?}", m)
+                        anyhow::bail!("Received unexpected message from coordinator: {:?}", m)
                     }
                 }
 
