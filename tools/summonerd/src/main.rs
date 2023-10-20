@@ -52,10 +52,27 @@ fn ceremony_db(path: &Utf8Path) -> Utf8PathBuf {
     path.join("ceremony.db")
 }
 
+const LONG_HELP: &str = r#"
+Penumbra summoning ceremony coordinator.
+This tool orchestrates receipt of contributions for bootstrapping
+proof parameters, to be used in the Penumbra genesis event.
+The provided subcommands should be run in the following order:
+
+    1. summonerd init --phase1-root <FILE> (optional)
+    2. summonerd start --phase1 ...
+    3. summonerd transition
+    4. summonerd start
+    5. summonerd export
+
+Each of these stages should be triggered manually by a human
+operating the orchestration.
+"#;
+
 #[derive(Debug, Parser)]
 #[clap(
     name = "summonerd",
     about = "Penumbra summoning ceremony coordinator",
+    long_about = LONG_HELP,
     version = env!("VERGEN_GIT_SEMVER"),
 )]
 struct Opt {
@@ -68,42 +85,54 @@ struct Opt {
 }
 
 #[derive(Debug, clap::Subcommand)]
+/// Hello folks
 enum Command {
     /// Generate a phase 1 root (for testing purposes).
     GeneratePhase1 {
+        /// Filepath for storing the content of the generated phase 1 root.
         #[clap(long, display_order = 100)]
         output: Utf8PathBuf,
     },
     /// Initialize the coordinator.
     Init {
         #[clap(long, display_order = 100)]
+        /// Directory for storing the sqlite3 database containing contributions.
         storage_dir: Utf8PathBuf,
+        /// Filepath to phase 1 root.
         #[clap(long, display_order = 200)]
         phase1_root: Utf8PathBuf,
     },
     /// Transition between phases
     Transition {
         #[clap(long, display_order = 100)]
+        /// Directory for storing the sqlite3 database containing contributions.
         storage_dir: Utf8PathBuf,
     },
     /// Start the coordinator.
     Start {
         #[clap(long, display_order = 100)]
+        /// The phase to be started. Must be "1" or "2".
         phase: u8,
+        /// Directory for storing the sqlite3 database containing contributions.
         #[clap(long, display_order = 700)]
         storage_dir: Utf8PathBuf,
         #[clap(long, display_order = 800)]
+        /// The Full Viewing Key used to read transactions.
         fvk: FullViewingKey,
         #[clap(long, display_order = 900)]
+        /// URL for Penumbra node to trail.
         node: Url,
         #[clap(long, display_order = 901, default_value = "127.0.0.1:8081")]
+        /// Local bind address for summonerd.
         listen: SocketAddr,
     },
     /// Export the output of the ceremony
     Export {
         #[clap(long, display_order = 100)]
+        /// Directory for storing the sqlite3 database containing contributions.
         storage_dir: Utf8PathBuf,
         #[clap(long, display_order = 200)]
+        /// Directory for storing the exported ceremony output.
         target_dir: Utf8PathBuf,
     },
 }
