@@ -159,7 +159,7 @@ impl ParticipantQueue {
     ) {
         for (i, address) in ranked.iter().enumerate() {
             match filter {
-                Some(filter) if filter == *address => continue,
+                Some(filter) if filter != *address => continue,
                 _ => {}
             }
             let (connection, bid) = self
