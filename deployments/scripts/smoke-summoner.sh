@@ -100,7 +100,13 @@ trap 'kill -9 "$phase2_pid"' EXIT
 echo "Phase 2 contributions..."
 cargo run --quiet --release --bin pcli -- --node http://127.0.0.1:8080 --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8081 --coordinator-address $SUMMONER_ADDRESS --phase 2 --bid 10penumbra
 
-# TODO: Export keys
+echo "Exporting keys..."
+cargo run --quiet --release --bin summonerd -- export --storage-dir /tmp/summonerd --target-dir ./crates/crypto/proof-params/src/gen
+
+# We have a set of tests in the pcli crate that generate and verify proofs using the
+# proving keys present in the `penumbra-proof-params` crate.
+echo "Check tests pass using the new proving keys..."
+cargo test -p pcli
 
 echo "Stopping phase 2 run..."
 if ! kill -0 "$phase2_pid" ; then
