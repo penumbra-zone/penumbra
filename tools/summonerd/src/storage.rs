@@ -311,8 +311,10 @@ impl Storage {
             |row| row.get::<usize, Vec<u8>>(0),
         )?;
         Ok(
-            Phase1RawCeremonyCRS::try_from(pb::CeremonyCrs::decode(data.as_slice())?)?
-                .assume_valid(),
+            Phase1RawCeremonyCRS::unchecked_from_protobuf(pb::CeremonyCrs::decode(
+                data.as_slice(),
+            )?)?
+            .assume_valid(),
         )
     }
 
@@ -326,8 +328,10 @@ impl Storage {
             |row| row.get::<usize, Vec<u8>>(0),
         )?;
         Ok(
-            Phase2RawCeremonyCRS::try_from(pb::CeremonyCrs::decode(data.as_slice())?)?
-                .assume_valid(),
+            Phase2RawCeremonyCRS::unchecked_from_protobuf(pb::CeremonyCrs::decode(
+                data.as_slice(),
+            )?)?
+            .assume_valid(),
         )
     }
 
