@@ -37,4 +37,4 @@ harness = false
 
 [features]
 default = []
-parallel = ["ark-ec/parallel", "ark-ff/parallel", "ark-groth16/parallel", "decaf377/parallel", "rayon"]
+parallel = ["ark-ec/parallel", "ark-ff/parallel", "ark-groth16/parallel", "decaf377/parallel", "rayon", "penumbra-shielded-pool/parallel"]
