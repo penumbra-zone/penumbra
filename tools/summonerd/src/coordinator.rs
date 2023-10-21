@@ -67,14 +67,15 @@ impl ContributionHandler {
         {
             Ok(Ok(_)) => Ok(()),
             Err(_) => {
-                tracing::info!("timeout when asking for contribution");
+                tracing::info!("STRIKE (timeout)");
+                self.storage.strike(&contributor).await?;
                 Ok(())
             }
             Ok(Err(e)) => Err(e),
         }
     }
 
-    #[tracing::instrument(skip(self, participant))]
+    #[tracing::instrument(skip_all)]
     async fn contribute_inner<P: Phase>(
         &mut self,
         contributor: Address,
@@ -104,6 +105,7 @@ impl ContributionHandler {
                 return Ok(());
             }
         }
+        tracing::info!("STRIKE (invalid or partial contribution)");
         self.storage.strike(&contributor).await?;
         return Ok(());
     }
