@@ -75,7 +75,9 @@ impl Participant {
                 })),
             }))
             .await?;
-        let msg = self.rx.message().await?;
+        // We use .ok(), because we want to treat any GRPC error as an expected error,
+        // and indicative of a failed contribution, thus returning immediately.
+        let msg = self.rx.message().await.ok().flatten();
         if let Some(ParticipateRequest {
             msg: Some(RequestMsg::Contribution(contribution)),
         }) = msg
