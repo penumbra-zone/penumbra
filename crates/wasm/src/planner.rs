@@ -7,7 +7,7 @@ use std::{
 use anyhow::{anyhow, Result};
 use rand_core::{CryptoRng, RngCore};
 
-use penumbra_asset::{asset::DenomMetadata, Balance, Value};
+use penumbra_asset::{asset::DenomMetadata, Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
@@ -19,11 +19,12 @@ use penumbra_dex::{
     swap_claim::SwapClaimPlan,
     TradingPair,
 };
-use penumbra_fee::Fee;
+use penumbra_fee::{Fee, GasPrices};
 use penumbra_governance::{
     proposal_state::Outcome as ProposalOutcome, DelegatorVotePlan, Proposal, ProposalDepositClaim,
     ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
 };
+use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
@@ -31,6 +32,7 @@ use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
 use penumbra_stake::{rate::RateData, validator};
 use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
+use penumbra_transaction::gas::GasCost;
 use penumbra_transaction::{
     memo::MemoPlaintext,
     plan::{ActionPlan, MemoPlan, TransactionPlan},
@@ -45,6 +47,8 @@ pub struct Planner<R: RngCore + CryptoRng> {
     balance: Balance,
     vote_intents: BTreeMap<u64, VoteIntent>,
     plan: TransactionPlan,
+    ibc_actions: Vec<IbcAction>,
+    gas_prices: GasPrices,
     // IMPORTANT: if you add more fields here, make sure to clear them when the planner is finished
 }
 
@@ -73,7 +77,15 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             balance: Balance::default(),
             vote_intents: BTreeMap::default(),
             plan: TransactionPlan::default(),
+            ibc_actions: Vec::new(),
+            gas_prices: GasPrices::zero(),
         }
+    }
+
+    /// Set the current gas prices for fee prediction.
+    pub fn set_gas_prices(&mut self, gas_prices: GasPrices) -> &mut Self {
+        self.gas_prices = gas_prices;
+        self
     }
 
     /// Get the current transaction balance of the planner.
@@ -130,6 +142,22 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// This function should be called once.
     pub fn fee(&mut self, fee: Fee) -> &mut Self {
+        self.balance += fee.0;
+        self.plan.fee = fee;
+        self
+    }
+
+    /// Calculate gas cost-based fees and add to the transaction plan.
+    ///
+    /// This function should be called once.
+    pub fn add_gas_fees(&mut self) -> &mut Self {
+        let minimum_fee = self.gas_prices.price(&self.plan.gas_cost());
+
+        // Since paying the fee possibly requires adding an additional Spend to the
+        // transaction, which would then change the fee calculation, we multiply the
+        // fee here by a factor of 2 and then recalculate and capture the excess as
+        // change outputs.
+        let fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(2u32));
         self.balance += fee.0;
         self.plan.fee = fee;
         self
@@ -305,6 +333,18 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
+    /// Perform an ICS-20 withdrawal
+    pub fn ics20_withdrawal(&mut self, withdrawal: Ics20Withdrawal) -> &mut Self {
+        self.action(ActionPlan::Withdrawal(withdrawal));
+        self
+    }
+
+    /// Perform an IBC action
+    pub fn ibc_action(&mut self, ibc_action: IbcAction) -> &mut Self {
+        self.action(ActionPlan::IbcAction(ibc_action));
+        self
+    }
+
     /// Vote with all possible vote weight on a given proposal.
     ///
     /// Voting twice on the same proposal in the same planner will overwrite the previous vote.
@@ -387,6 +427,11 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             self.spend(record.note, record.position);
         }
 
+        // Add any IBC actions to the planner
+        for ibc_action in self.ibc_actions.clone() {
+            self.ibc_action(ibc_action);
+        }
+
         // Add the required votes to the planner
         for (
             records,
@@ -450,8 +495,19 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             }
         }
 
-        // For any remaining provided balance, make a single change note for each
+        // Since we over-estimate the fees to be paid upfront by a fixed multiple to account
+        // for the cost of any additional `Spend` actions necessary to pay the fee, we need
+        // to now calculate the transaction's fee again and capture the excess as change
+        // by subtracting the excess from the required value balance.
+        let tx_real_fee = self.gas_prices.price(&self.plan.gas_cost());
+        let excess_fee_spent = self.plan.fee.amount() - tx_real_fee;
+        self.balance -= Value {
+            amount: excess_fee_spent,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+        self.plan.fee = Fee::from_staking_token_amount(tx_real_fee);
 
+        // For any remaining provided balance, make a single change note for each
         for value in self.balance.provided().collect::<Vec<_>>() {
             self.output(value, self_address);
         }
@@ -486,6 +542,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // Clear the planner and pull out the plan to return
         self.balance = Balance::zero();
         self.vote_intents = BTreeMap::new();
+        self.ibc_actions = Vec::new();
+        self.gas_prices = GasPrices::zero();
         let plan = mem::take(&mut self.plan);
 
         Ok(plan)
