@@ -170,7 +170,7 @@ impl ParticipantQueue {
                 .get(address)
                 .expect("Ranked participants are chosen from the set of connections");
             if let Err(e) =
-                connection.try_notify((i + 1) as u32, ranked.len() as u32, contributor_bid, *bid)
+                connection.try_notify(i as u32, ranked.len() as u32, contributor_bid, *bid)
             {
                 tracing::info!(?e, ?address, "pruning connection that we failed to notify");
                 self.participants.remove(address);

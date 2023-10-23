@@ -1,7 +1,8 @@
 use crate::App;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use penumbra_asset::Value;
 use penumbra_keys::{keys::AddressIndex, Address};
+use penumbra_num::Amount;
 use penumbra_proof_setup::all::{
     Phase1CeremonyContribution, Phase1RawCeremonyCRS, Phase2CeremonyContribution,
     Phase2RawCeremonyCRS,
@@ -124,13 +125,17 @@ impl CeremonyCmd {
                         .await?
                         .max_decoding_message_size(max_message_size(*phase))
                         .max_encoding_message_size(max_message_size(*phase));
-                println!("connected to coordinator...");
-
+                println!(
+                    r#"connected to coordinator!
+You may disconnect (CTRL+C) to increase your bid if you don't like your position in the queue.
+Otherwise, please keep this window open.
+"#
+                );
                 use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
                 let progress_bar = ProgressBar::with_draw_target(1, ProgressDrawTarget::stdout())
                     .with_style(ProgressStyle::default_bar().template(
-                        "[{elapsed}] {bar:50.cyan/blue} {pos:>7}/{len:7} {per_sec} ETA: {eta}",
-                    ));
+                    "[{elapsed}] {bar:50.cyan/blue} {pos:>7}/{len:7} {per_sec}\tETA: {eta}\t{msg}",
+                ));
                 progress_bar.set_position(0);
 
                 let mut response_rx = client
@@ -146,11 +151,19 @@ impl CeremonyCmd {
                         Some(ParticipateResponse {
                             msg: Some(ResponseMsg::Position(p)),
                         }) => {
-                            // This makes the progress bar go to 100% at the moment we're ready.
                             let len = p.connected_participants;
                             let pos = p.connected_participants - p.position;
                             progress_bar.set_length(len as u64);
                             progress_bar.set_position(pos as u64);
+                            progress_bar.set_message(format!(
+                                "(Your bid: {}, Top bid: {})",
+                                Amount::try_from(
+                                    p.your_bid.ok_or(anyhow!("expected bid amount"))?
+                                )?,
+                                Amount::try_from(
+                                    p.last_slot_bid.ok_or(anyhow!("expected top bid amount"))?
+                                )?
+                            ));
                         }
                         Some(ParticipateResponse {
                             msg:
@@ -167,7 +180,7 @@ impl CeremonyCmd {
                         }
                     }
                 };
-                println!("preparing contribution...");
+                println!("preparing contribution... (please keep this window open)");
                 let contribution = if *phase == 1 {
                     let parent = Phase1RawCeremonyCRS::unchecked_from_protobuf(unparsed_parent)?
                         .assume_valid();
@@ -186,6 +199,7 @@ impl CeremonyCmd {
                         msg: Some(RequestMsg::Contribution(contribution)),
                     })
                     .await?;
+                println!("coordinator is validating contribution...");
                 match response_rx.message().await? {
                     None => anyhow::bail!("Coordinator closed connection"),
                     Some(ParticipateResponse {
