@@ -1,0 +1,44 @@
+# Since the summoner smoke test takes ~18m to run, we don't want
+# to run it on every PR. Instead, we want to run it on demand,
+# and for now on merges into `main`.
+name: Summoner smoke Test
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  smoke_test:
+    runs-on: buildjet-16vcpu-ubuntu-2004
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    environment: smoke-test
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          lfs: true
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: Load rust cache
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
+
+      - name: Install cometbft binary
+        run: |
+          COMETBFT_VERSION="0.37.2"
+          curl -L -O "https://github.com/cometbft/cometbft/releases/download/v${COMETBFT_VERSION}/cometbft_${COMETBFT_VERSION}_linux_amd64.tar.gz"
+          tar -xzf "cometbft_${COMETBFT_VERSION}_linux_amd64.tar.gz" cometbft
+          mkdir -p $HOME/bin
+          cp cometbft $HOME/bin
+          echo $PATH
+          export PATH=$HOME/bin:$PATH
+          which cometbft
+          cometbft version
+
+      - name: Run e2e test of summoner
+        run: |
+          export PATH="$HOME/bin:$PATH"
+          ./deployments/scripts/smoke-summoner.sh

@@ -4,6 +4,7 @@
 //! along with the corresponding protobufs.
 use std::array;
 
+use crate::parallel_utils::{flatten_results, transform, transform_parallel};
 use crate::single::{
     self, circuit_degree, group::F, log::ContributionHash, DLogProof, ExtraTransitionInformation,
     LinkingProof, Phase1CRSElements, Phase1Contribution, Phase1RawCRSElements,
@@ -22,7 +23,7 @@ use penumbra_proto::tools::summoning::v1alpha1::{self as pb};
 use penumbra_shielded_pool::{NullifierDerivationCircuit, OutputCircuit, SpendCircuit};
 use penumbra_stake::UndelegateClaimCircuit;
 
-use rand_core::CryptoRngCore;
+use rand_core::OsRng;
 
 // Some helper functions since we have to use these seventeen billion times
 
@@ -75,6 +76,18 @@ impl Phase2RawCeremonyCRS {
                 x6.assume_valid(),
             ]),
         }
+    }
+
+    pub fn unchecked_from_protobuf(value: pb::CeremonyCrs) -> anyhow::Result<Self> {
+        Ok(Self([
+            from_bytes_unchecked::<Phase2RawCRSElements>(value.spend.as_slice())?,
+            from_bytes_unchecked::<Phase2RawCRSElements>(value.output.as_slice())?,
+            from_bytes_unchecked::<Phase2RawCRSElements>(value.delegator_vote.as_slice())?,
+            from_bytes_unchecked::<Phase2RawCRSElements>(value.undelegate_claim.as_slice())?,
+            from_bytes_unchecked::<Phase2RawCRSElements>(value.swap.as_slice())?,
+            from_bytes_unchecked::<Phase2RawCRSElements>(value.swap_claim.as_slice())?,
+            from_bytes_unchecked::<Phase2RawCRSElements>(value.nullifer_derivation_crs.as_slice())?,
+        ]))
     }
 }
 
@@ -187,190 +200,47 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
     type Error = anyhow::Error;
 
     fn try_from(value: pb::participate_request::Contribution) -> Result<Self> {
-        Ok(Self([
-            Phase2RawContribution {
-                parent: ContributionHash::try_from(
-                    value
-                        .parent_hashes
-                        .as_ref()
-                        .ok_or(anyhow!("no parent hashes"))?
-                        .spend
-                        .as_slice(),
-                )?,
-                new_elements: from_bytes::<Phase2RawCRSElements>(
-                    value
-                        .updated
-                        .as_ref()
-                        .ok_or(anyhow!("no updated"))?
-                        .spend
-                        .as_slice(),
-                )?,
-                linking_proof: from_bytes::<DLogProof>(
-                    value
-                        .update_proofs
-                        .as_ref()
-                        .ok_or(anyhow!("no update proofs"))?
-                        .spend
-                        .as_slice(),
-                )?,
-            },
-            Phase2RawContribution {
-                parent: ContributionHash::try_from(
-                    value
-                        .parent_hashes
-                        .as_ref()
-                        .ok_or(anyhow!("no parent hashes"))?
-                        .output
-                        .as_slice(),
-                )?,
-                new_elements: from_bytes::<Phase2RawCRSElements>(
-                    value
-                        .updated
-                        .as_ref()
-                        .ok_or(anyhow!("no updated"))?
-                        .output
-                        .as_slice(),
-                )?,
-                linking_proof: from_bytes::<DLogProof>(
-                    value
-                        .update_proofs
-                        .as_ref()
-                        .ok_or(anyhow!("no update proofs"))?
-                        .output
-                        .as_slice(),
-                )?,
-            },
-            Phase2RawContribution {
-                parent: ContributionHash::try_from(
-                    value
-                        .parent_hashes
-                        .as_ref()
-                        .ok_or(anyhow!("no parent hashes"))?
-                        .delegator_vote
-                        .as_slice(),
-                )?,
-                new_elements: from_bytes::<Phase2RawCRSElements>(
-                    value
-                        .updated
-                        .as_ref()
-                        .ok_or(anyhow!("no updated"))?
-                        .delegator_vote
-                        .as_slice(),
-                )?,
-                linking_proof: from_bytes::<DLogProof>(
-                    value
-                        .update_proofs
-                        .as_ref()
-                        .ok_or(anyhow!("no update proofs"))?
-                        .delegator_vote
-                        .as_slice(),
-                )?,
-            },
-            Phase2RawContribution {
-                parent: ContributionHash::try_from(
-                    value
-                        .parent_hashes
-                        .as_ref()
-                        .ok_or(anyhow!("no parent hashes"))?
-                        .undelegate_claim
-                        .as_slice(),
-                )?,
-                new_elements: from_bytes::<Phase2RawCRSElements>(
-                    value
-                        .updated
-                        .as_ref()
-                        .ok_or(anyhow!("no updated"))?
-                        .undelegate_claim
-                        .as_slice(),
-                )?,
-                linking_proof: from_bytes::<DLogProof>(
-                    value
-                        .update_proofs
-                        .as_ref()
-                        .ok_or(anyhow!("no update proofs"))?
-                        .undelegate_claim
-                        .as_slice(),
-                )?,
-            },
-            Phase2RawContribution {
-                parent: ContributionHash::try_from(
-                    value
-                        .parent_hashes
-                        .as_ref()
-                        .ok_or(anyhow!("no parent hashes"))?
-                        .swap
-                        .as_slice(),
-                )?,
-                new_elements: from_bytes::<Phase2RawCRSElements>(
-                    value
-                        .updated
-                        .as_ref()
-                        .ok_or(anyhow!("no updated"))?
-                        .swap
-                        .as_slice(),
-                )?,
-                linking_proof: from_bytes::<DLogProof>(
-                    value
-                        .update_proofs
-                        .as_ref()
-                        .ok_or(anyhow!("no update proofs"))?
-                        .swap
-                        .as_slice(),
-                )?,
-            },
-            Phase2RawContribution {
-                parent: ContributionHash::try_from(
-                    value
-                        .parent_hashes
-                        .as_ref()
-                        .ok_or(anyhow!("no parent hashes"))?
-                        .swap_claim
-                        .as_slice(),
-                )?,
-                new_elements: from_bytes::<Phase2RawCRSElements>(
-                    value
-                        .updated
-                        .as_ref()
-                        .ok_or(anyhow!("no updated"))?
-                        .swap_claim
-                        .as_slice(),
-                )?,
-                linking_proof: from_bytes::<DLogProof>(
-                    value
-                        .update_proofs
-                        .as_ref()
-                        .ok_or(anyhow!("no update proofs"))?
-                        .swap_claim
-                        .as_slice(),
-                )?,
-            },
-            Phase2RawContribution {
-                parent: ContributionHash::try_from(
-                    value
-                        .parent_hashes
-                        .as_ref()
-                        .ok_or(anyhow!("no parent hashes"))?
-                        .nullifer_derivation_crs
-                        .as_slice(),
-                )?,
-                new_elements: from_bytes::<Phase2RawCRSElements>(
-                    value
-                        .updated
-                        .as_ref()
-                        .ok_or(anyhow!("no updated"))?
-                        .nullifer_derivation_crs
-                        .as_slice(),
-                )?,
-                linking_proof: from_bytes::<DLogProof>(
-                    value
-                        .update_proofs
-                        .as_ref()
-                        .ok_or(anyhow!("no update proofs"))?
-                        .nullifer_derivation_crs
-                        .as_slice(),
-                )?,
-            },
-        ]))
+        let (parent_hashes, updated, update_proofs) = match value {
+            pb::participate_request::Contribution {
+                parent_hashes: Some(x0),
+                updated: Some(x1),
+                update_proofs: Some(x2),
+            } => (x0, x1, x2),
+            _ => anyhow::bail!("missing contribution data"),
+        };
+        let data = [
+            (parent_hashes.spend, updated.spend, update_proofs.spend),
+            (parent_hashes.output, updated.output, update_proofs.output),
+            (
+                parent_hashes.delegator_vote,
+                updated.delegator_vote,
+                update_proofs.delegator_vote,
+            ),
+            (
+                parent_hashes.undelegate_claim,
+                updated.undelegate_claim,
+                update_proofs.undelegate_claim,
+            ),
+            (parent_hashes.swap, updated.swap, update_proofs.swap),
+            (
+                parent_hashes.swap_claim,
+                updated.swap_claim,
+                update_proofs.swap_claim,
+            ),
+            (
+                parent_hashes.nullifer_derivation_crs,
+                updated.nullifer_derivation_crs,
+                update_proofs.nullifer_derivation_crs,
+            ),
+        ];
+        let out = transform_parallel(data, |(parent_hash, updated, update_proof)| {
+            Ok::<_, anyhow::Error>(Phase2RawContribution {
+                parent: ContributionHash::try_from(parent_hash.as_slice())?,
+                new_elements: from_bytes::<Phase2RawCRSElements>(updated.as_slice())?,
+                linking_proof: from_bytes::<DLogProof>(update_proof.as_slice())?,
+            })
+        });
+        Ok(Self(flatten_results(out)?))
     }
 }
 
@@ -379,17 +249,19 @@ impl Phase2RawCeremonyContribution {
     ///
     /// This doesn't check that it's connected to the right parent though, which is an additional
     /// step you want to do.
-    pub fn validate(
-        self,
-        rng: &mut impl CryptoRngCore,
-        root: &Phase2CeremonyCRS,
-    ) -> Option<Phase2CeremonyContribution> {
-        // Not happy at the need to copy here, but this avoids the need for a default impl or
-        // unsafe.
-        for (x, root_i) in self.0.iter().cloned().zip(root.0.iter()) {
-            x.validate(rng, root_i)?;
-        }
-        Some(self.assume_valid())
+    pub fn validate(self, root: &Phase2CeremonyCRS) -> Option<Phase2CeremonyContribution> {
+        let data: [_; 7] = self
+            .0
+            .into_iter()
+            .zip(root.0.iter())
+            .collect::<Vec<_>>()
+            .try_into()
+            .expect("iterator should have the same size");
+        let out = transform_parallel(data, |(x, root)| {
+            x.validate(&mut OsRng, root)
+                .ok_or(anyhow!("failed to validate"))
+        });
+        Some(Phase2CeremonyContribution(flatten_results(out).ok()?))
     }
 
     /// Skip validation, performing the conversion anyways.
@@ -397,17 +269,51 @@ impl Phase2RawCeremonyContribution {
     /// Useful when parsing known good data.
     pub fn assume_valid(self) -> Phase2CeremonyContribution {
         // This avoids a copy, and will break if we change the size:
-        match self.0 {
-            [x0, x1, x2, x3, x4, x5, x6] => Phase2CeremonyContribution([
-                x0.assume_valid(),
-                x1.assume_valid(),
-                x2.assume_valid(),
-                x3.assume_valid(),
-                x4.assume_valid(),
-                x5.assume_valid(),
-                x6.assume_valid(),
-            ]),
-        }
+        Phase2CeremonyContribution(transform(self.0, |x| x.assume_valid()))
+    }
+
+    pub fn unchecked_from_protobuf(value: pb::participate_request::Contribution) -> Result<Self> {
+        let (parent_hashes, updated, update_proofs) = match value {
+            pb::participate_request::Contribution {
+                parent_hashes: Some(x0),
+                updated: Some(x1),
+                update_proofs: Some(x2),
+            } => (x0, x1, x2),
+            _ => anyhow::bail!("missing contribution data"),
+        };
+        let data = [
+            (parent_hashes.spend, updated.spend, update_proofs.spend),
+            (parent_hashes.output, updated.output, update_proofs.output),
+            (
+                parent_hashes.delegator_vote,
+                updated.delegator_vote,
+                update_proofs.delegator_vote,
+            ),
+            (
+                parent_hashes.undelegate_claim,
+                updated.undelegate_claim,
+                update_proofs.undelegate_claim,
+            ),
+            (parent_hashes.swap, updated.swap, update_proofs.swap),
+            (
+                parent_hashes.swap_claim,
+                updated.swap_claim,
+                update_proofs.swap_claim,
+            ),
+            (
+                parent_hashes.nullifer_derivation_crs,
+                updated.nullifer_derivation_crs,
+                update_proofs.nullifer_derivation_crs,
+            ),
+        ];
+        let out = transform(data, |(parent_hash, updated, update_proof)| {
+            Ok::<_, anyhow::Error>(Phase2RawContribution {
+                parent: ContributionHash::try_from(parent_hash.as_slice())?,
+                new_elements: from_bytes_unchecked::<Phase2RawCRSElements>(updated.as_slice())?,
+                linking_proof: from_bytes_unchecked::<DLogProof>(update_proof.as_slice())?,
+            })
+        });
+        Ok(Self(flatten_results(out)?))
     }
 }
 
@@ -446,9 +352,12 @@ impl Phase2CeremonyContribution {
             .all(|(x, y)| x.is_linked_to(y))
     }
 
-    pub fn make<R: CryptoRngCore>(rng: &mut R, old: &Phase2CeremonyCRS) -> Self {
-        Self(array::from_fn(|i| {
-            Phase2Contribution::make(rng, ContributionHash::dummy(), &old.0.as_ref()[i])
+    pub fn make(old: &Phase2CeremonyCRS) -> Self {
+        let data = [
+            &old.0[0], &old.0[1], &old.0[2], &old.0[3], &old.0[4], &old.0[5], &old.0[6],
+        ];
+        Self(transform_parallel(data, |old_i| {
+            Phase2Contribution::make(&mut OsRng, ContributionHash::dummy(), &old_i)
         }))
     }
 }
@@ -600,190 +509,47 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
     type Error = anyhow::Error;
 
     fn try_from(value: pb::participate_request::Contribution) -> Result<Self> {
-        Ok(Self([
-            Phase1RawContribution {
-                parent: ContributionHash::try_from(
-                    value
-                        .parent_hashes
-                        .as_ref()
-                        .ok_or(anyhow!("no parent hashes"))?
-                        .spend
-                        .as_slice(),
-                )?,
-                new_elements: from_bytes::<Phase1RawCRSElements>(
-                    value
-                        .updated
-                        .as_ref()
-                        .ok_or(anyhow!("no updated"))?
-                        .spend
-                        .as_slice(),
-                )?,
-                linking_proof: from_bytes::<LinkingProof>(
-                    value
-                        .update_proofs
-                        .as_ref()
-                        .ok_or(anyhow!("no update proofs"))?
-                        .spend
-                        .as_slice(),
-                )?,
-            },
-            Phase1RawContribution {
-                parent: ContributionHash::try_from(
-                    value
-                        .parent_hashes
-                        .as_ref()
-                        .ok_or(anyhow!("no parent hashes"))?
-                        .output
-                        .as_slice(),
-                )?,
-                new_elements: from_bytes::<Phase1RawCRSElements>(
-                    value
-                        .updated
-                        .as_ref()
-                        .ok_or(anyhow!("no updated"))?
-                        .output
-                        .as_slice(),
-                )?,
-                linking_proof: from_bytes::<LinkingProof>(
-                    value
-                        .update_proofs
-                        .as_ref()
-                        .ok_or(anyhow!("no update proofs"))?
-                        .output
-                        .as_slice(),
-                )?,
-            },
-            Phase1RawContribution {
-                parent: ContributionHash::try_from(
-                    value
-                        .parent_hashes
-                        .as_ref()
-                        .ok_or(anyhow!("no parent hashes"))?
-                        .delegator_vote
-                        .as_slice(),
-                )?,
-                new_elements: from_bytes::<Phase1RawCRSElements>(
-                    value
-                        .updated
-                        .as_ref()
-                        .ok_or(anyhow!("no updated"))?
-                        .delegator_vote
-                        .as_slice(),
-                )?,
-                linking_proof: from_bytes::<LinkingProof>(
-                    value
-                        .update_proofs
-                        .as_ref()
-                        .ok_or(anyhow!("no update proofs"))?
-                        .delegator_vote
-                        .as_slice(),
-                )?,
-            },
-            Phase1RawContribution {
-                parent: ContributionHash::try_from(
-                    value
-                        .parent_hashes
-                        .as_ref()
-                        .ok_or(anyhow!("no parent hashes"))?
-                        .undelegate_claim
-                        .as_slice(),
-                )?,
-                new_elements: from_bytes::<Phase1RawCRSElements>(
-                    value
-                        .updated
-                        .as_ref()
-                        .ok_or(anyhow!("no updated"))?
-                        .undelegate_claim
-                        .as_slice(),
-                )?,
-                linking_proof: from_bytes::<LinkingProof>(
-                    value
-                        .update_proofs
-                        .as_ref()
-                        .ok_or(anyhow!("no update proofs"))?
-                        .undelegate_claim
-                        .as_slice(),
-                )?,
-            },
-            Phase1RawContribution {
-                parent: ContributionHash::try_from(
-                    value
-                        .parent_hashes
-                        .as_ref()
-                        .ok_or(anyhow!("no parent hashes"))?
-                        .swap
-                        .as_slice(),
-                )?,
-                new_elements: from_bytes::<Phase1RawCRSElements>(
-                    value
-                        .updated
-                        .as_ref()
-                        .ok_or(anyhow!("no updated"))?
-                        .swap
-                        .as_slice(),
-                )?,
-                linking_proof: from_bytes::<LinkingProof>(
-                    value
-                        .update_proofs
-                        .as_ref()
-                        .ok_or(anyhow!("no update proofs"))?
-                        .swap
-                        .as_slice(),
-                )?,
-            },
-            Phase1RawContribution {
-                parent: ContributionHash::try_from(
-                    value
-                        .parent_hashes
-                        .as_ref()
-                        .ok_or(anyhow!("no parent hashes"))?
-                        .swap_claim
-                        .as_slice(),
-                )?,
-                new_elements: from_bytes::<Phase1RawCRSElements>(
-                    value
-                        .updated
-                        .as_ref()
-                        .ok_or(anyhow!("no updated"))?
-                        .swap_claim
-                        .as_slice(),
-                )?,
-                linking_proof: from_bytes::<LinkingProof>(
-                    value
-                        .update_proofs
-                        .as_ref()
-                        .ok_or(anyhow!("no update proofs"))?
-                        .swap_claim
-                        .as_slice(),
-                )?,
-            },
-            Phase1RawContribution {
-                parent: ContributionHash::try_from(
-                    value
-                        .parent_hashes
-                        .as_ref()
-                        .ok_or(anyhow!("no parent hashes"))?
-                        .nullifer_derivation_crs
-                        .as_slice(),
-                )?,
-                new_elements: from_bytes::<Phase1RawCRSElements>(
-                    value
-                        .updated
-                        .as_ref()
-                        .ok_or(anyhow!("no updated"))?
-                        .nullifer_derivation_crs
-                        .as_slice(),
-                )?,
-                linking_proof: from_bytes::<LinkingProof>(
-                    value
-                        .update_proofs
-                        .as_ref()
-                        .ok_or(anyhow!("no update proofs"))?
-                        .nullifer_derivation_crs
-                        .as_slice(),
-                )?,
-            },
-        ]))
+        let (parent_hashes, updated, update_proofs) = match value {
+            pb::participate_request::Contribution {
+                parent_hashes: Some(x0),
+                updated: Some(x1),
+                update_proofs: Some(x2),
+            } => (x0, x1, x2),
+            _ => anyhow::bail!("missing contribution data"),
+        };
+        let data = [
+            (parent_hashes.spend, updated.spend, update_proofs.spend),
+            (parent_hashes.output, updated.output, update_proofs.output),
+            (
+                parent_hashes.delegator_vote,
+                updated.delegator_vote,
+                update_proofs.delegator_vote,
+            ),
+            (
+                parent_hashes.undelegate_claim,
+                updated.undelegate_claim,
+                update_proofs.undelegate_claim,
+            ),
+            (parent_hashes.swap, updated.swap, update_proofs.swap),
+            (
+                parent_hashes.swap_claim,
+                updated.swap_claim,
+                update_proofs.swap_claim,
+            ),
+            (
+                parent_hashes.nullifer_derivation_crs,
+                updated.nullifer_derivation_crs,
+                update_proofs.nullifer_derivation_crs,
+            ),
+        ];
+        let out = transform_parallel(data, |(parent_hash, updated, update_proof)| {
+            Ok::<_, anyhow::Error>(Phase1RawContribution {
+                parent: ContributionHash::try_from(parent_hash.as_slice())?,
+                new_elements: from_bytes::<Phase1RawCRSElements>(updated.as_slice())?,
+                linking_proof: from_bytes::<LinkingProof>(update_proof.as_slice())?,
+            })
+        });
+        Ok(Self(flatten_results(out)?))
     }
 }
 
@@ -792,13 +558,11 @@ impl Phase1RawCeremonyContribution {
     ///
     /// This doesn't check that it's connected to the right parent though, which is an additional
     /// step you want to do.
-    pub fn validate(self, rng: &mut impl CryptoRngCore) -> Option<Phase1CeremonyContribution> {
-        // Not happy at the need to copy here, but this avoids the need for a default impl or
-        // unsafe.
-        for x in self.0.iter().cloned() {
-            x.validate(rng)?;
-        }
-        Some(self.assume_valid())
+    pub fn validate(self) -> Option<Phase1CeremonyContribution> {
+        let out = transform_parallel(self.0, |x| {
+            x.validate().ok_or(anyhow!("failed to validate"))
+        });
+        Some(Phase1CeremonyContribution(flatten_results(out).ok()?))
     }
 
     /// Skip validation, performing the conversion anyways.
@@ -817,6 +581,50 @@ impl Phase1RawCeremonyContribution {
                 x6.assume_valid(),
             ]),
         }
+    }
+
+    pub fn unchecked_from_protobuf(value: pb::participate_request::Contribution) -> Result<Self> {
+        let (parent_hashes, updated, update_proofs) = match value {
+            pb::participate_request::Contribution {
+                parent_hashes: Some(x0),
+                updated: Some(x1),
+                update_proofs: Some(x2),
+            } => (x0, x1, x2),
+            _ => anyhow::bail!("missing contribution data"),
+        };
+        let data = [
+            (parent_hashes.spend, updated.spend, update_proofs.spend),
+            (parent_hashes.output, updated.output, update_proofs.output),
+            (
+                parent_hashes.delegator_vote,
+                updated.delegator_vote,
+                update_proofs.delegator_vote,
+            ),
+            (
+                parent_hashes.undelegate_claim,
+                updated.undelegate_claim,
+                update_proofs.undelegate_claim,
+            ),
+            (parent_hashes.swap, updated.swap, update_proofs.swap),
+            (
+                parent_hashes.swap_claim,
+                updated.swap_claim,
+                update_proofs.swap_claim,
+            ),
+            (
+                parent_hashes.nullifer_derivation_crs,
+                updated.nullifer_derivation_crs,
+                update_proofs.nullifer_derivation_crs,
+            ),
+        ];
+        let out = transform(data, |(parent_hash, updated, update_proof)| {
+            Ok::<_, anyhow::Error>(Phase1RawContribution {
+                parent: ContributionHash::try_from(parent_hash.as_slice())?,
+                new_elements: from_bytes_unchecked::<Phase1RawCRSElements>(updated.as_slice())?,
+                linking_proof: from_bytes_unchecked::<LinkingProof>(update_proof.as_slice())?,
+            })
+        });
+        Ok(Self(flatten_results(out)?))
     }
 }
 
@@ -855,9 +663,12 @@ impl Phase1CeremonyContribution {
             .all(|(x, y)| x.is_linked_to(y))
     }
 
-    pub fn make<R: CryptoRngCore>(rng: &mut R, old: &Phase1CeremonyCRS) -> Self {
-        Self(array::from_fn(|i| {
-            Phase1Contribution::make(rng, ContributionHash::dummy(), &old.0.as_ref()[i])
+    pub fn make(old: &Phase1CeremonyCRS) -> Self {
+        let data = [
+            &old.0[0], &old.0[1], &old.0[2], &old.0[3], &old.0[4], &old.0[5], &old.0[6],
+        ];
+        Self(transform_parallel(data, |old_i| {
+            Phase1Contribution::make(&mut OsRng, ContributionHash::dummy(), &old_i)
         }))
     }
 }
@@ -879,16 +690,12 @@ impl AllExtraTransitionInformation {
 pub fn transition(
     phase1: &Phase1CeremonyCRS,
 ) -> Result<(AllExtraTransitionInformation, Phase2CeremonyCRS)> {
-    let [c0, c1, c2, c3, c4, c5, c6] = circuits();
-
-    let (e0, p0) = single::transition(&phase1.0[0], &c0)?;
-    let (e1, p1) = single::transition(&phase1.0[1], &c1)?;
-    let (e2, p2) = single::transition(&phase1.0[2], &c2)?;
-    let (e3, p3) = single::transition(&phase1.0[3], &c3)?;
-    let (e4, p4) = single::transition(&phase1.0[4], &c4)?;
-    let (e5, p5) = single::transition(&phase1.0[5], &c5)?;
-    let (e6, p6) = single::transition(&phase1.0[6], &c6)?;
-
+    let circuits = circuits();
+    let indices = [0, 1, 2, 3, 4, 5, 6];
+    let [(e0, p0), (e1, p1), (e2, p2), (e3, p3), (e4, p4), (e5, p5), (e6, p6)] =
+        flatten_results(transform_parallel(indices, |i| {
+            single::transition(&phase1.0[i], &circuits[i])
+        }))?;
     Ok((
         AllExtraTransitionInformation([e0, e1, e2, e3, e4, e5, e6]),
         Phase2CeremonyCRS([p0, p1, p2, p3, p4, p5, p6]),
@@ -900,14 +707,9 @@ pub fn combine(
     phase2out: &Phase2CeremonyCRS,
     extra: &AllExtraTransitionInformation,
 ) -> [ProvingKey<Bls12_377>; NUM_CIRCUITS] {
-    let [c0, c1, c2, c3, c4, c5, c6] = circuits();
-    [
-        single::combine(&c0, &phase1out.0[0], &phase2out.0[0], &extra.0[0]),
-        single::combine(&c1, &phase1out.0[1], &phase2out.0[1], &extra.0[1]),
-        single::combine(&c2, &phase1out.0[2], &phase2out.0[2], &extra.0[2]),
-        single::combine(&c3, &phase1out.0[3], &phase2out.0[3], &extra.0[3]),
-        single::combine(&c4, &phase1out.0[4], &phase2out.0[4], &extra.0[4]),
-        single::combine(&c5, &phase1out.0[5], &phase2out.0[5], &extra.0[5]),
-        single::combine(&c6, &phase1out.0[6], &phase2out.0[6], &extra.0[6]),
-    ]
+    let circuits = circuits();
+    let indices = [0, 1, 2, 3, 4, 5, 6];
+    transform_parallel(indices, |i| {
+        single::combine(&circuits[i], &phase1out.0[i], &phase2out.0[i], &extra.0[i])
+    })
 }

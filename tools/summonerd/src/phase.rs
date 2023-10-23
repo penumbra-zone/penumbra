@@ -8,7 +8,6 @@ use penumbra_proof_setup::all::{
 use penumbra_proto::tools::summoning::v1alpha1::{
     participate_request::Contribution as PBContribution, CeremonyCrs,
 };
-use rand_core::CryptoRngCore;
 
 use crate::storage::Storage;
 
@@ -26,13 +25,13 @@ pub enum PhaseMarker {
 #[async_trait]
 pub trait Phase {
     /// The type for the elements.
-    type CRS: Clone + Send + Sync;
+    type CRS: Clone + Send + Sync + 'static;
 
     /// The type for unvalidated contributions.
-    type RawContribution: Send + Sync;
+    type RawContribution: Send + Sync + 'static;
 
     /// The type for validated contributions.
-    type Contribution: Send + Sync;
+    type Contribution: Send + Sync + 'static;
 
     /// The constant value for the marker we use, for runtime dispatch.
     const MARKER: PhaseMarker;
@@ -52,7 +51,6 @@ pub trait Phase {
     ///
     /// Note: this can be expensive.
     fn validate(
-        rng: &mut impl CryptoRngCore,
         root: &Self::CRS,
         contribution: Self::RawContribution,
     ) -> Option<Self::Contribution>;
@@ -93,11 +91,10 @@ impl Phase for Phase1 {
     }
 
     fn validate(
-        rng: &mut impl CryptoRngCore,
         _root: &Self::CRS,
         contribution: Self::RawContribution,
     ) -> Option<Self::Contribution> {
-        contribution.validate(rng)
+        contribution.validate()
     }
 
     fn is_linked_to(contribution: &Self::Contribution, parent: &Self::CRS) -> bool {
@@ -142,11 +139,10 @@ impl Phase for Phase2 {
     }
 
     fn validate(
-        rng: &mut impl CryptoRngCore,
         root: &Self::CRS,
         contribution: Self::RawContribution,
     ) -> Option<Self::Contribution> {
-        contribution.validate(rng, root)
+        contribution.validate(root)
     }
 
     fn is_linked_to(contribution: &Self::Contribution, parent: &Self::CRS) -> bool {

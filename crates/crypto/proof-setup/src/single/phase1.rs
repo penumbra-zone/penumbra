@@ -3,6 +3,7 @@ use ark_ff::{One, UniformRand, Zero};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand_core::{CryptoRngCore, OsRng};
 
+use crate::parallel_utils::transform_parallel;
 use crate::single::dlog;
 use crate::single::group::{
     pairing, BatchedPairingChecker11, BatchedPairingChecker12, GroupHasher, F, G1, G2,
@@ -71,7 +72,7 @@ impl RawCRSElements {
     /// This checks if the structure of the elements uses the secret scalars
     /// hidden behind the group elements correctly.
     #[must_use]
-    pub fn validate<R: CryptoRngCore>(self, rng: &mut R) -> Option<CRSElements> {
+    pub fn validate(self) -> Option<CRSElements> {
         // 0. Check that we can extract a valid degree out of these elements.
         let d = self.get_degree()?;
         // 1. Check that the elements committing to the secret values are not 0.
@@ -85,31 +86,22 @@ impl RawCRSElements {
         }
         // 2. Check that the two beta commitments match.
         // 3. Check that the x values match on both groups.
-        let mut checker = BatchedPairingChecker12::new(G2::generator(), G1::generator());
-        checker.add(self.beta_1, self.beta_2);
+        let mut checker0 = BatchedPairingChecker12::new(G2::generator(), G1::generator());
+        checker0.add(self.beta_1, self.beta_2);
         for (&x_1_i, &x_2_i) in self.x_1.iter().zip(self.x_2.iter()) {
-            checker.add(x_1_i, x_2_i);
-        }
-        if !checker.check(rng) {
-            return None;
+            checker0.add(x_1_i, x_2_i);
         }
 
         // 4. Check that alpha and x are connected in alpha_x.
-        let mut checker = BatchedPairingChecker12::new(G2::generator(), self.alpha_1);
+        let mut checker1 = BatchedPairingChecker12::new(G2::generator(), self.alpha_1);
         for (&alpha_x_i, &x_i) in self.alpha_x_1.iter().zip(self.x_2.iter()) {
-            checker.add(alpha_x_i, x_i);
-        }
-        if !checker.check(rng) {
-            return None;
+            checker1.add(alpha_x_i, x_i);
         }
         //
         // 5. Check that beta and x are connected in beta_x.
-        let mut checker = BatchedPairingChecker12::new(G2::generator(), self.beta_1);
+        let mut checker2 = BatchedPairingChecker12::new(G2::generator(), self.beta_1);
         for (&beta_x_i, &x_i) in self.beta_x_1.iter().zip(self.x_2.iter()) {
-            checker.add(beta_x_i, x_i);
-        }
-        if !checker.check(rng) {
-            return None;
+            checker2.add(beta_x_i, x_i);
         }
         if !self
             .x_2
@@ -120,11 +112,21 @@ impl RawCRSElements {
             return None;
         }
         // 6. Check that the x_i are the correct powers of x.
-        let mut checker = BatchedPairingChecker11::new(self.x_2[1], G2::generator());
+        let mut checker3 = BatchedPairingChecker11::new(self.x_2[1], G2::generator());
         for (&x_i, &x_i_plus_1) in self.x_1.iter().zip(self.x_1.iter().skip(1)) {
-            checker.add(x_i, x_i_plus_1);
+            checker3.add(x_i, x_i_plus_1);
         }
-        if !checker.check(&mut OsRng) {
+        // "神だけが私を裁ける"
+        if transform_parallel(
+            [Ok(checker0), Ok(checker1), Ok(checker2), Err(checker3)],
+            |x| match x {
+                Ok(x) => x.check(&mut OsRng),
+                Err(x) => x.check(&mut OsRng),
+            },
+        )
+        .iter()
+        .any(|x| !x)
+        {
             return None;
         }
 
@@ -240,10 +242,10 @@ pub struct RawContribution {
 
 impl RawContribution {
     /// Validate this raw contribution, potentially producing a valid one.
-    pub fn validate<R: CryptoRngCore>(&self, rng: &mut R) -> Option<Contribution> {
+    pub fn validate(&self) -> Option<Contribution> {
         self.new_elements
             .to_owned()
-            .validate(rng)
+            .validate()
             .map(|new_elements| Contribution {
                 parent: self.parent,
                 new_elements,
@@ -453,7 +455,7 @@ impl Phase for Phase1 {
         _root: &Self::CRSElements,
         contribution: &Self::RawContribution,
     ) -> Option<Self::Contribution> {
-        contribution.validate(&mut OsRng)
+        contribution.validate()
     }
 
     fn is_linked_to(contribution: &Self::Contribution, elements: &Self::CRSElements) -> bool {
@@ -502,27 +504,27 @@ mod test {
     #[test]
     fn test_root_crs_is_valid() {
         let root = CRSElements::root(D);
-        assert!(root.raw.validate(&mut OsRng).is_some());
+        assert!(root.raw.validate().is_some());
     }
 
     #[test]
     fn test_nontrivial_crs_is_valid() {
         let crs = non_trivial_crs();
-        assert!(crs.validate(&mut OsRng).is_some());
+        assert!(crs.validate().is_some());
     }
 
     #[test]
     fn test_changing_alpha_makes_crs_invalid() {
         let mut crs = non_trivial_crs();
         crs.alpha_1 = G1::generator();
-        assert!(crs.validate(&mut OsRng).is_none());
+        assert!(crs.validate().is_none());
     }
 
     #[test]
     fn test_changing_beta_makes_crs_invalid() {
         let mut crs = non_trivial_crs();
         crs.beta_1 = G1::generator();
-        assert!(crs.validate(&mut OsRng).is_none());
+        assert!(crs.validate().is_none());
     }
 
     #[test]
@@ -532,11 +534,11 @@ mod test {
         let x = F::rand(&mut OsRng);
 
         let crs0 = make_crs(F::zero(), beta, x);
-        assert!(crs0.validate(&mut OsRng).is_none());
+        assert!(crs0.validate().is_none());
         let crs1 = make_crs(alpha, F::zero(), x);
-        assert!(crs1.validate(&mut OsRng).is_none());
+        assert!(crs1.validate().is_none());
         let crs2 = make_crs(alpha, beta, F::zero());
-        assert!(crs2.validate(&mut OsRng).is_none());
+        assert!(crs2.validate().is_none());
     }
 
     #[test]
@@ -559,7 +561,7 @@ mod test {
             alpha_x_1: vec![G1::generator() * alpha, G1::generator() * (alpha * x)],
             beta_x_1: vec![G1::generator() * beta, G1::generator() * (beta * x)],
         };
-        assert!(crs.validate(&mut OsRng).is_none());
+        assert!(crs.validate().is_none());
     }
 
     #[test]
@@ -570,7 +572,7 @@ mod test {
             ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
             &root,
         );
-        assert!(contribution.new_elements.raw.validate(&mut OsRng).is_some());
+        assert!(contribution.new_elements.raw.validate().is_some());
     }
 
     #[test]

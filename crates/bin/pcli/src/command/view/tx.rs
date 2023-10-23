@@ -100,11 +100,20 @@ fn format_opaque_swap_claim_row(asset_cache: &Cache, swap: &SwapClaim) -> String
         asset_id: swap.body.fee.asset_id(),
     }
     .format(asset_cache);
+
+    // Get the denoms from the asset cache, else display the asset ID.
+    let asset_id_1 = swap.body.output_data.trading_pair.asset_1();
+    let asset_id_2 = swap.body.output_data.trading_pair.asset_2();
+    let denom_1: String = asset_cache
+        .get_by_id(asset_id_1)
+        .map_or_else(|| format!("{}", asset_id_1), |denom| format!("{}", denom));
+    let denom_2: String = asset_cache
+        .get_by_id(asset_id_2)
+        .map_or_else(|| format!("{}", asset_id_2), |denom| format!("{}", denom));
+
     format!(
         "Opaque swap claim for trading pair: {} <=> {} with fee {}",
-        swap.body.output_data.trading_pair.asset_1(),
-        swap.body.output_data.trading_pair.asset_2(),
-        value_fee,
+        denom_1, denom_2, value_fee,
     )
 }
 

@@ -22,7 +22,7 @@ async-trait = "0.1.52"
 atty = "0.2"
 bytes = "1"
 camino = "1"
-clap = { version = "3", features = ["derive", "env"] }
+clap = { version = "4", features = ["derive", "env", "color"] }
 console-subscriber = "0.2"
 decaf377 = "0.5"
 futures = "0.3.28"
@@ -32,7 +32,7 @@ penumbra-asset = { path = "../../crates/core/asset/" }
 penumbra-keys = { path = "../../crates/core/keys/" }
 penumbra-num = { path = "../../crates/core/num/" }
 penumbra-proof-params = { path = "../../crates/crypto/proof-params" }
-penumbra-proof-setup = { path = "../../crates/crypto/proof-setup/" }
+penumbra-proof-setup = { path = "../../crates/crypto/proof-setup/", features = ["parallel"] }
 penumbra-proto = { path = "../../crates/proto/" } 
 penumbra-view = { path = "../../crates/view/" }
 rand = "0.8"

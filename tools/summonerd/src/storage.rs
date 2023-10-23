@@ -208,12 +208,12 @@ impl Storage {
             Some(x) => x,
         };
         let crs = if is_root {
-            Phase1RawCeremonyCRS::try_from(pb::CeremonyCrs::decode(
+            Phase1RawCeremonyCRS::unchecked_from_protobuf(pb::CeremonyCrs::decode(
                 contribution_or_crs.as_slice(),
             )?)?
             .assume_valid()
         } else {
-            Phase1RawCeremonyContribution::try_from(PBContribution::decode(
+            Phase1RawCeremonyContribution::unchecked_from_protobuf(PBContribution::decode(
                 contribution_or_crs.as_slice(),
             )?)?
             .assume_valid()
@@ -235,12 +235,12 @@ impl Storage {
             Some(x) => x,
         };
         let crs = if is_root {
-            Phase2RawCeremonyCRS::try_from(pb::CeremonyCrs::decode(
+            Phase2RawCeremonyCRS::unchecked_from_protobuf(pb::CeremonyCrs::decode(
                 contribution_or_crs.as_slice(),
             )?)?
             .assume_valid()
         } else {
-            Phase2RawCeremonyContribution::try_from(PBContribution::decode(
+            Phase2RawCeremonyContribution::unchecked_from_protobuf(PBContribution::decode(
                 contribution_or_crs.as_slice(),
             )?)?
             .assume_valid()
@@ -311,8 +311,10 @@ impl Storage {
             |row| row.get::<usize, Vec<u8>>(0),
         )?;
         Ok(
-            Phase1RawCeremonyCRS::try_from(pb::CeremonyCrs::decode(data.as_slice())?)?
-                .assume_valid(),
+            Phase1RawCeremonyCRS::unchecked_from_protobuf(pb::CeremonyCrs::decode(
+                data.as_slice(),
+            )?)?
+            .assume_valid(),
         )
     }
 
@@ -326,8 +328,10 @@ impl Storage {
             |row| row.get::<usize, Vec<u8>>(0),
         )?;
         Ok(
-            Phase2RawCeremonyCRS::try_from(pb::CeremonyCrs::decode(data.as_slice())?)?
-                .assume_valid(),
+            Phase2RawCeremonyCRS::unchecked_from_protobuf(pb::CeremonyCrs::decode(
+                data.as_slice(),
+            )?)?
+            .assume_valid(),
         )
     }
 
