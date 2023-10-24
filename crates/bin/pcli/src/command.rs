@@ -48,13 +48,13 @@ pub enum Command {
     #[clap(subcommand, display_order = 500)]
     Keys(KeysCmd),
     /// Manage a validator.
-    #[clap(subcommand, display_order = 998)]
+    #[clap(subcommand, display_order = 900)]
     Validator(ValidatorCmd),
     /// Display information related to diagnosing problems running Penumbra
     #[clap(subcommand, display_order = 999)]
     Debug(DebugCmd),
-    /// Contribute to the setup ceremony.
-    #[clap(subcommand, display_order = 800)]
+    /// Contribute to the summoning ceremony.
+    #[clap(subcommand, display_order = 990)]
     Ceremony(CeremonyCmd),
 }
 
