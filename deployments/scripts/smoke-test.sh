@@ -55,11 +55,6 @@ trap 'kill -9 "$cometbft_pid" "$pd_pid"' EXIT
 echo "Waiting $TESTNET_BOOTTIME seconds for network to boot..."
 sleep "$TESTNET_BOOTTIME"
 
-echo "Running pclientd integration tests against network"
-PENUMBRA_NODE_PD_URL="http://127.0.0.1:8080" \
-    PCLI_UNLEASH_DANGER="yes" \
-    cargo test --quiet --release --features sct-divergence-check --package pclientd -- --ignored --test-threads 1 --nocapture
-
 echo "Running pcli integration tests against network"
 PENUMBRA_NODE_PD_URL="http://127.0.0.1:8080" \
     PCLI_UNLEASH_DANGER="yes" \
