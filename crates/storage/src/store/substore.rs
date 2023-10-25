@@ -43,7 +43,8 @@ pub struct SubstoreConfig {
 }
 
 impl SubstoreConfig {
-    pub fn new(prefix: String) -> Self {
+    pub fn new(prefix: impl ToString) -> Self {
+        let prefix = prefix.to_string();
         Self {
             cf_jmt: format!("substore-{}-jmt", prefix),
             cf_jmt_keys: format!("substore-{}-jmt-keys", prefix),
@@ -51,18 +52,6 @@ impl SubstoreConfig {
             cf_jmt_keys_by_keyhash: format!("substore-{}-jmt-keys-by-keyhash", prefix),
             cf_nonverifiable: format!("substore-{}-nonverifiable", prefix),
             prefix,
-        }
-    }
-
-    pub fn root_store() -> Self {
-        Self {
-            // TODO: harmonize cf format throughout.
-            cf_jmt: "jmt".to_string(),
-            cf_jmt_keys: "jmt_keys".to_string(),
-            cf_jmt_values: "jmt_values".to_string(),
-            cf_jmt_keys_by_keyhash: "jmt_keys_by_keyhash".to_string(),
-            cf_nonverifiable: "nonverifiable".to_string(),
-            prefix: "".to_string(),
         }
     }
 
