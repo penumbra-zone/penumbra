@@ -121,6 +121,37 @@ impl SubstoreSnapshot {
     fn rocksdb_snapshot(&self) -> &RocksDbSnapshot {
         &self.snapshot.0.snapshot
     }
+
+    /// Internal helper function used by `get_raw` and `prefix_raw`.
+    ///
+    /// Reads from the JMT will fail if the root is missing; this method
+    /// special-cases the empty tree case so that reads on an empty tree just
+    /// return None.
+    pub fn get_jmt(&self, key: jmt::KeyHash) -> Result<Option<Vec<u8>>> {
+        let tree = jmt::Sha256Jmt::new(self);
+        match tree.get(key, self.snapshot.version()) {
+            Ok(Some(value)) => {
+                tracing::trace!(version = ?self.snapshot.version(), ?key, value = ?hex::encode(&value), "read from tree");
+                Ok(Some(value))
+            }
+            Ok(None) => {
+                tracing::trace!(version = ?self.snapshot.version(), ?key, "key not found in tree");
+                Ok(None)
+            }
+            // This allows for using the Overlay on an empty database without
+            // errors We only skip the `MissingRootError` if the `version` is
+            // `u64::MAX`, the pre-genesis version. Otherwise, a missing root
+            // actually does indicate a problem.
+            Err(e)
+                if e.downcast_ref::<jmt::MissingRootError>().is_some()
+                    && self.snapshot.version() == u64::MAX =>
+            {
+                tracing::trace!(version = ?self.snapshot.version(), "no data available at this version");
+                Ok(None)
+            }
+            Err(e) => Err(e),
+        }
+    }
 }
 
 impl TreeReader for SubstoreSnapshot {
