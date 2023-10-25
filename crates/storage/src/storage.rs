@@ -213,12 +213,12 @@ impl Storage {
                     // Write the JMT key lookups to RocksDB
                     let jmt_keys_cf = inner
                         .db
-                        .cf_handle("jmt_keys")
+                        .cf_handle("substore--jmt-keys")
                         .expect("jmt_keys column family not found");
 
                     let jmt_keys_by_keyhash_cf = inner
                         .db
-                        .cf_handle("jmt_keys_by_keyhash")
+                        .cf_handle("substore--jmt-keys-by-keyhash")
                         .expect("jmt_keys_by_keyhash family not found");
 
                     for (keyhash, key_preimage, v) in unwritten_changes.iter() {
@@ -252,7 +252,7 @@ impl Storage {
                     for (k, v) in cache.nonverifiable_changes.into_iter() {
                         let nonverifiable_cf = inner
                             .db
-                            .cf_handle("nonverifiable")
+                            .cf_handle("substore--nonverifiable")
                             .expect("nonverifiable column family not found");
 
                         match v {
@@ -354,7 +354,7 @@ impl TreeWriter for Inner {
         let node_batch = node_batch.clone();
         let jmt_cf = self
             .db
-            .cf_handle("jmt")
+            .cf_handle("substore--jmt")
             .expect("jmt column family not found");
 
         for (node_key, node) in node_batch.nodes() {
@@ -366,7 +366,7 @@ impl TreeWriter for Inner {
         }
         let jmt_values_cf = self
             .db
-            .cf_handle("jmt_values")
+            .cf_handle("substore--jmt-values")
             .expect("jmt_values column family not found");
 
         for ((version, key_hash), some_value) in node_batch.values() {
@@ -384,8 +384,10 @@ impl TreeWriter for Inner {
 
 // TODO: maybe these should live elsewhere?
 fn get_rightmost_leaf(db: &DB) -> Result<Option<(NodeKey, LeafNode)>> {
-    let jmt_cf = db.cf_handle("jmt").expect("jmt column family not found");
-    let mut iter = db.raw_iterator_cf(jmt_cf);
+    let cf_jmt = db
+        .cf_handle("substore--jmt")
+        .expect("jmt column family not found");
+    let mut iter = db.raw_iterator_cf(cf_jmt);
     let mut ret = None;
     iter.seek_to_last();
 
