@@ -41,7 +41,13 @@ impl GovernanceCmd {
 
         match self {
             GovernanceCmd::ListProposals { .. } => {
-                unimplemented!("governance component needs an RPC defined")
+                let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
+                let proposals = client
+                    .list_proposals(ListProposalsRequest { chain_id })
+                    .await?
+                    .into_inner()
+                    .try_into()
+                    .context("cannot process proposal list data");
                 // below code is not usable outside of our own crates because
                 // it does raw state key accesses.
                 /*
