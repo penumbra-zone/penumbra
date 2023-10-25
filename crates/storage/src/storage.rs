@@ -66,7 +66,7 @@ impl Storage {
 
                     let mut substore_configs = Vec::new();
                     tracing::info!("initializing global store config");
-                    let root_store = SubstoreConfig::root_store();
+                    let root_store = SubstoreConfig::new("");
                     for substore_prefix in substore_prefixes {
                         tracing::info!(?substore_prefix, "initializing substore");
                         if substore_prefix.is_empty() {

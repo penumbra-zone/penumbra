@@ -45,7 +45,7 @@ impl MultistoreConfig {
 impl Default for MultistoreConfig {
     fn default() -> Self {
         Self {
-            root_store: Arc::new(SubstoreConfig::root_store()),
+            root_store: Arc::new(SubstoreConfig::new("")),
             substores: vec![],
         }
     }
