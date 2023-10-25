@@ -1,5 +1,6 @@
 FROM docker.io/library/node:20-alpine
 
+RUN apk add git
 RUN npm install -g pnpm
 USER node
 RUN git clone https://github.com/ejmg/cuiloa --depth 1 /home/node/app
