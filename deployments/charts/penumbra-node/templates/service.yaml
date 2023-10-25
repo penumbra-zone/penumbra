@@ -29,6 +29,12 @@ spec:
       port: 26660
       targetPort: 26660
       protocol: TCP
+  {{- if eq $.Values.cometbft.config.indexer "psql" }}
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+  {{- end }}
   selector:
     app: {{ $fn_name }}
     {{- include "penumbra-node.selectorLabels" $ | nindent 4 }}

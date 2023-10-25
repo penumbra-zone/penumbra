@@ -2,12 +2,11 @@
 {{ $count := (.Values.nodes | len | int) }}
 {{ range $i,$e := until $count }}
 {{ $fn_name := printf "%s-fn-%d" $.Release.Name $i }}
-{{ $pvc_name := printf "%s-config" $fn_name }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ $pvc_name }}
+  name: {{ $fn_name }}-config
   labels:
     {{- include "penumbra-node.labels" $ | nindent 4 }}
 spec:
@@ -18,5 +17,26 @@ spec:
   {{- if $.Values.persistence.storageClassName }}
   storageClassName: {{ $.Values.persistence.storageClassName }}
   {{- end }}
+---
+{{- if eq $.Values.cometbft.config.indexer "psql" }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $fn_name }}-db
+  labels:
+    {{- include "penumbra-node.labels" $ | nindent 4 }}
+spec:
+  accessModes: {{ $.Values.persistence.accessModes }}
+  resources:
+    requests:
+      # Storage for db is <1% of storage for node state.
+      # We could dynamically compute that based on persistence size,
+      # but it's also fine if we just hardcode the value for now.
+      storage: 2G
+  {{- if $.Values.persistence.storageClassName }}
+  storageClassName: {{ $.Values.persistence.storageClassName }}
+  {{- end }}
+{{- end }}
+
 {{- end }}
 {{- end }}
