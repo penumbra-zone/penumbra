@@ -1,0 +1,12 @@
+FROM docker.io/library/node:20-alpine
+
+RUN npm install -g pnpm
+USER node
+RUN git clone https://github.com/ejmg/cuiloa --depth 1 /home/node/app
+WORKDIR /home/node/app
+
+RUN pnpm install
+RUN pnpm build
+
+EXPOSE 3000
+CMD [ "pnpm", "dev" ]
