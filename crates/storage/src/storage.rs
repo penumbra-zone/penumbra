@@ -211,12 +211,12 @@ impl Storage {
                     // The `jmt_keys` column family maps JMT `key`s to their `keyhash`.
                     // The `jmt_keys_by_keyhash` column family maps JMT `keyhash`es to their preimage.
                     // Write the JMT key lookups to RocksDB
-                    let jmt_keys_cf = inner
+                    let cf_jmt_keys = inner
                         .db
                         .cf_handle("substore--jmt-keys")
                         .expect("jmt_keys column family not found");
 
-                    let jmt_keys_by_keyhash_cf = inner
+                    let cf_jmt_keys_by_keyhash = inner
                         .db
                         .cf_handle("substore--jmt-keys-by-keyhash")
                         .expect("jmt_keys_by_keyhash family not found");
@@ -225,15 +225,15 @@ impl Storage {
                         match v {
                             // Key still exists so update the key preimage and keyhash index.
                             Some(_) => {
-                                inner.db.put_cf(jmt_keys_cf, key_preimage, keyhash.0)?;
+                                inner.db.put_cf(cf_jmt_keys, key_preimage, keyhash.0)?;
                                 inner
                                     .db
-                                    .put_cf(jmt_keys_by_keyhash_cf, keyhash.0, key_preimage)?
+                                    .put_cf(cf_jmt_keys_by_keyhash, keyhash.0, key_preimage)?
                             }
                             // Key was deleted, so delete the key preimage, and its keyhash index.
                             None => {
-                                inner.db.delete_cf(jmt_keys_cf, key_preimage)?;
-                                inner.db.delete_cf(jmt_keys_by_keyhash_cf, keyhash.0)?;
+                                inner.db.delete_cf(cf_jmt_keys, key_preimage)?;
+                                inner.db.delete_cf(cf_jmt_keys_by_keyhash, keyhash.0)?;
                             }
                         };
                     }

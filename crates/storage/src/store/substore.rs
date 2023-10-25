@@ -153,7 +153,7 @@ impl TreeReader for SubstoreSnapshot {
         max_version: jmt::Version,
         key_hash: KeyHash,
     ) -> Result<Option<jmt::OwnedValue>> {
-        let jmt_values_cf = self.config.cf_jmt_values(&self.db);
+        let cf_jmt_values = self.config.cf_jmt_values(&self.db);
 
         // Prefix ranges exclude the upper bound in the iterator result.
         // This means that when requesting the largest possible version, there
@@ -164,7 +164,7 @@ impl TreeReader for SubstoreSnapshot {
                 key_hash,
             };
 
-            if let Some(v) = self.rocksdb_snapshot.get_cf(jmt_values_cf, k.encode())? {
+            if let Some(v) = self.rocksdb_snapshot.get_cf(cf_jmt_values, k.encode())? {
                 let maybe_value: Option<Vec<u8>> = BorshDeserialize::try_from_slice(v.as_ref())?;
                 return Ok(maybe_value);
             }
@@ -182,7 +182,7 @@ impl TreeReader for SubstoreSnapshot {
         readopts.set_iterate_upper_bound(upper_bound);
         let mut iterator =
             self.rocksdb_snapshot
-                .iterator_cf_opt(jmt_values_cf, readopts, IteratorMode::End);
+                .iterator_cf_opt(cf_jmt_values, readopts, IteratorMode::End);
 
         let Some(tuple) = iterator.next() else {
             return Ok(None);
@@ -199,10 +199,10 @@ impl TreeReader for SubstoreSnapshot {
         let db_node_key = DbNodeKey::from(node_key.clone());
         tracing::trace!(?node_key);
 
-        let jmt_cf = self.config.cf_jmt(&self.db);
+        let cf_jmt = self.config.cf_jmt(&self.db);
         let value = self
             .rocksdb_snapshot
-            .get_cf(jmt_cf, db_node_key.encode()?)?
+            .get_cf(cf_jmt, db_node_key.encode()?)?
             .map(|db_slice| Node::try_from_slice(&db_slice))
             .transpose()?;
 
@@ -211,8 +211,8 @@ impl TreeReader for SubstoreSnapshot {
     }
 
     fn get_rightmost_leaf(&self) -> Result<Option<(NodeKey, LeafNode)>> {
-        let jmt_cf = self.config.cf_jmt(&self.db);
-        let mut iter = self.rocksdb_snapshot.raw_iterator_cf(jmt_cf);
+        let cf_jmt = self.config.cf_jmt(&self.db);
+        let mut iter = self.rocksdb_snapshot.raw_iterator_cf(cf_jmt);
         iter.seek_to_last();
 
         if iter.valid() {
@@ -235,10 +235,10 @@ impl TreeReader for SubstoreSnapshot {
 
 impl HasPreimage for SubstoreSnapshot {
     fn preimage(&self, key_hash: KeyHash) -> Result<Option<Vec<u8>>> {
-        let jmt_keys_by_keyhash_cf = self.config.cf_jmt_keys_by_keyhash(&self.db);
+        let cf_jmt_keys_by_keyhash = self.config.cf_jmt_keys_by_keyhash(&self.db);
 
         Ok(self
             .rocksdb_snapshot
-            .get_cf(jmt_keys_by_keyhash_cf, key_hash.0)?)
+            .get_cf(cf_jmt_keys_by_keyhash, key_hash.0)?)
     }
 }

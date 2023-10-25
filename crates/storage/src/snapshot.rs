@@ -497,13 +497,13 @@ impl TreeReader for Inner {
         let db_node_key = DbNodeKey::from(node_key.clone());
         tracing::trace!(?node_key);
 
-        let jmt_cf = self
+        let cf_jmt = self
             .db
             .cf_handle("substore--jmt")
             .expect("jmt column family not found");
         let value = self
             .snapshot
-            .get_cf(jmt_cf, db_node_key.encode()?)?
+            .get_cf(cf_jmt, db_node_key.encode()?)?
             .map(|db_slice| Node::try_from_slice(&db_slice))
             .transpose()?;
 
@@ -512,11 +512,11 @@ impl TreeReader for Inner {
     }
 
     fn get_rightmost_leaf(&self) -> Result<Option<(NodeKey, LeafNode)>> {
-        let jmt_cf = self
+        let cf_jmt = self
             .db
             .cf_handle("substore--jmt")
             .expect("jmt column family not found");
-        let mut iter = self.snapshot.raw_iterator_cf(jmt_cf);
+        let mut iter = self.snapshot.raw_iterator_cf(cf_jmt);
         iter.seek_to_last();
 
         if iter.valid() {
@@ -539,11 +539,11 @@ impl TreeReader for Inner {
 
 impl HasPreimage for Inner {
     fn preimage(&self, key_hash: KeyHash) -> Result<Option<Vec<u8>>> {
-        let jmt_keys_by_keyhash_cf = self
+        let cf_jmt_keys_by_keyhash = self
             .db
             .cf_handle("substore--jmt-keys-by-keyhash")
             .expect("jmt_keys_by_keyhash column family not found");
 
-        Ok(self.snapshot.get_cf(jmt_keys_by_keyhash_cf, key_hash.0)?)
+        Ok(self.snapshot.get_cf(cf_jmt_keys_by_keyhash, key_hash.0)?)
     }
 }
