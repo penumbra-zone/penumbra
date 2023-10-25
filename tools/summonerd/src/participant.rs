@@ -11,14 +11,14 @@ use penumbra_proto::{
         participate_response::Confirm, ParticipateRequest, ParticipateResponse,
     },
 };
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, Mutex};
 use tonic::{Status, Streaming};
 
 use crate::phase::Phase;
 
 pub struct Participant {
     address: Address,
-    rx: Streaming<pb::ParticipateRequest>,
+    rx: Mutex<Streaming<pb::ParticipateRequest>>,
     tx: mpsc::Sender<Result<pb::ParticipateResponse, Status>>,
 }
 
@@ -32,7 +32,14 @@ impl Participant {
     ) {
         // Chosen through extensive performance benchmarking 8^)
         let (tx, rx_response) = mpsc::channel(10);
-        (Self { address, rx, tx }, rx_response)
+        (
+            Self {
+                address,
+                rx: Mutex::new(rx),
+                tx,
+            },
+            rx_response,
+        )
     }
 
     pub fn address(&self) -> Address {
@@ -77,7 +84,7 @@ impl Participant {
             .await?;
         // We use .ok(), because we want to treat any GRPC error as an expected error,
         // and indicative of a failed contribution, thus returning immediately.
-        let msg = self.rx.message().await.ok().flatten();
+        let msg = self.rx.lock().await.message().await.ok().flatten();
         if let Some(ParticipateRequest {
             msg: Some(RequestMsg::Contribution(contribution)),
         }) = msg

@@ -2,6 +2,7 @@ mod coordinator;
 mod participant;
 mod penumbra_knower;
 mod phase;
+mod queue;
 mod server;
 mod storage;
 
@@ -36,6 +37,7 @@ use url::Url;
 use crate::phase::Phase1;
 use crate::phase::Phase2;
 use crate::phase::PhaseMarker;
+use crate::queue::ParticipantQueue;
 use crate::{penumbra_knower::PenumbraKnower, server::CoordinatorService};
 use penumbra_proof_setup::all::{Phase1CeremonyCRS, Phase1RawCeremonyCRS};
 
@@ -169,12 +171,13 @@ impl Opt {
                 let knower =
                     PenumbraKnower::load_or_initialize(storage_dir.join("penumbra.db"), &fvk, node)
                         .await?;
-                let (coordinator, participant_tx) = Coordinator::new(storage.clone());
+                let queue = ParticipantQueue::new();
+                let coordinator = Coordinator::new(storage.clone(), queue.clone());
                 let coordinator_handle = match marker {
                     PhaseMarker::P1 => tokio::spawn(coordinator.run::<Phase1>()),
                     PhaseMarker::P2 => tokio::spawn(coordinator.run::<Phase2>()),
                 };
-                let service = CoordinatorService::new(knower, storage, participant_tx, marker);
+                let service = CoordinatorService::new(knower, storage, queue, marker);
                 let grpc_server =
                     Server::builder()
                         .accept_http1(true)

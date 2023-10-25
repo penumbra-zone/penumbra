@@ -1,10 +1,8 @@
 use penumbra_keys::Address;
-use penumbra_num::Amount;
 use penumbra_proto::penumbra::tools::summoning::v1alpha1::{
     self as pb, ceremony_coordinator_service_server as server,
     participate_request::{Identify, Msg},
 };
-use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{async_trait, Request, Response, Status, Streaming};
 
@@ -12,6 +10,7 @@ use crate::{
     participant::Participant,
     penumbra_knower::PenumbraKnower,
     phase::PhaseMarker,
+    queue::ParticipantQueue,
     storage::{ContributionAllowed, Storage},
 };
 
@@ -19,7 +18,7 @@ use crate::{
 pub struct CoordinatorService {
     knower: PenumbraKnower,
     storage: Storage,
-    participant_tx: mpsc::Sender<(Participant, Amount)>,
+    queue: ParticipantQueue,
     marker: PhaseMarker,
 }
 
@@ -27,13 +26,13 @@ impl CoordinatorService {
     pub fn new(
         knower: PenumbraKnower,
         storage: Storage,
-        participant_tx: mpsc::Sender<(Participant, Amount)>,
+        queue: ParticipantQueue,
         marker: PhaseMarker,
     ) -> Self {
         Self {
             knower,
             storage,
-            participant_tx,
+            queue,
             marker,
         }
     }
@@ -79,30 +78,32 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
             })? {
             ContributionAllowed::Yes(amount) => amount,
             ContributionAllowed::DidntBidEnough(amount) => {
+                tracing::debug!(?address, ?amount, "did not bid enough");
                 return Err(Status::permission_denied(format!(
                     "Bid amount {} is not large enough",
                     amount
-                )))
+                )));
             }
             ContributionAllowed::Banned => {
+                tracing::debug!(?address, "is banned");
                 return Err(Status::permission_denied(format!(
                     "nyo contwibution *cries* fow you"
-                )))
+                )));
             }
             ContributionAllowed::AlreadyContributed => {
+                tracing::debug!(?address, "already contributed");
                 return Err(Status::permission_denied(format!(
                     "Thanks again for your contribution! Participating once is enough to guarantee security, and we'd like to allow other people to participate as well."
-                )))
+                )));
             }
         };
-        tracing::info!(?amount, "bid");
+        tracing::info!(?amount, ?address, "bid");
         let (participant, response_rx) = Participant::new(address, streaming);
-        // TODO: Check if this is what we want to do
-        self.participant_tx
-            .send((participant, amount))
+        self.queue.push(participant, amount).await;
+        self.queue
+            .inform_one(address)
             .await
-            .map_err(|e| Status::internal(format!("cannot register participant {:#}", e)))?;
-
+            .map_err(|e| Status::internal(format!("failed to inform you: {}", e)))?;
         Ok(Response::new(ReceiverStream::new(response_rx)))
     }
 }
