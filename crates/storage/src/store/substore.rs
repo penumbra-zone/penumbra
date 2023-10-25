@@ -15,30 +15,31 @@ use crate::{
 
 #[derive(Debug)]
 pub struct SubstoreConfig {
-    /// The prefix of the substore. If empty, it is the transparent top-level store config.
+    /// The prefix of the substore. If empty, it is the root-level store config.
     pub prefix: String,
-    /// name: "substore--jmt"
+    /// name: "substore-{prefix}-jmt"
     /// role: persists the logical structure of the JMT
     /// maps: `storage::DbNodeKey` to `jmt::Node`
     // note: `DbNodeKey` is a newtype around `NodeKey` that serialize the key
     // so that it maps to a lexicographical ordering with ascending jmt::Version.
     cf_jmt: String,
-    /// jmt_keys: JMT key index.
+    /// name: "susbstore-{prefix}-jmt-keys"
+    /// role: JMT key index.
     /// maps: key preimages to their keyhash.
     cf_jmt_keys: String,
-    /// jmt_values: the actual values that JMT leaves point to.
+    /// name: "substore-{prefix}-jmt-values"
+    /// role: stores the actual values that JMT leaves point to.
     /// maps: KeyHash || BE(version) to an `Option<Vec<u8>>`
     cf_jmt_values: String,
-    /// jmt_keys_by_keyhash: JMT keyhash index.
+    /// name: "substore-{prefix}-jmt-keys-by-keyhash"
+    /// role: index JMT keys by their keyhash.
     /// maps: keyhashes to their preimage.
     cf_jmt_keys_by_keyhash: String,
-    /// nonverifiable: auxiliary data that is not part of our merkle tree,
-    /// and thus not strictly part of consensus (or verifiable).
+    /// name: "substore-{prefix}-nonverifiable"
+    /// role: auxiliary data that is not part of our merkle tree, and thus not strictly
+    /// part of consensus.
     /// maps: arbitrary keys to arbitrary values.
     cf_nonverifiable: String,
-    // This isn't part of the JMT, so the substore abstraction
-    // isn't really necessary, but it's cleaner if we keep it
-    // segmented by substore so that all reads can be dispached to a substore.
 }
 
 impl SubstoreConfig {
@@ -65,33 +66,43 @@ impl SubstoreConfig {
     }
 
     pub fn cf_jmt<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
-        db_handle
-            .cf_handle(self.cf_jmt.as_str())
-            .expect("substore jmt column family not found")
+        let column = self.cf_jmt.as_str();
+        db_handle.cf_handle(column).expect(&format!(
+            "jmt column family not found for prefix: {}, substore: {}",
+            column, self.prefix
+        ))
     }
 
     pub fn cf_jmt_values<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
-        db_handle
-            .cf_handle(self.cf_jmt_values.as_str())
-            .expect("substore jmt-values column family not found")
+        let column = self.cf_jmt_values.as_str();
+        db_handle.cf_handle(column).expect(&format!(
+            "jmt-values column family not found for prefix: {}, substore: {}",
+            column, self.prefix
+        ))
     }
 
     pub fn cf_jmt_keys_by_keyhash<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
-        db_handle
-            .cf_handle(self.cf_jmt_keys_by_keyhash.as_str())
-            .expect("substore jmt-keys-by-keyhash column family not found")
+        let column = self.cf_jmt_keys_by_keyhash.as_str();
+        db_handle.cf_handle(&column).expect(&format!(
+            "jmt-keys-by-keyhash column family not found for prefix: {}, substore: {}",
+            column, self.prefix
+        ))
     }
 
     pub fn cf_jmt_keys<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
-        db_handle
-            .cf_handle(self.cf_jmt_keys.as_str())
-            .expect("substore jmt-keys column family not found")
+        let column = self.cf_jmt_keys.as_str();
+        db_handle.cf_handle(column).expect(&format!(
+            "jmt-keys column family not found for prefix: {}, substore: {}",
+            column, self.prefix
+        ))
     }
 
     pub fn cf_nonverifiable<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
-        db_handle
-            .cf_handle(&self.cf_nonverifiable.as_str())
-            .expect("substore jmt-keys column family not found")
+        let column = self.cf_nonverifiable.as_str();
+        db_handle.cf_handle(column).expect(&format!(
+            "nonverifiable column family not found for prefix: {}, substore: {}",
+            column, self.prefix
+        ))
     }
     // TODO: we can use a `rocksdb::OptimisticTransactionDB` since we know that
     // our write load is not contentious (definitionally), and we can use make
