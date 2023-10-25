@@ -138,7 +138,6 @@ impl StateRead for Snapshot {
             snapshot: self.clone(),
         };
         let key_hash = jmt::KeyHash::with::<sha2::Sha256>(key);
-        let snapshot = self.clone();
 
         crate::future::SnapshotFuture(
             tokio::task::Builder::new()
@@ -439,7 +438,7 @@ impl TreeReader for Inner {
     ) -> Result<Option<jmt::OwnedValue>> {
         let jmt_values_cf = self
             .db
-            .cf_handle("jmt_values")
+            .cf_handle("substore--jmt-values")
             .expect("jmt_values column family not found");
 
         // Prefix ranges exclude the upper bound in the iterator result.
@@ -487,7 +486,7 @@ impl TreeReader for Inner {
 
         let jmt_cf = self
             .db
-            .cf_handle("jmt")
+            .cf_handle("substore--jmt")
             .expect("jmt column family not found");
         let value = self
             .snapshot
@@ -502,7 +501,7 @@ impl TreeReader for Inner {
     fn get_rightmost_leaf(&self) -> Result<Option<(NodeKey, LeafNode)>> {
         let jmt_cf = self
             .db
-            .cf_handle("jmt")
+            .cf_handle("substore--jmt")
             .expect("jmt column family not found");
         let mut iter = self.snapshot.raw_iterator_cf(jmt_cf);
         iter.seek_to_last();
@@ -529,7 +528,7 @@ impl HasPreimage for Inner {
     fn preimage(&self, key_hash: KeyHash) -> Result<Option<Vec<u8>>> {
         let jmt_keys_by_keyhash_cf = self
             .db
-            .cf_handle("jmt_keys_by_keyhash")
+            .cf_handle("substore--jmt-keys-by-keyhash")
             .expect("jmt_keys_by_keyhash column family not found");
 
         Ok(self.snapshot.get_cf(jmt_keys_by_keyhash_cf, key_hash.0)?)

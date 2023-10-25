@@ -18,7 +18,7 @@ use crate::{
 pub struct SubstoreConfig {
     /// The prefix of the substore. If empty, it is the transparent top-level store config.
     pub prefix: String,
-    /// name: "jmt"
+    /// name: "substore--jmt"
     /// role: persists the logical structure of the JMT
     /// maps: `storage::DbNodeKey` to `jmt::Node`
     // note: `DbNodeKey` is a newtype around `NodeKey` that serialize the key
