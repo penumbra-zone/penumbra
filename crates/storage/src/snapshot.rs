@@ -46,7 +46,7 @@ impl std::fmt::Debug for Snapshot {
 #[derive(Debug)]
 pub(crate) struct Inner {
     pub(crate) multistore: MultistoreConfig,
-    pub(crate) snapshot: RocksDbSnapshot,
+    pub(crate) snapshot: Arc<RocksDbSnapshot>,
     pub(crate) version: jmt::Version,
     // Used to retrieve column family handles.
     pub(crate) db: Arc<rocksdb::DB>,
@@ -60,7 +60,7 @@ impl Snapshot {
         multistore: MultistoreConfig,
     ) -> Self {
         Self(Arc::new(Inner {
-            snapshot: RocksDbSnapshot::new(db.clone()),
+            snapshot: Arc::new(RocksDbSnapshot::new(db.clone())),
             version,
             db,
             multistore,
@@ -135,7 +135,9 @@ impl StateRead for Snapshot {
 
         let substore = store::substore::SubstoreSnapshot {
             config: substore_config,
-            snapshot: self.clone(),
+            rocksdb_snapshot: self.0.snapshot.clone(),
+            version: self.version(),
+            db: self.0.db.clone(),
         };
         let key_hash = jmt::KeyHash::with::<sha2::Sha256>(key);
 
@@ -160,11 +162,13 @@ impl StateRead for Snapshot {
         let inner = self.0.clone();
         let snapshot = self.clone();
         let (key, substore_config) = inner.multistore.route_key_bytes(key);
+
         let substore = store::substore::SubstoreSnapshot {
             config: substore_config,
-            snapshot: self.clone(),
+            rocksdb_snapshot: self.0.snapshot.clone(),
+            version: self.version(),
+            db: self.0.db.clone(),
         };
-
         let key: Vec<u8> = key.to_vec();
         crate::future::SnapshotFuture(
             tokio::task::Builder::new()
@@ -173,7 +177,8 @@ impl StateRead for Snapshot {
                     span.in_scope(|| {
                         let _start = std::time::Instant::now();
 
-                        let cf_nonverifiable = substore.config.cf_nonverifiable(&snapshot);
+                        let cf_nonverifiable = substore.config.cf_nonverifiable(&snapshot.0.db);
+
                         let rsp = inner
                             .snapshot
                             .get_cf(cf_nonverifiable, key)
@@ -211,9 +216,11 @@ impl StateRead for Snapshot {
                 span.in_scope(|| {
                     let substore = store::substore::SubstoreSnapshot {
                         config: substore_config.clone(),
-                        snapshot: snapshot.clone(),
+                        rocksdb_snapshot: snapshot.0.snapshot.clone(),
+                        version: snapshot.version(),
+                        db: snapshot.0.db.clone(),
                     };
-                    let cf_jmt_keys = substore.config.cf_jmt_keys(&snapshot);
+                    let cf_jmt_keys = substore.config.cf_jmt_keys(&snapshot.0.db);
                     let jmt_keys_iterator =
                         snapshot
                             .0
@@ -232,7 +239,9 @@ impl StateRead for Snapshot {
 
                         let substore = store::substore::SubstoreSnapshot {
                             config: substore_config.clone(),
-                            snapshot: snapshot.clone(),
+                            rocksdb_snapshot: snapshot.0.snapshot.clone(),
+                            version: snapshot.version(),
+                            db: snapshot.0.db.clone(),
                         };
                         let v = substore
                             .get_jmt(key_hash)?
@@ -256,22 +265,23 @@ impl StateRead for Snapshot {
         let span = Span::current();
         let snapshot = self.clone();
 
-        let (prefix, config) = self.0.multistore.route_key_str(prefix);
+        let (prefix, substore_config) = self.0.multistore.route_key_str(prefix);
         let mut options = rocksdb::ReadOptions::default();
         options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
         let mode = rocksdb::IteratorMode::Start;
 
         let substore = store::substore::SubstoreSnapshot {
-            config: config.clone(),
-            snapshot: snapshot.clone(),
+            config: substore_config,
+            rocksdb_snapshot: self.0.snapshot.clone(),
+            version: self.version(),
+            db: self.0.db.clone(),
         };
-
         let (tx, rx) = mpsc::channel(10);
         tokio::task::Builder::new()
             .name("Snapshot::prefix_keys")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let cf_keys = substore.config.cf_jmt_keys(&snapshot);
+                    let cf_keys = substore.config.cf_jmt_keys(&snapshot.0.db);
                     let iter = snapshot.0.snapshot.iterator_cf_opt(cf_keys, options, mode);
                     for i in iter {
                         // For each key that matches the prefix, fetch the value from the JMT column family.
@@ -293,14 +303,16 @@ impl StateRead for Snapshot {
         let span = Span::current();
         let snapshot = self.clone();
 
-        let (prefix, config) = self.0.multistore.route_key_bytes(prefix);
+        let (prefix, substore_config) = self.0.multistore.route_key_bytes(prefix);
         let mut options = rocksdb::ReadOptions::default();
         options.set_iterate_range(rocksdb::PrefixRange(prefix));
         let mode = rocksdb::IteratorMode::Start;
 
         let substore = store::substore::SubstoreSnapshot {
-            config: config.clone(),
-            snapshot: snapshot.clone(),
+            config: substore_config,
+            rocksdb_snapshot: self.0.snapshot.clone(),
+            version: self.version(),
+            db: self.0.db.clone(),
         };
 
         let (tx_prefix_query, rx_prefix_query) = mpsc::channel(10);
@@ -311,7 +323,7 @@ impl StateRead for Snapshot {
             .name("Snapshot::nonverifiable_prefix_raw")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let cf_nonverifiable = substore.config.cf_nonverifiable(&snapshot);
+                    let cf_nonverifiable = substore.config.cf_nonverifiable(&snapshot.0.db);
                     let iter = snapshot
                         .0
                         .snapshot
@@ -336,7 +348,7 @@ impl StateRead for Snapshot {
         let span = Span::current();
         let snapshot = self.clone();
 
-        let (prefix, config) = self
+        let (prefix, substore_config) = self
             .0
             .multistore
             .route_key_bytes(prefix.unwrap_or_default());
@@ -381,16 +393,17 @@ impl StateRead for Snapshot {
         let prefix = prefix.to_vec();
 
         let substore = store::substore::SubstoreSnapshot {
-            config: config.clone(),
-            snapshot: snapshot.clone(),
+            config: substore_config,
+            rocksdb_snapshot: self.0.snapshot.clone(),
+            version: self.version(),
+            db: self.0.db.clone(),
         };
-
         let (tx, rx) = mpsc::channel::<Result<(Vec<u8>, Vec<u8>)>>(10);
         tokio::task::Builder::new()
             .name("Snapshot::nonverifiable_range_raw")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let cf_nonverifiable = substore.config.cf_nonverifiable(&snapshot);
+                    let cf_nonverifiable = substore.config.cf_nonverifiable(&snapshot.0.db);
                     let iter = snapshot
                         .0
                         .snapshot

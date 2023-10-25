@@ -11,7 +11,6 @@ use rocksdb::{ColumnFamily, IteratorMode, ReadOptions};
 use crate::{
     snapshot::RocksDbSnapshot,
     storage::{DbNodeKey, VersionedKeyHash},
-    Snapshot,
 };
 
 #[derive(Debug)]
@@ -65,42 +64,32 @@ impl SubstoreConfig {
             .chain(std::iter::once(&self.cf_nonverifiable))
     }
 
-    pub fn cf_jmt<'s>(&self, snapshot: &'s Snapshot) -> &'s ColumnFamily {
-        snapshot
-            .0
-            .db
+    pub fn cf_jmt<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
+        db_handle
             .cf_handle(self.cf_jmt.as_str())
             .expect("substore jmt column family not found")
     }
 
-    pub fn cf_jmt_values<'s>(&self, snapshot: &'s Snapshot) -> &'s ColumnFamily {
-        snapshot
-            .0
-            .db
+    pub fn cf_jmt_values<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
+        db_handle
             .cf_handle(self.cf_jmt_values.as_str())
             .expect("substore jmt-values column family not found")
     }
 
-    pub fn cf_jmt_keys_by_keyhash<'s>(&self, snapshot: &'s Snapshot) -> &'s ColumnFamily {
-        snapshot
-            .0
-            .db
+    pub fn cf_jmt_keys_by_keyhash<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
+        db_handle
             .cf_handle(self.cf_jmt_keys_by_keyhash.as_str())
             .expect("substore jmt-keys-by-keyhash column family not found")
     }
 
-    pub fn cf_jmt_keys<'s>(&self, snapshot: &'s Snapshot) -> &'s ColumnFamily {
-        snapshot
-            .0
-            .db
+    pub fn cf_jmt_keys<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
+        db_handle
             .cf_handle(self.cf_jmt_keys.as_str())
             .expect("substore jmt-keys column family not found")
     }
 
-    pub fn cf_nonverifiable<'s>(&self, snapshot: &'s Snapshot) -> &'s ColumnFamily {
-        snapshot
-            .0
-            .db
+    pub fn cf_nonverifiable<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
+        db_handle
             .cf_handle(&self.cf_nonverifiable.as_str())
             .expect("substore jmt-keys column family not found")
     }
@@ -113,13 +102,15 @@ impl SubstoreConfig {
 }
 
 pub struct SubstoreSnapshot {
-    pub config: Arc<SubstoreConfig>,
-    pub snapshot: Snapshot,
+    pub(crate) config: Arc<SubstoreConfig>,
+    pub(crate) rocksdb_snapshot: Arc<RocksDbSnapshot>,
+    pub(crate) version: jmt::Version,
+    pub(crate) db: Arc<rocksdb::DB>,
 }
 
 impl SubstoreSnapshot {
-    fn rocksdb_snapshot(&self) -> &RocksDbSnapshot {
-        &self.snapshot.0.snapshot
+    pub fn version(&self) -> jmt::Version {
+        self.version
     }
 
     /// Internal helper function used by `get_raw` and `prefix_raw`.
@@ -129,13 +120,13 @@ impl SubstoreSnapshot {
     /// return None.
     pub fn get_jmt(&self, key: jmt::KeyHash) -> Result<Option<Vec<u8>>> {
         let tree = jmt::Sha256Jmt::new(self);
-        match tree.get(key, self.snapshot.version()) {
+        match tree.get(key, self.version()) {
             Ok(Some(value)) => {
-                tracing::trace!(version = ?self.snapshot.version(), ?key, value = ?hex::encode(&value), "read from tree");
+                tracing::trace!(version = ?self.version(), ?key, value = ?hex::encode(&value), "read from tree");
                 Ok(Some(value))
             }
             Ok(None) => {
-                tracing::trace!(version = ?self.snapshot.version(), ?key, "key not found in tree");
+                tracing::trace!(version = ?self.version(), ?key, "key not found in tree");
                 Ok(None)
             }
             // This allows for using the Overlay on an empty database without
@@ -144,9 +135,9 @@ impl SubstoreSnapshot {
             // actually does indicate a problem.
             Err(e)
                 if e.downcast_ref::<jmt::MissingRootError>().is_some()
-                    && self.snapshot.version() == u64::MAX =>
+                    && self.version() == u64::MAX =>
             {
-                tracing::trace!(version = ?self.snapshot.version(), "no data available at this version");
+                tracing::trace!(version = ?self.version(), "no data available at this version");
                 Ok(None)
             }
             Err(e) => Err(e),
@@ -162,7 +153,7 @@ impl TreeReader for SubstoreSnapshot {
         max_version: jmt::Version,
         key_hash: KeyHash,
     ) -> Result<Option<jmt::OwnedValue>> {
-        let jmt_values_cf = self.config.cf_jmt_values(&self.snapshot);
+        let jmt_values_cf = self.config.cf_jmt_values(&self.db);
 
         // Prefix ranges exclude the upper bound in the iterator result.
         // This means that when requesting the largest possible version, there
@@ -173,7 +164,7 @@ impl TreeReader for SubstoreSnapshot {
                 key_hash,
             };
 
-            if let Some(v) = self.rocksdb_snapshot().get_cf(jmt_values_cf, k.encode())? {
+            if let Some(v) = self.rocksdb_snapshot.get_cf(jmt_values_cf, k.encode())? {
                 let maybe_value: Option<Vec<u8>> = BorshDeserialize::try_from_slice(v.as_ref())?;
                 return Ok(maybe_value);
             }
@@ -190,7 +181,7 @@ impl TreeReader for SubstoreSnapshot {
         readopts.set_iterate_lower_bound(lower_bound);
         readopts.set_iterate_upper_bound(upper_bound);
         let mut iterator =
-            self.rocksdb_snapshot()
+            self.rocksdb_snapshot
                 .iterator_cf_opt(jmt_values_cf, readopts, IteratorMode::End);
 
         let Some(tuple) = iterator.next() else {
@@ -208,9 +199,9 @@ impl TreeReader for SubstoreSnapshot {
         let db_node_key = DbNodeKey::from(node_key.clone());
         tracing::trace!(?node_key);
 
-        let jmt_cf = self.config.cf_jmt(&self.snapshot);
+        let jmt_cf = self.config.cf_jmt(&self.db);
         let value = self
-            .rocksdb_snapshot()
+            .rocksdb_snapshot
             .get_cf(jmt_cf, db_node_key.encode()?)?
             .map(|db_slice| Node::try_from_slice(&db_slice))
             .transpose()?;
@@ -220,8 +211,8 @@ impl TreeReader for SubstoreSnapshot {
     }
 
     fn get_rightmost_leaf(&self) -> Result<Option<(NodeKey, LeafNode)>> {
-        let jmt_cf = self.config.cf_jmt(&self.snapshot);
-        let mut iter = self.rocksdb_snapshot().raw_iterator_cf(jmt_cf);
+        let jmt_cf = self.config.cf_jmt(&self.db);
+        let mut iter = self.rocksdb_snapshot.raw_iterator_cf(jmt_cf);
         iter.seek_to_last();
 
         if iter.valid() {
@@ -244,10 +235,10 @@ impl TreeReader for SubstoreSnapshot {
 
 impl HasPreimage for SubstoreSnapshot {
     fn preimage(&self, key_hash: KeyHash) -> Result<Option<Vec<u8>>> {
-        let jmt_keys_by_keyhash_cf = self.config.cf_jmt_keys_by_keyhash(&self.snapshot);
+        let jmt_keys_by_keyhash_cf = self.config.cf_jmt_keys_by_keyhash(&self.db);
 
         Ok(self
-            .rocksdb_snapshot()
+            .rocksdb_snapshot
             .get_cf(jmt_keys_by_keyhash_cf, key_hash.0)?)
     }
 }
