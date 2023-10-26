@@ -24,6 +24,7 @@ mod dex_utils;
 mod network;
 mod opt;
 mod terminal;
+mod transaction_view_ext;
 mod warning;
 
 const CONFIG_FILE_NAME: &str = "config.toml";
