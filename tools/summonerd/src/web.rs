@@ -23,23 +23,37 @@ pub fn web_app(storage: Storage) -> Router {
 }
 
 pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoResponse {
-    // TODO: Get info from queue
+    // TODO: Also get info from queue
 
     let num_contributions_so_far_phase_1 = state
         .storage
         .current_slot(PhaseMarker::P1)
         .await
-        .expect("No contributions so far");
+        .expect("Can get contributions so far");
+
+    let recent_contributions_phase_1 = state
+        .storage
+        .top_n_contributors(PhaseMarker::P1, 5)
+        .await
+        .expect("Can get top N contributors");
 
     let num_contributions_so_far_phase_2 = state
         .storage
         .current_slot(PhaseMarker::P2)
         .await
-        .expect("No contributions so far");
+        .expect("Can get contributions so far");
+
+    let recent_contributions_phase_2 = state
+        .storage
+        .top_n_contributors(PhaseMarker::P2, 5)
+        .await
+        .expect("Can get top N contributors");
 
     let template = MainTemplate {
         num_contributions_so_far_phase_1,
         num_contributions_so_far_phase_2,
+        recent_contributions_phase_1,
+        recent_contributions_phase_2,
     };
     HtmlTemplate(template)
 }
@@ -49,6 +63,8 @@ pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoRespon
 struct MainTemplate {
     num_contributions_so_far_phase_1: u64,
     num_contributions_so_far_phase_2: u64,
+    recent_contributions_phase_2: Vec<String>,
+    recent_contributions_phase_1: Vec<String>,
 }
 
 struct HtmlTemplate<T>(T);

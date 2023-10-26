@@ -10,7 +10,6 @@ mod web;
 use anyhow::Result;
 use ark_groth16::{ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalSerialize;
-use axum::handler::HandlerWithoutStateExt;
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use clap::Parser;
