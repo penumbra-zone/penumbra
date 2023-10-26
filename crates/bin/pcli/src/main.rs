@@ -19,6 +19,7 @@ mod dex_utils;
 mod network;
 mod opt;
 mod terminal;
+mod transaction_view_ext;
 mod warning;
 
 use opt::Opt;
