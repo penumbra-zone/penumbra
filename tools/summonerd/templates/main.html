@@ -1,7 +1,26 @@
 <h1>✨✨✨✨ Penumbra Summoning Ceremony ✨✨✨✨</h1>
 
 <h2>Previous Contributions in phase 1: {{ num_contributions_so_far_phase_1 }}</h2>
+
+{% if recent_contributions_phase_1.len() != 0 %}
+Recent phase 1 contributors:
+<ul>
+    {% for contributor in recent_contributions_phase_1 %}
+    <li>{{ contributor|e }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
 <h2>Previous Contributions in phase 2: {{ num_contributions_so_far_phase_2 }}</h2>
+
+{% if recent_contributions_phase_2.len() != 0 %}
+Recent phase 2 contributors:
+<ul>
+    {% for contributor in recent_contributions_phase_2 %}
+    <li>{{ contributor|e }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
 
 <h2>How to become a Penumbra Summoner:</h2>
 

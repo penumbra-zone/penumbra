@@ -318,6 +318,33 @@ impl Storage {
         )
     }
 
+    /// Get last N contributors from the database.
+    pub async fn top_n_contributors(&self, marker: PhaseMarker, n: u64) -> Result<Vec<String>> {
+        let mut conn = self.pool.get()?;
+        let tx = conn.transaction()?;
+        let query = match marker {
+            PhaseMarker::P1 => format!(
+                "SELECT address from phase1_contributions WHERE address IS NOT NULL ORDER BY slot DESC LIMIT {}",
+                n
+            ),
+            PhaseMarker::P2 => format!(
+                "SELECT address from phase2_contributions WHERE address IS NOT NULL ORDER BY slot DESC LIMIT {}",
+                n
+            ),
+        };
+
+        let mut out = Vec::new();
+        let mut stmt = tx.prepare(&query)?;
+        let mut rows = stmt.query([])?;
+        while let Some(row) = rows.next()? {
+            let address_bytes: Vec<u8> = row.get(0)?;
+            let address: Address = address_bytes.try_into()?;
+            out.push(format!("{}", address));
+        }
+
+        Ok(out)
+    }
+
     /// Get Phase 2 root.
     pub async fn phase2_root(&self) -> Result<Phase2CeremonyCRS> {
         let mut conn = self.pool.get()?;
