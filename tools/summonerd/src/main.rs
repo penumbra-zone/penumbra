@@ -5,10 +5,12 @@ mod phase;
 mod queue;
 mod server;
 mod storage;
+mod web;
 
 use anyhow::Result;
 use ark_groth16::{ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalSerialize;
+use axum::{routing::get, Router};
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use clap::Parser;
@@ -38,6 +40,7 @@ use crate::phase::Phase1;
 use crate::phase::Phase2;
 use crate::phase::PhaseMarker;
 use crate::queue::ParticipantQueue;
+use crate::web::main_page;
 use crate::{penumbra_knower::PenumbraKnower, server::CoordinatorService};
 use penumbra_proof_setup::all::{Phase1CeremonyCRS, Phase1RawCeremonyCRS};
 
@@ -128,6 +131,9 @@ enum Command {
         #[clap(long, display_order = 901, default_value = "127.0.0.1:8081")]
         /// Local bind address for summonerd.
         listen: SocketAddr,
+        #[clap(long, display_order = 902, default_value = "127.0.0.1:8082")]
+        /// Local bind address for summonerd web view.
+        web_addr: SocketAddr,
     },
     /// Export the output of the ceremony
     Export {
@@ -155,6 +161,7 @@ impl Opt {
                 fvk,
                 node,
                 listen,
+                web_addr,
             } => {
                 let marker = match phase {
                     1 => PhaseMarker::P1,
@@ -188,11 +195,18 @@ impl Opt {
                         ));
                 tracing::info!(?listen, "starting grpc server");
                 let server_handle = tokio::spawn(grpc_server.serve(listen));
+
+                let web_app = Router::new().route("/", get(main_page));
+                tracing::info!("starting web server on {}", web_addr);
+                let webserver_handle =
+                    axum::Server::bind(&web_addr).serve(web_app.into_make_service());
+
                 // TODO: better error reporting
                 // We error out if a service errors, rather than keep running
                 tokio::select! {
                     x = coordinator_handle => x?.map_err(|e| anyhow::anyhow!(e))?,
                     x = server_handle => x?.map_err(|e| anyhow::anyhow!(e))?,
+                    x = webserver_handle => x.map_err(|e| anyhow::anyhow!(e))?,
                 };
                 Ok(())
             }

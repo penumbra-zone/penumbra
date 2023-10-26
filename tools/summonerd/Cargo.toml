@@ -20,6 +20,8 @@ ark-groth16 = "0.4"
 ark-serialize = "0.4"
 async-trait = "0.1.52"
 atty = "0.2"
+askama = "0.11"
+axum = "0.6"
 bytes = "1"
 camino = "1"
 clap = { version = "4", features = ["derive", "env", "color"] }
@@ -33,7 +35,7 @@ penumbra-keys = { path = "../../crates/core/keys/" }
 penumbra-num = { path = "../../crates/core/num/" }
 penumbra-proof-params = { path = "../../crates/crypto/proof-params" }
 penumbra-proof-setup = { path = "../../crates/crypto/proof-setup/", features = ["parallel"] }
-penumbra-proto = { path = "../../crates/proto/" } 
+penumbra-proto = { path = "../../crates/proto/" }
 penumbra-view = { path = "../../crates/view/" }
 rand = "0.8"
 rand_core = "0.6.4"
