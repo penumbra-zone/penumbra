@@ -1,0 +1,31 @@
+<h1>✨✨✨✨ Penumbra Summoning Ceremony ✨✨✨✨</h1>
+
+<h2>Previous Contributions: {{ num_contributions_so_far }}</h2>
+
+<h2>How to become a Penumbra Summoner:</h2>
+
+<p>To become a Penumbra Summoner, you only need to install Penumbra's command line wallet tool and get testnet tokens.
+    Note
+    that the testnet tokens have no value.</p>
+
+<p>First, follow the <a href="https://guide.penumbra.zone/main/pcli.html">Penumbra Guide</a>
+    to first setup your wallet and receive testnet tokens via the faucet in our Discord.</p>
+
+<p>You're ready to contribute! In the command that follows, you'll be sending some of your testnet tokens to the
+    coordinator to bid for a slot to contribute. You need to send a minimum of 1penumbra, but if you want to get to the
+    front of the queue, simply bid more.</p>
+<p>
+    In the Terminal, run:
+
+<pre>cargo run --quiet --release --bin pcli -- --node http://grpc.testnet.penumbra.zone ceremony contribute --coordinator-url COORDINATOR_URL --coordinator-address SUMMONER_ADDRESS --phase 2 --bid 1penumbra</pre>
+</p>
+
+<p>
+    Next, watch the progress bar - this will tell you how long you have left to wait in the queue. Once you are
+    selected, your computer will generate your contribution and send it to the coordinator. If you get tired of waiting,
+    you can
+    increase your bid by running the same command again as above with an additional bid amount - this will get
+    <i>added</i> to your existing bid, so you won't lose any tokens.
+</p>
+
+<p>Thank you for helping summon Penumbra! ✨✨</p>
