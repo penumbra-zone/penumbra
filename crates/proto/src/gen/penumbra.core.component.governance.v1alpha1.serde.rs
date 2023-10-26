@@ -2784,6 +2784,231 @@ impl<'de> serde::Deserialize<'de> for ProposalInfoResponse {
         deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.ProposalInfoResponse", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for ProposalListRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.chain_id.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ProposalListRequest", len)?;
+        if !self.chain_id.is_empty() {
+            struct_ser.serialize_field("chainId", &self.chain_id)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for ProposalListRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "chain_id",
+            "chainId",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ChainId,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = ProposalListRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalListRequest")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ProposalListRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut chain_id__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ChainId => {
+                            if chain_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("chainId"));
+                            }
+                            chain_id__ = Some(map_.next_value()?);
+                        }
+                    }
+                }
+                Ok(ProposalListRequest {
+                    chain_id: chain_id__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.ProposalListRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for ProposalListResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.proposal.is_some() {
+            len += 1;
+        }
+        if self.start_block_height != 0 {
+            len += 1;
+        }
+        if self.start_position != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ProposalListResponse", len)?;
+        if let Some(v) = self.proposal.as_ref() {
+            struct_ser.serialize_field("proposal", v)?;
+        }
+        if self.start_block_height != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("startBlockHeight", ToString::to_string(&self.start_block_height).as_str())?;
+        }
+        if self.start_position != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("startPosition", ToString::to_string(&self.start_position).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for ProposalListResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "proposal",
+            "start_block_height",
+            "startBlockHeight",
+            "start_position",
+            "startPosition",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Proposal,
+            StartBlockHeight,
+            StartPosition,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "proposal" => Ok(GeneratedField::Proposal),
+                            "startBlockHeight" | "start_block_height" => Ok(GeneratedField::StartBlockHeight),
+                            "startPosition" | "start_position" => Ok(GeneratedField::StartPosition),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = ProposalListResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.ProposalListResponse")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ProposalListResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut proposal__ = None;
+                let mut start_block_height__ = None;
+                let mut start_position__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Proposal => {
+                            if proposal__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("proposal"));
+                            }
+                            proposal__ = map_.next_value()?;
+                        }
+                        GeneratedField::StartBlockHeight => {
+                            if start_block_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("startBlockHeight"));
+                            }
+                            start_block_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::StartPosition => {
+                            if start_position__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("startPosition"));
+                            }
+                            start_position__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(ProposalListResponse {
+                    proposal: proposal__,
+                    start_block_height: start_block_height__.unwrap_or_default(),
+                    start_position: start_position__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.ProposalListResponse", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for ProposalOutcome {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
