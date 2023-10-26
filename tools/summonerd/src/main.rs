@@ -10,7 +10,7 @@ mod web;
 use anyhow::Result;
 use ark_groth16::{ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalSerialize;
-use axum::{routing::get, Router};
+use axum::handler::HandlerWithoutStateExt;
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use clap::Parser;
@@ -40,7 +40,7 @@ use crate::phase::Phase1;
 use crate::phase::Phase2;
 use crate::phase::PhaseMarker;
 use crate::queue::ParticipantQueue;
-use crate::web::main_page;
+use crate::web::web_app;
 use crate::{penumbra_knower::PenumbraKnower, server::CoordinatorService};
 use penumbra_proof_setup::all::{Phase1CeremonyCRS, Phase1RawCeremonyCRS};
 
@@ -184,7 +184,7 @@ impl Opt {
                     PhaseMarker::P1 => tokio::spawn(coordinator.run::<Phase1>()),
                     PhaseMarker::P2 => tokio::spawn(coordinator.run::<Phase2>()),
                 };
-                let service = CoordinatorService::new(knower, storage, queue, marker);
+                let service = CoordinatorService::new(knower, storage.clone(), queue, marker);
                 let grpc_server =
                     Server::builder()
                         .accept_http1(true)
@@ -196,8 +196,8 @@ impl Opt {
                 tracing::info!(?listen, "starting grpc server");
                 let server_handle = tokio::spawn(grpc_server.serve(listen));
 
-                let web_app = Router::new().route("/", get(main_page));
                 tracing::info!("starting web server on {}", web_addr);
+                let web_app = web_app(storage);
                 let webserver_handle =
                     axum::Server::bind(&web_addr).serve(web_app.into_make_service());
 
