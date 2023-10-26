@@ -1,18 +1,45 @@
 use askama::Template;
 use axum::{
-    extract,
+    extract::State,
     http::StatusCode,
     response::{Html, IntoResponse, Response},
+    routing::get,
+    Router,
 };
+use std::sync::Arc;
 
-pub async fn main_page() -> impl IntoResponse {
+use crate::storage::Storage;
+use crate::PhaseMarker;
+
+/// Represents the storage used by the web application.
+pub struct WebAppState {
+    storage: Storage,
+}
+
+pub fn web_app(storage: Storage) -> Router {
+    let shared_state = Arc::new(WebAppState { storage });
+
+    Router::new().route("/", get(main_page).with_state(shared_state))
+}
+
+pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoResponse {
     // TODO: Get info from queue
 
-    // TODO: Get info from storage
-    let num_contributions_so_far = 1;
+    let num_contributions_so_far_phase_1 = state
+        .storage
+        .current_slot(PhaseMarker::P1)
+        .await
+        .expect("No contributions so far");
+
+    let num_contributions_so_far_phase_2 = state
+        .storage
+        .current_slot(PhaseMarker::P2)
+        .await
+        .expect("No contributions so far");
 
     let template = MainTemplate {
-        num_contributions_so_far,
+        num_contributions_so_far_phase_1,
+        num_contributions_so_far_phase_2,
     };
     HtmlTemplate(template)
 }
@@ -20,7 +47,8 @@ pub async fn main_page() -> impl IntoResponse {
 #[derive(Template)]
 #[template(path = "main.html")]
 struct MainTemplate {
-    num_contributions_so_far: u64,
+    num_contributions_so_far_phase_1: u64,
+    num_contributions_so_far_phase_2: u64,
 }
 
 struct HtmlTemplate<T>(T);
