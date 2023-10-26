@@ -33,7 +33,7 @@ pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoRespon
 
     let recent_contributions_phase_1 = state
         .storage
-        .top_n_contributors(PhaseMarker::P1, 5)
+        .last_n_contributors(PhaseMarker::P1, 5)
         .await
         .expect("Can get top N contributors");
 
@@ -45,7 +45,7 @@ pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoRespon
 
     let recent_contributions_phase_2 = state
         .storage
-        .top_n_contributors(PhaseMarker::P2, 5)
+        .last_n_contributors(PhaseMarker::P2, 5)
         .await
         .expect("Can get top N contributors");
 
