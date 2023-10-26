@@ -20,8 +20,8 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-      - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
+      # - name: Load rust cache
+      #  uses: astriaorg/buildjet-rust-cache@v2.5.1
 
       - name: Install cometbft binary
         run: |
