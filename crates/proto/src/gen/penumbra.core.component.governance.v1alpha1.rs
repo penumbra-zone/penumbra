@@ -506,6 +506,30 @@ pub struct ProposalRateDataResponse {
     #[prost(message, optional, tag = "1")]
     pub rate_data: ::core::option::Option<super::super::stake::v1alpha1::RateData>,
 }
+/// Requests the list of all proposals.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProposalListRequest {
+    /// The expected chain id (empty string if no expectation).
+    ///
+    /// TODO: we could filter by starting block height here?
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+}
+/// The data for a single proposal.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProposalListResponse {
+    /// The proposal metadata.
+    #[prost(message, optional, tag = "1")]
+    pub proposal: ::core::option::Option<Proposal>,
+    /// The block height at which the proposal started voting.
+    #[prost(uint64, tag = "2")]
+    pub start_block_height: u64,
+    /// The position of the state commitment tree at which the proposal is considered to have started voting.
+    #[prost(uint64, tag = "3")]
+    pub start_position: u64,
+}
 /// Governance configuration data.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -693,6 +717,36 @@ pub mod query_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        pub async fn proposal_list(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ProposalListRequest>,
+        ) -> std::result::Result<
+            tonic::Response<tonic::codec::Streaming<super::ProposalListResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.governance.v1alpha1.QueryService/ProposalList",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.governance.v1alpha1.QueryService",
+                        "ProposalList",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
         /// Used for computing voting power ?
         pub async fn proposal_rate_data(
             &mut self,
@@ -739,6 +793,19 @@ pub mod query_service_server {
             request: tonic::Request<super::ProposalInfoRequest>,
         ) -> std::result::Result<
             tonic::Response<super::ProposalInfoResponse>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the ProposalList method.
+        type ProposalListStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::ProposalListResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        async fn proposal_list(
+            &self,
+            request: tonic::Request<super::ProposalListRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::ProposalListStream>,
             tonic::Status,
         >;
         /// Server streaming response type for the ProposalRateData method.
@@ -881,6 +948,53 @@ pub mod query_service_server {
                                 max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.component.governance.v1alpha1.QueryService/ProposalList" => {
+                    #[allow(non_camel_case_types)]
+                    struct ProposalListSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::ServerStreamingService<super::ProposalListRequest>
+                    for ProposalListSvc<T> {
+                        type Response = super::ProposalListResponse;
+                        type ResponseStream = T::ProposalListStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ProposalListRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::proposal_list(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ProposalListSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

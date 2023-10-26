@@ -300,6 +300,7 @@ message Proposal {
 // Query operations for the governance component.
 service QueryService {
   rpc ProposalInfo(ProposalInfoRequest) returns (ProposalInfoResponse);
+  rpc ProposalList(ProposalListRequest) returns (stream ProposalListResponse);
   // Used for computing voting power ?
   rpc ProposalRateData(ProposalRateDataRequest) returns (stream ProposalRateDataResponse);
 }
@@ -329,6 +330,23 @@ message ProposalRateDataRequest {
 // The rate data for a single validator.
 message ProposalRateDataResponse {
   core.component.stake.v1alpha1.RateData rate_data = 1;
+}
+
+// Requests the list of all proposals.
+message ProposalListRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // TODO: we could filter by starting block height here?
+}
+
+// The data for a single proposal.
+message ProposalListResponse {
+  // The proposal metadata.
+  Proposal proposal = 1;
+  // The block height at which the proposal started voting.
+  uint64 start_block_height = 2;
+  // The position of the state commitment tree at which the proposal is considered to have started voting.
+  uint64 start_position = 3;
 }
 
 // Governance configuration data.
