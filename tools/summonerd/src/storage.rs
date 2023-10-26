@@ -319,7 +319,7 @@ impl Storage {
     }
 
     /// Get last N contributors from the database.
-    pub async fn top_n_contributors(&self, marker: PhaseMarker, n: u64) -> Result<Vec<String>> {
+    pub async fn last_n_contributors(&self, marker: PhaseMarker, n: u64) -> Result<Vec<String>> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let query = match marker {
@@ -339,7 +339,7 @@ impl Storage {
         while let Some(row) = rows.next()? {
             let address_bytes: Vec<u8> = row.get(0)?;
             let address: Address = address_bytes.try_into()?;
-            out.push(format!("{}", address));
+            out.push(address.display_short_form());
         }
 
         Ok(out)
