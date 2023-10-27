@@ -92,28 +92,49 @@ impl Snapshot {
             .await?
     }
 
+    /// Returns some value corresponding to the key, along with an ICS23 existence proof
+    /// up to the current JMT root hash. If the key is not present, returns `None` and a
+    /// non-existence proof.
+    pub async fn _get_with_proof_new_api(
+        &self,
+        key: Vec<u8>,
+    ) -> Result<(Option<Vec<u8>>, Vec<ics23::CommitmentProof>)> {
+        let span = tracing::Span::current();
+
+        let (_, substore_config) = self.0.multistore.route_key_bytes(&key);
+        let substore = store::substore::SubstoreSnapshot {
+            config: substore_config.clone(),
+            rocksdb_snapshot: self.0.snapshot.clone(),
+            version: self.version(),
+            db: self.0.db.clone(),
+        };
+
+        let prefix = substore_config.prefix.clone();
     /// Returns the root hash of this `State`.
     ///
     /// If the `State` is empty, the all-zeros hash will be returned as a placeholder value.
     ///
     /// This method may only be used on a clean [`State`] fork, and will error
     /// if [`is_dirty`] returns `true`.
-    pub async fn root_hash(&self) -> Result<crate::RootHash> {
-        let span = Span::current();
-        let snapshot = self.clone();
+    pub async fn root_hash_for(&self, prefix: &str) -> Result<crate::RootHash> {
+        let span = tracing::Span::current();
+
+        let (_, substore_config) = self.0.multistore.route_key_str(&prefix);
+        let substore = store::substore::SubstoreSnapshot {
+            config: substore_config,
+            rocksdb_snapshot: self.0.snapshot.clone(),
+            version: self.version(),
+            db: self.0.db.clone(),
+        };
 
         tokio::task::Builder::new()
-            .name("State::root_hash")
-            .spawn_blocking(move || {
-                span.in_scope(|| {
-                    let tree = jmt::Sha256Jmt::new(&*snapshot.0);
-                    let root = tree
-                        .get_root_hash_option(snapshot.version())?
-                        .unwrap_or(crate::RootHash([0; 32]));
-                    Ok(root)
-                })
-            })?
+            .name("Snapshot::root_hash_for")
+            .spawn_blocking(move || span.in_scope(|| substore.root_hash()))?
             .await?
+    }
+
+    pub async fn root_hash(&self) -> Result<crate::RootHash> {
+        self.root_hash_for("").await
     }
 }
 
@@ -438,6 +459,12 @@ impl StateRead for Snapshot {
         None
     }
 }
+
+// TODO(erwan):
+// We will remove the `TreeReader` implementation over `Snapshot`s as a last item, once we know what to do
+// with versioning. Then, we can remove this implementation and make `Storage::commit_inner` work with substore trees.
+// Note: this might require another round of remodel as we might face issues with spawning blocking tasks over a non-Arc'd
+// `SubstoreSnapshot`.
 
 /// A reader interface for rocksdb. NOTE: it is up to the caller to ensure consistency between the
 /// rocksdb::DB handle and any write batches that may be applied through the writer interface.
