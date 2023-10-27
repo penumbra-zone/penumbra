@@ -110,6 +110,45 @@ impl Snapshot {
         };
 
         let prefix = substore_config.prefix.clone();
+        let substore_root_hash = substore.root_hash()?;
+        let (opt_value, substore_proof) = tokio::task::Builder::new()
+            .name("Snapshot::get_with_proof")
+            .spawn_blocking(move || span.in_scope(|| substore.get_with_proof(key)))?
+            .await??;
+
+        if !prefix.is_empty() {
+            /*
+               TODO(erwan): temporary artifact, this should of course be part of a proof spec.
+            */
+            let tmp_leaf_op = ics23::LeafOp {
+                prefix: prefix.as_bytes().to_vec(),
+                hash: ics23::HashOp::Sha256.into(),
+                length: ics23::LengthOp::NoPrefix.into(),
+                prehash_key: ics23::HashOp::NoHash.into(),
+                prehash_value: ics23::HashOp::NoHash.into(),
+            };
+            /*
+               Remove this.
+            */
+
+            let root_proof = ics23::CommitmentProof {
+                proof: Some(ics23::commitment_proof::Proof::Exist(
+                    ics23::ExistenceProof {
+                        key: prefix.into(),
+                        value: substore_root_hash.0.to_vec(),
+                        path: vec![],
+                        leaf: Some(tmp_leaf_op),
+                    },
+                )),
+            };
+
+            Ok((opt_value, vec![substore_proof, root_proof]))
+        } else {
+            /* otherwise, we're dealing with an entry that belongs to the main store.*/
+            todo!()
+        }
+    }
+
     /// Returns the root hash of this `State`.
     ///
     /// If the `State` is empty, the all-zeros hash will be returned as a placeholder value.
