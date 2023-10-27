@@ -10,7 +10,7 @@ jobs:
         with:
           buf_api_token: ${{ secrets.BUF_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          input: 'proto'
+          # input: 'proto'
 
       - uses: bufbuild/buf-lint-action@v1
         with:
@@ -59,7 +59,7 @@ jobs:
         with:
           buf_api_token: ${{ secrets.BUF_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          input: 'proto'
+          # input: 'proto'
 
       - name: Install protobuf compiler
         shell: bash

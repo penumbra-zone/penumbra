@@ -301,6 +301,8 @@ message Proposal {
 service QueryService {
   rpc ProposalInfo(ProposalInfoRequest) returns (ProposalInfoResponse);
   rpc ProposalList(ProposalListRequest) returns (stream ProposalListResponse);
+  rpc ProposalData(ProposalDataRequest) returns (ProposalDataResponse);
+  rpc ValidatorVotes(ValidatorVotesRequest) returns (stream ValidatorVotesResponse);
   // Used for computing voting power ?
   rpc ProposalRateData(ProposalRateDataRequest) returns (stream ProposalRateDataResponse);
 }
@@ -317,6 +319,26 @@ message ProposalInfoResponse {
   uint64 start_block_height = 1;
   // The position of the state commitment tree at which the proposal is considered to have started voting.
   uint64 start_position = 2;
+}
+
+message ProposalDataRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // The proposal id to request information on.
+  uint64 proposal_id = 2;
+}
+
+message ProposalDataResponse {
+  // The proposal metadata.
+  Proposal proposal = 1;
+  // The block height at which the proposal started voting.
+  uint64 start_block_height = 2;
+  // The block height at which the proposal ends voting.
+  uint64 end_block_height = 3;
+  // The position of the state commitment tree at which the proposal is considered to have started voting.
+  uint64 start_position = 4;
+  // The current state of the proposal.
+  ProposalState state = 5;
 }
 
 // Requests the validator rate data for a proposal.
@@ -336,6 +358,8 @@ message ProposalRateDataResponse {
 message ProposalListRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
+  // Whether to include proposals that are no longer active.;
+  bool inactive = 2;
   // TODO: we could filter by starting block height here?
 }
 
@@ -345,8 +369,28 @@ message ProposalListResponse {
   Proposal proposal = 1;
   // The block height at which the proposal started voting.
   uint64 start_block_height = 2;
+  // The block height at which the proposal ends voting.
+  uint64 end_block_height = 3;
   // The position of the state commitment tree at which the proposal is considered to have started voting.
-  uint64 start_position = 3;
+  uint64 start_position = 4;
+  // The current state of the proposal.
+  ProposalState state = 5;
+}
+
+// Requests the list of all validator votes for a given proposal.
+message ValidatorVotesRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // The proposal id to request information on.
+  uint64 proposal_id = 2;
+}
+
+// The data for a single validator vote.
+message ValidatorVotesResponse {
+  // The vote.
+  governance.v1alpha1.Vote vote = 1;
+  // The validator identity.
+  keys.v1alpha1.IdentityKey identity_key = 2;
 }
 
 // Governance configuration data.
