@@ -69,28 +69,6 @@ fn format_opaque_bytes(bytes: &[u8]) -> String {
     }
 }
 
-fn format_visible_address(
-    asset_cache: &Cache,
-    ivk: &IncomingViewingKey,
-    decrypted_note: &NoteView,
-) -> String {
-    format!(
-        "{} spent {}",
-        format_address(ivk, &decrypted_note.address.address()),
-        decrypted_note.value.value().format(asset_cache),
-    )
-}
-
-fn format_address(ivk: &IncomingViewingKey, address: &Address) -> String {
-    if ivk.views_address(address) {
-        let account = ivk.index_for_diversifier(address.diversifier()).account;
-
-        format!("[account {account:?}]")
-    } else {
-        address.display_short_form()
-    }
-}
-
 // feels like these functions should be extension traits of their respective structs
 fn format_address_view(address_view: &AddressView) -> String {
     match address_view {
@@ -124,11 +102,11 @@ fn format_value_view(value_view: &ValueView) -> String {
 
 pub trait TransactionViewExt {
     /// Render this transaction view on stdout.
-    fn render_terminal(&self, fvk: FullViewingKey, asset_cache: Cache);
+    fn render_terminal(&self);
 }
 
 impl TransactionViewExt for TransactionView {
-    fn render_terminal(&self, fvk: FullViewingKey, asset_cache: Cache) {
+    fn render_terminal(&self) {
         // tx id
         // anchor hash
         // tx_sig?
