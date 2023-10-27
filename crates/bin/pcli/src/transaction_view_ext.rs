@@ -1,6 +1,7 @@
 use comfy_table::presets;
 use comfy_table::Table;
 use penumbra_asset::asset::Cache;
+use penumbra_asset::ValueView;
 use penumbra_dex::swap::SwapView;
 use penumbra_keys::keys::IncomingViewingKey;
 use penumbra_keys::Address;
@@ -80,9 +81,6 @@ fn format_visible_address(
     )
 }
 
-// Turns an `Address` into a `String` representation; either a short-form for addresses
-// not associated with the `ivk`, or in the form of `[account: {account}]` for
-// addresses associated with the `ivk`.
 fn format_address(ivk: &IncomingViewingKey, address: &Address) -> String {
     if ivk.views_address(address) {
         let account = ivk.index_for_diversifier(address.diversifier()).account;
@@ -93,13 +91,43 @@ fn format_address(ivk: &IncomingViewingKey, address: &Address) -> String {
     }
 }
 
+// feels like these functions should be extension traits of their respective structs
+fn format_address_view(address_view: &AddressView) -> String {
+    match address_view {
+        AddressView::Visible {
+            address,
+            index,
+            wallet_id,
+        } => {
+            format!("[address {:?}]", index.account)
+        }
+        AddressView::Opaque { address } => {
+            // slicing off the first 8 chars to match the plaintext length for aesthetics
+            format!("{}", format_opaque_bytes(&address.to_vec()[..8]))
+        }
+    }
+}
+
+// feels like these functions should be extension traits of their respective structs
+fn format_value_view(value_view: &ValueView) -> String {
+    match value_view {
+        ValueView::KnownDenom { amount, denom } => {
+            // TODO: This can be further tweaked depending on what DenomMetadata units should be shown. Leaving as default for now.
+            format!("{} {}", amount, denom)
+            // format!("{}", format_opaque_bytes(&address.to_vec()[..8])) // slicing off the first 8 chars to match the plaintext length for aesthetics
+        }
+        ValueView::UnknownDenom { amount, asset_id } => {
+            format!("{} {}", amount, asset_id) //format_opaque_bytes(&address.to_vec()))
+        }
+    }
+}
+
 pub trait TransactionViewExt {
     /// Render this transaction view on stdout.
     fn render_terminal(&self, fvk: FullViewingKey, asset_cache: Cache);
 }
 
 impl TransactionViewExt for TransactionView {
-    // TODO: this can probably be generic over different key types, decoding only what the key can see.
     fn render_terminal(&self, fvk: FullViewingKey, asset_cache: Cache) {
         // tx id
         // anchor hash
@@ -110,10 +138,9 @@ impl TransactionViewExt for TransactionView {
 
         println!("⠿ Tx Metadata");
         println!("⠿ Anchor");
-        println!(
-            "⠿ Fee: {}",
-            &self.body_view.transaction_parameters.fee.value().amount
-        );
+        // the denomination should be visible here...
+        let fee = &self.body_view.transaction_parameters.fee;
+        println!("⠿ Fee: {} {}", &fee.amount(), &fee.asset_id());
         println!(
             "⠿ Expiration Height: {}",
             &self.body_view.transaction_parameters.expiry_height
@@ -159,14 +186,14 @@ impl TransactionViewExt for TransactionView {
                         } => {
                             visible_action = format!(
                                 "{} -> {}",
-                                note.value.value().format(&asset_cache),
-                                format_address(fvk.incoming(), &note.address.address())
+                                format_value_view(&note.value),
+                                format_address_view(&note.address),
                             );
                             ["Output", &visible_action]
                         }
                         OutputView::Opaque { output } => {
-                            let bytes = output.body.note_payload.encrypted_note.0.clone();
-                            opaque_action = format_opaque_bytes(&bytes) + "\x1b[0m"; // ANSI code to reset colors
+                            let bytes = output.body.note_payload.encrypted_note.0.clone(); // taken to be a unique value, for aesthetic reasons
+                            opaque_action = format_opaque_bytes(&bytes);
                             ["Output", &opaque_action]
                         }
                     }
@@ -176,14 +203,14 @@ impl TransactionViewExt for TransactionView {
                         SpendView::Visible { spend: _, note } => {
                             visible_action = format!(
                                 "{} -> {}",
-                                format_address(fvk.incoming(), &note.address.address()),
-                                note.value.value().format(&asset_cache)
+                                format_address_view(&note.address),
+                                format_value_view(&note.value)
                             );
                             ["Spend", &visible_action]
                         }
                         SpendView::Opaque { spend } => {
-                            let bytes = spend.body.nullifier.to_bytes();
-                            opaque_action = format_opaque_bytes(&bytes) + "\x1b[0m"; // ANSI code to reset colors
+                            let bytes = spend.body.nullifier.to_bytes(); // taken to be a unique value, for aesthetic reasons
+                            opaque_action = format_opaque_bytes(&bytes);
                             ["Spend", &opaque_action]
                         }
                     }
