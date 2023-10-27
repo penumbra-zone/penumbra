@@ -27,6 +27,8 @@ fn format_opaque_bytes(bytes: &[u8]) -> String {
 
         // TODO: Hm, this can allow the same color for both, should rejig things to avoid this
 
+        // to be more general, perhaps this should be configurable
+        // an opaque address needs less space than an opaque memo, etc
         let max_bytes = 32;
         let rem = if bytes.len() > max_bytes {
             bytes[0..max_bytes].to_vec()
@@ -107,17 +109,11 @@ pub trait TransactionViewExt {
 
 impl TransactionViewExt for TransactionView {
     fn render_terminal(&self) {
-        // tx id
-        // anchor hash
-        // tx_sig?
-        // fee
-        // detection data?
-        // memo view
-
-        println!("⠿ Tx Metadata");
-        println!("⠿ Anchor");
-        // the denomination should be visible here...
+        println!("⠿ Tx Hash"); // Not available here?
+        println!("⠿ Tx Sig"); // Probably not needed
+        println!("⠿ Anchor"); // Probably not needed
         let fee = &self.body_view.transaction_parameters.fee;
+        // the denomination should be visible here... does a FeeView exist?
         println!("⠿ Fee: {} {}", &fee.amount(), &fee.asset_id());
         println!(
             "⠿ Expiration Height: {}",
@@ -131,9 +127,11 @@ impl TransactionViewExt for TransactionView {
                     ciphertext: _,
                 } => {
                     println!("⠿ Memo Sender: {}", &plaintext.return_address.address());
-                    println!("⠿ Memo Text: {}\n", &plaintext.text);
-                }
-                penumbra_transaction::MemoView::Opaque { ciphertext: _ } => (),
+                    println!("⠿ Memo Text: \n{}\n", &plaintext.text);
+                },
+                penumbra_transaction::MemoView::Opaque { ciphertext } => {
+                    println!("⠿ Encrypted Memo: \n{}\n", format_opaque_bytes(&ciphertext.0));
+                },
             }
         }
 
@@ -147,14 +145,6 @@ impl TransactionViewExt for TransactionView {
             let visible_action: String;
 
             let row = match action_view {
-                penumbra_transaction::ActionView::Swap(swap) => match swap {
-                    SwapView::Visible {
-                        swap: _,
-                        swap_plaintext: _,
-                    } => ["visible", "swap"],
-                    SwapView::Opaque { swap: _ } => ["opaque", "swap"],
-                },
-                penumbra_transaction::ActionView::SwapClaim(_av) => ["okie doke", "swap plaintext"],
                 penumbra_transaction::ActionView::Output(output) => {
                     match output {
                         OutputView::Visible {
@@ -206,7 +196,16 @@ impl TransactionViewExt for TransactionView {
 }
 
 /*
-
+                penumbra_transaction::ActionView::Swap(swap) => {
+                    match swap {
+                        SwapView::Visible {
+                            swap: _,
+                            swap_plaintext: _,
+                        } => ["visible", "swap"],
+                        SwapView::Opaque { swap: _ } => ["opaque", "swap"],
+                    }
+                }
+                penumbra_transaction::ActionView::SwapClaim(_av) => ["okie doke", "swap plaintext"],
 penumbra_transaction::ActionView::Spend(av) => ["temp", "test"],
 penumbra_transaction::ActionView::Delegate(av) => ["temp", "test"],
 penumbra_transaction::ActionView::Undelegate(av) => ["temp", "test"],
