@@ -1,20 +1,6 @@
 use anyhow::{Context, Result};
-use comfy_table::{presets, Table};
-use penumbra_asset::{asset::Cache, Value};
-use penumbra_dex::{
-    lp::position::Position,
-    swap::SwapPlaintext,
-    swap::{Swap, SwapView},
-    swap_claim::{SwapClaim, SwapClaimView},
-    DirectedUnitPair,
-};
-use penumbra_keys::{keys::IncomingViewingKey, Address};
 use penumbra_proto::{util::tendermint_proxy::v1alpha1::GetTxRequest, DomainType};
-use penumbra_shielded_pool::{Note, NoteView};
-use penumbra_transaction::{
-    view::action_view::{OutputView, SpendView},
-    Transaction,
-};
+use penumbra_transaction::Transaction;
 use penumbra_view::{TransactionInfo, ViewClient};
 
 use crate::App;
@@ -29,221 +15,11 @@ pub struct TxCmd {
     raw: bool,
 }
 
-fn format_visible_swap_row(asset_cache: &Cache, swap: &SwapPlaintext) -> String {
-    // Typical swaps are one asset for another, but we can't know that for sure.
-
-    // For the non-pathological case:
-    let (from_asset, from_value, to_asset) =
-        if swap.delta_1_i.value() == 0 && swap.delta_2_i.value() > 0 {
-            (
-                swap.trading_pair.asset_2(),
-                swap.delta_2_i,
-                swap.trading_pair.asset_1(),
-            )
-        } else if swap.delta_2_i.value() == 0 && swap.delta_1_i.value() > 0 {
-            (
-                swap.trading_pair.asset_1(),
-                swap.delta_1_i,
-                swap.trading_pair.asset_2(),
-            )
-        } else {
-            // The pathological case (both assets have input values).
-            let value_1 = Value {
-                amount: swap.delta_1_i,
-                asset_id: swap.trading_pair.asset_1(),
-            }
-            .format(asset_cache);
-            let value_2 = Value {
-                amount: swap.delta_1_i,
-                asset_id: swap.trading_pair.asset_1(),
-            }
-            .format(asset_cache);
-            let value_fee = Value {
-                amount: swap.claim_fee.amount(),
-                asset_id: swap.claim_fee.asset_id(),
-            }
-            .format(asset_cache);
-
-            return format!("{value_1} for {value_2} and paid claim fee {value_fee}",);
-        };
-
-    let from = Value {
-        amount: from_value,
-        asset_id: from_asset,
-    }
-    .format(asset_cache);
-    let to = asset_cache
-        .get(&to_asset)
-        .map_or_else(|| format!("{to_asset}"), |to_denom| format!("{to_denom}"));
-    let value_fee = Value {
-        amount: swap.claim_fee.amount(),
-        asset_id: swap.claim_fee.asset_id(),
-    }
-    .format(asset_cache);
-
-    format!("{from} for {to} and paid claim fee {value_fee}")
-}
-
-fn format_opaque_swap_row(swap: &Swap) -> String {
-    // An opaque swap has no plaintext amount information for us to display, how sad.
-    format!(
-        "Opaque swap for trading pair: {} <=> {}",
-        swap.body.trading_pair.asset_1(),
-        swap.body.trading_pair.asset_2()
-    )
-}
-
-fn format_opaque_swap_claim_row(asset_cache: &Cache, swap: &SwapClaim) -> String {
-    // An opaque swap claim has no plaintext amount information for us to display, how sad.
-    let value_fee = Value {
-        amount: swap.body.fee.amount(),
-        asset_id: swap.body.fee.asset_id(),
-    }
-    .format(asset_cache);
-
-    // Get the denoms from the asset cache, else display the asset ID.
-    let asset_id_1 = swap.body.output_data.trading_pair.asset_1();
-    let asset_id_2 = swap.body.output_data.trading_pair.asset_2();
-    let denom_1: String = asset_cache
-        .get_by_id(asset_id_1)
-        .map_or_else(|| format!("{}", asset_id_1), |denom| format!("{}", denom));
-    let denom_2: String = asset_cache
-        .get_by_id(asset_id_2)
-        .map_or_else(|| format!("{}", asset_id_2), |denom| format!("{}", denom));
-
-    format!(
-        "Opaque swap claim for trading pair: {} <=> {} with fee {}",
-        denom_1, denom_2, value_fee,
-    )
-}
-
-fn format_visible_swap_claim_row(
-    asset_cache: &Cache,
-    swap: &SwapClaim,
-    note_1: &Note,
-    note_2: &Note,
-) -> String {
-    // Typical swap claims only have a single output note with value, but we can't know that for sure.
-
-    let value_fee = Value {
-        amount: swap.body.fee.amount(),
-        asset_id: swap.body.fee.asset_id(),
-    }
-    .format(asset_cache);
-
-    // For the non-pathological case:
-    let claimed_value = if note_1.amount().value() == 0 && note_2.amount().value() > 0 {
-        note_2.value()
-    } else if note_2.amount().value() == 0 && note_1.amount().value() > 0 {
-        note_1.value()
-    } else {
-        // The pathological case (both assets have output values).
-        return format!(
-            "Claimed {} and {} with fee {}",
-            note_1.value().format(asset_cache),
-            note_2.value().format(asset_cache),
-            value_fee,
-        );
-    };
-
-    format!(
-        "Claimed {} with fee {}",
-        claimed_value.format(asset_cache),
-        value_fee
-    )
-}
-
-fn format_visible_output_row(
-    asset_cache: &Cache,
-    ivk: &IncomingViewingKey,
-    decrypted_note: &NoteView,
-) -> String {
-    format!(
-        "{} to {}",
-        decrypted_note.value.value().format(asset_cache),
-        format_address(ivk, &decrypted_note.address.address()),
-    )
-}
-
-fn format_visible_spend_row(
-    asset_cache: &Cache,
-    ivk: &IncomingViewingKey,
-    decrypted_note: &NoteView,
-) -> String {
-    format!(
-        "{} spent {}",
-        format_address(ivk, &decrypted_note.address.address()),
-        decrypted_note.value.value().format(asset_cache),
-    )
-}
-
-// Turns an `Address` into a `String` representation; either a short-form for addresses
-// not associated with the `ivk`, or in the form of `[account: {account}]` for
-// addresses associated with the `ivk`.
-fn format_address(ivk: &IncomingViewingKey, address: &Address) -> String {
-    if ivk.views_address(address) {
-        let account = ivk.index_for_diversifier(address.diversifier()).account;
-
-        format!("[account {account:?}]")
-    } else {
-        address.display_short_form()
-    }
-}
-
-fn format_full_address(ivk: &IncomingViewingKey, address: &Address) -> String {
-    if ivk.views_address(address) {
-        let account = ivk.index_for_diversifier(address.diversifier()).account;
-
-        format!("[account {account:?}]")
-    } else {
-        format!("{}", address)
-    }
-}
-
-fn format_position_row(asset_cache: &Cache, position: Position) -> String {
-    let trading_pair = position.phi.pair;
-    let denom_1 = asset_cache
-        .get(&trading_pair.asset_1())
-        .expect("asset should be known to view service");
-    let denom_2 = asset_cache
-        .get(&trading_pair.asset_2())
-        .expect("asset should be known to view service");
-
-    let unit_1 = denom_1.default_unit();
-    let unit_2 = denom_2.default_unit();
-
-    // TODO: leaving this around since we may want it to render prices
-    let _unit_pair = DirectedUnitPair {
-        start: unit_1.clone(),
-        end: unit_2.clone(),
-    };
-
-    let r1 = Value {
-        amount: position.reserves.r1,
-        asset_id: trading_pair.asset_1(),
-    };
-    let r2 = Value {
-        amount: position.reserves.r2,
-        asset_id: trading_pair.asset_2(),
-    };
-
-    format!(
-        // TODO: nicely render prices
-        // "Reserves: ({}, {})  Prices: ({}, {})  Fee: {} ID: {}",
-        "Reserves: ({}, {})  Fee: {} ID: {}",
-        r1.format(asset_cache),
-        r2.format(asset_cache),
-        position.phi.component.fee,
-        position.id(),
-    )
-}
-
 impl TxCmd {
     pub fn offline(&self) -> bool {
         false
     }
     pub async fn exec(&self, app: &mut App) -> Result<()> {
-        let fvk = app.config.full_viewing_key.clone();
         let hash = self
             .hash
             // We have to convert to uppercase because `tendermint::Hash` only accepts uppercase :(
@@ -283,8 +59,6 @@ impl TxCmd {
             }
         };
 
-        let asset_cache = app.view().assets().await?;
-
         if self.raw {
             use colored_json::prelude::*;
             println!(
@@ -293,7 +67,7 @@ impl TxCmd {
             );
         } else {
             use crate::transaction_view_ext::TransactionViewExt;
-            tx_info.view.render_terminal(fvk, asset_cache);
+            tx_info.view.render_terminal();
         }
 
         Ok(())
