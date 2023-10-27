@@ -28,9 +28,8 @@ pub(crate) use rocks_wrapper::RocksDbSnapshot;
 /// for read-only access by multiple threads, e.g., RPC calls.
 ///
 /// Snapshots are cheap to create and clone.  Internally, they're implemented as
-/// a wrapper around a [RocksDB
-/// snapshot](https://github.com/facebook/rocksdb/wiki/Snapshot) with a pinned
-/// JMT version number for the snapshot.
+/// a wrapper around a [RocksDB snapshot](https://github.com/facebook/rocksdb/wiki/Snapshot)
+/// with a pinned JMT version number for the snapshot.
 #[derive(Clone)]
 pub struct Snapshot(pub(crate) Arc<Inner>);
 
@@ -78,17 +77,18 @@ impl Snapshot {
         &self,
         key: Vec<u8>,
     ) -> Result<(Option<Vec<u8>>, ics23::CommitmentProof)> {
-        let span = Span::current();
-        let snapshot = self.clone();
+        let span = tracing::Span::current();
 
+        let (_, substore_config) = self.0.multistore.route_key_bytes(&key);
+        let substore = store::substore::SubstoreSnapshot {
+            config: substore_config,
+            rocksdb_snapshot: self.0.snapshot.clone(),
+            version: self.version(),
+            db: self.0.db.clone(),
+        };
         tokio::task::Builder::new()
-            .name("State::get_with_proof")
-            .spawn_blocking(move || {
-                span.in_scope(|| {
-                    let tree = jmt::Sha256Jmt::new(&*snapshot.0);
-                    tree.get_with_ics23_proof(key, snapshot.version())
-                })
-            })?
+            .name("Snapshot::get_with_proof")
+            .spawn_blocking(move || span.in_scope(|| substore.get_with_proof(key)))?
             .await?
     }
 
