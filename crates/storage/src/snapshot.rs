@@ -121,7 +121,7 @@ impl Snapshot {
                TODO(erwan): temporary artifact, this should of course be part of a proof spec.
             */
             let tmp_leaf_op = ics23::LeafOp {
-                prefix: prefix.as_bytes().to_vec(),
+                prefix: vec![],
                 hash: ics23::HashOp::Sha256.into(),
                 length: ics23::LengthOp::NoPrefix.into(),
                 prehash_key: ics23::HashOp::NoHash.into(),
@@ -145,7 +145,7 @@ impl Snapshot {
             Ok((opt_value, vec![substore_proof, root_proof]))
         } else {
             /* otherwise, we're dealing with an entry that belongs to the main store.*/
-            todo!()
+            Ok((opt_value, vec![substore_proof]))
         }
     }
 
