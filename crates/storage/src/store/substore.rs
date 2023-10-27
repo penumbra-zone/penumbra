@@ -127,11 +127,25 @@ impl SubstoreSnapshot {
         Ok(tree
             .get_root_hash_option(version)?
             .unwrap_or(jmt::RootHash([0; 32])))
+    }
+
     pub fn version(&self) -> jmt::Version {
         self.version
     }
 
-    /// Internal helper function used by `get_raw` and `prefix_raw`.
+    /// Returns some value corresponding to the key, along with an ICS23 existence proof
+    /// up to the current JMT root hash. If the key is not present, returns `None` and a
+    /// non-existence proof.
+    pub(crate) fn get_with_proof(
+        &self,
+        key: Vec<u8>,
+    ) -> Result<(Option<Vec<u8>>, ics23::CommitmentProof)> {
+        let version = self.version();
+        let tree = jmt::Sha256Jmt::new(self);
+        tree.get_with_ics23_proof(key, version)
+    }
+
+    /// Helper function used by `get_raw` and `prefix_raw`.
     ///
     /// Reads from the JMT will fail if the root is missing; this method
     /// special-cases the empty tree case so that reads on an empty tree just
