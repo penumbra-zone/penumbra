@@ -104,6 +104,7 @@ impl SubstoreConfig {
             column, self.prefix
         ))
     }
+
     // TODO: we can use a `rocksdb::OptimisticTransactionDB` since we know that
     // our write load is not contentious (definitionally), and we can use make
     // writing to every substore atomic.
@@ -120,6 +121,12 @@ pub struct SubstoreSnapshot {
 }
 
 impl SubstoreSnapshot {
+    pub fn root_hash(&self) -> Result<crate::RootHash> {
+        let version = self.version();
+        let tree = jmt::Sha256Jmt::new(self);
+        Ok(tree
+            .get_root_hash_option(version)?
+            .unwrap_or(jmt::RootHash([0; 32])))
     pub fn version(&self) -> jmt::Version {
         self.version
     }
