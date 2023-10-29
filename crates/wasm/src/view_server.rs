@@ -36,7 +36,7 @@ pub struct StoredTree {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ScanBlockResult {
     height: u64,
-    nct_updates: Updates,
+    sct_updates: Updates,
     new_notes: Vec<SpendableNoteRecord>,
     new_swaps: Vec<SwapRecord>,
 }
@@ -44,13 +44,13 @@ pub struct ScanBlockResult {
 impl ScanBlockResult {
     pub fn new(
         height: u64,
-        nct_updates: Updates,
+        sct_updates: Updates,
         new_notes: Vec<SpendableNoteRecord>,
         new_swaps: Vec<SwapRecord>,
     ) -> ScanBlockResult {
         Self {
             height,
-            nct_updates,
+            sct_updates,
             new_notes,
             new_swaps,
         }
@@ -65,7 +65,7 @@ pub struct ViewServer {
     notes: BTreeMap<note::StateCommitment, SpendableNoteRecord>,
     swaps: BTreeMap<tct::StateCommitment, SwapRecord>,
     denoms: BTreeMap<Id, DenomMetadata>,
-    nct: Tree,
+    sct: Tree,
     storage: IndexedDBStorage,
     last_position: Option<StoredPosition>,
     last_forgotten: Option<Forgotten>,
@@ -100,7 +100,7 @@ impl ViewServer {
             epoch_duration,
             notes: Default::default(),
             denoms: Default::default(),
-            nct: tree,
+            sct: tree,
             swaps: Default::default(),
             storage: IndexedDBStorage::new(constants).await?,
             last_position: None,
@@ -133,7 +133,7 @@ impl ViewServer {
                 StatePayload::Note { note: payload, .. } => {
                     match payload.trial_decrypt(&self.fvk) {
                         Some(note) => {
-                            let note_position = self.nct.insert(Keep, payload.note_commitment)?;
+                            let note_position = self.sct.insert(Keep, payload.note_commitment)?;
 
                             let source = clone_payload.source().cloned().unwrap_or_default();
                             let nullifier = Nullifier::derive(
@@ -161,14 +161,14 @@ impl ViewServer {
                             found_new_data = true;
                         }
                         None => {
-                            self.nct.insert(Forget, payload.note_commitment)?;
+                            self.sct.insert(Forget, payload.note_commitment)?;
                         }
                     }
                 }
                 StatePayload::Swap { swap: payload, .. } => {
                     match payload.trial_decrypt(&self.fvk) {
                         Some(swap) => {
-                            let swap_position = self.nct.insert(Keep, payload.commitment)?;
+                            let swap_position = self.sct.insert(Keep, payload.commitment)?;
                             let batch_data =
                                 block.swap_outputs.get(&swap.trading_pair).ok_or_else(|| {
                                     anyhow::anyhow!("server gave invalid compact block")
@@ -204,7 +204,7 @@ impl ViewServer {
                             found_new_data = true;
                         }
                         None => {
-                            self.nct.insert(Forget, payload.commitment)?;
+                            self.sct.insert(Forget, payload.commitment)?;
                         }
                     }
                 }
@@ -215,10 +215,10 @@ impl ViewServer {
 
                     match advice_result {
                         None => {
-                            self.nct.insert(Forget, commitment)?;
+                            self.sct.insert(Forget, commitment)?;
                         }
                         Some(note) => {
-                            let position = self.nct.insert(Keep, commitment)?;
+                            let position = self.sct.insert(Keep, commitment)?;
 
                             let address_index_1 = self
                                 .fvk
@@ -249,9 +249,9 @@ impl ViewServer {
             }
         }
 
-        self.nct.end_block()?;
+        self.sct.end_block()?;
         if block.epoch_root.is_some() {
-            self.nct.end_epoch()?;
+            self.sct.end_epoch()?;
         }
 
         self.latest_height = block.height;
@@ -266,8 +266,8 @@ impl ViewServer {
     pub fn flush_updates(&mut self) -> WasmResult<JsValue> {
         utils::set_panic_hook();
 
-        let nct_updates: Updates = self
-            .nct
+        let sct_updates: Updates = self
+            .sct
             .updates(
                 self.last_position.unwrap_or_default(),
                 self.last_forgotten.unwrap_or_default(),
@@ -276,7 +276,7 @@ impl ViewServer {
 
         let updates = ScanBlockResult {
             height: self.latest_height,
-            nct_updates: nct_updates.clone(),
+            sct_updates: sct_updates.clone(),
             new_notes: self.notes.clone().into_values().collect(),
             new_swaps: self.swaps.clone().into_values().collect(),
         };
@@ -284,8 +284,8 @@ impl ViewServer {
         self.notes = Default::default();
         self.swaps = Default::default();
 
-        self.last_position = nct_updates.set_position;
-        self.last_forgotten = nct_updates.set_forgotten;
+        self.last_position = sct_updates.set_position;
+        self.last_forgotten = sct_updates.set_forgotten;
 
         let serializer = Serializer::new().serialize_large_number_types_as_bigints(true);
         let result = updates.serialize(&serializer)?;
@@ -296,10 +296,10 @@ impl ViewServer {
     /// SCT root can be compared with the root obtained by GRPC and verify that there is no divergence
     /// Returns: `Root`
     #[wasm_bindgen]
-    pub fn get_nct_root(&mut self) -> Result<JsValue, Error> {
+    pub fn get_sct_root(&mut self) -> Result<JsValue, Error> {
         utils::set_panic_hook();
 
-        let root = self.nct.root();
+        let root = self.sct.root();
         serde_wasm_bindgen::to_value(&root)
     }
 
