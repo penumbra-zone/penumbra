@@ -22,7 +22,7 @@ pub fn set_panic_hook() {
 ///     tx_bytes: `HEX string`
 /// Returns: `penumbra_tct::Root`
 #[wasm_bindgen]
-pub fn decode_nct_root(tx_bytes: &str) -> WasmResult<JsValue> {
+pub fn decode_sct_root(tx_bytes: &str) -> WasmResult<JsValue> {
     utils::set_panic_hook();
 
     let tx_vec: Vec<u8> = hex::decode(tx_bytes)?;

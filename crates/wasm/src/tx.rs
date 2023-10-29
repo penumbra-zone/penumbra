@@ -99,7 +99,7 @@ pub fn witness(transaction_plan: JsValue, stored_tree: JsValue) -> WasmResult<Js
     let stored_tree: StoredTree =
         serde_wasm_bindgen::from_value(stored_tree).expect("able to parse StoredTree from JS");
 
-    let nct = load_tree(stored_tree);
+    let sct = load_tree(stored_tree);
 
     let note_commitments: Vec<StateCommitment> = plan
         .spend_plans()
@@ -111,17 +111,17 @@ pub fn witness(transaction_plan: JsValue, stored_tree: JsValue) -> WasmResult<Js
         )
         .collect();
 
-    let anchor = nct.root();
+    let anchor = sct.root();
 
     // Obtain an auth path for each requested note commitment
 
     let auth_paths: Vec<Proof> = note_commitments
         .iter()
-        .map(|nc| nct.witness(*nc).expect("note commitment is in the NCT"))
+        .map(|nc| sct.witness(*nc).expect("note commitment is in the SCT"))
         .collect::<Vec<Proof>>();
 
-    // Release the read lock on the NCT
-    drop(nct);
+    // Release the read lock on the SCT
+    drop(sct);
 
     let mut witness_data = WitnessData {
         anchor,
