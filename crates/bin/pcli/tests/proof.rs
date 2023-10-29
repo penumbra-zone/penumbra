@@ -53,10 +53,10 @@ fn spend_proof_parameters_vs_current_spend_circuit() {
     let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
     let nk = *sk_sender.nullifier_key();
     let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
-    let mut nct = tct::Tree::new();
-    nct.insert(tct::Witness::Keep, note_commitment).unwrap();
-    let anchor = nct.root();
-    let note_commitment_proof = nct.witness(note_commitment).unwrap();
+    let mut sct = tct::Tree::new();
+    sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+    let anchor = sct.root();
+    let note_commitment_proof = sct.witness(note_commitment).unwrap();
     let v_blinding = Fr::rand(&mut OsRng);
     let balance_commitment = value_to_send.commit(v_blinding);
     let rk: VerificationKey<SpendAuth> = rsk.into();
