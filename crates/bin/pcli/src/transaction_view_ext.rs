@@ -110,7 +110,6 @@ fn format_fee_view(fee: &Fee) -> String {
 fn value_view_amount(value_view: &ValueView) -> Amount {
     match value_view {
         ValueView::KnownDenom { amount, .. } | ValueView::UnknownDenom { amount, .. } => *amount,
-        _ => panic!("Unexpected ValueView variant!"),
     }
 }
 
@@ -153,7 +152,7 @@ impl TransactionViewExt for TransactionView {
         actions_table.load_preset(presets::NOTHING);
         actions_table.set_header(vec!["Tx Action", "Description"]);
 
-        // Iterate over the ActionViews in the TxV & display as appropriate
+        // Iterate over the ActionViews in the TxView & display as appropriate
         for action_view in &self.body_view.action_views {
             let action: String;
 
