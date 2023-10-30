@@ -11,15 +11,16 @@ fn format_opaque_bytes(bytes: &[u8]) -> String {
     if bytes.len() < 8 {
         return String::new();
     } else {
+        /*
+        // TODO: Hm, this can allow the same color for both, should rejig things to avoid this
         // Select foreground and background colors based on the first 8 bytes.
-        // let fg_color_index = bytes[0] % 8;
-        // let bg_color_index = bytes[4] % 8;
+        let fg_color_index = bytes[0] % 8;
+        let bg_color_index = bytes[4] % 8;
 
         // ANSI escape codes for foreground and background colors.
         let fg_color_code = 37; // 30 through 37 are foreground colors
         let bg_color_code = 40; // 40 through 47 are background colors
-
-        // TODO: Hm, this can allow the same color for both, should rejig things to avoid this
+        */
 
         // to be more general, perhaps this should be configurable
         // an opaque address needs less space than an opaque memo, etc
@@ -32,36 +33,34 @@ fn format_opaque_bytes(bytes: &[u8]) -> String {
 
         // Convert the rest of the bytes to hexadecimal.
         let hex_str = hex::encode_upper(rem);
-        let block_chars: String = hex_str
+        let opaque_chars: String = hex_str
             .chars()
             .map(|c| {
                 match c {
-                    '0' => "\u{2595}", // TODO: what are these codes
-                    '1' => "\u{2581}",
-                    '2' => "\u{2582}",
-                    '3' => "\u{2583}",
-                    '4' => "\u{2584}",
-                    '5' => "\u{2585}",
-                    '6' => "\u{2586}",
-                    '7' => "\u{2587}",
-                    '8' => "\u{2588}",
-                    '9' => "\u{2589}",
-                    'A' => "\u{259A}",
-                    'B' => "\u{259B}",
-                    'C' => "\u{259C}",
-                    'D' => "\u{258D}",
-                    'E' => "\u{259E}",
-                    'F' => "\u{259F}",
+                    '0' => "⠚", // "\u{2595}", alternatively use ASCII blocks
+                    '1' => "⠁", // "\u{2581}",
+                    '2' => "⠃", // "\u{2582}",
+                    '3' => "⠉", // "\u{2583}",
+                    '4' => "⠙", // "\u{2584}",
+                    '5' => "⠑", // "\u{2585}",
+                    '6' => "⠋", // "\u{2586}",
+                    '7' => "⠛", // "\u{2587}",
+                    '8' => "⠓", // "\u{2588}",
+                    '9' => "⠊", // "\u{2589}",
+                    'A' => "⠊", // "\u{259A}",
+                    'B' => "⠋", // "\u{259B}",
+                    'C' => "⠌", // "\u{259C}",
+                    'D' => "⠍", // "\u{259D}",
+                    'E' => "⠎", // "\u{259E}",
+                    'F' => "⠏", // "\u{259F}",
                     _ => "",
                 }
                 .to_string()
             })
             .collect();
 
-        format!(
-            "\u{001b}[{};{}m{}",
-            fg_color_code, bg_color_code, block_chars
-        )
+        //format!("\u{001b}[{};{}m{}", fg_color_code, bg_color_code, block_chars)
+        format!("{}", opaque_chars)
     }
 }
 
