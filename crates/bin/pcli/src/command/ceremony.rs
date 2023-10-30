@@ -95,12 +95,16 @@ impl CeremonyCmd {
             } => {
                 println!("¸,ø¤º°` initiating summoning participation `°º¤ø,¸");
                 println!("submitting bid for contribution slot: {}", bid);
-                if *phase != 1 && *phase != 2 {
-                    anyhow::bail!("phase must be 1 or 2.");
-                }
-                let index = AddressIndex {
-                    account: 0,
-                    randomizer: b"ceremonyaddr".as_slice().try_into().unwrap(),
+                let index = match *phase {
+                    1 => AddressIndex {
+                        account: 0,
+                        randomizer: b"ceremnyaddr1".as_slice().try_into().unwrap(),
+                    },
+                    2 => AddressIndex {
+                        account: 0,
+                        randomizer: b"ceremnyaddr2".as_slice().try_into().unwrap(),
+                    },
+                    _ => anyhow::bail!("phase must be 1 or 2."),
                 };
                 handle_bid(app, *coordinator_address, index, bid).await?;
                 let address = app.config.full_viewing_key.payment_address(index).0;
