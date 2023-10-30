@@ -5,11 +5,14 @@
 use std::array;
 
 use crate::parallel_utils::{flatten_results, transform, transform_parallel};
+use crate::single::group::GroupHasher;
 use crate::single::{
-    self, circuit_degree, group::F, log::ContributionHash, DLogProof, ExtraTransitionInformation,
-    LinkingProof, Phase1CRSElements, Phase1Contribution, Phase1RawCRSElements,
-    Phase1RawContribution, Phase2CRSElements, Phase2Contribution, Phase2RawCRSElements,
-    Phase2RawContribution,
+    self, circuit_degree,
+    group::F,
+    log::{ContributionHash, Hashable},
+    DLogProof, ExtraTransitionInformation, LinkingProof, Phase1CRSElements, Phase1Contribution,
+    Phase1RawCRSElements, Phase1RawContribution, Phase2CRSElements, Phase2Contribution,
+    Phase2RawCRSElements, Phase2RawContribution,
 };
 use anyhow::{anyhow, Result};
 use ark_groth16::ProvingKey;
@@ -362,6 +365,17 @@ impl Phase2CeremonyContribution {
     }
 }
 
+impl Hashable for Phase2CeremonyContribution {
+    fn hash(&self) -> ContributionHash {
+        let hashes = transform(self.0.clone(), |x| x.hash());
+        let mut hasher = GroupHasher::new(b"phase2contr");
+        for h in hashes {
+            hasher.eat_bytes(h.as_ref());
+        }
+        ContributionHash(hasher.finalize_bytes())
+    }
+}
+
 // TODO: Make the phase 1 and phase 2 functionality generic
 
 /// Holds all of the CRS elements for phase1 in one struct, before validation.
@@ -670,6 +684,17 @@ impl Phase1CeremonyContribution {
         Self(transform_parallel(data, |old_i| {
             Phase1Contribution::make(&mut OsRng, ContributionHash::dummy(), &old_i)
         }))
+    }
+}
+
+impl Hashable for Phase1CeremonyContribution {
+    fn hash(&self) -> ContributionHash {
+        let hashes = transform(self.0.clone(), |x| x.hash());
+        let mut hasher = GroupHasher::new(b"phase1contr");
+        for h in hashes {
+            hasher.eat_bytes(h.as_ref());
+        }
+        ContributionHash(hasher.finalize_bytes())
     }
 }
 
