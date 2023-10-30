@@ -1,15 +1,13 @@
 #![allow(dead_code)]
 extern crate core;
 
-pub use view_server::ViewServer;
-
 pub mod error;
 pub mod keys;
-mod note_record;
-mod planner;
-mod storage;
-mod swap_record;
-mod tx;
-mod utils;
-mod view_server;
-mod wasm_planner;
+pub mod note_record;
+pub mod planner;
+pub mod storage;
+pub mod swap_record;
+pub mod tx;
+pub mod utils;
+pub mod view_server;
+pub mod wasm_planner;
