@@ -57,9 +57,9 @@ cargo run --quiet --release --bin summonerd -- generate-phase1 --output phase1.b
 
 echo "Setting up storage directory..."
 mkdir /tmp/summonerd
-cargo run --quiet --release --bin pcli -- --home /tmp/summonerd --node http://127.0.0.1:8080 keys generate
-export SUMMONER_ADDRESS=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/summonerd --node http://127.0.0.1:8080 view address 0 2>&1)
-export SUMMONER_FVK=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/summonerd --node http://127.0.0.1:8080 keys export full-viewing-key 2>&1)
+cargo run --quiet --release --bin pcli -- --home /tmp/summonerd init --grpc-url http://127.0.0.1:8080 soft-kms generate
+export SUMMONER_ADDRESS=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/summonerd view address 0 2>&1)
+export SUMMONER_FVK=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/summonerd keys export full-viewing-key 2>&1)
 cargo run --quiet --release --bin summonerd -- init --storage-dir /tmp/summonerd --phase1-root phase1.bin
 
 echo "Starting phase 1 run..."
@@ -73,11 +73,11 @@ echo "Setting up test accounts..."
 # the home directory, and so if there is already a backup wallet, we refuse to overwrite it,
 # and will exit non-zero. We don't care about the backup wallet for this test, so we ignore the
 # exit code.
-echo $SEED_PHRASE | cargo run --quiet --release --bin pcli -- --home /tmp/account1 keys import phrase || true
-export ACCOUNT1_ADDRESS=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/account1 --node http://127.0.0.1:8080 view address 0 2>&1)
+echo $SEED_PHRASE | cargo run --quiet --release --bin pcli -- --home /tmp/account1 init --grpc-url http://127.0.0.1:8080 soft-kms import-phrase || true
+export ACCOUNT1_ADDRESS=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/account1 view address 0 2>&1)
 
 echo "Phase 1 contributions..."
-cargo run --quiet --release --bin pcli -- --node http://127.0.0.1:8080 --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8081 --coordinator-address $SUMMONER_ADDRESS --phase 1 --bid 10penumbra
+cargo run --quiet --release --bin pcli -- --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8081 --coordinator-address $SUMMONER_ADDRESS --phase 1 --bid 10penumbra
 
 echo "Stopping phase 1 run..."
 if ! kill -0 "$phase1_pid" ; then
@@ -98,7 +98,7 @@ phase2_pid="$!"
 trap 'kill -9 "$phase2_pid"' EXIT
 
 echo "Phase 2 contributions..."
-cargo run --quiet --release --bin pcli -- --node http://127.0.0.1:8080 --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8081 --coordinator-address $SUMMONER_ADDRESS --phase 2 --bid 10penumbra
+cargo run --quiet --release --bin pcli -- --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8081 --coordinator-address $SUMMONER_ADDRESS --phase 2 --bid 10penumbra
 
 echo "Exporting keys..."
 cargo run --quiet --release --bin summonerd -- export --storage-dir /tmp/summonerd --target-dir ./crates/crypto/proof-params/src/gen
