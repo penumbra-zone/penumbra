@@ -13,8 +13,8 @@ use crate::component::{
 };
 
 #[async_trait]
-impl<H> MsgHandler<H> for MsgCreateClient {
-    async fn check_stateless(&self) -> Result<()> {
+impl MsgHandler for MsgCreateClient {
+    async fn check_stateless<H>(&self) -> Result<()> {
         client_state_is_tendermint(self)?;
         consensus_state_is_tendermint(self)?;
 
@@ -28,7 +28,7 @@ impl<H> MsgHandler<H> for MsgCreateClient {
     // - client type
     // - consensus state
     // - processed time and height
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         let client_state =
             ics02_validation::get_tendermint_client_state(self.client_state.clone())?;

@@ -10,7 +10,7 @@ use ibc_types::core::{
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::{
-    app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute},
+    app_handler::{AppHandlerCheck, AppHandlerExecute},
     channel::StateWriteExt,
     connection::StateReadExt,
     proof_verification::ChannelProofVerifier,
@@ -18,14 +18,17 @@ use crate::component::{
 };
 
 #[async_trait]
-impl<H: AppHandler> MsgHandler<H> for MsgChannelOpenTry {
-    async fn check_stateless(&self) -> Result<()> {
+impl MsgHandler for MsgChannelOpenTry {
+    async fn check_stateless<H: AppHandlerCheck>(&self) -> Result<()> {
         connection_hops_eq_1(self)?;
 
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+        &self,
+        mut state: S,
+    ) -> Result<()> {
         tracing::debug!(msg = ?self);
         let connection_on_b = verify_connections_open(&state, self).await?;
 

@@ -16,15 +16,15 @@ use crate::component::{
 };
 
 #[async_trait]
-impl<H> MsgHandler<H> for MsgConnectionOpenConfirm {
-    async fn check_stateless(&self) -> Result<()> {
+impl MsgHandler for MsgConnectionOpenConfirm {
+    async fn check_stateless<H>(&self) -> Result<()> {
         // NOTE: other than that the message is a well formed ConnectionOpenConfirm,
         // there is no other stateless validation to perform.
 
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         // Validate a ConnectionOpenConfirm message, completing the IBC connection handshake.
         //

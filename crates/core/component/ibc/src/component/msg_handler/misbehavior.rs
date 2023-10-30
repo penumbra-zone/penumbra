@@ -21,8 +21,8 @@ use super::update_client::verify_header_validator_set;
 use super::MsgHandler;
 
 #[async_trait]
-impl<H> MsgHandler<H> for MsgSubmitMisbehaviour {
-    async fn check_stateless(&self) -> Result<()> {
+impl MsgHandler for MsgSubmitMisbehaviour {
+    async fn check_stateless<H>(&self) -> Result<()> {
         misbehavior_is_tendermint(self)?;
         let untrusted_misbehavior =
             ics02_validation::get_tendermint_misbehavior(self.misbehaviour.clone())?;
@@ -38,7 +38,7 @@ impl<H> MsgHandler<H> for MsgSubmitMisbehaviour {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         let untrusted_misbehavior =

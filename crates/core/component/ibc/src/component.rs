@@ -15,7 +15,8 @@ mod msg_handler;
 mod packet;
 mod proof_verification;
 mod state_key;
-mod transfer;
+// TODO: move this to the shielded pool crate
+pub mod transfer;
 mod view;
 
 use msg_handler::MsgHandler;

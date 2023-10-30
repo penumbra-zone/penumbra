@@ -23,13 +23,13 @@ use crate::component::{
 };
 
 #[async_trait]
-impl<H> MsgHandler<H> for MsgConnectionOpenTry {
-    async fn check_stateless(&self) -> Result<()> {
+impl MsgHandler for MsgConnectionOpenTry {
+    async fn check_stateless<H>(&self) -> Result<()> {
         // basic checks are performed by the ibc-rs crate when deserializing domain types.
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         // Validate a ConnectionOpenTry message, which is sent to us by a counterparty chain that

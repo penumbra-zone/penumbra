@@ -66,6 +66,10 @@ pub enum IbcAction {
 }
 
 impl IbcAction {
+    pub fn with_handler<H: AppHandler>(self) -> IbcActionWithHandler<H> {
+        IbcActionWithHandler::new(self)
+    }
+
     /// Create a tracing span to track execution related to this action.
     ///
     /// The parent span is provided explicitly, so that this span can be constructed

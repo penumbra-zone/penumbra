@@ -7,21 +7,24 @@ use ibc_types::core::channel::{
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::{
-    app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute},
+    app_handler::{AppHandlerCheck, AppHandlerExecute},
     channel::{StateReadExt as _, StateWriteExt as _},
     connection::StateReadExt as _,
     MsgHandler,
 };
 
 #[async_trait]
-impl<H: AppHandler> MsgHandler<H> for MsgChannelOpenInit {
-    async fn check_stateless(&self) -> Result<()> {
+impl MsgHandler for MsgChannelOpenInit {
+    async fn check_stateless<H: AppHandlerCheck>(&self) -> Result<()> {
         connection_hops_eq_1(self)?;
 
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+        &self,
+        mut state: S,
+    ) -> Result<()> {
         tracing::debug!(msg = ?self);
         let channel_id = get_channel_id(&state).await?;
 

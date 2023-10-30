@@ -4,6 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::TransactionContext;
 use penumbra_ibc::component::StateReadExt as _;
+use penumbra_ibc::component::transfer::Ics20Transfer;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Action;
 
@@ -37,7 +38,10 @@ impl ActionHandler for Action {
             Action::ProposalDepositClaim(action) => action.check_stateless(()),
             Action::Swap(action) => action.check_stateless(()),
             Action::Output(action) => action.check_stateless(()),
-            Action::IbcAction(action) => action.check_stateless(()),
+            Action::IbcAction(action) => {
+                let action = action.clone().with_handler::<Ics20Transfer>(); 
+                action.check_stateless(())
+            },
             Action::Ics20Withdrawal(action) => action.check_stateless(()),
             Action::DaoSpend(action) => action.check_stateless(()),
             Action::DaoOutput(action) => action.check_stateless(()),
@@ -70,7 +74,7 @@ impl ActionHandler for Action {
                     anyhow::bail!("transaction contains IBC actions, but IBC is not enabled");
                 }
 
-                action.check_stateful(state).await
+                action.with_handler::<Ics20Transfer>().check_stateful(state).await
             }
             Action::Ics20Withdrawal(action) => action.check_stateful(state).await,
             Action::DaoSpend(action) => action.check_stateful(state).await,
@@ -98,7 +102,7 @@ impl ActionHandler for Action {
             Action::SwapClaim(action) => action.execute(state).await,
             Action::Spend(action) => action.execute(state).await,
             Action::Output(action) => action.execute(state).await,
-            Action::IbcAction(action) => action.execute(state).await,
+            Action::IbcAction(action) => action.with_handler::<Ics20Transfer>().execute(state).await,
             Action::Ics20Withdrawal(action) => action.execute(state).await,
             Action::DaoSpend(action) => action.execute(state).await,
             Action::DaoOutput(action) => action.execute(state).await,

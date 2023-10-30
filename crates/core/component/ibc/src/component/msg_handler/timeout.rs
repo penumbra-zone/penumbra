@@ -9,7 +9,7 @@ use ibc_types::core::channel::{
 use penumbra_storage::StateWrite;
 
 use crate::component::{
-    app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute},
+    app_handler::{AppHandlerCheck, AppHandlerExecute},
     channel::{StateReadExt as _, StateWriteExt},
     client::StateReadExt,
     connection::StateReadExt as _,
@@ -18,14 +18,17 @@ use crate::component::{
 };
 
 #[async_trait]
-impl<H: AppHandler> MsgHandler<H> for MsgTimeout {
-    async fn check_stateless(&self) -> Result<()> {
+impl MsgHandler for MsgTimeout {
+    async fn check_stateless<H: AppHandlerCheck>(&self) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+        &self,
+        mut state: S,
+    ) -> Result<()> {
         tracing::debug!(msg = ?self);
         let mut channel = state
             .get_channel(&self.packet.chan_on_a, &self.packet.port_on_a)

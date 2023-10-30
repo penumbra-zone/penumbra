@@ -15,14 +15,14 @@ use ibc_types::core::connection::State as ConnectionState;
 use penumbra_storage::StateWrite;
 
 #[async_trait]
-impl<H> MsgHandler<H> for MsgConnectionOpenInit {
-    async fn check_stateless(&self) -> Result<()> {
+impl MsgHandler for MsgConnectionOpenInit {
+    async fn check_stateless<H>(&self) -> Result<()> {
         version_is_supported(self)?;
 
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         // check that the client with the specified ID exists

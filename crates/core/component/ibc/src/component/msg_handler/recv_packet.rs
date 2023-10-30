@@ -14,7 +14,7 @@ use penumbra_chain::component::StateReadExt;
 use penumbra_storage::StateWrite;
 
 use crate::component::{
-    app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute},
+    app_handler::{AppHandlerCheck, AppHandlerExecute},
     channel::{StateReadExt as _, StateWriteExt},
     connection::StateReadExt as _,
     proof_verification::PacketProofVerifier,
@@ -22,14 +22,17 @@ use crate::component::{
 };
 
 #[async_trait]
-impl<H: AppHandler> MsgHandler<H> for MsgRecvPacket {
-    async fn check_stateless(&self) -> Result<()> {
+impl MsgHandler for MsgRecvPacket {
+    async fn check_stateless<H: AppHandlerCheck>(&self) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+        &self,
+        mut state: S,
+    ) -> Result<()> {
         tracing::debug!(msg = ?self);
         tracing::debug!(data = ?String::from_utf8_lossy(&self.packet.data));
         let channel = state
