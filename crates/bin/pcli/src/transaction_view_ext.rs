@@ -2,6 +2,7 @@ use comfy_table::presets;
 use comfy_table::Table;
 use penumbra_asset::ValueView;
 use penumbra_keys::AddressView;
+use penumbra_num::Amount;
 use penumbra_shielded_pool::SpendView;
 use penumbra_transaction::view::action_view::OutputView;
 use penumbra_transaction::TransactionView;
@@ -65,12 +66,13 @@ fn format_opaque_bytes(bytes: &[u8]) -> String {
 }
 
 // feels like these functions should be extension traits of their respective structs
+// propose moving this to core/keys/src/address/view.rs
 fn format_address_view(address_view: &AddressView) -> String {
     match address_view {
         AddressView::Visible {
-            address,
+            address: _,
             index,
-            wallet_id,
+            wallet_id: _,
         } => {
             format!("[address {:?}]", index.account)
         }
@@ -82,16 +84,26 @@ fn format_address_view(address_view: &AddressView) -> String {
 }
 
 // feels like these functions should be extension traits of their respective structs
+// propose moving this to core/asset/src/value.rs
 fn format_value_view(value_view: &ValueView) -> String {
     match value_view {
         ValueView::KnownDenom { amount, denom } => {
             // TODO: This can be further tweaked depending on what DenomMetadata units should be shown. Leaving as default for now.
             format!("{} {}", amount, denom)
-            // format!("{}", format_opaque_bytes(&address.to_vec()[..8])) // slicing off the first 8 chars to match the plaintext length for aesthetics
         }
         ValueView::UnknownDenom { amount, asset_id } => {
-            format!("{} {}", amount, asset_id) //format_opaque_bytes(&address.to_vec()))
+            format!("{} {}", amount, format_opaque_bytes(&asset_id.to_bytes()))
         }
+    }
+}
+
+// when handling ValueViews inside of a Visible variant of an ActionView, handling both cases may be suboptimal
+// potentially this makes sense as a method on the ValueView enum
+// propose moving this to core/asset/src/value.rs
+fn value_view_amount(value_view: &ValueView) -> Amount {
+    match value_view {
+        ValueView::KnownDenom { amount, .. } | ValueView::UnknownDenom { amount, .. } => *amount,
+        _ => panic!("Unexpected ValueView variant!"),
     }
 }
 
