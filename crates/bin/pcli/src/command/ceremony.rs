@@ -7,6 +7,7 @@ use penumbra_proof_setup::all::{
     Phase1CeremonyContribution, Phase1RawCeremonyCRS, Phase2CeremonyContribution,
     Phase2RawCeremonyCRS,
 };
+use penumbra_proof_setup::single::log::Hashable;
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::ceremony_coordinator_service_client::CeremonyCoordinatorServiceClient,
     tools::summoning::v1alpha1::{
@@ -181,16 +182,18 @@ Otherwise, please keep this window open.
                     }
                 };
                 println!("preparing contribution... (please keep this window open)");
-                let contribution = if *phase == 1 {
+                let (contribution, hash) = if *phase == 1 {
                     let parent = Phase1RawCeremonyCRS::unchecked_from_protobuf(unparsed_parent)?
                         .assume_valid();
                     let contribution = Phase1CeremonyContribution::make(&parent);
-                    contribution.try_into()?
+                    let hash = contribution.hash();
+                    (contribution.try_into()?, hash)
                 } else {
                     let parent = Phase2RawCeremonyCRS::unchecked_from_protobuf(unparsed_parent)?
                         .assume_valid();
                     let contribution = Phase2CeremonyContribution::make(&parent);
-                    contribution.try_into()?
+                    let hash = contribution.hash();
+                    (contribution.try_into()?, hash)
                 };
                 println!("submitting contribution...");
 
@@ -207,6 +210,7 @@ Otherwise, please keep this window open.
                     }) => {
                         println!("contribution confirmed at slot {slot}");
                         println!("thank you for your help summoning penumbra <3");
+                        println!("here's your contribution receipt (save this to verify inclusion in the final transcript):\n{}", hex::encode_upper(hash.as_ref()));
                     }
                     m => {
                         anyhow::bail!("Received unexpected message from coordinator: {:?}", m)
