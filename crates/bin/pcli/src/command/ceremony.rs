@@ -46,7 +46,7 @@ async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -
     let value = bid.parse::<Value>()?;
 
     let memo_plaintext = MemoPlaintext {
-        sender: app.fvk.payment_address(from).0,
+        sender: app.config.full_viewing_key.payment_address(from).0,
         text: "E PLURIBUS UNUM".to_owned(),
     };
 
@@ -59,7 +59,7 @@ async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -
             app.view
                 .as_mut()
                 .context("view service must be initialized")?,
-            app.fvk.wallet_id(),
+            app.config.full_viewing_key.wallet_id(),
             from,
         )
         .await
@@ -103,7 +103,7 @@ impl CeremonyCmd {
                     randomizer: b"ceremonyaddr".as_slice().try_into().unwrap(),
                 };
                 handle_bid(app, *coordinator_address, index, bid).await?;
-                let address = app.fvk.payment_address(index).0;
+                let address = app.config.full_viewing_key.payment_address(index).0;
 
                 println!("connecting to coordinator...");
                 // After we bid, we need to wait a couple of seconds just for the transaction to be

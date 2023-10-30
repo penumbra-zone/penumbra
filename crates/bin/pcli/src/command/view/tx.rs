@@ -233,7 +233,7 @@ impl TxCmd {
         false
     }
     pub async fn exec(&self, app: &mut App) -> Result<()> {
-        let fvk = app.fvk.clone();
+        let fvk = app.config.full_viewing_key.clone();
         let hash = self
             .hash
             // We have to convert to uppercase because `tendermint::Hash` only accepts uppercase :(

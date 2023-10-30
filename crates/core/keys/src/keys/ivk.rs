@@ -20,7 +20,7 @@ const MOD_R_QUOTIENT: usize = 4;
 
 /// Allows viewing incoming notes, i.e., notes sent to the spending key this
 /// key is derived from.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IncomingViewingKey {
     pub(super) ivk: ka::Secret,
     pub(super) dk: DiversifierKey,

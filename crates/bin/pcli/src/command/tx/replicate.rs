@@ -168,7 +168,7 @@ impl ConstantProduct {
                 app.view
                     .as_mut()
                     .context("view service must be initialized")?,
-                app.fvk.wallet_id(),
+                app.config.full_viewing_key.wallet_id(),
                 AddressIndex::new(self.source),
             )
             .await?;
