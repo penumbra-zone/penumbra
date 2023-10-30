@@ -180,7 +180,7 @@ has been configured between the Osmosis testnet and the *current* Penumbra testn
 
 Penumbra aims to implement full IBC support for cross-chain asset transfers. For now, however,
 we're only running a relayer between the Penumbra testnet and the [Osmosis testnet] chains.
-For Testnet 62 Iapetus, the channel information is:
+For Testnet 63 Rhea, the channel information is:
 
 <!--
 To update the information below, update the Hermes config, then run:
@@ -194,7 +194,7 @@ during setup.
   "ordering": 1,
   "counterparty": {
     "port_id": "transfer",
-    "channel_id": "channel-3909"
+    "channel_id": "channel-4217"
   },
   "connection_hops": [
     "connection-0"
