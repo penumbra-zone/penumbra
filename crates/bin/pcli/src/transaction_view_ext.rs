@@ -114,14 +114,15 @@ pub trait TransactionViewExt {
 
 impl TransactionViewExt for TransactionView {
     fn render_terminal(&self) {
-        println!("⠿ Tx Hash"); // Not available here?
-        println!("⠿ Tx Sig"); // Probably not needed
-        println!("⠿ Anchor"); // Probably not needed
+        println!("Tx Hash"); // Not available here?
+        println!("Tx Sig"); // Probably not needed
+        println!("Anchor"); // Probably not needed
+
         let fee = &self.body_view.transaction_parameters.fee;
         // the denomination should be visible here... does a FeeView exist?
-        println!("⠿ Fee: {} {}", &fee.amount(), &fee.asset_id());
+        println!("Fee: {} {}", &fee.amount(), &fee.asset_id());
         println!(
-            "⠿ Expiration Height: {}",
+            "Expiration Height: {}",
             &self.body_view.transaction_parameters.expiry_height
         );
 
@@ -131,14 +132,11 @@ impl TransactionViewExt for TransactionView {
                     plaintext,
                     ciphertext: _,
                 } => {
-                    println!("⠿ Memo Sender: {}", &plaintext.return_address.address());
-                    println!("⠿ Memo Text: \n{}\n", &plaintext.text);
+                    println!("Memo Sender: {}", &plaintext.return_address.address());
+                    println!("Memo Text: \n{}\n", &plaintext.text);
                 }
                 penumbra_transaction::MemoView::Opaque { ciphertext } => {
-                    println!(
-                        "⠿ Encrypted Memo: \n{}\n",
-                        format_opaque_bytes(&ciphertext.0)
-                    );
+                    println!("Encrypted Memo: \n{}\n", format_opaque_bytes(&ciphertext.0));
                 }
             }
         }
