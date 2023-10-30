@@ -45,6 +45,12 @@ async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -
 
     let value = bid.parse::<Value>()?;
 
+    // If the bid is 0, skip creating a transaction. For instance, this allows reconnecting
+    // without paying extra.
+    if value.amount == 0u64.into() {
+        return Ok(());
+    }
+
     let memo_plaintext = MemoPlaintext {
         sender: app.config.full_viewing_key.payment_address(from).0,
         text: "E PLURIBUS UNUM".to_owned(),
