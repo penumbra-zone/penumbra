@@ -102,6 +102,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    needs:
+      - penumbra
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -121,6 +123,10 @@ jobs:
     permissions:
       contents: read
       packages: write
+    # The upstream container references the Penumbra container by tag,
+    # so ensure it exists.
+    needs:
+      - penumbra
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -142,6 +148,8 @@ jobs:
 
   hermes:
     runs-on: ubuntu-latest
+    needs:
+      - penumbra
     permissions:
       contents: read
       packages: write
