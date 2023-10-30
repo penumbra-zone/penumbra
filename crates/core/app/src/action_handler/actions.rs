@@ -3,8 +3,8 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_chain::TransactionContext;
-use penumbra_ibc::component::StateReadExt as _;
 use penumbra_ibc::component::transfer::Ics20Transfer;
+use penumbra_ibc::component::StateReadExt as _;
 use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Action;
 
@@ -39,8 +39,12 @@ impl ActionHandler for Action {
             Action::Swap(action) => action.check_stateless(()).await,
             Action::Output(action) => action.check_stateless(()).await,
             Action::IbcAction(action) => {
-                action.clone().with_handler::<Ics20Transfer>().check_stateless(()).await
-            }, 
+                action
+                    .clone()
+                    .with_handler::<Ics20Transfer>()
+                    .check_stateless(())
+                    .await
+            }
             Action::Ics20Withdrawal(action) => action.check_stateless(()).await,
             Action::DaoSpend(action) => action.check_stateless(()).await,
             Action::DaoOutput(action) => action.check_stateless(()).await,
@@ -72,7 +76,11 @@ impl ActionHandler for Action {
                     anyhow::bail!("transaction contains IBC actions, but IBC is not enabled");
                 }
 
-                action.clone().with_handler::<Ics20Transfer>().check_stateful(state).await
+                action
+                    .clone()
+                    .with_handler::<Ics20Transfer>()
+                    .check_stateful(state)
+                    .await
             }
             Action::Ics20Withdrawal(action) => action.check_stateful(state).await,
             Action::DaoSpend(action) => action.check_stateful(state).await,
@@ -100,7 +108,13 @@ impl ActionHandler for Action {
             Action::SwapClaim(action) => action.execute(state).await,
             Action::Spend(action) => action.execute(state).await,
             Action::Output(action) => action.execute(state).await,
-            Action::IbcAction(action) => action.clone().with_handler::<Ics20Transfer>().execute(state).await,
+            Action::IbcAction(action) => {
+                action
+                    .clone()
+                    .with_handler::<Ics20Transfer>()
+                    .execute(state)
+                    .await
+            }
             Action::Ics20Withdrawal(action) => action.execute(state).await,
             Action::DaoSpend(action) => action.execute(state).await,
             Action::DaoOutput(action) => action.execute(state).await,
