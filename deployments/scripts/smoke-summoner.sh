@@ -20,7 +20,7 @@ if ! hash cometbft > /dev/null 2>&1 ; then
     exit 1
 fi
 
-export RUST_LOG="summonerd=info,pcli=info,pd=info,penumbra=info"
+export RUST_LOG="summonerd=info,pd=info,penumbra=info"
 
 # Duration that the network will run before we start the ceremony.
 TESTNET_BOOTTIME="${TESTNET_BOOTTIME:-20}"
@@ -59,6 +59,7 @@ echo "Setting up storage directory..."
 mkdir /tmp/summonerd
 cargo run --quiet --release --bin pcli -- --home /tmp/summonerd init --grpc-url http://127.0.0.1:8080 soft-kms generate
 export SUMMONER_ADDRESS=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/summonerd view address 0 2>&1)
+echo $SUMMONER_ADDRESS
 export SUMMONER_FVK=$(grep "full_viewing_key" /tmp/summonerd/config.toml | cut -d= -f2 | tr -d ' "')
 cargo run --quiet --release --bin summonerd -- init --storage-dir /tmp/summonerd --phase1-root phase1.bin
 
@@ -75,6 +76,7 @@ echo "Setting up test accounts..."
 # exit code.
 echo $SEED_PHRASE | cargo run --quiet --release --bin pcli -- --home /tmp/account1 init --grpc-url http://127.0.0.1:8080 soft-kms import-phrase || true
 export ACCOUNT1_ADDRESS=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/account1 view address 0 2>&1)
+echo $ACCOUNT1_ADDRESS
 
 echo "Phase 1 contributions..."
 cargo run --quiet --release --bin pcli -- --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8081 --coordinator-address $SUMMONER_ADDRESS --phase 1 --bid 10penumbra
