@@ -15,7 +15,7 @@ use ibc_types::core::connection::State as ConnectionState;
 use penumbra_storage::StateWrite;
 
 #[async_trait]
-impl MsgHandler for MsgConnectionOpenInit {
+impl<H> MsgHandler<H> for MsgConnectionOpenInit {
     async fn check_stateless(&self) -> Result<()> {
         version_is_supported(self)?;
 

@@ -17,7 +17,7 @@ use crate::component::{
 };
 
 #[async_trait]
-impl MsgHandler for MsgConnectionOpenAck {
+impl<H> MsgHandler<H> for MsgConnectionOpenAck {
     async fn check_stateless(&self) -> Result<()> {
         Ok(())
     }

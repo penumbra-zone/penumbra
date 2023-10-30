@@ -14,16 +14,15 @@ use penumbra_chain::component::StateReadExt;
 use penumbra_storage::StateWrite;
 
 use crate::component::{
-    app_handler::{AppHandlerCheck, AppHandlerExecute},
+    app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute},
     channel::{StateReadExt as _, StateWriteExt},
     connection::StateReadExt as _,
     proof_verification::PacketProofVerifier,
-    transfer::Ics20Transfer,
     MsgHandler,
 };
 
 #[async_trait]
-impl MsgHandler for MsgRecvPacket {
+impl<H: AppHandler> MsgHandler<H> for MsgRecvPacket {
     async fn check_stateless(&self) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
@@ -105,7 +104,7 @@ impl MsgHandler for MsgRecvPacket {
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
-            Ics20Transfer::recv_packet_check(&mut state, self).await?;
+            H::recv_packet_check(&mut state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }
@@ -146,7 +145,7 @@ impl MsgHandler for MsgRecvPacket {
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
-            Ics20Transfer::recv_packet_execute(state, self).await;
+            H::recv_packet_execute(state, self).await;
         } else {
             anyhow::bail!("invalid port id");
         }

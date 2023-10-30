@@ -23,7 +23,7 @@ use crate::component::{
 };
 
 #[async_trait]
-impl MsgHandler for MsgConnectionOpenTry {
+impl<H> MsgHandler<H> for MsgConnectionOpenTry {
     async fn check_stateless(&self) -> Result<()> {
         // basic checks are performed by the ibc-rs crate when deserializing domain types.
         Ok(())

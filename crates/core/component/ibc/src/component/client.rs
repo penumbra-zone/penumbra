@@ -363,7 +363,10 @@ mod tests {
     use std::str::FromStr;
     use tendermint::Time;
 
+    use crate::ibc_action::IbcActionWithHandler;
     use crate::IbcAction;
+
+    use crate::component::transfer::Ics20Transfer;
 
     // test that we can create and update a light client.
     #[tokio::test]
@@ -433,8 +436,12 @@ mod tests {
 
         msg_update_stargaze_client.client_id = ClientId::from_str("07-tendermint-0").unwrap();
 
-        let create_client_action = IbcAction::CreateClient(msg_create_stargaze_client);
-        let update_client_action = IbcAction::UpdateClient(msg_update_stargaze_client);
+        let create_client_action = IbcActionWithHandler::<Ics20Transfer>::new(
+            IbcAction::CreateClient(msg_create_stargaze_client),
+        );
+        let update_client_action = IbcActionWithHandler::<Ics20Transfer>::new(
+            IbcAction::UpdateClient(msg_update_stargaze_client),
+        );
 
         create_client_action.check_stateless(()).await?;
         create_client_action.check_stateful(state.clone()).await?;
@@ -459,7 +466,8 @@ mod tests {
 
         let mut second_update = MsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
         second_update.client_id = ClientId::from_str("07-tendermint-0").unwrap();
-        let second_update_client_action = IbcAction::UpdateClient(second_update);
+        let second_update_client_action =
+            IbcActionWithHandler::<Ics20Transfer>::new(IbcAction::UpdateClient(second_update));
 
         second_update_client_action.check_stateless(()).await?;
         second_update_client_action

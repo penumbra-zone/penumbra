@@ -1,5 +1,5 @@
 mod action_handler;
-mod app_handler;
+pub mod app_handler;
 mod channel;
 mod client;
 mod client_counter;

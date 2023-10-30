@@ -8,16 +8,15 @@ use ibc_types::core::{
 use penumbra_storage::StateWrite;
 
 use crate::component::{
-    app_handler::{AppHandlerCheck, AppHandlerExecute},
+    app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute},
     channel::{StateReadExt as _, StateWriteExt as _},
     connection::StateReadExt as _,
     proof_verification::{commit_packet, PacketProofVerifier},
-    transfer::Ics20Transfer,
     MsgHandler,
 };
 
 #[async_trait]
-impl MsgHandler for MsgAcknowledgement {
+impl<H: AppHandler> MsgHandler<H> for MsgAcknowledgement {
     async fn check_stateless(&self) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
@@ -73,7 +72,7 @@ impl MsgHandler for MsgAcknowledgement {
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
-            Ics20Transfer::acknowledge_packet_check(&mut state, self).await?;
+            H::acknowledge_packet_check(&mut state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }
@@ -113,7 +112,7 @@ impl MsgHandler for MsgAcknowledgement {
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
-            Ics20Transfer::acknowledge_packet_execute(state, self).await;
+            H::acknowledge_packet_execute(state, self).await;
         } else {
             anyhow::bail!("invalid port id");
         }

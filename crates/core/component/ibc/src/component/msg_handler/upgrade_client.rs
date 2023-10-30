@@ -21,7 +21,7 @@ use crate::component::{
 static SENTINEL_UPGRADE_ROOT: &str = "sentinel_root";
 
 #[async_trait]
-impl MsgHandler for MsgUpgradeClient {
+impl<H> MsgHandler<H> for MsgUpgradeClient {
     async fn check_stateless(&self) -> Result<()> {
         Ok(())
     }

@@ -17,6 +17,7 @@ pub mod params;
 mod version;
 
 pub use ibc_action::IbcAction;
+pub use ibc_action::IbcActionWithHandler;
 pub use ibc_token::IbcToken;
 pub use ics20_withdrawal::Ics20Withdrawal;
 

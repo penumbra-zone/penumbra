@@ -16,7 +16,7 @@ use crate::component::{
 };
 
 #[async_trait]
-impl MsgHandler for MsgConnectionOpenConfirm {
+impl<H> MsgHandler<H> for MsgConnectionOpenConfirm {
     async fn check_stateless(&self) -> Result<()> {
         // NOTE: other than that the message is a well formed ConnectionOpenConfirm,
         // there is no other stateless validation to perform.

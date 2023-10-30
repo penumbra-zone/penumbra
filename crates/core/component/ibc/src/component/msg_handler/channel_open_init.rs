@@ -7,15 +7,14 @@ use ibc_types::core::channel::{
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::{
-    app_handler::{AppHandlerCheck, AppHandlerExecute},
+    app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute},
     channel::{StateReadExt as _, StateWriteExt as _},
     connection::StateReadExt as _,
-    transfer::Ics20Transfer,
     MsgHandler,
 };
 
 #[async_trait]
-impl MsgHandler for MsgChannelOpenInit {
+impl<H: AppHandler> MsgHandler<H> for MsgChannelOpenInit {
     async fn check_stateless(&self) -> Result<()> {
         connection_hops_eq_1(self)?;
 
@@ -36,7 +35,7 @@ impl MsgHandler for MsgChannelOpenInit {
 
         let transfer = PortId::transfer();
         if self.port_id_on_a == transfer {
-            Ics20Transfer::chan_open_init_check(&mut state, self).await?;
+            H::chan_open_init_check(&mut state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }
@@ -70,7 +69,7 @@ impl MsgHandler for MsgChannelOpenInit {
 
         let transfer = PortId::transfer();
         if self.port_id_on_a == transfer {
-            Ics20Transfer::chan_open_init_execute(state, self).await;
+            H::chan_open_init_execute(state, self).await;
         } else {
             anyhow::bail!("invalid port id");
         }

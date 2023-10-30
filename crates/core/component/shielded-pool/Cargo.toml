@@ -12,6 +12,7 @@ component = [
     "penumbra-proto/penumbra-storage",
     "penumbra-chain/component",
     "penumbra-sct/component",
+    "tonic",
 ]
 proving-keys = ["penumbra-proof-params/proving-keys"]
 default = ["std", "component", "proving-keys"]

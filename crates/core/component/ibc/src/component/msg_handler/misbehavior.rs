@@ -21,7 +21,7 @@ use super::update_client::verify_header_validator_set;
 use super::MsgHandler;
 
 #[async_trait]
-impl MsgHandler for MsgSubmitMisbehaviour {
+impl<H> MsgHandler<H> for MsgSubmitMisbehaviour {
     async fn check_stateless(&self) -> Result<()> {
         misbehavior_is_tendermint(self)?;
         let untrusted_misbehavior =

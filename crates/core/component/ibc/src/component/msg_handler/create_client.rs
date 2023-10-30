@@ -13,7 +13,7 @@ use crate::component::{
 };
 
 #[async_trait]
-impl MsgHandler for MsgCreateClient {
+impl<H> MsgHandler<H> for MsgCreateClient {
     async fn check_stateless(&self) -> Result<()> {
         client_state_is_tendermint(self)?;
         consensus_state_is_tendermint(self)?;
