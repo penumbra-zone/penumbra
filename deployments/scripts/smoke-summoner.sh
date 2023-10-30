@@ -59,7 +59,7 @@ echo "Setting up storage directory..."
 mkdir /tmp/summonerd
 cargo run --quiet --release --bin pcli -- --home /tmp/summonerd init --grpc-url http://127.0.0.1:8080 soft-kms generate
 export SUMMONER_ADDRESS=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/summonerd view address 0 2>&1)
-export SUMMONER_FVK=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release --bin pcli -- --home /tmp/summonerd keys export full-viewing-key 2>&1)
+export SUMMONER_FVK=$(grep "full_viewing_key" /tmp/summonerd/config.toml | cut -d= -f2 | tr -d ' "')
 cargo run --quiet --release --bin summonerd -- init --storage-dir /tmp/summonerd --phase1-root phase1.bin
 
 echo "Starting phase 1 run..."
