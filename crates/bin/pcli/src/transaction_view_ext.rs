@@ -1,6 +1,9 @@
 use comfy_table::presets;
 use comfy_table::Table;
 use penumbra_asset::ValueView;
+use penumbra_dex::swap::SwapView;
+use penumbra_dex::swap_claim::SwapClaimView;
+use penumbra_fee::Fee;
 use penumbra_keys::AddressView;
 use penumbra_num::Amount;
 use penumbra_shielded_pool::SpendView;
@@ -88,7 +91,7 @@ fn format_address_view(address_view: &AddressView) -> String {
 fn format_value_view(value_view: &ValueView) -> String {
     match value_view {
         ValueView::KnownDenom { amount, denom } => {
-            // TODO: This can be further tweaked depending on what DenomMetadata units should be shown. Leaving as default for now.
+            // TODO: This can be further tweaked depending on what DenomMetadata units should be shown. Leaving as base units for now.
             format!("{} {}", amount, denom)
         }
         ValueView::UnknownDenom { amount, asset_id } => {
@@ -97,7 +100,11 @@ fn format_value_view(value_view: &ValueView) -> String {
     }
 }
 
-// when handling ValueViews inside of a Visible variant of an ActionView, handling both cases may be suboptimal
+fn format_fee_view(fee: &Fee) -> String {
+    format!("{} {}", fee.amount(), fee.asset_id())
+}
+
+// when handling ValueViews inside of a Visible variant of an ActionView, handling both cases might be needlessly verbose
 // potentially this makes sense as a method on the ValueView enum
 // propose moving this to core/asset/src/value.rs
 fn value_view_amount(value_view: &ValueView) -> Amount {
@@ -120,7 +127,8 @@ impl TransactionViewExt for TransactionView {
 
         let fee = &self.body_view.transaction_parameters.fee;
         // the denomination should be visible here... does a FeeView exist?
-        println!("Fee: {} {}", &fee.amount(), &fee.asset_id());
+        println!("Fee: {}", format_fee_view(&fee));
+
         println!(
             "Expiration Height: {}",
             &self.body_view.transaction_parameters.expiry_height
@@ -147,10 +155,26 @@ impl TransactionViewExt for TransactionView {
 
         // Iterate over the ActionViews in the TxV & display as appropriate
         for action_view in &self.body_view.action_views {
-            let opaque_action: String;
-            let visible_action: String;
+            let action: String;
 
             let row = match action_view {
+                penumbra_transaction::ActionView::Spend(spend) => {
+                    match spend {
+                        SpendView::Visible { spend: _, note } => {
+                            action = format!(
+                                "{} -> {}",
+                                format_address_view(&note.address),
+                                format_value_view(&note.value)
+                            );
+                            ["Spend", &action]
+                        }
+                        SpendView::Opaque { spend } => {
+                            let bytes = spend.body.nullifier.to_bytes(); // taken to be a unique value, for aesthetic reasons
+                            action = format_opaque_bytes(&bytes);
+                            ["Spend", &action]
+                        }
+                    }
+                }
                 penumbra_transaction::ActionView::Output(output) => {
                     match output {
                         OutputView::Visible {
@@ -158,39 +182,178 @@ impl TransactionViewExt for TransactionView {
                             note,
                             payload_key: _,
                         } => {
-                            visible_action = format!(
+                            action = format!(
                                 "{} -> {}",
                                 format_value_view(&note.value),
                                 format_address_view(&note.address),
                             );
-                            ["Output", &visible_action]
+                            ["Output", &action]
                         }
                         OutputView::Opaque { output } => {
-                            let bytes = output.body.note_payload.encrypted_note.0.clone(); // taken to be a unique value, for aesthetic reasons
-                            opaque_action = format_opaque_bytes(&bytes);
-                            ["Output", &opaque_action]
+                            let bytes = output.body.note_payload.encrypted_note.0; // taken to be a unique value, for aesthetic reasons
+                            action = format_opaque_bytes(&bytes);
+                            ["Output", &action]
                         }
                     }
                 }
-                penumbra_transaction::ActionView::Spend(spend) => {
-                    match spend {
-                        SpendView::Visible { spend: _, note } => {
-                            visible_action = format!(
-                                "{} -> {}",
-                                format_address_view(&note.address),
-                                format_value_view(&note.value)
-                            );
-                            ["Spend", &visible_action]
-                        }
-                        SpendView::Opaque { spend } => {
-                            let bytes = spend.body.nullifier.to_bytes(); // taken to be a unique value, for aesthetic reasons
-                            opaque_action = format_opaque_bytes(&bytes);
-                            ["Spend", &opaque_action]
-                        }
-                    }
-                }
+                penumbra_transaction::ActionView::Swap(swap) => {
+                    // Typical swaps are one asset for another, but we can't know that for sure.
+                    match swap {
+                        SwapView::Visible {
+                            swap: _,
+                            swap_plaintext,
+                        } => {
+                            let (from_asset, from_value, to_asset) = match (
+                                swap_plaintext.delta_1_i.value(),
+                                swap_plaintext.delta_2_i.value(),
+                            ) {
+                                (0, v) if v > 0 => (
+                                    swap_plaintext.trading_pair.asset_2(),
+                                    swap_plaintext.delta_2_i,
+                                    swap_plaintext.trading_pair.asset_1(),
+                                ),
+                                (v, 0) if v > 0 => (
+                                    swap_plaintext.trading_pair.asset_1(),
+                                    swap_plaintext.delta_1_i,
+                                    swap_plaintext.trading_pair.asset_2(),
+                                ),
+                                // The pathological case (both assets have output values).
+                                _ => (
+                                    swap_plaintext.trading_pair.asset_1(),
+                                    swap_plaintext.delta_1_i,
+                                    swap_plaintext.trading_pair.asset_1(),
+                                ),
+                            };
 
-                _ => ["NYI", "NYI"], // this match should be exhaustive
+                            action = format!(
+                                "{} {} for {} and paid claim fee {:?}",
+                                from_value,
+                                from_asset,
+                                to_asset,
+                                format_fee_view(&swap_plaintext.claim_fee),
+                            );
+
+                            ["Swap", &action]
+                        }
+                        SwapView::Opaque { swap } => {
+                            action = format!(
+                                "Opaque swap for trading pair: {} <=> {}",
+                                swap.body.trading_pair.asset_1(),
+                                swap.body.trading_pair.asset_2()
+                            );
+                            ["Swap", &action]
+                        }
+                    }
+                }
+                penumbra_transaction::ActionView::SwapClaim(swap_claim) => {
+                    match swap_claim {
+                        SwapClaimView::Visible {
+                            swap_claim,
+                            output_1,
+                            output_2,
+                        } => {
+                            dbg!(swap_claim); // View service can't see SwapClaims?
+                            let claimed_value = match (
+                                value_view_amount(&output_1.value).value(),
+                                value_view_amount(&output_2.value).value(),
+                            ) {
+                                (0, v) if v > 0 => format_value_view(&output_2.value),
+                                (v, 0) if v > 0 => format_value_view(&output_1.value),
+                                // The pathological case (both assets have output values).
+                                _ => format!(
+                                    "{} and {}",
+                                    format_value_view(&output_1.value),
+                                    format_value_view(&output_2.value),
+                                ),
+                            };
+
+                            action = format!(
+                                "Claimed {} with fee {:?}",
+                                claimed_value,
+                                format_fee_view(&swap_claim.body.fee),
+                            );
+                            ["Swap Claim", &action]
+                        }
+                        SwapClaimView::Opaque { swap_claim } => {
+                            let bytes = swap_claim.body.nullifier.to_bytes(); // taken to be a unique value, for aesthetic reasons
+                            action = format_opaque_bytes(&bytes);
+                            ["Swap Claim", &action]
+                        }
+                    }
+                }
+                penumbra_transaction::ActionView::Ics20Withdrawal(withdrawal) => {
+                    let unit = withdrawal.denom.best_unit_for(withdrawal.amount);
+                    action = format!(
+                        "{}{} via {} to {}",
+                        unit.format_value(withdrawal.amount),
+                        unit,
+                        withdrawal.source_channel,
+                        withdrawal.destination_chain_address,
+                    );
+                    ["Ics20 Withdrawal", &action]
+                }
+                penumbra_transaction::ActionView::PositionOpen(position_open) => {
+                    let position = &position_open.position;
+                    /* TODO: leaving this around since we may want it to render prices
+                    let _unit_pair = DirectedUnitPair {
+                        start: unit_1.clone(),
+                        end: unit_2.clone(),
+                    };
+                    */
+
+                    action = format!(
+                        "Reserves: ({} {}, {} {}) Fee: {} ID: {}",
+                        position.reserves.r1,
+                        position.phi.pair.asset_1(),
+                        position.reserves.r2,
+                        position.phi.pair.asset_2(),
+                        position.phi.component.fee,
+                        position.id(),
+                    );
+                    ["Open Liquidity Position", &action]
+                }
+                penumbra_transaction::ActionView::PositionClose(_) => {
+                    ["Close Liquitity Position", ""]
+                }
+                penumbra_transaction::ActionView::PositionWithdraw(_) => {
+                    ["Withdraw Liquitity Position", ""]
+                }
+                penumbra_transaction::ActionView::PositionRewardClaim(_) => {
+                    ["Claim Liquitity Position Reward", ""]
+                }
+                penumbra_transaction::ActionView::ProposalDepositClaim(proposal_deposit_claim) => {
+                    action = format!(
+                        "Claim Deposit for Governance Proposal #{}",
+                        proposal_deposit_claim.proposal
+                    );
+                    [&action, ""]
+                }
+                penumbra_transaction::ActionView::ProposalSubmit(proposal_submit) => {
+                    action = format!(
+                        "Submit Governance Proposal #{}",
+                        proposal_submit.proposal.id
+                    );
+                    [&action, ""]
+                }
+                penumbra_transaction::ActionView::ProposalWithdraw(proposal_withdraw) => {
+                    action = format!(
+                        "Withdraw Governance Proposal #{}",
+                        proposal_withdraw.proposal
+                    );
+                    [&action, ""]
+                }
+                penumbra_transaction::ActionView::IbcRelay(_) => ["IBC Relay", ""],
+                penumbra_transaction::ActionView::DelegatorVote(_) => ["Delegator Vote", ""],
+                penumbra_transaction::ActionView::ValidatorDefinition(_) => {
+                    ["Upload Validator Definition", ""]
+                }
+                penumbra_transaction::ActionView::ValidatorVote(_) => ["Validator Vote", ""],
+                penumbra_transaction::ActionView::DaoDeposit(_) => ["DAO Deposit", ""],
+                penumbra_transaction::ActionView::DaoSpend(_) => ["DAO Spend", ""],
+                penumbra_transaction::ActionView::DaoOutput(_) => ["DAO Output", ""],
+                penumbra_transaction::ActionView::Delegate(_) => ["Delegation", ""],
+                penumbra_transaction::ActionView::Undelegate(_) => ["Undelegation", ""],
+                penumbra_transaction::ActionView::UndelegateClaim(_) => ["Undelegation Claim", ""],
             };
 
             actions_table.add_row(row);
@@ -200,35 +363,3 @@ impl TransactionViewExt for TransactionView {
         println!("{actions_table}");
     }
 }
-
-/*
-                penumbra_transaction::ActionView::Swap(swap) => {
-                    match swap {
-                        SwapView::Visible {
-                            swap: _,
-                            swap_plaintext: _,
-                        } => ["visible", "swap"],
-                        SwapView::Opaque { swap: _ } => ["opaque", "swap"],
-                    }
-                }
-                penumbra_transaction::ActionView::SwapClaim(_av) => ["okie doke", "swap plaintext"],
-penumbra_transaction::ActionView::Spend(av) => ["temp", "test"],
-penumbra_transaction::ActionView::Delegate(av) => ["temp", "test"],
-penumbra_transaction::ActionView::Undelegate(av) => ["temp", "test"],
-penumbra_transaction::ActionView::UndelegateClaim(av) => ["temp", "test"],
-penumbra_transaction::ActionView::IbcAction(av) => ["temp", "test"],
-penumbra_transaction::ActionView::ProposalSubmit(av) => ["temp", "test"],
-penumbra_transaction::ActionView::ProposalWithdraw(av) => ["temp", "test"],
-penumbra_transaction::ActionView::ProposalDepositClaim(av) => ["temp", "test"],
-penumbra_transaction::ActionView::ValidatorVote(av) => ["temp", "test"],
-penumbra_transaction::ActionView::DelegatorVote(av) => ["temp", "test"],
-penumbra_transaction::ActionView::PositionOpen(av) => ["temp", "test"],
-penumbra_transaction::ActionView::PositionClose(av) => ["temp", "test"],
-penumbra_transaction::ActionView::PositionWithdraw(av) => ["temp", "test"],
-penumbra_transaction::ActionView::PositionRewardClaim(av) => ["temp", "test"],
-penumbra_transaction::ActionView::Ics20Withdrawal(i) => ["temp", "test"],
-penumbra_transaction::ActionView::DaoDeposit(av) => ["temp", "test"],
-penumbra_transaction::ActionView::DaoSpend(av) => ["temp", "test"],
-penumbra_transaction::ActionView::DaoOutput(av) => ["temp", "test"],
-
-*/
