@@ -1,13 +1,7 @@
 use comfy_table::presets;
 use comfy_table::Table;
-use penumbra_asset::asset::Cache;
 use penumbra_asset::ValueView;
-use penumbra_dex::swap::SwapView;
-use penumbra_keys::keys::IncomingViewingKey;
-use penumbra_keys::Address;
 use penumbra_keys::AddressView;
-use penumbra_keys::FullViewingKey;
-use penumbra_shielded_pool::NoteView;
 use penumbra_shielded_pool::SpendView;
 use penumbra_transaction::view::action_view::OutputView;
 use penumbra_transaction::TransactionView;
@@ -128,10 +122,13 @@ impl TransactionViewExt for TransactionView {
                 } => {
                     println!("⠿ Memo Sender: {}", &plaintext.return_address.address());
                     println!("⠿ Memo Text: \n{}\n", &plaintext.text);
-                },
+                }
                 penumbra_transaction::MemoView::Opaque { ciphertext } => {
-                    println!("⠿ Encrypted Memo: \n{}\n", format_opaque_bytes(&ciphertext.0));
-                },
+                    println!(
+                        "⠿ Encrypted Memo: \n{}\n",
+                        format_opaque_bytes(&ciphertext.0)
+                    );
+                }
             }
         }
 
