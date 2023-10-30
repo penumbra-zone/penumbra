@@ -6,7 +6,7 @@ use penumbra_component::ActionHandler;
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
-    component::{app_handler::AppHandler, MsgHandler as LocalActionHandler},
+    component::{app_handler::AppHandler, MsgHandler as _},
     IbcAction, IbcActionWithHandler,
 };
 

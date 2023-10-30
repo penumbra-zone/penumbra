@@ -20,34 +20,32 @@ impl ActionHandler for Action {
     async fn check_stateless(&self, context: TransactionContext) -> Result<()> {
         match self {
             // These actions require a context
-            Action::SwapClaim(action) => action.check_stateless(context),
-            Action::Spend(action) => action.check_stateless(context),
-            Action::DelegatorVote(action) => action.check_stateless(context),
+            Action::SwapClaim(action) => action.check_stateless(context).await,
+            Action::Spend(action) => action.check_stateless(context).await,
+            Action::DelegatorVote(action) => action.check_stateless(context).await,
             // These actions don't require a context
-            Action::Delegate(action) => action.check_stateless(()),
-            Action::Undelegate(action) => action.check_stateless(()),
-            Action::UndelegateClaim(action) => action.check_stateless(()),
-            Action::ValidatorDefinition(action) => action.check_stateless(()),
-            Action::ValidatorVote(action) => action.check_stateless(()),
-            Action::PositionClose(action) => action.check_stateless(()),
-            Action::PositionOpen(action) => action.check_stateless(()),
-            Action::PositionRewardClaim(action) => action.check_stateless(()),
-            Action::PositionWithdraw(action) => action.check_stateless(()),
-            Action::ProposalSubmit(action) => action.check_stateless(()),
-            Action::ProposalWithdraw(action) => action.check_stateless(()),
-            Action::ProposalDepositClaim(action) => action.check_stateless(()),
-            Action::Swap(action) => action.check_stateless(()),
-            Action::Output(action) => action.check_stateless(()),
+            Action::Delegate(action) => action.check_stateless(()).await,
+            Action::Undelegate(action) => action.check_stateless(()).await,
+            Action::UndelegateClaim(action) => action.check_stateless(()).await,
+            Action::ValidatorDefinition(action) => action.check_stateless(()).await,
+            Action::ValidatorVote(action) => action.check_stateless(()).await,
+            Action::PositionClose(action) => action.check_stateless(()).await,
+            Action::PositionOpen(action) => action.check_stateless(()).await,
+            Action::PositionRewardClaim(action) => action.check_stateless(()).await,
+            Action::PositionWithdraw(action) => action.check_stateless(()).await,
+            Action::ProposalSubmit(action) => action.check_stateless(()).await,
+            Action::ProposalWithdraw(action) => action.check_stateless(()).await,
+            Action::ProposalDepositClaim(action) => action.check_stateless(()).await,
+            Action::Swap(action) => action.check_stateless(()).await,
+            Action::Output(action) => action.check_stateless(()).await,
             Action::IbcAction(action) => {
-                let action = action.clone().with_handler::<Ics20Transfer>(); 
-                action.check_stateless(())
-            },
-            Action::Ics20Withdrawal(action) => action.check_stateless(()),
-            Action::DaoSpend(action) => action.check_stateless(()),
-            Action::DaoOutput(action) => action.check_stateless(()),
-            Action::DaoDeposit(action) => action.check_stateless(()),
+                action.clone().with_handler::<Ics20Transfer>().check_stateless(()).await
+            }, 
+            Action::Ics20Withdrawal(action) => action.check_stateless(()).await,
+            Action::DaoSpend(action) => action.check_stateless(()).await,
+            Action::DaoOutput(action) => action.check_stateless(()).await,
+            Action::DaoDeposit(action) => action.check_stateless(()).await,
         }
-        .await
     }
 
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
@@ -74,7 +72,7 @@ impl ActionHandler for Action {
                     anyhow::bail!("transaction contains IBC actions, but IBC is not enabled");
                 }
 
-                action.with_handler::<Ics20Transfer>().check_stateful(state).await
+                action.clone().with_handler::<Ics20Transfer>().check_stateful(state).await
             }
             Action::Ics20Withdrawal(action) => action.check_stateful(state).await,
             Action::DaoSpend(action) => action.check_stateful(state).await,
@@ -102,7 +100,7 @@ impl ActionHandler for Action {
             Action::SwapClaim(action) => action.execute(state).await,
             Action::Spend(action) => action.execute(state).await,
             Action::Output(action) => action.execute(state).await,
-            Action::IbcAction(action) => action.with_handler::<Ics20Transfer>().execute(state).await,
+            Action::IbcAction(action) => action.clone().with_handler::<Ics20Transfer>().execute(state).await,
             Action::Ics20Withdrawal(action) => action.execute(state).await,
             Action::DaoSpend(action) => action.execute(state).await,
             Action::DaoOutput(action) => action.execute(state).await,
