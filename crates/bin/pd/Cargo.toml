@@ -10,7 +10,7 @@ license = "MIT OR Apache-2.0"
 publish = false
 # Pin a MSRV. Anything more recent than this value is OK.
 # If a lower version is used for build, the build will fail.
-rust-version = "1.65"
+rust-version = "1.73"
 
 [features]
 std = ["ibc-types/std"]
