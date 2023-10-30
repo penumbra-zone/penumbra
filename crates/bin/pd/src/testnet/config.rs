@@ -2,8 +2,8 @@ use anyhow::Context;
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
 use directories::UserDirs;
 use penumbra_app::genesis::AppState;
+use penumbra_custody::soft_kms::Config as SoftKmsConfig;
 use penumbra_keys::keys::{SpendKey, SpendKeyBytes};
-use penumbra_wallet::KeyStore;
 use rand::Rng;
 use rand_core::OsRng;
 use regex::{Captures, Regex};
@@ -125,11 +125,12 @@ impl TestnetTendermintConfig {
         let validator_spend_key_filepath = cb_config_dir.clone().join("validator_custody.json");
         tracing::debug!(validator_spend_key_filepath = %validator_spend_key_filepath.display(), "writing validator custody file");
         let mut validator_spend_key_file = File::create(validator_spend_key_filepath)?;
-        let validator_wallet = KeyStore {
-            spend_key: v.keys.validator_spend_key.clone().into(),
-        };
+        let validator_wallet = SoftKmsConfig::from(
+            SpendKey::try_from(v.keys.validator_spend_key.clone())
+                .expect("spend key should be valid"),
+        );
         validator_spend_key_file
-            .write_all(serde_json::to_string_pretty(&validator_wallet)?.as_bytes())?;
+            .write_all(toml::to_string_pretty(&validator_wallet)?.as_bytes())?;
 
         Ok(())
     }

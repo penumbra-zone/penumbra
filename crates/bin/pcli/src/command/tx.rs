@@ -272,8 +272,11 @@ impl TxCmd {
                 let to = to
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
-                let memo_ephemeral_address =
-                    app.fvk.ephemeral_address(OsRng, AddressIndex::new(*from)).0;
+                let memo_ephemeral_address = app
+                    .config
+                    .full_viewing_key
+                    .ephemeral_address(OsRng, AddressIndex::new(*from))
+                    .0;
 
                 let memo_plaintext = MemoPlaintext {
                     sender: memo_ephemeral_address,
@@ -291,7 +294,7 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
+                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*from),
                     )
                     .await
@@ -314,7 +317,7 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
+                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -322,7 +325,7 @@ impl TxCmd {
             }
             TxCmd::Sweep => loop {
                 let plans = plan::sweep(
-                    app.fvk.wallet_id(),
+                    app.config.full_viewing_key.wallet_id(),
                     app.view
                         .as_mut()
                         .context("view service must be initialized")?,
@@ -352,7 +355,7 @@ impl TxCmd {
                 let input = input.parse::<Value>()?;
                 let into = asset::REGISTRY.parse_unit(into.as_str()).base();
 
-                let fvk = app.fvk.clone();
+                let fvk = app.config.full_viewing_key.clone();
 
                 // If a source address was specified, use it for the swap, otherwise,
                 // use the default address.
@@ -376,7 +379,7 @@ impl TxCmd {
                 );
                 planner.swap(input, into.id(), estimated_claim_fee, claim_address)?;
 
-                let wallet_id = app.fvk.wallet_id();
+                let wallet_id = app.config.full_viewing_key.wallet_id();
                 let plan = planner
                     .plan(app.view(), wallet_id, AddressIndex::new(*source))
                     .await
@@ -420,7 +423,7 @@ impl TxCmd {
                     .format(&asset_cache),
                 );
 
-                let wallet_id = app.fvk.wallet_id();
+                let wallet_id = app.config.full_viewing_key.wallet_id();
 
                 let params = app
                     .view
@@ -469,7 +472,7 @@ impl TxCmd {
 
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
-                let wallet_id = app.fvk.wallet_id().clone();
+                let wallet_id = app.config.full_viewing_key.wallet_id().clone();
                 let plan = planner
                     .delegate(unbonded_amount.value(), rate_data)
                     .plan(app.view(), wallet_id, AddressIndex::new(*source))
@@ -513,7 +516,7 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
+                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await
@@ -522,7 +525,7 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::UndelegateClaim {} => {
-                let wallet_id = app.fvk.wallet_id(); // this should be optional? or saved in the client statefully?
+                let wallet_id = app.config.full_viewing_key.wallet_id(); // this should be optional? or saved in the client statefully?
 
                 let channel = app.pd_channel().await?;
                 let view: &mut dyn ViewClient = app
@@ -612,7 +615,7 @@ impl TxCmd {
                                 app.view
                                     .as_mut()
                                     .context("view service must be initialized")?,
-                                app.fvk.wallet_id(),
+                                app.config.full_viewing_key.wallet_id(),
                                 address_index,
                             )
                             .await?;
@@ -644,7 +647,7 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
+                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -663,7 +666,7 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
+                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -743,7 +746,7 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
+                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -809,7 +812,7 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
+                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -832,7 +835,7 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
+                        app.config.full_viewing_key.wallet_id(),
                         source,
                     )
                     .await?;
@@ -850,7 +853,8 @@ impl TxCmd {
 
                 let fee = Fee::from_staking_token_amount(Amount::zero());
                 let (ephemeral_return_address, _) = app
-                    .fvk
+                    .config
+                    .full_viewing_key
                     .ephemeral_address(OsRng, AddressIndex::from(*source));
 
                 // get the current time on the local machine
@@ -904,7 +908,7 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
+                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -924,7 +928,7 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
+                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -965,7 +969,7 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
+                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -1042,7 +1046,7 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
+                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -1095,7 +1099,7 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.fvk.wallet_id(),
+                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;

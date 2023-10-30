@@ -1,6 +1,6 @@
 mod ceremony;
 mod debug;
-mod keys;
+mod init;
 mod query;
 mod tx;
 mod utils;
@@ -8,7 +8,7 @@ mod validator;
 mod view;
 
 pub use debug::DebugCmd;
-pub use keys::KeysCmd;
+pub use init::InitCmd;
 pub use query::QueryCmd;
 pub use tx::TxCmd;
 pub use validator::ValidatorCmd;
@@ -31,6 +31,13 @@ use self::ceremony::CeremonyCmd;
 // https://docs.rs/clap/latest/clap/builder/struct.App.html#method.display_order
 #[derive(Debug, clap::Subcommand)]
 pub enum Command {
+    /// Initialize `pcli` with a new wallet, or reset it.
+    ///
+    /// This command requires selecting a custody backend.  The `SoftKMS`
+    /// backend is a good default choice.  More backends (e.g., threshold
+    /// custody, hardware wallets) may be added in the future.
+    #[clap(display_order = 100)]
+    Init(InitCmd),
     /// Query the public chain state, like the validator set.
     ///
     /// This command has two modes: it can be used to query raw bytes of
@@ -44,9 +51,6 @@ pub enum Command {
     /// Create and broadcast a transaction.
     #[clap(subcommand, display_order = 400, visible_alias = "tx")]
     Transaction(TxCmd),
-    /// Manage your wallet's keys.
-    #[clap(subcommand, display_order = 500)]
-    Keys(KeysCmd),
     /// Manage a validator.
     #[clap(subcommand, display_order = 900)]
     Validator(ValidatorCmd),
@@ -62,9 +66,9 @@ impl Command {
     /// Determine if this command can run in "offline" mode.
     pub fn offline(&self) -> bool {
         match self {
+            Command::Init(_) => true,
             Command::Transaction(cmd) => cmd.offline(),
             Command::View(cmd) => cmd.offline(),
-            Command::Keys(cmd) => cmd.offline(),
             Command::Validator(cmd) => cmd.offline(),
             Command::Query(cmd) => cmd.offline(),
             Command::Debug(cmd) => cmd.offline(),

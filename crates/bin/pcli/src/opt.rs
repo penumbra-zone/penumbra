@@ -1,5 +1,6 @@
 use crate::{
-    box_grpc_svc::{self, BoxGrpcService},
+    box_grpc_svc,
+    config::{CustodyConfig, PcliConfig},
     App, Command,
 };
 use anyhow::Result;
@@ -7,7 +8,6 @@ use camino::Utf8PathBuf;
 use clap::Parser;
 use directories::ProjectDirs;
 use penumbra_custody::soft_kms::SoftKms;
-use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     custody::v1alpha1::{
         custody_protocol_service_client::CustodyProtocolServiceClient,
@@ -19,9 +19,7 @@ use penumbra_proto::{
     },
 };
 use penumbra_view::ViewService;
-use penumbra_wallet::KeyStore;
 use tracing_subscriber::EnvFilter;
-use url::Url;
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -30,34 +28,18 @@ use url::Url;
     version = env!("VERGEN_GIT_SEMVER"),
 )]
 pub struct Opt {
-    /// The remote URL of the pd gRPC endpoint
-    #[clap(
-        short,
-        long,
-        default_value = "https://grpc.testnet.penumbra.zone",
-        env = "PENUMBRA_NODE_PD_URL",
-        parse(try_from_str = Url::parse),
-    )]
-    node: Url,
     #[clap(subcommand)]
     pub cmd: Command,
     /// The home directory used to store configuration and data.
     #[clap(long, default_value_t = default_home(), env = "PENUMBRA_PCLI_HOME")]
     pub home: Utf8PathBuf,
-    /// If set, use a remote view service instead of local synchronization.
-    /// Should be specified as a URL, e.g. http://127.0.0.1:8081.
-    #[clap(short, long, env = "PENUMBRA_VIEW_ADDRESS")]
-    view_address: Option<Url>,
-    /// The filter for `pcli`'s log messages.
-    #[clap( long, default_value_t = EnvFilter::new("warn"), env = "RUST_LOG")]
-    tracing_filter: EnvFilter,
 }
 
 impl Opt {
     pub fn init_tracing(&mut self) {
         tracing_subscriber::fmt()
             .with_env_filter(
-                std::mem::take(&mut self.tracing_filter)
+                EnvFilter::from_default_env()
                     // Without explicitly disabling the `r1cs` target, the ZK proof implementations
                     // will spend an enormous amount of CPU and memory building useless tracing output.
                     .add_directive(
@@ -70,61 +52,67 @@ impl Opt {
             .init();
     }
 
+    pub fn load_config(&self) -> Result<PcliConfig> {
+        let path = self.home.join(crate::CONFIG_FILE_NAME);
+        PcliConfig::load(path)
+    }
+
     pub async fn into_app(self) -> Result<(App, Command)> {
-        let home = self.home.clone();
-        let custody_path = home.join(crate::CUSTODY_FILE_NAME);
+        let config = self.load_config()?;
 
         // Build the custody service...
-        let wallet = KeyStore::load(custody_path)?;
-        let soft_kms = SoftKms::new(wallet.spend_key.clone().into());
-        let custody_svc = CustodyProtocolServiceServer::new(soft_kms);
-        let custody = CustodyProtocolServiceClient::new(box_grpc_svc::local(custody_svc));
-
-        let fvk = wallet.spend_key.full_viewing_key().clone();
-
-        // ...and the view service...
-        let view = if !self.cmd.offline() {
-            Some(self.view_client(&fvk).await?)
-        } else {
-            None
+        let custody = match &config.custody {
+            CustodyConfig::ViewOnly => {
+                tracing::info!("using view-only custody service");
+                let null_kms = penumbra_custody::null_kms::NullKms::default();
+                let custody_svc = CustodyProtocolServiceServer::new(null_kms);
+                CustodyProtocolServiceClient::new(box_grpc_svc::local(custody_svc))
+            }
+            CustodyConfig::SoftKms(config) => {
+                tracing::info!("using software KMS custody service");
+                let soft_kms = SoftKms::new(config.clone());
+                let custody_svc = CustodyProtocolServiceServer::new(soft_kms);
+                CustodyProtocolServiceClient::new(box_grpc_svc::local(custody_svc))
+            }
         };
 
-        let pd_url = self.node;
+        // ...and the view service...
+        let view = match (self.cmd.offline(), &config.view_url) {
+            // In offline mode, don't construct a view service at all.
+            (true, _) => None,
+            (false, Some(view_url)) => {
+                // Use a remote view service.
+                tracing::info!(%view_url, "using remote view service");
+
+                let ep = tonic::transport::Endpoint::new(view_url.to_string())?;
+                Some(ViewProtocolServiceClient::new(
+                    box_grpc_svc::connect(ep).await?,
+                ))
+            }
+            (false, None) => {
+                // Use an in-memory view service.
+                let path = self.home.join(crate::VIEW_FILE_NAME);
+                tracing::info!(%path, "using local view service");
+
+                let svc = ViewService::load_or_initialize(
+                    Some(path),
+                    &config.full_viewing_key,
+                    config.grpc_url.clone(),
+                )
+                .await?;
+
+                // Now build the view and custody clients, doing gRPC with ourselves
+                let svc = ViewProtocolServiceServer::new(svc);
+                Some(ViewProtocolServiceClient::new(box_grpc_svc::local(svc)))
+            }
+        };
 
         let app = App {
             view,
             custody,
-            fvk,
-            wallet,
-            pd_url,
+            config,
         };
         Ok((app, self.cmd))
-    }
-
-    /// Constructs a [`ViewProtocolServiceClient`] based on the command-line options.
-    async fn view_client(
-        &self,
-        fvk: &FullViewingKey,
-    ) -> Result<ViewProtocolServiceClient<BoxGrpcService>> {
-        let svc = if let Some(address) = self.view_address.clone() {
-            // Use a remote view service.
-            tracing::info!(%address, "using remote view service");
-
-            let ep = tonic::transport::Endpoint::new(address.to_string())?;
-            box_grpc_svc::connect(ep).await?
-        } else {
-            // Use an in-memory view service.
-            let path = self.home.join(crate::VIEW_FILE_NAME);
-            tracing::info!(%path, "using local view service");
-
-            let svc = ViewService::load_or_initialize(Some(path), fvk, self.node.clone()).await?;
-
-            // Now build the view and custody clients, doing gRPC with ourselves
-            let svc = ViewProtocolServiceServer::new(svc);
-            box_grpc_svc::local(svc)
-        };
-
-        Ok(ViewProtocolServiceClient::new(svc))
     }
 }
 

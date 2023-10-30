@@ -12,6 +12,7 @@ mod client;
 mod pre_auth;
 mod request;
 
+pub mod null_kms;
 pub mod policy;
 pub mod soft_kms;
 
