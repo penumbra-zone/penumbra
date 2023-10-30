@@ -55,15 +55,15 @@ fn load_wallet_into_tmpdir() -> TempDir {
         .args([
             "--home",
             tmpdir.path().to_str().unwrap(),
-            "keys",
-            "import",
-            "phrase",
+            "init",
+            "soft-kms",
+            "import-phrase",
         ])
         .write_stdin(SEED_PHRASE)
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     setup_cmd
         .assert()
-        .stdout(predicate::str::contains("Saving backup wallet"));
+        .stdout(predicate::str::contains("Writing generated configs"));
 
     tmpdir
 }
