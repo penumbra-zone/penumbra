@@ -59,6 +59,8 @@ spec:
             allowPrivilegeEscalation: true
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- toYaml $.Values.containerEnv | nindent 12 }}
           command:
             - sh
             - -c
