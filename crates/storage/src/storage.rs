@@ -4,8 +4,8 @@ use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 
 use anyhow::{bail, Result};
 use jmt::{
-    storage::{LeafNode, NodeKey, TreeWriter},
-    KeyHash, Sha256Jmt,
+    storage::{LeafNode, NodeKey},
+    KeyHash,
 };
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
@@ -19,7 +19,6 @@ use crate::{
         multistore::MultistoreConfig,
         substore::{SubstoreConfig, SubstoreSnapshot, SubstoreStorage},
     },
-    EscapedByteSlice,
 };
 use crate::{snapshot_cache::SnapshotCache, StateDelta};
 
@@ -230,15 +229,19 @@ impl Storage {
                 db: self.0.db.clone(),
             };
 
+            let substore_storage = SubstoreStorage {
+                snapshot: substore_snapshot,
+                config: substore_config.clone(),
+                db: self.0.db.clone(),
+            };
+
             // TODO(erwan): we want to atomically write the changes to the substore, and then write the root hash to the jmt
             // to do this we probably will have to pass a transaction object to the commit routine.
             let Some(changeset) = changes_by_substore.remove(substore_config) else {
                 continue;
             };
 
-            let root_hash = self
-                .commit_inner_substore(substore_snapshot, changeset, new_version)
-                .await?;
+            let root_hash = substore_storage.commit(changeset, new_version).await?;
 
             substore_roots.push((substore_config, root_hash));
         }
@@ -261,8 +264,15 @@ impl Storage {
             version: new_version,
             db: self.0.db.clone(),
         };
-        let global_root_hash = self
-            .commit_inner_substore(main_store_snapshot, main_store_changes, new_version)
+
+        let main_store_storage = SubstoreStorage {
+            config: main_store_snapshot.config.clone(),
+            snapshot: main_store_snapshot,
+            db: self.0.db.clone(),
+        };
+
+        let global_root_hash = main_store_storage
+            .commit(main_store_changes, new_version)
             .await?;
 
         /* hydrate the snapshot cache */
@@ -310,84 +320,6 @@ impl Storage {
             .await
     }
 
-    /// TODO(erwan): this is possibly cleaner as a `SubstoreConfig::commit`
-    /// but first we need to decide what is the correct resolution for `TreeWriter`.
-    async fn commit_inner_substore(
-        &self,
-        substore_snapshot: SubstoreSnapshot,
-        cache: Cache,
-        new_version: jmt::Version,
-    ) -> Result<crate::RootHash> {
-        let span = Span::current();
-        let inner = self.0.clone();
-
-        tokio::task::Builder::new()
-            .name("Storage::commit_inner_substore")
-            .spawn_blocking(move || {
-                span.in_scope(|| {
-                    let jmt = Sha256Jmt::new(&substore_snapshot);
-
-                    // TODO(erwan): this could be folded with sharding the changesets.
-                    let unwritten_changes: Vec<_> = cache
-                        .unwritten_changes
-                        .into_iter()
-                        .map(|(key, some_value)| (KeyHash::with::<sha2::Sha256>(&key), key, some_value))
-                        .collect();
-
-                    let cf_jmt_keys = substore_snapshot.config.cf_jmt_keys(&inner.db);
-                    let cf_jmt_keys_by_keyhash = substore_snapshot.config.cf_jmt_keys_by_keyhash(&inner.db);
-
-                    /* Keyhash and pre-image indices */
-                    for (keyhash, key_preimage, value) in unwritten_changes.iter() {
-                        match value {
-                            Some(_) => { /* Key inserted, or updated, so we add it to the keyhash index */
-                                inner.db.put_cf(cf_jmt_keys, key_preimage, keyhash.0)?;
-                                inner
-                                    .db
-                                    .put_cf(cf_jmt_keys_by_keyhash, keyhash.0, key_preimage)?
-                            }
-                            None => { /* Key deleted, so we delete it from the preimage and keyhash index entries */
-                                inner.db.delete_cf(cf_jmt_keys, key_preimage)?;
-                                inner.db.delete_cf(cf_jmt_keys_by_keyhash, keyhash.0)?;
-                            }
-                        };
-                    }
-
-                    let (root_hash, batch) = jmt.put_value_set(
-                        unwritten_changes.into_iter().map(|(keyhash, _key, some_value)| (keyhash, some_value)),
-                        new_version,
-                    )?;
-
-                    let substore_storage = SubstoreStorage {
-                        config: substore_snapshot.config.clone(),
-                        db: inner.db.clone(),
-                    };
-
-                    substore_storage.write_node_batch(&batch.node_batch)?;
-                    // substore_snapshot.write_node_batch(&batch.node_batch)?;
-                    tracing::trace!(?root_hash, "wrote node batch to backing store");
-
-                    // Write the unwritten changes from the nonverifiable to RocksDB.
-                    for (k, v) in cache.nonverifiable_changes.into_iter() {
-
-                        let cf_nonverifiable = substore_snapshot.config.cf_nonverifiable(&inner.db);
-                        match v {
-                            Some(v) => {
-                                tracing::trace!(key = ?EscapedByteSlice(&k), value = ?EscapedByteSlice(&v), "put nonverifiable key");
-                                inner.db.put_cf(cf_nonverifiable, k, &v)?;
-                            }
-                            None => {
-                                inner.db.delete_cf(cf_nonverifiable, k)?;
-                            }
-                        };
-                    }
-
-
-                    Ok(root_hash)
-                })
-            })?
-            .await?
-    }
     #[cfg(feature = "migration")]
     /// Commits the provided [`StateDelta`] to persistent storage without increasing the version
     /// of the chain state.
