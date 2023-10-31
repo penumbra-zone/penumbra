@@ -101,7 +101,7 @@ impl CeremonyCmd {
                 bid,
             } => {
                 println!("¸,ø¤º°` initiating summoning participation `°º¤ø,¸");
-                println!("submitting bid for contribution slot: {}", bid);
+
                 let index = match *phase {
                     1 => AddressIndex {
                         account: 0,
@@ -113,8 +113,14 @@ impl CeremonyCmd {
                     },
                     _ => anyhow::bail!("phase must be 1 or 2."),
                 };
-                handle_bid(app, *coordinator_address, index, bid).await?;
                 let address = app.config.full_viewing_key.payment_address(index).0;
+
+                println!(
+                    "submitting bid {} for contribution slot from address {}",
+                    bid, address
+                );
+
+                handle_bid(app, *coordinator_address, index, bid).await?;
 
                 println!("connecting to coordinator...");
                 // After we bid, we need to wait a couple of seconds just for the transaction to be
