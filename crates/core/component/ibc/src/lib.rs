@@ -12,14 +12,14 @@ pub mod component;
 pub mod genesis;
 mod ibc_action;
 mod ibc_token;
-mod ics20_withdrawal;
+// mod ics20_withdrawal;
 pub mod params;
 mod version;
 
 pub use ibc_action::IbcAction;
 pub use ibc_action::IbcActionWithHandler;
 pub use ibc_token::IbcToken;
-pub use ics20_withdrawal::Ics20Withdrawal;
+// pub use ics20_withdrawal::Ics20Withdrawal;
 
 #[cfg_attr(docsrs, doc(cfg(feature = "component")))]
 #[cfg(feature = "component")]

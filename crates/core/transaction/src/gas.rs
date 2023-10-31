@@ -6,9 +6,9 @@ use penumbra_dex::{
     SwapClaim,
 };
 use penumbra_fee::Gas;
-use penumbra_ibc::{IbcAction, Ics20Withdrawal};
+use penumbra_ibc::IbcAction;
 use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{Output, Spend};
+use penumbra_shielded_pool::{Ics20Withdrawal, Output, Spend};
 use penumbra_stake::{
     validator::Definition as ValidatorDefinition, Delegate, Undelegate, UndelegateClaim,
 };

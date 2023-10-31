@@ -14,8 +14,8 @@ use penumbra_governance::{
     DelegatorVote, DelegatorVoteView, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
     ValidatorVote, VotingReceiptToken,
 };
-use penumbra_ibc::{IbcAction, Ics20Withdrawal};
-use penumbra_shielded_pool::{Note, Output, OutputView, Spend, SpendView};
+use penumbra_ibc::IbcAction;
+use penumbra_shielded_pool::{Ics20Withdrawal, Note, Output, OutputView, Spend, SpendView};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 
 use crate::{Action, ActionView, TransactionPerspective};

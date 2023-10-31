@@ -6,13 +6,10 @@ use ibc_types::core::{
 };
 use penumbra_storage::{StateRead, StateWrite};
 
-use crate::{
-    component::{
-        channel::{StateReadExt as _, StateWriteExt as _},
-        client::StateReadExt as _,
-        connection::StateReadExt as _,
-    },
-    Ics20Withdrawal,
+use crate::component::{
+    channel::{StateReadExt as _, StateWriteExt as _},
+    client::StateReadExt as _,
+    connection::StateReadExt as _,
 };
 
 pub trait CheckStatus: private::Sealed {}
@@ -44,6 +41,23 @@ pub struct IBCPacket<S: CheckStatus> {
 }
 
 impl IBCPacket<Unchecked> {
+    pub fn new(
+        source_port: PortId,
+        source_channel: ChannelId,
+        timeout_height: Height,
+        timeout_timestamp: u64,
+        data: Vec<u8>,
+    ) -> Self {
+        Self {
+            source_port,
+            source_channel,
+            timeout_height,
+            timeout_timestamp,
+            data,
+            m: std::marker::PhantomData,
+        }
+    }
+
     pub fn assume_checked(self) -> IBCPacket<Checked> {
         IBCPacket {
             source_port: self.source_port,
@@ -56,19 +70,19 @@ impl IBCPacket<Unchecked> {
     }
 }
 
-impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
-    fn from(withdrawal: Ics20Withdrawal) -> Self {
-        Self {
-            source_port: PortId::transfer(),
-            source_channel: withdrawal.source_channel.clone(),
-            timeout_height: withdrawal.timeout_height,
-            timeout_timestamp: withdrawal.timeout_time,
-            data: withdrawal.packet_data(),
+// impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
+//     fn from(withdrawal: Ics20Withdrawal) -> Self {
+//         Self {
+//             source_port: PortId::transfer(),
+//             source_channel: withdrawal.source_channel.clone(),
+//             timeout_height: withdrawal.timeout_height,
+//             timeout_timestamp: withdrawal.timeout_time,
+//             data: withdrawal.packet_data(),
 
-            m: std::marker::PhantomData,
-        }
-    }
-}
+//             m: std::marker::PhantomData,
+//         }
+//     }
+// }
 
 #[async_trait]
 pub trait SendPacketRead: StateRead {

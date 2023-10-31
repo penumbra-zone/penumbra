@@ -24,11 +24,11 @@ use penumbra_governance::{
     proposal_state::Outcome as ProposalOutcome, DelegatorVotePlan, Proposal, ProposalDepositClaim,
     ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
 };
-use penumbra_ibc::{IbcAction, Ics20Withdrawal};
+use penumbra_ibc::IbcAction;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
-use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
+use penumbra_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, SpendPlan};
 use penumbra_stake::{rate::RateData, validator};
 use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;

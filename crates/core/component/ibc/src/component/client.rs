@@ -366,7 +366,84 @@ mod tests {
     use crate::ibc_action::IbcActionWithHandler;
     use crate::IbcAction;
 
-    use crate::component::transfer::Ics20Transfer;
+    use crate::component::app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};
+    use ibc_types::core::channel::msgs::{
+        MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
+        MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket, MsgTimeout,
+    };
+
+    struct MockAppHandler {}
+
+    #[async_trait]
+    impl AppHandlerCheck for MockAppHandler {
+        async fn chan_open_init_check<S: StateRead>(
+            state: S,
+            msg: &MsgChannelOpenInit,
+        ) -> Result<()> {
+            Ok(())
+        }
+        async fn chan_open_try_check<S: StateRead>(
+            state: S,
+            msg: &MsgChannelOpenTry,
+        ) -> Result<()> {
+            Ok(())
+        }
+        async fn chan_open_ack_check<S: StateRead>(
+            state: S,
+            msg: &MsgChannelOpenAck,
+        ) -> Result<()> {
+            Ok(())
+        }
+        async fn chan_open_confirm_check<S: StateRead>(
+            state: S,
+            msg: &MsgChannelOpenConfirm,
+        ) -> Result<()> {
+            Ok(())
+        }
+        async fn chan_close_confirm_check<S: StateRead>(
+            state: S,
+            msg: &MsgChannelCloseConfirm,
+        ) -> Result<()> {
+            Ok(())
+        }
+        async fn chan_close_init_check<S: StateRead>(
+            state: S,
+            msg: &MsgChannelCloseInit,
+        ) -> Result<()> {
+            Ok(())
+        }
+
+        async fn recv_packet_check<S: StateRead>(state: S, msg: &MsgRecvPacket) -> Result<()> {
+            Ok(())
+        }
+        async fn timeout_packet_check<S: StateRead>(state: S, msg: &MsgTimeout) -> Result<()> {
+            Ok(())
+        }
+        async fn acknowledge_packet_check<S: StateRead>(
+            state: S,
+            msg: &MsgAcknowledgement,
+        ) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    #[async_trait]
+    impl AppHandlerExecute for MockAppHandler {
+        async fn chan_open_init_execute<S: StateWrite>(state: S, msg: &MsgChannelOpenInit) {}
+        async fn chan_open_try_execute<S: StateWrite>(state: S, msg: &MsgChannelOpenTry) {}
+        async fn chan_open_ack_execute<S: StateWrite>(state: S, msg: &MsgChannelOpenAck) {}
+        async fn chan_open_confirm_execute<S: StateWrite>(state: S, msg: &MsgChannelOpenConfirm) {}
+        async fn chan_close_confirm_execute<S: StateWrite>(state: S, msg: &MsgChannelCloseConfirm) {
+        }
+        async fn chan_close_init_execute<S: StateWrite>(state: S, msg: &MsgChannelCloseInit) {}
+
+        async fn recv_packet_execute<S: StateWrite>(state: S, msg: &MsgRecvPacket) {}
+        async fn timeout_packet_execute<S: StateWrite>(state: S, msg: &MsgTimeout) {}
+        async fn acknowledge_packet_execute<S: StateWrite>(state: S, msg: &MsgAcknowledgement) {}
+    }
+
+    #[async_trait]
+    impl AppHandler for MockAppHandler {}
 
     // test that we can create and update a light client.
     #[tokio::test]
@@ -436,10 +513,10 @@ mod tests {
 
         msg_update_stargaze_client.client_id = ClientId::from_str("07-tendermint-0").unwrap();
 
-        let create_client_action = IbcActionWithHandler::<Ics20Transfer>::new(
+        let create_client_action = IbcActionWithHandler::<MockAppHandler>::new(
             IbcAction::CreateClient(msg_create_stargaze_client),
         );
-        let update_client_action = IbcActionWithHandler::<Ics20Transfer>::new(
+        let update_client_action = IbcActionWithHandler::<MockAppHandler>::new(
             IbcAction::UpdateClient(msg_update_stargaze_client),
         );
 
@@ -467,7 +544,7 @@ mod tests {
         let mut second_update = MsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
         second_update.client_id = ClientId::from_str("07-tendermint-0").unwrap();
         let second_update_client_action =
-            IbcActionWithHandler::<Ics20Transfer>::new(IbcAction::UpdateClient(second_update));
+            IbcActionWithHandler::<MockAppHandler>::new(IbcAction::UpdateClient(second_update));
 
         second_update_client_action.check_stateless(()).await?;
         second_update_client_action

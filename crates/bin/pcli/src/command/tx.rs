@@ -18,7 +18,6 @@ use penumbra_asset::{asset, asset::DenomMetadata, Value, STAKING_TOKEN_ASSET_ID}
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_fee::Fee;
 use penumbra_governance::{proposal::ProposalToml, Vote};
-use penumbra_ibc::Ics20Withdrawal;
 use penumbra_keys::keys::AddressIndex;
 use penumbra_num::Amount;
 use penumbra_proto::{
@@ -42,6 +41,7 @@ use penumbra_proto::{
     },
     view::v1alpha1::GasPricesRequest,
 };
+use penumbra_shielded_pool::Ics20Withdrawal;
 use penumbra_stake::rate::RateData;
 use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
 use penumbra_transaction::{gas::swap_claim_gas_cost, memo::MemoPlaintext};

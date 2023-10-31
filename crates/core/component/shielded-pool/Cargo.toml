@@ -37,6 +37,7 @@ penumbra-tct = { path = "../../../crypto/tct" }
 penumbra-proof-params = { path = "../../../crypto/proof-params", default-features = false }
 penumbra-sct = { path = "../sct", default-features = false }
 penumbra-component = { path = "../component", optional = true }
+penumbra-ibc = { path = "../ibc" }
 penumbra-chain = { path = "../chain", default-features = false }
 penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-num = { path = "../../../core/num", default-features = false }
@@ -45,6 +46,7 @@ decaf377-ka = { path = "../../../crypto/decaf377-ka/" }
 decaf377-fmd = { path = "../../../crypto/decaf377-fmd/" }
 
 # Penumbra dependencies
+ibc-types = { version = "0.7.0", default-features = false }
 decaf377-rdsa = { version = "0.7" }
 decaf377 = { version = "0.5", features = ["r1cs"] }
 poseidon377 = { version = "0.6", features = ["r1cs"] }
@@ -60,7 +62,9 @@ ark-serialize = "0.4"
 ark-groth16 = { version = "0.4", default-features = false }
 ark-snark = "0.4"
 metrics = "0.19.0"
+prost = "0.12"
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 tracing = "0.1"
 anyhow = "1"
 async-trait = "0.1.52"

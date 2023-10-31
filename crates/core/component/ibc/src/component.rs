@@ -12,11 +12,11 @@ pub mod rpc;
 mod ibc_component;
 mod metrics;
 mod msg_handler;
-mod packet;
+pub mod packet;
 mod proof_verification;
-mod state_key;
+pub mod state_key;
 // TODO: move this to the shielded pool crate
-pub mod transfer;
+// pub mod transfer;
 mod view;
 
 use msg_handler::MsgHandler;
