@@ -5,7 +5,7 @@ use super::substore::SubstoreConfig;
 /// A collection of substore, each with a unique prefix.
 #[derive(Debug, Clone)]
 pub struct MultistoreConfig {
-    pub root_store: Arc<SubstoreConfig>,
+    pub main_store: Arc<SubstoreConfig>,
     pub substores: Vec<Arc<SubstoreConfig>>,
 }
 
@@ -18,7 +18,7 @@ impl MultistoreConfig {
             .iter()
             .find(|s| key.starts_with(&s.prefix.as_bytes()))
             .cloned()
-            .unwrap_or(self.root_store.clone())
+            .unwrap_or(self.main_store.clone())
     }
 
     /// Route the key to the correct substore, or the transparent store if no prefix matches.
@@ -45,7 +45,7 @@ impl MultistoreConfig {
 impl Default for MultistoreConfig {
     fn default() -> Self {
         Self {
-            root_store: Arc::new(SubstoreConfig::new("")),
+            main_store: Arc::new(SubstoreConfig::new("")),
             substores: vec![],
         }
     }

@@ -7,7 +7,7 @@ use anyhow::Result;
 use borsh::BorshDeserialize;
 use jmt::{
     storage::{HasPreimage, LeafNode, Node, NodeKey, TreeReader},
-    KeyHash,
+    KeyHash, RootHash,
 };
 use rocksdb::{ColumnFamily, IteratorMode, ReadOptions};
 
@@ -106,6 +106,10 @@ impl SubstoreConfig {
             "nonverifiable column family not found for prefix: {}, substore: {}",
             column, self.prefix
         ))
+    }
+
+    pub fn _commit<'s>(&self, _db_handle: &'s Arc<rocksdb::DB>) -> Result<RootHash> {
+        todo!()
     }
 }
 
