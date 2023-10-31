@@ -10,8 +10,11 @@ use jmt::{
     KeyHash, RootHash,
 };
 use rocksdb::{ColumnFamily, IteratorMode, ReadOptions};
+use tracing::Span;
 
 use crate::{snapshot::RocksDbSnapshot, storage::VersionedKeyHash, Cache};
+
+use jmt::storage::TreeWriter;
 
 #[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct SubstoreConfig {
@@ -279,17 +282,82 @@ impl HasPreimage for SubstoreSnapshot {
 }
 
 pub struct SubstoreStorage {
-    pub(crate) config: Arc<SubstoreConfig>,
     pub(crate) db: Arc<rocksdb::DB>,
+    pub(crate) config: Arc<SubstoreConfig>,
+    pub(crate) snapshot: SubstoreSnapshot,
 }
 
 impl SubstoreStorage {
-    pub async fn _commit(&self, _changeset: Cache, _new_version: jmt::Version) -> Result<RootHash> {
-        todo!()
+    pub async fn commit(self, cache: Cache, new_version: jmt::Version) -> Result<RootHash> {
+        let span = Span::current();
+        let db_handle = self.db.clone();
+        let substore_snapshot = SubstoreSnapshot {
+            config: self.config.clone(),
+            rocksdb_snapshot: self.snapshot.rocksdb_snapshot.clone(),
+            version: new_version,
+            db: self.db.clone(),
+        };
+
+        tokio::task::Builder::new()
+                .name("Storage::commit_inner_substore")
+                .spawn_blocking(move || {
+                    span.in_scope(|| {
+                        let jmt = jmt::Sha256Jmt::new(&substore_snapshot);
+                        // TODO(erwan): this could be folded with sharding the changesets.
+                        let unwritten_changes: Vec<_> = cache
+                            .unwritten_changes
+                            .into_iter()
+                            .map(|(key, some_value)| (KeyHash::with::<sha2::Sha256>(&key), key, some_value))
+                            .collect();
+                        let cf_jmt_keys = substore_snapshot.config.cf_jmt_keys(&db_handle);
+                        let cf_jmt_keys_by_keyhash = substore_snapshot.config.cf_jmt_keys_by_keyhash(&db_handle);
+
+                        /* Keyhash and pre-image indices */
+                        for (keyhash, key_preimage, value) in unwritten_changes.iter() {
+                            match value {
+                                Some(_) => { /* Key inserted, or updated, so we add it to the keyhash index */
+                                    db_handle.put_cf(cf_jmt_keys, key_preimage, keyhash.0)?;
+                                        db_handle
+                                        .put_cf(cf_jmt_keys_by_keyhash, keyhash.0, key_preimage)?
+                                }
+                                None => { /* Key deleted, so we delete it from the preimage and keyhash index entries */
+                                    db_handle.delete_cf(cf_jmt_keys, key_preimage)?;
+                                    db_handle.delete_cf(cf_jmt_keys_by_keyhash, keyhash.0)?;
+                                }
+                            };
+                        }
+
+                        let (root_hash, batch) = jmt.put_value_set(
+                            unwritten_changes.into_iter().map(|(keyhash, _key, some_value)| (keyhash, some_value)),
+                            new_version,
+                        )?;
+
+                        self.write_node_batch(&batch.node_batch)?;
+                        // substore_snapshot.write_node_batch(&batch.node_batch)?;
+                        tracing::trace!(?root_hash, "wrote node batch to backing store");
+
+                        // Write the unwritten changes from the nonverifiable to RocksDB.
+                        for (k, v) in cache.nonverifiable_changes.into_iter() {
+
+                            let cf_nonverifiable = substore_snapshot.config.cf_nonverifiable(&db_handle);
+                            match v {
+                                Some(v) => {
+                                    tracing::trace!(key = ?crate::EscapedByteSlice(&k), value = ?crate::EscapedByteSlice(&v), "put nonverifiable key");
+                                    db_handle.put_cf(cf_nonverifiable, k, &v)?;
+                                }
+                                None => {
+                                    db_handle.delete_cf(cf_nonverifiable, k)?;
+                                }
+                            };
+                        }
+                        Ok(root_hash)
+                    })
+                })?
+                .await?
     }
 }
 
-impl jmt::storage::TreeWriter for SubstoreStorage {
+impl TreeWriter for SubstoreStorage {
     /// Writes a [`NodeBatch`] into storage which includes the JMT
     /// nodes (`DbNodeKey` -> `Node`) and the JMT values,
     /// (`VersionedKeyHash` -> `Option<Vec<u8>>`).
