@@ -303,6 +303,7 @@ impl SubstoreStorage {
                 .spawn_blocking(move || {
                     span.in_scope(|| {
                         let jmt = jmt::Sha256Jmt::new(&substore_snapshot);
+
                         // TODO(erwan): this could be folded with sharding the changesets.
                         let unwritten_changes: Vec<_> = cache
                             .unwritten_changes
@@ -333,12 +334,9 @@ impl SubstoreStorage {
                         )?;
 
                         self.write_node_batch(&batch.node_batch)?;
-                        // substore_snapshot.write_node_batch(&batch.node_batch)?;
                         tracing::trace!(?root_hash, "wrote node batch to backing store");
 
-                        // Write the unwritten changes from the nonverifiable to RocksDB.
                         for (k, v) in cache.nonverifiable_changes.into_iter() {
-
                             let cf_nonverifiable = substore_snapshot.config.cf_nonverifiable(&db_handle);
                             match v {
                                 Some(v) => {
