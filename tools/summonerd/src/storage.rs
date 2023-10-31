@@ -2,10 +2,13 @@ use anyhow::Result;
 use camino::Utf8Path;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
-use penumbra_proof_setup::all::{
-    AllExtraTransitionInformation, Phase1CeremonyCRS, Phase1CeremonyContribution,
-    Phase1RawCeremonyCRS, Phase1RawCeremonyContribution, Phase2CeremonyCRS,
-    Phase2CeremonyContribution, Phase2RawCeremonyCRS, Phase2RawCeremonyContribution,
+use penumbra_proof_setup::{
+    all::{
+        AllExtraTransitionInformation, Phase1CeremonyCRS, Phase1CeremonyContribution,
+        Phase1RawCeremonyCRS, Phase1RawCeremonyContribution, Phase2CeremonyCRS,
+        Phase2CeremonyContribution, Phase2RawCeremonyCRS, Phase2RawCeremonyContribution,
+    },
+    single::log::Hashable,
 };
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::{
@@ -82,7 +85,7 @@ impl Storage {
         let tx = conn.transaction()?;
 
         tx.execute(
-            "INSERT INTO phase1_contributions VALUES (0, 1, ?1, NULL)",
+            "INSERT INTO phase1_contributions VALUES (0, 1, ?1, NULL, NULL)",
             [pb::CeremonyCrs::try_from(phase_1_root)?.encode_to_vec()],
         )?;
 
@@ -101,7 +104,7 @@ impl Storage {
         let tx = conn.transaction()?;
 
         tx.execute(
-            "INSERT INTO phase2_contributions VALUES (0, 1, ?1, NULL)",
+            "INSERT INTO phase2_contributions VALUES (0, 1, ?1, NULL, NULL)",
             [pb::CeremonyCrs::try_from(phase_2_root)?.encode_to_vec()],
         )?;
         tx.execute(
@@ -257,10 +260,12 @@ impl Storage {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let contributor_bytes = contributor.to_vec();
+        let hash = contribution.hash().as_ref().to_owned();
         tx.execute(
-            "INSERT INTO phase1_contributions VALUES(NULL, 0, ?1, ?2)",
+            "INSERT INTO phase1_contributions VALUES(NULL, 0, ?1, ?2, ?3)",
             [
                 PBContribution::try_from(contribution)?.encode_to_vec(),
+                hash,
                 contributor_bytes,
             ],
         )?;
@@ -276,10 +281,12 @@ impl Storage {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let contributor_bytes = contributor.to_vec();
+        let hash = contribution.hash().as_ref().to_owned();
         tx.execute(
-            "INSERT INTO phase2_contributions VALUES(NULL, 0, ?1, ?2)",
+            "INSERT INTO phase2_contributions VALUES(NULL, 0, ?1, ?2, ?3)",
             [
                 PBContribution::try_from(contribution)?.encode_to_vec(),
+                hash,
                 contributor_bytes,
             ],
         )?;

@@ -5,6 +5,8 @@ CREATE TABLE phase1_contributions (
     is_root INTEGER NOT NULL,
     -- If this is the root, will be just the elements, and not a full contribution
     contribution_or_crs BLOB NOT NULL,
+    -- NULL in the specific case that this is the root
+    hash BLOB,
     -- NULL in the specific case that this is the root 
     address BLOB
 );
@@ -16,6 +18,8 @@ CREATE TABLE phase2_contributions (
     is_root INTEGER NOT NULL,
     -- If this is the root, will be just the elements, and not a full contribution
     contribution_or_crs BLOB NOT NULL,
+    -- NULL in the specific case that this is the root
+    hash BLOB,
     -- NULL in the specific case that this is the root 
     address BLOB
 );
