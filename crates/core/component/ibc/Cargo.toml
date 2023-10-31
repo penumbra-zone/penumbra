@@ -11,7 +11,6 @@ component = [
     "penumbra-storage",
     "penumbra-proto/penumbra-storage",
     "penumbra-chain/component",
-    #"penumbra-shielded-pool/component",
 ]
 default = ["component", "std"]
 std = ["ibc-types/std"]
@@ -24,7 +23,6 @@ penumbra-proto = { path = "../../../proto", default-features = false }
 penumbra-storage = { path = "../../../storage", optional = true }
 penumbra-component = { path = "../component", optional = true }
 penumbra-chain = { path = "../chain", default-features = false }
-# penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-num = { path = "../../../core/num", default-features = false }
 penumbra-keys = { path = "../../../core/keys", default-features = false }
