@@ -32,6 +32,7 @@ use std::io::Read;
 use std::net::SocketAddr;
 use storage::Storage;
 use tonic::transport::Server;
+use tracing::Instrument;
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
 
@@ -175,9 +176,14 @@ impl Opt {
                         .await?;
                 let queue = ParticipantQueue::new();
                 let coordinator = Coordinator::new(storage.clone(), queue.clone());
+                let coordinator_span = tracing::error_span!("coordinator");
                 let coordinator_handle = match marker {
-                    PhaseMarker::P1 => tokio::spawn(coordinator.run::<Phase1>()),
-                    PhaseMarker::P2 => tokio::spawn(coordinator.run::<Phase2>()),
+                    PhaseMarker::P1 => {
+                        tokio::spawn(coordinator.run::<Phase1>().instrument(coordinator_span))
+                    }
+                    PhaseMarker::P2 => {
+                        tokio::spawn(coordinator.run::<Phase2>().instrument(coordinator_span))
+                    }
                 };
                 let service = CoordinatorService::new(knower, storage.clone(), queue, marker);
                 let grpc_server = Server::builder().add_service(

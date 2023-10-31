@@ -19,9 +19,9 @@ impl Coordinator {
     pub async fn run<P: Phase + 'static>(mut self) -> Result<()> {
         loop {
             let participant_count = self.queue.len().await;
-            tracing::debug!(
+            tracing::info!(
                 participant_count = participant_count,
-                "top of coordinator loop"
+                "starting ceremony round"
             );
             // 1. Inform all participants of their position
             self.queue.inform_all().await?;
@@ -33,12 +33,16 @@ impl Coordinator {
                 }
                 tokio::time::sleep(Duration::from_secs(QUEUE_SLEEP_TIME_SECS)).await;
             };
+            tracing::info!(
+                address = ?contributor.address().display_short_form(),
+                "requesting contribution from participant"
+            );
             // 3. Get their contribution, or time out.
             self.contribute::<P>(contributor).await?;
         }
     }
 
-    #[tracing::instrument(skip_all, fields(address = ?contributor.address()))]
+    #[tracing::instrument(skip_all, fields(address = ?contributor.address().display_short_form()))]
     async fn contribute<P: Phase>(&mut self, contributor: Participant) -> Result<()> {
         let address = contributor.address();
         match tokio::time::timeout(
@@ -57,7 +61,6 @@ impl Coordinator {
         }
     }
 
-    #[tracing::instrument(skip_all)]
     async fn contribute_inner<P: Phase>(&mut self, mut contributor: Participant) -> Result<()> {
         let address = contributor.address();
         let parent = P::current_crs(&self.storage)
@@ -65,7 +68,7 @@ impl Coordinator {
             .expect("the phase should've been initialized by now");
         let maybe = contributor.contribute::<P>(&parent).await?;
         if let Some(unvalidated) = maybe {
-            tracing::debug!("validating contribution");
+            tracing::info!("validating contribution");
             let root = P::fetch_root(&self.storage).await?;
             let maybe_contribution = tokio::task::spawn_blocking(move || {
                 if let Some(contribution) = P::validate(&root, unvalidated) {
@@ -76,6 +79,7 @@ impl Coordinator {
                 None
             })
             .await?;
+            tracing::info!("saving contribution");
             if let Some(contribution) = maybe_contribution {
                 P::commit_contribution(&self.storage, address, contribution).await?;
                 contributor
