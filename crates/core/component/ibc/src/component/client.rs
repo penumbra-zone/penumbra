@@ -377,51 +377,50 @@ mod tests {
     #[async_trait]
     impl AppHandlerCheck for MockAppHandler {
         async fn chan_open_init_check<S: StateRead>(
-            state: S,
-            msg: &MsgChannelOpenInit,
+            _state: S,
+            _msg: &MsgChannelOpenInit,
         ) -> Result<()> {
             Ok(())
         }
         async fn chan_open_try_check<S: StateRead>(
-            state: S,
-            msg: &MsgChannelOpenTry,
+            _state: S,
+            _msg: &MsgChannelOpenTry,
         ) -> Result<()> {
             Ok(())
         }
         async fn chan_open_ack_check<S: StateRead>(
-            state: S,
-            msg: &MsgChannelOpenAck,
+            _state: S,
+            _msg: &MsgChannelOpenAck,
         ) -> Result<()> {
             Ok(())
         }
         async fn chan_open_confirm_check<S: StateRead>(
-            state: S,
-            msg: &MsgChannelOpenConfirm,
+            _state: S,
+            _msg: &MsgChannelOpenConfirm,
         ) -> Result<()> {
             Ok(())
         }
         async fn chan_close_confirm_check<S: StateRead>(
-            state: S,
-            msg: &MsgChannelCloseConfirm,
+            _state: S,
+            _msg: &MsgChannelCloseConfirm,
         ) -> Result<()> {
             Ok(())
         }
         async fn chan_close_init_check<S: StateRead>(
-            state: S,
-            msg: &MsgChannelCloseInit,
+            _state: S,
+            _msg: &MsgChannelCloseInit,
         ) -> Result<()> {
             Ok(())
         }
-
-        async fn recv_packet_check<S: StateRead>(state: S, msg: &MsgRecvPacket) -> Result<()> {
+        async fn recv_packet_check<S: StateRead>(_state: S, _msg: &MsgRecvPacket) -> Result<()> {
             Ok(())
         }
-        async fn timeout_packet_check<S: StateRead>(state: S, msg: &MsgTimeout) -> Result<()> {
+        async fn timeout_packet_check<S: StateRead>(_state: S, _msg: &MsgTimeout) -> Result<()> {
             Ok(())
         }
         async fn acknowledge_packet_check<S: StateRead>(
-            state: S,
-            msg: &MsgAcknowledgement,
+            _state: S,
+            _msg: &MsgAcknowledgement,
         ) -> Result<()> {
             Ok(())
         }
@@ -429,17 +428,15 @@ mod tests {
 
     #[async_trait]
     impl AppHandlerExecute for MockAppHandler {
-        async fn chan_open_init_execute<S: StateWrite>(state: S, msg: &MsgChannelOpenInit) {}
-        async fn chan_open_try_execute<S: StateWrite>(state: S, msg: &MsgChannelOpenTry) {}
-        async fn chan_open_ack_execute<S: StateWrite>(state: S, msg: &MsgChannelOpenAck) {}
-        async fn chan_open_confirm_execute<S: StateWrite>(state: S, msg: &MsgChannelOpenConfirm) {}
-        async fn chan_close_confirm_execute<S: StateWrite>(state: S, msg: &MsgChannelCloseConfirm) {
-        }
-        async fn chan_close_init_execute<S: StateWrite>(state: S, msg: &MsgChannelCloseInit) {}
-
-        async fn recv_packet_execute<S: StateWrite>(state: S, msg: &MsgRecvPacket) {}
-        async fn timeout_packet_execute<S: StateWrite>(state: S, msg: &MsgTimeout) {}
-        async fn acknowledge_packet_execute<S: StateWrite>(state: S, msg: &MsgAcknowledgement) {}
+        async fn chan_open_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenInit) {}
+        async fn chan_open_try_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenTry) {}
+        async fn chan_open_ack_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenAck) {}
+        async fn chan_open_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenConfirm) {}
+        async fn chan_close_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseConfirm) {}
+        async fn chan_close_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseInit) {}
+        async fn recv_packet_execute<S: StateWrite>(_state: S, _msg: &MsgRecvPacket) {}
+        async fn timeout_packet_execute<S: StateWrite>(_state: S, _msg: &MsgTimeout) {}
+        async fn acknowledge_packet_execute<S: StateWrite>(_state: S, _msg: &MsgAcknowledgement) {}
     }
 
     #[async_trait]
