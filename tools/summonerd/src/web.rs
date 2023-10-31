@@ -19,10 +19,20 @@ pub struct WebAppState {
 pub fn web_app(storage: Storage) -> Router {
     let shared_state = Arc::new(WebAppState { storage });
 
-    Router::new().route("/", get(main_page).with_state(shared_state))
+    Router::new()
+        .route("/", get(main_page).with_state(shared_state.clone()))
+        .route("/phase/1", get(phase_1).with_state(shared_state.clone()))
+        .route("/phase/2", get(phase_2).with_state(shared_state))
 }
 
 pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoResponse {
+    // TODO: Grab from the database, so we will need the state
+    let phase_number = 1;
+    let template = MainTemplate { phase_number };
+    HtmlTemplate(template)
+}
+
+pub async fn phase_1(State(state): State<Arc<WebAppState>>) -> impl IntoResponse {
     // TODO: Also get info from queue
 
     let num_contributions_so_far_phase_1 = state
@@ -37,6 +47,16 @@ pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoRespon
         .await
         .expect("Can get top N contributors");
 
+    let template = Phase1Template {
+        num_contributions_so_far_phase_1,
+        recent_contributions_phase_1,
+    };
+    HtmlTemplate(template)
+}
+
+pub async fn phase_2(State(state): State<Arc<WebAppState>>) -> impl IntoResponse {
+    // TODO: Also get info from queue
+
     let num_contributions_so_far_phase_2 = state
         .storage
         .current_slot(PhaseMarker::P2)
@@ -49,10 +69,8 @@ pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoRespon
         .await
         .expect("Can get top N contributors");
 
-    let template = MainTemplate {
-        num_contributions_so_far_phase_1,
+    let template = Phase2Template {
         num_contributions_so_far_phase_2,
-        recent_contributions_phase_1,
         recent_contributions_phase_2,
     };
     HtmlTemplate(template)
@@ -61,10 +79,21 @@ pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoRespon
 #[derive(Template)]
 #[template(path = "main.html")]
 struct MainTemplate {
+    phase_number: u64,
+}
+
+#[derive(Template)]
+#[template(path = "phase1.html")]
+struct Phase1Template {
     num_contributions_so_far_phase_1: u64,
+    recent_contributions_phase_1: Vec<(String, String)>,
+}
+
+#[derive(Template)]
+#[template(path = "phase2.html")]
+struct Phase2Template {
     num_contributions_so_far_phase_2: u64,
     recent_contributions_phase_2: Vec<(String, String)>,
-    recent_contributions_phase_1: Vec<(String, String)>,
 }
 
 struct HtmlTemplate<T>(T);
