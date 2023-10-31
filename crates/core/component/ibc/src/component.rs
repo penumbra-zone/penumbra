@@ -1,5 +1,4 @@
 mod action_handler;
-pub mod app_handler;
 mod channel;
 mod client;
 mod client_counter;
@@ -15,6 +14,7 @@ mod msg_handler;
 mod proof_verification;
 mod view;
 
+pub mod app_handler;
 pub mod packet;
 pub mod state_key;
 
