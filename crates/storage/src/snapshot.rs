@@ -82,70 +82,13 @@ impl Snapshot {
             .await?
     }
 
-    /// Returns some value corresponding to the key, along with an ICS23 existence proof
-    /// up to the current JMT root hash. If the key is not present, returns `None` and a
-    /// non-existence proof.
-    pub async fn _get_with_proof_new_api(
-        &self,
-        key: Vec<u8>,
-    ) -> Result<(Option<Vec<u8>>, Vec<ics23::CommitmentProof>)> {
-        let span = tracing::Span::current();
-
-        let (_, substore_config) = self.0.multistore.route_key_bytes(&key);
-        let substore = store::substore::SubstoreSnapshot {
-            config: substore_config.clone(),
-            rocksdb_snapshot: self.0.snapshot.clone(),
-            version: self.version(),
-            db: self.0.db.clone(),
-        };
-
-        let prefix = substore_config.prefix.clone();
-        let substore_root_hash = substore.root_hash()?;
-        let (opt_value, substore_proof) = tokio::task::Builder::new()
-            .name("Snapshot::get_with_proof")
-            .spawn_blocking(move || span.in_scope(|| substore.get_with_proof(key)))?
-            .await??;
-
-        if !prefix.is_empty() {
-            /*
-               TODO(erwan): temporary artifact, this should of course be part of a proof spec.
-            */
-            let tmp_leaf_op = ics23::LeafOp {
-                prefix: vec![],
-                hash: ics23::HashOp::Sha256.into(),
-                length: ics23::LengthOp::NoPrefix.into(),
-                prehash_key: ics23::HashOp::NoHash.into(),
-                prehash_value: ics23::HashOp::NoHash.into(),
-            };
-            /*
-               Remove this.
-            */
-
-            let root_proof = ics23::CommitmentProof {
-                proof: Some(ics23::commitment_proof::Proof::Exist(
-                    ics23::ExistenceProof {
-                        key: prefix.into(),
-                        value: substore_root_hash.0.to_vec(),
-                        path: vec![],
-                        leaf: Some(tmp_leaf_op),
-                    },
-                )),
-            };
-
-            Ok((opt_value, vec![substore_proof, root_proof]))
-        } else {
-            /* otherwise, we're dealing with an entry that belongs to the main store.*/
-            Ok((opt_value, vec![substore_proof]))
-        }
-    }
-
     /// Returns the root hash of this `State`.
     ///
     /// If the `State` is empty, the all-zeros hash will be returned as a placeholder value.
     ///
     /// This method may only be used on a clean [`State`] fork, and will error
     /// if [`is_dirty`] returns `true`.
-    pub async fn root_hash_for(&self, prefix: &str) -> Result<crate::RootHash> {
+    pub async fn prefix_root_hash(&self, prefix: &str) -> Result<crate::RootHash> {
         let span = tracing::Span::current();
 
         let (_, substore_config) = self.0.multistore.route_key_str(&prefix);
@@ -163,7 +106,7 @@ impl Snapshot {
     }
 
     pub async fn root_hash(&self) -> Result<crate::RootHash> {
-        self.root_hash_for("").await
+        self.prefix_root_hash("").await
     }
 }
 
