@@ -108,7 +108,7 @@ impl SubstoreConfig {
         ))
     }
 
-    pub fn _commit<'s>(&self, _db_handle: &'s Arc<rocksdb::DB>) -> Result<RootHash> {
+    pub fn _commit(&self, _db_handle: &Arc<rocksdb::DB>) -> Result<RootHash> {
         todo!()
     }
 }
