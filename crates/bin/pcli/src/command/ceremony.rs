@@ -144,9 +144,10 @@ Otherwise, please keep this window open.
                 );
                 use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
                 let progress_bar = ProgressBar::with_draw_target(1, ProgressDrawTarget::stdout())
-                    .with_style(ProgressStyle::default_bar().template(
-                    "[{elapsed}] {bar:50.cyan/blue} {pos:>7}/{len:7} {per_sec}\tETA: {eta}\t{msg}",
-                ));
+                    .with_style(
+                        ProgressStyle::default_bar()
+                            .template("[{elapsed}] {bar:50.blue/cyan} position {pos} out of {len} connected summoners\t{msg}"),
+                    );
                 progress_bar.set_position(0);
 
                 let mut response_rx = client
@@ -163,11 +164,11 @@ Otherwise, please keep this window open.
                             msg: Some(ResponseMsg::Position(p)),
                         }) => {
                             let len = p.connected_participants;
-                            let pos = p.connected_participants - p.position;
+                            let pos = p.position;
                             progress_bar.set_length(len as u64);
                             progress_bar.set_position(pos as u64);
                             progress_bar.set_message(format!(
-                                "(Your bid: {}, Top bid: {})",
+                                "(your bid: {}, most recent slot bid: {})",
                                 Amount::try_from(
                                     p.your_bid.ok_or(anyhow!("expected bid amount"))?
                                 )?,
