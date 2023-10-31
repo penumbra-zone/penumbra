@@ -11,10 +11,7 @@ use jmt::{
 };
 use rocksdb::{ColumnFamily, IteratorMode, ReadOptions};
 
-use crate::{
-    snapshot::RocksDbSnapshot,
-    storage::{DbNodeKey, VersionedKeyHash},
-};
+use crate::{snapshot::RocksDbSnapshot, storage::VersionedKeyHash, Cache};
 
 #[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct SubstoreConfig {
@@ -278,5 +275,80 @@ impl HasPreimage for SubstoreSnapshot {
         Ok(self
             .rocksdb_snapshot
             .get_cf(cf_jmt_keys_by_keyhash, key_hash.0)?)
+    }
+}
+
+pub struct SubstoreStorage {
+    pub(crate) config: Arc<SubstoreConfig>,
+    pub(crate) db: Arc<rocksdb::DB>,
+}
+
+impl SubstoreStorage {
+    pub async fn _commit(&self, _changeset: Cache, _new_version: jmt::Version) -> Result<RootHash> {
+        todo!()
+    }
+}
+
+impl jmt::storage::TreeWriter for SubstoreStorage {
+    /// Writes a [`NodeBatch`] into storage which includes the JMT
+    /// nodes (`DbNodeKey` -> `Node`) and the JMT values,
+    /// (`VersionedKeyHash` -> `Option<Vec<u8>>`).
+    fn write_node_batch(&self, node_batch: &jmt::storage::NodeBatch) -> Result<()> {
+        use borsh::BorshSerialize;
+
+        let node_batch = node_batch.clone();
+        let cf_jmt = self.config.cf_jmt(&self.db);
+
+        for (node_key, node) in node_batch.nodes() {
+            let db_node_key = DbNodeKey::from(node_key.clone());
+            let db_node_key_bytes = db_node_key.encode()?;
+            let value_bytes = &node.try_to_vec()?;
+            tracing::trace!(?db_node_key_bytes, value_bytes = ?hex::encode(value_bytes));
+            self.db.put_cf(cf_jmt, db_node_key_bytes, value_bytes)?;
+        }
+        let cf_jmt_values = self.config.cf_jmt_values(&self.db);
+
+        for ((version, key_hash), some_value) in node_batch.values() {
+            let versioned_key = VersionedKeyHash::new(*version, *key_hash);
+            let key_bytes = &versioned_key.encode();
+            let value_bytes = &some_value.try_to_vec()?;
+            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));
+
+            self.db.put_cf(cf_jmt_values, key_bytes, value_bytes)?;
+        }
+
+        Ok(())
+    }
+}
+
+/// An ordered node key is a node key that is encoded in a way that
+/// preserves the order of the node keys in the database.
+pub struct DbNodeKey(NodeKey);
+
+impl DbNodeKey {
+    pub fn from(node_key: NodeKey) -> Self {
+        DbNodeKey(node_key)
+    }
+
+    pub fn into_inner(self) -> NodeKey {
+        self.0
+    }
+
+    pub fn encode(&self) -> Result<Vec<u8>> {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&self.0.version().to_be_bytes()); // encode version as big-endian
+        let rest = borsh::BorshSerialize::try_to_vec(&self.0)?;
+        bytes.extend_from_slice(&rest);
+        Ok(bytes)
+    }
+
+    pub fn decode(bytes: impl AsRef<[u8]>) -> Result<Self> {
+        if bytes.as_ref().len() < 8 {
+            anyhow::bail!("byte slice is too short")
+        }
+        // Ignore the bytes that encode the version
+        let node_key_slice = bytes.as_ref()[8..].to_vec();
+        let node_key = borsh::BorshDeserialize::try_from_slice(&node_key_slice)?;
+        Ok(DbNodeKey(node_key))
     }
 }
