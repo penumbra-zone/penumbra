@@ -1,6 +1,8 @@
 <h1>✨✨✨✨ Penumbra Summoning Ceremony ✨✨✨✨</h1>
 
-<h2>Penumbra Summoning Ceremony is currently in phase: {{ phase_number }} of 2</h2>
+<h2><a href="/phase/{{ phase_number }}">Penumbra Summoning Ceremony</a> is currently in phase: <a
+        href="/phase/{{ phase_number }}">{{ phase_number }}</a> of 2
+</h2>
 
 <h2>How to become a Penumbra Summoner:</h2>
 
@@ -17,7 +19,7 @@
 <p>
     In the Terminal, run:
 
-<pre>cargo run --quiet --release --bin pcli -- --node https://grpc.testnet.penumbra.zone ceremony contribute --coordinator-url COORDINATOR_URL --coordinator-address SUMMONER_ADDRESS --phase {{ phase_number }} --bid 1penumbra</pre>
+<pre>cargo run --quiet --release --bin pcli -- ceremony contribute --coordinator-url COORDINATOR_URL --coordinator-address SUMMONER_ADDRESS --phase {{ phase_number }} --bid 1penumbra</pre>
 </p>
 
 <p>

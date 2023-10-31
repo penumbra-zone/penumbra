@@ -26,8 +26,19 @@ pub fn web_app(storage: Storage) -> Router {
 }
 
 pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoResponse {
-    // TODO: Grab from the database, so we will need the state
-    let phase_number = 1;
+    let has_transitioned = state
+        .storage
+        .transition_extra_information()
+        .await
+        .expect("Can get transition status");
+
+    let phase_number: u64;
+    if has_transitioned.is_some() {
+        phase_number = 2;
+    } else {
+        phase_number = 1;
+    }
+
     let template = MainTemplate { phase_number };
     HtmlTemplate(template)
 }
