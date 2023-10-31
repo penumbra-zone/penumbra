@@ -279,10 +279,80 @@ impl Storage {
                         .try_push(latest_snapshot.clone())
                         .expect("should process snapshots with consecutive jmt versions");
 
-                    // Send fails if the channel is closed (i.e., if there are no receivers);
-                    // in this case, we should ignore the error, we have no one to notify.
-                    let _ = inner.tx_dispatcher.send(latest_snapshot);
 
+    /// Commits the provided [`StateDelta`] to persistent storage as the latest
+    /// version of the chain state. If `write_to_snapshot_cache` is `false`, the
+    /// snapshot will not be written to the snapshot cache, and no subscribers
+    /// will be notified.
+    async fn commit_inner_substore(
+        &self,
+        substore_snapshot: SubstoreSnapshot,
+        cache: Cache,
+        new_version: jmt::Version,
+    ) -> Result<crate::RootHash> {
+        let span = Span::current();
+        let inner = self.0.clone();
+
+        tokio::task::Builder::new()
+            .name("Storage::commit_inner_substore")
+            .spawn_blocking(move || {
+                span.in_scope(|| {
+                    let jmt = Sha256Jmt::new(&substore_snapshot);
+
+                    // TODO(erwan): this could be folded with sharding the changesets.
+                    let unwritten_changes: Vec<_> = cache
+                        .unwritten_changes
+                        .into_iter()
+                        .map(|(key, some_value)| (KeyHash::with::<sha2::Sha256>(&key), key, some_value))
+                        .collect();
+
+                    let cf_jmt_keys = substore_snapshot.config.cf_jmt_keys(&inner.db);
+                    let cf_jmt_keys_by_keyhash = substore_snapshot.config.cf_jmt_keys_by_keyhash(&inner.db);
+
+                    /* Keyhash and pre-image indices */
+                    for (keyhash, key_preimage, value) in unwritten_changes.iter() {
+                        match value {
+                            Some(_) => { /* Key inserted, or updated, so we add it to the keyhash index */
+                                inner.db.put_cf(cf_jmt_keys, key_preimage, keyhash.0)?;
+                                inner
+                                    .db
+                                    .put_cf(cf_jmt_keys_by_keyhash, keyhash.0, key_preimage)?
+                            }
+                            None => { /* Key deleted, so we delete it from the preimage and keyhash index entries */
+                                inner.db.delete_cf(cf_jmt_keys, key_preimage)?;
+                                inner.db.delete_cf(cf_jmt_keys_by_keyhash, keyhash.0)?;
+                            }
+                        };
+                    }
+
+                    let (root_hash, batch) = jmt.put_value_set(
+                        unwritten_changes.into_iter().map(|(keyhash, _key, some_value)| (keyhash, some_value)),
+                        new_version,
+                    )?;
+                    inner.write_node_batch(&batch.node_batch)?;
+                    tracing::trace!(?root_hash, "wrote node batch to backing store");
+
+                    // Write the unwritten changes from the nonverifiable to RocksDB.
+                    for (k, v) in cache.nonverifiable_changes.into_iter() {
+
+                        let cf_nonverifiable = substore_snapshot.config.cf_nonverifiable(&inner.db);
+                        match v {
+                            Some(v) => {
+                                tracing::trace!(key = ?EscapedByteSlice(&k), value = ?EscapedByteSlice(&v), "put nonverifiable key");
+                                inner.db.put_cf(cf_nonverifiable, k, &v)?;
+                            }
+                            None => {
+                                inner.db.delete_cf(cf_nonverifiable, k)?;
+                            }
+                        };
+                    }
+
+
+                    Ok(root_hash)
+                })
+            })?
+            .await?
+    }
                     Ok(root_hash)
                 })
             })?
