@@ -127,12 +127,9 @@ enum Command {
         #[clap(long, display_order = 900)]
         /// URL for Penumbra node to trail.
         node: Url,
-        #[clap(long, display_order = 901, default_value = "127.0.0.1:8081")]
-        /// Local bind address for summonerd.
-        listen: SocketAddr,
-        #[clap(long, display_order = 902, default_value = "127.0.0.1:8082")]
-        /// Local bind address for summonerd web view.
-        web_addr: SocketAddr,
+        #[clap(long, display_order = 902, default_value = "127.0.0.1:8080")]
+        /// The address to bind the gRPC and web servers to.
+        bind_addr: SocketAddr,
     },
     /// Export the output of the ceremony
     Export {
@@ -159,8 +156,7 @@ impl Opt {
                 storage_dir,
                 fvk,
                 node,
-                listen,
-                web_addr,
+                bind_addr,
             } => {
                 let marker = match phase {
                     1 => PhaseMarker::P1,
@@ -184,28 +180,25 @@ impl Opt {
                     PhaseMarker::P2 => tokio::spawn(coordinator.run::<Phase2>()),
                 };
                 let service = CoordinatorService::new(knower, storage.clone(), queue, marker);
-                let grpc_server =
-                    Server::builder()
-                        .accept_http1(true)
-                        .add_service(tonic_web::enable(
-                            CeremonyCoordinatorServiceServer::new(service)
-                                .max_encoding_message_size(max_message_size(marker))
-                                .max_decoding_message_size(max_message_size(marker)),
-                        ));
-                tracing::info!(?listen, "starting grpc server");
-                let server_handle = tokio::spawn(grpc_server.serve(listen));
+                let grpc_server = Server::builder().add_service(
+                    CeremonyCoordinatorServiceServer::new(service)
+                        .max_encoding_message_size(max_message_size(marker))
+                        .max_decoding_message_size(max_message_size(marker)),
+                );
 
-                tracing::info!("starting web server on {}", web_addr);
                 let web_app = web_app(storage);
-                let webserver_handle =
-                    axum::Server::bind(&web_addr).serve(web_app.into_make_service());
+
+                let router = grpc_server.into_router().merge(web_app);
+
+                tracing::info!(?bind_addr, "starting grpc and web server");
+                let server_handle =
+                    axum::Server::bind(&bind_addr).serve(router.into_make_service());
 
                 // TODO: better error reporting
                 // We error out if a service errors, rather than keep running
                 tokio::select! {
                     x = coordinator_handle => x?.map_err(|e| anyhow::anyhow!(e))?,
-                    x = server_handle => x?.map_err(|e| anyhow::anyhow!(e))?,
-                    x = webserver_handle => x.map_err(|e| anyhow::anyhow!(e))?,
+                    x = server_handle => x.map_err(|e| anyhow::anyhow!(e))?,
                 };
                 Ok(())
             }
