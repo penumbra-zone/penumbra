@@ -1,26 +1,6 @@
 <h1>✨✨✨✨ Penumbra Summoning Ceremony ✨✨✨✨</h1>
 
-<h2>Previous Contributions in phase 1: {{ num_contributions_so_far_phase_1 }}</h2>
-
-{% if recent_contributions_phase_1.len() != 0 %}
-Recent phase 1 contributors:
-<ul>
-    {% for contribution in recent_contributions_phase_1 %}
-    <li>{{ contribution.0|e }} contributed at {{ contribution.1 }}</li>
-    {% endfor %}
-</ul>
-{% endif %}
-
-<h2>Previous Contributions in phase 2: {{ num_contributions_so_far_phase_2 }}</h2>
-
-{% if recent_contributions_phase_2.len() != 0 %}
-Recent phase 2 contributors:
-<ul>
-    {% for contribution in recent_contributions_phase_2 %}
-    <li>{{ contribution.0|e }} contributed at {{ contribution.1 }}</li>
-    {% endfor %}
-</ul>
-{% endif %}
+<h2>Penumbra Summoning Ceremony is currently in phase: {{ phase_number }} of 2</h2>
 
 <h2>How to become a Penumbra Summoner:</h2>
 
@@ -37,7 +17,7 @@ Recent phase 2 contributors:
 <p>
     In the Terminal, run:
 
-<pre>cargo run --quiet --release --bin pcli -- --node https://grpc.testnet.penumbra.zone ceremony contribute --coordinator-url COORDINATOR_URL --coordinator-address SUMMONER_ADDRESS --phase PHASE_NUMBER --bid 1penumbra</pre>
+<pre>cargo run --quiet --release --bin pcli -- --node https://grpc.testnet.penumbra.zone ceremony contribute --coordinator-url COORDINATOR_URL --coordinator-address SUMMONER_ADDRESS --phase {{ phase_number }} --bid 1penumbra</pre>
 </p>
 
 <p>
