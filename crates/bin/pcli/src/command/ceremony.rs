@@ -155,6 +155,7 @@ Otherwise, please keep this window open.
                             .template("[{elapsed}] {bar:50.blue/cyan} position {pos} out of {len} connected summoners\t{msg}"),
                     );
                 progress_bar.set_position(0);
+                progress_bar.enable_steady_tick(1000);
 
                 let mut response_rx = client
                     .participate(ReceiverStream::new(req_rx))
@@ -169,8 +170,10 @@ Otherwise, please keep this window open.
                         Some(ParticipateResponse {
                             msg: Some(ResponseMsg::Position(p)),
                         }) => {
+                            tracing::debug!(?p);
                             let len = p.connected_participants;
-                            let pos = p.position;
+                            // e.g. displaying 1 / 2 instead of 0 / 2
+                            let pos = p.position + 1;
                             progress_bar.set_length(len as u64);
                             progress_bar.set_position(pos as u64);
                             progress_bar.set_message(format!(
@@ -182,6 +185,7 @@ Otherwise, please keep this window open.
                                     p.last_slot_bid.ok_or(anyhow!("expected top bid amount"))?
                                 )?
                             ));
+                            progress_bar.tick();
                         }
                         Some(ParticipateResponse {
                             msg:
