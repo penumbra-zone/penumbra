@@ -5,8 +5,8 @@
 {% if recent_contributions_phase_1.len() != 0 %}
 Recent phase 1 contributors:
 <ul>
-    {% for contributor in recent_contributions_phase_1 %}
-    <li>{{ contributor|e }}</li>
+    {% for contribution in recent_contributions_phase_1 %}
+    <li>{{ contribution.0|e }} contributed at {{ contribution.1 }}</li>
     {% endfor %}
 </ul>
 {% endif %}
@@ -16,8 +16,8 @@ Recent phase 1 contributors:
 {% if recent_contributions_phase_2.len() != 0 %}
 Recent phase 2 contributors:
 <ul>
-    {% for contributor in recent_contributions_phase_2 %}
-    <li>{{ contributor|e }}</li>
+    {% for contribution in recent_contributions_phase_2 %}
+    <li>{{ contribution.0|e }} contributed at {{ contribution.1 }}</li>
     {% endfor %}
 </ul>
 {% endif %}
