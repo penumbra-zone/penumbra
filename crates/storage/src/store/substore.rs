@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::{
+    fmt::{Display, Formatter},
+    sync::Arc,
+};
 
 use anyhow::Result;
 use borsh::BorshDeserialize;
@@ -13,7 +16,7 @@ use crate::{
     storage::{DbNodeKey, VersionedKeyHash},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct SubstoreConfig {
     /// The prefix of the substore. If empty, it is the root-level store config.
     pub prefix: String,
@@ -104,12 +107,11 @@ impl SubstoreConfig {
             column, self.prefix
         ))
     }
+}
 
-    // TODO: we can use a `rocksdb::OptimisticTransactionDB` since we know that
-    // our write load is not contentious (definitionally), and we can use make
-    // writing to every substore atomic.
-    pub fn _commit(&self, _changeset: ()) -> Result<()> {
-        todo!("commit changeset to rocksdb")
+impl Display for SubstoreConfig {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SubstoreConfig(prefix={})", self.prefix)
     }
 }
 
