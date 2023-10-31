@@ -1,10 +1,10 @@
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::BorshDeserialize;
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 // use tokio_stream::wrappers::WatchStream;
 
 use anyhow::{bail, Result};
 use jmt::{
-    storage::{LeafNode, Node, NodeBatch, NodeKey, TreeWriter},
+    storage::{LeafNode, NodeKey, TreeWriter},
     KeyHash, Sha256Jmt,
 };
 use parking_lot::RwLock;
@@ -17,7 +17,7 @@ use crate::{
     snapshot::Snapshot,
     store::{
         multistore::MultistoreConfig,
-        substore::{SubstoreConfig, SubstoreSnapshot},
+        substore::{SubstoreConfig, SubstoreSnapshot, SubstoreStorage},
     },
     EscapedByteSlice,
 };
@@ -357,7 +357,13 @@ impl Storage {
                         unwritten_changes.into_iter().map(|(keyhash, _key, some_value)| (keyhash, some_value)),
                         new_version,
                     )?;
-                    inner.write_node_batch(&batch.node_batch)?;
+
+                    let substore_storage = SubstoreStorage {
+                        config: substore_snapshot.config.clone(),
+                        db: inner.db.clone(),
+                    };
+
+                    substore_storage.write_node_batch(&batch.node_batch)?;
                     // substore_snapshot.write_node_batch(&batch.node_batch)?;
                     tracing::trace!(?root_hash, "wrote node batch to backing store");
 
@@ -411,44 +417,10 @@ impl Storage {
     }
 }
 
-impl TreeWriter for Inner {
-    /// Writes a [`NodeBatch`] into storage which includes the JMT
-    /// nodes (`DbNodeKey` -> `Node`) and the JMT values,
-    /// (`VersionedKeyHash` -> `Option<Vec<u8>>`).
-    fn write_node_batch(&self, node_batch: &NodeBatch) -> Result<()> {
-        let node_batch = node_batch.clone();
-        let jmt_cf = self
-            .db
-            .cf_handle("substore--jmt")
-            .expect("jmt column family not found");
-
-        for (node_key, node) in node_batch.nodes() {
-            let db_node_key = DbNodeKey::from(node_key.clone());
-            let db_node_key_bytes = db_node_key.encode()?;
-            let value_bytes = &node.try_to_vec()?;
-            tracing::trace!(?db_node_key_bytes, value_bytes = ?hex::encode(value_bytes));
-            self.db.put_cf(jmt_cf, db_node_key_bytes, value_bytes)?;
-        }
-        let jmt_values_cf = self
-            .db
-            .cf_handle("substore--jmt-values")
-            .expect("jmt_values column family not found");
-
-        for ((version, key_hash), some_value) in node_batch.values() {
-            let versioned_key = VersionedKeyHash::new(*version, *key_hash);
-            let key_bytes = &versioned_key.encode();
-            let value_bytes = &some_value.try_to_vec()?;
-            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));
-
-            self.db.put_cf(jmt_values_cf, key_bytes, value_bytes)?;
-        }
-
-        Ok(())
-    }
-}
-
 // TODO: maybe these should live elsewhere?
 fn get_rightmost_leaf(db: &DB) -> Result<Option<(NodeKey, LeafNode)>> {
+    use crate::store::substore::DbNodeKey;
+    use jmt::storage::Node;
     let cf_jmt = db
         .cf_handle("substore--jmt")
         .expect("jmt column family not found");
@@ -522,37 +494,5 @@ impl VersionedKeyHash {
 
             Ok(VersionedKeyHash { version, key_hash })
         }
-    }
-}
-
-/// An ordered node key is a node key that is encoded in a way that
-/// preserves the order of the node keys in the database.
-pub struct DbNodeKey(NodeKey);
-
-impl DbNodeKey {
-    pub fn from(node_key: NodeKey) -> Self {
-        DbNodeKey(node_key)
-    }
-
-    pub fn into_inner(self) -> NodeKey {
-        self.0
-    }
-
-    pub fn encode(&self) -> Result<Vec<u8>> {
-        let mut bytes = Vec::new();
-        bytes.extend_from_slice(&self.0.version().to_be_bytes()); // encode version as big-endian
-        let rest = borsh::BorshSerialize::try_to_vec(&self.0)?;
-        bytes.extend_from_slice(&rest);
-        Ok(bytes)
-    }
-
-    pub fn decode(bytes: impl AsRef<[u8]>) -> Result<Self> {
-        if bytes.as_ref().len() < 8 {
-            anyhow::bail!("byte slice is too short")
-        }
-        // Ignore the bytes that encode the version
-        let node_key_slice = bytes.as_ref()[8..].to_vec();
-        let node_key = borsh::BorshDeserialize::try_from_slice(&node_key_slice)?;
-        Ok(DbNodeKey(node_key))
     }
 }
