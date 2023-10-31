@@ -24,7 +24,7 @@ askama = "0.11"
 axum = "0.6"
 bytes = "1"
 camino = "1"
-clap = { version = "4", features = ["derive", "env", "color"] }
+clap = { version = "3", features = ["derive", "env", "color"] }
 console-subscriber = "0.2"
 decaf377 = "0.5"
 futures = "0.3.28"
