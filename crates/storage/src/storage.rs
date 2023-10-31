@@ -225,7 +225,7 @@ impl Storage {
             let substore_snapshot = SubstoreSnapshot {
                 config: substore_config.clone(),
                 rocksdb_snapshot: snapshot.0.snapshot.clone(),
-                version: new_version, // TODO(erwan): we're going to start with globally versioning the substores, but we'll need to change this later.
+                version: new_version,
                 db: self.0.db.clone(),
             };
 
