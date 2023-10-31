@@ -63,8 +63,8 @@ pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoRespon
 struct MainTemplate {
     num_contributions_so_far_phase_1: u64,
     num_contributions_so_far_phase_2: u64,
-    recent_contributions_phase_2: Vec<String>,
-    recent_contributions_phase_1: Vec<String>,
+    recent_contributions_phase_2: Vec<(String, String)>,
+    recent_contributions_phase_1: Vec<(String, String)>,
 }
 
 struct HtmlTemplate<T>(T);
