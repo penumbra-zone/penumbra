@@ -1,5 +1,5 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 // use tokio_stream::wrappers::WatchStream;
 
 use anyhow::{bail, Result};
@@ -15,7 +15,10 @@ use tracing::Span;
 use crate::{
     cache::Cache,
     snapshot::Snapshot,
-    store::{multistore::MultistoreConfig, substore::SubstoreConfig},
+    store::{
+        multistore::MultistoreConfig,
+        substore::{SubstoreConfig, SubstoreSnapshot},
+    },
     EscapedByteSlice,
 };
 use crate::{snapshot_cache::SnapshotCache, StateDelta};
@@ -186,99 +189,125 @@ impl Storage {
     /// will be notified.
     async fn commit_inner(
         &self,
+        snapshot: Snapshot,
         cache: Cache,
         new_version: jmt::Version,
         write_to_snapshot_cache: bool,
     ) -> Result<crate::RootHash> {
-        let span = Span::current();
         let inner = self.0.clone();
+        /* shard the set of changes */
+        // TODO(erwan): pondering whether this should be encapsulated in a method over `Cache`. logically, i think this
+        // makes sense but the current `Cache` impl is crisp and clean so i'm not sure.
+        let mut changes_by_substore = BTreeMap::new();
+        for (key, some_value) in &cache.unwritten_changes {
+            let (truncated_key, substore_config) = self.0.multistore_config.route_key_str(key);
+            changes_by_substore
+                .entry(substore_config)
+                .or_insert_with(|| Cache::default())
+                .unwritten_changes
+                .insert(truncated_key.to_string(), some_value.clone());
+        }
 
-        tokio::task::Builder::new()
-            .name("Storage::write_node_batch")
-            .spawn_blocking(move || {
-                span.in_scope(|| {
-                    let snap = inner.snapshots.read().latest();
-                    let jmt = Sha256Jmt::new(&*snap.0);
+        for (key, some_value) in &cache.nonverifiable_changes {
+            let (truncated_key, substore_config) = self.0.multistore_config.route_key_bytes(key);
+            changes_by_substore
+                .entry(substore_config)
+                .or_insert_with(|| Cache::default())
+                .nonverifiable_changes
+                .insert(truncated_key.to_vec(), some_value.clone());
+        }
 
-                    let unwritten_changes: Vec<_> = cache
-                        .unwritten_changes
-                        .into_iter()
-                        // Pre-calculate all KeyHashes for later storage in `jmt_keys`
-                        .map(|(key, some_value)| (KeyHash::with::<sha2::Sha256>(&key), key, some_value))
-                        .collect();
+        /* commit the substores */
+        let mut substore_roots = Vec::new();
 
-                    // Maintain a two-way index of the JMT keys and their hashes in RocksDB.
-                    // The `jmt_keys` column family maps JMT `key`s to their `keyhash`.
-                    // The `jmt_keys_by_keyhash` column family maps JMT `keyhash`es to their preimage.
-                    // Write the JMT key lookups to RocksDB
-                    let cf_jmt_keys = inner
-                        .db
-                        .cf_handle("substore--jmt-keys")
-                        .expect("jmt_keys column family not found");
+        // TODO(erwan): concurrency?
+        for substore_config in &self.0.multistore_config.substores {
+            let substore_snapshot = SubstoreSnapshot {
+                config: substore_config.clone(),
+                rocksdb_snapshot: snapshot.0.snapshot.clone(),
+                version: new_version, // TODO(erwan): we're going to start with globally versioning the substores, but we'll need to change this later.
+                db: self.0.db.clone(),
+            };
 
-                    let cf_jmt_keys_by_keyhash = inner
-                        .db
-                        .cf_handle("substore--jmt-keys-by-keyhash")
-                        .expect("jmt_keys_by_keyhash family not found");
+            // TODO(erwan): we want to atomically write the changes to the substore, and then write the root hash to the jmt
+            // to do this we probably will have to pass a transaction object to the commit routine.
+            let Some(changeset) = changes_by_substore.remove(substore_config) else {
+                continue;
+            };
 
-                    for (keyhash, key_preimage, v) in unwritten_changes.iter() {
-                        match v {
-                            // Key still exists so update the key preimage and keyhash index.
-                            Some(_) => {
-                                inner.db.put_cf(cf_jmt_keys, key_preimage, keyhash.0)?;
-                                inner
-                                    .db
-                                    .put_cf(cf_jmt_keys_by_keyhash, keyhash.0, key_preimage)?
-                            }
-                            // Key was deleted, so delete the key preimage, and its keyhash index.
-                            None => {
-                                inner.db.delete_cf(cf_jmt_keys, key_preimage)?;
-                                inner.db.delete_cf(cf_jmt_keys_by_keyhash, keyhash.0)?;
-                            }
-                        };
-                    }
+            let root_hash = self
+                .commit_inner_substore(substore_snapshot, changeset, new_version)
+                .await?;
 
-                    // Write the unwritten changes from the state to the JMT.
-                    let (root_hash, batch) = jmt.put_value_set(
-                        unwritten_changes.into_iter().map(|(keyhash, _key, some_value)| (keyhash, some_value)),
-                        new_version,
-                    )?;
+            substore_roots.push((substore_config, root_hash));
+        }
 
-                    // Apply the JMT changes to the DB.
-                    inner.write_node_batch(&batch.node_batch)?;
-                    tracing::trace!(?root_hash, "wrote node batch to backing store");
+        /* commit roots to main store */
+        let mut main_store_changes = changes_by_substore
+            .remove(&self.0.multistore_config.root_store)
+            .expect("always have main store changes"); // TODO(erwan): possibly relax this later in the pr, for testing.
 
-                    // Write the unwritten changes from the nonverifiable to RocksDB.
-                    for (k, v) in cache.nonverifiable_changes.into_iter() {
-                        let nonverifiable_cf = inner
-                            .db
-                            .cf_handle("substore--nonverifiable")
-                            .expect("nonverifiable column family not found");
+        for (config, root_hash) in substore_roots {
+            main_store_changes
+                .unwritten_changes
+                .insert(config.prefix.clone(), Some(root_hash.0.to_vec()));
+        }
 
-                        match v {
-                            Some(v) => {
-                                tracing::trace!(key = ?EscapedByteSlice(&k), value = ?EscapedByteSlice(&v), "put nonverifiable key");
-                                inner.db.put_cf(nonverifiable_cf, k, &v)?;
-                            }
-                            None => {
-                                inner.db.delete_cf(nonverifiable_cf, k)?;
-                            }
-                        };
-                    }
+        /* commit main substore */
+        let main_store_snapshot = SubstoreSnapshot {
+            config: self.0.multistore_config.root_store.clone(),
+            rocksdb_snapshot: snapshot.0.snapshot.clone(),
+            version: new_version,
+            db: self.0.db.clone(),
+        };
+        let global_root_hash = self
+            .commit_inner_substore(main_store_snapshot, main_store_changes, new_version)
+            .await?;
 
-                    if !write_to_snapshot_cache {
-                        return Ok(root_hash);
-                    }
+        /* hydrate the snapshot cache */
+        if !write_to_snapshot_cache {
+            return Ok(global_root_hash);
+        }
 
-                    let latest_snapshot = Snapshot::new(inner.db.clone(), new_version, inner.multistore_config.clone());
-                    // Obtain a write lock to the snapshot cache, and push the latest snapshot
-                    // available. The lock guard is implicitly dropped immediately.
-                    inner
-                        .snapshots
-                        .write()
-                        .try_push(latest_snapshot.clone())
-                        .expect("should process snapshots with consecutive jmt versions");
+        let latest_snapshot = Snapshot::new(
+            inner.db.clone(),
+            new_version,
+            inner.multistore_config.clone(),
+        );
+        // Obtain a write lock to the snapshot cache, and push the latest snapshot
+        // available. The lock guard is implicitly dropped immediately.
+        inner
+            .snapshots
+            .write()
+            .try_push(latest_snapshot.clone())
+            .expect("should process snapshots with consecutive jmt versions");
 
+        // Send fails if the channel is closed (i.e., if there are no receivers);
+        // in this case, we should ignore the error, we have no one to notify.
+        let _ = inner.tx_dispatcher.send(latest_snapshot);
+
+        Ok(global_root_hash)
+
+        //end
+    }
+
+    /// Commits the provided [`StateDelta`] to persistent storage as the latest
+    /// version of the chain state.
+    pub async fn commit(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
+        // Extract the snapshot and the changes from the state delta
+        let (snapshot, changes) = delta.flatten();
+
+        // We use wrapping_add here so that we can write `new_version = 0` by
+        // overflowing `PRE_GENESIS_VERSION`.
+        let old_version = self.latest_version();
+        let new_version = old_version.wrapping_add(1);
+        tracing::trace!(old_version, new_version);
+        if old_version != snapshot.version() {
+            anyhow::bail!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, snapshot.version());
+        }
+        self.commit_inner(snapshot, changes, new_version, true)
+            .await
+    }
 
     /// Commits the provided [`StateDelta`] to persistent storage as the latest
     /// version of the chain state. If `write_to_snapshot_cache` is `false`, the
@@ -353,48 +382,14 @@ impl Storage {
             })?
             .await?
     }
-                    Ok(root_hash)
-                })
-            })?
-            .await?
-    }
-
-    /// Commits the provided [`StateDelta`] to persistent storage as the latest
-    /// version of the chain state.
-    pub async fn commit(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
-        // Extract the snapshot and the changes from the state delta
-        let (snapshot, changes) = delta.flatten();
-
-        // We use wrapping_add here so that we can write `new_version = 0` by
-        // overflowing `PRE_GENESIS_VERSION`.
-        let old_version = self.latest_version();
-        let new_version = old_version.wrapping_add(1);
-        tracing::trace!(old_version, new_version);
-        if old_version != snapshot.version() {
-            anyhow::bail!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, snapshot.version());
-        }
-
-        /*
-
-        TODO:
-            Shard the set of changes into multiple sets of changes, one for each substore, and
-            strip the prefix from the keys in each set of changes.
-
-            For each set of changes, commit the changes to the corresponding substore via `SubstoreConfig::commit(changeset)`.
-
-            Collect the root hashes and store them in the jmt
-         */
-
-        self.commit_inner(changes, new_version, true).await
-    }
-
     #[cfg(feature = "migration")]
     /// Commits the provided [`StateDelta`] to persistent storage without increasing the version
     /// of the chain state.
     pub async fn commit_in_place(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
-        let (_, changes) = delta.flatten();
+        let (snapshot, changes) = delta.flatten();
         let old_version = self.latest_version();
-        self.commit_inner(changes, old_version, false).await
+        self.commit_inner(snapshot, changes, old_version, false)
+            .await
     }
 
     /// Returns the internal handle to RocksDB, this is useful to test adjacent storage crates.
