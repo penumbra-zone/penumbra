@@ -1,3 +1,5 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use anyhow::Result;
 use camino::Utf8Path;
 use penumbra_keys::Address;
@@ -26,6 +28,19 @@ use crate::{penumbra_knower::PenumbraKnower, phase::PhaseMarker};
 
 const MIN_BID_AMOUNT_U64: u64 = 1u64;
 const MAX_STRIKES: u64 = 3u64;
+
+/// The current time as a unix timestamp.
+///
+/// This is used 3 times in this file, so worth abstracting.
+///
+/// This will return 0 if---for whatever reason---this code is being run in an environment
+/// that thinks it's before 1970.
+fn current_time_unix() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|x| x.as_secs())
+        .unwrap_or(0)
+}
 
 /// Represents the possible outcomes of checking contribution eligibility.
 #[derive(Clone, Debug)]
@@ -85,8 +100,11 @@ impl Storage {
         let tx = conn.transaction()?;
 
         tx.execute(
-            "INSERT INTO phase1_contributions VALUES (0, 1, ?1, NULL, NULL)",
-            [pb::CeremonyCrs::try_from(phase_1_root)?.encode_to_vec()],
+            "INSERT INTO phase1_contributions VALUES (0, 1, ?1, NULL, NULL, ?2)",
+            (
+                pb::CeremonyCrs::try_from(phase_1_root)?.encode_to_vec(),
+                current_time_unix(),
+            ),
         )?;
 
         tx.commit()?;
@@ -104,8 +122,11 @@ impl Storage {
         let tx = conn.transaction()?;
 
         tx.execute(
-            "INSERT INTO phase2_contributions VALUES (0, 1, ?1, NULL, NULL)",
-            [pb::CeremonyCrs::try_from(phase_2_root)?.encode_to_vec()],
+            "INSERT INTO phase2_contributions VALUES (0, 1, ?1, NULL, NULL, ?2)",
+            (
+                pb::CeremonyCrs::try_from(phase_2_root)?.encode_to_vec(),
+                current_time_unix(),
+            ),
         )?;
         tx.execute(
             "INSERT INTO transition_aux VALUES (0, ?1)",
@@ -262,12 +283,13 @@ impl Storage {
         let contributor_bytes = contributor.to_vec();
         let hash = contribution.hash().as_ref().to_owned();
         tx.execute(
-            "INSERT INTO phase1_contributions VALUES(NULL, 0, ?1, ?2, ?3)",
-            [
+            "INSERT INTO phase1_contributions VALUES(NULL, 0, ?1, ?2, ?3, ?4)",
+            (
                 PBContribution::try_from(contribution)?.encode_to_vec(),
                 hash,
                 contributor_bytes,
-            ],
+                current_time_unix(),
+            ),
         )?;
         tx.commit()?;
         Ok(())
@@ -283,12 +305,13 @@ impl Storage {
         let contributor_bytes = contributor.to_vec();
         let hash = contribution.hash().as_ref().to_owned();
         tx.execute(
-            "INSERT INTO phase2_contributions VALUES(NULL, 0, ?1, ?2, ?3)",
-            [
+            "INSERT INTO phase2_contributions VALUES(NULL, 0, ?1, ?2, ?3, ?4)",
+            (
                 PBContribution::try_from(contribution)?.encode_to_vec(),
                 hash,
                 contributor_bytes,
-            ],
+                current_time_unix(),
+            ),
         )?;
         tx.commit()?;
         Ok(())
