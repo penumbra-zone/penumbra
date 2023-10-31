@@ -69,7 +69,7 @@ impl Storage {
 
                     let mut substore_configs = Vec::new();
                     tracing::info!("initializing global store config");
-                    let root_store = SubstoreConfig::new("");
+                    let main_store = SubstoreConfig::new("");
                     for substore_prefix in substore_prefixes {
                         tracing::info!(?substore_prefix, "initializing substore");
                         if substore_prefix.is_empty() {
@@ -79,12 +79,12 @@ impl Storage {
                     }
 
                     let multistore_config = MultistoreConfig {
-                        root_store: Arc::new(root_store),
+                        main_store: Arc::new(main_store),
                         substores: substore_configs.clone(),
                     };
 
                     let mut columns: Vec<&String> =
-                        multistore_config.root_store.columns().collect();
+                        multistore_config.main_store.columns().collect();
 
                     let mut substore_columns: Vec<&String> = substore_configs
                         .iter()
@@ -199,28 +199,29 @@ impl Storage {
         // TODO(erwan): pondering whether this should be encapsulated in a method over `Cache`. logically, i think this
         // makes sense but the current `Cache` impl is crisp and clean so i'm not sure.
         let mut changes_by_substore = BTreeMap::new();
-        for (key, some_value) in &cache.unwritten_changes {
-            let (truncated_key, substore_config) = self.0.multistore_config.route_key_str(key);
+        for (key, some_value) in cache.unwritten_changes.into_iter() {
+            let (truncated_key, substore_config) = self.0.multistore_config.route_key_str(&key);
             changes_by_substore
                 .entry(substore_config)
                 .or_insert_with(|| Cache::default())
                 .unwritten_changes
-                .insert(truncated_key.to_string(), some_value.clone());
+                .insert(truncated_key.to_string(), some_value);
         }
 
-        for (key, some_value) in &cache.nonverifiable_changes {
-            let (truncated_key, substore_config) = self.0.multistore_config.route_key_bytes(key);
+        for (key, some_value) in cache.nonverifiable_changes {
+            let (truncated_key, substore_config) = self.0.multistore_config.route_key_bytes(&key);
             changes_by_substore
                 .entry(substore_config)
                 .or_insert_with(|| Cache::default())
                 .nonverifiable_changes
-                .insert(truncated_key.to_vec(), some_value.clone());
+                .insert(truncated_key.to_vec(), some_value);
         }
 
         /* commit the substores */
         let mut substore_roots = Vec::new();
 
-        // TODO(erwan): concurrency?
+        // TODO(erwan): the substores are disjoint key spaces and CFs
+        // this is probably a good candidate for a joinset.
         for substore_config in &self.0.multistore_config.substores {
             let substore_snapshot = SubstoreSnapshot {
                 config: substore_config.clone(),
@@ -244,7 +245,7 @@ impl Storage {
 
         /* commit roots to main store */
         let mut main_store_changes = changes_by_substore
-            .remove(&self.0.multistore_config.root_store)
+            .remove(&self.0.multistore_config.main_store)
             .expect("always have main store changes"); // TODO(erwan): possibly relax this later in the pr, for testing.
 
         for (config, root_hash) in substore_roots {
@@ -255,7 +256,7 @@ impl Storage {
 
         /* commit main substore */
         let main_store_snapshot = SubstoreSnapshot {
-            config: self.0.multistore_config.root_store.clone(),
+            config: self.0.multistore_config.main_store.clone(),
             rocksdb_snapshot: snapshot.0.snapshot.clone(),
             version: new_version,
             db: self.0.db.clone(),
@@ -309,10 +310,8 @@ impl Storage {
             .await
     }
 
-    /// Commits the provided [`StateDelta`] to persistent storage as the latest
-    /// version of the chain state. If `write_to_snapshot_cache` is `false`, the
-    /// snapshot will not be written to the snapshot cache, and no subscribers
-    /// will be notified.
+    /// TODO(erwan): this is possibly cleaner as a `SubstoreConfig::commit`
+    /// but first we need to decide what is the correct resolution for `TreeWriter`.
     async fn commit_inner_substore(
         &self,
         substore_snapshot: SubstoreSnapshot,
@@ -359,6 +358,7 @@ impl Storage {
                         new_version,
                     )?;
                     inner.write_node_batch(&batch.node_batch)?;
+                    // substore_snapshot.write_node_batch(&batch.node_batch)?;
                     tracing::trace!(?root_hash, "wrote node batch to backing store");
 
                     // Write the unwritten changes from the nonverifiable to RocksDB.
