@@ -70,20 +70,6 @@ impl IBCPacket<Unchecked> {
     }
 }
 
-// impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
-//     fn from(withdrawal: Ics20Withdrawal) -> Self {
-//         Self {
-//             source_port: PortId::transfer(),
-//             source_channel: withdrawal.source_channel.clone(),
-//             timeout_height: withdrawal.timeout_height,
-//             timeout_timestamp: withdrawal.timeout_time,
-//             data: withdrawal.packet_data(),
-
-//             m: std::marker::PhantomData,
-//         }
-//     }
-// }
-
 #[async_trait]
 pub trait SendPacketRead: StateRead {
     /// send_packet_check verifies that a packet can be sent using the provided parameters.

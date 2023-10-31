@@ -80,6 +80,5 @@ hex = "0.4"
 # Component dependencies
 tonic = { version = "0.10", optional = true }
 
-
 [dev-dependencies]
 proptest = "1"
