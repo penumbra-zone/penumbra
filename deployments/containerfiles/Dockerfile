@@ -1,4 +1,5 @@
-ARG RUST_VERSION=1.71.1
+# N.B. the RUST_VERSION should match MSRV in crates/bin/pd/Cargo.toml
+ARG RUST_VERSION=1.73.0
 FROM docker.io/rust:${RUST_VERSION}-slim-bookworm AS build-env
 
 # Install build dependencies. These packages should match what's recommended on
