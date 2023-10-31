@@ -41,7 +41,7 @@ pub async fn phase_1(State(state): State<Arc<WebAppState>>) -> impl IntoResponse
         .await
         .expect("Can get contributions so far");
 
-    let recent_contributions_phase_1 = state
+    let contributions_by_hash_time_shortaddr = state
         .storage
         .last_n_contributors(PhaseMarker::P1, 5)
         .await
@@ -49,7 +49,7 @@ pub async fn phase_1(State(state): State<Arc<WebAppState>>) -> impl IntoResponse
 
     let template = Phase1Template {
         num_contributions_so_far_phase_1,
-        recent_contributions_phase_1,
+        contributions_by_hash_time_shortaddr,
     };
     HtmlTemplate(template)
 }
@@ -63,7 +63,7 @@ pub async fn phase_2(State(state): State<Arc<WebAppState>>) -> impl IntoResponse
         .await
         .expect("Can get contributions so far");
 
-    let recent_contributions_phase_2 = state
+    let contributions_by_hash_time_shortaddr = state
         .storage
         .last_n_contributors(PhaseMarker::P2, 5)
         .await
@@ -71,7 +71,7 @@ pub async fn phase_2(State(state): State<Arc<WebAppState>>) -> impl IntoResponse
 
     let template = Phase2Template {
         num_contributions_so_far_phase_2,
-        recent_contributions_phase_2,
+        contributions_by_hash_time_shortaddr,
     };
     HtmlTemplate(template)
 }
@@ -86,14 +86,14 @@ struct MainTemplate {
 #[template(path = "phase1.html")]
 struct Phase1Template {
     num_contributions_so_far_phase_1: u64,
-    recent_contributions_phase_1: Vec<(String, String)>,
+    contributions_by_hash_time_shortaddr: Vec<(String, String, String)>,
 }
 
 #[derive(Template)]
 #[template(path = "phase2.html")]
 struct Phase2Template {
     num_contributions_so_far_phase_2: u64,
-    recent_contributions_phase_2: Vec<(String, String)>,
+    contributions_by_hash_time_shortaddr: Vec<(String, String, String)>,
 }
 
 struct HtmlTemplate<T>(T);

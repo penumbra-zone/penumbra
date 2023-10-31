@@ -348,21 +348,21 @@ impl Storage {
         )
     }
 
-    /// Get the hash and timestamp of the last N contributors from the database.
+    /// Get the hash, timestamp, short address of the last N contributors from the database.
     pub async fn last_n_contributors(
         &self,
         marker: PhaseMarker,
         n: u64,
-    ) -> Result<Vec<(String, String)>> {
+    ) -> Result<Vec<(String, String, String)>> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let query = match marker {
             PhaseMarker::P1 => format!(
-                "SELECT hash, time from phase1_contributions WHERE address IS NOT NULL ORDER BY slot DESC LIMIT {}",
+                "SELECT hash, time, address from phase1_contributions WHERE address IS NOT NULL ORDER BY slot DESC LIMIT {}",
                 n
             ),
             PhaseMarker::P2 => format!(
-                "SELECT hash, time from phase2_contributions WHERE address IS NOT NULL ORDER BY slot DESC LIMIT {}",
+                "SELECT hash, time, address from phase2_contributions WHERE address IS NOT NULL ORDER BY slot DESC LIMIT {}",
                 n
             ),
         };
@@ -377,7 +377,9 @@ impl Storage {
             let date_time =
                 chrono::DateTime::from_timestamp(unix_timestamp as i64, 0).unwrap_or_default();
             let hash: String = hex::encode(hash_bytes);
-            out.push((hash, date_time.to_string()));
+            let address_bytes: Vec<u8> = row.get(0)?;
+            let address: Address = address_bytes.try_into()?;
+            out.push((hash, date_time.to_string(), address.display_short_form()));
         }
 
         Ok(out)
