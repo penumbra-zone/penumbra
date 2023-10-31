@@ -431,8 +431,13 @@ mod tests {
         async fn chan_open_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenInit) {}
         async fn chan_open_try_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenTry) {}
         async fn chan_open_ack_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenAck) {}
-        async fn chan_open_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenConfirm) {}
-        async fn chan_close_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseConfirm) {}
+        async fn chan_open_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenConfirm) {
+        }
+        async fn chan_close_confirm_execute<S: StateWrite>(
+            _state: S,
+            _msg: &MsgChannelCloseConfirm,
+        ) {
+        }
         async fn chan_close_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseInit) {}
         async fn recv_packet_execute<S: StateWrite>(_state: S, _msg: &MsgRecvPacket) {}
         async fn timeout_packet_execute<S: StateWrite>(_state: S, _msg: &MsgTimeout) {}
