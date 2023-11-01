@@ -47,6 +47,7 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
         &self,
         request: Request<Streaming<pb::ParticipateRequest>>,
     ) -> Result<Response<Self::ParticipateStream>, Status> {
+        tracing::info!("new potential connection, parsing first message");
         let mut streaming = request.into_inner();
         let msg = streaming.message().await?;
         let address = if let Some(pb::ParticipateRequest {
