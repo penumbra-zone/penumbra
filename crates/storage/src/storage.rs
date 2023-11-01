@@ -1,12 +1,8 @@
-use borsh::BorshDeserialize;
 use std::{path::PathBuf, sync::Arc};
 // use tokio_stream::wrappers::WatchStream;
 
 use anyhow::{bail, Result};
-use jmt::{
-    storage::{LeafNode, NodeKey},
-    KeyHash,
-};
+use jmt::KeyHash;
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
 use tokio::sync::watch;
@@ -96,7 +92,10 @@ impl Storage {
 
                     // Note: for compatibility reasons with Tendermint/CometBFT, we set the "pre-genesis"
                     // jmt version to be u64::MAX, corresponding to -1 mod 2^64.
-                    let jmt_version = latest_version(db.as_ref())?.unwrap_or(u64::MAX);
+                    let jmt_version = multistore_config
+                        .main_store
+                        .latest_version(db.clone())?
+                        .unwrap_or(u64::MAX);
 
                     let latest_snapshot =
                         Snapshot::new(db.clone(), jmt_version, MultistoreConfig::default());
@@ -324,36 +323,6 @@ impl Storage {
             panic!("Unable to get mutable reference to Inner");
         }
     }
-}
-
-// TODO: maybe these should live elsewhere?
-fn get_rightmost_leaf(db: &DB) -> Result<Option<(NodeKey, LeafNode)>> {
-    use crate::store::substore::DbNodeKey;
-    use jmt::storage::Node;
-    let cf_jmt = db
-        .cf_handle("substore--jmt")
-        .expect("jmt column family not found");
-    let mut iter = db.raw_iterator_cf(cf_jmt);
-    let mut ret = None;
-    iter.seek_to_last();
-
-    if iter.valid() {
-        let node_key =
-            DbNodeKey::decode(iter.key().expect("all DB entries should have a key"))?.into_inner();
-        let node = Node::try_from_slice(iter.value().expect("all DB entries should have a value"))?;
-
-        if let Node::Leaf(leaf_node) = node {
-            ret = Some((node_key, leaf_node));
-        }
-    } else {
-        // There are no keys in the database
-    }
-
-    Ok(ret)
-}
-
-pub fn latest_version(db: &DB) -> Result<Option<jmt::Version>> {
-    Ok(get_rightmost_leaf(db)?.map(|(node_key, _)| node_key.version()))
 }
 
 impl Inner {

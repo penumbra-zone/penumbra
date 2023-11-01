@@ -108,8 +108,35 @@ impl SubstoreConfig {
         ))
     }
 
-    pub fn _commit(&self, _db_handle: &Arc<rocksdb::DB>) -> Result<RootHash> {
-        todo!()
+    pub fn latest_version(&self, db_handle: Arc<rocksdb::DB>) -> Result<Option<jmt::Version>> {
+        Ok(self
+            .get_rightmost_leaf(db_handle)?
+            .map(|(node_key, _)| node_key.version()))
+    }
+
+    fn get_rightmost_leaf(
+        &self,
+        db_handle: Arc<rocksdb::DB>,
+    ) -> Result<Option<(NodeKey, LeafNode)>> {
+        let cf_jmt = self.cf_jmt(&db_handle);
+        let mut iter = db_handle.raw_iterator_cf(cf_jmt);
+        iter.seek_to_last();
+
+        if iter.valid() {
+            let node_key =
+                DbNodeKey::decode(iter.key().expect("all DB entries should have a key"))?
+                    .into_inner();
+            let node =
+                Node::try_from_slice(iter.value().expect("all DB entries should have a value"))?;
+
+            if let Node::Leaf(leaf_node) = node {
+                return Ok(Some((node_key, leaf_node)));
+            }
+        } else {
+            // There are no keys in the database
+        }
+
+        Ok(None)
     }
 }
 
