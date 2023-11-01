@@ -79,7 +79,7 @@ export ACCOUNT1_ADDRESS=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release 
 echo $ACCOUNT1_ADDRESS
 
 echo "Phase 1 contributions..."
-cargo run --quiet --release --bin pcli -- --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8081 --coordinator-address $SUMMONER_ADDRESS --phase 1 --bid 10penumbra
+cargo run --quiet --release --bin pcli -- --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8080 --coordinator-address $SUMMONER_ADDRESS --phase 1 --bid 10penumbra
 
 echo "Stopping phase 1 run..."
 if ! kill -0 "$phase1_pid" ; then
@@ -100,7 +100,7 @@ phase2_pid="$!"
 trap 'kill -9 "$phase2_pid"' EXIT
 
 echo "Phase 2 contributions..."
-cargo run --quiet --release --bin pcli -- --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8081 --coordinator-address $SUMMONER_ADDRESS --phase 2 --bid 10penumbra
+cargo run --quiet --release --bin pcli -- --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8080 --coordinator-address $SUMMONER_ADDRESS --phase 2 --bid 10penumbra
 
 echo "Exporting keys..."
 cargo run --quiet --release --bin summonerd -- export --storage-dir /tmp/summonerd --target-dir ./crates/crypto/proof-params/src/gen
