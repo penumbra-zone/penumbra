@@ -2,7 +2,6 @@ use std::{path::PathBuf, sync::Arc};
 // use tokio_stream::wrappers::WatchStream;
 
 use anyhow::{bail, Result};
-use jmt::KeyHash;
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
 use tokio::sync::watch;
@@ -49,7 +48,6 @@ struct Inner {
 impl Storage {
     /// Initializes a new storage instance at the given path, along with a substore
     /// defined by each of the provided prefixes.
-    /// TODO: potentially restore the `impl IntoIterator` if it makes sense later in the pr.
     pub async fn init(path: PathBuf, substore_prefixes: Vec<String>) -> Result<Self> {
         let span = Span::current();
 
@@ -331,46 +329,6 @@ impl Inner {
         if let Some(jh) = self.jh_dispatcher.take() {
             jh.abort();
             let _ = jh.await;
-        }
-    }
-}
-
-/// Represent a JMT key hash at a specific `jmt::Version`
-/// This is used to index the JMT values in RocksDB.
-#[derive(Clone, Debug)]
-pub struct VersionedKeyHash {
-    pub key_hash: KeyHash,
-    pub version: jmt::Version,
-}
-
-impl VersionedKeyHash {
-    pub fn new(version: jmt::Version, key_hash: KeyHash) -> Self {
-        Self { version, key_hash }
-    }
-
-    pub fn encode(&self) -> Vec<u8> {
-        let mut buf: Vec<u8> = self.key_hash.0.to_vec();
-        buf.extend_from_slice(&self.version.to_be_bytes());
-        buf
-    }
-
-    pub fn _decode(buf: Vec<u8>) -> Result<Self> {
-        if buf.len() != 40 {
-            Err(anyhow::anyhow!(
-                "could not decode buffer into VersionedKey (invalid size)"
-            ))
-        } else {
-            let raw_key_hash: [u8; 32] = buf[0..32]
-                .try_into()
-                .expect("buffer is at least 40 bytes wide");
-            let key_hash = KeyHash(raw_key_hash);
-
-            let raw_version: [u8; 8] = buf[32..40]
-                .try_into()
-                .expect("buffer is at least 40 bytes wide");
-            let version: u64 = u64::from_be_bytes(raw_version);
-
-            Ok(VersionedKeyHash { version, key_hash })
         }
     }
 }
