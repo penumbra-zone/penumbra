@@ -185,14 +185,15 @@ impl Opt {
                         tokio::spawn(coordinator.run::<Phase2>().instrument(coordinator_span))
                     }
                 };
-                let service = CoordinatorService::new(knower, storage.clone(), queue, marker);
+                let service =
+                    CoordinatorService::new(knower, storage.clone(), queue.clone(), marker);
                 let grpc_server = Server::builder().add_service(
                     CeremonyCoordinatorServiceServer::new(service)
                         .max_encoding_message_size(max_message_size(marker))
                         .max_decoding_message_size(max_message_size(marker)),
                 );
 
-                let web_app = web_app(storage);
+                let web_app = web_app(marker, queue, storage);
 
                 let router = grpc_server.into_router().merge(web_app);
 
