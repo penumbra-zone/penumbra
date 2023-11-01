@@ -24,10 +24,7 @@ use r2d2_sqlite::{
 };
 use tokio::task::spawn_blocking;
 
-use crate::{penumbra_knower::PenumbraKnower, phase::PhaseMarker};
-
-const MIN_BID_AMOUNT_U64: u64 = 1u64;
-const MAX_STRIKES: u64 = 3u64;
+use crate::{config::Config, penumbra_knower::PenumbraKnower, phase::PhaseMarker};
 
 /// The current time as a unix timestamp.
 ///
@@ -53,21 +50,28 @@ pub enum ContributionAllowed {
 
 #[derive(Clone)]
 pub struct Storage {
+    config: Config,
     pool: r2d2::Pool<SqliteConnectionManager>,
 }
 
 impl Storage {
     /// If the database at `storage_path` exists, [`Self::load`] it, otherwise, [`Self::initialize`] it.
-    pub async fn load_or_initialize(storage_path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
+    pub async fn load_or_initialize(
+        config: Config,
+        storage_path: impl AsRef<Utf8Path>,
+    ) -> anyhow::Result<Self> {
         if storage_path.as_ref().exists() {
-            return Self::load(storage_path).await;
+            return Self::load(config, storage_path).await;
         }
 
-        Self::initialize(storage_path).await
+        Self::initialize(config, storage_path).await
     }
 
     /// Initialize creates the database, but does not insert anything into it.
-    async fn initialize(storage_path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
+    async fn initialize(
+        config: Config,
+        storage_path: impl AsRef<Utf8Path>,
+    ) -> anyhow::Result<Self> {
         // Connect to the database (or create it)
         let pool = Self::connect(storage_path)?;
 
@@ -81,13 +85,14 @@ impl Storage {
 
             tx.commit()?;
 
-            Ok(Storage { pool })
+            Ok(Storage { config, pool })
         })
         .await?
     }
 
-    async fn load(path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
+    async fn load(config: Config, path: impl AsRef<Utf8Path>) -> anyhow::Result<Self> {
         let storage = Self {
+            config,
             pool: Self::connect(path)?,
         };
 
@@ -196,7 +201,7 @@ impl Storage {
         // - Hasn't already contributed
         // - Not banned
         let amount = knower.total_amount_sent_to_me(&address).await?;
-        if amount < Amount::from(MIN_BID_AMOUNT_U64) {
+        if amount < Amount::from(self.config.min_bid_u64) {
             return Ok(ContributionAllowed::DidntBidEnough(amount));
         }
         let has_contributed = {
@@ -213,7 +218,7 @@ impl Storage {
         if has_contributed {
             return Ok(ContributionAllowed::AlreadyContributed);
         }
-        if self.get_strikes(address).await? >= MAX_STRIKES {
+        if self.get_strikes(address).await? >= self.config.max_strikes {
             return Ok(ContributionAllowed::Banned);
         }
         Ok(ContributionAllowed::Yes(amount))
