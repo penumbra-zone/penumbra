@@ -220,10 +220,12 @@ impl Storage {
         let mut multistore_versions =
             multistore::VersionCache::from_config(self.0.multistore_config.clone());
 
+        // TODO(erwan): refactor this before shipping pr.
+
         // Note(erwan): if the number of substore grows, this loop could be transformed into
         // a [`tokio::task::JoinSet`]. however, at the time of writing, there is a single digit number
         // of substores, so the overhead of a joinset is not worth it.
-        for substore_config in &self.0.multistore_config.substores {
+        for substore_config in self.0.multistore_config.iter() {
             let new_substore_version = substore_config
                 .latest_version_from_snapshot(&inner.db, &snapshot.0.snapshot)?
                 .unwrap_or(u64::MAX)
