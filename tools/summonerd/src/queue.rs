@@ -7,6 +7,13 @@ use tokio::sync::RwLock;
 
 use crate::participant::Participant;
 
+/// A snapshot of the queue for public consumption.
+pub struct Snapshot {
+    pub top_bid: Option<Amount>,
+    pub median_bid: Option<Amount>,
+    pub connected_participants: u64,
+}
+
 /// The inner struct for "normal" manipulation outside of the concurrent data structure
 struct Inner {
     // Invariant: this is always sorted by the amount.
@@ -90,6 +97,17 @@ impl Inner {
     fn iter(&self) -> impl Iterator<Item = &(Participant, Amount)> {
         self.sorted.iter()
     }
+
+    fn snapshot(&self) -> Snapshot {
+        Snapshot {
+            top_bid: self.top_bid(),
+            median_bid: self
+                .sorted
+                .get(self.sorted.len() / 2)
+                .map(|(_, amount)| *amount),
+            connected_participants: self.sorted.len() as u64,
+        }
+    }
 }
 
 /// A thread safe queue of participants, sorted by bid amounts.
@@ -154,5 +172,10 @@ impl ParticipantQueue {
     /// Informal all participants of their position in the queue.
     pub async fn inform_all(&self) -> Result<()> {
         self.inform(None).await
+    }
+
+    /// Return a snapshot of this queue.
+    pub async fn snapshot(&self) -> Snapshot {
+        self.participants.read().await.snapshot()
     }
 }

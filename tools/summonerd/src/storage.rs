@@ -353,29 +353,35 @@ impl Storage {
         &self,
         marker: PhaseMarker,
         n: u64,
-    ) -> Result<Vec<(String, String, String)>> {
+    ) -> Result<Vec<(u64, String, String, String)>> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let query = match marker {
             PhaseMarker::P1 =>
-                "SELECT hash, time, address from phase1_contributions WHERE address IS NOT NULL ORDER BY slot DESC LIMIT ?1",
+                "SELECT slot, hash, time, address from phase1_contributions WHERE address IS NOT NULL ORDER BY slot DESC LIMIT ?1",
             PhaseMarker::P2 =>
-                "SELECT hash, time, address from phase2_contributions WHERE address IS NOT NULL ORDER BY slot DESC LIMIT ?1",
+                "SELECT slot, hash, time, address from phase2_contributions WHERE address IS NOT NULL ORDER BY slot DESC LIMIT ?1",
         };
 
         let mut out = Vec::new();
         let mut stmt = tx.prepare(query)?;
         let mut rows = stmt.query([n])?;
         while let Some(row) = rows.next()? {
-            let hash_bytes: Vec<u8> = row.get(0)?;
-            let unix_timestamp: u64 = row.get(1)?;
+            let slot: u64 = row.get(0)?;
+            let hash_bytes: Vec<u8> = row.get(1)?;
+            let unix_timestamp: u64 = row.get(2)?;
             // Convert unix timestamp to date time
             let date_time =
                 chrono::DateTime::from_timestamp(unix_timestamp as i64, 0).unwrap_or_default();
             let hash: String = hex::encode_upper(hash_bytes);
-            let address_bytes: Vec<u8> = row.get(2)?;
+            let address_bytes: Vec<u8> = row.get(3)?;
             let address: Address = address_bytes.try_into()?;
-            out.push((hash, date_time.to_string(), address.display_short_form()));
+            out.push((
+                slot,
+                hash,
+                date_time.to_string(),
+                address.display_short_form(),
+            ));
         }
 
         Ok(out)
