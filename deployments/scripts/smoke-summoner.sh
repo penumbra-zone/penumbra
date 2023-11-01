@@ -64,7 +64,7 @@ export SUMMONER_FVK=$(grep "full_viewing_key" /tmp/summonerd/config.toml | cut -
 cargo run --quiet --release --bin summonerd -- init --storage-dir /tmp/summonerd --phase1-root phase1.bin
 
 echo "Starting phase 1 run..."
-cargo run --quiet --release --bin summonerd -- start --phase 1 --storage-dir /tmp/summonerd --fvk $SUMMONER_FVK --node http://127.0.0.1:8080 &
+cargo run --quiet --release --bin summonerd -- start --phase 1 --storage-dir /tmp/summonerd --fvk $SUMMONER_FVK --node http://127.0.0.1:8080 --bind-addr http://127.0.0.1:8082 &
 phase1_pid="$!"
 # If script ends early, ensure phase 1 is halted.
 trap 'kill -9 "$phase1_pid"' EXIT
@@ -79,7 +79,7 @@ export ACCOUNT1_ADDRESS=$(PCLI_UNLEASH_DANGER="yes" cargo run --quiet --release 
 echo $ACCOUNT1_ADDRESS
 
 echo "Phase 1 contributions..."
-cargo run --quiet --release --bin pcli -- --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8080 --coordinator-address $SUMMONER_ADDRESS --phase 1 --bid 10penumbra
+cargo run --quiet --release --bin pcli -- --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8082 --coordinator-address $SUMMONER_ADDRESS --phase 1 --bid 10penumbra
 
 echo "Stopping phase 1 run..."
 if ! kill -0 "$phase1_pid" ; then
@@ -94,13 +94,13 @@ echo "Transitioning..."
 cargo run --quiet --release --bin summonerd -- transition --storage-dir /tmp/summonerd
 
 echo "Starting phase 2 run..."
-cargo run --quiet --release --bin summonerd -- start --phase 2 --storage-dir /tmp/summonerd --fvk $SUMMONER_FVK --node http://127.0.0.1:8080 &
+cargo run --quiet --release --bin summonerd -- start --phase 2 --storage-dir /tmp/summonerd --fvk $SUMMONER_FVK --node http://127.0.0.1:8080 --bind-addr http://127.0.0.1:8082 &
 phase2_pid="$!"
 # If script ends early, ensure phase 2 is halted.
 trap 'kill -9 "$phase2_pid"' EXIT
 
 echo "Phase 2 contributions..."
-cargo run --quiet --release --bin pcli -- --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8080 --coordinator-address $SUMMONER_ADDRESS --phase 2 --bid 10penumbra
+cargo run --quiet --release --bin pcli -- --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8082 --coordinator-address $SUMMONER_ADDRESS --phase 2 --bid 10penumbra
 
 echo "Exporting keys..."
 cargo run --quiet --release --bin summonerd -- export --storage-dir /tmp/summonerd --target-dir ./crates/crypto/proof-params/src/gen
