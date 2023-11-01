@@ -101,7 +101,8 @@ fn format_value_view(value_view: &ValueView) -> String {
 }
 
 fn format_fee_view(fee: &Fee) -> String {
-    format!("{} {}", fee.amount(), fee.asset_id())
+    // TODO: Implement FeeView to show decrypted fee.asset_id()
+    format!("{}", fee.amount())
 }
 
 // when handling ValueViews inside of a Visible variant of an ActionView, handling both cases might be needlessly verbose
