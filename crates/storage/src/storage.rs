@@ -11,7 +11,7 @@ use crate::{
     cache::Cache,
     snapshot::Snapshot,
     store::{
-        multistore::MultistoreConfig,
+        multistore::{self, MultistoreConfig},
         substore::{SubstoreConfig, SubstoreSnapshot, SubstoreStorage},
     },
 };
@@ -63,7 +63,7 @@ impl Storage {
 
                     let mut substore_configs = Vec::new();
                     tracing::info!("initializing global store config");
-                    let main_store = SubstoreConfig::new("");
+                    let main_store = Arc::new(SubstoreConfig::new(""));
                     for substore_prefix in substore_prefixes {
                         tracing::info!(?substore_prefix, "initializing substore");
                         if substore_prefix.is_empty() {
@@ -72,32 +72,36 @@ impl Storage {
                         substore_configs.push(Arc::new(SubstoreConfig::new(substore_prefix)));
                     }
 
-                    let multistore_config = MultistoreConfig {
-                        main_store: Arc::new(main_store),
-                        substores: substore_configs.clone(),
-                    };
-
-                    let mut columns: Vec<&String> =
-                        multistore_config.main_store.columns().collect();
-
                     let mut substore_columns: Vec<&String> = substore_configs
                         .iter()
                         .flat_map(|config| config.columns())
                         .collect();
-
+                    let mut columns: Vec<&String> = main_store.columns().collect();
                     columns.append(&mut substore_columns);
+
+                    let multistore_config = MultistoreConfig {
+                        main_store: main_store.clone(),
+                        substores: substore_configs.clone(),
+                    };
 
                     let db = Arc::new(DB::open_cf(&opts, path, columns)?);
 
                     // Note: for compatibility reasons with Tendermint/CometBFT, we set the "pre-genesis"
                     // jmt version to be u64::MAX, corresponding to -1 mod 2^64.
-                    let jmt_version = multistore_config
-                        .main_store
-                        .latest_version(db.clone())?
-                        .unwrap_or(u64::MAX);
+                    let jmt_version = main_store.latest_version_from_db(&db)?.unwrap_or(u64::MAX);
 
-                    let latest_snapshot =
-                        Snapshot::new(db.clone(), jmt_version, MultistoreConfig::default());
+                    let mut multistore_cache =
+                        multistore::VersionCache::from_config(multistore_config.clone());
+
+                    for substore_config in substore_configs {
+                        let substore_version = substore_config
+                            .latest_version_from_db(&db)?
+                            .unwrap_or(u64::MAX);
+
+                        multistore_cache.set_version(substore_config.clone(), substore_version);
+                    }
+
+                    let latest_snapshot = Snapshot::new(db.clone(), jmt_version, multistore_cache);
 
                     // A concurrent-safe ring buffer of the latest 10 snapshots.
                     let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot.clone(), 10));
@@ -139,8 +143,8 @@ impl Storage {
                         jh_dispatcher: Some(jh_dispatcher),
                         tx_dispatcher,
                         tx_state,
-                        snapshots,
                         multistore_config,
+                        snapshots,
                         db,
                     })))
                 })
@@ -211,19 +215,26 @@ impl Storage {
     ) -> Result<crate::RootHash> {
         let inner = self.0.clone();
 
-        let mut changes_by_substore = cache.shard_by_prefix(self.0.multistore_config.clone());
+        let mut changes_by_substore = cache.shard_by_prefix(&self.0.multistore_config);
         let mut substore_roots = Vec::new();
+        let mut multistore_versions =
+            multistore::VersionCache::from_config(self.0.multistore_config.clone());
 
         // Note(erwan): if the number of substore grows, this loop could be transformed into
         // a [`tokio::task::JoinSet`]. however, at the time of writing, there is a single digit number
         // of substores, so the overhead of a joinset is not worth it.
         for substore_config in &self.0.multistore_config.substores {
+            let new_substore_version = substore_config
+                .latest_version_from_snapshot(&inner.db, &snapshot.0.snapshot)?
+                .unwrap_or(u64::MAX)
+                .wrapping_add(1);
             let substore_snapshot = SubstoreSnapshot {
                 config: substore_config.clone(),
                 rocksdb_snapshot: snapshot.0.snapshot.clone(),
-                version: new_version,
+                version: new_substore_version,
                 db: self.0.db.clone(),
             };
+            multistore_versions.set_version(substore_config.clone(), new_substore_version);
 
             let substore_storage = SubstoreStorage {
                 config: substore_config.clone(),
@@ -273,11 +284,7 @@ impl Storage {
             return Ok(global_root_hash);
         }
 
-        let latest_snapshot = Snapshot::new(
-            inner.db.clone(),
-            new_version,
-            inner.multistore_config.clone(),
-        );
+        let latest_snapshot = Snapshot::new(inner.db.clone(), new_version, multistore_versions);
         // Obtain a write lock to the snapshot cache, and push the latest snapshot
         // available. The lock guard is implicitly dropped immediately.
         inner
@@ -292,7 +299,7 @@ impl Storage {
 
         Ok(global_root_hash)
 
-        //end
+        // The end
     }
 
     #[cfg(feature = "migration")]
