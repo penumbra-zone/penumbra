@@ -10,6 +10,11 @@ use penumbra_shielded_pool::SpendView;
 use penumbra_transaction::view::action_view::OutputView;
 use penumbra_transaction::TransactionView;
 
+// Issues identified:
+// TODO: FeeView
+// TODO: TradingPairView
+// Implemented some helper functions which may make more sense as methods on existing Structs
+
 // a helper function to create pretty placeholders for encrypted information
 fn format_opaque_bytes(bytes: &[u8]) -> String {
     if bytes.len() < 8 {
