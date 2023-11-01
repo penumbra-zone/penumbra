@@ -121,10 +121,6 @@ pub trait TransactionViewExt {
 
 impl TransactionViewExt for TransactionView {
     fn render_terminal(&self) {
-        println!("Tx Hash"); // Not available here?
-        println!("Tx Sig"); // Probably not needed
-        println!("Anchor"); // Probably not needed
-
         let fee = &self.body_view.transaction_parameters.fee;
         // the denomination should be visible here... does a FeeView exist?
         println!("Fee: {}", format_fee_view(&fee));
