@@ -93,12 +93,12 @@ impl Snapshot {
         let span = tracing::Span::current();
 
         let (_, substore_config) = self.0.multistore_cache.config.route_key_str(&prefix);
-        let version = self.substore_version(&substore_config).unwrap_or(u64::MAX);
+        let substore_version = self.substore_version(&substore_config).unwrap_or(u64::MAX);
 
         let substore = store::substore::SubstoreSnapshot {
             config: substore_config,
             rocksdb_snapshot: self.0.snapshot.clone(),
-            version,
+            version: substore_version,
             db: self.0.db.clone(),
         };
 
@@ -219,6 +219,7 @@ impl StateRead for Snapshot {
                     let substore_version = snapshot
                         .substore_version(&substore_config)
                         .unwrap_or(u64::MAX);
+
                     let substore = store::substore::SubstoreSnapshot {
                         config: substore_config.clone(),
                         rocksdb_snapshot: snapshot.0.snapshot.clone(),
@@ -242,12 +243,6 @@ impl StateRead for Snapshot {
 
                         let key_hash = jmt::KeyHash::with::<sha2::Sha256>(k.as_bytes());
 
-                        let substore = store::substore::SubstoreSnapshot {
-                            config: substore_config.clone(),
-                            rocksdb_snapshot: snapshot.0.snapshot.clone(),
-                            version: snapshot.version(),
-                            db: snapshot.0.db.clone(),
-                        };
                         let v = substore
                             .get_jmt(key_hash)?
                             .expect("keys in jmt_keys should have a corresponding value in jmt");

@@ -70,6 +70,10 @@ impl VersionCache {
 }
 
 impl MultistoreConfig {
+    pub fn iter(&self) -> impl Iterator<Item = &Arc<SubstoreConfig>> {
+        std::iter::once(&self.main_store).chain(self.substores.iter())
+    }
+
     /// Returns the substore matching the key's prefix, return `None` otherwise.
     pub fn find_substore(&self, key: &[u8]) -> Arc<SubstoreConfig> {
         let key = key.as_ref();
