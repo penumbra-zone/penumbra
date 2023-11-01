@@ -248,7 +248,8 @@ impl TransactionViewExt for TransactionView {
                             output_1,
                             output_2,
                         } => {
-                            dbg!(swap_claim); // View service can't see SwapClaims?
+                            // View service can't see SwapClaims: https://github.com/penumbra-zone/penumbra/issues/2547
+                            dbg!(swap_claim); 
                             let claimed_value = match (
                                 value_view_amount(&output_1.value).value(),
                                 value_view_amount(&output_2.value).value(),
