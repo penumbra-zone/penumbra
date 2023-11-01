@@ -9,7 +9,7 @@ use penumbra_proto::tools::summoning::v1alpha1::{
     participate_request::Contribution as PBContribution, CeremonyCrs,
 };
 
-use crate::storage::Storage;
+use crate::{config::Config, storage::Storage};
 
 /// A simple marker for which phase we're in, which some code can depend on at runtime.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,10 +36,8 @@ pub trait Phase {
     /// The constant value for the marker we use, for runtime dispatch.
     const MARKER: PhaseMarker;
 
-    /// The amount of time we should wait for a contribution.
-    ///
-    /// This varies since one phase is more expensive than the other.
-    const CONTRIBUTION_TIME_SECS: u64;
+    /// Get the contribution time from a config
+    fn contribution_time(config: Config) -> u64;
 
     /// Serialize the CRS value, in a potentially failing way.
     fn serialize_crs(data: Self::CRS) -> Result<CeremonyCrs>;
@@ -80,7 +78,10 @@ impl Phase for Phase1 {
     type RawContribution = Phase1RawCeremonyContribution;
     type Contribution = Phase1CeremonyContribution;
     const MARKER: PhaseMarker = PhaseMarker::P1;
-    const CONTRIBUTION_TIME_SECS: u64 = 20 * 60;
+
+    fn contribution_time(config: Config) -> u64 {
+        config.phase1_timeout_secs
+    }
 
     fn serialize_crs(data: Self::CRS) -> Result<CeremonyCrs> {
         data.try_into()
@@ -128,7 +129,10 @@ impl Phase for Phase2 {
     type RawContribution = Phase2RawCeremonyContribution;
     type Contribution = Phase2CeremonyContribution;
     const MARKER: PhaseMarker = PhaseMarker::P2;
-    const CONTRIBUTION_TIME_SECS: u64 = 10 * 60;
+
+    fn contribution_time(config: Config) -> u64 {
+        config.phase2_timeout_secs
+    }
 
     fn serialize_crs(data: Self::CRS) -> Result<CeremonyCrs> {
         data.try_into()

@@ -1,3 +1,4 @@
+mod config;
 mod coordinator;
 mod participant;
 mod penumbra_knower;
@@ -36,6 +37,7 @@ use tracing::Instrument;
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
 
+use crate::config::Config;
 use crate::phase::Phase1;
 use crate::phase::Phase2;
 use crate::phase::PhaseMarker;
@@ -131,6 +133,14 @@ enum Command {
         #[clap(long, display_order = 902, default_value = "127.0.0.1:8080")]
         /// The address to bind the gRPC and web servers to.
         bind_addr: SocketAddr,
+        #[clap(long, display_order = 1000)]
+        phase1_timeout_secs: Option<u64>,
+        #[clap(long, display_order = 1001)]
+        phase2_timeout_secs: Option<u64>,
+        #[clap(long, display_order = 1002)]
+        min_bid_u64: Option<u64>,
+        #[clap(long, display_order = 1002)]
+        max_strikes: Option<u64>,
     },
     /// Export the output of the ceremony
     Export {
@@ -158,13 +168,23 @@ impl Opt {
                 fvk,
                 node,
                 bind_addr,
+                phase1_timeout_secs,
+                phase2_timeout_secs,
+                min_bid_u64,
+                max_strikes,
             } => {
+                let config = Config::default()
+                    .with_phase1_timeout_secs(phase1_timeout_secs)
+                    .with_phase2_timeout_secs(phase2_timeout_secs)
+                    .with_min_bid_u64(min_bid_u64)
+                    .with_max_strikes(max_strikes);
                 let marker = match phase {
                     1 => PhaseMarker::P1,
                     2 => PhaseMarker::P2,
                     _ => anyhow::bail!("Phase must be 1 or 2."),
                 };
-                let storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
+                let storage =
+                    Storage::load_or_initialize(config, ceremony_db(&storage_dir)).await?;
                 // Check if we've transitioned, for a nice error message
                 if marker == PhaseMarker::P2
                     && storage.transition_extra_information().await?.is_none()
@@ -175,7 +195,7 @@ impl Opt {
                     PenumbraKnower::load_or_initialize(storage_dir.join("penumbra.db"), &fvk, node)
                         .await?;
                 let queue = ParticipantQueue::new();
-                let coordinator = Coordinator::new(storage.clone(), queue.clone());
+                let coordinator = Coordinator::new(config, storage.clone(), queue.clone());
                 let coordinator_span = tracing::error_span!("coordinator");
                 let coordinator_handle = match marker {
                     PhaseMarker::P1 => {
@@ -226,13 +246,17 @@ impl Opt {
                 // This is assumed to be valid as it's the starting point for the ceremony.
                 let phase_1_root = phase_1_raw_root.assume_valid();
 
-                let mut storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
+                let mut storage =
+                    Storage::load_or_initialize(Config::default(), ceremony_db(&storage_dir))
+                        .await?;
                 storage.set_root(phase_1_root).await?;
 
                 Ok(())
             }
             Command::Transition { storage_dir } => {
-                let mut storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
+                let mut storage =
+                    Storage::load_or_initialize(Config::default(), ceremony_db(&storage_dir))
+                        .await?;
 
                 let phase1_crs = match storage.phase1_current_crs().await? {
                     Some(x) => x,
@@ -247,7 +271,9 @@ impl Opt {
                 storage_dir,
                 target_dir,
             } => {
-                let storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
+                let storage =
+                    Storage::load_or_initialize(Config::default(), ceremony_db(&storage_dir))
+                        .await?;
                 // Grab phase1 output
                 let phase1_crs = match storage.phase1_current_crs().await? {
                     Some(x) => x,

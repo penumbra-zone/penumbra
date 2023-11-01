@@ -2,18 +2,26 @@ use std::time::Duration;
 
 use anyhow::Result;
 
-use crate::{participant::Participant, phase::Phase, queue::ParticipantQueue, storage::Storage};
+use crate::{
+    config::Config, participant::Participant, phase::Phase, queue::ParticipantQueue,
+    storage::Storage,
+};
 
 const QUEUE_SLEEP_TIME_SECS: u64 = 1;
 
 pub struct Coordinator {
+    config: Config,
     storage: Storage,
     queue: ParticipantQueue,
 }
 
 impl Coordinator {
-    pub fn new(storage: Storage, queue: ParticipantQueue) -> Self {
-        Self { storage, queue }
+    pub fn new(config: Config, storage: Storage, queue: ParticipantQueue) -> Self {
+        Self {
+            config,
+            storage,
+            queue,
+        }
     }
 
     pub async fn run<P: Phase + 'static>(mut self) -> Result<()> {
@@ -46,7 +54,7 @@ impl Coordinator {
     async fn contribute<P: Phase>(&mut self, contributor: Participant) -> Result<()> {
         let address = contributor.address();
         match tokio::time::timeout(
-            Duration::from_secs(P::CONTRIBUTION_TIME_SECS),
+            Duration::from_secs(P::contribution_time(self.config)),
             self.contribute_inner::<P>(contributor),
         )
         .await
