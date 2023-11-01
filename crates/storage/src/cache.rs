@@ -1,8 +1,11 @@
-use std::{any::Any, collections::BTreeMap};
+use std::{any::Any, collections::BTreeMap, sync::Arc};
 
 use tendermint::abci;
 
-use crate::StateWrite;
+use crate::{
+    store::{multistore::MultistoreConfig, substore::SubstoreConfig},
+    StateWrite,
+};
 
 /// A cache of changes to the state of the blockchain.
 ///
@@ -71,5 +74,33 @@ impl Cache {
     /// Extracts and returns the ABCI events contained in this cache.
     pub fn take_events(&mut self) -> Vec<abci::Event> {
         std::mem::take(&mut self.events)
+    }
+
+    /// Consumes a `Cache` and returns a map of `SubstoreConfig` to `Cache` that
+    /// corresponds to changes belonging to each substore. The keys in each `Cache`
+    /// are truncated to remove the substore prefix.
+    pub fn shard_by_prefix(
+        self,
+        prefixes: MultistoreConfig,
+    ) -> BTreeMap<Arc<SubstoreConfig>, Self> {
+        let mut changes_by_substore = BTreeMap::new();
+        for (key, some_value) in self.unwritten_changes.into_iter() {
+            let (truncated_key, substore_config) = prefixes.route_key_str(&key);
+            changes_by_substore
+                .entry(substore_config)
+                .or_insert_with(|| Cache::default())
+                .unwritten_changes
+                .insert(truncated_key.to_string(), some_value);
+        }
+
+        for (key, some_value) in self.nonverifiable_changes {
+            let (truncated_key, substore_config) = prefixes.route_key_bytes(&key);
+            changes_by_substore
+                .entry(substore_config)
+                .or_insert_with(|| Cache::default())
+                .nonverifiable_changes
+                .insert(truncated_key.to_vec(), some_value);
+        }
+        changes_by_substore
     }
 }

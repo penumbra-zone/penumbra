@@ -284,19 +284,17 @@ impl HasPreimage for SubstoreSnapshot {
 pub struct SubstoreStorage {
     pub(crate) db: Arc<rocksdb::DB>,
     pub(crate) config: Arc<SubstoreConfig>,
-    pub(crate) snapshot: SubstoreSnapshot,
 }
 
 impl SubstoreStorage {
-    pub async fn commit(self, cache: Cache, new_version: jmt::Version) -> Result<RootHash> {
+    pub async fn commit(
+        self,
+        cache: Cache,
+        substore_snapshot: SubstoreSnapshot,
+        new_version: jmt::Version,
+    ) -> Result<RootHash> {
         let span = Span::current();
         let db_handle = self.db.clone();
-        let substore_snapshot = SubstoreSnapshot {
-            config: self.config.clone(),
-            rocksdb_snapshot: self.snapshot.rocksdb_snapshot.clone(),
-            version: new_version,
-            db: self.db.clone(),
-        };
 
         tokio::task::Builder::new()
                 .name("Storage::commit_inner_substore")
