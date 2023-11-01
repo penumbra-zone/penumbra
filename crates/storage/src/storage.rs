@@ -41,6 +41,7 @@ struct Inner {
     multistore_config: MultistoreConfig,
     #[allow(dead_code)]
     /// A handle to the dispatcher task.
+    /// It is used by `Storage::release` to wait for the task to terminate.
     jh_dispatcher: Option<tokio::task::JoinHandle<()>>,
     db: Arc<DB>,
 }
