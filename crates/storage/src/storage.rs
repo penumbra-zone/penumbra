@@ -1,5 +1,5 @@
 use borsh::BorshDeserialize;
-use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 // use tokio_stream::wrappers::WatchStream;
 
 use anyhow::{bail, Result};
@@ -183,6 +183,24 @@ impl Storage {
     }
 
     /// Commits the provided [`StateDelta`] to persistent storage as the latest
+    /// version of the chain state.
+    pub async fn commit(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
+        // Extract the snapshot and the changes from the state delta
+        let (snapshot, changes) = delta.flatten();
+
+        // We use wrapping_add here so that we can write `new_version = 0` by
+        // overflowing `PRE_GENESIS_VERSION`.
+        let old_version = self.latest_version();
+        let new_version = old_version.wrapping_add(1);
+        tracing::trace!(old_version, new_version);
+        if old_version != snapshot.version() {
+            anyhow::bail!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, snapshot.version());
+        }
+        self.commit_inner(snapshot, changes, new_version, true)
+            .await
+    }
+
+    /// Commits the provided [`StateDelta`] to persistent storage as the latest
     /// version of the chain state. If `write_to_snapshot_cache` is `false`, the
     /// snapshot will not be written to the snapshot cache, and no subscribers
     /// will be notified.
@@ -194,33 +212,13 @@ impl Storage {
         write_to_snapshot_cache: bool,
     ) -> Result<crate::RootHash> {
         let inner = self.0.clone();
-        /* shard the set of changes */
-        // TODO(erwan): pondering whether this should be encapsulated in a method over `Cache`. logically, i think this
-        // makes sense but the current `Cache` impl is crisp and clean so i'm not sure.
-        let mut changes_by_substore = BTreeMap::new();
-        for (key, some_value) in cache.unwritten_changes.into_iter() {
-            let (truncated_key, substore_config) = self.0.multistore_config.route_key_str(&key);
-            changes_by_substore
-                .entry(substore_config)
-                .or_insert_with(|| Cache::default())
-                .unwritten_changes
-                .insert(truncated_key.to_string(), some_value);
-        }
 
-        for (key, some_value) in cache.nonverifiable_changes {
-            let (truncated_key, substore_config) = self.0.multistore_config.route_key_bytes(&key);
-            changes_by_substore
-                .entry(substore_config)
-                .or_insert_with(|| Cache::default())
-                .nonverifiable_changes
-                .insert(truncated_key.to_vec(), some_value);
-        }
-
-        /* commit the substores */
+        let mut changes_by_substore = cache.shard_by_prefix(self.0.multistore_config.clone());
         let mut substore_roots = Vec::new();
 
-        // TODO(erwan): the substores are disjoint key spaces and CFs
-        // this is probably a good candidate for a joinset.
+        // Note(erwan): if the number of substore grows, this loop could be transformed into
+        // a [`tokio::task::JoinSet`]. however, at the time of writing, there is a single digit number
+        // of substores, so the overhead of a joinset is not worth it.
         for substore_config in &self.0.multistore_config.substores {
             let substore_snapshot = SubstoreSnapshot {
                 config: substore_config.clone(),
@@ -230,19 +228,17 @@ impl Storage {
             };
 
             let substore_storage = SubstoreStorage {
-                snapshot: substore_snapshot,
                 config: substore_config.clone(),
                 db: self.0.db.clone(),
             };
 
-            // TODO(erwan): we want to atomically write the changes to the substore, and then write the root hash to the jmt
-            // to do this we probably will have to pass a transaction object to the commit routine.
             let Some(changeset) = changes_by_substore.remove(substore_config) else {
                 continue;
             };
 
-            let root_hash = substore_storage.commit(changeset, new_version).await?;
-
+            let root_hash = substore_storage
+                .commit(changeset, substore_snapshot, new_version)
+                .await?;
             substore_roots.push((substore_config, root_hash));
         }
 
@@ -267,12 +263,11 @@ impl Storage {
 
         let main_store_storage = SubstoreStorage {
             config: main_store_snapshot.config.clone(),
-            snapshot: main_store_snapshot,
             db: self.0.db.clone(),
         };
 
         let global_root_hash = main_store_storage
-            .commit(main_store_changes, new_version)
+            .commit(main_store_changes, main_store_snapshot, new_version)
             .await?;
 
         /* hydrate the snapshot cache */
@@ -300,24 +295,6 @@ impl Storage {
         Ok(global_root_hash)
 
         //end
-    }
-
-    /// Commits the provided [`StateDelta`] to persistent storage as the latest
-    /// version of the chain state.
-    pub async fn commit(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
-        // Extract the snapshot and the changes from the state delta
-        let (snapshot, changes) = delta.flatten();
-
-        // We use wrapping_add here so that we can write `new_version = 0` by
-        // overflowing `PRE_GENESIS_VERSION`.
-        let old_version = self.latest_version();
-        let new_version = old_version.wrapping_add(1);
-        tracing::trace!(old_version, new_version);
-        if old_version != snapshot.version() {
-            anyhow::bail!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, snapshot.version());
-        }
-        self.commit_inner(snapshot, changes, new_version, true)
-            .await
     }
 
     #[cfg(feature = "migration")]
