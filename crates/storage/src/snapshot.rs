@@ -7,7 +7,7 @@ use tracing::Span;
 
 #[cfg(feature = "metrics")]
 use crate::metrics;
-use crate::store::multistore::MultistoreConfig;
+use crate::store::multistore;
 use crate::{store, StateRead};
 
 mod rocks_wrapper;
@@ -23,18 +23,10 @@ pub(crate) use rocks_wrapper::RocksDbSnapshot;
 #[derive(Clone)]
 pub struct Snapshot(pub(crate) Arc<Inner>);
 
-impl std::fmt::Debug for Snapshot {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Snapshot")
-            .field("version", &self.0.version)
-            .finish_non_exhaustive()
-    }
-}
-
 // We don't want to expose the `TreeReader` implementation outside of this crate.
 #[derive(Debug)]
 pub(crate) struct Inner {
-    pub(crate) multistore: MultistoreConfig,
+    pub(crate) multistore_cache: multistore::VersionCache,
     pub(crate) snapshot: Arc<RocksDbSnapshot>,
     pub(crate) version: jmt::Version,
     // Used to retrieve column family handles.
@@ -46,13 +38,13 @@ impl Snapshot {
     pub(crate) fn new(
         db: Arc<rocksdb::DB>,
         version: jmt::Version,
-        multistore: MultistoreConfig,
+        multistore_cache: multistore::VersionCache,
     ) -> Self {
         Self(Arc::new(Inner {
             snapshot: Arc::new(RocksDbSnapshot::new(db.clone())),
             version,
             db,
-            multistore,
+            multistore_cache,
         }))
     }
 
@@ -69,17 +61,26 @@ impl Snapshot {
     ) -> Result<(Option<Vec<u8>>, ics23::CommitmentProof)> {
         let span = tracing::Span::current();
 
-        let (_, substore_config) = self.0.multistore.route_key_bytes(&key);
+        let (_, substore_config) = self.0.multistore_cache.route_key_bytes(&key);
+        let substore_version = self.substore_version(&substore_config).unwrap_or(u64::MAX);
+
         let substore = store::substore::SubstoreSnapshot {
             config: substore_config,
             rocksdb_snapshot: self.0.snapshot.clone(),
-            version: self.version(),
+            version: substore_version,
             db: self.0.db.clone(),
         };
         tokio::task::Builder::new()
             .name("Snapshot::get_with_proof")
             .spawn_blocking(move || span.in_scope(|| substore.get_with_proof(key)))?
             .await?
+    }
+
+    pub fn substore_version(
+        &self,
+        prefix: &Arc<store::substore::SubstoreConfig>,
+    ) -> Option<jmt::Version> {
+        self.0.multistore_cache.get_version(prefix)
     }
 
     /// Returns the root hash of this `State`.
@@ -91,11 +92,13 @@ impl Snapshot {
     pub async fn prefix_root_hash(&self, prefix: &str) -> Result<crate::RootHash> {
         let span = tracing::Span::current();
 
-        let (_, substore_config) = self.0.multistore.route_key_str(&prefix);
+        let (_, substore_config) = self.0.multistore_cache.config.route_key_str(&prefix);
+        let version = self.substore_version(&substore_config).unwrap_or(u64::MAX);
+
         let substore = store::substore::SubstoreSnapshot {
             config: substore_config,
             rocksdb_snapshot: self.0.snapshot.clone(),
-            version: self.version(),
+            version,
             db: self.0.db.clone(),
         };
 
@@ -124,12 +127,14 @@ impl StateRead for Snapshot {
     /// Fetch a key from the JMT column family.
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         let span = Span::current();
-        let (key, substore_config) = self.0.multistore.route_key_str(key);
+        let (key, substore_config) = self.0.multistore_cache.route_key_str(key);
+
+        let substore_version = self.substore_version(&substore_config).unwrap_or(u64::MAX);
 
         let substore = store::substore::SubstoreSnapshot {
             config: substore_config,
             rocksdb_snapshot: self.0.snapshot.clone(),
-            version: self.version(),
+            version: substore_version,
             db: self.0.db.clone(),
         };
         let key_hash = jmt::KeyHash::with::<sha2::Sha256>(key);
@@ -154,12 +159,16 @@ impl StateRead for Snapshot {
         let span = Span::current();
         let inner = self.0.clone();
         let snapshot = self.clone();
-        let (key, substore_config) = inner.multistore.route_key_bytes(key);
+        let (key, substore_config) = inner.multistore_cache.route_key_bytes(key);
+
+        let substore_version = snapshot
+            .substore_version(&substore_config)
+            .unwrap_or(u64::MAX);
 
         let substore = store::substore::SubstoreSnapshot {
             config: substore_config,
             rocksdb_snapshot: self.0.snapshot.clone(),
-            version: self.version(),
+            version: substore_version,
             db: self.0.db.clone(),
         };
         let key: Vec<u8> = key.to_vec();
@@ -195,7 +204,7 @@ impl StateRead for Snapshot {
         options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
         let mode = rocksdb::IteratorMode::Start;
 
-        let (_, substore_config) = self.0.multistore.route_key_bytes(prefix.as_bytes());
+        let (_, substore_config) = self.0.multistore_cache.route_key_bytes(prefix.as_bytes());
         let snapshot = self.clone();
 
         let (tx_prefix_item, rx_prefix_query) = mpsc::channel(10);
@@ -207,10 +216,13 @@ impl StateRead for Snapshot {
             .name("Snapshot::prefix_raw")
             .spawn_blocking(move || {
                 span.in_scope(|| {
+                    let substore_version = snapshot
+                        .substore_version(&substore_config)
+                        .unwrap_or(u64::MAX);
                     let substore = store::substore::SubstoreSnapshot {
                         config: substore_config.clone(),
                         rocksdb_snapshot: snapshot.0.snapshot.clone(),
-                        version: snapshot.version(),
+                        version: substore_version,
                         db: snapshot.0.db.clone(),
                     };
                     let cf_jmt_keys = substore.config.cf_jmt_keys(&snapshot.0.db);
@@ -258,15 +270,19 @@ impl StateRead for Snapshot {
         let span = Span::current();
         let snapshot = self.clone();
 
-        let (prefix, substore_config) = self.0.multistore.route_key_str(prefix);
+        let (prefix, substore_config) = self.0.multistore_cache.route_key_str(prefix);
         let mut options = rocksdb::ReadOptions::default();
         options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
         let mode = rocksdb::IteratorMode::Start;
 
+        let substore_version = snapshot
+            .substore_version(&substore_config)
+            .unwrap_or(u64::MAX);
+
         let substore = store::substore::SubstoreSnapshot {
             config: substore_config,
             rocksdb_snapshot: self.0.snapshot.clone(),
-            version: self.version(),
+            version: substore_version,
             db: self.0.db.clone(),
         };
         let (tx, rx) = mpsc::channel(10);
@@ -296,18 +312,21 @@ impl StateRead for Snapshot {
         let span = Span::current();
         let snapshot = self.clone();
 
-        let (prefix, substore_config) = self.0.multistore.route_key_bytes(prefix);
+        let (prefix, substore_config) = self.0.multistore_cache.route_key_bytes(prefix);
         let mut options = rocksdb::ReadOptions::default();
         options.set_iterate_range(rocksdb::PrefixRange(prefix));
         let mode = rocksdb::IteratorMode::Start;
 
+        let substore_version = snapshot
+            .substore_version(&substore_config)
+            .unwrap_or(u64::MAX);
+
         let substore = store::substore::SubstoreSnapshot {
             config: substore_config,
             rocksdb_snapshot: self.0.snapshot.clone(),
-            version: self.version(),
+            version: substore_version,
             db: self.0.db.clone(),
         };
-
         let (tx_prefix_query, rx_prefix_query) = mpsc::channel(10);
 
         // Here we're operating on the nonverifiable data, which is a raw k/v store,
@@ -343,7 +362,7 @@ impl StateRead for Snapshot {
 
         let (prefix, substore_config) = self
             .0
-            .multistore
+            .multistore_cache
             .route_key_bytes(prefix.unwrap_or_default());
         let (_range, (start, end)) = crate::utils::convert_bounds(range)?;
         let mut options = rocksdb::ReadOptions::default();
@@ -385,10 +404,14 @@ impl StateRead for Snapshot {
         let mode = rocksdb::IteratorMode::Start;
         let prefix = prefix.to_vec();
 
+        let substore_version = snapshot
+            .substore_version(&substore_config)
+            .unwrap_or(u64::MAX);
+
         let substore = store::substore::SubstoreSnapshot {
             config: substore_config,
             rocksdb_snapshot: self.0.snapshot.clone(),
-            version: self.version(),
+            version: substore_version,
             db: self.0.db.clone(),
         };
         let (tx, rx) = mpsc::channel::<Result<(Vec<u8>, Vec<u8>)>>(10);
@@ -429,5 +452,13 @@ impl StateRead for Snapshot {
     fn object_type(&self, _key: &str) -> Option<std::any::TypeId> {
         // No-op -- this will never be called internally, and `Snapshot` is not exposed in public API
         None
+    }
+}
+
+impl std::fmt::Debug for Snapshot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Snapshot")
+            .field("version", &self.0.version)
+            .finish_non_exhaustive()
     }
 }

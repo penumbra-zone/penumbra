@@ -108,15 +108,32 @@ impl SubstoreConfig {
         ))
     }
 
-    pub fn latest_version(&self, db_handle: Arc<rocksdb::DB>) -> Result<Option<jmt::Version>> {
+    /* TODO(erwan): this should be reworked before we ship this PR */
+
+    pub fn latest_version_from_db(
+        &self,
+        db_handle: &Arc<rocksdb::DB>,
+    ) -> Result<Option<jmt::Version>> {
         Ok(self
-            .get_rightmost_leaf(db_handle)?
+            .get_rightmost_leaf_from_db(db_handle)?
             .map(|(node_key, _)| node_key.version()))
     }
 
-    fn get_rightmost_leaf(
+    pub fn latest_version_from_snapshot(
         &self,
-        db_handle: Arc<rocksdb::DB>,
+        db_handle: &Arc<rocksdb::DB>,
+        snapshot: &RocksDbSnapshot,
+    ) -> Result<Option<jmt::Version>> {
+        Ok(self
+            .get_rightmost_leaf_from_snapshot(db_handle, snapshot)?
+            .map(|(node_key, _)| node_key.version()))
+    }
+
+    // TODO(erwan): it's strange that this exists over a `SubstoreConfig`, or that we have
+    // two different ways of getting the rightmost leaf.
+    fn get_rightmost_leaf_from_db(
+        &self,
+        db_handle: &Arc<rocksdb::DB>,
     ) -> Result<Option<(NodeKey, LeafNode)>> {
         let cf_jmt = self.cf_jmt(&db_handle);
         let mut iter = db_handle.raw_iterator_cf(cf_jmt);
@@ -137,6 +154,24 @@ impl SubstoreConfig {
         }
 
         Ok(None)
+    }
+
+    fn get_rightmost_leaf_from_snapshot(
+        &self,
+        db_handle: &Arc<rocksdb::DB>,
+        snapshot: &RocksDbSnapshot,
+    ) -> Result<Option<(NodeKey, LeafNode)>> {
+        let cf_jmt = self.cf_jmt(&db_handle);
+        let mut iter = snapshot.iterator_cf(cf_jmt, IteratorMode::End);
+        let Some((raw_key, raw_value)) = iter.next().transpose()? else {
+            return Ok(None);
+        };
+
+        let node_key = DbNodeKey::decode(&raw_key)?.into_inner();
+        let Node::Leaf(leaf) = Node::try_from_slice(&raw_value)? else {
+            return Ok(None);
+        };
+        Ok(Some((node_key, leaf)))
     }
 }
 
@@ -463,7 +498,8 @@ impl VersionedKeyHash {
         buf
     }
 
-    pub fn _decode(buf: Vec<u8>) -> Result<Self> {
+    #[allow(dead_code)]
+    pub fn decode(buf: Vec<u8>) -> Result<Self> {
         if buf.len() != 40 {
             Err(anyhow::anyhow!(
                 "could not decode buffer into VersionedKey (invalid size)"

@@ -81,7 +81,7 @@ impl Cache {
     /// are truncated to remove the substore prefix.
     pub fn shard_by_prefix(
         self,
-        prefixes: MultistoreConfig,
+        prefixes: &MultistoreConfig,
     ) -> BTreeMap<Arc<SubstoreConfig>, Self> {
         let mut changes_by_substore = BTreeMap::new();
         for (key, some_value) in self.unwritten_changes.into_iter() {
