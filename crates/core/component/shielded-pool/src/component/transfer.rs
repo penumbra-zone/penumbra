@@ -1,6 +1,9 @@
 use std::str::FromStr;
 
-use crate::component::{NoteManager, SupplyWrite};
+use crate::{
+    component::{NoteManager, SupplyWrite},
+    Ics20Withdrawal,
+};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types::{
@@ -32,8 +35,6 @@ use penumbra_ibc::component::{
     },
     state_key,
 };
-
-use crate::component::Ics20Withdrawal;
 
 // returns a bool indicating if the provided denom was issued locally or if it was bridged in.
 // this logic is a bit tricky, and adapted from https://github.com/cosmos/ibc/tree/main/spec/app/ics-020-fungible-token-transfer (sendFungibleTokens).
