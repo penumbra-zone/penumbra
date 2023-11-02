@@ -1,5 +1,6 @@
 use comfy_table::presets;
 use comfy_table::Table;
+use penumbra_asset::asset::Id;
 use penumbra_asset::ValueView;
 use penumbra_dex::swap::SwapView;
 use penumbra_dex::swap_claim::SwapClaimView;
@@ -105,12 +106,21 @@ fn format_value_view(value_view: &ValueView) -> String {
     }
 }
 
-fn format_fee_view(fee: &Fee) -> String {
-    // TODO: Implement FeeView to show decrypted fee.asset_id()
+fn format_fee(fee: &Fee) -> String {
+    // TODO: Implement FeeView to show decrypted fee.
     format!("{}", fee.amount())
 }
 
-// when handling ValueViews inside of a Visible variant of an ActionView, handling both cases might be needlessly verbose
+fn format_asset_id(asset_id: &Id) -> String {
+    // TODO: Implement TradingPairView to show decrypted .asset_id()
+    let input = &asset_id.to_string();
+    let truncated = &input[0..10]; //passet1
+    let ellipsis = "...";
+    let end = &input[(input.len() - 3)..];
+    format!("{}{}{}", truncated, ellipsis, end)
+}
+
+// When handling ValueViews inside of a Visible variant of an ActionView, handling both cases might be needlessly verbose
 // potentially this makes sense as a method on the ValueView enum
 // propose moving this to core/asset/src/value.rs
 fn value_view_amount(value_view: &ValueView) -> Amount {
@@ -128,7 +138,7 @@ impl TransactionViewExt for TransactionView {
     fn render_terminal(&self) {
         let fee = &self.body_view.transaction_parameters.fee;
         // the denomination should be visible here... does a FeeView exist?
-        println!("Fee: {}", format_fee_view(&fee));
+        println!("Fee: {}", format_fee(&fee));
 
         println!(
             "Expiration Height: {}",
@@ -227,11 +237,11 @@ impl TransactionViewExt for TransactionView {
                             };
 
                             action = format!(
-                                "{} {} for {} and paid claim fee {:?}",
+                                "{} {} for {} and paid claim fee {}",
                                 from_value,
-                                from_asset,
-                                to_asset,
-                                format_fee_view(&swap_plaintext.claim_fee),
+                                format_asset_id(&from_asset),
+                                format_asset_id(&to_asset),
+                                format_fee(&swap_plaintext.claim_fee),
                             );
 
                             ["Swap", &action]
@@ -239,8 +249,8 @@ impl TransactionViewExt for TransactionView {
                         SwapView::Opaque { swap } => {
                             action = format!(
                                 "Opaque swap for trading pair: {} <=> {}",
-                                swap.body.trading_pair.asset_1(),
-                                swap.body.trading_pair.asset_2()
+                                format_asset_id(&swap.body.trading_pair.asset_1()),
+                                format_asset_id(&swap.body.trading_pair.asset_2()),
                             );
                             ["Swap", &action]
                         }
@@ -254,7 +264,7 @@ impl TransactionViewExt for TransactionView {
                             output_2,
                         } => {
                             // View service can't see SwapClaims: https://github.com/penumbra-zone/penumbra/issues/2547
-                            dbg!(swap_claim); 
+                            dbg!(swap_claim);
                             let claimed_value = match (
                                 value_view_amount(&output_1.value).value(),
                                 value_view_amount(&output_2.value).value(),
@@ -272,7 +282,7 @@ impl TransactionViewExt for TransactionView {
                             action = format!(
                                 "Claimed {} with fee {:?}",
                                 claimed_value,
-                                format_fee_view(&swap_claim.body.fee),
+                                format_fee(&swap_claim.body.fee),
                             );
                             ["Swap Claim", &action]
                         }
@@ -306,9 +316,9 @@ impl TransactionViewExt for TransactionView {
                     action = format!(
                         "Reserves: ({} {}, {} {}) Fee: {} ID: {}",
                         position.reserves.r1,
-                        position.phi.pair.asset_1(),
+                        format_asset_id(&position.phi.pair.asset_1()),
                         position.reserves.r2,
-                        position.phi.pair.asset_2(),
+                        format_asset_id(&position.phi.pair.asset_2()),
                         position.phi.component.fee,
                         position.id(),
                     );
