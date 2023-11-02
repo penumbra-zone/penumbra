@@ -226,10 +226,10 @@ impl Storage {
         // a [`tokio::task::JoinSet`]. however, at the time of writing, there is a single digit number
         // of substores, so the overhead of a joinset is not worth it.
         for substore_config in self.0.multistore_config.iter() {
-            let new_substore_version = substore_config
+            let old_substore_version = substore_config
                 .latest_version_from_snapshot(&inner.db, &snapshot.0.snapshot)?
-                .unwrap_or(u64::MAX)
-                .wrapping_add(1);
+                .unwrap_or(u64::MAX);
+            let new_substore_version = old_substore_version.wrapping_add(1);
             let substore_snapshot = SubstoreSnapshot {
                 config: substore_config.clone(),
                 rocksdb_snapshot: snapshot.0.snapshot.clone(),
@@ -248,7 +248,7 @@ impl Storage {
             };
 
             let root_hash = substore_storage
-                .commit(changeset, substore_snapshot, new_version)
+                .commit(changeset, substore_snapshot, new_substore_version)
                 .await?;
             substore_roots.push((substore_config, root_hash));
         }
