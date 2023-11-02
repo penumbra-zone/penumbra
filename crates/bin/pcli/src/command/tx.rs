@@ -704,8 +704,6 @@ impl TxCmd {
                 proposal_id,
                 source,
             }) => {
-                use penumbra_governance::state_key;
-
                 let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
                 let proposal = client
                     .proposal_data(ProposalDataRequest {
