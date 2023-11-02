@@ -256,7 +256,7 @@ impl Storage {
         /* commit roots to main store */
         let mut main_store_changes = changes_by_substore
             .remove(&self.0.multistore_config.main_store)
-            .expect("always have main store changes"); // TODO(erwan): possibly relax this later in the pr, for testing.
+            .unwrap_or_default();
 
         for (config, root_hash) in substore_roots {
             main_store_changes
