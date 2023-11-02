@@ -363,7 +363,7 @@ mod tests {
     use std::str::FromStr;
     use tendermint::Time;
 
-    use crate::ibc_action::IbcActionWithHandler;
+    use crate::component::ibc_action_with_handler::IbcActionWithHandler;
     use crate::IbcAction;
 
     use crate::component::app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};

@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use ibc_types::core::{
     channel::msgs::{
         MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
@@ -17,30 +15,6 @@ use ibc_types::TypeUrl as IbcTypesTypeUrl;
 use penumbra_proto::penumbra::core::component::ibc::v1alpha1::{self as pb};
 use penumbra_proto::{DomainType, TypeUrl};
 use serde::{Deserialize, Serialize};
-
-use crate::component::app_handler::AppHandler;
-
-pub struct IbcActionWithHandler<H>(IbcAction, PhantomData<H>);
-
-impl<H: AppHandler> IbcActionWithHandler<H> {
-    pub fn new(action: IbcAction) -> Self {
-        Self(action, PhantomData)
-    }
-
-    pub fn action(&self) -> &IbcAction {
-        &self.0
-    }
-
-    pub fn into_inner(self) -> IbcAction {
-        self.0
-    }
-}
-
-impl<H: AppHandler> From<IbcActionWithHandler<H>> for IbcAction {
-    fn from(value: IbcActionWithHandler<H>) -> Self {
-        value.0
-    }
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::IbcAction", into = "pb::IbcAction")]
@@ -66,10 +40,6 @@ pub enum IbcAction {
 }
 
 impl IbcAction {
-    pub fn with_handler<H: AppHandler>(self) -> IbcActionWithHandler<H> {
-        IbcActionWithHandler::new(self)
-    }
-
     /// Create a tracing span to track execution related to this action.
     ///
     /// The parent span is provided explicitly, so that this span can be constructed

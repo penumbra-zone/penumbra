@@ -15,6 +15,7 @@ mod proof_verification;
 mod view;
 
 pub mod app_handler;
+pub mod ibc_action_with_handler;
 pub mod packet;
 pub mod state_key;
 
