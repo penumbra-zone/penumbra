@@ -9,9 +9,6 @@ pub mod event;
 pub mod genesis;
 pub mod state_key;
 
-pub mod ics20_withdrawal;
-pub use ics20_withdrawal::Ics20Withdrawal;
-
 pub mod note;
 mod note_payload;
 pub mod rseed;

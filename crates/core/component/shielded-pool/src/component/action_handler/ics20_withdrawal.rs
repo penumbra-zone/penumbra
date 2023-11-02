@@ -7,7 +7,7 @@ use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
     component::transfer::{Ics20TransferReadExt as _, Ics20TransferWriteExt as _},
-    Ics20Withdrawal,
+    component::Ics20Withdrawal,
 };
 
 #[async_trait]
