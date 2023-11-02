@@ -49,7 +49,8 @@ function helm_uninstall() {
 # as necessary. Will *not* replace certain durable resources like
 # the LoadBalancer Service objects, which are annotated with helm.sh/resource-policy=keep.
 function helm_install() {
-    helmfile apply -f "$HELMFILE_MANIFEST" --args \
+    # TODO: make sure helmfile is present in ci environemnt.
+    helmfile sync -f "$HELMFILE_MANIFEST" --args \
         --set="image.tag=${PENUMBRA_VERSION}"
 }
 
