@@ -81,12 +81,9 @@ pub enum CeremonyCmd {
     Contribute {
         #[clap(long)]
         phase: u8,
-        #[clap(long, default_value = "https://summoning-dev.penumbra.zone")]
+        #[clap(long, default_value = "https://summoning.penumbra.zone")]
         coordinator_url: Url,
-        #[clap(
-            long,
-            default_value = "penumbra1zjd6p7d6xta200mzcxtcudqthe4yfsnm6cw7wpr6tdecj6gsdpjmjld6vezu7rdj3kr8u9rl9pkhgst99sxy8wlvl8wqsst0wjhy0wewsczx9d6ys96z84rhewdwrm537y6wwz"
-        )]
+        #[clap(long)]
         coordinator_address: Address,
         #[clap(long)]
         bid: String,
