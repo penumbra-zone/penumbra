@@ -6,9 +6,10 @@ use axum::{
     routing::get,
     Router,
 };
+use penumbra_keys::Address;
 use std::sync::Arc;
 
-use crate::PhaseMarker;
+use crate::{config::Config, PhaseMarker};
 use crate::{queue::ParticipantQueue, storage::Storage};
 
 /// The number of previous contributions to display
@@ -16,13 +17,23 @@ const LAST_N: u64 = 10_000;
 
 /// Represents the storage used by the web application.
 pub struct WebAppState {
+    address: Address,
+    config: Config,
     phase: PhaseMarker,
     queue: ParticipantQueue,
     storage: Storage,
 }
 
-pub fn web_app(phase: PhaseMarker, queue: ParticipantQueue, storage: Storage) -> Router {
+pub fn web_app(
+    address: Address,
+    config: Config,
+    phase: PhaseMarker,
+    queue: ParticipantQueue,
+    storage: Storage,
+) -> Router {
     let shared_state = Arc::new(WebAppState {
+        address,
+        config,
         phase,
         queue,
         storage,
@@ -40,7 +51,11 @@ pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoRespon
         PhaseMarker::P2 => 2,
     };
 
-    let template = MainTemplate { phase_number };
+    let template = MainTemplate {
+        address: state.address.to_string(),
+        min_bid: format!("{}penumbra", state.config.min_bid_u64),
+        phase_number,
+    };
     HtmlTemplate(template)
 }
 
@@ -63,8 +78,14 @@ pub async fn phase_1(State(state): State<Arc<WebAppState>>) -> impl IntoResponse
         let snapshot = state.queue.snapshot().await;
         Some((
             snapshot.connected_participants,
-            snapshot.top_bid.unwrap_or(0u64.into()).to_string(),
-            snapshot.median_bid.unwrap_or(0u64.into()).to_string(),
+            format!(
+                "{}penumbra",
+                snapshot.top_bid.unwrap_or(0u64.into()) / 1_000_000u128.into()
+            ),
+            format!(
+                "{}penumbra",
+                snapshot.median_bid.unwrap_or(0u64.into()) / 1_000_000u128.into()
+            ),
         ))
     } else {
         None
@@ -97,8 +118,14 @@ pub async fn phase_2(State(state): State<Arc<WebAppState>>) -> impl IntoResponse
         let snapshot = state.queue.snapshot().await;
         Some((
             snapshot.connected_participants,
-            snapshot.top_bid.unwrap_or(0u64.into()).to_string(),
-            snapshot.median_bid.unwrap_or(0u64.into()).to_string(),
+            format!(
+                "{}penumbra",
+                snapshot.top_bid.unwrap_or(0u64.into()) / 1_000_000u128.into()
+            ),
+            format!(
+                "{}penumbra",
+                snapshot.median_bid.unwrap_or(0u64.into()) / 1_000_000u128.into()
+            ),
         ))
     } else {
         None
@@ -115,6 +142,8 @@ pub async fn phase_2(State(state): State<Arc<WebAppState>>) -> impl IntoResponse
 #[derive(Template)]
 #[template(path = "main.html")]
 struct MainTemplate {
+    address: String,
+    min_bid: String,
     phase_number: u64,
 }
 
