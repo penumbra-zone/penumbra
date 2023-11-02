@@ -101,6 +101,9 @@ impl Storage {
                         multistore_cache.set_version(substore_config.clone(), substore_version);
                     }
 
+                    // TODO(erwan): we need to refactor this whole setup phase.
+                    multistore_cache.set_version(main_store, jmt_version);
+
                     let latest_snapshot = Snapshot::new(db.clone(), jmt_version, multistore_cache);
 
                     // A concurrent-safe ring buffer of the latest 10 snapshots.
