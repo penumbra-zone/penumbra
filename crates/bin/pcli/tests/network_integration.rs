@@ -811,6 +811,8 @@ fn governance_submit_proposal() {
             "submit",
             "--file",
             "proposal.toml",
+            "--deposit-amount",
+            "1penumbra",
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     submit_cmd.assert().success();
@@ -1276,6 +1278,8 @@ fn delegate_submit_proposal_and_vote() {
             "submit",
             "--file",
             template_path,
+            "--deposit-amount",
+            "1penumbra",
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     submit_proposal_cmd.assert().success();
