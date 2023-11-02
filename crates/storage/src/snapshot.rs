@@ -471,7 +471,6 @@ impl TreeReader for Inner {
 
     /// Gets node given a node key. Returns `None` if the node does not exist.
     fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node>> {
-        let node_key = node_key;
         let db_node_key = DbNodeKey::from(node_key.clone());
         tracing::trace!(?node_key);
 

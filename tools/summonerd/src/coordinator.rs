@@ -98,6 +98,6 @@ impl Coordinator {
         }
         tracing::info!("STRIKE (invalid or partial contribution)");
         self.storage.strike(&address).await?;
-        return Ok(());
+        Ok(())
     }
 }

@@ -45,6 +45,7 @@ impl PcliConfig {
 /// The custody backend to use.
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 #[serde(tag = "backend")]
+#[allow(clippy::large_enum_variant)]
 pub enum CustodyConfig {
     /// A view-only client that can't sign transactions.
     ViewOnly,

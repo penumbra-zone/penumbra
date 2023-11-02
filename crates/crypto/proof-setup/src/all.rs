@@ -360,7 +360,7 @@ impl Phase2CeremonyContribution {
             &old.0[0], &old.0[1], &old.0[2], &old.0[3], &old.0[4], &old.0[5], &old.0[6],
         ];
         Self(transform_parallel(data, |old_i| {
-            Phase2Contribution::make(&mut OsRng, ContributionHash::dummy(), &old_i)
+            Phase2Contribution::make(&mut OsRng, ContributionHash::dummy(), old_i)
         }))
     }
 }
@@ -682,7 +682,7 @@ impl Phase1CeremonyContribution {
             &old.0[0], &old.0[1], &old.0[2], &old.0[3], &old.0[4], &old.0[5], &old.0[6],
         ];
         Self(transform_parallel(data, |old_i| {
-            Phase1Contribution::make(&mut OsRng, ContributionHash::dummy(), &old_i)
+            Phase1Contribution::make(&mut OsRng, ContributionHash::dummy(), old_i)
         }))
     }
 }
@@ -707,7 +707,7 @@ impl AllExtraTransitionInformation {
     }
 
     pub fn from_bytes(data: &[u8]) -> Result<Self> {
-        Ok(from_bytes_unchecked::<Self>(data)?)
+        from_bytes_unchecked::<Self>(data)
     }
 }
 

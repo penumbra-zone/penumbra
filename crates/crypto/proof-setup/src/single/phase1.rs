@@ -72,7 +72,6 @@ impl RawCRSElements {
     ///
     /// This checks if the structure of the elements uses the secret scalars
     /// hidden behind the group elements correctly.
-    #[must_use]
     pub fn validate(self) -> anyhow::Result<CRSElements> {
         // 0. Check that we can extract a valid degree out of these elements.
         let d = self
