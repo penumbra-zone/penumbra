@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use ark_ec::Group;
 use ark_ff::{One, UniformRand, Zero};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress, Valid, Validate};
 use rand_core::{CryptoRngCore, OsRng};
 
 use crate::parallel_utils::{flatten_results, transform_parallel};
@@ -148,6 +148,76 @@ impl RawCRSElements {
             degree: d,
             raw: self,
         }
+    }
+
+    /// This is a replacement for the CanonicalDeserialize trait impl (more or less).
+    #[cfg(not(feature = "parallel"))]
+    pub(crate) fn checked_deserialize_parallel(compress: Compress, data: &[u8]) -> Self {
+        Self::deserialize_with_mode(data, compress, Validate::Yes)
+    }
+
+    /// This is a replacement for the CanonicalDeserialize trait impl (more or less).
+    #[cfg(feature = "parallel")]
+    pub(crate) fn checked_deserialize_parallel(
+        compress: Compress,
+        data: &[u8],
+    ) -> anyhow::Result<Self> {
+        use rayon::prelude::*;
+
+        let out = Self::deserialize_with_mode(data, compress, Validate::No)?;
+        out.alpha_1.check()?;
+        out.beta_1.check()?;
+        out.beta_2.check()?;
+
+        let mut check_x_1 = Ok(());
+        let mut check_x_2 = Ok(());
+        let mut check_alpha_x_1 = Ok(());
+        let mut check_beta_x_1 = Ok(());
+
+        rayon::join(
+            || {
+                rayon::join(
+                    || {
+                        check_x_1 = out
+                            .x_1
+                            .par_iter()
+                            .map(|x| x.check())
+                            .collect::<Result<_, _>>();
+                    },
+                    || {
+                        check_x_2 = out
+                            .x_2
+                            .par_iter()
+                            .map(|x| x.check())
+                            .collect::<Result<_, _>>();
+                    },
+                )
+            },
+            || {
+                rayon::join(
+                    || {
+                        check_alpha_x_1 = out
+                            .alpha_x_1
+                            .par_iter()
+                            .map(|x| x.check())
+                            .collect::<Result<_, _>>();
+                    },
+                    || {
+                        check_beta_x_1 = out
+                            .beta_x_1
+                            .par_iter()
+                            .map(|x| x.check())
+                            .collect::<Result<_, _>>();
+                    },
+                )
+            },
+        );
+
+        check_x_1?;
+        check_x_2?;
+        check_alpha_x_1?;
+        check_beta_x_1?;
+        Ok(out)
     }
 }
 
