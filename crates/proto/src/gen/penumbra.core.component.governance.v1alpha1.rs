@@ -516,6 +516,11 @@ pub struct ProposalDataResponse {
     /// The current state of the proposal.
     #[prost(message, optional, tag = "5")]
     pub state: ::core::option::Option<ProposalState>,
+    /// The deposit amount paid for the proposal.
+    #[prost(message, optional, tag = "6")]
+    pub proposal_deposit_amount: ::core::option::Option<
+        super::super::super::num::v1alpha1::Amount,
+    >,
 }
 /// Requests the validator rate data for a proposal.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -661,6 +666,67 @@ pub struct ChangedAppParametersSet {
     /// The new set of parameters the proposal is trying to enact.
     #[prost(message, optional, tag = "2")]
     pub new: ::core::option::Option<ChangedAppParameters>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct VotingPowerAtProposalStartRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    /// The proposal id to request information on.
+    #[prost(uint64, tag = "2")]
+    pub proposal_id: u64,
+    /// The validator identity key to request information on.
+    #[prost(message, optional, tag = "3")]
+    pub identity_key: ::core::option::Option<
+        super::super::super::keys::v1alpha1::IdentityKey,
+    >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct VotingPowerAtProposalStartResponse {
+    /// The voting power for the given identity key at the start of the proposal.
+    /// TODO: since we don't support optional fields in our protos any more,
+    /// this will be set to 0 if the validator was not active at the start of the proposal.
+    /// Is this potentially an issue?
+    #[prost(uint64, tag = "1")]
+    pub voting_power: u64,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AllTalliedDelegatorVotesForProposalRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    /// The proposal id to request information on.
+    #[prost(uint64, tag = "2")]
+    pub proposal_id: u64,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AllTalliedDelegatorVotesForProposalResponse {
+    /// The tally of delegator votes for a given validator for the proposal.
+    #[prost(message, optional, tag = "1")]
+    pub tally: ::core::option::Option<Tally>,
+    /// The validator identity associated with the tally.
+    #[prost(message, optional, tag = "2")]
+    pub identity_key: ::core::option::Option<
+        super::super::super::keys::v1alpha1::IdentityKey,
+    >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NextProposalIdRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct NextProposalIdResponse {
+    /// The next proposal ID.
+    #[prost(uint64, tag = "1")]
+    pub next_proposal_id: u64,
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
@@ -839,6 +905,36 @@ pub mod query_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        pub async fn next_proposal_id(
+            &mut self,
+            request: impl tonic::IntoRequest<super::NextProposalIdRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::NextProposalIdResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.governance.v1alpha1.QueryService/NextProposalId",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.governance.v1alpha1.QueryService",
+                        "NextProposalId",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
         pub async fn validator_votes(
             &mut self,
             request: impl tonic::IntoRequest<super::ValidatorVotesRequest>,
@@ -865,6 +961,72 @@ pub mod query_service_client {
                     GrpcMethod::new(
                         "penumbra.core.component.governance.v1alpha1.QueryService",
                         "ValidatorVotes",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
+        pub async fn voting_power_at_proposal_start(
+            &mut self,
+            request: impl tonic::IntoRequest<super::VotingPowerAtProposalStartRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::VotingPowerAtProposalStartResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.governance.v1alpha1.QueryService/VotingPowerAtProposalStart",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.governance.v1alpha1.QueryService",
+                        "VotingPowerAtProposalStart",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn all_tallied_delegator_votes_for_proposal(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                super::AllTalliedDelegatorVotesForProposalRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                tonic::codec::Streaming<
+                    super::AllTalliedDelegatorVotesForProposalResponse,
+                >,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.governance.v1alpha1.QueryService/AllTalliedDelegatorVotesForProposal",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.governance.v1alpha1.QueryService",
+                        "AllTalliedDelegatorVotesForProposal",
                     ),
                 );
             self.inner.server_streaming(req, path, codec).await
@@ -937,6 +1099,13 @@ pub mod query_service_server {
             tonic::Response<super::ProposalDataResponse>,
             tonic::Status,
         >;
+        async fn next_proposal_id(
+            &self,
+            request: tonic::Request<super::NextProposalIdRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::NextProposalIdResponse>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the ValidatorVotes method.
         type ValidatorVotesStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::ValidatorVotesResponse, tonic::Status>,
@@ -948,6 +1117,29 @@ pub mod query_service_server {
             request: tonic::Request<super::ValidatorVotesRequest>,
         ) -> std::result::Result<
             tonic::Response<Self::ValidatorVotesStream>,
+            tonic::Status,
+        >;
+        async fn voting_power_at_proposal_start(
+            &self,
+            request: tonic::Request<super::VotingPowerAtProposalStartRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::VotingPowerAtProposalStartResponse>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the AllTalliedDelegatorVotesForProposal method.
+        type AllTalliedDelegatorVotesForProposalStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<
+                    super::AllTalliedDelegatorVotesForProposalResponse,
+                    tonic::Status,
+                >,
+            >
+            + Send
+            + 'static;
+        async fn all_tallied_delegator_votes_for_proposal(
+            &self,
+            request: tonic::Request<super::AllTalliedDelegatorVotesForProposalRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::AllTalliedDelegatorVotesForProposalStream>,
             tonic::Status,
         >;
         /// Server streaming response type for the ProposalRateData method.
@@ -1187,6 +1379,52 @@ pub mod query_service_server {
                     };
                     Box::pin(fut)
                 }
+                "/penumbra.core.component.governance.v1alpha1.QueryService/NextProposalId" => {
+                    #[allow(non_camel_case_types)]
+                    struct NextProposalIdSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::UnaryService<super::NextProposalIdRequest>
+                    for NextProposalIdSvc<T> {
+                        type Response = super::NextProposalIdResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::NextProposalIdRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::next_proposal_id(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = NextProposalIdSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
                 "/penumbra.core.component.governance.v1alpha1.QueryService/ValidatorVotes" => {
                     #[allow(non_camel_case_types)]
                     struct ValidatorVotesSvc<T: QueryService>(pub Arc<T>);
@@ -1219,6 +1457,115 @@ pub mod query_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = ValidatorVotesSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.component.governance.v1alpha1.QueryService/VotingPowerAtProposalStart" => {
+                    #[allow(non_camel_case_types)]
+                    struct VotingPowerAtProposalStartSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::UnaryService<
+                        super::VotingPowerAtProposalStartRequest,
+                    > for VotingPowerAtProposalStartSvc<T> {
+                        type Response = super::VotingPowerAtProposalStartResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::VotingPowerAtProposalStartRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::voting_power_at_proposal_start(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = VotingPowerAtProposalStartSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.component.governance.v1alpha1.QueryService/AllTalliedDelegatorVotesForProposal" => {
+                    #[allow(non_camel_case_types)]
+                    struct AllTalliedDelegatorVotesForProposalSvc<T: QueryService>(
+                        pub Arc<T>,
+                    );
+                    impl<
+                        T: QueryService,
+                    > tonic::server::ServerStreamingService<
+                        super::AllTalliedDelegatorVotesForProposalRequest,
+                    > for AllTalliedDelegatorVotesForProposalSvc<T> {
+                        type Response = super::AllTalliedDelegatorVotesForProposalResponse;
+                        type ResponseStream = T::AllTalliedDelegatorVotesForProposalStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::AllTalliedDelegatorVotesForProposalRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::all_tallied_delegator_votes_for_proposal(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AllTalliedDelegatorVotesForProposalSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

@@ -1,7 +1,7 @@
 use std::{
     collections::BTreeMap,
     fs::File,
-    io::Read,
+    io::{Read, Write},
     str::FromStr,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -17,7 +17,7 @@ use liquidity_position::PositionCmd;
 use penumbra_asset::{asset, asset::DenomMetadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_fee::Fee;
-use penumbra_governance::{proposal::ProposalToml, Vote};
+use penumbra_governance::{proposal::ProposalToml, proposal_state::State as ProposalState, Vote};
 use penumbra_ibc::Ics20Withdrawal;
 use penumbra_keys::keys::AddressIndex;
 use penumbra_num::Amount;
@@ -33,7 +33,8 @@ use penumbra_proto::{
         },
         governance::v1alpha1::{
             query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
-            ProposalInfoRequest, ProposalInfoResponse, ProposalRateDataRequest,
+            NextProposalIdRequest, ProposalDataRequest, ProposalInfoRequest, ProposalInfoResponse,
+            ProposalRateDataRequest,
         },
         stake::v1alpha1::{
             query_service_client::QueryServiceClient as StakeQueryServiceClient,
@@ -673,21 +674,21 @@ impl TxCmd {
 
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Proposal(ProposalCmd::Template { .. }) => {
-                unimplemented!("governance needs an RPC endpoint");
-                // below code isn't usable by any other client
-                /*
-                let chain_params = app.view().chain_params().await?;
+            TxCmd::Proposal(ProposalCmd::Template { file, kind }) => {
+                let app_params = app.view().app_params().await?;
 
                 // Find out what the latest proposal ID is so we can include the next ID in the template:
-                let mut client = StorageQueryServiceClient::new(app.pd_channel().await?);
+                let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
                 let next_proposal_id: u64 = client
-                    .key_proto(penumbra_governance::state_key::next_proposal_id())
+                    .next_proposal_id(NextProposalIdRequest {
+                        chain_id: app.view().app_params().await?.chain_params.chain_id,
+                    })
                     .await?
-                    .context(format!("there are no proposals yet"))?;
+                    .into_inner()
+                    .next_proposal_id;
 
                 let toml_template: ProposalToml = kind
-                    .template_proposal(&chain_params, next_proposal_id)?
+                    .template_proposal(&app_params, next_proposal_id)?
                     .into();
 
                 if let Some(file) = file {
@@ -698,24 +699,35 @@ impl TxCmd {
                 } else {
                     println!("{}", toml::to_string_pretty(&toml_template)?);
                 }
-                 */
             }
-            TxCmd::Proposal(ProposalCmd::DepositClaim { .. }) => {
-                unimplemented!("governance needs an RPC endpoint");
-                // below code isn't usable by any other client
-                /*
+            TxCmd::Proposal(ProposalCmd::DepositClaim {
+                proposal_id,
+                source,
+            }) => {
                 use penumbra_governance::state_key;
 
-                let fee = Fee::from_staking_token_amount((*fee).into());
-
-                let mut client = app.specific_client().await?;
-                let state: ProposalState = client
-                    .key_domain(state_key::proposal_state(*proposal_id))
+                let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
+                let proposal = client
+                    .proposal_data(ProposalDataRequest {
+                        chain_id: app.view().app_params().await?.chain_params.chain_id,
+                        proposal_id: *proposal_id,
+                    })
                     .await?
+                    .into_inner();
+                let state: ProposalState = proposal
+                    .state
                     .context(format!(
                         "proposal state for proposal {} was not found",
                         proposal_id
-                    ))?;
+                    ))?
+                    .try_into()?;
+                let deposit_amount: Amount = proposal
+                    .proposal_deposit_amount
+                    .context(format!(
+                        "proposal deposit amount for proposal {} was not found",
+                        proposal_id
+                    ))?
+                    .try_into()?;
 
                 let outcome = match state {
                     ProposalState::Voting => anyhow::bail!(
@@ -731,17 +743,8 @@ impl TxCmd {
                     }
                 };
 
-                let deposit_amount: Amount = client
-                    .key_domain(state_key::proposal_deposit_amount(*proposal_id))
-                    .await?
-                    .context(format!(
-                        "deposit amount for proposal {} was not found",
-                        proposal_id
-                    ))?;
-
                 let plan = Planner::new(OsRng)
                     .proposal_deposit_claim(*proposal_id, deposit_amount, outcome)
-                    .fee(fee)
                     .plan(
                         app.view
                             .as_mut()
@@ -752,7 +755,6 @@ impl TxCmd {
                     .await?;
 
                 app.build_and_submit_transaction(plan).await?;
-                */
             }
             TxCmd::Vote { vote, source } => {
                 let (proposal_id, vote): (u64, Vote) = (*vote).into();

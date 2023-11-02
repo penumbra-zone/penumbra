@@ -779,8 +779,6 @@ fn swap() {
 //         .stdout(predicate::str::is_match(format!(r"1\s*1000penumbra")).unwrap());
 // }
 
-/*
-// TODO: re-enable this after restoring governance functionality.
 #[ignore]
 #[test]
 fn governance_submit_proposal() {
@@ -830,7 +828,6 @@ fn governance_submit_proposal() {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     proposals_cmd.assert().success();
 }
-*/
 
 #[ignore]
 #[test]
@@ -1200,8 +1197,6 @@ fn test_orders() {
     withdraw_cmd.assert().success();
 }
 
-/*
-// TODO: re-enable this after restoring governance functionality.
 #[ignore]
 #[test]
 fn delegate_submit_proposal_and_vote() {
@@ -1315,4 +1310,3 @@ fn delegate_submit_proposal_and_vote() {
         .assert()
         .success();
 }
- */
