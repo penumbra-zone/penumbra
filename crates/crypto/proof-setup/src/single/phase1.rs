@@ -4,7 +4,7 @@ use ark_ff::{One, UniformRand, Zero};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress, Valid, Validate};
 use rand_core::{CryptoRngCore, OsRng};
 
-use crate::parallel_utils::{flatten_results, transform_parallel};
+use crate::parallel_utils::{flatten_results, transform_parallel, zip_map_parallel};
 use crate::single::dlog;
 use crate::single::group::{
     BatchedPairingChecker11, BatchedPairingChecker12, GroupHasher, F, G1, G2,
@@ -394,38 +394,11 @@ impl Contribution {
         let beta = F::rand(rng);
         let x = F::rand(rng);
 
-        let mut new = old.clone();
-
-        new.raw.alpha_1 *= alpha;
-        new.raw.beta_1 *= beta;
-        new.raw.beta_2 *= beta;
-
-        let mut x_i = F::one();
-        let mut alpha_x_i = alpha;
-        let mut beta_x_i = beta;
-
-        let d = old.degree;
-        for i in 0..short_len(d) {
-            new.raw.x_1[i] *= x_i;
-            new.raw.x_2[i] *= x_i;
-            new.raw.alpha_x_1[i] *= alpha_x_i;
-            new.raw.beta_x_1[i] *= beta_x_i;
-
-            x_i *= x;
-            alpha_x_i *= x;
-            beta_x_i *= x;
-        }
-        for i in short_len(d)..long_len(d) {
-            new.raw.x_1[i] *= x_i;
-
-            x_i *= x;
-        }
-
         let alpha_proof = dlog::prove(
             rng,
             b"phase1 alpha proof",
             dlog::Statement {
-                result: new.raw.alpha_1,
+                result: old.raw.alpha_1 * alpha,
                 base: old.raw.alpha_1,
             },
             dlog::Witness { dlog: alpha },
@@ -434,7 +407,7 @@ impl Contribution {
             rng,
             b"phase1 beta proof",
             dlog::Statement {
-                result: new.raw.beta_1,
+                result: old.raw.beta_1 * beta,
                 base: old.raw.beta_1,
             },
             dlog::Witness { dlog: beta },
@@ -443,15 +416,64 @@ impl Contribution {
             rng,
             b"phase1 x proof",
             dlog::Statement {
-                result: new.raw.x_1[1],
+                result: old.raw.x_1[1] * x,
                 base: old.raw.x_1[1],
             },
             dlog::Witness { dlog: x },
         );
 
+        let d = old.degree;
+
+        let (mut x_i_tweaks, mut alpha_x_i_tweaks, mut beta_x_i_tweaks) = {
+            let mut x_i_tweaks = Vec::new();
+            let mut alpha_x_i_tweaks = Vec::new();
+            let mut beta_x_i_tweaks = Vec::new();
+
+            let mut x_i = F::one();
+            let mut alpha_x_i = alpha;
+            let mut beta_x_i = beta;
+
+            for _ in 0..short_len(d) {
+                x_i_tweaks.push(x_i);
+                alpha_x_i_tweaks.push(alpha_x_i);
+                beta_x_i_tweaks.push(beta_x_i);
+
+                x_i *= x;
+                alpha_x_i *= x;
+                beta_x_i *= x;
+            }
+            for _ in short_len(d)..long_len(d) {
+                x_i_tweaks.push(x_i);
+
+                x_i *= x;
+            }
+
+            (x_i_tweaks, alpha_x_i_tweaks, beta_x_i_tweaks)
+        };
+
+        let mut old = old.clone();
+        let x_1 = zip_map_parallel(&mut old.raw.x_1, &mut x_i_tweaks, |g, x| *g * x);
+        let x_2 = zip_map_parallel(&mut old.raw.x_2, &mut x_i_tweaks, |g, x| *g * x);
+        let alpha_x_1 =
+            zip_map_parallel(&mut old.raw.alpha_x_1, &mut alpha_x_i_tweaks, |g, x| *g * x);
+        let beta_x_1 = zip_map_parallel(&mut old.raw.beta_x_1, &mut beta_x_i_tweaks, |g, x| *g * x);
+
+        let new_elements = CRSElements {
+            degree: d,
+            raw: RawCRSElements {
+                alpha_1: old.raw.alpha_1 * alpha,
+                beta_1: old.raw.beta_1 * beta,
+                beta_2: old.raw.beta_2 * beta,
+                x_1,
+                x_2,
+                alpha_x_1,
+                beta_x_1,
+            },
+        };
+
         Self {
             parent,
-            new_elements: new,
+            new_elements,
             linking_proof: LinkingProof {
                 alpha_proof,
                 beta_proof,
