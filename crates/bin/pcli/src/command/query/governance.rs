@@ -1,15 +1,20 @@
-use std::io::{stdout, Write};
+use std::{
+    collections::BTreeMap,
+    io::{stdout, Write},
+};
 
 use anyhow::{Context, Result};
 use futures::TryStreamExt;
-use serde::Serialize;
-//use serde::Serialize;
-use crate::command::query::OutputFormat::Json;
+use penumbra_governance::Vote;
 use penumbra_proto::core::component::governance::v1alpha1::{
-    query_service_client::QueryServiceClient as GovernanceQueryServiceClient, ProposalDataRequest,
-    ProposalListRequest, ProposalListResponse,
+    query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
+    AllTalliedDelegatorVotesForProposalRequest, ProposalDataRequest, ProposalListRequest,
+    ProposalListResponse, ValidatorVotesRequest, ValidatorVotesResponse,
+    VotingPowerAtProposalStartRequest,
 };
+use penumbra_stake::IdentityKey;
 use penumbra_view::ViewClient;
+use serde::Serialize;
 use serde_json::json;
 
 use crate::App;
@@ -84,7 +89,7 @@ impl GovernanceCmd {
             }
             GovernanceCmd::Proposal { proposal_id, query } => {
                 match query {
-                    Definition => {
+                    &PerProposalCmd::Definition => {
                         let proposal = client
                             .proposal_data(ProposalDataRequest {
                                 chain_id,
@@ -98,7 +103,7 @@ impl GovernanceCmd {
                                 .expect("proposal should always be populated"),
                         )?;
                     }
-                    State => {
+                    PerProposalCmd::State => {
                         let proposal = client
                             .proposal_data(ProposalDataRequest {
                                 chain_id,
@@ -112,7 +117,7 @@ impl GovernanceCmd {
                                 .expect("proposal state should always be populated"),
                         )?;
                     }
-                    Period => {
+                    PerProposalCmd::Period => {
                         let proposal = client
                             .proposal_data(ProposalDataRequest {
                                 chain_id,
@@ -128,48 +133,74 @@ impl GovernanceCmd {
                         });
                         json(&period)?;
                     }
-                    Tally => {
-                        let validator_votes = client
+                    PerProposalCmd::Tally => {
+                        let validator_votes: Vec<ValidatorVotesResponse> = client
                             .validator_votes(ValidatorVotesRequest {
-                                chain_id,
+                                chain_id: chain_id.clone(),
                                 proposal_id: *proposal_id,
                             })
                             .await?
-                            .into_inner();
+                            .into_inner()
+                            .try_collect::<Vec<_>>()
+                            .await?;
 
                         let mut validator_votes_and_power: BTreeMap<IdentityKey, (Vote, u64)> =
                             BTreeMap::new();
-                        for (identity_key, vote) in validator_votes.iter() {
+                        for vote_response in validator_votes {
+                            let identity_key: IdentityKey = vote_response
+                                .identity_key
+                                .expect("identity key must be set for vote response")
+                                .try_into()?;
+                            let vote: Vote = vote_response
+                                .vote
+                                .expect("vote must be set for vote response")
+                                .try_into()?;
                             let power: u64 = client
-                                .key_proto(voting_power_at_proposal_start(
-                                    *proposal_id,
-                                    *identity_key,
-                                ))
+                                .voting_power_at_proposal_start(VotingPowerAtProposalStartRequest {
+                                    chain_id: chain_id.clone(),
+                                    proposal_id: *proposal_id,
+                                    identity_key: Some(identity_key.into()),
+                                })
                                 .await
                                 .context("Error looking for validator power")?
-                                .context("validator power not found")?;
+                                .into_inner()
+                                .voting_power;
 
-                            validator_votes_and_power.insert(*identity_key, (*vote, power));
+                            validator_votes_and_power.insert(identity_key, (vote, power));
                         }
 
                         let mut delegator_tallies: BTreeMap<
                             IdentityKey,
                             penumbra_governance::Tally,
                         > = client
-                            .prefix_domain::<penumbra_governance::Tally>(
-                                all_tallied_delegator_votes_for_proposal(*proposal_id),
+                            .all_tallied_delegator_votes_for_proposal(
+                                AllTalliedDelegatorVotesForProposalRequest {
+                                    chain_id: chain_id.clone(),
+                                    proposal_id: *proposal_id,
+                                },
                             )
                             .await?
-                            .and_then(|r| async move {
-                                Ok((
-                                    IdentityKey::from_str(
-                                        r.0.rsplit('/').next().context("invalid key")?,
-                                    )?,
-                                    r.1,
+                            .into_inner()
+                            .map_ok(|response| {
+                                let identity_key: IdentityKey = response
+                                    .identity_key
+                                    .expect("identity key must be set for vote response")
+                                    .try_into()?;
+                                let tally: penumbra_governance::Tally = response
+                                    .tally
+                                    .expect("tally must be set for vote response")
+                                    .try_into()?;
+                                Ok::<(IdentityKey, penumbra_governance::Tally), anyhow::Error>((
+                                    identity_key,
+                                    tally,
                                 ))
                             })
-                            .try_collect()
-                            .await?;
+                            // TODO: double iterator here is suboptimal but trying to collect
+                            // `Result<Vec<_>>` was annoying
+                            .try_collect::<Vec<_>>()
+                            .await?
+                            .into_iter()
+                            .collect::<Result<BTreeMap<_, _>>>()?;
 
                         // Combine the two mappings
                         let mut total = penumbra_governance::Tally::default();
