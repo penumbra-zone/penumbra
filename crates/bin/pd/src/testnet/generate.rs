@@ -66,7 +66,7 @@ impl TestnetConfig {
         epoch_duration: Option<u64>,
         unbonding_epochs: Option<u64>,
     ) -> anyhow::Result<TestnetConfig> {
-        let external_addresses = external_addresses.unwrap_or(Vec::new());
+        let external_addresses = external_addresses.unwrap_or_default();
 
         let testnet_validators = Self::collect_validators(
             validators_input_file,

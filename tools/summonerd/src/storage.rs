@@ -179,7 +179,7 @@ impl Storage {
             .query_row(
                 "SELECT strikes FROM participant_metadata WHERE address = ?1",
                 [address.to_vec()],
-                |row| Ok(row.get::<usize, u64>(0)?),
+                |row| row.get::<usize, u64>(0),
             )
             .optional()?
             .unwrap_or(0);
@@ -200,7 +200,7 @@ impl Storage {
         // - Bid more than min amount
         // - Hasn't already contributed
         // - Not banned
-        let amount = knower.total_amount_sent_to_me(&address).await?;
+        let amount = knower.total_amount_sent_to_me(address).await?;
         if amount < Amount::from(self.config.min_bid_u64) {
             return Ok(ContributionAllowed::DidntBidEnough(amount));
         }
@@ -416,13 +416,13 @@ impl Storage {
         let tx = conn.transaction()?;
         let maybe_data = tx
             .query_row("SELECT data FROM transition_aux WHERE id = 0", [], |row| {
-                Ok(row.get::<usize, Vec<u8>>(0)?)
+                row.get::<usize, Vec<u8>>(0)
             })
             .optional()?;
         if let Some(data) = maybe_data {
             Ok(Some(AllExtraTransitionInformation::from_bytes(&data)?))
         } else {
-            return Ok(None);
+            Ok(None)
         }
     }
 }

@@ -108,11 +108,17 @@ impl CeremonyCmd {
                 let index = match *phase {
                     1 => AddressIndex {
                         account: 0,
-                        randomizer: b"ceremnyaddr1".as_slice().try_into().unwrap(),
+                        randomizer: b"ceremnyaddr1"
+                            .as_slice()
+                            .try_into()
+                            .expect("12 bytes long"),
                     },
                     2 => AddressIndex {
                         account: 0,
-                        randomizer: b"ceremnyaddr2".as_slice().try_into().unwrap(),
+                        randomizer: b"ceremnyaddr2"
+                            .as_slice()
+                            .try_into()
+                            .expect("12 bytes long"),
                     },
                     _ => anyhow::bail!("phase must be 1 or 2."),
                 };

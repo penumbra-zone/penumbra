@@ -30,6 +30,7 @@ use self::ceremony::CeremonyCmd;
 //
 // https://docs.rs/clap/latest/clap/builder/struct.App.html#method.display_order
 #[derive(Debug, clap::Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum Command {
     /// Initialize `pcli` with a new wallet, or reset it.
     ///

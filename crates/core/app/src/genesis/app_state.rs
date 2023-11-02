@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 /// The application state at genesis.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(try_from = "pb::GenesisAppState", into = "pb::GenesisAppState")]
+#[allow(clippy::large_enum_variant)]
 pub enum AppState {
     /// The application state at genesis.
     Content(Content),

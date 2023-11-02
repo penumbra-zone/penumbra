@@ -87,15 +87,13 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
             }
             ContributionAllowed::Banned => {
                 tracing::debug!(?address, "is banned");
-                return Err(Status::permission_denied(format!(
-                    "nyo contwibution *cries* fow you"
-                )));
+                return Err(Status::permission_denied(
+                    "nyo contwibution *cries* fow you".to_string(),
+                ));
             }
             ContributionAllowed::AlreadyContributed => {
                 tracing::debug!(?address, "already contributed");
-                return Err(Status::permission_denied(format!(
-                    "Thanks again for your contribution! Participating once is enough to guarantee security, and we'd like to allow other people to participate as well."
-                )));
+                return Err(Status::permission_denied("Thanks again for your contribution! Participating once is enough to guarantee security, and we'd like to allow other people to participate as well.".to_string()));
             }
         };
         tracing::info!(?amount, ?address, "bid");

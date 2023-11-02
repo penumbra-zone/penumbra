@@ -94,6 +94,7 @@ struct Opt {
 
 #[derive(Debug, clap::Subcommand)]
 /// Hello folks
+#[allow(clippy::large_enum_variant)]
 enum Command {
     /// Generate a phase 1 root (for testing purposes).
     GeneratePhase1 {
@@ -318,8 +319,8 @@ fn write_params(
     let vk_location = target_dir.join(format!("{}_vk.param", name));
     let id_location = target_dir.join(format!("{}_id.rs", name));
 
-    let pk_file = fs::File::create(&pk_location)?;
-    let vk_file = fs::File::create(&vk_location)?;
+    let pk_file = fs::File::create(pk_location)?;
+    let vk_file = fs::File::create(vk_location)?;
 
     let pk_writer = BufWriter::new(pk_file);
     let vk_writer = BufWriter::new(vk_file);
