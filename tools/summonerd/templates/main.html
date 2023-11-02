@@ -14,12 +14,12 @@
     to first setup your wallet and receive testnet tokens via the faucet in our Discord.</p>
 
 <p>You're ready to contribute! In the command that follows, you'll be sending some of your testnet tokens to the
-    coordinator to bid for a slot to contribute. You need to send a minimum of 1penumbra, but if you want to get to the
+  coordinator to bid for a slot to contribute. You need to send a minimum of {{ min_bid }}, but if you want to get to the
     front of the queue, simply bid more.</p>
 <p>
     In the Terminal, run:
 
-<pre>cargo run --quiet --release --bin pcli -- ceremony contribute --phase {{ phase_number }} --bid 1penumbra</pre>
+<pre>cargo run --quiet --release --bin pcli -- ceremony contribute --coordinator-address {{ address }} --phase {{ phase_number }} --bid {{ min_bid }}</pre>
 </p>
 
 <p>

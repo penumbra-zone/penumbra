@@ -214,7 +214,13 @@ impl Opt {
                         .max_decoding_message_size(max_message_size(marker)),
                 );
 
-                let web_app = web_app(marker, queue, storage);
+                let web_app = web_app(
+                    fvk.payment_address(0u32.into()).0,
+                    config,
+                    marker,
+                    queue,
+                    storage,
+                );
 
                 let router = grpc_server.into_router().merge(web_app);
 
