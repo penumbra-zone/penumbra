@@ -17,7 +17,7 @@ use crate::single::{
 use anyhow::{anyhow, Result};
 use ark_groth16::ProvingKey;
 use ark_relations::r1cs::ConstraintMatrices;
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress, Validate};
 use decaf377::Bls12_377;
 use penumbra_dex::{swap::proof::SwapCircuit, swap_claim::proof::SwapClaimCircuit};
 use penumbra_governance::DelegatorVoteCircuit;
@@ -30,18 +30,28 @@ use rand_core::OsRng;
 
 // Some helper functions since we have to use these seventeen billion times
 
+const SERIALIZATION_COMPRESSION: Compress = Compress::No;
+
 fn to_bytes<T: CanonicalSerialize>(t: &T) -> Result<Vec<u8>> {
     let mut out = Vec::new();
-    t.serialize_uncompressed(&mut out)?;
+    t.serialize_with_mode(&mut out, SERIALIZATION_COMPRESSION)?;
     Ok(out)
 }
 
 fn from_bytes<T: CanonicalDeserialize>(data: &[u8]) -> Result<T> {
-    Ok(T::deserialize_uncompressed(data)?)
+    Ok(T::deserialize_with_mode(
+        data,
+        SERIALIZATION_COMPRESSION,
+        Validate::Yes,
+    )?)
 }
 
 fn from_bytes_unchecked<T: CanonicalDeserialize>(data: &[u8]) -> Result<T> {
-    Ok(T::deserialize_uncompressed_unchecked(data)?)
+    Ok(T::deserialize_with_mode(
+        data,
+        SERIALIZATION_COMPRESSION,
+        Validate::No,
+    )?)
 }
 
 pub const NUM_CIRCUITS: usize = 7;
@@ -239,7 +249,10 @@ impl TryFrom<pb::participate_request::Contribution> for Phase2RawCeremonyContrib
         let out = transform_parallel(data, |(parent_hash, updated, update_proof)| {
             Ok::<_, anyhow::Error>(Phase2RawContribution {
                 parent: ContributionHash::try_from(parent_hash.as_slice())?,
-                new_elements: from_bytes::<Phase2RawCRSElements>(updated.as_slice())?,
+                new_elements: Phase2RawCRSElements::checked_deserialize_parallel(
+                    SERIALIZATION_COMPRESSION,
+                    updated.as_slice(),
+                )?,
                 linking_proof: from_bytes::<DLogProof>(update_proof.as_slice())?,
             })
         });
@@ -559,7 +572,10 @@ impl TryFrom<pb::participate_request::Contribution> for Phase1RawCeremonyContrib
         let out = transform_parallel(data, |(parent_hash, updated, update_proof)| {
             Ok::<_, anyhow::Error>(Phase1RawContribution {
                 parent: ContributionHash::try_from(parent_hash.as_slice())?,
-                new_elements: from_bytes::<Phase1RawCRSElements>(updated.as_slice())?,
+                new_elements: Phase1RawCRSElements::checked_deserialize_parallel(
+                    SERIALIZATION_COMPRESSION,
+                    updated.as_slice(),
+                )?,
                 linking_proof: from_bytes::<LinkingProof>(update_proof.as_slice())?,
             })
         });
