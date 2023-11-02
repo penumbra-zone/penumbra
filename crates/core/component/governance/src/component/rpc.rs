@@ -1,12 +1,8 @@
-use std::collections::BTreeMap;
 use std::pin::Pin;
 use std::str::FromStr;
 
 use anyhow::Context;
-use anyhow::Error;
 use async_stream::try_stream;
-use async_stream::AsyncStream;
-use core::future::Future;
 use futures::{StreamExt, TryStreamExt};
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_num::Amount;
@@ -366,32 +362,32 @@ impl QueryService for Server {
         let identity_key: IdentityKey = request
             .identity_key
             .ok_or_else(|| {
-                tonic::Status::invalid_argument(format!("identity key not included in request"))
+                tonic::Status::invalid_argument("identity key not included in request".to_string())
             })?
             .try_into()
             .map_err(|_| {
-                tonic::Status::invalid_argument(format!("identity key in request was bad protobuf"))
+                tonic::Status::invalid_argument(
+                    "identity key in request was bad protobuf".to_string(),
+                )
             })?;
 
-        if state
+        let voting_power = state
             .get_proto::<u64>(&state_key::voting_power_at_proposal_start(
                 proposal_id,
                 identity_key,
             ))
             .await
-            .map_err(|e| {
-                tonic::Status::internal(format!("error accessing storage: {}", e.to_string()))
-            })?
-            .is_none()
-        {
+            .map_err(|e| tonic::Status::internal(format!("error accessing storage: {}", e)))?;
+
+        if voting_power.is_none() {
             return Err(tonic::Status::not_found(format!(
                 "validator did not exist at proposal creation: {}",
-                identity_key.to_string()
+                identity_key
             )));
         }
 
         Ok(tonic::Response::new(VotingPowerAtProposalStartResponse {
-            voting_power: todo!(),
+            voting_power: voting_power.expect("voting power should be set"),
         }))
     }
 

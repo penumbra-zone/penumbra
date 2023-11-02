@@ -7,10 +7,7 @@ use penumbra_proto::{
     penumbra::core::component::dao::v1alpha1::query_service_client::QueryServiceClient as DaoQueryServiceClient,
 };
 use penumbra_view::ViewClient;
-use std::{
-    collections::BTreeMap,
-    io::{stdout, Write},
-};
+use std::io::{stdout, Write};
 
 #[derive(Debug, clap::Subcommand)]
 pub enum DaoCmd {
@@ -45,7 +42,7 @@ impl DaoCmd {
         let balances = client
             .dao_asset_balances(DaoAssetBalancesRequest {
                 chain_id,
-                asset_ids: asset_id.map_or_else(|| vec![], |id| vec![id.into()]),
+                asset_ids: asset_id.map_or_else(std::vec::Vec::new, |id| vec![id.into()]),
             })
             .await?
             .into_inner()
@@ -63,38 +60,8 @@ impl DaoCmd {
                 .context("cannot parse balance")?;
             let value_str = balance.format(&asset_cache);
 
-            writeln!(writer, "{value_str}");
+            writeln!(writer, "{value_str}")?;
         }
-        // if let Some(asset_id) = asset_id {
-        //     let key = state_key::balance_for_asset(asset_id);
-        //     let amount: Amount = client
-        //         .key_domain(&key)
-        //         .await?
-        //         .context(format!("No balance found for asset {asset_id}"))?;
-
-        //     let value = Value { asset_id, amount };
-        //     let value_str = value.format(&asset_cache);
-
-        //     println!("{value_str}");
-        // } else {
-        //     let prefix = dao::state_key::all_assets_balance();
-        //     let results: Vec<_> = client.prefix_domain(prefix).await?.try_collect().await?;
-
-        //     println!("DAO balance ({} unique assets):", results.len());
-
-        //     for (key, amount) in results {
-        //         // Parse every key/value pair into a Value
-        //         let asset_id: asset::Id = key
-        //             .rsplit('/')
-        //             .next()
-        //             .expect("valid key")
-        //             .parse()
-        //             .expect("valid asset ID");
-        //         let value = Value { asset_id, amount };
-        //         let value_str = value.format(&asset_cache);
-        //         println!("{value_str}");
-        //     }
-        // };
 
         Ok(())
     }
