@@ -117,12 +117,12 @@ impl TypeUrl for IbcRelay {
 }
 
 impl DomainType for IbcRelay {
-    type Proto = pb::IbcAction;
+    type Proto = pb::IbcRelay;
 }
 
-impl TryFrom<pb::IbcAction> for IbcRelay {
+impl TryFrom<pb::IbcRelay> for IbcRelay {
     type Error = anyhow::Error;
-    fn try_from(value: pb::IbcAction) -> Result<Self, Self::Error> {
+    fn try_from(value: pb::IbcRelay) -> Result<Self, Self::Error> {
         let raw_action = value
             .raw_action
             .ok_or_else(|| anyhow::anyhow!("empty IBC transaction is not allowed"))?;
