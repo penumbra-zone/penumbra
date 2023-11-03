@@ -5,7 +5,7 @@ use penumbra_dex::{
     swap_claim::SwapClaimView,
 };
 use penumbra_governance::{ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote};
-use penumbra_ibc::IbcAction;
+use penumbra_ibc::IbcRelay;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
 use penumbra_shielded_pool::Ics20Withdrawal;
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
@@ -29,7 +29,7 @@ pub enum ActionView {
     DelegatorVote(DelegatorVoteView),
     // Action types with transparent contents
     ValidatorDefinition(penumbra_stake::validator::Definition),
-    IbcAction(IbcAction),
+    IbcAction(IbcRelay),
     ProposalSubmit(ProposalSubmit),
     ProposalWithdraw(ProposalWithdraw),
     ValidatorVote(ValidatorVote),

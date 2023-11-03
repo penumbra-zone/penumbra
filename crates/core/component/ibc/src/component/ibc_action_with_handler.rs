@@ -1,30 +1,30 @@
 use crate::component::app_handler::AppHandler;
-use crate::IbcAction;
+use crate::IbcRelay;
 use std::marker::PhantomData;
 
-pub struct IbcActionWithHandler<H>(IbcAction, PhantomData<H>);
+pub struct IbcActionWithHandler<H>(IbcRelay, PhantomData<H>);
 
 impl<H: AppHandler> IbcActionWithHandler<H> {
-    pub fn new(action: IbcAction) -> Self {
+    pub fn new(action: IbcRelay) -> Self {
         Self(action, PhantomData)
     }
 
-    pub fn action(&self) -> &IbcAction {
+    pub fn action(&self) -> &IbcRelay {
         &self.0
     }
 
-    pub fn into_inner(self) -> IbcAction {
+    pub fn into_inner(self) -> IbcRelay {
         self.0
     }
 }
 
-impl<H: AppHandler> From<IbcActionWithHandler<H>> for IbcAction {
+impl<H: AppHandler> From<IbcActionWithHandler<H>> for IbcRelay {
     fn from(value: IbcActionWithHandler<H>) -> Self {
         value.0
     }
 }
 
-impl IbcAction {
+impl IbcRelay {
     pub fn with_handler<H: AppHandler>(self) -> IbcActionWithHandler<H> {
         IbcActionWithHandler::new(self)
     }

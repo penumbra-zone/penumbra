@@ -17,7 +17,7 @@ mod ibc_token;
 pub mod params;
 mod version;
 
-pub use ibc_action::IbcAction;
+pub use ibc_action::IbcRelay;
 pub use ibc_token::IbcToken;
 
 #[cfg_attr(docsrs, doc(cfg(feature = "component")))]

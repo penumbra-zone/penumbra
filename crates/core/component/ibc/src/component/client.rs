@@ -364,7 +364,7 @@ mod tests {
     use tendermint::Time;
 
     use crate::component::ibc_action_with_handler::IbcActionWithHandler;
-    use crate::IbcAction;
+    use crate::IbcRelay;
 
     use crate::component::app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};
     use ibc_types::core::channel::msgs::{
@@ -516,10 +516,10 @@ mod tests {
         msg_update_stargaze_client.client_id = ClientId::from_str("07-tendermint-0").unwrap();
 
         let create_client_action = IbcActionWithHandler::<MockAppHandler>::new(
-            IbcAction::CreateClient(msg_create_stargaze_client),
+            IbcRelay::CreateClient(msg_create_stargaze_client),
         );
         let update_client_action = IbcActionWithHandler::<MockAppHandler>::new(
-            IbcAction::UpdateClient(msg_update_stargaze_client),
+            IbcRelay::UpdateClient(msg_update_stargaze_client),
         );
 
         create_client_action.check_stateless(()).await?;
@@ -546,7 +546,7 @@ mod tests {
         let mut second_update = MsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
         second_update.client_id = ClientId::from_str("07-tendermint-0").unwrap();
         let second_update_client_action =
-            IbcActionWithHandler::<MockAppHandler>::new(IbcAction::UpdateClient(second_update));
+            IbcActionWithHandler::<MockAppHandler>::new(IbcRelay::UpdateClient(second_update));
 
         second_update_client_action.check_stateless(()).await?;
         second_update_client_action

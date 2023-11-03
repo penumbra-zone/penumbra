@@ -13,7 +13,7 @@ pub enum Action {
     Output(penumbra_shielded_pool::Output),
     Spend(penumbra_shielded_pool::Spend),
     ValidatorDefinition(penumbra_stake::validator::Definition),
-    IbcAction(penumbra_ibc::IbcAction),
+    IbcAction(penumbra_ibc::IbcRelay),
     Swap(penumbra_dex::swap::Swap),
     SwapClaim(penumbra_dex::swap_claim::SwapClaim),
     ProposalSubmit(penumbra_governance::ProposalSubmit),

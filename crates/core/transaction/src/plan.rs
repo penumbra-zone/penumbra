@@ -13,7 +13,7 @@ use penumbra_fee::Fee;
 use penumbra_governance::{
     DelegatorVotePlan, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
 };
-use penumbra_ibc::IbcAction;
+use penumbra_ibc::IbcRelay;
 use penumbra_keys::Address;
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
@@ -100,7 +100,7 @@ impl TransactionPlan {
         })
     }
 
-    pub fn ibc_actions(&self) -> impl Iterator<Item = &IbcAction> {
+    pub fn ibc_actions(&self) -> impl Iterator<Item = &IbcRelay> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::IbcAction(ibc_action) = action {
                 Some(ibc_action)

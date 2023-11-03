@@ -14,7 +14,7 @@ use penumbra_governance::{
     ValidatorVote,
 };
 
-use penumbra_ibc::IbcAction;
+use penumbra_ibc::IbcRelay;
 use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType, TypeUrl};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
@@ -45,7 +45,7 @@ pub enum ActionPlan {
     Swap(SwapPlan),
     /// Describes a swap claim.
     SwapClaim(SwapClaimPlan),
-    IbcAction(IbcAction),
+    IbcAction(IbcRelay),
     /// Propose a governance vote.
     ProposalSubmit(ProposalSubmit),
     /// Withdraw a proposed vote.
@@ -147,8 +147,8 @@ impl From<penumbra_stake::validator::Definition> for ActionPlan {
     }
 }
 
-impl From<IbcAction> for ActionPlan {
-    fn from(inner: IbcAction) -> ActionPlan {
+impl From<IbcRelay> for ActionPlan {
+    fn from(inner: IbcRelay) -> ActionPlan {
         ActionPlan::IbcAction(inner)
     }
 }

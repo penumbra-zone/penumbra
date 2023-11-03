@@ -24,7 +24,7 @@ use penumbra_governance::{
     proposal_state::Outcome as ProposalOutcome, DelegatorVotePlan, Proposal, ProposalDepositClaim,
     ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
 };
-use penumbra_ibc::IbcAction;
+use penumbra_ibc::IbcRelay;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
@@ -47,7 +47,7 @@ pub struct Planner<R: RngCore + CryptoRng> {
     balance: Balance,
     vote_intents: BTreeMap<u64, VoteIntent>,
     plan: TransactionPlan,
-    ibc_actions: Vec<IbcAction>,
+    ibc_actions: Vec<IbcRelay>,
     gas_prices: GasPrices,
     // IMPORTANT: if you add more fields here, make sure to clear them when the planner is finished
 }
@@ -340,7 +340,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Perform an IBC action
-    pub fn ibc_action(&mut self, ibc_action: IbcAction) -> &mut Self {
+    pub fn ibc_action(&mut self, ibc_action: IbcRelay) -> &mut Self {
         self.action(ActionPlan::IbcAction(ibc_action));
         self
     }
