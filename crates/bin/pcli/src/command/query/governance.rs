@@ -13,7 +13,6 @@ use penumbra_proto::core::component::governance::v1alpha1::{
     VotingPowerAtProposalStartRequest,
 };
 use penumbra_stake::IdentityKey;
-use penumbra_view::ViewClient;
 use serde::Serialize;
 use serde_json::json;
 
