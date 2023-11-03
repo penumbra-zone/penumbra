@@ -12,6 +12,7 @@ use penumbra_proto::{
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
+#[cfg(feature = "component")]
 use penumbra_ibc::component::packet::{IBCPacket, Unchecked};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -37,6 +38,7 @@ pub struct Ics20Withdrawal {
     pub source_channel: ChannelId,
 }
 
+#[cfg(feature = "component")]
 impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
     fn from(withdrawal: Ics20Withdrawal) -> Self {
         Self::new(

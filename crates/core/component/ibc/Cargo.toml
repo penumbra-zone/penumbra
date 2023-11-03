@@ -7,8 +7,8 @@ edition = "2021"
 
 [features]
 component = [
-    "penumbra-component",
     "penumbra-storage",
+    "penumbra-component",
     "penumbra-proto/penumbra-storage",
     "penumbra-chain/component",
 ]

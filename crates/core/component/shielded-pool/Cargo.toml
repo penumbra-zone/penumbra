@@ -10,8 +10,10 @@ component = [
     "penumbra-component",
     "penumbra-storage",
     "penumbra-proto/penumbra-storage",
+    "penumbra-ibc/component",
     "penumbra-chain/component",
     "penumbra-sct/component",
+    "tonic"
 ]
 proving-keys = ["penumbra-proof-params/proving-keys"]
 default = ["std", "component", "proving-keys"]
@@ -36,7 +38,7 @@ penumbra-tct = { path = "../../../crypto/tct" }
 penumbra-proof-params = { path = "../../../crypto/proof-params", default-features = false }
 penumbra-sct = { path = "../sct", default-features = false }
 penumbra-component = { path = "../component", optional = true }
-penumbra-ibc = { path = "../ibc" }
+penumbra-ibc = { path = "../ibc", default-features = false }
 penumbra-chain = { path = "../chain", default-features = false }
 penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-num = { path = "../../../core/num", default-features = false }
