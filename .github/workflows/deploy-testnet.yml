@@ -67,6 +67,7 @@ jobs:
       - name: bounce osiris
         shell: bash
         run: |-
+          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
           # Set the exact version for the current testnet for Osiris, so deps match.
           kubectl set image deployments \
               -l "app.kubernetes.io/instance=osiris-testnet" \
@@ -78,6 +79,7 @@ jobs:
       - name: bounce galileo
         shell: bash
         run: |-
+          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
           # Set the exact version for the current testnet for Galileo, so deps match.
           kubectl set image deployments \
               -l "app.kubernetes.io/instance=galileo" \
