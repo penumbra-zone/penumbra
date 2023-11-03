@@ -1,22 +1,22 @@
 syntax = "proto3";
 package penumbra.core.component.dex.v1alpha1;
 
-import "penumbra/crypto/tct/v1alpha1/tct.proto";
-import "penumbra/core/num/v1alpha1/num.proto";
 import "penumbra/core/asset/v1alpha1/asset.proto";
-import "penumbra/core/keys/v1alpha1/keys.proto";
-import "penumbra/core/component/sct/v1alpha1/sct.proto";
 import "penumbra/core/component/fee/v1alpha1/fee.proto";
+import "penumbra/core/component/sct/v1alpha1/sct.proto";
 import "penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto";
+import "penumbra/core/keys/v1alpha1/keys.proto";
+import "penumbra/core/num/v1alpha1/num.proto";
+import "penumbra/crypto/tct/v1alpha1/tct.proto";
 
 // A Penumbra ZK swap proof.
 message ZKSwapProof {
-    bytes inner = 1;
+  bytes inner = 1;
 }
 
 // A Penumbra ZK swap claim proof.
 message ZKSwapClaimProof {
-    bytes inner = 1;
+  bytes inner = 1;
 }
 
 // A transaction action that submits a swap to the dex.
@@ -400,14 +400,14 @@ service QueryService {
   rpc LiquidityPositionsByPrice(LiquidityPositionsByPriceRequest) returns (stream LiquidityPositionsByPriceResponse);
 
   // Get the current (direct) spread on a trading pair.
-  // 
+  //
   // This method doesn't do simulation, so actually executing might result in a
   // better price (if the chain takes a different route to the target asset).
   rpc Spread(SpreadRequest) returns (SpreadResponse);
 }
 
 // Simulation for the DEX component.
-// 
+//
 // This is a separate service from the QueryService because it's not just a
 // simple read query from the state. Thus it poses greater DoS risks, and node
 // operators may want to enable it separately.
@@ -491,7 +491,7 @@ message LiquidityPositionsRequest {
 message LiquidityPositionsResponse {
   core.component.dex.v1alpha1.Position data = 1;
 }
-  
+
 message LiquidityPositionByIdRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;

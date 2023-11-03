@@ -7,6 +7,6 @@ package penumbra.core.num.v1alpha1;
 // implementation into a `uint128` or comparable data structure, in order to model
 // the Amount accurately.
 message Amount {
-    uint64 lo = 1;
-    uint64 hi = 2;
+  uint64 lo = 1;
+  uint64 hi = 2;
 }

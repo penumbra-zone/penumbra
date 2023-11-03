@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package penumbra.narsil.ledger.v1alpha1;
 
+import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/core/keys/v1alpha1/keys.proto";
 import "penumbra/core/transaction/v1alpha1/transaction.proto";
-import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/custody/v1alpha1/custody.proto";
 
 // Methods for narsil clients to communicate with narsild.

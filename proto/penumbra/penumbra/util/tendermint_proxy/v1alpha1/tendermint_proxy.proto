@@ -1,9 +1,7 @@
 syntax = "proto3";
 package penumbra.util.tendermint_proxy.v1alpha1;
 
-
 import "google/protobuf/timestamp.proto";
-
 import "tendermint/crypto/proof.proto";
 import "tendermint/p2p/types.proto";
 import "tendermint/types/block.proto";
