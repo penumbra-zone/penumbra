@@ -2,7 +2,10 @@
 # Utility script to trigger GitHub Action workflows across different repositories [0].
 # Requires a GitHub Personal Access Token (PAT), exported as GITHUB_PAT env var [1].
 #
-# [0] https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#repository_dispatch
+# Uses event `workflow_dispatch`, rather than `repository_dispatch`, because the latter
+# does not support passing `inputs`, which we need to set a specific version of Penumbra.
+#
+# [0] https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#workflow_dispatch
 # [1] https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
 set -euo pipefail
 
@@ -19,11 +22,15 @@ elif [[ -z "$github_pat" ]] ; then
     exit 1
 fi
 
+# The workflow id is the filename containing the job YAML.
+# https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28#get-a-workflow
+workflow_id="container.yml"
+
 # Support overriding the upstream version of Penumbra, but default to 'main'.
 penumbra_version="${PENUMBRA_VERSION:-main}"
 
-# Build URL for repository dispatch API endpoint.
-github_repository_url="https://api.github.com/repos/${github_repo}/dispatches"
+# Build URL for workflow dispatch API endpoint.
+github_workflow_url="https://api.github.com/repos/${github_repo}/actions/workflows/${workflow_id}/dispatches"
 
 # Accept arguments for workflow, and emit valid JSON for curl request.
 # Using printf allows us to interpolate bash variables in JSON,
@@ -32,12 +39,15 @@ function format_json_payload() {
     local v
     v="${1:-}"
     shift
-    printf '{"event_type": "container-build", "client_payload": { "penumbra_version": "%s" }}' "$v"
+    # N.B. the "ref" value here is the gitref on the remote repo, not the calling repo.
+    printf '{"ref": "main", "inputs": { "penumbra_version": "%s" }}' "$v"
 }
 
 json_payload="$(format_json_payload "$penumbra_version")"
-curl -f -X POST "$github_repository_url" \
-          -H 'Accept: application/vnd.github.v3+json' \
+>&2 printf 'Sending JSON blob:\n%s\nto URL: %s\n' "$json_payload" "$github_workflow_url"
+curl -f -L -X POST \
+          -H 'Accept: application/vnd.github+json' \
           -H 'Content-Type: application/json' \
           -H "Authorization: token $github_pat" \
+          "$github_workflow_url" \
           --data "$json_payload"
