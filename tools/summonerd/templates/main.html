@@ -1,33 +1,78 @@
-<h1>✨✨✨✨ Penumbra Summoning Ceremony ✨✨✨✨</h1>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <link href="/static/index.css" rel="stylesheet">
+</head>
+<body class="bg-black text-white">
+<div class="p-4 mb-4">
+  <a href="/" class="text-2xl font-bold uppercase hover:text-teal">Penumbra Summoning Ceremony</a>
+</div>
 
-<h2><a href="/phase/{{ phase_number }}">Penumbra Summoning Ceremony</a> is currently in phase: <a
-        href="/phase/{{ phase_number }}">{{ phase_number }}</a> of 2
-</h2>
+<div class="space-y-8 mx-auto w-3/4">
+  <div class="relative bg-charcoal rounded-lg shadow-sm">
+    <div class="relative z-10 p-4 text-lg">
+      <div class="mb-4">
+        <a href="/phase/1" class="font-bold text-3xl bg-text-linear bg-clip-text text-transparent mb-4">Phase 1 Status</a>
+      </div>
+      <div>
+        {% if phase_number == 1 %}
+        <span class="font-bold">Active!</span>
+        {% else %}
+        <span>Completed.</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="absolute inset-0 z-0 rounded-lg bg-card-radial opacity-20"></div>
+  </div>
 
-<h2>How to become a Penumbra Summoner:</h2>
+  <div class="relative bg-charcoal rounded-lg shadow-sm">
+    <div class="relative z-10 p-4 text-lg">
+      <div class="mb-4">
+        <a href="/phase/2" class="font-bold text-3xl bg-text-linear bg-clip-text text-transparent mb-4">Phase 2 Status</a>
+      </div>
+      <div>
+        {% if phase_number == 1 %}
+        <span>Waiting for Phase 1...</span>
+        {% else %}
+        <span class="font-bold">Active!</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="absolute inset-0 z-0 rounded-lg bg-card-radial opacity-20"></div>
+  </div>
 
-<p>To become a Penumbra Summoner, you only need to install Penumbra's command line wallet tool and get testnet tokens.
-    Note
-    that the testnet tokens have no value.</p>
-
-<p>First, follow the <a href="https://guide.penumbra.zone/main/pcli.html">Penumbra Guide</a>
-    to first setup your wallet and receive testnet tokens via the faucet in our Discord.</p>
-
-<p>You're ready to contribute! In the command that follows, you'll be sending some of your testnet tokens to the
-  coordinator to bid for a slot to contribute. You need to send a minimum of {{ min_bid }}, but if you want to get to the
-    front of the queue, simply bid more.</p>
-<p>
-    In the Terminal, run:
-
-<pre>cargo run --quiet --release --bin pcli -- ceremony contribute --coordinator-address {{ address }} --phase {{ phase_number }} --bid {{ min_bid }}</pre>
-</p>
-
-<p>
-    Next, watch the progress bar - this will tell you how long you have left to wait in the queue. Once you are
-    selected, your computer will generate your contribution and send it to the coordinator. If you get tired of waiting,
-    you can
-    increase your bid by running the same command again as above with an additional bid amount - this will get
-    <i>added</i> to your existing bid, so you won't lose any tokens.
-</p>
-
-<p>Thank you for helping summon Penumbra! ✨✨</p>
+  <div class="relative bg-charcoal rounded-lg shadow-sm">
+    <div class="relative z-10 p-4 space-y-2">
+      <h2 class="font-bold text-3xl bg-text-linear bg-clip-text text-transparent">How to Contribute</h2>
+      <h3 class="font-bold text-xl pt-4">Creating a Wallet</h3>
+      <p>
+            The first step to contributing is to setup a wallet on the command line.
+            To do this, follow the <a href="https://guide.penumbra.zone/main/pcli.html" class="underline">Penumbra Guide</a>
+            in order to setup <span class="font-mono">pcli</span> and create a wallet.
+      </p>
+      <h3 class="font-bold text-xl pt-4">Receiving Faucet Funds</h3>
+      <p>
+            After setting up a wallet, you can join our <a href="https://discord.gg/hKvkrqa3zC" class="underline">Public Discord</a> in
+            order to get testnet funds.
+            <br>
+              To do this, you need to first get your address from <span class="font-mono">pcli</span>:
+            <pre class="text-left">cargo run --quiet --release --bin pcli -- v address</pre>
+          Then, you can go to the <span class="font-bold">#testnet-faucet</span> channel in the Discord, and use that address to receive funds.
+      </p>
+      <h3 class="font-bold text-xl pt-4">Contributing</h3>
+      <p>
+            Foo bar baz.
+            You can then join the contribution queue for the current phase with the following command:
+          <pre class="text-sm">cargo run --quiet --release --bin pcli -- ceremony contribute --phase 1 --bid {{ min_bid }} --coordinator-address {{ address }}</pre>
+          Once in the queue, you just have to wait until the command completes.
+          </br>
+          You can improve your position in the queue by bidding more funds. Note that each time you bid with the command above,
+          this adds additional funds to all of the previous bids you've already submitted. If you get disconnected for some reason,
+          you can simply bid 0penumbra and recover your position in the queue, since all of your previous bids have been recorded.
+          Note as well that you need to bid at least <span class="font-bold">{{ min_bid }}</span> to contribute.
+      </p>
+    </div>
+    <div class="absolute inset-0 z-0 rounded-lg bg-card-radial opacity-20"></div>
+  </div>
+</body>
+</html>
