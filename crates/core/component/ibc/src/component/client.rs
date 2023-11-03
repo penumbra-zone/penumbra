@@ -363,7 +363,89 @@ mod tests {
     use std::str::FromStr;
     use tendermint::Time;
 
+    use crate::component::ibc_action_with_handler::IbcActionWithHandler;
     use crate::IbcAction;
+
+    use crate::component::app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};
+    use ibc_types::core::channel::msgs::{
+        MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
+        MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket, MsgTimeout,
+    };
+
+    struct MockAppHandler {}
+
+    #[async_trait]
+    impl AppHandlerCheck for MockAppHandler {
+        async fn chan_open_init_check<S: StateRead>(
+            _state: S,
+            _msg: &MsgChannelOpenInit,
+        ) -> Result<()> {
+            Ok(())
+        }
+        async fn chan_open_try_check<S: StateRead>(
+            _state: S,
+            _msg: &MsgChannelOpenTry,
+        ) -> Result<()> {
+            Ok(())
+        }
+        async fn chan_open_ack_check<S: StateRead>(
+            _state: S,
+            _msg: &MsgChannelOpenAck,
+        ) -> Result<()> {
+            Ok(())
+        }
+        async fn chan_open_confirm_check<S: StateRead>(
+            _state: S,
+            _msg: &MsgChannelOpenConfirm,
+        ) -> Result<()> {
+            Ok(())
+        }
+        async fn chan_close_confirm_check<S: StateRead>(
+            _state: S,
+            _msg: &MsgChannelCloseConfirm,
+        ) -> Result<()> {
+            Ok(())
+        }
+        async fn chan_close_init_check<S: StateRead>(
+            _state: S,
+            _msg: &MsgChannelCloseInit,
+        ) -> Result<()> {
+            Ok(())
+        }
+        async fn recv_packet_check<S: StateRead>(_state: S, _msg: &MsgRecvPacket) -> Result<()> {
+            Ok(())
+        }
+        async fn timeout_packet_check<S: StateRead>(_state: S, _msg: &MsgTimeout) -> Result<()> {
+            Ok(())
+        }
+        async fn acknowledge_packet_check<S: StateRead>(
+            _state: S,
+            _msg: &MsgAcknowledgement,
+        ) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    #[async_trait]
+    impl AppHandlerExecute for MockAppHandler {
+        async fn chan_open_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenInit) {}
+        async fn chan_open_try_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenTry) {}
+        async fn chan_open_ack_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenAck) {}
+        async fn chan_open_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenConfirm) {
+        }
+        async fn chan_close_confirm_execute<S: StateWrite>(
+            _state: S,
+            _msg: &MsgChannelCloseConfirm,
+        ) {
+        }
+        async fn chan_close_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseInit) {}
+        async fn recv_packet_execute<S: StateWrite>(_state: S, _msg: &MsgRecvPacket) {}
+        async fn timeout_packet_execute<S: StateWrite>(_state: S, _msg: &MsgTimeout) {}
+        async fn acknowledge_packet_execute<S: StateWrite>(_state: S, _msg: &MsgAcknowledgement) {}
+    }
+
+    #[async_trait]
+    impl AppHandler for MockAppHandler {}
 
     // test that we can create and update a light client.
     #[tokio::test]
@@ -433,8 +515,12 @@ mod tests {
 
         msg_update_stargaze_client.client_id = ClientId::from_str("07-tendermint-0").unwrap();
 
-        let create_client_action = IbcAction::CreateClient(msg_create_stargaze_client);
-        let update_client_action = IbcAction::UpdateClient(msg_update_stargaze_client);
+        let create_client_action = IbcActionWithHandler::<MockAppHandler>::new(
+            IbcAction::CreateClient(msg_create_stargaze_client),
+        );
+        let update_client_action = IbcActionWithHandler::<MockAppHandler>::new(
+            IbcAction::UpdateClient(msg_update_stargaze_client),
+        );
 
         create_client_action.check_stateless(()).await?;
         create_client_action.check_stateful(state.clone()).await?;
@@ -459,7 +545,8 @@ mod tests {
 
         let mut second_update = MsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
         second_update.client_id = ClientId::from_str("07-tendermint-0").unwrap();
-        let second_update_client_action = IbcAction::UpdateClient(second_update);
+        let second_update_client_action =
+            IbcActionWithHandler::<MockAppHandler>::new(IbcAction::UpdateClient(second_update));
 
         second_update_client_action.check_stateless(()).await?;
         second_update_client_action

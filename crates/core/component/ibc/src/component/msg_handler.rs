@@ -16,6 +16,7 @@ mod timeout;
 mod update_client;
 mod upgrade_client;
 
+use crate::component::app_handler::{AppHandlerCheck, AppHandlerExecute};
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_storage::StateWrite;
@@ -24,6 +25,9 @@ use penumbra_storage::StateWrite;
 /// message types) and tweaked (removing the separate check_stateless step).
 #[async_trait]
 pub(crate) trait MsgHandler {
-    async fn check_stateless(&self) -> Result<()>;
-    async fn try_execute<S: StateWrite>(&self, state: S) -> Result<()>;
+    async fn check_stateless<H: AppHandlerCheck>(&self) -> Result<()>;
+    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+        &self,
+        state: S,
+    ) -> Result<()>;
 }

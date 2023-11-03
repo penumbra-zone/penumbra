@@ -12,19 +12,21 @@ use crate::component::{
     channel::{StateReadExt as _, StateWriteExt as _},
     connection::StateReadExt as _,
     proof_verification::ChannelProofVerifier,
-    transfer::Ics20Transfer,
     MsgHandler,
 };
 
 #[async_trait]
 impl MsgHandler for MsgChannelOpenAck {
-    async fn check_stateless(&self) -> Result<()> {
+    async fn check_stateless<H: AppHandlerCheck>(&self) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+        &self,
+        mut state: S,
+    ) -> Result<()> {
         tracing::debug!(msg = ?self);
         let mut channel = state
             .get_channel(&self.chan_id_on_a, &self.port_id_on_a)
@@ -67,7 +69,7 @@ impl MsgHandler for MsgChannelOpenAck {
 
         let transfer = PortId::transfer();
         if self.port_id_on_a == transfer {
-            Ics20Transfer::chan_open_ack_check(&mut state, self).await?;
+            H::chan_open_ack_check(&mut state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }
@@ -94,7 +96,7 @@ impl MsgHandler for MsgChannelOpenAck {
 
         let transfer = PortId::transfer();
         if self.port_id_on_a == transfer {
-            Ics20Transfer::chan_open_ack_execute(state, self).await;
+            H::chan_open_ack_execute(state, self).await;
         } else {
             anyhow::bail!("invalid port id");
         }

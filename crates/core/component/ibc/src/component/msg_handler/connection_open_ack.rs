@@ -18,11 +18,11 @@ use crate::component::{
 
 #[async_trait]
 impl MsgHandler for MsgConnectionOpenAck {
-    async fn check_stateless(&self) -> Result<()> {
+    async fn check_stateless<H>(&self) -> Result<()> {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         // Validate a ConnectionOpenAck message, which is sent to us by a counterparty chain that
         // has committed a Connection to us expected to be in the TRYOPEN state. Before executing a

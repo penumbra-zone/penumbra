@@ -24,13 +24,13 @@ use crate::component::{
 
 #[async_trait]
 impl MsgHandler for MsgUpdateClient {
-    async fn check_stateless(&self) -> Result<()> {
+    async fn check_stateless<H>(&self) -> Result<()> {
         header_is_tendermint(self)?;
 
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
         // Optimization: no-op if the update is already committed.  We no-op
         // to Ok(()) rather than erroring to avoid having two "racing" relay
         // transactions fail just because they both contain the same client

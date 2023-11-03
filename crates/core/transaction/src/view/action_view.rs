@@ -5,8 +5,9 @@ use penumbra_dex::{
     swap_claim::SwapClaimView,
 };
 use penumbra_governance::{ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote};
-use penumbra_ibc::{IbcAction, Ics20Withdrawal};
+use penumbra_ibc::IbcAction;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
+use penumbra_shielded_pool::Ics20Withdrawal;
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 use serde::{Deserialize, Serialize};
 

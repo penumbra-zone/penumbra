@@ -1,5 +1,4 @@
 mod action_handler;
-mod app_handler;
 mod channel;
 mod client;
 mod client_counter;
@@ -12,11 +11,13 @@ pub mod rpc;
 mod ibc_component;
 mod metrics;
 mod msg_handler;
-mod packet;
 mod proof_verification;
-mod state_key;
-mod transfer;
 mod view;
+
+pub mod app_handler;
+pub mod ibc_action_with_handler;
+pub mod packet;
+pub mod state_key;
 
 use msg_handler::MsgHandler;
 
