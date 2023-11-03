@@ -10,6 +10,10 @@ metadata:
   name: {{ $fn_name }}
   labels:
     {{- include "penumbra-node.labels" $ | nindent 4 }}
+    "app.kubernetes.io/component": fullnode
+    {{- if $.Values.part_of }}
+    "app.kubernetes.io/part-of": {{ $.Values.part_of }}
+    {{- end }}
 spec:
   replicas: 1
   strategy:
