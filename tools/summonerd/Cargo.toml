@@ -1,6 +1,6 @@
 [package]
 name = "summonerd"
-version = "0.62.0"
+version = "0.63.1"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"
 description = "Coordination node for summoning ceremony"
@@ -24,10 +24,12 @@ askama = "0.11"
 axum = "0.6"
 bytes = "1"
 camino = "1"
-clap = { version = "4", features = ["derive", "env", "color"] }
+clap = { version = "3", features = ["derive", "env", "color"] }
+chrono = "0.4"
 console-subscriber = "0.2"
 decaf377 = "0.5"
 futures = "0.3.28"
+hex = "0.4"
 http-body = "0.4.5"
 metrics-tracing-context = "0.11.0"
 penumbra-asset = { path = "../../crates/core/asset/" }

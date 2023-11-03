@@ -61,8 +61,6 @@ impl MsgHandler for MsgUpdateClient {
                 .get_verified_consensus_state(trusted_height, self.client_id.clone())
                 .await?;
 
-            let last_trusted_consensus_state = last_trusted_consensus_state;
-
             // We also have to convert from an IBC height, which has two
             // components, to a Tendermint height, which has only one.
             let trusted_height = trusted_height

@@ -52,6 +52,13 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
             .unwrap_or_default())
     }
 
+    /// Get the proposal definition for a proposal.
+    async fn proposal_definition(&self, proposal_id: u64) -> Result<Option<Proposal>> {
+        Ok(self
+            .get(&state_key::proposal_definition(proposal_id))
+            .await?)
+    }
+
     /// Get the proposal payload for a proposal.
     async fn proposal_payload(&self, proposal_id: u64) -> Result<Option<ProposalPayload>> {
         Ok(self
@@ -100,7 +107,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
             .await?)
     }
 
-    /// Get the proposal voting end block for a given proposal.
+    /// Get the proposal voting start block for a given proposal.
     async fn proposal_voting_start(&self, proposal_id: u64) -> Result<Option<u64>> {
         Ok(self
             .get_proto::<u64>(&state_key::proposal_voting_start(proposal_id))
@@ -114,7 +121,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
             .await?)
     }
 
-    /// Get the proposal voting end block for a given proposal.
+    /// Get the proposal voting start block for a given proposal.
     async fn proposal_voting_start_position(
         &self,
         proposal_id: u64,

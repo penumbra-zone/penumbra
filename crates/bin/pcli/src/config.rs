@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use url::Url;
@@ -27,8 +27,11 @@ pub struct PcliConfig {
 }
 
 impl PcliConfig {
-    pub fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let contents = std::fs::read_to_string(path)?;
+    pub fn load<P: AsRef<Path> + std::fmt::Display>(path: P) -> Result<Self> {
+        let contents = std::fs::read_to_string(&path).context(format!(
+            "pcli config file not found: {}. hint: run 'pcli init' to create new keys",
+            &path
+        ))?;
         Ok(toml::from_str(&contents)?)
     }
 
@@ -42,6 +45,7 @@ impl PcliConfig {
 /// The custody backend to use.
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 #[serde(tag = "backend")]
+#[allow(clippy::large_enum_variant)]
 pub enum CustodyConfig {
     /// A view-only client that can't sign transactions.
     ViewOnly,

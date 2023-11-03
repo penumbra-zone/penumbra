@@ -7,6 +7,7 @@ use penumbra_proof_setup::all::{
     Phase1CeremonyContribution, Phase1RawCeremonyCRS, Phase2CeremonyContribution,
     Phase2RawCeremonyCRS,
 };
+use penumbra_proof_setup::single::log::Hashable;
 use penumbra_proto::{
     penumbra::tools::summoning::v1alpha1::ceremony_coordinator_service_client::CeremonyCoordinatorServiceClient,
     tools::summoning::v1alpha1::{
@@ -45,6 +46,12 @@ async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -
 
     let value = bid.parse::<Value>()?;
 
+    // If the bid is 0, skip creating a transaction. For instance, this allows reconnecting
+    // without paying extra.
+    if value.amount == 0u64.into() {
+        return Ok(());
+    }
+
     let memo_plaintext = MemoPlaintext {
         sender: app.config.full_viewing_key.payment_address(from).0,
         text: "E PLURIBUS UNUM".to_owned(),
@@ -74,7 +81,7 @@ pub enum CeremonyCmd {
     Contribute {
         #[clap(long)]
         phase: u8,
-        #[clap(long)]
+        #[clap(long, default_value = "https://summoning.penumbra.zone")]
         coordinator_url: Url,
         #[clap(long)]
         coordinator_address: Address,
@@ -94,16 +101,32 @@ impl CeremonyCmd {
                 bid,
             } => {
                 println!("¸,ø¤º°` initiating summoning participation `°º¤ø,¸");
-                println!("submitting bid for contribution slot: {}", bid);
-                if *phase != 1 && *phase != 2 {
-                    anyhow::bail!("phase must be 1 or 2.");
-                }
-                let index = AddressIndex {
-                    account: 0,
-                    randomizer: b"ceremonyaddr".as_slice().try_into().unwrap(),
+
+                let index = match *phase {
+                    1 => AddressIndex {
+                        account: 0,
+                        randomizer: b"ceremnyaddr1"
+                            .as_slice()
+                            .try_into()
+                            .expect("12 bytes long"),
+                    },
+                    2 => AddressIndex {
+                        account: 0,
+                        randomizer: b"ceremnyaddr2"
+                            .as_slice()
+                            .try_into()
+                            .expect("12 bytes long"),
+                    },
+                    _ => anyhow::bail!("phase must be 1 or 2."),
                 };
-                handle_bid(app, *coordinator_address, index, bid).await?;
                 let address = app.config.full_viewing_key.payment_address(index).0;
+
+                println!(
+                    "submitting bid {} for contribution slot from address {}",
+                    bid, address
+                );
+
+                handle_bid(app, *coordinator_address, index, bid).await?;
 
                 println!("connecting to coordinator...");
                 // After we bid, we need to wait a couple of seconds just for the transaction to be
@@ -133,10 +156,12 @@ Otherwise, please keep this window open.
                 );
                 use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
                 let progress_bar = ProgressBar::with_draw_target(1, ProgressDrawTarget::stdout())
-                    .with_style(ProgressStyle::default_bar().template(
-                    "[{elapsed}] {bar:50.cyan/blue} {pos:>7}/{len:7} {per_sec}\tETA: {eta}\t{msg}",
-                ));
+                    .with_style(
+                        ProgressStyle::default_bar()
+                            .template("[{elapsed}] {bar:50.blue/cyan} position {pos} out of {len} connected summoners\t{msg}"),
+                    );
                 progress_bar.set_position(0);
+                progress_bar.enable_steady_tick(1000);
 
                 let mut response_rx = client
                     .participate(ReceiverStream::new(req_rx))
@@ -151,12 +176,14 @@ Otherwise, please keep this window open.
                         Some(ParticipateResponse {
                             msg: Some(ResponseMsg::Position(p)),
                         }) => {
+                            tracing::debug!(?p);
                             let len = p.connected_participants;
-                            let pos = p.connected_participants - p.position;
+                            // e.g. displaying 1 / 2 instead of 0 / 2
+                            let pos = p.position + 1;
                             progress_bar.set_length(len as u64);
                             progress_bar.set_position(pos as u64);
                             progress_bar.set_message(format!(
-                                "(Your bid: {}, Top bid: {})",
+                                "(your bid: {}, most recent slot bid: {})",
                                 Amount::try_from(
                                     p.your_bid.ok_or(anyhow!("expected bid amount"))?
                                 )?,
@@ -164,6 +191,7 @@ Otherwise, please keep this window open.
                                     p.last_slot_bid.ok_or(anyhow!("expected top bid amount"))?
                                 )?
                             ));
+                            progress_bar.tick();
                         }
                         Some(ParticipateResponse {
                             msg:
@@ -181,16 +209,18 @@ Otherwise, please keep this window open.
                     }
                 };
                 println!("preparing contribution... (please keep this window open)");
-                let contribution = if *phase == 1 {
+                let (contribution, hash) = if *phase == 1 {
                     let parent = Phase1RawCeremonyCRS::unchecked_from_protobuf(unparsed_parent)?
                         .assume_valid();
                     let contribution = Phase1CeremonyContribution::make(&parent);
-                    contribution.try_into()?
+                    let hash = contribution.hash();
+                    (contribution.try_into()?, hash)
                 } else {
                     let parent = Phase2RawCeremonyCRS::unchecked_from_protobuf(unparsed_parent)?
                         .assume_valid();
                     let contribution = Phase2CeremonyContribution::make(&parent);
-                    contribution.try_into()?
+                    let hash = contribution.hash();
+                    (contribution.try_into()?, hash)
                 };
                 println!("submitting contribution...");
 
@@ -207,6 +237,7 @@ Otherwise, please keep this window open.
                     }) => {
                         println!("contribution confirmed at slot {slot}");
                         println!("thank you for your help summoning penumbra <3");
+                        println!("here's your contribution receipt (save this to verify inclusion in the final transcript):\n{}", hex::encode_upper(hash.as_ref()));
                     }
                     m => {
                         anyhow::bail!("Received unexpected message from coordinator: {:?}", m)

@@ -194,7 +194,7 @@ mod test {
         let dummy_memo_key: PayloadKey = [0; 32].into();
 
         let value: Value = "1234.02penumbra".parse().unwrap();
-        let dest_address = "penumbrav2t1f5h060qspaga3vvwf2mwak2dj6ugymxd2et5h6l3n0u2y57lcv4t7j2m8n75nm7qmhg4v3csexl5slm6tm5hg5wyw39fv2q0jnpwdjn3llduzgmg5d3efuqq6ymn76t0hvgage".parse().unwrap();
+        let dest_address = "penumbra1rqcd3hfvkvc04c4c9vc0ac87lh4y0z8l28k4xp6d0cnd5jc6f6k0neuzp6zdwtpwyfpswtdzv9jzqtpjn5t6wh96pfx3flq2dhqgc42u7c06kj57dl39w2xm6tg0wh4zc8kjjk".parse().unwrap();
 
         let output_plan = OutputPlan::new(&mut rng, value, dest_address);
         let blinding_factor = output_plan.value_blinding;

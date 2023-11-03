@@ -314,13 +314,13 @@ pub(crate) trait StakingImpl: StateWriteExt {
             for d in changes.delegations {
                 delegations_by_validator
                     .entry(d.validator_identity.clone())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(d);
             }
             for u in changes.undelegations {
                 undelegations_by_validator
                     .entry(u.validator_identity.clone())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(u);
             }
         }

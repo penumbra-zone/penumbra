@@ -1,12 +1,13 @@
+use anyhow::anyhow;
 use ark_ec::Group;
 use ark_ff::{One, UniformRand, Zero};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress, Valid, Validate};
 use rand_core::{CryptoRngCore, OsRng};
 
-use crate::parallel_utils::transform_parallel;
+use crate::parallel_utils::{flatten_results, transform_parallel, zip_map_parallel};
 use crate::single::dlog;
 use crate::single::group::{
-    pairing, BatchedPairingChecker11, BatchedPairingChecker12, GroupHasher, F, G1, G2,
+    BatchedPairingChecker11, BatchedPairingChecker12, GroupHasher, F, G1, G2,
 };
 use crate::single::log::{ContributionHash, Hashable, Phase};
 
@@ -71,10 +72,11 @@ impl RawCRSElements {
     ///
     /// This checks if the structure of the elements uses the secret scalars
     /// hidden behind the group elements correctly.
-    #[must_use]
-    pub fn validate(self) -> Option<CRSElements> {
+    pub fn validate(self) -> anyhow::Result<CRSElements> {
         // 0. Check that we can extract a valid degree out of these elements.
-        let d = self.get_degree()?;
+        let d = self
+            .get_degree()
+            .ok_or_else(|| anyhow!("failed to get degree"))?;
         // 1. Check that the elements committing to the secret values are not 0.
         if self.alpha_1.is_zero()
             || self.beta_1.is_zero()
@@ -82,7 +84,7 @@ impl RawCRSElements {
             || self.x_1[1].is_zero()
             || self.x_2[1].is_zero()
         {
-            return None;
+            anyhow::bail!("one of alpha_1, beta_1, beta_2, x_1[1], x_2[1] was zero");
         }
         // 2. Check that the two beta commitments match.
         // 3. Check that the x values match on both groups.
@@ -103,34 +105,33 @@ impl RawCRSElements {
         for (&beta_x_i, &x_i) in self.beta_x_1.iter().zip(self.x_2.iter()) {
             checker2.add(beta_x_i, x_i);
         }
-        if !self
-            .x_2
-            .iter()
-            .zip(self.beta_x_1.iter())
-            .all(|(x_i, beta_x_i)| pairing(self.beta_1, x_i) == pairing(beta_x_i, G2::generator()))
-        {
-            return None;
-        }
         // 6. Check that the x_i are the correct powers of x.
         let mut checker3 = BatchedPairingChecker11::new(self.x_2[1], G2::generator());
         for (&x_i, &x_i_plus_1) in self.x_1.iter().zip(self.x_1.iter().skip(1)) {
             checker3.add(x_i, x_i_plus_1);
         }
         // "神だけが私を裁ける"
-        if transform_parallel(
-            [Ok(checker0), Ok(checker1), Ok(checker2), Err(checker3)],
-            |x| match x {
-                Ok(x) => x.check(&mut OsRng),
-                Err(x) => x.check(&mut OsRng),
+        flatten_results(transform_parallel(
+            [
+                (0, Ok(checker0)),
+                (1, Ok(checker1)),
+                (2, Ok(checker2)),
+                (3, Err(checker3)),
+            ],
+            |(i, x)| {
+                let ok = match x {
+                    Ok(x) => x.check(&mut OsRng),
+                    Err(x) => x.check(&mut OsRng),
+                };
+                if ok {
+                    Ok(())
+                } else {
+                    Err(anyhow!("checker {} failed", i))
+                }
             },
-        )
-        .iter()
-        .any(|x| !x)
-        {
-            return None;
-        }
+        ))?;
 
-        Some(CRSElements {
+        Ok(CRSElements {
             degree: d,
             raw: self,
         })
@@ -146,6 +147,76 @@ impl RawCRSElements {
             degree: d,
             raw: self,
         }
+    }
+
+    /// This is a replacement for the CanonicalDeserialize trait impl (more or less).
+    #[cfg(not(feature = "parallel"))]
+    pub(crate) fn checked_deserialize_parallel(compress: Compress, data: &[u8]) -> Self {
+        Self::deserialize_with_mode(data, compress, Validate::Yes)
+    }
+
+    /// This is a replacement for the CanonicalDeserialize trait impl (more or less).
+    #[cfg(feature = "parallel")]
+    pub(crate) fn checked_deserialize_parallel(
+        compress: Compress,
+        data: &[u8],
+    ) -> anyhow::Result<Self> {
+        use rayon::prelude::*;
+
+        let out = Self::deserialize_with_mode(data, compress, Validate::No)?;
+        out.alpha_1.check()?;
+        out.beta_1.check()?;
+        out.beta_2.check()?;
+
+        let mut check_x_1 = Ok(());
+        let mut check_x_2 = Ok(());
+        let mut check_alpha_x_1 = Ok(());
+        let mut check_beta_x_1 = Ok(());
+
+        rayon::join(
+            || {
+                rayon::join(
+                    || {
+                        check_x_1 = out
+                            .x_1
+                            .par_iter()
+                            .map(|x| x.check())
+                            .collect::<Result<_, _>>();
+                    },
+                    || {
+                        check_x_2 = out
+                            .x_2
+                            .par_iter()
+                            .map(|x| x.check())
+                            .collect::<Result<_, _>>();
+                    },
+                )
+            },
+            || {
+                rayon::join(
+                    || {
+                        check_alpha_x_1 = out
+                            .alpha_x_1
+                            .par_iter()
+                            .map(|x| x.check())
+                            .collect::<Result<_, _>>();
+                    },
+                    || {
+                        check_beta_x_1 = out
+                            .beta_x_1
+                            .par_iter()
+                            .map(|x| x.check())
+                            .collect::<Result<_, _>>();
+                    },
+                )
+            },
+        );
+
+        check_x_1?;
+        check_x_2?;
+        check_alpha_x_1?;
+        check_beta_x_1?;
+        Ok(out)
     }
 }
 
@@ -246,6 +317,7 @@ impl RawContribution {
         self.new_elements
             .to_owned()
             .validate()
+            .ok()
             .map(|new_elements| Contribution {
                 parent: self.parent,
                 new_elements,
@@ -321,38 +393,11 @@ impl Contribution {
         let beta = F::rand(rng);
         let x = F::rand(rng);
 
-        let mut new = old.clone();
-
-        new.raw.alpha_1 *= alpha;
-        new.raw.beta_1 *= beta;
-        new.raw.beta_2 *= beta;
-
-        let mut x_i = F::one();
-        let mut alpha_x_i = alpha;
-        let mut beta_x_i = beta;
-
-        let d = old.degree;
-        for i in 0..short_len(d) {
-            new.raw.x_1[i] *= x_i;
-            new.raw.x_2[i] *= x_i;
-            new.raw.alpha_x_1[i] *= alpha_x_i;
-            new.raw.beta_x_1[i] *= beta_x_i;
-
-            x_i *= x;
-            alpha_x_i *= x;
-            beta_x_i *= x;
-        }
-        for i in short_len(d)..long_len(d) {
-            new.raw.x_1[i] *= x_i;
-
-            x_i *= x;
-        }
-
         let alpha_proof = dlog::prove(
             rng,
             b"phase1 alpha proof",
             dlog::Statement {
-                result: new.raw.alpha_1,
+                result: old.raw.alpha_1 * alpha,
                 base: old.raw.alpha_1,
             },
             dlog::Witness { dlog: alpha },
@@ -361,7 +406,7 @@ impl Contribution {
             rng,
             b"phase1 beta proof",
             dlog::Statement {
-                result: new.raw.beta_1,
+                result: old.raw.beta_1 * beta,
                 base: old.raw.beta_1,
             },
             dlog::Witness { dlog: beta },
@@ -370,15 +415,64 @@ impl Contribution {
             rng,
             b"phase1 x proof",
             dlog::Statement {
-                result: new.raw.x_1[1],
+                result: old.raw.x_1[1] * x,
                 base: old.raw.x_1[1],
             },
             dlog::Witness { dlog: x },
         );
 
+        let d = old.degree;
+
+        let (mut x_i_tweaks, mut alpha_x_i_tweaks, mut beta_x_i_tweaks) = {
+            let mut x_i_tweaks = Vec::new();
+            let mut alpha_x_i_tweaks = Vec::new();
+            let mut beta_x_i_tweaks = Vec::new();
+
+            let mut x_i = F::one();
+            let mut alpha_x_i = alpha;
+            let mut beta_x_i = beta;
+
+            for _ in 0..short_len(d) {
+                x_i_tweaks.push(x_i);
+                alpha_x_i_tweaks.push(alpha_x_i);
+                beta_x_i_tweaks.push(beta_x_i);
+
+                x_i *= x;
+                alpha_x_i *= x;
+                beta_x_i *= x;
+            }
+            for _ in short_len(d)..long_len(d) {
+                x_i_tweaks.push(x_i);
+
+                x_i *= x;
+            }
+
+            (x_i_tweaks, alpha_x_i_tweaks, beta_x_i_tweaks)
+        };
+
+        let mut old = old.clone();
+        let x_1 = zip_map_parallel(&mut old.raw.x_1, &mut x_i_tweaks, |g, x| *g * x);
+        let x_2 = zip_map_parallel(&mut old.raw.x_2, &mut x_i_tweaks, |g, x| *g * x);
+        let alpha_x_1 =
+            zip_map_parallel(&mut old.raw.alpha_x_1, &mut alpha_x_i_tweaks, |g, x| *g * x);
+        let beta_x_1 = zip_map_parallel(&mut old.raw.beta_x_1, &mut beta_x_i_tweaks, |g, x| *g * x);
+
+        let new_elements = CRSElements {
+            degree: d,
+            raw: RawCRSElements {
+                alpha_1: old.raw.alpha_1 * alpha,
+                beta_1: old.raw.beta_1 * beta,
+                beta_2: old.raw.beta_2 * beta,
+                x_1,
+                x_2,
+                alpha_x_1,
+                beta_x_1,
+            },
+        };
+
         Self {
             parent,
-            new_elements: new,
+            new_elements,
             linking_proof: LinkingProof {
                 alpha_proof,
                 beta_proof,
@@ -504,27 +598,27 @@ mod test {
     #[test]
     fn test_root_crs_is_valid() {
         let root = CRSElements::root(D);
-        assert!(root.raw.validate().is_some());
+        assert!(root.raw.validate().is_ok());
     }
 
     #[test]
     fn test_nontrivial_crs_is_valid() {
         let crs = non_trivial_crs();
-        assert!(crs.validate().is_some());
+        assert!(crs.validate().is_ok());
     }
 
     #[test]
     fn test_changing_alpha_makes_crs_invalid() {
         let mut crs = non_trivial_crs();
         crs.alpha_1 = G1::generator();
-        assert!(crs.validate().is_none());
+        assert!(crs.validate().is_err());
     }
 
     #[test]
     fn test_changing_beta_makes_crs_invalid() {
         let mut crs = non_trivial_crs();
         crs.beta_1 = G1::generator();
-        assert!(crs.validate().is_none());
+        assert!(crs.validate().is_err());
     }
 
     #[test]
@@ -534,11 +628,11 @@ mod test {
         let x = F::rand(&mut OsRng);
 
         let crs0 = make_crs(F::zero(), beta, x);
-        assert!(crs0.validate().is_none());
+        assert!(crs0.validate().is_err());
         let crs1 = make_crs(alpha, F::zero(), x);
-        assert!(crs1.validate().is_none());
+        assert!(crs1.validate().is_err());
         let crs2 = make_crs(alpha, beta, F::zero());
-        assert!(crs2.validate().is_none());
+        assert!(crs2.validate().is_err());
     }
 
     #[test]
@@ -561,7 +655,7 @@ mod test {
             alpha_x_1: vec![G1::generator() * alpha, G1::generator() * (alpha * x)],
             beta_x_1: vec![G1::generator() * beta, G1::generator() * (beta * x)],
         };
-        assert!(crs.validate().is_none());
+        assert!(crs.validate().is_err());
     }
 
     #[test]
@@ -572,7 +666,7 @@ mod test {
             ContributionHash([0u8; CONTRIBUTION_HASH_SIZE]),
             &root,
         );
-        assert!(contribution.new_elements.raw.validate().is_some());
+        assert!(contribution.new_elements.raw.validate().is_ok());
     }
 
     #[test]

@@ -1,7 +1,7 @@
 //! This module is very similar to the one for phase1, so reading that one might be useful.
 use ark_ec::Group;
 use ark_ff::{fields::Field, UniformRand, Zero};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress, Valid, Validate};
 use rand_core::{CryptoRngCore, OsRng};
 
 use crate::single::log::{ContributionHash, Hashable, Phase};
@@ -58,6 +58,49 @@ impl RawCRSElements {
     /// Convert without checking validity.
     pub(crate) fn assume_valid(self) -> CRSElements {
         CRSElements { raw: self }
+    }
+
+    /// This is a replacement for the CanonicalDeserialize trait impl (more or less).
+    #[cfg(not(feature = "parallel"))]
+    pub(crate) fn checked_deserialize_parallel(compress: Compress, data: &[u8]) -> Self {
+        Self::deserialize_with_mode(data, compress, Validate::Yes)
+    }
+
+    /// This is a replacement for the CanonicalDeserialize trait impl (more or less).
+    #[cfg(feature = "parallel")]
+    pub(crate) fn checked_deserialize_parallel(
+        compress: Compress,
+        data: &[u8],
+    ) -> anyhow::Result<Self> {
+        use rayon::prelude::*;
+
+        let out = Self::deserialize_with_mode(data, compress, Validate::No)?;
+        out.delta_1.check()?;
+        out.delta_2.check()?;
+
+        let mut check_inv_delta_p_1 = Ok(());
+        let mut check_inv_delta_t_1 = Ok(());
+
+        rayon::join(
+            || {
+                check_inv_delta_p_1 = out
+                    .inv_delta_p_1
+                    .par_iter()
+                    .map(|x| x.check())
+                    .collect::<Result<_, _>>();
+            },
+            || {
+                check_inv_delta_t_1 = out
+                    .inv_delta_t_1
+                    .par_iter()
+                    .map(|x| x.check())
+                    .collect::<Result<_, _>>();
+            },
+        );
+
+        check_inv_delta_p_1?;
+        check_inv_delta_t_1?;
+        Ok(out)
     }
 }
 

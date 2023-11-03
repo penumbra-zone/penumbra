@@ -1,5 +1,6 @@
 #![deny(clippy::unwrap_used)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![recursion_limit = "512"]
 
 pub mod delegator_vote;
 pub use delegator_vote::{

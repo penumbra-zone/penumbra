@@ -1,0 +1,33 @@
+<h1>✨✨✨✨ Penumbra Summoning Ceremony ✨✨✨✨</h1>
+
+{% if snapshot_participants_top_median.is_some() %}
+{% let value = snapshot_participants_top_median.as_ref().unwrap() %}
+<span>Waiting:</span>
+<span>{{ value.0 }}</span>
+<span>Top Bid:</span>
+<span>{{ value.1 }}</span>
+<span>Median Bid:</span>
+<span>{{ value.2 }}</span>
+{% endif %}
+
+<h2>Previous Contributions in phase 2: {{ num_contributions_so_far_phase_2 }}</h2>
+
+{% if contributions_by_slot_hash_time_shortaddr.len() != 0 %}
+Recent phase 2 contributors:
+<table>
+    <tr>
+      <td>Slot</td>
+      <td>Who</td>
+      <td>What</td>
+      <td>When</td>
+    </tr>
+    {% for contribution in contributions_by_slot_hash_time_shortaddr.iter() %}
+    <tr>
+      <td>{{ contribution.0 }}</td>
+      <td>{{ contribution.3 }}</td>
+      <td>{{ contribution.1 }}</td>
+      <td>{{ contribution.2 }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
