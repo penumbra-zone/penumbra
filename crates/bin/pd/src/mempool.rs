@@ -27,7 +27,7 @@ use crate::{metrics, App};
 pub struct Mempool {
     queue: mpsc::Receiver<Message<Request, Response, tower::BoxError>>,
     app: App,
-    snapshot_rx: watch::Receiver<Snapshot>,
+    rx_snapshot: watch::Receiver<Snapshot>,
 }
 
 impl Mempool {
@@ -41,7 +41,7 @@ impl Mempool {
         Ok(Self {
             queue,
             app,
-            snapshot_rx,
+            rx_snapshot: snapshot_rx,
         })
     }
 
@@ -95,9 +95,9 @@ impl Mempool {
                 biased;
                 // Check whether the height has changed, which requires us to throw away our
                 // ephemeral mempool state, and create a new one based on the new state.
-                change = self.snapshot_rx.changed() => {
+                change = self.rx_snapshot.changed() => {
                     if let Ok(()) = change {
-                        let snapshot = self.snapshot_rx.borrow().clone();
+                        let snapshot = self.rx_snapshot.borrow().clone();
                         tracing::debug!(height = ?snapshot.version(), "resetting ephemeral mempool state");
                         self.app = App::new(snapshot).await?;
                     } else {
