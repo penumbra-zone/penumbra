@@ -54,13 +54,12 @@ impl GovernanceCmd {
         // use PerProposalCmd::*;
 
         let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
-        let chain_id = app.view().app_params().await?.chain_params.chain_id;
         match self {
             GovernanceCmd::ListProposals { inactive } => {
                 let proposals: Vec<ProposalListResponse> = client
                     .proposal_list(ProposalListRequest {
-                        chain_id,
                         inactive: *inactive,
+                        ..Default::default()
                     })
                     .await?
                     .into_inner()
@@ -92,8 +91,8 @@ impl GovernanceCmd {
                     &PerProposalCmd::Definition => {
                         let proposal = client
                             .proposal_data(ProposalDataRequest {
-                                chain_id,
                                 proposal_id: *proposal_id,
+                                ..Default::default()
                             })
                             .await?
                             .into_inner();
@@ -106,8 +105,8 @@ impl GovernanceCmd {
                     PerProposalCmd::State => {
                         let proposal = client
                             .proposal_data(ProposalDataRequest {
-                                chain_id,
                                 proposal_id: *proposal_id,
+                                ..Default::default()
                             })
                             .await?
                             .into_inner();
@@ -120,8 +119,8 @@ impl GovernanceCmd {
                     PerProposalCmd::Period => {
                         let proposal = client
                             .proposal_data(ProposalDataRequest {
-                                chain_id,
                                 proposal_id: *proposal_id,
+                                ..Default::default()
                             })
                             .await?
                             .into_inner();
@@ -136,8 +135,8 @@ impl GovernanceCmd {
                     PerProposalCmd::Tally => {
                         let validator_votes: Vec<ValidatorVotesResponse> = client
                             .validator_votes(ValidatorVotesRequest {
-                                chain_id: chain_id.clone(),
                                 proposal_id: *proposal_id,
+                                ..Default::default()
                             })
                             .await?
                             .into_inner()
@@ -157,9 +156,9 @@ impl GovernanceCmd {
                                 .try_into()?;
                             let power: u64 = client
                                 .voting_power_at_proposal_start(VotingPowerAtProposalStartRequest {
-                                    chain_id: chain_id.clone(),
                                     proposal_id: *proposal_id,
                                     identity_key: Some(identity_key.into()),
+                                    ..Default::default()
                                 })
                                 .await
                                 .context("Error looking for validator power")?
@@ -175,8 +174,8 @@ impl GovernanceCmd {
                         > = client
                             .all_tallied_delegator_votes_for_proposal(
                                 AllTalliedDelegatorVotesForProposalRequest {
-                                    chain_id: chain_id.clone(),
                                     proposal_id: *proposal_id,
+                                    ..Default::default()
                                 },
                             )
                             .await?
