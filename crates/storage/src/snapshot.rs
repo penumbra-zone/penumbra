@@ -7,7 +7,7 @@ use tracing::Span;
 
 #[cfg(feature = "metrics")]
 use crate::metrics;
-use crate::store::multistore;
+use crate::store::multistore::{self, MultistoreCache};
 use crate::{store, StateRead};
 
 mod rocks_wrapper;
@@ -26,7 +26,8 @@ pub struct Snapshot(pub(crate) Arc<Inner>);
 // We don't want to expose the `TreeReader` implementation outside of this crate.
 #[derive(Debug)]
 pub(crate) struct Inner {
-    pub(crate) multistore_cache: multistore::VersionCache,
+    /// Tracks the latest version of each substore, and routes keys to the correct substore.
+    pub(crate) multistore_cache: MultistoreCache,
     pub(crate) snapshot: Arc<RocksDbSnapshot>,
     pub(crate) version: jmt::Version,
     // Used to retrieve column family handles.
@@ -38,7 +39,7 @@ impl Snapshot {
     pub(crate) fn new(
         db: Arc<rocksdb::DB>,
         version: jmt::Version,
-        multistore_cache: multistore::VersionCache,
+        multistore_cache: multistore::MultistoreCache,
     ) -> Self {
         Self(Arc::new(Inner {
             snapshot: Arc::new(RocksDbSnapshot::new(db.clone())),
