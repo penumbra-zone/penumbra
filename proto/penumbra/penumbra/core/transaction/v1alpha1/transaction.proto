@@ -80,7 +80,7 @@ message Action {
     // Uncommon actions have numbers > 15.
 
     component.stake.v1alpha1.ValidatorDefinition validator_definition = 16;
-    component.ibc.v1alpha1.IbcAction ibc_action = 17;
+    component.ibc.v1alpha1.IbcRelay ibc_relay_action = 17;
 
     // Governance:
     component.governance.v1alpha1.ProposalSubmit proposal_submit = 18;
@@ -172,7 +172,7 @@ message ActionView {
 
     // Action types without visible/opaque variants
     component.stake.v1alpha1.ValidatorDefinition validator_definition = 16;
-    component.ibc.v1alpha1.IbcAction ibc_action = 17;
+    component.ibc.v1alpha1.IbcRelay ibc_relay_action = 17;
 
     // Governance:
     component.governance.v1alpha1.ProposalSubmit proposal_submit = 18;
@@ -252,7 +252,7 @@ message ActionPlan {
     // This is just a message relayed to the chain.
     component.stake.v1alpha1.ValidatorDefinition validator_definition = 16;
     // This is just a message relayed to the chain.
-    component.ibc.v1alpha1.IbcAction ibc_action = 17;
+    component.ibc.v1alpha1.IbcRelay ibc_relay_action = 17;
     // Governance:
     component.governance.v1alpha1.ProposalSubmit proposal_submit = 18;
     component.governance.v1alpha1.ProposalWithdraw proposal_withdraw = 19;
