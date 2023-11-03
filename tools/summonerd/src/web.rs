@@ -43,6 +43,22 @@ pub fn web_app(
         .route("/", get(main_page).with_state(shared_state.clone()))
         .route("/phase/1", get(phase_1).with_state(shared_state.clone()))
         .route("/phase/2", get(phase_2).with_state(shared_state))
+        .route(
+            "/static/index.css",
+            get(|| async { include_bytes!("../templates/static/index.css") }),
+        )
+        .route(
+            "/static/Iosevka-Term.woff2",
+            get(|| async { include_bytes!("../templates/static/Iosevka-Term.woff2") }),
+        )
+        .route(
+            "/static/PublicSans-Bold.woff2",
+            get(|| async { include_bytes!("../templates/static/PublicSans-Bold.woff2") }),
+        )
+        .route(
+            "/static/PublicSans-Regular.woff2",
+            get(|| async { include_bytes!("../templates/static/PublicSans-Regular.woff2") }),
+        )
 }
 
 pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoResponse {
@@ -60,14 +76,6 @@ pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoRespon
 }
 
 pub async fn phase_1(State(state): State<Arc<WebAppState>>) -> impl IntoResponse {
-    // TODO: Also get info from queue
-
-    let num_contributions_so_far_phase_1 = state
-        .storage
-        .current_slot(PhaseMarker::P1)
-        .await
-        .expect("Can get contributions so far");
-
     let contributions_by_slot_hash_time_shortaddr = state
         .storage
         .last_n_contributors(PhaseMarker::P1, LAST_N)
@@ -93,21 +101,12 @@ pub async fn phase_1(State(state): State<Arc<WebAppState>>) -> impl IntoResponse
 
     let template = Phase1Template {
         snapshot_participants_top_median,
-        num_contributions_so_far_phase_1,
         contributions_by_slot_hash_time_shortaddr,
     };
     HtmlTemplate(template)
 }
 
 pub async fn phase_2(State(state): State<Arc<WebAppState>>) -> impl IntoResponse {
-    // TODO: Also get info from queue
-
-    let num_contributions_so_far_phase_2 = state
-        .storage
-        .current_slot(PhaseMarker::P2)
-        .await
-        .expect("Can get contributions so far");
-
     let contributions_by_slot_hash_time_shortaddr = state
         .storage
         .last_n_contributors(PhaseMarker::P2, LAST_N)
@@ -133,7 +132,6 @@ pub async fn phase_2(State(state): State<Arc<WebAppState>>) -> impl IntoResponse
 
     let template = Phase2Template {
         snapshot_participants_top_median,
-        num_contributions_so_far_phase_2,
         contributions_by_slot_hash_time_shortaddr,
     };
     HtmlTemplate(template)
@@ -151,7 +149,6 @@ struct MainTemplate {
 #[template(path = "phase1.html")]
 struct Phase1Template {
     snapshot_participants_top_median: Option<(u64, String, String)>,
-    num_contributions_so_far_phase_1: u64,
     contributions_by_slot_hash_time_shortaddr: Vec<(u64, String, String, String)>,
 }
 
@@ -159,7 +156,6 @@ struct Phase1Template {
 #[template(path = "phase2.html")]
 struct Phase2Template {
     snapshot_participants_top_median: Option<(u64, String, String)>,
-    num_contributions_so_far_phase_2: u64,
     contributions_by_slot_hash_time_shortaddr: Vec<(u64, String, String, String)>,
 }
 
