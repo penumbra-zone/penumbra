@@ -261,7 +261,10 @@ impl Storage {
         let main_store_config = self.0.multistore_config.main_store.clone();
         let mut main_store_changes = changes_by_substore
             .remove(&main_store_config)
-            .expect("TODO(erwan): change to unwrap_or_default");
+            .unwrap_or_else(|| {
+                tracing::debug!("no changes for main store, creating empty changeset");
+                Cache::default()
+            });
 
         for (config, root_hash) in substore_roots {
             main_store_changes
