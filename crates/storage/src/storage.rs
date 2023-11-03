@@ -91,7 +91,7 @@ impl Storage {
                     let jmt_version = main_store.latest_version_from_db(&db)?.unwrap_or(u64::MAX);
 
                     let mut multistore_cache =
-                        multistore::VersionCache::from_config(multistore_config.clone());
+                        multistore::MultistoreCache::from_config(multistore_config.clone());
 
                     for substore_config in substore_configs {
                         let substore_version = substore_config
@@ -221,7 +221,7 @@ impl Storage {
         let mut changes_by_substore = cache.shard_by_prefix(&self.0.multistore_config);
         let mut substore_roots = Vec::new();
         let mut multistore_versions =
-            multistore::VersionCache::from_config(self.0.multistore_config.clone());
+            multistore::MultistoreCache::from_config(self.0.multistore_config.clone());
 
         // TODO(erwan): refactor this before shipping pr.
 
