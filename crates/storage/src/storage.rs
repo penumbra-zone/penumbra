@@ -239,7 +239,6 @@ impl Storage {
                 version: new_substore_version,
                 db: self.0.db.clone(),
             };
-            multistore_versions.set_version(substore_config.clone(), new_substore_version);
 
             let substore_storage = SubstoreStorage {
                 config: substore_config.clone(),
@@ -250,16 +249,19 @@ impl Storage {
                 continue;
             };
 
+            // Commit the substore and collect the root hash
             let root_hash = substore_storage
                 .commit(changeset, substore_snapshot, new_substore_version)
                 .await?;
+            multistore_versions.set_version(substore_config.clone(), new_substore_version);
             substore_roots.push((substore_config, root_hash));
         }
 
         /* commit roots to main store */
+        let main_store_config = self.0.multistore_config.main_store.clone();
         let mut main_store_changes = changes_by_substore
-            .remove(&self.0.multistore_config.main_store)
-            .unwrap_or_default();
+            .remove(&main_store_config)
+            .expect("TODO(erwan): change to unwrap_or_default");
 
         for (config, root_hash) in substore_roots {
             main_store_changes
@@ -269,20 +271,21 @@ impl Storage {
 
         /* commit main substore */
         let main_store_snapshot = SubstoreSnapshot {
-            config: self.0.multistore_config.main_store.clone(),
+            config: main_store_config.clone(),
             rocksdb_snapshot: snapshot.0.snapshot.clone(),
             version: new_version,
             db: self.0.db.clone(),
         };
 
         let main_store_storage = SubstoreStorage {
-            config: main_store_snapshot.config.clone(),
+            config: main_store_config.clone(),
             db: self.0.db.clone(),
         };
 
         let global_root_hash = main_store_storage
             .commit(main_store_changes, main_store_snapshot, new_version)
             .await?;
+        multistore_versions.set_version(main_store_config, new_version);
 
         /* hydrate the snapshot cache */
         if !write_to_snapshot_cache {

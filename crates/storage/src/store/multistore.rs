@@ -71,7 +71,7 @@ impl VersionCache {
 
 impl MultistoreConfig {
     pub fn iter(&self) -> impl Iterator<Item = &Arc<SubstoreConfig>> {
-        std::iter::once(&self.main_store).chain(self.substores.iter())
+       self.substores.iter()
     }
 
     /// Returns the substore matching the key's prefix, return `None` otherwise.
