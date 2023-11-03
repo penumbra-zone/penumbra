@@ -1,33 +1,60 @@
-<h1>✨✨✨✨ Penumbra Summoning Ceremony ✨✨✨✨</h1>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <link href="/static/index.css" rel="stylesheet">
+</head>
+<body class="bg-black text-white">
+<div class="p-4 mb-4">
+  <a href="/" class="text-2xl font-bold uppercase hover:text-teal">Penumbra Summoning Ceremony</a>
+</div>
 
+<div class="space-y-8 mx-auto w-3/4">
 {% if snapshot_participants_top_median.is_some() %}
 {% let value = snapshot_participants_top_median.as_ref().unwrap() %}
-<span>Waiting:</span>
-<span>{{ value.0 }}</span>
-<span>Top Bid:</span>
-<span>{{ value.1 }}</span>
-<span>Median Bid:</span>
-<span>{{ value.2 }}</span>
+  <div class="relative bg-charcoal rounded-lg shadow-sm">
+    <div class="relative z-10 p-4 text-lg">
+      <h2 class="font-bold text-3xl bg-text-linear bg-clip-text text-transparent mb-4">Queue</h2>
+      <div>
+        <span class="font-bold">0</span>
+        <span>waiting</span>
+      </div>
+      <h3 class="text-xl mt-4 mb-2 font-bold">Bids</h3>
+      <div>
+        <span class="font-mono">0penumbra</span>
+        <span class="text-sm">(top)</span>
+      </div>
+      <div>
+        <span class="font-mono">0penumbra</span>
+        <span class="text-sm">(median)</span>
+      </div>
+    </div>
+    <div class="absolute inset-0 z-0 rounded-lg bg-card-radial opacity-20"></div>
+  </div>
 {% endif %}
-
-<h2>Previous Contributions in phase 2: {{ num_contributions_so_far_phase_2 }}</h2>
-
-{% if contributions_by_slot_hash_time_shortaddr.len() != 0 %}
-Recent phase 2 contributors:
-<table>
-    <tr>
-      <td>Slot</td>
-      <td>Who</td>
-      <td>What</td>
-      <td>When</td>
-    </tr>
-    {% for contribution in contributions_by_slot_hash_time_shortaddr.iter() %}
-    <tr>
-      <td>{{ contribution.0 }}</td>
-      <td>{{ contribution.3 }}</td>
-      <td>{{ contribution.1 }}</td>
-      <td>{{ contribution.2 }}</td>
-    </tr>
-    {% endfor %}
-</table>
-{% endif %}
+  <div class="relative bg-charcoal rounded-lg shadow-sm">
+    <div class="relative z-10 p-4 space-y-4">
+      <h2 class="font-bold text-3xl bg-text-linear bg-clip-text text-transparent">Phase 2 Contributions</h2>
+      <table class="table-auto w-full border-separate">
+        <tbody>
+          <tr class="font-bold">
+            <th class="">Slot</th>
+            <th class="">Who</th>
+            <th class="">What</th>
+            <th class="">When</th>
+          </tr>
+          
+          {% for contribution in contributions_by_slot_hash_time_shortaddr.iter() %}
+          <tr class="font-mono">
+            <td class="px-4">{{ contribution.0 }}</td>
+            <td class="px-4">{{ contribution.3 }}</td>
+            <td class="px-4">{{ contribution.1 }}</td>
+            <td class="px-4">{{ contribution.2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="absolute inset-0 z-0 rounded-lg bg-card-radial opacity-20"></div>
+  </div>
+</body>
+</html>
