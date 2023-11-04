@@ -303,9 +303,42 @@ img, video {
   z-index: 10;
 }
 
+.m-4 {
+  margin: 1rem;
+}
+
+.m-8 {
+  margin: 2rem;
+}
+
 .mx-auto {
   margin-left: auto;
   margin-right: auto;
+}
+
+.my-2 {
+  margin-top: .5rem;
+  margin-bottom: .5rem;
+}
+
+.mx-48 {
+  margin-left: 12rem;
+  margin-right: 12rem;
+}
+
+.mx-4 {
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+.my-4 {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.my-8 {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
 }
 
 .mb-2 {
@@ -316,16 +349,12 @@ img, video {
   margin-bottom: 1rem;
 }
 
-.mt-2 {
-  margin-top: .5rem;
-}
-
 .mt-4 {
   margin-top: 1rem;
 }
 
-.mt-8 {
-  margin-top: 2rem;
+.flex {
+  display: flex;
 }
 
 .table {
@@ -348,6 +377,18 @@ img, video {
   border-collapse: separate;
 }
 
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.gap-2 {
+  gap: .5rem;
+}
+
 .space-y-2 > :not([hidden]) ~ :not([hidden]) {
   --tw-space-y-reverse: 0;
   margin-top: calc(.5rem * calc(1 - var(--tw-space-y-reverse)));
@@ -364,6 +405,14 @@ img, video {
   --tw-space-y-reverse: 0;
   margin-top: calc(2rem * calc(1 - var(--tw-space-y-reverse)));
   margin-bottom: calc(2rem * var(--tw-space-y-reverse));
+}
+
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
+.whitespace-nowrap {
+  white-space: nowrap;
 }
 
 .rounded-lg {
@@ -396,13 +445,18 @@ img, video {
   padding: 1rem;
 }
 
+.p-2 {
+  padding: .5rem;
+}
+
 .px-4 {
   padding-left: 1rem;
   padding-right: 1rem;
 }
 
-.pt-8 {
-  padding-top: 2rem;
+.py-4 {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
 }
 
 .pt-4 {
@@ -480,7 +534,7 @@ img, video {
 
 @font-face {
   font-family: Public Sans;
-  src: url("PublicSans-Regular.e4d8c00e.woff2") format("woff2");
+  src: url("PublicSans-Regular.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -506,3 +560,16 @@ img, video {
   color: var(--teal);
 }
 
+@media (width >= 640px) {
+  .sm\:w-full {
+    width: 100%;
+  }
+}
+
+@media (width >= 768px) {
+  .md\:w-3\/4 {
+    width: 75%;
+  }
+}
+
+/*# sourceMappingURL=index.61d3354a.css.map */
