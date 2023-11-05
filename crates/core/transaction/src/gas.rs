@@ -289,7 +289,7 @@ impl GasCost for Action {
             Action::DaoDeposit(deposit) => deposit.gas_cost(),
             Action::DaoSpend(spend) => spend.gas_cost(),
             Action::DaoOutput(output) => output.gas_cost(),
-            Action::IbcAction(x) => x.gas_cost(),
+            Action::IbcRelay(x) => x.gas_cost(),
             Action::ValidatorDefinition(x) => x.gas_cost(),
         }
     }

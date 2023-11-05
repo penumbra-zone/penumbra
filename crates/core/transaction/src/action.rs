@@ -13,7 +13,7 @@ pub enum Action {
     Output(penumbra_shielded_pool::Output),
     Spend(penumbra_shielded_pool::Spend),
     ValidatorDefinition(penumbra_stake::validator::Definition),
-    IbcAction(penumbra_ibc::IbcRelay),
+    IbcRelay(penumbra_ibc::IbcRelay),
     Swap(penumbra_dex::swap::Swap),
     SwapClaim(penumbra_dex::swap_claim::SwapClaim),
     ProposalSubmit(penumbra_governance::ProposalSubmit),
@@ -49,7 +49,7 @@ impl Action {
             Action::ValidatorDefinition(_) => {
                 tracing::info_span!("ValidatorDefinition", ?idx)
             }
-            Action::IbcAction(msg) => {
+            Action::IbcRelay(msg) => {
                 // Construct a nested span, identifying the IbcAction within
                 // the transaction but also the message within the IbcAction.
                 let action_span = tracing::info_span!("IbcAction", ?idx);
@@ -110,7 +110,7 @@ impl IsAction for Action {
             Action::DaoOutput(output) => output.balance_commitment(),
             // These actions just post Protobuf data to the chain, and leave the
             // value balance unchanged.
-            Action::IbcAction(x) => x.balance_commitment(),
+            Action::IbcRelay(x) => x.balance_commitment(),
             Action::ValidatorDefinition(_) => balance::Commitment::default(),
         }
     }
@@ -139,7 +139,7 @@ impl IsAction for Action {
             Action::DaoDeposit(x) => x.view_from_perspective(txp),
             // TODO: figure out where to implement the actual decryption methods for these? where are their action definitions?
             Action::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.to_owned()),
-            Action::IbcAction(x) => ActionView::IbcAction(x.to_owned()),
+            Action::IbcRelay(x) => ActionView::IbcRelay(x.to_owned()),
         }
     }
 }
@@ -179,8 +179,8 @@ impl From<Action> for pb::Action {
             Action::Swap(inner) => pb::Action {
                 action: Some(pb::action::Action::Swap(inner.into())),
             },
-            Action::IbcAction(inner) => pb::Action {
-                action: Some(pb::action::Action::IbcAction(inner.into())),
+            Action::IbcRelay(inner) => pb::Action {
+                action: Some(pb::action::Action::IbcRelayAction(inner.into())),
             },
             Action::ProposalSubmit(inner) => pb::Action {
                 action: Some(pb::action::Action::ProposalSubmit(inner.into())),
@@ -247,7 +247,7 @@ impl TryFrom<pb::Action> for Action {
             }
             pb::action::Action::SwapClaim(inner) => Ok(Action::SwapClaim(inner.try_into()?)),
             pb::action::Action::Swap(inner) => Ok(Action::Swap(inner.try_into()?)),
-            pb::action::Action::IbcAction(inner) => Ok(Action::IbcAction(inner.try_into()?)),
+            pb::action::Action::IbcRelayAction(inner) => Ok(Action::IbcRelay(inner.try_into()?)),
             pb::action::Action::ProposalSubmit(inner) => {
                 Ok(Action::ProposalSubmit(inner.try_into()?))
             }

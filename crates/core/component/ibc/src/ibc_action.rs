@@ -200,7 +200,7 @@ impl TryFrom<pb::IbcRelay> for IbcRelay {
     }
 }
 
-impl From<IbcRelay> for pb::IbcAction {
+impl From<IbcRelay> for pb::IbcRelay {
     fn from(value: IbcRelay) -> Self {
         let raw_action = match value {
             IbcRelay::CreateClient(msg) => pbjson_types::Any {
@@ -273,7 +273,7 @@ impl From<IbcRelay> for pb::IbcAction {
             },
             IbcRelay::Unknown(raw_action) => raw_action,
         };
-        pb::IbcAction {
+        pb::IbcRelay {
             raw_action: Some(raw_action),
         }
     }

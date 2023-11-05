@@ -592,7 +592,7 @@ impl ViewProtocolService for ViewService {
         }
 
         // Finally, insert all the requested IBC actions.
-        for ibc_action in prq.ibc_actions {
+        for ibc_action in prq.ibc_relay_actions {
             planner.ibc_action(
                 ibc_action
                     .try_into()

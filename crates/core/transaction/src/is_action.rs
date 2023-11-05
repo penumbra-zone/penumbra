@@ -201,7 +201,7 @@ impl IsAction for IbcRelay {
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::IbcAction(self.clone())
+        ActionView::IbcRelay(self.clone())
     }
 }
 

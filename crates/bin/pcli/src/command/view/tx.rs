@@ -353,7 +353,7 @@ impl TxCmd {
                     penumbra_transaction::ActionView::ValidatorDefinition(_) => {
                         ["Upload Validator Definition".to_string(), "".to_string()]
                     }
-                    penumbra_transaction::ActionView::IbcAction(_) => {
+                    penumbra_transaction::ActionView::IbcRelay(_) => {
                         ["IBC Action".to_string(), "".to_string()]
                     }
                     penumbra_transaction::ActionView::ProposalSubmit(prop_submit) => [

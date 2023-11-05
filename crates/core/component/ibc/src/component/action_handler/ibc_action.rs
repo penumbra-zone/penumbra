@@ -7,7 +7,7 @@ use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
     component::{app_handler::AppHandler, MsgHandler as _},
-    IbcRelay, IbcActionWithHandler,
+    IbcActionWithHandler, IbcRelay,
 };
 
 #[async_trait]
