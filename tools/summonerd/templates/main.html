@@ -67,83 +67,18 @@
     <div class="relative bg-charcoal rounded-lg shadow-sm">
       <div class="relative z-10 p-4 space-y-2">
         <h2 class="font-bold text-3xl bg-text-linear bg-clip-text text-transparent">How to Contribute</h2>
-        <h3 class="font-bold text-xl pt-4 bg-text-linear bg-clip-text text-transparent">Installing <span class="font-mono">pcli</span></h3>
+        <h3 class="font-bold text-xl pt-4 bg-text-linear bg-clip-text text-transparent">Creating a Wallet</h3>
         <p>
-          Ceremony contributions require using the command line interface, called <span class="font-mono">pcli</span>.
-          This section contains instructions on building this tool from source.
-          You may also want to look at the <a href="https://guide.penumbra.zone/main/pcli.html" class="underline">Penumbra Guide</a>
-          for more information.
-        </p>
-        <h4 class="font-bold text-lg pt-2">Installing the Rust Toolchain</h3>
-        <p>
-            This requires that you install a recent stable version of the Rust compiler.
-            You can do this with <a href="https://www.rust-lang.org/learn/get-started" class="underline">these installation instructions</a>.
-            Don't forget to reload your shell so that <span class="font-mono">cargo</span> is readily available.
-        </p>
-        <p>
-            You'll also want to install <span class="font-mono">rustfmt</span>, by running the following command:
-        </p>
+          Ceremony contributions require using the command line.
+          Follow the <a href="https://guide.penumbra.zone/main/pcli.html" class="underline">Penumbra Guide</a>
+          to set up <span class="font-mono">pcli</span> and create a wallet.
+          <br>
+          If you already have <span class="font-mono">pcli</span> installed, make sure you're using
+          <span class="font-bold">v0.63.1</span>:
         <pre
-          class="text-sm my-8 p-2 bg-charcoal rounded-lg">rustup component add rustfmt</pre>
-        <h4 class="font-bold text-lg pt-2">Installing Build Prerequisites</h3>
-        <h5 class="font-bold pt-2">Linux</h3>
-        <p>
-            You may need to install some additional packages in order to build <span class="font-mono">pcli</span>,
-            depending on your distribution.
-            For a bare-bones Ubuntu installation, you can run:
+          class="text-sm my-8 p-2 bg-charcoal rounded-lg"><span class="no-select">$ </span>cargo run --quiet --release --bin pcli -- --version
+<span class="no-select">pcli v0.63.1</span></pre>
         </p>
-        <pre
-          class="text-sm my-8 p-2 bg-charcoal rounded-lg">sudo apt-get install build-essential pkg-config libssl-dev clang git-lfs</pre>
-        <p>
-          For a minimal Fedora/CentOS/RHEL image, you can run:
-        </p>
-        <pre
-          class="text-sm my-8 p-2 bg-charcoal rounded-lg">sudo dnf install openssl-devel clang git cargo rustfmt git-lfs</pre>
-        <h5 class="font-bold pt-2">MacOS</h3>
-        <p>
-          You may need to install the command-line developer tools (if you haven't already):
-        </p>
-        <pre
-            class="text-sm my-8 p-2 bg-charcoal rounded-lg">xcode-select --install</pre>
-        <p>
-          You'll also need to install Git LFS, which you can do <a href="xcode-select --install" class="underline">via Homebrew</a>:
-        </p>
-        <pre
-            class="text-sm my-8 p-2 bg-charcoal rounded-lg">brew install git-lfs</pre>
-        <h4 class="font-bold text-lg pt-2">Making sure <span class="font-mono">git-lfs</span> is Installed</h3>
-        <p>
-            To make sure that it's installed, run:
-        </p>
-        <pre
-            class="text-sm my-8 p-2 bg-charcoal rounded-lg">git lfs install</pre>
-        <h4 class="font-bold text-lg pt-2">Cloning the Repository</h3>
-        <p>
-          With the tools above installed, you can then clone the repository:
-        </p>
-        <pre
-            class="text-sm my-8 p-2 bg-charcoal rounded-lg">git clone https://github.com/penumbra-zone/penumbra</pre>
-        <p>
-          To build the latest version of <span class="font-mono">pcli</span> compatible with the current testnet,
-          you'll have to navigate to the penumbra folder and check out the latest tag:
-        </p>
-        <pre
-            class="text-sm my-8 p-2 bg-charcoal rounded-lg">cd penumbra && git fetch --all && git checkout v0.63.1</pre>
-        <h4 class="font-bold text-lg pt-2">Building <span class="font-mono">pcli</span></h3>
-        <p>
-          We can then build <span class="font-mono">pcli</span> using <span class="font-mono">cargo</span>:
-        </p>
-        <pre
-            class="text-sm my-8 p-2 bg-charcoal rounded-lg">cargo build --release --bin pcli</pre>
-        <p>
-          You may see compilation warnings, which you can safely ignore.
-        </p>
-        <h3 class="font-bold text-xl pt-4 bg-text-linear bg-clip-text text-transparent">Generating a Wallet</h3>
-        <p>
-          After installing <span class="font-mono">pcli</span>, you'll need to generate a new wallet to be able
-          to receive and send funds. To do this, run the following command:
-        </p>
-        <pre
-            class="text-sm my-8 p-2 bg-charcoal rounded-lg">cargo run --quiet --release --bin pcli init soft-kms generate</pre>
         <h3 class="font-bold text-xl pt-4 bg-text-linear bg-clip-text text-transparent">Receiving Faucet Funds</h3>
         <p>
           After setting up a wallet, you can join our <a href="https://discord.gg/hKvkrqa3zC" class="underline">Public
