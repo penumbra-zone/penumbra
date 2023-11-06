@@ -97,8 +97,6 @@ impl Snapshot {
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
 
-        tracing::debug!(?prefix, "processing a root hash query for a substore");
-
         let config = self
             .0
             .multistore_cache
@@ -182,7 +180,7 @@ impl StateRead for Snapshot {
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
 
-        let version = self.substore_version(&config).unwrap_or(u64::MAX);
+        let version = self.substore_version(&config).expect("substore exists");
 
         let substore = store::substore::SubstoreSnapshot {
             config,
@@ -225,11 +223,12 @@ impl StateRead for Snapshot {
 
         // When we iterate over a prefixed substore, we need to strip the prefix from the keys.
         // If the prefix is the empty string, stripping the prefix is a no-op.
+        // TODO(erwan): this should be refactored in the routing logic.
         let prefix_truncated = prefix
             .strip_prefix(&config.prefix)
             .expect("prefix is a prefix of itself")
             .to_string();
-        tracing::debug!(prefix_truncated, prefix_requested = ?prefix, prefix_detected = config.prefix, "prefix_raw");
+        tracing::debug!(prefix_truncated, prefix_requested = ?prefix, prefix_detected = config.prefix, "processed argument in prefix_raw");
 
         let version = self.substore_version(&config).expect("substore exists");
 
@@ -271,7 +270,6 @@ impl StateRead for Snapshot {
                         let v = substore
                             .get_jmt(key_hash)?
                             .expect("keys in jmt_keys should have a corresponding value in jmt");
-                        tracing::debug!(%k, "prefix_raw");
 
                         tx_prefix_item.blocking_send(Ok((k, v)))?;
                     }
@@ -288,25 +286,34 @@ impl StateRead for Snapshot {
     // be better overall.
     fn prefix_keys(&self, prefix: &str) -> Self::PrefixKeysStream {
         let span = Span::current();
+
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
+        let config = self.0.multistore_cache.find_substore(prefix.as_bytes());
 
-        let (prefix, config) = self.0.multistore_cache.route_key_str(prefix);
+        // When we iterate over a prefixed substore, we need to strip the prefix from the keys.
+        // If the prefix is the empty string, stripping the prefix is a no-op.
+        // TODO(erwan): this should be refactored in the routing logic.
+        let prefix_truncated = prefix
+            .strip_prefix(&config.prefix)
+            .expect("prefix is a prefix of itself")
+            .to_string();
+        tracing::debug!(prefix_truncated, prefix_requested = ?prefix, prefix_detected = config.prefix, "processed argument to prefix_keys");
 
         let version = self.substore_version(&config).expect("substore exists");
 
         let substore = store::substore::SubstoreSnapshot {
-            config: config,
+            config,
             rocksdb_snapshot,
             version,
             db,
         };
 
         let mut options = rocksdb::ReadOptions::default();
-        options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
+        options.set_iterate_range(rocksdb::PrefixRange(prefix_truncated.as_bytes()));
         let mode = rocksdb::IteratorMode::Start;
+        let (tx_prefix_keys, rx_prefix_keys) = mpsc::channel(10);
 
-        let (tx, rx) = mpsc::channel(10);
         tokio::task::Builder::new()
             .name("Snapshot::prefix_keys")
             .spawn_blocking(move || {
@@ -318,19 +325,18 @@ impl StateRead for Snapshot {
                             .iterator_cf_opt(cf_jmt_keys, options, mode);
 
                     for key_and_keyhash in iter {
-                        // for each key that match the prefix, we fetch some value form the JMT
                         let (raw_preimage, _) = key_and_keyhash?;
                         let preimage = std::str::from_utf8(raw_preimage.as_ref())
                             .expect("saved jmt keys are utf-8 strings")
                             .to_string();
-                        tx.blocking_send(Ok(preimage))?;
+                        tx_prefix_keys.blocking_send(Ok(preimage))?;
                     }
                     anyhow::Ok(())
                 })
             })
             .expect("should be able to spawn_blocking");
 
-        tokio_stream::wrappers::ReceiverStream::new(rx)
+        tokio_stream::wrappers::ReceiverStream::new(rx_prefix_keys)
     }
 
     fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> Self::NonconsensusPrefixRawStream {

@@ -151,19 +151,17 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
     let snapshot = storage.latest_snapshot();
     let mut counter = 0;
     let query_prefix = "prefix_a";
-    let mut range = snapshot.prefix_raw(query_prefix);
+    let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
-        let (key, value) = res?;
+        let key = res?;
         let key = format!("prefix_a{key}");
         if counter >= kv_a.len() {
-            tracing::debug!(?key, ?value, ?query_prefix, "unexpected key/value pair");
-            panic!("prefix query returned too many entries")
+            tracing::debug!(?key, ?query_prefix, "unexpected key");
+            panic!("prefix_keys query returned too many entries")
         }
 
         let expected_key = kv_a[counter].0.clone();
-        let expected_value = kv_a[counter].1.clone();
         assert_eq!(key, expected_key, "key {} should match", counter);
-        assert_eq!(value, expected_value, "value {} should match", counter);
         counter += 1;
     }
     assert_eq!(
@@ -174,20 +172,132 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
 
     let mut counter = 0;
     let query_prefix = "prefix_b";
-    let mut range = snapshot.prefix_raw(query_prefix);
+    let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
-        let (key, value) = res?;
+        let key = res?;
         let key = format!("prefix_b{key}");
 
         if counter >= kv_b.len() {
-            tracing::debug!(?key, ?value, ?query_prefix, "unexpected key/value pair");
-            panic!("prefix query returned too many entries")
+            tracing::debug!(?key, ?query_prefix, "unexpected key");
+            panic!("prefix_keys query returned too many entries")
         }
 
         let expected_key = kv_b[counter].0.clone();
-        let expected_value = kv_b[counter].1.clone();
         assert_eq!(key, expected_key, "key {} should match", counter);
-        assert_eq!(value, expected_value, "value {} should match", counter);
+        counter += 1;
+    }
+    assert_eq!(
+        counter,
+        kv_b.len(),
+        "should have iterated over all keys (prefix_b)"
+    );
+
+    let mut counter = 0;
+    let query_prefix = "key";
+    let mut range = snapshot.prefix_keys(query_prefix);
+    while let Some(res) = range.next().await {
+        let key = res?;
+        tracing::debug!(?key, ?query_prefix, "iterating over keys");
+
+        if counter >= kv_main.len() {
+            tracing::debug!(?key, ?query_prefix, "unexpected key");
+            panic!("prefix_keys query returned too many entries")
+        }
+
+        let expected_key = kv_main[counter].0.clone();
+        assert_eq!(key, expected_key, "key {} should match", counter);
+        counter += 1;
+    }
+    assert_eq!(
+        counter,
+        kv_main.len(),
+        "should have iterated over all keys (main)"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+/// Test that `StateRead::prefix_keys` work as expected.
+/// This test is similar to `test_substore_prefix_queries`, but uses `prefix_keys` instead of
+/// `prefix_raw`.
+async fn test_substore_prefix_keys() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let tmpdir = tempfile::tempdir()?;
+    let db_path = tmpdir.into_path();
+    let substore_prefixes = vec!["prefix_a", "prefix_b", "prefix_c"]
+        .into_iter()
+        .map(|s| s.to_string())
+        .collect();
+    let storage = Storage::init(db_path, substore_prefixes).await?;
+    let mut delta = StateDelta::new(storage.latest_snapshot());
+
+    let mut all_kv = vec![];
+    let mut kv_a = vec![];
+    let mut kv_b = vec![];
+    let mut kv_main = vec![];
+    for i in 0..10 {
+        let key_a_i = format!("prefix_a/key_{}", i);
+        let value_a_i = format!("value_{}a", i).as_bytes().to_vec();
+        delta.put_raw(key_a_i.clone(), value_a_i.clone());
+        all_kv.push((key_a_i.clone(), value_a_i.clone()));
+        kv_a.push((key_a_i, value_a_i));
+    }
+
+    for i in 0..10 {
+        let key_b_i = format!("prefix_b/key_{}", i);
+        let value_b_i = format!("value_{}b", i).as_bytes().to_vec();
+        delta.put_raw(key_b_i.clone(), value_b_i.clone());
+        all_kv.push((key_b_i.clone(), value_b_i.clone()));
+        kv_b.push((key_b_i, value_b_i));
+    }
+
+    for i in 0..10 {
+        let key_i = format!("key_{}", i);
+        let value_i = format!("value_{}", i).as_bytes().to_vec();
+        delta.put_raw(key_i.clone(), value_i.clone());
+        all_kv.push((key_i.clone(), value_i.clone()));
+        kv_main.push((key_i, value_i));
+    }
+
+    let _ = storage.commit(delta).await?;
+
+    let snapshot = storage.latest_snapshot();
+    let mut counter = 0;
+    let query_prefix = "prefix_a";
+    let mut range = snapshot.prefix_keys(query_prefix);
+    while let Some(res) = range.next().await {
+        let key = res?;
+        let key = format!("prefix_a{key}");
+        if counter >= kv_a.len() {
+            tracing::debug!(?key, ?query_prefix, "unexpected key");
+            panic!("prefix_keys query returned too many entries")
+        }
+
+        let expected_key = kv_a[counter].0.clone();
+        assert_eq!(key, expected_key, "key {} should match", counter);
+        counter += 1;
+    }
+    assert_eq!(
+        counter,
+        kv_a.len(),
+        "should have iterated over all keys (prefix_a)"
+    );
+
+    let mut counter = 0;
+    let query_prefix = "prefix_b";
+    let mut range = snapshot.prefix_keys(query_prefix);
+    while let Some(res) = range.next().await {
+        let key = res?;
+        let key = format!("prefix_b{key}");
+
+        if counter >= kv_b.len() {
+            tracing::debug!(?key, ?query_prefix, "unexpected key");
+            panic!("prefix_keys query returned too many entries")
+        }
+
+        let expected_key = kv_b[counter].0.clone();
+        assert_eq!(key, expected_key, "key {} should match", counter);
         counter += 1;
     }
     assert_eq!(
