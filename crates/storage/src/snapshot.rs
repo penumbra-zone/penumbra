@@ -128,15 +128,18 @@ impl StateRead for Snapshot {
     /// Fetch a key from the JMT column family.
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         let span = Span::current();
-        let (key, substore_config) = self.0.multistore_cache.route_key_str(key);
+        let (key, config) = self.0.multistore_cache.route_key_str(key);
 
-        let substore_version = self.substore_version(&substore_config).unwrap_or(u64::MAX);
+        let rocksdb_snapshot = self.0.snapshot.clone();
+        let db = self.0.db.clone();
+
+        let version = self.substore_version(&config).expect("substore exists");
 
         let substore = store::substore::SubstoreSnapshot {
-            config: substore_config,
-            rocksdb_snapshot: self.0.snapshot.clone(),
-            version: substore_version,
-            db: self.0.db.clone(),
+            config,
+            rocksdb_snapshot,
+            version,
+            db,
         };
         let key_hash = jmt::KeyHash::with::<sha2::Sha256>(key);
 
@@ -158,21 +161,21 @@ impl StateRead for Snapshot {
 
     fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
         let span = Span::current();
-        let inner = self.0.clone();
-        let snapshot = self.clone();
-        let (key, substore_config) = inner.multistore_cache.route_key_bytes(key);
+        let (key, config) = self.0.multistore_cache.route_key_bytes(key);
 
-        let substore_version = snapshot
-            .substore_version(&substore_config)
-            .unwrap_or(u64::MAX);
+        let rocksdb_snapshot = self.0.snapshot.clone();
+        let db = self.0.db.clone();
+
+        let version = self.substore_version(&config).unwrap_or(u64::MAX);
 
         let substore = store::substore::SubstoreSnapshot {
-            config: substore_config,
-            rocksdb_snapshot: self.0.snapshot.clone(),
-            version: substore_version,
-            db: self.0.db.clone(),
+            config,
+            rocksdb_snapshot,
+            version,
+            db,
         };
         let key: Vec<u8> = key.to_vec();
+
         crate::future::SnapshotFuture(
             tokio::task::Builder::new()
                 .name("Snapshot::nonverifiable_get_raw")
@@ -180,10 +183,9 @@ impl StateRead for Snapshot {
                     span.in_scope(|| {
                         let _start = std::time::Instant::now();
 
-                        let cf_nonverifiable = substore.config.cf_nonverifiable(&snapshot.0.db);
-
-                        let rsp = inner
-                            .snapshot
+                        let cf_nonverifiable = substore.config.cf_nonverifiable(&substore.db);
+                        let rsp = substore
+                            .rocksdb_snapshot
                             .get_cf(cf_nonverifiable, key)
                             .map_err(Into::into);
                         #[cfg(feature = "metrics")]
@@ -201,13 +203,22 @@ impl StateRead for Snapshot {
     fn prefix_raw(&self, prefix: &str) -> Self::PrefixRawStream {
         let span = Span::current();
 
+        let rocksdb_snapshot = self.0.snapshot.clone();
+        let db = self.0.db.clone();
+        let (_, config) = self.0.multistore_cache.route_key_bytes(prefix.as_bytes());
+
+        let version = self.substore_version(&config).expect("substore exists");
+
+        let substore = store::substore::SubstoreSnapshot {
+            config,
+            rocksdb_snapshot,
+            version,
+            db,
+        };
+
         let mut options = rocksdb::ReadOptions::default();
         options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
         let mode = rocksdb::IteratorMode::Start;
-
-        let (_, substore_config) = self.0.multistore_cache.route_key_bytes(prefix.as_bytes());
-        let snapshot = self.clone();
-
         let (tx_prefix_item, rx_prefix_query) = mpsc::channel(10);
 
         // Since the JMT keys are hashed, we can't use a prefix iterator directly.
@@ -217,21 +228,10 @@ impl StateRead for Snapshot {
             .name("Snapshot::prefix_raw")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let substore_version = snapshot
-                        .substore_version(&substore_config)
-                        .unwrap_or(u64::MAX);
-
-                    let substore = store::substore::SubstoreSnapshot {
-                        config: substore_config.clone(),
-                        rocksdb_snapshot: snapshot.0.snapshot.clone(),
-                        version: substore_version,
-                        db: snapshot.0.db.clone(),
-                    };
-                    let cf_jmt_keys = substore.config.cf_jmt_keys(&snapshot.0.db);
+                    let cf_jmt_keys = substore.config.cf_jmt_keys(&substore.db);
                     let jmt_keys_iterator =
-                        snapshot
-                            .0
-                            .snapshot
+                        substore
+                            .rocksdb_snapshot
                             .iterator_cf_opt(cf_jmt_keys, options, mode);
 
                     for tuple in jmt_keys_iterator {
@@ -265,36 +265,42 @@ impl StateRead for Snapshot {
     fn prefix_keys(&self, prefix: &str) -> Self::PrefixKeysStream {
         let span = Span::current();
         let snapshot = self.clone();
+        let rocksdb_snapshot = self.0.snapshot.clone();
+        let db = self.0.db.clone();
 
-        let (prefix, substore_config) = self.0.multistore_cache.route_key_str(prefix);
+        let (prefix, config) = self.0.multistore_cache.route_key_str(prefix);
+
+        let version = snapshot.substore_version(&config).expect("substore exists");
+
+        let substore = store::substore::SubstoreSnapshot {
+            config: config,
+            rocksdb_snapshot,
+            version,
+            db,
+        };
+
         let mut options = rocksdb::ReadOptions::default();
         options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
         let mode = rocksdb::IteratorMode::Start;
 
-        let substore_version = snapshot
-            .substore_version(&substore_config)
-            .unwrap_or(u64::MAX);
-
-        let substore = store::substore::SubstoreSnapshot {
-            config: substore_config,
-            rocksdb_snapshot: self.0.snapshot.clone(),
-            version: substore_version,
-            db: self.0.db.clone(),
-        };
         let (tx, rx) = mpsc::channel(10);
         tokio::task::Builder::new()
             .name("Snapshot::prefix_keys")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let cf_keys = substore.config.cf_jmt_keys(&snapshot.0.db);
-                    let iter = snapshot.0.snapshot.iterator_cf_opt(cf_keys, options, mode);
-                    for i in iter {
-                        // For each key that matches the prefix, fetch the value from the JMT column family.
-                        let (key_preimage, _key_hash) = i?;
-                        let k = std::str::from_utf8(key_preimage.as_ref())
+                    let cf_jmt_keys = substore.config.cf_jmt_keys(&substore.db);
+                    let iter =
+                        substore
+                            .rocksdb_snapshot
+                            .iterator_cf_opt(cf_jmt_keys, options, mode);
+
+                    for key_and_keyhash in iter {
+                        // for each key that match the prefix, we fetch some value form the JMT
+                        let (raw_preimage, _) = key_and_keyhash?;
+                        let preimage = std::str::from_utf8(raw_preimage.as_ref())
                             .expect("saved jmt keys are utf-8 strings")
                             .to_string();
-                        tx.blocking_send(Ok(k))?;
+                        tx.blocking_send(Ok(preimage))?;
                     }
                     anyhow::Ok(())
                 })
@@ -307,35 +313,34 @@ impl StateRead for Snapshot {
     fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> Self::NonconsensusPrefixRawStream {
         let span = Span::current();
         let snapshot = self.clone();
+        let rocksdb_snapshot = self.0.snapshot.clone();
+        let db = self.0.db.clone();
 
-        let (prefix, substore_config) = self.0.multistore_cache.route_key_bytes(prefix);
+        let (prefix, config) = self.0.multistore_cache.route_key_bytes(prefix);
+        let version = snapshot.substore_version(&config).expect("substore exists");
+
+        let substore = store::substore::SubstoreSnapshot {
+            config,
+            rocksdb_snapshot,
+            version,
+            db,
+        };
+
         let mut options = rocksdb::ReadOptions::default();
         options.set_iterate_range(rocksdb::PrefixRange(prefix));
         let mode = rocksdb::IteratorMode::Start;
 
-        let substore_version = snapshot
-            .substore_version(&substore_config)
-            .unwrap_or(u64::MAX);
-
-        let substore = store::substore::SubstoreSnapshot {
-            config: substore_config,
-            rocksdb_snapshot: self.0.snapshot.clone(),
-            version: substore_version,
-            db: self.0.db.clone(),
-        };
         let (tx_prefix_query, rx_prefix_query) = mpsc::channel(10);
 
-        // Here we're operating on the nonverifiable data, which is a raw k/v store,
-        // so we just iterate over the keys.
         tokio::task::Builder::new()
             .name("Snapshot::nonverifiable_prefix_raw")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let cf_nonverifiable = substore.config.cf_nonverifiable(&snapshot.0.db);
-                    let iter = snapshot
-                        .0
-                        .snapshot
-                        .iterator_cf_opt(cf_nonverifiable, options, mode);
+                    let cf_nonverifiable = substore.config.cf_nonverifiable(&substore.db);
+                    let iter =
+                        substore
+                            .rocksdb_snapshot
+                            .iterator_cf_opt(cf_nonverifiable, options, mode);
                     for i in iter {
                         let (key, value) = i?;
                         tx_prefix_query.blocking_send(Ok((key.into(), value.into())))?;
@@ -355,11 +360,23 @@ impl StateRead for Snapshot {
     ) -> anyhow::Result<Self::NonconsensusRangeRawStream> {
         let span = Span::current();
         let snapshot = self.clone();
+        let rocksdb_snapshot = self.0.snapshot.clone();
+        let db = self.0.db.clone();
 
-        let (prefix, substore_config) = self
+        let (prefix, config) = self
             .0
             .multistore_cache
             .route_key_bytes(prefix.unwrap_or_default());
+
+        let version = snapshot.substore_version(&config).expect("substore exists");
+
+        let substore = store::substore::SubstoreSnapshot {
+            config,
+            rocksdb_snapshot,
+            version,
+            db,
+        };
+
         let (_range, (start, end)) = crate::utils::convert_bounds(range)?;
         let mut options = rocksdb::ReadOptions::default();
 
@@ -400,26 +417,17 @@ impl StateRead for Snapshot {
         let mode = rocksdb::IteratorMode::Start;
         let prefix = prefix.to_vec();
 
-        let substore_version = snapshot
-            .substore_version(&substore_config)
-            .unwrap_or(u64::MAX);
-
-        let substore = store::substore::SubstoreSnapshot {
-            config: substore_config,
-            rocksdb_snapshot: self.0.snapshot.clone(),
-            version: substore_version,
-            db: self.0.db.clone(),
-        };
         let (tx, rx) = mpsc::channel::<Result<(Vec<u8>, Vec<u8>)>>(10);
         tokio::task::Builder::new()
             .name("Snapshot::nonverifiable_range_raw")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    let cf_nonverifiable = substore.config.cf_nonverifiable(&snapshot.0.db);
-                    let iter = snapshot
-                        .0
-                        .snapshot
-                        .iterator_cf_opt(cf_nonverifiable, options, mode);
+                    let cf_nonverifiable = substore.config.cf_nonverifiable(&substore.db);
+                    let iter =
+                        substore
+                            .rocksdb_snapshot
+                            .iterator_cf_opt(cf_nonverifiable, options, mode);
+
                     for i in iter {
                         let (key, value) = i?;
 
