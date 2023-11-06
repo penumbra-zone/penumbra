@@ -267,9 +267,16 @@ impl Storage {
             });
 
         for (config, root_hash) in substore_roots {
-            main_store_changes
-                .unwritten_changes
-                .insert(config.prefix.clone(), Some(root_hash.0.to_vec()));
+            // TODO(erwan): this is a temporary hack that we need to remove before shipping.
+            // the root hash of each substore is stored in the main store, under the prefix key.
+            // however, the current (incomplete) routing logic still allows empty keys on substores e.g:
+            //      - `prefix_a/key_1` corresponds to the key `/key_1` in substore `prefix_a`
+            //      - `prefix_a` corresponds to the key "" in substore `prefix_a`
+            //          instead, it should correspond to the key `prefix_a` in the main store
+            main_store_changes.unwritten_changes.insert(
+                format!("prefix_root_hash_{}", config.prefix),
+                Some(root_hash.0.to_vec()),
+            );
         }
 
         /* commit main substore */
