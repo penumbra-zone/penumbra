@@ -57,20 +57,29 @@ impl Storage {
             .spawn_blocking(move || {
                 span.in_scope(|| {
                     tracing::info!(?path, "opening rocksdb");
-                    let mut opts = Options::default();
-                    opts.create_if_missing(true);
-                    opts.create_missing_column_families(true);
 
                     let mut substore_configs = Vec::new();
                     tracing::info!("initializing global store config");
                     let main_store = Arc::new(SubstoreConfig::new(""));
                     for substore_prefix in substore_prefixes {
-                        tracing::info!(?substore_prefix, "initializing substore");
+                        tracing::debug!(?substore_prefix, "reading substore config");
                         if substore_prefix.is_empty() {
                             bail!("the empty prefix is reserved")
                         }
                         substore_configs.push(Arc::new(SubstoreConfig::new(substore_prefix)));
                     }
+
+                    let multistore_config = MultistoreConfig {
+                        main_store: main_store.clone(),
+                        substores: substore_configs.clone(),
+                    };
+
+                    // RocksDB setup: define options, collect all the columns, and open the database.
+                    // Each substore defines a prefix and its own set of columns.
+                    // See [`crate::store::SubstoreConfig`] for more details.
+                    let mut opts = Options::default();
+                    opts.create_if_missing(true);
+                    opts.create_missing_column_families(true);
 
                     let mut substore_columns: Vec<&String> = substore_configs
                         .iter()
@@ -79,13 +88,9 @@ impl Storage {
                     let mut columns: Vec<&String> = main_store.columns().collect();
                     columns.append(&mut substore_columns);
 
-                    let multistore_config = MultistoreConfig {
-                        main_store: main_store.clone(),
-                        substores: substore_configs.clone(),
-                    };
-
                     let db = Arc::new(DB::open_cf(&opts, path, columns)?);
 
+                    // Initialize the substore cache with the latest version of each substore.
                     // Note: for compatibility reasons with Tendermint/CometBFT, we set the "pre-genesis"
                     // jmt version to be u64::MAX, corresponding to -1 mod 2^64.
                     let jmt_version = main_store.latest_version_from_db(&db)?.unwrap_or(u64::MAX);
@@ -100,14 +105,14 @@ impl Storage {
 
                         multistore_cache.set_version(substore_config.clone(), substore_version);
                         tracing::debug!(
-                            ?substore_config,
+                            substore_prefix = ?substore_config.prefix,
                             ?substore_version,
-                            "initialized substore"
+                            "initializing substore"
                         );
                     }
 
-                    // TODO(erwan): we need to refactor this whole setup phase.
                     multistore_cache.set_version(main_store, jmt_version);
+                    tracing::debug!(?jmt_version, "initializing main store");
 
                     let latest_snapshot = Snapshot::new(db.clone(), jmt_version, multistore_cache);
 

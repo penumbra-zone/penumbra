@@ -106,6 +106,11 @@ impl MultistoreCache {
         self.substores.get(substore).cloned()
     }
 
+    /// Returns the substore matching the prefix.
+    pub fn find_substore(&self, key: &[u8]) -> Arc<SubstoreConfig> {
+        self.config.find_substore(key)
+    }
+
     /// Route the key to the correct substore, or the transparent store if no prefix matches.
     /// Returns the truncated key, and the target snapshot.
     pub fn route_key_str<'a>(&self, key: &'a str) -> (&'a str, Arc<SubstoreConfig>) {
