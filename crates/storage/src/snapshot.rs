@@ -61,15 +61,17 @@ impl Snapshot {
         key: Vec<u8>,
     ) -> Result<(Option<Vec<u8>>, ics23::CommitmentProof)> {
         let span = tracing::Span::current();
+        let rocksdb_snapshot = self.0.snapshot.clone();
+        let db = self.0.db.clone();
 
-        let (_, substore_config) = self.0.multistore_cache.route_key_bytes(&key);
-        let substore_version = self.substore_version(&substore_config).unwrap_or(u64::MAX);
+        let (_, config) = self.0.multistore_cache.route_key_bytes(&key);
+        let version = self.substore_version(&config).unwrap_or(u64::MAX);
 
         let substore = store::substore::SubstoreSnapshot {
-            config: substore_config,
-            rocksdb_snapshot: self.0.snapshot.clone(),
-            version: substore_version,
-            db: self.0.db.clone(),
+            config,
+            rocksdb_snapshot,
+            version,
+            db,
         };
         tokio::task::Builder::new()
             .name("Snapshot::get_with_proof")
@@ -92,19 +94,33 @@ impl Snapshot {
     /// if [`is_dirty`] returns `true`.
     pub async fn prefix_root_hash(&self, prefix: &str) -> Result<crate::RootHash> {
         let span = tracing::Span::current();
+        let rocksdb_snapshot = self.0.snapshot.clone();
+        let db = self.0.db.clone();
 
-        let (_, substore_config) = self.0.multistore_cache.config.route_key_str(&prefix);
-        let substore_version = self.substore_version(&substore_config).unwrap_or(u64::MAX);
+        tracing::debug!(?prefix, "processing a root hash query for a substore");
+
+        let config = self
+            .0
+            .multistore_cache
+            .config
+            .find_substore(prefix.as_bytes());
+        let version = self.substore_version(&config).expect("substore exists");
 
         let substore = store::substore::SubstoreSnapshot {
-            config: substore_config,
-            rocksdb_snapshot: self.0.snapshot.clone(),
-            version: substore_version,
-            db: self.0.db.clone(),
+            config,
+            rocksdb_snapshot,
+            version,
+            db,
         };
 
+        tracing::debug!(
+            prefix = substore.config.prefix,
+            version = substore.version,
+            "fetching root hash for substore"
+        );
+
         tokio::task::Builder::new()
-            .name("Snapshot::root_hash_for")
+            .name("Snapshot::prefix_root_hash")
             .spawn_blocking(move || span.in_scope(|| substore.root_hash()))?
             .await?
     }

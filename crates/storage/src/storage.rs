@@ -99,6 +99,11 @@ impl Storage {
                             .unwrap_or(u64::MAX);
 
                         multistore_cache.set_version(substore_config.clone(), substore_version);
+                        tracing::debug!(
+                            ?substore_config,
+                            ?substore_version,
+                            "initialized substore"
+                        );
                     }
 
                     // TODO(erwan): we need to refactor this whole setup phase.
@@ -197,10 +202,11 @@ impl Storage {
         // overflowing `PRE_GENESIS_VERSION`.
         let old_version = self.latest_version();
         let new_version = old_version.wrapping_add(1);
-        tracing::trace!(old_version, new_version);
+        tracing::debug!(old_version, new_version);
         if old_version != snapshot.version() {
             anyhow::bail!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, snapshot.version());
         }
+
         self.commit_inner(snapshot, changes, new_version, true)
             .await
     }
@@ -216,45 +222,63 @@ impl Storage {
         new_version: jmt::Version,
         write_to_snapshot_cache: bool,
     ) -> Result<crate::RootHash> {
-        let inner = self.0.clone();
-
+        tracing::debug!(new_jmt_version = ?new_version, "committing state delta");
         let mut changes_by_substore = cache.shard_by_prefix(&self.0.multistore_config);
         let mut substore_roots = Vec::new();
         let mut multistore_versions =
             multistore::MultistoreCache::from_config(self.0.multistore_config.clone());
+
+        let db = self.0.db.clone();
+        let rocksdb_snapshot = snapshot.0.snapshot.clone();
 
         // TODO(erwan): refactor this before shipping pr.
 
         // Note(erwan): if the number of substore grows, this loop could be transformed into
         // a [`tokio::task::JoinSet`]. however, at the time of writing, there is a single digit number
         // of substores, so the overhead of a joinset is not worth it.
-        for substore_config in self.0.multistore_config.iter() {
-            let old_substore_version = substore_config
-                .latest_version_from_snapshot(&inner.db, &snapshot.0.snapshot)?
-                .unwrap_or(u64::MAX);
-            let new_substore_version = old_substore_version.wrapping_add(1);
+        for config in self.0.multistore_config.iter() {
+            tracing::debug!(substore_prefix = ?config.prefix, "processing substore");
+            // If the substore is empty, we need to fetch its initialized version from the cache.
+            let old_substore_version = config
+                .latest_version_from_snapshot(&db, &rocksdb_snapshot)?
+                .unwrap_or_else(|| {
+                    tracing::debug!("substore is empty, fetching initialized version from cache");
+                    snapshot
+                        .substore_version(config)
+                        .expect("prefix should be initialized")
+                });
+
+            let Some(changeset) = changes_by_substore.remove(config) else {
+                tracing::debug!(prefix = config.prefix, "no changes for substore, skipping");
+                multistore_versions.set_version(config.clone(), old_substore_version);
+                continue;
+            };
+
+            let version = old_substore_version.wrapping_add(1);
             let substore_snapshot = SubstoreSnapshot {
-                config: substore_config.clone(),
-                rocksdb_snapshot: snapshot.0.snapshot.clone(),
-                version: new_substore_version,
-                db: self.0.db.clone(),
+                config: config.clone(),
+                rocksdb_snapshot: rocksdb_snapshot.clone(),
+                version,
+                db: db.clone(),
             };
 
             let substore_storage = SubstoreStorage {
-                config: substore_config.clone(),
-                db: self.0.db.clone(),
-            };
-
-            let Some(changeset) = changes_by_substore.remove(substore_config) else {
-                continue;
+                config: config.clone(),
+                db: db.clone(),
             };
 
             // Commit the substore and collect the root hash
             let root_hash = substore_storage
-                .commit(changeset, substore_snapshot, new_substore_version)
+                .commit(changeset, substore_snapshot, version)
                 .await?;
-            multistore_versions.set_version(substore_config.clone(), new_substore_version);
-            substore_roots.push((substore_config, root_hash));
+            multistore_versions.set_version(config.clone(), version);
+            tracing::debug!(
+                ?root_hash,
+                prefix = config.prefix,
+                ?version,
+                "substore committed"
+            );
+            substore_roots.push((config, root_hash));
         }
 
         /* commit roots to main store */
@@ -267,16 +291,9 @@ impl Storage {
             });
 
         for (config, root_hash) in substore_roots {
-            // TODO(erwan): this is a temporary hack that we need to remove before shipping.
-            // the root hash of each substore is stored in the main store, under the prefix key.
-            // however, the current (incomplete) routing logic still allows empty keys on substores e.g:
-            //      - `prefix_a/key_1` corresponds to the key `/key_1` in substore `prefix_a`
-            //      - `prefix_a` corresponds to the key "" in substore `prefix_a`
-            //          instead, it should correspond to the key `prefix_a` in the main store
-            main_store_changes.unwritten_changes.insert(
-                format!("prefix_root_hash_{}", config.prefix),
-                Some(root_hash.0.to_vec()),
-            );
+            main_store_changes
+                .unwritten_changes
+                .insert(config.prefix.to_string(), Some(root_hash.0.to_vec()));
         }
 
         /* commit main substore */
@@ -302,10 +319,10 @@ impl Storage {
             return Ok(global_root_hash);
         }
 
-        let latest_snapshot = Snapshot::new(inner.db.clone(), new_version, multistore_versions);
+        let latest_snapshot = Snapshot::new(db.clone(), new_version, multistore_versions);
         // Obtain a write lock to the snapshot cache, and push the latest snapshot
         // available. The lock guard is implicitly dropped immediately.
-        inner
+        self.0
             .snapshots
             .write()
             .try_push(latest_snapshot.clone())
@@ -313,7 +330,7 @@ impl Storage {
 
         // Send fails if the channel is closed (i.e., if there are no receivers);
         // in this case, we should ignore the error, we have no one to notify.
-        let _ = inner.tx_dispatcher.send(latest_snapshot);
+        let _ = self.0.tx_dispatcher.send(latest_snapshot);
 
         Ok(global_root_hash)
 

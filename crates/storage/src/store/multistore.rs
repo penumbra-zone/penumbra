@@ -20,7 +20,7 @@ impl MultistoreConfig {
         // Note: This is a linear search, but the number of substores is small.
         self.substores
             .iter()
-            .find(|s| key.starts_with(&s.prefix.as_bytes()))
+            .find(|s| key.starts_with(s.prefix.as_bytes()))
             .cloned()
             .unwrap_or(self.main_store.clone())
     }
@@ -29,6 +29,10 @@ impl MultistoreConfig {
     /// Returns the truncated key, and the target snapshot.
     pub fn route_key_str<'a>(&self, key: &'a str) -> (&'a str, Arc<SubstoreConfig>) {
         let config = self.find_substore(key.as_bytes());
+        if key == config.prefix {
+            return (key, self.main_store.clone());
+        }
+
         let key = key
             .strip_prefix(&config.prefix)
             .expect("key has the prefix of the matched substore");
@@ -39,9 +43,14 @@ impl MultistoreConfig {
     /// Returns the truncated key, and the target snapshot.
     pub fn route_key_bytes<'a>(&self, key: &'a [u8]) -> (&'a [u8], Arc<SubstoreConfig>) {
         let config = self.find_substore(key);
+        if key == config.prefix.as_bytes() {
+            return (key, self.main_store.clone());
+        }
+
         let key = key
             .strip_prefix(config.prefix.as_bytes())
             .expect("key has the prefix of the matched substore");
+
         (key, config)
     }
 }
