@@ -221,7 +221,15 @@ impl StateRead for Snapshot {
 
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
-        let (_, config) = self.0.multistore_cache.route_key_bytes(prefix.as_bytes());
+        let config = self.0.multistore_cache.find_substore(prefix.as_bytes());
+
+        // When we iterate over a prefixed substore, we need to strip the prefix from the keys.
+        // If the prefix is the empty string, stripping the prefix is a no-op.
+        let prefix_truncated = prefix
+            .strip_prefix(&config.prefix)
+            .expect("prefix is a prefix of itself")
+            .to_string();
+        tracing::debug!(prefix_truncated, prefix_requested = ?prefix, prefix_detected = config.prefix, "prefix_raw");
 
         let version = self.substore_version(&config).expect("substore exists");
 
@@ -233,7 +241,7 @@ impl StateRead for Snapshot {
         };
 
         let mut options = rocksdb::ReadOptions::default();
-        options.set_iterate_range(rocksdb::PrefixRange(prefix.as_bytes()));
+        options.set_iterate_range(rocksdb::PrefixRange(prefix_truncated.as_bytes()));
         let mode = rocksdb::IteratorMode::Start;
         let (tx_prefix_item, rx_prefix_query) = mpsc::channel(10);
 
@@ -280,13 +288,12 @@ impl StateRead for Snapshot {
     // be better overall.
     fn prefix_keys(&self, prefix: &str) -> Self::PrefixKeysStream {
         let span = Span::current();
-        let snapshot = self.clone();
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
 
         let (prefix, config) = self.0.multistore_cache.route_key_str(prefix);
 
-        let version = snapshot.substore_version(&config).expect("substore exists");
+        let version = self.substore_version(&config).expect("substore exists");
 
         let substore = store::substore::SubstoreSnapshot {
             config: config,
@@ -328,12 +335,11 @@ impl StateRead for Snapshot {
 
     fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> Self::NonconsensusPrefixRawStream {
         let span = Span::current();
-        let snapshot = self.clone();
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
 
         let (prefix, config) = self.0.multistore_cache.route_key_bytes(prefix);
-        let version = snapshot.substore_version(&config).expect("substore exists");
+        let version = self.substore_version(&config).expect("substore exists");
 
         let substore = store::substore::SubstoreSnapshot {
             config,
@@ -375,7 +381,6 @@ impl StateRead for Snapshot {
         range: impl std::ops::RangeBounds<Vec<u8>>,
     ) -> anyhow::Result<Self::NonconsensusRangeRawStream> {
         let span = Span::current();
-        let snapshot = self.clone();
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
 
@@ -384,7 +389,7 @@ impl StateRead for Snapshot {
             .multistore_cache
             .route_key_bytes(prefix.unwrap_or_default());
 
-        let version = snapshot.substore_version(&config).expect("substore exists");
+        let version = self.substore_version(&config).expect("substore exists");
 
         let substore = store::substore::SubstoreSnapshot {
             config,

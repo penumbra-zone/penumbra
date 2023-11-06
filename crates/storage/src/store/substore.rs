@@ -181,6 +181,11 @@ impl Display for SubstoreConfig {
     }
 }
 
+/// A read-only view into a substore at a specific state version.
+///
+/// A [`SubstoreSnapshot`] is lightweight and cheap to create, it can be
+/// instantiated on-demand when a read-only view of a substore's state is
+/// needed.
 pub struct SubstoreSnapshot {
     pub(crate) config: Arc<SubstoreConfig>,
     pub(crate) rocksdb_snapshot: Arc<RocksDbSnapshot>,
@@ -189,6 +194,7 @@ pub struct SubstoreSnapshot {
 }
 
 impl SubstoreSnapshot {
+    // TODO(erwan): this probably should be a `Result<Option<RootHash>>`?
     pub fn root_hash(&self) -> Result<crate::RootHash> {
         let version = self.version();
         let tree = jmt::Sha256Jmt::new(self);
@@ -222,11 +228,11 @@ impl SubstoreSnapshot {
         let tree = jmt::Sha256Jmt::new(self);
         match tree.get(key, self.version()) {
             Ok(Some(value)) => {
-                tracing::trace!(version = ?self.version(), ?key, value = ?hex::encode(&value), "read from tree");
+                tracing::trace!(substore = ?self.config.prefix, version = ?self.version(), ?key, value = ?hex::encode(&value), "read from tree");
                 Ok(Some(value))
             }
             Ok(None) => {
-                tracing::trace!(version = ?self.version(), ?key, "key not found in tree");
+                tracing::trace!(substore = ?self.config.prefix, version = ?self.version(), ?key, "key not found in tree");
                 Ok(None)
             }
             // This allows for using the Overlay on an empty database without
@@ -237,7 +243,7 @@ impl SubstoreSnapshot {
                 if e.downcast_ref::<jmt::MissingRootError>().is_some()
                     && self.version() == u64::MAX =>
             {
-                tracing::trace!(version = ?self.version(), "no data available at this version");
+                tracing::trace!(substore = ?self.config.prefix, version = ?self.version(), "no data available at this version");
                 Ok(None)
             }
             Err(e) => Err(e),
