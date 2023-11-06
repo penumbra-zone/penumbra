@@ -26,7 +26,8 @@ impl MultistoreConfig {
     }
 
     /// Route the key to the correct substore, or the transparent store if no prefix matches.
-    /// Returns the truncated key, and the target snapshot.
+    /// Returns a key with the prefix removed, and the target `SubstoreConfig`.
+    /// If the key is an exact match for the prefix, the main store is returned instead.
     pub fn route_key_str<'a>(&self, key: &'a str) -> (&'a str, Arc<SubstoreConfig>) {
         let config = self.find_substore(key.as_bytes());
         if key == config.prefix {
@@ -40,7 +41,8 @@ impl MultistoreConfig {
     }
 
     /// Route the key to the correct substore, or the transparent store if no prefix matches.
-    /// Returns the truncated key, and the target snapshot.
+    /// Returns a key with the prefix removed, and the target `SubstoreConfig`.
+    /// If the key is an exact match for the prefix, the main store is returned instead.
     pub fn route_key_bytes<'a>(&self, key: &'a [u8]) -> (&'a [u8], Arc<SubstoreConfig>) {
         let config = self.find_substore(key);
         if key == config.prefix.as_bytes() {
@@ -52,6 +54,32 @@ impl MultistoreConfig {
             .expect("key has the prefix of the matched substore");
 
         (key, config)
+    }
+
+    /// Finds the substore matching the prefix, and returns a truncated prefix and a corresponding
+    /// `SubstoreConfig`. This method differs from `route_key_str` in that it does not return the
+    /// main store if the key is an exact match for the prefix.
+    /// This is useful for implementing prefix iteration.
+    pub fn route_prefix_str<'a>(&self, prefix: &'a str) -> (&'a str, Arc<SubstoreConfig>) {
+        let config = self.find_substore(prefix.as_bytes());
+
+        let truncated_prefix = prefix
+            .strip_prefix(&config.prefix)
+            .expect("key has the prefix of the matched substore");
+        (truncated_prefix, config)
+    }
+
+    /// Finds the substore matching the prefix, and returns a truncated prefix and a corresponding
+    /// `SubstoreConfig`. This method differs from `route_key_str` in that it does not return the
+    /// main store if the key is an exact match for the prefix.
+    /// This is useful for implementing prefix iteration.
+    pub fn route_prefix_bytes<'a>(&self, prefix: &'a [u8]) -> (&'a [u8], Arc<SubstoreConfig>) {
+        let config = self.find_substore(prefix);
+
+        let truncated_prefix = prefix
+            .strip_prefix(config.prefix.as_bytes())
+            .expect("key has the prefix of the matched substore");
+        (truncated_prefix, config)
     }
 }
 
@@ -104,22 +132,5 @@ impl MultistoreCache {
 
     pub fn get_version(&self, substore: &Arc<SubstoreConfig>) -> Option<jmt::Version> {
         self.substores.get(substore).cloned()
-    }
-
-    /// Returns the substore matching the prefix.
-    pub fn find_substore(&self, key: &[u8]) -> Arc<SubstoreConfig> {
-        self.config.find_substore(key)
-    }
-
-    /// Route the key to the correct substore, or the transparent store if no prefix matches.
-    /// Returns the truncated key, and the target snapshot.
-    pub fn route_key_str<'a>(&self, key: &'a str) -> (&'a str, Arc<SubstoreConfig>) {
-        self.config.route_key_str(key)
-    }
-
-    /// Route the key to the correct substore, or the transparent store if no prefix matches.
-    /// Returns the truncated key, and the target snapshot.
-    pub fn route_key_bytes<'a>(&self, key: &'a [u8]) -> (&'a [u8], Arc<SubstoreConfig>) {
-        self.config.route_key_bytes(key)
     }
 }
