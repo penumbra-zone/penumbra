@@ -385,6 +385,10 @@ img, video {
   align-items: center;
 }
 
+.text-center {
+  text-align: center;
+}
+
 .gap-2 {
   gap: .5rem;
 }
