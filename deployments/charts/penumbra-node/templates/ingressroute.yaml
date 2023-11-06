@@ -14,6 +14,10 @@ spec:
   routes:
   - kind: Rule
     match: Host(`{{ .Values.ingressRoute.hosts.pd }}`)
+    {{- with .Values.ingressRoute.middlewares }}
+    middlewares:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
     services:
 {{- /*
 Skip nodes with seed_mode=true when looping over nodes, to exclude from LB RPCs.
