@@ -207,7 +207,7 @@ impl Opt {
                     }
                 };
                 let service =
-                    CoordinatorService::new(knower, storage.clone(), queue.clone(), marker);
+                    CoordinatorService::new(knower.clone(), storage.clone(), queue.clone(), marker);
                 let grpc_server = Server::builder().add_service(
                     CeremonyCoordinatorServiceServer::new(service)
                         .max_encoding_message_size(max_message_size(marker))
@@ -233,6 +233,7 @@ impl Opt {
                 tokio::select! {
                     x = coordinator_handle => x?.map_err(|e| anyhow::anyhow!(e))?,
                     x = server_handle => x.map_err(|e| anyhow::anyhow!(e))?,
+                    e = knower.wait_for_crash() => return Err(e),
                 };
                 Ok(())
             }
