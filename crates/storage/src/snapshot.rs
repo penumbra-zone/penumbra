@@ -64,7 +64,7 @@ impl Snapshot {
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
 
-        let (_, config) = self.0.multistore_cache.route_key_bytes(&key);
+        let (_, config) = self.0.multistore_cache.config.route_key_bytes(&key);
         let version = self.substore_version(&config).unwrap_or(u64::MAX);
 
         let substore = store::substore::SubstoreSnapshot {
@@ -142,7 +142,7 @@ impl StateRead for Snapshot {
     /// Fetch a key from the JMT column family.
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         let span = Span::current();
-        let (key, config) = self.0.multistore_cache.route_key_str(key);
+        let (key, config) = self.0.multistore_cache.config.route_key_str(key);
 
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
@@ -175,7 +175,7 @@ impl StateRead for Snapshot {
 
     fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
         let span = Span::current();
-        let (key, config) = self.0.multistore_cache.route_key_bytes(key);
+        let (key, config) = self.0.multistore_cache.config.route_key_bytes(key);
 
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
@@ -219,15 +219,8 @@ impl StateRead for Snapshot {
 
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
-        let config = self.0.multistore_cache.find_substore(prefix.as_bytes());
 
-        // When we iterate over a prefixed substore, we need to strip the prefix from the keys.
-        // If the prefix is the empty string, stripping the prefix is a no-op.
-        // TODO(erwan): this should be refactored in the routing logic.
-        let prefix_truncated = prefix
-            .strip_prefix(&config.prefix)
-            .expect("prefix is a prefix of itself")
-            .to_string();
+        let (prefix_truncated, config) = self.0.multistore_cache.config.route_prefix_str(prefix);
         tracing::debug!(prefix_truncated, prefix_requested = ?prefix, prefix_detected = config.prefix, "processed argument in prefix_raw");
 
         let version = self.substore_version(&config).expect("substore exists");
@@ -289,15 +282,8 @@ impl StateRead for Snapshot {
 
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
-        let config = self.0.multistore_cache.find_substore(prefix.as_bytes());
 
-        // When we iterate over a prefixed substore, we need to strip the prefix from the keys.
-        // If the prefix is the empty string, stripping the prefix is a no-op.
-        // TODO(erwan): this should be refactored in the routing logic.
-        let prefix_truncated = prefix
-            .strip_prefix(&config.prefix)
-            .expect("prefix is a prefix of itself")
-            .to_string();
+        let (prefix_truncated, config) = self.0.multistore_cache.config.route_prefix_str(prefix);
         tracing::debug!(prefix_truncated, prefix_requested = ?prefix, prefix_detected = config.prefix, "processed argument to prefix_keys");
 
         let version = self.substore_version(&config).expect("substore exists");
@@ -344,7 +330,7 @@ impl StateRead for Snapshot {
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
 
-        let (prefix, config) = self.0.multistore_cache.route_key_bytes(prefix);
+        let (prefix, config) = self.0.multistore_cache.config.route_key_bytes(prefix);
         let version = self.substore_version(&config).expect("substore exists");
 
         let substore = store::substore::SubstoreSnapshot {
@@ -393,6 +379,7 @@ impl StateRead for Snapshot {
         let (prefix, config) = self
             .0
             .multistore_cache
+            .config
             .route_key_bytes(prefix.unwrap_or_default());
 
         let version = self.substore_version(&config).expect("substore exists");
