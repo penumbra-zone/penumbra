@@ -238,6 +238,9 @@ impl Storage {
 
         // TODO(erwan): refactor this before shipping pr.
 
+        // TODO(erwa): use a write batch to commit all the substores in a single transaction.
+        let mut _batch = rocksdb::WriteBatch::default();
+
         // Note(erwan): if the number of substore grows, this loop could be transformed into
         // a [`tokio::task::JoinSet`]. however, at the time of writing, there is a single digit number
         // of substores, so the overhead of a joinset is not worth it.
