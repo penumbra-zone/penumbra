@@ -3,8 +3,8 @@ use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa as rdsa;
 use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
-use penumbra_proto::core::component::shielded_pool::v1alpha1::SpendPlan;
-use penumbra_shielded_pool::spend;
+// use penumbra_proto::core::component::shielded_pool::v1alpha1::{SpendPlan, Spend};
+use penumbra_shielded_pool::{spend, SpendPlan, OutputPlan};
 use rand_core::{CryptoRng, RngCore};
 use penumbra_transaction::plan::TransactionPlan; 
 use penumbra_transaction::{
@@ -59,12 +59,36 @@ pub fn build_parallel(
     Ok(value)
 }
 
+pub fn build_spend_action(
+    spend_plan: SpendPlan,
+    fvk: FullViewingKey,
+    witness_data: WitnessData,
+    memo_key: Option<PayloadKey>,
+    // plan: TransactionPlan
+) -> Result<(Action, Fr)> {
+    let spend = BuildPlan::Spend(spend_plan);
+    let spends = spend.build_action(&fvk, witness_data, memo_key).unwrap();
+    Ok(spends)
+}
+
+pub fn build_output_action(
+    output_plan: OutputPlan,
+    fvk: FullViewingKey,
+    witness_data: WitnessData,
+    memo_key: Option<PayloadKey>,
+    // plan: TransactionPlan
+) -> Result<(Action, Fr)> {
+    let output = BuildPlan::Output(output_plan);
+    let output = output.build_action(&fvk, witness_data, memo_key).unwrap();
+    Ok(output)
+}
+
 pub fn build_tx_parallel(
     fvk: FullViewingKey,
     witness_data: WitnessData,
     plan: TransactionPlan
 ) -> Result<UnauthTransaction> {
-    console_log!("Entered 'new' build method!");
+    console_log!("Parallel build method!");
 
     let mut actions = Vec::new();
     let mut synthetic_blinding_factor = Fr::zero();
@@ -88,17 +112,17 @@ pub fn build_tx_parallel(
 
     // Build the transaction's spends.
     for spend_plan in plan.spend_plans() {
-        let spend = BuildPlan::Spend(spend_plan.clone());
-        let spend = spend.build_action(&fvk, witness_data.clone(), memo_key.clone()).unwrap();
-        actions.push(spend);
+        let spend = build_spend_action(spend_plan.to_owned(), fvk.clone(), witness_data.clone(), memo_key.clone()).unwrap();
+        synthetic_blinding_factor += spend.1;
+        actions.push(spend.0);
     }
 
     // need to handle the blinding factor!!
 
     for output_plan in plan.output_plans() {
-        let output = BuildPlan::Output(output_plan.clone());
-        let output = output.build_action(&fvk, witness_data.clone(), memo_key.clone()).unwrap();
-        actions.push(output);
+        let output = build_output_action(output_plan.to_owned(), fvk.clone(), witness_data.clone(), memo_key.clone()).unwrap();
+        synthetic_blinding_factor += output.1;
+        actions.push(output.0);
     }
 
     // Build the transaction's swaps.
