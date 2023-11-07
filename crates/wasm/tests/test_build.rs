@@ -14,7 +14,8 @@ mod tests {
     use penumbra_tct::Forgotten;
     use penumbra_tct::storage::StoreCommitment;
     use penumbra_wasm::tx::authorize;
-    use penumbra_wasm::tx::build;
+    // use penumbra_wasm::tx::build;
+    use penumbra_wasm::build::{self, build_parallel};
     use penumbra_wasm::tx::witness;
     use penumbra_wasm::view_server::StoredTree;
     use penumbra_wasm::wasm_planner;
@@ -50,12 +51,16 @@ mod tests {
     use js_sys::Array;
     use serde_json::from_value;
     use penumbra_tct::structure::Hash;
+    use penumbra_proto::core::transaction::v1alpha1 as ps;
+    use penumbra_transaction::AuthorizationData;
+    use penumbra_proto::DomainType;
+    use rand_core::OsRng;
 
     #[wasm_bindgen_test]
     async fn mock_build() {
         // Limit the use of Penumbra Rust libraries since we're mocking JS calls
         // based on constructing objects according to protobuf definitions.
-      
+    
         // Sample chain and fmd parameters.
         let chain_params = ChainParameters {
             chain_id: "penumbra-testnet-iapetus".to_string(),
@@ -293,7 +298,7 @@ mod tests {
             transaction_plan.clone()
         ).unwrap();
 
-        // -------------- 3. Generate witness and build / sign the planned transaction --------------
+        // -------------- 3. Generate witness and build the planned transaction --------------
 
         // Retrieve SCT.
         let tx_last_position: IdbTransaction<'_> = database_ref.transaction_on_one("TREE_LAST_POSITION").unwrap();
@@ -334,11 +339,13 @@ mod tests {
         let full_viewing_key = "penumbrafullviewingkey1mnm04x7yx5tyznswlp0sxs8nsxtgxr9p98dp0msuek8fzxuknuzawjpct8zdevcvm3tsph0wvsuw33x2q42e7sf29q904hwerma8xzgrxsgq2";
 
         // Execute spend transaction and proof.
-        let transaction = build(
-            full_viewing_key, transaction_plan, 
+        let transaction = build_parallel(
+            full_viewing_key, 
+            transaction_plan, 
             witness_data.unwrap(), 
-            authorization_data
-        );
+            authorization_data.clone()
+        ).unwrap();
+
         console_log!("transaction is: {:?}", transaction);
     }
 }
