@@ -19,6 +19,7 @@ use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType, TypeUrl};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use serde::{Deserialize, Serialize};
+use crate::plan::build_actions::BuildPlan;
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
 ///
@@ -29,6 +30,8 @@ use serde::{Deserialize, Serialize};
 #[serde(try_from = "pb_t::ActionPlan", into = "pb_t::ActionPlan")]
 #[allow(clippy::large_enum_variant)]
 pub enum ActionPlan {
+    /// Describes a proposed build for a specific [`Action`]. 
+    Build(BuildPlan),
     /// Describes a proposed spend.
     Spend(SpendPlan),
     /// Describes a proposed output.
@@ -99,6 +102,7 @@ impl ActionPlan {
             Withdrawal(withdrawal) => withdrawal.balance(),
             // None of these contribute to transaction balance:
             IbcAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
+            Build(_) => Balance::default(),
         }
     }
 }
@@ -284,6 +288,7 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             ActionPlan::Withdrawal(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::Withdrawal(inner.into())),
             },
+            ActionPlan::Build(inner) => todo!(),
         }
     }
 }

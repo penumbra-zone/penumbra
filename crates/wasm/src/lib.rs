@@ -11,3 +11,4 @@ pub mod tx;
 pub mod utils;
 pub mod view_server;
 pub mod wasm_planner;
+pub mod build;
