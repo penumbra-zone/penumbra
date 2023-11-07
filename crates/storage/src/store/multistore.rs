@@ -60,7 +60,7 @@ impl MultistoreConfig {
     /// `SubstoreConfig`. This method differs from `route_key_str` in that it does not return the
     /// main store if the key is an exact match for the prefix.
     /// This is useful for implementing prefix iteration.
-    pub fn route_prefix_str<'a>(&self, prefix: &'a str) -> (&'a str, Arc<SubstoreConfig>) {
+    pub fn match_prefix_str<'a>(&self, prefix: &'a str) -> (&'a str, Arc<SubstoreConfig>) {
         let config = self.find_substore(prefix.as_bytes());
 
         let truncated_prefix = prefix
@@ -73,7 +73,7 @@ impl MultistoreConfig {
     /// `SubstoreConfig`. This method differs from `route_key_str` in that it does not return the
     /// main store if the key is an exact match for the prefix.
     /// This is useful for implementing prefix iteration.
-    pub fn route_prefix_bytes<'a>(&self, prefix: &'a [u8]) -> (&'a [u8], Arc<SubstoreConfig>) {
+    pub fn match_prefix_bytes<'a>(&self, prefix: &'a [u8]) -> (&'a [u8], Arc<SubstoreConfig>) {
         let config = self.find_substore(prefix);
 
         let truncated_prefix = prefix
