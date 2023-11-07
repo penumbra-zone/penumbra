@@ -220,7 +220,7 @@ impl StateRead for Snapshot {
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
 
-        let (prefix_truncated, config) = self.0.multistore_cache.config.route_prefix_str(prefix);
+        let (prefix_truncated, config) = self.0.multistore_cache.config.match_prefix_str(prefix);
         tracing::debug!(prefix_truncated, prefix_requested = ?prefix, prefix_detected = config.prefix, "processed argument in prefix_raw");
 
         let version = self.substore_version(&config).expect("substore exists");
@@ -283,7 +283,7 @@ impl StateRead for Snapshot {
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
 
-        let (prefix_truncated, config) = self.0.multistore_cache.config.route_prefix_str(prefix);
+        let (prefix_truncated, config) = self.0.multistore_cache.config.match_prefix_str(prefix);
         tracing::debug!(prefix_truncated, prefix_requested = ?prefix, prefix_detected = config.prefix, "processed argument to prefix_keys");
 
         let version = self.substore_version(&config).expect("substore exists");
@@ -330,7 +330,7 @@ impl StateRead for Snapshot {
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
 
-        let (prefix, config) = self.0.multistore_cache.config.route_key_bytes(prefix);
+        let (truncated_prefix, config) = self.0.multistore_cache.config.match_prefix_bytes(prefix);
         let version = self.substore_version(&config).expect("substore exists");
 
         let substore = store::substore::SubstoreSnapshot {
@@ -341,7 +341,7 @@ impl StateRead for Snapshot {
         };
 
         let mut options = rocksdb::ReadOptions::default();
-        options.set_iterate_range(rocksdb::PrefixRange(prefix));
+        options.set_iterate_range(rocksdb::PrefixRange(truncated_prefix));
         let mode = rocksdb::IteratorMode::Start;
 
         let (tx_prefix_query, rx_prefix_query) = mpsc::channel(10);
