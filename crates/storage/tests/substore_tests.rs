@@ -332,3 +332,95 @@ async fn test_substore_prefix_keys() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+/// Test that range queries over the main store work as expected.
+/// TODO(erwan): the range query implementation is broken for substores. Ignore this test for now.
+#[ignore]
+async fn test_substore_nv_range_queries_main_store() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let tmpdir = tempfile::tempdir()?;
+    let db_path = tmpdir.into_path();
+    let substore_prefixes = vec!["a", "b", "c", "d"]
+        .into_iter()
+        .map(|s| s.to_string())
+        .collect();
+    let storage = Storage::init(db_path, substore_prefixes).await?;
+    let mut delta = StateDelta::new(storage.latest_snapshot());
+
+    let mut all_kv = vec![];
+    let mut kv_a = vec![];
+    let mut kv_c = vec![];
+    let mut kv_d = vec![];
+    let mut kv_main = vec![];
+    for i in 0..100 {
+        let key_a_i = format!("a/key_{}", i);
+        let value_a_i = format!("value_{}a", i).as_bytes().to_vec();
+        delta.put_raw(key_a_i.clone(), value_a_i.clone());
+        all_kv.push((key_a_i.clone(), value_a_i.clone()));
+        kv_a.push((key_a_i, value_a_i));
+    }
+
+    for i in 0..100 {
+        let key_c_i = format!("c/key_{}", i);
+        let value_c_i = format!("value_{}c", i).as_bytes().to_vec();
+        delta.put_raw(key_c_i.clone(), value_c_i.clone());
+        all_kv.push((key_c_i.clone(), value_c_i.clone()));
+        kv_c.push((key_c_i, value_c_i));
+    }
+
+    for i in 0..100 {
+        let key_i = format!("compactblock/{i:020}");
+        let value_i = format!("value_{}", i).as_bytes().to_vec();
+        delta.put_raw(key_i.clone(), value_i.clone());
+        all_kv.push((key_i.clone(), value_i.clone()));
+        kv_main.push((key_i, value_i));
+    }
+
+    for i in 0..100 {
+        let key_d_i = format!("d/key_{}", i);
+        let value_d_i = format!("value_{}c", i).as_bytes().to_vec();
+        delta.put_raw(key_d_i.clone(), value_d_i.clone());
+        all_kv.push((key_d_i.clone(), value_d_i.clone()));
+        kv_d.push((key_d_i, value_d_i));
+    }
+
+    let _ = storage.commit(delta).await?;
+
+    let snapshot = storage.latest_snapshot();
+
+    // First, check that we can iterate over a range of compact blocks in the main store.
+    // We define a range that spans all compact blocks between 12 and 34.
+    let mut counter = 0;
+    let start_index = 12;
+    let end_index = 34;
+    let mut index = start_index;
+
+    let start_key = format!("compactblock/{:020}", start_index)
+        .as_bytes()
+        .to_vec();
+    let end_key = format!("compactblock/{:020}", end_index)
+        .as_bytes()
+        .to_vec();
+    let mut range = snapshot.nonverifiable_range_raw(None, start_key.clone()..end_key.clone())?;
+    while let Some(res) = range.next().await {
+        let (raw_key, _) = res?;
+        let key = String::from_utf8(raw_key)?;
+        if counter > kv_a.len() {
+            tracing::debug!(?key, ?start_key, ?end_key, "unexpected key");
+            panic!("prefix_keys query returned too many entries")
+        }
+
+        let expected_key = kv_main[index].0.clone();
+        assert_eq!(key, expected_key, "key {} should match", counter);
+        counter += 1;
+        index += 1;
+    }
+    assert_eq!(
+        counter,
+        end_index - start_index,
+        "should have iterated over all entries (compact block range)"
+    );
+
+    Ok(())
+}
