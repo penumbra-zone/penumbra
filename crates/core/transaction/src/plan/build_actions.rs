@@ -22,7 +22,7 @@ impl BuildPlan {
         fvk: &FullViewingKey,
         witness_data: WitnessData,
         memo_key: Option<PayloadKey>,
-    ) -> Result<Action> {
+    ) -> Result<(Action, Fr)> {
         match self {
             BuildPlan::Spend(spend_plan) => {
                 console_log!("Building spend action!");
@@ -43,7 +43,7 @@ impl BuildPlan {
                     witness_data.anchor,
                 ));
 
-                Ok(spend)
+                Ok((spend, synthetic_blinding_factor))
             }
             BuildPlan::Output(output_plan) => {
                 console_log!("Building output action!");
@@ -58,7 +58,7 @@ impl BuildPlan {
                     memo_key.as_ref().unwrap_or(&dummy_payload_key),
                 ));
 
-                Ok(output)
+                Ok((output, synthetic_blinding_factor))
             }
         }
     }
