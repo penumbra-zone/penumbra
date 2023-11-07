@@ -47,6 +47,10 @@ wasm-bindgen-test        = "0.3.37"
 web-sys                  = { version = "0.3.64", features = ["console"] }
 use = "0.0.0"
 serde_json = "1.0.107"
+pbjson = "0.6.0"
+js-sys = "0.3.65"
+tracing = "0.1.40"
+decaf377-rdsa = "0.7.0"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.37"
