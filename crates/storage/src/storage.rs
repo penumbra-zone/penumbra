@@ -240,21 +240,24 @@ impl Storage {
         // its own changes to the batch, and we will commit it at the end.
         let mut write_batch = rocksdb::WriteBatch::default();
 
-        // Note(erwan): since we work over sharded keyspaces/disjoint column families, it is tempting to consider
-        // a rewrite of this loop into a [`tokio::task::JoinSet`], however there are some complications that should
-        // be on your radar:
-        // * overhead: at the time of writing, there is a single digit number of substores, so it's implausible
-        //   that the overhead of a joinset would be worth it.
-        // * atomicity: unfortunately, `WriteBatch`es are not thread safe, this means that to spin-up N tasks,
-        //   we would either need to:
-        //      Option A: use a single batch, and synchronize access to it between tasks. if the number of substore
-        //                contention grows with the number of substores, which is likely the case if you're considering
-        //                a joinset.
-        //      Option B: use N batches, and find a way to commit to them atomically. (better, but not supported)
-        //                RocksDB does not allow merging batches together, and though [`rocksdb::OptimisticTransactionDB`]
-        //                offers an ACID API, it is not compatible with the [`rocksdb::WriteBatch`] API.
-        // A last option is to relax atomicity constraints, so that each commit task can produce its own independent batch,
-        // and we can commit them all at once. This means that each batch write is atomic, but the overall commit is not.
+        // Note(erwan): since we work over sharded keyspaces/disjoint column families,
+        // it is tempting to consider a rewrite of this loop into a [`tokio::task::JoinSet`],
+        // however there are some complications that should be on your radar:
+        // * overhead: at the time of writing, there is a single digit number of substores,
+        //   so it's implausible that the overhead of a joinset would be worth it.
+        // * atomicity: unfortunately, `WriteBatch`es are not thread safe, this means that
+        //   to spin-up N tasks, we would either need to:
+        //      Option A: use a single batch, and synchronize access to it between tasks.
+        //                if the number of substore contention grows with the number of substores,
+        //                which is likely the case if you're considering a joinset.
+        //      Option B: use N batches, and find a way to commit to them atomically.
+        //                (better, but not supported) RocksDB does not allow merging batches
+        //                together, and though [`rocksdb::OptimisticTransactionDB`] offers an
+        //                ACID API, it is not compatible with the [`rocksdb::WriteBatch`] API.
+        // A last option is to relax atomicity constraints, so that each commit task can produce
+        // its own independent batch, and we can commit them all at once. This means that each batch
+        // write is atomic, but the overall commit is not.
+
         for config in self.0.multistore_config.iter() {
             tracing::debug!(substore_prefix = ?config.prefix, "processing substore");
             // If the substore is empty, we need to fetch its initialized version from the cache.
