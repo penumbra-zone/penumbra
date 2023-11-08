@@ -86,7 +86,7 @@ impl SubstoreConfig {
 
     pub fn cf_jmt_keys_by_keyhash<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
         let column = self.cf_jmt_keys_by_keyhash.as_str();
-        db_handle.cf_handle(&column).expect(&format!(
+        db_handle.cf_handle(column).expect(&format!(
             "jmt-keys-by-keyhash column family not found for prefix: {}, substore: {}",
             column, self.prefix
         ))
@@ -135,7 +135,7 @@ impl SubstoreConfig {
         &self,
         db_handle: &Arc<rocksdb::DB>,
     ) -> Result<Option<(NodeKey, LeafNode)>> {
-        let cf_jmt = self.cf_jmt(&db_handle);
+        let cf_jmt = self.cf_jmt(db_handle);
         let mut iter = db_handle.raw_iterator_cf(cf_jmt);
         iter.seek_to_last();
 
@@ -161,7 +161,7 @@ impl SubstoreConfig {
         db_handle: &Arc<rocksdb::DB>,
         snapshot: &RocksDbSnapshot,
     ) -> Result<Option<(NodeKey, LeafNode)>> {
-        let cf_jmt = self.cf_jmt(&db_handle);
+        let cf_jmt = self.cf_jmt(db_handle);
         let mut iter = snapshot.iterator_cf(cf_jmt, IteratorMode::End);
         let Some((raw_key, raw_value)) = iter.next().transpose()? else {
             return Ok(None);
@@ -301,7 +301,6 @@ impl TreeReader for SubstoreSnapshot {
 
     /// Gets node given a node key. Returns `None` if the node does not exist.
     fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node>> {
-        let node_key = node_key;
         let db_node_key = DbNodeKey::from(node_key.clone());
         tracing::trace!(?node_key);
 

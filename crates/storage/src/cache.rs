@@ -88,7 +88,7 @@ impl Cache {
             let (truncated_key, substore_config) = prefixes.route_key_str(&key);
             changes_by_substore
                 .entry(substore_config)
-                .or_insert_with(|| Cache::default())
+                .or_insert_with(Cache::default)
                 .unwritten_changes
                 .insert(truncated_key.to_string(), some_value);
         }
@@ -97,7 +97,7 @@ impl Cache {
             let (truncated_key, substore_config) = prefixes.route_key_bytes(&key);
             changes_by_substore
                 .entry(substore_config)
-                .or_insert_with(|| Cache::default())
+                .or_insert_with(Cache::default)
                 .nonverifiable_changes
                 .insert(truncated_key.to_vec(), some_value);
         }

@@ -16,7 +16,6 @@ impl MultistoreConfig {
 
     /// Returns the substore matching the key's prefix, return `None` otherwise.
     pub fn find_substore(&self, key: &[u8]) -> Arc<SubstoreConfig> {
-        let key = key.as_ref();
         // Note: This is a linear search, but the number of substores is small.
         self.substores
             .iter()
@@ -93,19 +92,10 @@ impl Default for MultistoreConfig {
 }
 
 /// Tracks the latest version of each substore, and wraps a `MultistoreConfig`.
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct MultistoreCache {
     pub config: MultistoreConfig,
     pub substores: std::collections::BTreeMap<Arc<SubstoreConfig>, jmt::Version>,
-}
-
-impl Default for MultistoreCache {
-    fn default() -> Self {
-        Self {
-            config: MultistoreConfig::default(),
-            substores: std::collections::BTreeMap::new(),
-        }
-    }
 }
 
 impl Display for MultistoreCache {
