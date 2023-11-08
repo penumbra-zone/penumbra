@@ -1,6 +1,7 @@
 use std::{
     collections::BTreeSet,
     sync::{Arc, Mutex},
+    time::Duration,
 };
 
 use anyhow::Context;
@@ -374,12 +375,24 @@ async fn fetch_transactions(
     block_height: u64,
 ) -> anyhow::Result<Vec<Transaction>> {
     let mut client = AppQueryServiceClient::new(channel);
-    let transactions = client
-        .transactions_by_height(TransactionsByHeightRequest {
-            block_height,
-            ..Default::default()
-        })
-        .await?
+    let request = TransactionsByHeightRequest {
+        block_height,
+        ..Default::default()
+    };
+    // HACK: this is not a robust long-term solution but may help
+    // avoid "split-brain" block fetch issues, where a client learns
+    // of a new block, then immediately tries to fetch it, but that
+    // fetch is load-balanced over a different node that hasn't yet
+    // learned about that block.
+    let response = match client.transactions_by_height(request.clone()).await {
+        Ok(rsp) => rsp,
+        Err(e) => {
+            tracing::warn!(?e, "failed to fetch block, waiting and retrying once");
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            client.transactions_by_height(request).await?
+        }
+    };
+    let transactions = response
         .into_inner()
         .transactions
         .into_iter()
