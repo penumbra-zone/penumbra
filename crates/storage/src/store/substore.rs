@@ -350,25 +350,23 @@ impl HasPreimage for SubstoreSnapshot {
 }
 
 pub struct SubstoreStorage {
-    pub(crate) db: Arc<rocksdb::DB>,
-    pub(crate) config: Arc<SubstoreConfig>,
+    pub(crate) substore_snapshot: SubstoreSnapshot,
 }
 
 impl SubstoreStorage {
     pub async fn commit(
         self,
         cache: Cache,
-        substore_snapshot: SubstoreSnapshot,
+        mut write_batch: rocksdb::WriteBatch,
         new_version: jmt::Version,
-    ) -> Result<RootHash> {
+    ) -> Result<(RootHash, rocksdb::WriteBatch)> {
         let span = Span::current();
-        let db_handle = self.db.clone();
 
         tokio::task::Builder::new()
                 .name("Storage::commit_inner_substore")
                 .spawn_blocking(move || {
                     span.in_scope(|| {
-                        let jmt = jmt::Sha256Jmt::new(&substore_snapshot);
+                        let jmt = jmt::Sha256Jmt::new(&self.substore_snapshot);
 
                         // TODO(erwan): this could be folded with sharding the changesets.
                         let unwritten_changes: Vec<_> = cache
@@ -376,20 +374,20 @@ impl SubstoreStorage {
                             .into_iter()
                             .map(|(key, some_value)| (KeyHash::with::<sha2::Sha256>(&key), key, some_value))
                             .collect();
-                        let cf_jmt_keys = substore_snapshot.config.cf_jmt_keys(&db_handle);
-                        let cf_jmt_keys_by_keyhash = substore_snapshot.config.cf_jmt_keys_by_keyhash(&db_handle);
+                        let cf_jmt_keys = self.substore_snapshot.config.cf_jmt_keys(&self.substore_snapshot.db);
+                        let cf_jmt_keys_by_keyhash = self.substore_snapshot.config.cf_jmt_keys_by_keyhash(&self.substore_snapshot.db);
 
                         /* Keyhash and pre-image indices */
                         for (keyhash, key_preimage, value) in unwritten_changes.iter() {
                             match value {
                                 Some(_) => { /* Key inserted, or updated, so we add it to the keyhash index */
-                                    db_handle.put_cf(cf_jmt_keys, key_preimage, keyhash.0)?;
-                                        db_handle
-                                        .put_cf(cf_jmt_keys_by_keyhash, keyhash.0, key_preimage)?
+                                    write_batch.put_cf(cf_jmt_keys, key_preimage, keyhash.0);
+                                        write_batch
+                                        .put_cf(cf_jmt_keys_by_keyhash, keyhash.0, key_preimage)
                                 }
                                 None => { /* Key deleted, so we delete it from the preimage and keyhash index entries */
-                                    db_handle.delete_cf(cf_jmt_keys, key_preimage)?;
-                                    db_handle.delete_cf(cf_jmt_keys_by_keyhash, keyhash.0)?;
+                                    write_batch.delete_cf(cf_jmt_keys, key_preimage);
+                                    write_batch.delete_cf(cf_jmt_keys_by_keyhash, keyhash.0);
                                 }
                             };
                         }
@@ -403,18 +401,18 @@ impl SubstoreStorage {
                         tracing::trace!(?root_hash, "wrote node batch to backing store");
 
                         for (k, v) in cache.nonverifiable_changes.into_iter() {
-                            let cf_nonverifiable = substore_snapshot.config.cf_nonverifiable(&db_handle);
+                            let cf_nonverifiable = self.substore_snapshot.config.cf_nonverifiable(&self.substore_snapshot.db);
                             match v {
                                 Some(v) => {
                                     tracing::trace!(key = ?crate::EscapedByteSlice(&k), value = ?crate::EscapedByteSlice(&v), "put nonverifiable key");
-                                    db_handle.put_cf(cf_nonverifiable, k, &v)?;
+                                    write_batch.put_cf(cf_nonverifiable, k, &v);
                                 }
                                 None => {
-                                    db_handle.delete_cf(cf_nonverifiable, k)?;
+                                    write_batch.delete_cf(cf_nonverifiable, k);
                                 }
                             };
                         }
-                        Ok(root_hash)
+                        Ok((root_hash, write_batch))
                     })
                 })?
                 .await?
@@ -429,16 +427,24 @@ impl TreeWriter for SubstoreStorage {
         use borsh::BorshSerialize;
 
         let node_batch = node_batch.clone();
-        let cf_jmt = self.config.cf_jmt(&self.db);
+        let cf_jmt = self
+            .substore_snapshot
+            .config
+            .cf_jmt(&self.substore_snapshot.db);
 
         for (node_key, node) in node_batch.nodes() {
             let db_node_key = DbNodeKey::from(node_key.clone());
             let db_node_key_bytes = db_node_key.encode()?;
             let value_bytes = &node.try_to_vec()?;
             tracing::trace!(?db_node_key_bytes, value_bytes = ?hex::encode(value_bytes));
-            self.db.put_cf(cf_jmt, db_node_key_bytes, value_bytes)?;
+            self.substore_snapshot
+                .db
+                .put_cf(cf_jmt, db_node_key_bytes, value_bytes)?;
         }
-        let cf_jmt_values = self.config.cf_jmt_values(&self.db);
+        let cf_jmt_values = self
+            .substore_snapshot
+            .config
+            .cf_jmt_values(&self.substore_snapshot.db);
 
         for ((version, key_hash), some_value) in node_batch.values() {
             let versioned_key = VersionedKeyHash::new(*version, *key_hash);
@@ -446,7 +452,9 @@ impl TreeWriter for SubstoreStorage {
             let value_bytes = &some_value.try_to_vec()?;
             tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));
 
-            self.db.put_cf(cf_jmt_values, key_bytes, value_bytes)?;
+            self.substore_snapshot
+                .db
+                .put_cf(cf_jmt_values, key_bytes, value_bytes)?;
         }
 
         Ok(())
