@@ -83,7 +83,7 @@ impl<T: StateRead + ?Sized> Ics20TransferReadExt for T {}
 
 #[async_trait]
 pub trait Ics20TransferWriteExt: StateWrite {
-    async fn withdrawal_execute(&mut self, withdrawal: &Ics20Withdrawal) {
+    async fn withdrawal_execute(&mut self, withdrawal: &Ics20Withdrawal) -> Result<()> {
         // create packet, assume it's already checked since the component caller contract calls `check` before `execute`
         let checked_packet = IBCPacket::<Unchecked>::from(withdrawal.clone()).assume_checked();
 
@@ -107,9 +107,33 @@ pub trait Ics20TransferWriteExt: StateWrite {
         } else {
             // receiver is the source, burn utxos
 
-            // NOTE: this burning should already be accomplished by the value balance check from
-            // the withdrawal's balance commitment, so nothing to do here.
+            // double check the value balance here.
             //
+            // for assets not originating from Penumbra, never transfer out more tokens than were
+            // transferred in. (Our counterparties should be checking this anyways, since if we
+            // were Byzantine we could lie to them).
+            let value_balance: Amount = self
+                .get(&state_key::ics20_value_balance(
+                    &withdrawal.source_channel,
+                    &withdrawal.denom.id(),
+                ))
+                .await?
+                .unwrap_or_else(Amount::zero);
+
+            if value_balance < withdrawal.amount {
+                anyhow::bail!("insufficient balance to withdraw tokens");
+            }
+
+            let new_value_balance =
+                value_balance
+                    .checked_sub(&withdrawal.amount)
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("underflow subtracting value balance in ics20 withdrawal")
+                    })?;
+            self.put(
+                state_key::ics20_value_balance(&withdrawal.source_channel, &withdrawal.denom.id()),
+                new_value_balance,
+            );
 
             // update supply tracking of burned note
             self.update_token_supply(&withdrawal.denom.id(), -(withdrawal.amount.value() as i128))
@@ -118,14 +142,14 @@ pub trait Ics20TransferWriteExt: StateWrite {
         }
 
         self.send_packet_execute(checked_packet).await;
+
+        Ok(())
     }
 }
 
 impl<T: StateWrite + ?Sized> Ics20TransferWriteExt for T {}
 
-// TODO: Ics20 implementation.
 // see: https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer
-// TODO (ava): add versioning to AppHandlers
 #[async_trait]
 impl AppHandlerCheck for Ics20Transfer {
     async fn chan_open_init_check<S: StateRead>(_state: S, msg: &MsgChannelOpenInit) -> Result<()> {
@@ -347,6 +371,21 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             )
             .await
             .context("failed to mint notes in ibc transfer")?;
+
+        // update the value balance
+        let value_balance: Amount = state
+            .get(&state_key::ics20_value_balance(
+                &msg.packet.chan_on_b,
+                &denom.id(),
+            ))
+            .await?
+            .unwrap_or_else(Amount::zero);
+
+        let new_value_balance = value_balance + value.amount;
+        state.put(
+            state_key::ics20_value_balance(&msg.packet.chan_on_b, &denom.id()),
+            new_value_balance,
+        );
     }
 
     Ok(())
