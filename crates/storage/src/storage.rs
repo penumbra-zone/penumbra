@@ -224,10 +224,10 @@ impl Storage {
         &self,
         snapshot: Snapshot,
         cache: Cache,
-        new_version: jmt::Version,
+        version: jmt::Version,
         write_to_snapshot_cache: bool,
     ) -> Result<crate::RootHash> {
-        tracing::debug!(new_jmt_version = ?new_version, "committing state delta");
+        tracing::debug!(new_jmt_version = ?version, "committing state delta");
         let mut changes_by_substore = cache.shard_by_prefix(&self.0.multistore_config);
         let mut substore_roots = Vec::new();
         let mut multistore_versions =
@@ -235,6 +235,8 @@ impl Storage {
 
         let db = self.0.db.clone();
         let rocksdb_snapshot = snapshot.0.snapshot.clone();
+
+        let mut new_versions = vec![];
 
         // We use a single write batch to commit all the substores at once. Each task will append
         // its own changes to the batch, and we will commit it at the end.
@@ -257,7 +259,6 @@ impl Storage {
         // A last option is to relax atomicity constraints, so that each commit task can produce
         // its own independent batch, and we can commit them all at once. This means that each batch
         // write is atomic, but the overall commit is not.
-
         for config in self.0.multistore_config.iter() {
             tracing::debug!(substore_prefix = ?config.prefix, "processing substore");
             // If the substore is empty, we need to fetch its initialized version from the cache.
@@ -277,6 +278,7 @@ impl Storage {
             };
 
             let version = old_substore_version.wrapping_add(1);
+            new_versions.push(version);
             let substore_snapshot = SubstoreSnapshot {
                 config: config.clone(),
                 rocksdb_snapshot: rocksdb_snapshot.clone(),
@@ -291,14 +293,14 @@ impl Storage {
                 .commit(changeset, write_batch, version)
                 .await?;
             write_batch = substore_batch;
-            multistore_versions.set_version(config.clone(), version);
+
             tracing::debug!(
                 ?root_hash,
                 prefix = config.prefix,
                 ?version,
-                "substore committed"
+                "added substore to write batch"
             );
-            substore_roots.push((config, root_hash));
+            substore_roots.push((config.clone(), root_hash, version));
         }
 
         /* commit roots to main store */
@@ -310,7 +312,7 @@ impl Storage {
                 Cache::default()
             });
 
-        for (config, root_hash) in substore_roots {
+        for (config, root_hash, _) in substore_roots.iter() {
             main_store_changes
                 .unwritten_changes
                 .insert(config.prefix.to_string(), Some(root_hash.0.to_vec()));
@@ -320,7 +322,7 @@ impl Storage {
         let main_store_snapshot = SubstoreSnapshot {
             config: main_store_config.clone(),
             rocksdb_snapshot: snapshot.0.snapshot.clone(),
-            version: new_version,
+            version,
             db: self.0.db.clone(),
         };
 
@@ -329,17 +331,38 @@ impl Storage {
         };
 
         let (global_root_hash, write_batch) = main_store_storage
-            .commit(main_store_changes, write_batch, new_version)
+            .commit(main_store_changes, write_batch, version)
             .await?;
-        multistore_versions.set_version(main_store_config, new_version);
+        tracing::debug!(
+            ?global_root_hash,
+            ?version,
+            "added main store to write batch"
+        );
         db.write(write_batch).expect("can write to db");
+
+        /* update multistore versions */
+        for (config, root_hash, new_version) in substore_roots {
+            tracing::debug!(
+                ?root_hash,
+                prefix = ?config.prefix,
+                ?new_version,
+                "updating substore version"
+            );
+            multistore_versions.set_version(config, new_version);
+        }
+
+        tracing::debug!(?global_root_hash, ?version, "updating main store version");
+        multistore_versions.set_version(main_store_config, version);
 
         /* hydrate the snapshot cache */
         if !write_to_snapshot_cache {
+            tracing::debug!("skipping snapshot cache update");
             return Ok(global_root_hash);
         }
 
-        let latest_snapshot = Snapshot::new(db.clone(), new_version, multistore_versions);
+        tracing::debug!("updating snapshot cache");
+
+        let latest_snapshot = Snapshot::new(db.clone(), version, multistore_versions);
         // Obtain a write lock to the snapshot cache, and push the latest snapshot
         // available. The lock guard is implicitly dropped immediately.
         self.0
@@ -347,6 +370,8 @@ impl Storage {
             .write()
             .try_push(latest_snapshot.clone())
             .expect("should process snapshots with consecutive jmt versions");
+
+        tracing::debug!(?version, "dispatching snapshot");
 
         // Send fails if the channel is closed (i.e., if there are no receivers);
         // in this case, we should ignore the error, we have no one to notify.
