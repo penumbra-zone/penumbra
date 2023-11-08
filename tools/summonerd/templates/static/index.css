@@ -287,13 +287,6 @@ img, video {
   position: absolute;
 }
 
-.no-select {
-  user-select: none;
-  -moz-user-select: none; /* Firefox */
-  -webkit-user-select: none; /* Safari and Chrome */
-  -ms-user-select: none; /* IE 10+ and Edge */
-}
-
 .relative {
   position: relative;
 }
@@ -582,6 +575,5 @@ img, video {
     width: 75%;
   }
 }
-
 
 /*# sourceMappingURL=index.61d3354a.css.map */
