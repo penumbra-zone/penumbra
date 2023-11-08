@@ -22,8 +22,6 @@ impl ActionHandler for Ics20Withdrawal {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        state.withdrawal_execute(self).await;
-
-        Ok(())
+        state.withdrawal_execute(self).await
     }
 }
