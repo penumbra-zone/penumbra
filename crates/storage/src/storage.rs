@@ -326,11 +326,22 @@ impl Storage {
 
         let mut _tx = db.transaction();
 
-        for (_, _, _write_batch) in substore_state {
-            // TODO(erwan): it seems like `Transaction` does not actually have a way to append
-            // an entire batch of writes. this is a bit annoying, because it means that we need
-            // to iterate over the batch and append each write individually.
-            // alternatively, we could use a `WriteBatch` and commit it directly, but this would
+        for (_, _, write_batch) in substore_state {
+            // Spike(erwan): the original plan was to concurrently generate N write batches, and then
+            // commit them all in a single transaction. however unfortunately, the `Transaction` API does not
+            // support directly adding batches to a transaction, and the `WriteBatch` API does not support
+            // merging batches together, or concurrent writes.
+            // This leaves us with three options:
+            // - use a single commit task (spawn block on `SubstoreStorage::commit`), which would ingest and
+            // return a `WriteBatch` the next time it is called. this would require no synchronization, but
+            // is probably the slowest option.
+            // - use N commit tasks (spawn block on `SubstoreStorage::commit`), which would produce a root hash
+            // and a `WriteBatch`, then commit each batch sequentially. this would require no synchronization but
+            // offers incomplete atomicity.
+            // - use N commit tasks (spawn block on `SubstoreStorage::commit`), which share a single `WriteBatch`,
+            // wait for all tasks to complete, and then commit the batch. this would require some synchronization
+            // between the commit tasks, but offers complete atomicity. it's probably slow.
+            db.write(write_batch).expect("should write batch");
 
             let _write_opts = rocksdb::WriteOptions::default();
         }

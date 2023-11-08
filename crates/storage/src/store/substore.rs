@@ -375,16 +375,16 @@ impl SubstoreStorage {
         cache: Cache,
         substore_snapshot: SubstoreSnapshot,
         new_version: jmt::Version,
-    ) -> Result<(RootHash, rocksdb::WriteBatch)> {
+    ) -> Result<(RootHash, rocksdb::WriteBatchWithTransaction<true>)> {
         let span = Span::current();
-        let mut batch_handle = rocksdb::WriteBatch::default();
+        let mut batch_handle = rocksdb::WriteBatchWithTransaction::<true>::default();
         let db_handle = self.db.clone();
 
         tokio::task::Builder::new()
                 .name("Storage::commit_inner_substore")
                 .spawn_blocking(move || {
                     span.in_scope(|| {
-                        let write_batch = rocksdb::WriteBatch::default();
+                        let write_batch = rocksdb::WriteBatchWithTransaction::<true>::default();
                         let jmt = jmt::Sha256Jmt::new(&substore_snapshot);
 
                         // TODO(erwan): this could be folded with sharding the changesets.
