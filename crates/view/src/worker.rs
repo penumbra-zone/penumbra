@@ -1,6 +1,7 @@
 use std::{
     collections::BTreeSet,
     sync::{Arc, Mutex},
+    time::Duration,
 };
 
 use anyhow::Context;
@@ -377,12 +378,25 @@ async fn fetch_block(
     height: i64,
 ) -> anyhow::Result<proto::tendermint::types::Block> {
     let mut client = TendermintProxyServiceClient::new(channel);
-    Ok(client
+    // HACK: this is not a robust long-term solution but may help
+    // avoid "split-brain" block fetch issues, where a client learns
+    // of a new block, then immediately tries to fetch it, but that
+    // fetch is load-balanced over a different node that hasn't yet
+    // learned about that block.
+    let rsp = match client
         .get_block_by_height(GetBlockByHeightRequest { height })
-        .await?
-        .into_inner()
-        .block
-        .expect("block not found"))
+        .await
+    {
+        Ok(rsp) => rsp,
+        Err(e) => {
+            tracing::warn!(?e, "failed to fetch block, waiting and retrying once");
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            client
+                .get_block_by_height(GetBlockByHeightRequest { height })
+                .await?
+        }
+    };
+    Ok(rsp.into_inner().block.expect("block not found"))
 }
 
 #[cfg(feature = "sct-divergence-check")]
