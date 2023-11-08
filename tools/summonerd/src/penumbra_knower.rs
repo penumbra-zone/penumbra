@@ -1,6 +1,4 @@
-use std::time::Duration;
-
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use camino::Utf8Path;
 use penumbra_asset::STAKING_TOKEN_ASSET_ID;
 use penumbra_keys::{Address, FullViewingKey};
@@ -15,7 +13,9 @@ pub struct PenumbraKnower {
     // we get the specific information we need, as this will get populated
     // by the view service.
     storage: Storage,
-    view: ViewService,
+    // Not sure if storing this is necessary, but seems like a good idea to avoid things getting
+    // dropped on the floor
+    _view: ViewService,
 }
 
 impl PenumbraKnower {
@@ -29,7 +29,10 @@ impl PenumbraKnower {
     ) -> Result<Self> {
         let storage = Storage::load_or_initialize(Some(storage_path), fvk, node.clone()).await?;
         let view = ViewService::new(storage.clone(), node).await?;
-        Ok(Self { storage, view })
+        Ok(Self {
+            storage,
+            _view: view,
+        })
     }
 
     pub async fn total_amount_sent_to_me(&self, by: &Address) -> Result<Amount> {
@@ -43,15 +46,5 @@ impl PenumbraKnower {
             total = total.saturating_add(&note.note.amount());
         }
         Ok(total)
-    }
-
-    pub async fn wait_for_crash(&self) -> anyhow::Error {
-        loop {
-            match self.view.status().await {
-                Ok(_) => {}
-                Err(e) => return anyhow!("view service errored {:?}", e),
-            };
-            tokio::time::sleep(Duration::from_secs(1)).await;
-        }
     }
 }
