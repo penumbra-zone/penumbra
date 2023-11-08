@@ -68,7 +68,10 @@ impl SubstoreConfig {
             .chain(std::iter::once(&self.cf_nonverifiable))
     }
 
-    pub fn cf_jmt<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
+    pub fn cf_jmt<'s>(
+        &self,
+        db_handle: &'s Arc<rocksdb::OptimisticTransactionDB>,
+    ) -> &'s ColumnFamily {
         let column = self.cf_jmt.as_str();
         db_handle.cf_handle(column).expect(&format!(
             "jmt column family not found for prefix: {}, substore: {}",
@@ -76,7 +79,10 @@ impl SubstoreConfig {
         ))
     }
 
-    pub fn cf_jmt_values<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
+    pub fn cf_jmt_values<'s>(
+        &self,
+        db_handle: &'s Arc<rocksdb::OptimisticTransactionDB>,
+    ) -> &'s ColumnFamily {
         let column = self.cf_jmt_values.as_str();
         db_handle.cf_handle(column).expect(&format!(
             "jmt-values column family not found for prefix: {}, substore: {}",
@@ -84,7 +90,10 @@ impl SubstoreConfig {
         ))
     }
 
-    pub fn cf_jmt_keys_by_keyhash<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
+    pub fn cf_jmt_keys_by_keyhash<'s>(
+        &self,
+        db_handle: &'s Arc<rocksdb::OptimisticTransactionDB>,
+    ) -> &'s ColumnFamily {
         let column = self.cf_jmt_keys_by_keyhash.as_str();
         db_handle.cf_handle(&column).expect(&format!(
             "jmt-keys-by-keyhash column family not found for prefix: {}, substore: {}",
@@ -92,7 +101,10 @@ impl SubstoreConfig {
         ))
     }
 
-    pub fn cf_jmt_keys<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
+    pub fn cf_jmt_keys<'s>(
+        &self,
+        db_handle: &'s Arc<rocksdb::OptimisticTransactionDB>,
+    ) -> &'s ColumnFamily {
         let column = self.cf_jmt_keys.as_str();
         db_handle.cf_handle(column).expect(&format!(
             "jmt-keys column family not found for prefix: {}, substore: {}",
@@ -100,7 +112,10 @@ impl SubstoreConfig {
         ))
     }
 
-    pub fn cf_nonverifiable<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
+    pub fn cf_nonverifiable<'s>(
+        &self,
+        db_handle: &'s Arc<rocksdb::OptimisticTransactionDB>,
+    ) -> &'s ColumnFamily {
         let column = self.cf_nonverifiable.as_str();
         db_handle.cf_handle(column).expect(&format!(
             "nonverifiable column family not found for prefix: {}, substore: {}",
@@ -112,7 +127,7 @@ impl SubstoreConfig {
 
     pub fn latest_version_from_db(
         &self,
-        db_handle: &Arc<rocksdb::DB>,
+        db_handle: &Arc<rocksdb::OptimisticTransactionDB>,
     ) -> Result<Option<jmt::Version>> {
         Ok(self
             .get_rightmost_leaf_from_db(db_handle)?
@@ -121,7 +136,7 @@ impl SubstoreConfig {
 
     pub fn latest_version_from_snapshot(
         &self,
-        db_handle: &Arc<rocksdb::DB>,
+        db_handle: &Arc<rocksdb::OptimisticTransactionDB>,
         snapshot: &RocksDbSnapshot,
     ) -> Result<Option<jmt::Version>> {
         Ok(self
@@ -133,7 +148,7 @@ impl SubstoreConfig {
     // two different ways of getting the rightmost leaf.
     fn get_rightmost_leaf_from_db(
         &self,
-        db_handle: &Arc<rocksdb::DB>,
+        db_handle: &Arc<rocksdb::OptimisticTransactionDB>,
     ) -> Result<Option<(NodeKey, LeafNode)>> {
         let cf_jmt = self.cf_jmt(&db_handle);
         let mut iter = db_handle.raw_iterator_cf(cf_jmt);
@@ -158,7 +173,7 @@ impl SubstoreConfig {
 
     fn get_rightmost_leaf_from_snapshot(
         &self,
-        db_handle: &Arc<rocksdb::DB>,
+        db_handle: &Arc<rocksdb::OptimisticTransactionDB>,
         snapshot: &RocksDbSnapshot,
     ) -> Result<Option<(NodeKey, LeafNode)>> {
         let cf_jmt = self.cf_jmt(&db_handle);
@@ -190,7 +205,7 @@ pub struct SubstoreSnapshot {
     pub(crate) config: Arc<SubstoreConfig>,
     pub(crate) rocksdb_snapshot: Arc<RocksDbSnapshot>,
     pub(crate) version: jmt::Version,
-    pub(crate) db: Arc<rocksdb::DB>,
+    pub(crate) db: Arc<rocksdb::OptimisticTransactionDB>,
 }
 
 impl SubstoreSnapshot {
@@ -350,7 +365,7 @@ impl HasPreimage for SubstoreSnapshot {
 }
 
 pub struct SubstoreStorage {
-    pub(crate) db: Arc<rocksdb::DB>,
+    pub(crate) db: Arc<rocksdb::OptimisticTransactionDB>,
     pub(crate) config: Arc<SubstoreConfig>,
 }
 
@@ -360,14 +375,16 @@ impl SubstoreStorage {
         cache: Cache,
         substore_snapshot: SubstoreSnapshot,
         new_version: jmt::Version,
-    ) -> Result<RootHash> {
+    ) -> Result<(RootHash, rocksdb::WriteBatch)> {
         let span = Span::current();
+        let mut batch_handle = rocksdb::WriteBatch::default();
         let db_handle = self.db.clone();
 
         tokio::task::Builder::new()
                 .name("Storage::commit_inner_substore")
                 .spawn_blocking(move || {
                     span.in_scope(|| {
+                        let write_batch = rocksdb::WriteBatch::default();
                         let jmt = jmt::Sha256Jmt::new(&substore_snapshot);
 
                         // TODO(erwan): this could be folded with sharding the changesets.
@@ -383,13 +400,13 @@ impl SubstoreStorage {
                         for (keyhash, key_preimage, value) in unwritten_changes.iter() {
                             match value {
                                 Some(_) => { /* Key inserted, or updated, so we add it to the keyhash index */
-                                    db_handle.put_cf(cf_jmt_keys, key_preimage, keyhash.0)?;
-                                        db_handle
-                                        .put_cf(cf_jmt_keys_by_keyhash, keyhash.0, key_preimage)?
+                                    batch_handle.put_cf(cf_jmt_keys, key_preimage, keyhash.0);
+                                        batch_handle
+                                        .put_cf(cf_jmt_keys_by_keyhash, keyhash.0, key_preimage)
                                 }
                                 None => { /* Key deleted, so we delete it from the preimage and keyhash index entries */
-                                    db_handle.delete_cf(cf_jmt_keys, key_preimage)?;
-                                    db_handle.delete_cf(cf_jmt_keys_by_keyhash, keyhash.0)?;
+                                    batch_handle.delete_cf(cf_jmt_keys, key_preimage);
+                                    batch_handle.delete_cf(cf_jmt_keys_by_keyhash, keyhash.0);
                                 }
                             };
                         }
@@ -407,14 +424,14 @@ impl SubstoreStorage {
                             match v {
                                 Some(v) => {
                                     tracing::trace!(key = ?crate::EscapedByteSlice(&k), value = ?crate::EscapedByteSlice(&v), "put nonverifiable key");
-                                    db_handle.put_cf(cf_nonverifiable, k, &v)?;
+                                    batch_handle.put_cf(cf_nonverifiable, k, &v);
                                 }
                                 None => {
-                                    db_handle.delete_cf(cf_nonverifiable, k)?;
+                                    batch_handle.delete_cf(cf_nonverifiable, k);
                                 }
                             };
                         }
-                        Ok(root_hash)
+                        Ok((root_hash, write_batch))
                     })
                 })?
                 .await?

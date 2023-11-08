@@ -31,13 +31,13 @@ pub(crate) struct Inner {
     pub(crate) snapshot: Arc<RocksDbSnapshot>,
     pub(crate) version: jmt::Version,
     // Used to retrieve column family handles.
-    pub(crate) db: Arc<rocksdb::DB>,
+    pub(crate) db: Arc<rocksdb::OptimisticTransactionDB>,
 }
 
 impl Snapshot {
     /// Creates a new `Snapshot` with the given version and substore configs.
     pub(crate) fn new(
-        db: Arc<rocksdb::DB>,
+        db: Arc<rocksdb::OptimisticTransactionDB>,
         version: jmt::Version,
         multistore_cache: multistore::MultistoreCache,
     ) -> Self {

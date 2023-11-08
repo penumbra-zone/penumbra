@@ -3,7 +3,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{bail, Result};
 use parking_lot::RwLock;
-use rocksdb::{Options, DB};
+use rocksdb::{OptimisticTransactionDB, Options};
 use tokio::sync::watch;
 use tracing::Span;
 
@@ -43,7 +43,7 @@ struct Inner {
     /// A handle to the dispatcher task.
     /// It is used by `Storage::release` to wait for the task to terminate.
     jh_dispatcher: Option<tokio::task::JoinHandle<()>>,
-    db: Arc<DB>,
+    db: Arc<OptimisticTransactionDB>,
 }
 
 impl Storage {
@@ -88,7 +88,10 @@ impl Storage {
                     let mut columns: Vec<&String> = main_store.columns().collect();
                     columns.append(&mut substore_columns);
 
-                    let db = Arc::new(DB::open_cf(&opts, path, columns)?);
+                    // let db = Arc::new(DB::open_cf(&opts, path, columns)?);
+                    let db = Arc::new(rocksdb::OptimisticTransactionDB::open_cf(
+                        &opts, path, columns,
+                    )?);
 
                     // Initialize the substore cache with the latest version of each substore.
                     // Note: for compatibility reasons with Tendermint/CometBFT, we set the "pre-genesis"
@@ -229,7 +232,7 @@ impl Storage {
     ) -> Result<crate::RootHash> {
         tracing::debug!(new_jmt_version = ?new_version, "committing state delta");
         let mut changes_by_substore = cache.shard_by_prefix(&self.0.multistore_config);
-        let mut substore_roots = Vec::new();
+        let mut substore_state = Vec::new();
         let mut multistore_versions =
             multistore::MultistoreCache::from_config(self.0.multistore_config.clone());
 
@@ -276,7 +279,7 @@ impl Storage {
             };
 
             // Commit the substore and collect the root hash
-            let root_hash = substore_storage
+            let (root_hash, write_batch) = substore_storage
                 .commit(changeset, substore_snapshot, version)
                 .await?;
             multistore_versions.set_version(config.clone(), version);
@@ -286,7 +289,7 @@ impl Storage {
                 ?version,
                 "substore committed"
             );
-            substore_roots.push((config, root_hash));
+            substore_state.push((config, root_hash, write_batch));
         }
 
         /* commit roots to main store */
@@ -298,7 +301,7 @@ impl Storage {
                 Cache::default()
             });
 
-        for (config, root_hash) in substore_roots {
+        for (config, root_hash, _) in substore_state.iter() {
             main_store_changes
                 .unwritten_changes
                 .insert(config.prefix.to_string(), Some(root_hash.0.to_vec()));
@@ -317,9 +320,21 @@ impl Storage {
             db: self.0.db.clone(),
         };
 
-        let global_root_hash = main_store_storage
+        let (global_root_hash, _main_write_batch) = main_store_storage
             .commit(main_store_changes, main_store_snapshot, new_version)
             .await?;
+
+        let mut _tx = db.transaction();
+
+        for (_, _, _write_batch) in substore_state {
+            // TODO(erwan): it seems like `Transaction` does not actually have a way to append
+            // an entire batch of writes. this is a bit annoying, because it means that we need
+            // to iterate over the batch and append each write individually.
+            // alternatively, we could use a `WriteBatch` and commit it directly, but this would
+
+            let _write_opts = rocksdb::WriteOptions::default();
+        }
+
         multistore_versions.set_version(main_store_config, new_version);
 
         /* hydrate the snapshot cache */
@@ -357,7 +372,7 @@ impl Storage {
 
     /// Returns the internal handle to RocksDB, this is useful to test adjacent storage crates.
     #[cfg(test)]
-    pub(crate) fn db(&self) -> Arc<DB> {
+    pub(crate) fn db(&self) -> Arc<rocksdb::OptimisticTransactionDB> {
         self.0.db.clone()
     }
 

@@ -14,7 +14,7 @@ use std::sync::Arc;
 pub struct RocksDbSnapshot {
     /// The snapshot itself.  It's not really `'static`, so it's on us to ensure
     /// that the database stays live as long as the snapshot does.
-    inner: rocksdb::Snapshot<'static>,
+    inner: rocksdb::SnapshotWithThreadMode<'static, rocksdb::OptimisticTransactionDB>,
     /// The raw pointer form of the Arc<DB> we use to guarantee the database
     /// lives at least as long as the snapshot.  We create this from the Arc<DB>
     /// in the constructor, pass it to the snapshot on creation, and then
@@ -25,7 +25,7 @@ pub struct RocksDbSnapshot {
     /// using the raw pointer.  Instead, we must explicitly convert the raw
     /// pointer back into an Arc when we're finished using it, and only then
     /// drop it.
-    raw_db: *const rocksdb::DB,
+    raw_db: *const rocksdb::OptimisticTransactionDB,
 }
 
 impl Debug for RocksDbSnapshot {
@@ -44,7 +44,7 @@ impl Debug for RocksDbSnapshot {
 // call that discards the in-memory snapshot, so it would not be safe to add
 // such an implementation.
 impl Deref for RocksDbSnapshot {
-    type Target = rocksdb::Snapshot<'static>;
+    type Target = rocksdb::SnapshotWithThreadMode<'static, rocksdb::OptimisticTransactionDB>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
@@ -53,14 +53,17 @@ impl Deref for RocksDbSnapshot {
 
 impl RocksDbSnapshot {
     /// Creates a new snapshot of the given `db`.
-    pub fn new(db: Arc<rocksdb::DB>) -> Self {
+    pub fn new(db: Arc<rocksdb::OptimisticTransactionDB>) -> Self {
         // First, convert the Arc<DB> into a raw pointer.
         let raw_db = Arc::into_raw(db);
         // Next, use the raw pointer to construct a &DB instance with a fake
         // 'static lifetime, and use that instance to construct the inner
         // Snapshot.
-        let static_db: &'static rocksdb::DB = unsafe { &*raw_db };
-        let inner = rocksdb::Snapshot::new(static_db);
+        let static_db: &'static rocksdb::OptimisticTransactionDB = unsafe { &*raw_db };
+        let inner =
+            rocksdb::SnapshotWithThreadMode::<'static, rocksdb::OptimisticTransactionDB>::new(
+                static_db,
+            );
 
         Self { inner, raw_db }
     }
