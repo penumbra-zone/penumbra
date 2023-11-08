@@ -5,9 +5,11 @@ use penumbra_asset::balance;
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 
 use crate::{ActionView, IsAction, TransactionPerspective};
+use serde::{Deserialize, Serialize};
 
 /// An action performed by a Penumbra transaction.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(try_from = "pb::Action", into = "pb::Action")]
 #[allow(clippy::large_enum_variant)]
 pub enum Action {
     Output(penumbra_shielded_pool::Output),
