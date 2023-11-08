@@ -236,14 +236,25 @@ impl Storage {
         let db = self.0.db.clone();
         let rocksdb_snapshot = snapshot.0.snapshot.clone();
 
-        // TODO(erwan): refactor this before shipping pr.
+        // We use a single write batch to commit all the substores at once. Each task will append
+        // its own changes to the batch, and we will commit it at the end.
+        let mut write_batch = rocksdb::WriteBatch::default();
 
-        // TODO(erwa): use a write batch to commit all the substores in a single transaction.
-        let mut _batch = rocksdb::WriteBatch::default();
-
-        // Note(erwan): if the number of substore grows, this loop could be transformed into
-        // a [`tokio::task::JoinSet`]. however, at the time of writing, there is a single digit number
-        // of substores, so the overhead of a joinset is not worth it.
+        // Note(erwan): since we work over sharded keyspaces/disjoint column families, it is tempting to consider
+        // a rewrite of this loop into a [`tokio::task::JoinSet`], however there are some complications that should
+        // be on your radar:
+        // * overhead: at the time of writing, there is a single digit number of substores, so it's implausible
+        //   that the overhead of a joinset would be worth it.
+        // * atomicity: unfortunately, `WriteBatch`es are not thread safe, this means that to spin-up N tasks,
+        //   we would either need to:
+        //      Option A: use a single batch, and synchronize access to it between tasks. if the number of substore
+        //                contention grows with the number of substores, which is likely the case if you're considering
+        //                a joinset.
+        //      Option B: use N batches, and find a way to commit to them atomically. (better, but not supported)
+        //                RocksDB does not allow merging batches together, and though [`rocksdb::OptimisticTransactionDB`]
+        //                offers an ACID API, it is not compatible with the [`rocksdb::WriteBatch`] API.
+        // A last option is to relax atomicity constraints, so that each commit task can produce its own independent batch,
+        // and we can commit them all at once. This means that each batch write is atomic, but the overall commit is not.
         for config in self.0.multistore_config.iter() {
             tracing::debug!(substore_prefix = ?config.prefix, "processing substore");
             // If the substore is empty, we need to fetch its initialized version from the cache.
@@ -270,15 +281,13 @@ impl Storage {
                 db: db.clone(),
             };
 
-            let substore_storage = SubstoreStorage {
-                config: config.clone(),
-                db: db.clone(),
-            };
+            let substore_storage = SubstoreStorage { substore_snapshot };
 
             // Commit the substore and collect the root hash
-            let root_hash = substore_storage
-                .commit(changeset, substore_snapshot, version)
+            let (root_hash, substore_batch) = substore_storage
+                .commit(changeset, write_batch, version)
                 .await?;
+            write_batch = substore_batch;
             multistore_versions.set_version(config.clone(), version);
             tracing::debug!(
                 ?root_hash,
@@ -313,14 +322,14 @@ impl Storage {
         };
 
         let main_store_storage = SubstoreStorage {
-            config: main_store_config.clone(),
-            db: self.0.db.clone(),
+            substore_snapshot: main_store_snapshot,
         };
 
-        let global_root_hash = main_store_storage
-            .commit(main_store_changes, main_store_snapshot, new_version)
+        let (global_root_hash, write_batch) = main_store_storage
+            .commit(main_store_changes, write_batch, new_version)
             .await?;
         multistore_versions.set_version(main_store_config, new_version);
+        db.write(write_batch).expect("can write to db");
 
         /* hydrate the snapshot cache */
         if !write_to_snapshot_cache {
