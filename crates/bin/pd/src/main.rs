@@ -44,7 +44,7 @@ use tendermint::v0_37::abci::{ConsensusRequest, MempoolRequest};
 )]
 struct Opt {
     /// Enable Tokio Console support.
-    #[clap(long, default_value = "false")]
+    #[clap(long)]
     tokio_console: bool,
     /// Command to run.
     #[clap(subcommand)]
