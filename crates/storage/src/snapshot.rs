@@ -110,7 +110,9 @@ impl Snapshot {
             anyhow::bail!("requested substore does not exist")
         }
 
-        let version = self.substore_version(&config).expect("substore exists");
+        let version = self
+            .substore_version(&config)
+            .expect("the substore exists and has been initialized");
 
         let substore = store::substore::SubstoreSnapshot {
             config,
@@ -155,7 +157,9 @@ impl StateRead for Snapshot {
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
 
-        let version = self.substore_version(&config).expect("substore exists");
+        let version = self
+            .substore_version(&config)
+            .expect("the substore exists and has been initialized");
 
         let substore = store::substore::SubstoreSnapshot {
             config,
@@ -188,7 +192,9 @@ impl StateRead for Snapshot {
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
 
-        let version = self.substore_version(&config).expect("substore exists");
+        let version = self
+            .substore_version(&config)
+            .expect("the substore exists and has been initialized");
 
         let substore = store::substore::SubstoreSnapshot {
             config,
@@ -231,7 +237,9 @@ impl StateRead for Snapshot {
         let (prefix_truncated, config) = self.0.multistore_cache.config.match_prefix_str(prefix);
         tracing::debug!(substore_key = prefix_truncated,  substore_prefix = config.prefix, prefix_supplied = ?prefix, "matched prefix, fetching substore");
 
-        let version = self.substore_version(&config).expect("substore exists");
+        let version = self
+            .substore_version(&config)
+            .expect("the substore exists and has been initialized");
 
         let substore = store::substore::SubstoreSnapshot {
             config,
@@ -294,7 +302,9 @@ impl StateRead for Snapshot {
         let (prefix_truncated, config) = self.0.multistore_cache.config.match_prefix_str(prefix);
         tracing::debug!(substore_key = prefix_truncated,  substore_prefix = config.prefix, prefix_supplied = ?prefix, "matched prefix, fetching substore");
 
-        let version = self.substore_version(&config).expect("substore exists");
+        let version = self
+            .substore_version(&config)
+            .expect("the substore exists and has been initialized");
 
         let substore = store::substore::SubstoreSnapshot {
             config,
@@ -340,7 +350,9 @@ impl StateRead for Snapshot {
 
         let (truncated_prefix, config) = self.0.multistore_cache.config.match_prefix_bytes(prefix);
         tracing::debug!(substore_key = ?truncated_prefix,  substore_prefix = config.prefix, prefix_supplied = ?prefix, "matched prefix, fetching substore");
-        let version = self.substore_version(&config).expect("substore exists");
+        let version = self
+            .substore_version(&config)
+            .expect("the substore exists and has been initialized");
 
         let substore = store::substore::SubstoreSnapshot {
             config,
@@ -391,7 +403,9 @@ impl StateRead for Snapshot {
             .config
             .route_key_bytes(prefix.unwrap_or_default());
 
-        let version = self.substore_version(&config).expect("substore exists");
+        let version = self
+            .substore_version(&config)
+            .expect("the substore exists and has been initialized");
 
         let substore = store::substore::SubstoreSnapshot {
             config,
