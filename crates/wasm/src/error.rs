@@ -10,6 +10,7 @@ use web_sys::DomException;
 use penumbra_tct::error::{InsertBlockError, InsertEpochError, InsertError};
 
 pub type WasmResult<T> = Result<T, WasmError>;
+pub type WasmOption<T> = Option<T>;
 
 #[derive(Error, Debug)]
 pub enum WasmError {
