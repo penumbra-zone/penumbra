@@ -102,6 +102,14 @@ impl Snapshot {
             .multistore_cache
             .config
             .find_substore(prefix.as_bytes());
+
+        // If a substore is not found, we default to the main store.
+        // But we want to avoid misleading a caller by returning
+        // `RootHash` that does not correspond to the queried prefix.
+        if prefix != config.prefix {
+            anyhow::bail!("requested substore does not exist")
+        }
+
         let version = self.substore_version(&config).expect("substore exists");
 
         let substore = store::substore::SubstoreSnapshot {
