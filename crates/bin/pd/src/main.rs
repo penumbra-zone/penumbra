@@ -116,12 +116,12 @@ enum RootCommand {
         )]
         cometbft_addr: Url,
 
-        /// Enable the trade simulation service, which allows clients to simulate
-        /// trades without submitting them. This is useful for approximating the
-        /// cost of a trade before submitting it. But, it is a potential DoS vector,
-        /// so it is disabled by default.
+        /// Enable expensive RPCs, such as the trade simulation service.
+        /// The trade simulation service allows clients to simulate trades without submitting them.
+        /// This is useful for approximating the cost of a trade before submitting it.
+        /// But, it is a potential DoS vector, so it is disabled by default.
         #[clap(short, long, display_order = 500)]
-        simulate_trade_service: bool,
+        enable_expensive_rpc: bool,
     },
     /// Generate, join, or reset a testnet.
     Testnet {
@@ -271,7 +271,7 @@ async fn main() -> anyhow::Result<()> {
             grpc_auto_https,
             metrics_bind,
             cometbft_addr,
-            simulate_trade_service,
+            enable_expensive_rpc,
         } => {
             tracing::info!(
                 ?abci_bind,
@@ -279,7 +279,7 @@ async fn main() -> anyhow::Result<()> {
                 ?grpc_auto_https,
                 ?metrics_bind,
                 %cometbft_addr,
-                ?simulate_trade_service,
+                ?enable_expensive_rpc,
                 "starting pd"
             );
 
@@ -424,7 +424,7 @@ async fn main() -> anyhow::Result<()> {
                     .build()
                     .with_context(|| "could not configure grpc reflection service")?));
 
-            if simulate_trade_service {
+            if enable_expensive_rpc {
                 grpc_server = grpc_server.add_service(we(SimulationServiceServer::new(
                     DexServer::new(storage.clone()),
                 )));
