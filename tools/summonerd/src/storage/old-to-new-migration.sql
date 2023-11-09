@@ -26,7 +26,8 @@ CREATE TABLE phase1_contributions (
     is_root INTEGER NOT NULL,
     hash BLOB,
     address BLOB,
-    time INTEGER NOT NULL
+    time INTEGER NOT NULL,
+    FOREIGN KEY (slot) REFERENCES phase1_contribution_data(slot)
 );
 INSERT INTO phase1_contributions (slot, is_root, hash, address, time)
 SELECT slot, is_root, hash, address, time FROM phase1_contributions_old;
@@ -37,7 +38,8 @@ CREATE TABLE phase2_contributions (
     is_root INTEGER NOT NULL,
     hash BLOB,
     address BLOB,
-    time INTEGER NOT NULL
+    time INTEGER NOT NULL,
+    FOREIGN KEY (slot) REFERENCES phase2_contribution_data(slot)
 );
 INSERT INTO phase2_contributions (slot, is_root, hash, address, time)
 SELECT slot, is_root, hash, address, time FROM phase2_contributions_old;
