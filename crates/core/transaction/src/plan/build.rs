@@ -12,8 +12,159 @@ use crate::{
     transaction::{DetectionData, TransactionParameters},
     AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
 };
+use wasm_bindgen_test::console_log;
 
 impl TransactionPlan {
+    pub fn build_unauth_with_actions(
+        self,
+        mut actions: Vec<Action>,
+        fvk: FullViewingKey,
+        witness_data: WitnessData,
+    ) -> Result<UnauthTransaction> {
+        console_log!("build_unauth_with_actions method!");
+        let mut synthetic_blinding_factor = Fr::zero();
+
+        let mut memo: Option<MemoCiphertext> = None;
+            let mut memo_key: Option<PayloadKey> = None;
+            if self.memo_plan.is_some() {
+                let memo_plan = self
+                    .memo_plan
+                    .clone()
+                    .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
+                memo = memo_plan.memo().ok();
+                memo_key = Some(memo_plan.key);
+            }
+
+        // Fill in blinding factors
+        for spend_plan in self.spend_plans() {
+            synthetic_blinding_factor += spend_plan.value_blinding;
+        }
+        for output_plan in self.output_plans() {
+            synthetic_blinding_factor += output_plan.value_blinding;
+        }
+
+        // Build the transaction's swaps.
+        for swap_plan in self.swap_plans() {
+            synthetic_blinding_factor += swap_plan.fee_blinding;
+            actions.push(Action::Swap(swap_plan.swap(&fvk)));
+        }
+
+        // Build the transaction's swap claims.
+        for swap_claim_plan in self.swap_claim_plans().cloned() {
+            let note_commitment = swap_claim_plan.swap_plaintext.swap_commitment();
+            let auth_path = witness_data
+                .state_commitment_proofs
+                .get(&note_commitment)
+                .context(format!("could not get proof for {note_commitment:?}"))?;
+
+            actions.push(Action::SwapClaim(
+                swap_claim_plan.swap_claim(&fvk, auth_path),
+            ));
+        }
+
+        // Add detection data when there are outputs.
+        let detection_data: Option<DetectionData> = if self.num_outputs() == 0 {
+            None
+        } else {
+            let mut fmd_clues = Vec::new();
+            for clue_plan in self.clue_plans() {
+                fmd_clues.push(clue_plan.clue());
+            }
+            Some(DetectionData { fmd_clues })
+        };
+
+        // All of these actions have "transparent" value balance with no
+        // blinding factor, so they don't contribute to the
+        // synthetic_blinding_factor used for the binding signature.
+
+        for delegation in self.delegations().cloned() {
+            actions.push(Action::Delegate(delegation))
+        }
+        for undelegation in self.undelegations().cloned() {
+            actions.push(Action::Undelegate(undelegation))
+        }
+        for plan in self.undelegate_claim_plans() {
+            synthetic_blinding_factor += plan.balance_blinding;
+            let undelegate_claim = plan.undelegate_claim();
+            actions.push(Action::UndelegateClaim(undelegate_claim));
+        }
+        for proposal_submit in self.proposal_submits().cloned() {
+            actions.push(Action::ProposalSubmit(proposal_submit))
+        }
+        for proposal_withdraw_plan in self.proposal_withdraws().cloned() {
+            actions.push(Action::ProposalWithdraw(proposal_withdraw_plan));
+        }
+        for validator_vote in self.validator_votes().cloned() {
+            actions.push(Action::ValidatorVote(validator_vote))
+        }
+        for delegator_vote_plan in self.delegator_vote_plans() {
+            let note_commitment = delegator_vote_plan.staked_note.commit();
+            let auth_path = witness_data
+                .state_commitment_proofs
+                .get(&note_commitment)
+                .context(format!("could not get proof for {note_commitment:?}"))?;
+
+            actions.push(Action::DelegatorVote(delegator_vote_plan.delegator_vote(
+                &fvk,
+                [0; 64].into(),
+                auth_path.clone(),
+            )));
+        }
+        for proposal_deposit_claim in self.proposal_deposit_claims().cloned() {
+            actions.push(Action::ProposalDepositClaim(proposal_deposit_claim))
+        }
+        for vd in self.validator_definitions().cloned() {
+            actions.push(Action::ValidatorDefinition(vd))
+        }
+        for ibc_action in self.ibc_actions().cloned() {
+            actions.push(Action::IbcAction(ibc_action))
+        }
+        for dao_spend in self.dao_spends().cloned() {
+            actions.push(Action::DaoSpend(dao_spend))
+        }
+        for dao_output in self.dao_outputs().cloned() {
+            actions.push(Action::DaoOutput(dao_output))
+        }
+        for dao_deposit in self.dao_deposits().cloned() {
+            actions.push(Action::DaoDeposit(dao_deposit))
+        }
+        for position_open in self.position_openings().cloned() {
+            actions.push(Action::PositionOpen(position_open))
+        }
+        for position_close in self.position_closings().cloned() {
+            actions.push(Action::PositionClose(position_close))
+        }
+        for position_withdraw in self.position_withdrawals() {
+            actions.push(Action::PositionWithdraw(
+                position_withdraw.position_withdraw(),
+            ))
+        }
+        // build the transaction's ICS20 withdrawals
+        for ics20_withdrawal in self.ics20_withdrawals() {
+            actions.push(Action::Ics20Withdrawal(ics20_withdrawal.clone()))
+        }
+
+        let transaction_body = TransactionBody {
+            actions,
+            transaction_parameters: TransactionParameters {
+                expiry_height: self.expiry_height,
+                chain_id: self.chain_id,
+            },
+            fee: self.fee,
+            detection_data,
+            memo,
+        };
+
+        Ok(UnauthTransaction {
+            inner: Transaction {
+                transaction_body,
+                anchor: witness_data.anchor,
+                binding_sig: [0; 64].into(),
+            },
+            synthetic_blinding_factor,
+        })
+    }
+
     /// Build the transaction this plan describes.
     ///
     /// To turn a transaction plan into an unauthorized transaction, we need:
@@ -442,6 +593,7 @@ impl UnauthTransaction {
         rng: &mut R,
         auth_data: &AuthorizationData,
     ) -> Result<Transaction> {
+        console_log!("authorize!");
         // Do some basic input sanity-checking.
         let spend_count = self.inner.spends().count();
         if auth_data.spend_auths.len() != spend_count {
