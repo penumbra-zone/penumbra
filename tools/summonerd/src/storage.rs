@@ -128,12 +128,12 @@ impl Storage {
         let tx = conn.transaction()?;
 
         tx.execute(
-            "INSERT INTO phase2_contributions VALUES (0, 1, NULL, NULL, ?1)",
-            (current_time_unix(),),
-        )?;
-        tx.execute(
             "INSERT INTO phase2_contribution_data VALUES (0, ?1)",
             (pb::CeremonyCrs::try_from(phase_2_root)?.encode_to_vec(),),
+        )?;
+        tx.execute(
+            "INSERT INTO phase2_contributions VALUES (0, 1, NULL, NULL, ?1)",
+            (current_time_unix(),),
         )?;
         tx.execute(
             "INSERT INTO transition_aux VALUES (0, ?1)",
