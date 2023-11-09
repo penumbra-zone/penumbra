@@ -226,6 +226,45 @@ pub trait ViewClient {
         .boxed()
     }
 
+    /// Return unspent notes, grouped by account ID (combining ephemeral addresses for the account) and then by asset id.
+    #[instrument(skip(self, wallet_id))]
+    fn unspent_notes_by_account_and_asset(
+        &mut self,
+        wallet_id: WalletId,
+    ) -> Pin<
+        Box<
+            dyn Future<
+                    Output = Result<BTreeMap<u32, BTreeMap<asset::Id, Vec<SpendableNoteRecord>>>>,
+                > + Send
+                + 'static,
+        >,
+    > {
+        let notes = self.notes(pb::NotesRequest {
+            wallet_id: Some(wallet_id.into()),
+            include_spent: false,
+            ..Default::default()
+        });
+        async move {
+            let notes = notes.await?;
+            tracing::trace!(?notes);
+
+            let mut notes_by_account_and_asset = BTreeMap::new();
+
+            for note_record in notes {
+                notes_by_account_and_asset
+                    .entry(note_record.address_index.account)
+                    .or_insert_with(BTreeMap::new)
+                    .entry(note_record.note.asset_id())
+                    .or_insert_with(Vec::new)
+                    .push(note_record);
+            }
+            tracing::trace!(?notes_by_account_and_asset);
+
+            Ok(notes_by_account_and_asset)
+        }
+        .boxed()
+    }
+
     /// Return unspent notes, grouped by denom and then by address index.
     #[instrument(skip(self, wallet_id))]
     fn unspent_notes_by_asset_and_address(

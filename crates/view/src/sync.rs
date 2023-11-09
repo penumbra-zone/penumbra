@@ -27,7 +27,14 @@ pub struct FilteredBlock {
 impl FilteredBlock {
     pub fn inbound_transaction_ids(&self) -> BTreeSet<[u8; 32]> {
         let mut ids = BTreeSet::new();
-        let sources = self.new_notes.iter().map(|n| n.source);
+        let sources: Vec<NoteSource> = self
+            .new_notes
+            .clone()
+            .iter()
+            .map(|n| n.source)
+            .chain(self.new_swaps.iter().map(|n| n.source))
+            .collect();
+
         for source in sources {
             if let NoteSource::Transaction { id } = source {
                 ids.insert(id);

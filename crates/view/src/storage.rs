@@ -955,7 +955,13 @@ impl Storage {
                     }
                 }
                 let amount = record.note.amount();
-                output.push(record);
+
+                // Only display notes of value > 0
+
+                if amount.value() > 0 {
+                    output.push(record);
+                }
+
                 // If we're tracking amounts, accumulate the value of the note
                 // and check if we should break out of the loop.
                 if amount_cutoff {
@@ -1169,11 +1175,6 @@ impl Storage {
     }
 
     pub async fn give_advice(&self, note: Note) -> anyhow::Result<()> {
-        // Do not insert advice for zero amounts, simply return Ok because this is fine
-        if u128::from(note.amount()) == 0u128 {
-            return Ok(());
-        }
-
         let pool = self.pool.clone();
         let mut lock = pool.get()?;
         let dbtx = lock.transaction()?;
@@ -1254,7 +1255,7 @@ impl Storage {
         spawn_blocking(move || {
             pool.get()?
                 .prepare(&format!(
-                    "SELECT nullifier FROM (SELECT nullifier FROM spendable_notes UNION SELECT nullifier FROM swaps) WHERE nullifier IN ({})",
+                    "SELECT nullifier FROM (SELECT nullifier FROM spendable_notes UNION SELECT nullifier FROM swaps UNION SELECT nullifier FROM tx_by_nullifier) WHERE nullifier IN ({})",
                     nullifiers
                         .iter()
                         .map(|x| format!("x'{}'", hex::encode(x.0.to_bytes())))
