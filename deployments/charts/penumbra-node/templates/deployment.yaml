@@ -170,6 +170,7 @@ spec:
             - 0.0.0.0:9000
             - --home
             - /penumbra-config/testnet_data/node0/pd
+            - --enable-expensive-rpc
           ports:
             - name: pd-grpc
               containerPort: 8080
