@@ -26,12 +26,10 @@ mod auth;
 mod build;
 mod clue;
 mod memo;
-mod build_actions;
 
 pub use action::ActionPlan;
 pub use clue::CluePlan;
 pub use memo::MemoPlan;
-pub use build_actions::BuildPlan;
 
 /// A declaration of a planned [`Transaction`](crate::Transaction),
 /// for use in transaction authorization and creation.

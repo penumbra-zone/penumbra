@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Context, Result};
 use penumbra_asset::Balance;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_dex::{
@@ -19,7 +19,11 @@ use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType, TypeUrl};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use serde::{Deserialize, Serialize};
-use crate::plan::build_actions::BuildPlan;
+use crate::{WitnessData, Error};
+use crate::Action;
+use crate::Action::{Spend, Output};
+use wasm_bindgen_test::console_log;
+use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
 ///
@@ -30,8 +34,6 @@ use crate::plan::build_actions::BuildPlan;
 #[serde(try_from = "pb_t::ActionPlan", into = "pb_t::ActionPlan")]
 #[allow(clippy::large_enum_variant)]
 pub enum ActionPlan {
-    /// Describes a proposed build for a specific [`Action`]. 
-    Build(BuildPlan),
     /// Describes a proposed spend.
     Spend(SpendPlan),
     /// Describes a proposed output.
@@ -77,6 +79,47 @@ pub enum ActionPlan {
 }
 
 impl ActionPlan {
+    pub fn build_unauth(
+        &self,
+        fvk: &FullViewingKey,
+        witness_data: &WitnessData,
+        memo_key: Option<PayloadKey>,
+    ) -> Result<Action> {
+        use ActionPlan::*;
+
+        match self {
+            Spend(spend_plan) => {
+                let note_commitment = spend_plan.note.commit();
+                let auth_path = witness_data
+                    .state_commitment_proofs
+                    .get(&note_commitment)
+                    .context(format!("could not get proof for {note_commitment:?}"))?;
+
+                let spend = Action::Spend(spend_plan.spend(
+                    &fvk,
+                    [0; 64].into(),
+                    auth_path.clone(),
+                    witness_data.anchor,
+                ));
+
+                Ok(spend)
+            }
+            Output(output_plan) => {
+                let dummy_payload_key: PayloadKey = [0u8; 32].into();
+                let output = Action::Output(output_plan.output(
+                    &fvk.outgoing(),
+                    memo_key.as_ref().unwrap_or(&dummy_payload_key),
+                ));
+
+                Ok(output)
+            }
+            _ => {
+                // Handle other variants
+                todo!()
+            }
+        }
+    }
+
     pub fn balance(&self) -> Balance {
         use ActionPlan::*;
 
@@ -102,7 +145,6 @@ impl ActionPlan {
             Withdrawal(withdrawal) => withdrawal.balance(),
             // None of these contribute to transaction balance:
             IbcAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
-            Build(_) => Balance::default(),
         }
     }
 }
@@ -288,7 +330,6 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             ActionPlan::Withdrawal(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::Withdrawal(inner.into())),
             },
-            ActionPlan::Build(inner) => todo!(),
         }
     }
 }
