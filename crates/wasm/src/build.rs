@@ -44,6 +44,8 @@ impl WasmBuilder {
         memo_key: JsValue, // WasmOption<JsValue
     ) -> WasmResult<JsValue> {
         console_log!("Entered action_builder!");
+
+        utils::set_panic_hook();
         
         // Serialize witness
         let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
@@ -52,11 +54,6 @@ impl WasmBuilder {
         // Retrieve the viewing key
         let full_viewing_key: FullViewingKey = FullViewingKey::from_str(full_viewing_key)
             .expect("The provided string is not a valid FullViewingKey");
-
-        // let memo_key_proto: pb::MemoData = serde_wasm_bindgen::from_value(memo_key)?;
-        // let memo_key_cinv: MemoData = memo_key_proto.try_into()?;
-
-        // let memo_key_res: PayloadKey = memo_key_cinv.encrypted_memo.try_into();
 
         let dummy_payload_key: PayloadKey = [0u8; 32].into();
 
