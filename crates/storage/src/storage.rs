@@ -41,7 +41,7 @@ struct Inner {
     multistore_config: MultistoreConfig,
     #[allow(dead_code)]
     /// A handle to the dispatcher task.
-    /// It is used by `Storage::release` to wait for the task to terminate.
+    /// This is used by `Storage::release` to wait for the task to terminate.
     jh_dispatcher: Option<tokio::task::JoinHandle<()>>,
     db: Arc<DB>,
 }
@@ -186,13 +186,13 @@ impl Storage {
         self.0.tx_state.subscribe()
     }
 
-    /// Returns a new [`State`] on top of the latest version of the tree.
+    /// Returns a new [`Snapshot`] on top of the latest version of the tree.
     pub fn latest_snapshot(&self) -> Snapshot {
         self.0.snapshots.read().latest()
     }
 
-    /// Fetches the [`State`] snapshot corresponding to the supplied `jmt::Version`
-    /// from [`SnapshotCache`], or returns `None` if no match was found (cache-miss).
+    /// Fetches the [`Snapshot`] corresponding to the supplied `jmt::Version` from
+    /// the [`SnapshotCache`]. Returns `None` if no match was found.
     pub fn snapshot(&self, version: jmt::Version) -> Option<Snapshot> {
         self.0.snapshots.read().get(version)
     }
@@ -378,13 +378,12 @@ impl Storage {
         let _ = self.0.tx_dispatcher.send(latest_snapshot);
 
         Ok(global_root_hash)
-
-        // The end
     }
 
     #[cfg(feature = "migration")]
     /// Commits the provided [`StateDelta`] to persistent storage without increasing the version
     /// of the chain state.
+    /// TODO(erwan): with the addition of substores, we need to revisit this API.
     pub async fn commit_in_place(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
         let (snapshot, changes) = delta.flatten();
         let old_version = self.latest_version();

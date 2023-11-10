@@ -16,6 +16,8 @@ use crate::{snapshot::RocksDbSnapshot, Cache};
 
 use jmt::storage::TreeWriter;
 
+/// Specifies the configuration of a substore, which is a prefixed subset of
+/// the main store with its own merkle tree, nonverifiable data, preimage index, etc.
 #[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct SubstoreConfig {
     /// The prefix of the substore. If empty, it is the root-level store config.
@@ -59,7 +61,7 @@ impl SubstoreConfig {
     }
 
     /// Returns an iterator over all column families in this substore.
-    /// This is verbose, but very lightweight.
+    /// Note(erwan): This is verbose, but very lightweight.
     pub fn columns(&self) -> impl Iterator<Item = &String> {
         std::iter::once(&self.cf_jmt)
             .chain(std::iter::once(&self.cf_jmt_keys))
@@ -108,8 +110,6 @@ impl SubstoreConfig {
         ))
     }
 
-    /* TODO(erwan): this should be reworked before we ship this PR */
-
     pub fn latest_version_from_db(
         &self,
         db_handle: &Arc<rocksdb::DB>,
@@ -129,8 +129,9 @@ impl SubstoreConfig {
             .map(|(node_key, _)| node_key.version()))
     }
 
-    // TODO(erwan): it's strange that this exists over a `SubstoreConfig`, or that we have
-    // two different ways of getting the rightmost leaf.
+    // TODO(erwan): having two different implementations of this is a bit weird and should
+    // be refactored, or remodeled. The DB version is only used during initialization, before
+    // a `Snapshot` is available.
     fn get_rightmost_leaf_from_db(
         &self,
         db_handle: &Arc<rocksdb::DB>,
@@ -194,7 +195,6 @@ pub struct SubstoreSnapshot {
 }
 
 impl SubstoreSnapshot {
-    // TODO(erwan): this probably should be a `Result<Option<RootHash>>`?
     pub fn root_hash(&self) -> Result<crate::RootHash> {
         let version = self.version();
         let tree = jmt::Sha256Jmt::new(self);

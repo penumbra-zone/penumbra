@@ -28,7 +28,9 @@ pub struct Snapshot(pub(crate) Arc<Inner>);
 pub(crate) struct Inner {
     /// Tracks the latest version of each substore, and routes keys to the correct substore.
     pub(crate) multistore_cache: MultistoreCache,
+    /// A handle to the underlying RocksDB snapshot.
     pub(crate) snapshot: Arc<RocksDbSnapshot>,
+    /// The version of the main JMT tree.
     pub(crate) version: jmt::Version,
     // Used to retrieve column family handles.
     pub(crate) db: Arc<rocksdb::DB>,
@@ -149,7 +151,7 @@ impl StateRead for Snapshot {
     type NonconsensusRangeRawStream =
         tokio_stream::wrappers::ReceiverStream<anyhow::Result<(Vec<u8>, Vec<u8>)>>;
 
-    /// Fetch a key from the JMT column family.
+    /// Fetch a key from the JMT.
     fn get_raw(&self, key: &str) -> Self::GetRawFut {
         let span = Span::current();
         let (key, config) = self.0.multistore_cache.config.route_key_str(key);
@@ -185,6 +187,7 @@ impl StateRead for Snapshot {
         )
     }
 
+    /// Fetch a key from nonverifiable storage.
     fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
         let span = Span::current();
         let (key, config) = self.0.multistore_cache.config.route_key_bytes(key);
@@ -228,6 +231,7 @@ impl StateRead for Snapshot {
         )
     }
 
+    /// Returns a stream of all key-value pairs with the given prefix.
     fn prefix_raw(&self, prefix: &str) -> Self::PrefixRawStream {
         let span = Span::current();
 
@@ -343,6 +347,7 @@ impl StateRead for Snapshot {
         tokio_stream::wrappers::ReceiverStream::new(rx_prefix_keys)
     }
 
+    /// Returns a stream of all key-value pairs with the given prefix, from nonverifiable storage.
     fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> Self::NonconsensusPrefixRawStream {
         let span = Span::current();
         let rocksdb_snapshot = self.0.snapshot.clone();
@@ -388,6 +393,9 @@ impl StateRead for Snapshot {
         tokio_stream::wrappers::ReceiverStream::new(rx_prefix_query)
     }
 
+    /// Returns a stream of all key-value pairs with the given prefix, and range
+    /// from nonverifiable storage.
+    /// TODO(erwan): For now this method only supports range queries over the main store.
     fn nonverifiable_range_raw(
         &self,
         prefix: Option<&[u8]>,
