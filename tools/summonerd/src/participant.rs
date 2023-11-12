@@ -75,6 +75,12 @@ impl Participant {
         parent: &P::CRS,
     ) -> Result<Option<P::RawContribution>> {
         tracing::info!("sending ContributeNow message to participant");
+        // This can happen as a result of them closing their connection or it dropping
+        // by this point.
+        if self.tx.is_closed() {
+            tracing::info!("participant receiving channel was closed");
+            return Ok(None);
+        }
         self.tx
             .send(Ok(ParticipateResponse {
                 msg: Some(ResponseMsg::ContributeNow(ContributeNow {
