@@ -28,7 +28,7 @@ impl App {
         println!("building transaction...");
         let start = std::time::Instant::now();
         let tx = penumbra_wallet::build_transaction(
-            &self.fvk,
+            &self.config.full_viewing_key,
             self.view.as_mut().expect("view service initialized"),
             &mut self.custody,
             OsRng,
@@ -84,16 +84,16 @@ impl App {
 
     // TODO: why do we need this here but not in the view crate?
     pub async fn pd_channel(&self) -> anyhow::Result<Channel> {
-        match self.pd_url.scheme() {
-            "http" => Ok(Channel::from_shared(self.pd_url.to_string())?
+        match self.config.grpc_url.scheme() {
+            "http" => Ok(Channel::from_shared(self.config.grpc_url.to_string())?
                 .connect()
                 .await?),
-            "https" => Ok(Channel::from_shared(self.pd_url.to_string())?
+            "https" => Ok(Channel::from_shared(self.config.grpc_url.to_string())?
                 .tls_config(ClientTlsConfig::new())?
                 .connect()
                 .await?),
             other => Err(anyhow::anyhow!("unknown url scheme {other}"))
-                .with_context(|| format!("could not connect to {}", self.pd_url)),
+                .with_context(|| format!("could not connect to {}", self.config.grpc_url)),
         }
     }
 

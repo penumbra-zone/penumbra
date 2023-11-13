@@ -60,8 +60,8 @@ opt-level = "s"
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
 cargo-dist-version = "0.0.5"
 # The preferred Rust toolchain to use in CI (rustup toolchain syntax).
-# We use the same value as the MSRV in pd/Cargo.toml.
-rust-toolchain-version = "1.65"
+# We use the same value as the MSRV in crates/bin/pd/Cargo.toml.
+rust-toolchain-version = "1.73"
 # CI backends to support (see 'cargo dist generate-ci')
 ci = ["github"]
 # Target platforms to build apps for (Rust target-triple syntax)

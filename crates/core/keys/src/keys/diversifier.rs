@@ -79,7 +79,7 @@ impl TryFrom<pb::Diversifier> for Diversifier {
 }
 
 #[derive(Clone, Derivative)]
-#[derivative(Debug)]
+#[derivative(Debug, PartialEq, Eq)]
 pub struct DiversifierKey(
     #[derivative(Debug(bound = "", format_with = "crate::fmt_hex"))] pub(super) [u8; 16],
 );

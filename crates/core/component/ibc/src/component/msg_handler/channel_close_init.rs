@@ -10,19 +10,21 @@ use crate::component::{
     app_handler::{AppHandlerCheck, AppHandlerExecute},
     channel::{StateReadExt as _, StateWriteExt as _},
     connection::StateReadExt as _,
-    transfer::Ics20Transfer,
     MsgHandler,
 };
 
 #[async_trait]
 impl MsgHandler for MsgChannelCloseInit {
-    async fn check_stateless(&self) -> Result<()> {
+    async fn check_stateless<H: AppHandlerCheck>(&self) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+        &self,
+        mut state: S,
+    ) -> Result<()> {
         tracing::debug!(msg = ?self);
         // TODO: capability authentication?
         //
@@ -46,7 +48,7 @@ impl MsgHandler for MsgChannelCloseInit {
         }
         let transfer = PortId::transfer();
         if self.port_id_on_a == transfer {
-            Ics20Transfer::chan_close_init_check(&mut state, self).await?;
+            H::chan_close_init_check(&mut state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }
@@ -71,7 +73,7 @@ impl MsgHandler for MsgChannelCloseInit {
 
         let transfer = PortId::transfer();
         if self.port_id_on_a == transfer {
-            Ics20Transfer::chan_close_init_execute(state, self).await;
+            H::chan_close_init_execute(state, self).await;
         } else {
             anyhow::bail!("invalid port id");
         }

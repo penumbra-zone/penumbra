@@ -33,7 +33,7 @@ pub enum Action {
     Undelegate(penumbra_stake::Undelegate),
     UndelegateClaim(penumbra_stake::UndelegateClaim),
 
-    Ics20Withdrawal(penumbra_ibc::Ics20Withdrawal),
+    Ics20Withdrawal(penumbra_shielded_pool::Ics20Withdrawal),
 
     DaoSpend(penumbra_dao::DaoSpend),
     DaoOutput(penumbra_dao::DaoOutput),

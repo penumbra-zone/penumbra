@@ -44,6 +44,17 @@ cometbft:
     p2p:
       max_num_inbound_peers: 300
       max_num_outbound_peers: 200
+    # Set the indexer strategy. Can be "kv" or "psql".
+    indexer: kv
+    # URL for connecting to the postgresql database. Only used if `indexer=psql`.
+    postgres_connection_url: "postgresql://penumbra:penumbra@localhost:5432/penumbra?sslmode=disable"
+
+# settings for optional postgres sidecar, used for indexing cometbft events
+postgres:
+  image:
+    repository: docker.io/library/postgres
+    pullPolicy: IfNotPresent
+    tag: "latest"
 
 # Configure nodes. By default, only one is created.
 # Extend this list to add more. Valid node attributes are:
@@ -73,6 +84,10 @@ ingressRoute:
     tm: tm.chart-example.local
   # Secret object containing TLS info
   secretName: ""
+  # Traefik middleware CRDs, to be applied to pd's gRPC service.
+  # These config objects must already exist in the API, i.e. create them out of band.
+  middlewares:
+    - name: cors-allow-all
 
 imagePullSecrets: []
 nameOverride: ""

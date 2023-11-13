@@ -51,6 +51,11 @@ containerArgs:
   # store state in emptyDir for now
   - /penumbra-config/testnet_data/node0/pd
 
+# Environment variables for pd containers.
+containerEnv:
+  - name: RUST_LOG
+    value: info,pd=debug,penumbra=debug
+
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""

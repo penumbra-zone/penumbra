@@ -21,6 +21,7 @@ use pd::testnet::{
     join::testnet_join,
 };
 use pd::upgrade::{self, Upgrade};
+use penumbra_proto::core::component::dex::v1alpha1::simulation_service_server::SimulationServiceServer;
 use penumbra_proto::util::tendermint_proxy::v1alpha1::tendermint_proxy_service_server::TendermintProxyServiceServer;
 use penumbra_storage::{StateDelta, Storage};
 use penumbra_tendermint_proxy::TendermintProxy;
@@ -44,7 +45,7 @@ use tendermint::v0_37::abci::{ConsensusRequest, MempoolRequest};
 )]
 struct Opt {
     /// Enable Tokio Console support.
-    #[clap(long, default_value = "false")]
+    #[clap(long)]
     tokio_console: bool,
     /// Command to run.
     #[clap(subcommand)]
@@ -114,6 +115,13 @@ enum RootCommand {
             alias = "tendermint-addr",
         )]
         cometbft_addr: Url,
+
+        /// Enable expensive RPCs, such as the trade simulation service.
+        /// The trade simulation service allows clients to simulate trades without submitting them.
+        /// This is useful for approximating the cost of a trade before submitting it.
+        /// But, it is a potential DoS vector, so it is disabled by default.
+        #[clap(short, long, display_order = 500)]
+        enable_expensive_rpc: bool,
     },
     /// Generate, join, or reset a testnet.
     Testnet {
@@ -263,6 +271,7 @@ async fn main() -> anyhow::Result<()> {
             grpc_auto_https,
             metrics_bind,
             cometbft_addr,
+            enable_expensive_rpc,
         } => {
             tracing::info!(
                 ?abci_bind,
@@ -270,6 +279,7 @@ async fn main() -> anyhow::Result<()> {
                 ?grpc_auto_https,
                 ?metrics_bind,
                 %cometbft_addr,
+                ?enable_expensive_rpc,
                 "starting pd"
             );
 
@@ -364,7 +374,7 @@ async fn main() -> anyhow::Result<()> {
             use penumbra_shielded_pool::component::rpc::Server as ShieldedPoolServer;
             use penumbra_stake::component::rpc::Server as StakeServer;
 
-            let grpc_server = Server::builder()
+            let mut grpc_server = Server::builder()
                 .trace_fn(|req| match remote_addr(req) {
                     Some(remote_addr) => {
                         tracing::error_span!("grpc", ?remote_addr)
@@ -413,6 +423,12 @@ async fn main() -> anyhow::Result<()> {
                     .register_encoded_file_descriptor_set(penumbra_proto::FILE_DESCRIPTOR_SET)
                     .build()
                     .with_context(|| "could not configure grpc reflection service")?));
+
+            if enable_expensive_rpc {
+                grpc_server = grpc_server.add_service(we(SimulationServiceServer::new(
+                    DexServer::new(storage.clone()),
+                )));
+            }
 
             let grpc_server = if let Some(domain) = grpc_auto_https {
                 use pd::auto_https::Wrapper;

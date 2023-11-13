@@ -4,7 +4,7 @@
     "key": "default",
     "chain-id": "$PENUMBRA_CHAIN_ID",
     "rpc-addr": "$PENUMBRA_RPC_URL",
-    "account-prefix": "penumbrav2t",
+    "account-prefix": "penumbra",
     "keyring-backend": "test",
     "gas-adjustment": 1.0,
     "gas-prices": "0.00upenumbra",

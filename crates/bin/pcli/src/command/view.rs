@@ -57,7 +57,7 @@ impl ViewCmd {
 
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         // TODO: refactor view methods to take a single App
-        let full_viewing_key = app.fvk.clone();
+        let full_viewing_key = app.config.full_viewing_key.clone();
 
         match self {
             ViewCmd::WalletId(wallet_id_cmd) => {

@@ -14,19 +14,21 @@ use crate::component::{
     channel::{StateReadExt as _, StateWriteExt as _},
     connection::StateReadExt as _,
     proof_verification::ChannelProofVerifier,
-    transfer::Ics20Transfer,
     MsgHandler,
 };
 
 #[async_trait]
 impl MsgHandler for MsgChannelCloseConfirm {
-    async fn check_stateless(&self) -> Result<()> {
+    async fn check_stateless<H: AppHandlerCheck>(&self) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+        &self,
+        mut state: S,
+    ) -> Result<()> {
         tracing::debug!(msg = ?self);
         // TODO: capability authentication?
         //
@@ -83,7 +85,7 @@ impl MsgHandler for MsgChannelCloseConfirm {
 
         let transfer = PortId::transfer();
         if self.port_id_on_b == transfer {
-            Ics20Transfer::chan_close_confirm_check(&mut state, self).await?;
+            H::chan_close_confirm_check(&mut state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }
@@ -107,7 +109,7 @@ impl MsgHandler for MsgChannelCloseConfirm {
 
         let transfer = PortId::transfer();
         if self.port_id_on_b == transfer {
-            Ics20Transfer::chan_close_confirm_execute(state, self).await;
+            H::chan_close_confirm_execute(state, self).await;
         } else {
             anyhow::bail!("invalid port id");
         }

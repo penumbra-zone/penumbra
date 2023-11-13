@@ -4,29 +4,28 @@ use std::fs;
 
 use anyhow::{Context, Result};
 use clap::Parser;
+use config::PcliConfig;
 use futures::StreamExt;
-use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     custody::v1alpha1::custody_protocol_service_client::CustodyProtocolServiceClient,
     view::v1alpha1::view_protocol_service_client::ViewProtocolServiceClient,
 };
 use penumbra_view::ViewClient;
-use url::Url;
 
 mod box_grpc_svc;
 mod command;
+mod config;
 mod dex_utils;
 mod network;
 mod opt;
 mod warning;
 
 use opt::Opt;
-use penumbra_wallet::KeyStore;
 
 use box_grpc_svc::BoxGrpcService;
 use command::*;
 
-const CUSTODY_FILE_NAME: &str = "custody.json";
+const CONFIG_FILE_NAME: &str = "config.toml";
 const VIEW_FILE_NAME: &str = "pcli-view.sqlite";
 
 #[derive(Debug)]
@@ -36,9 +35,7 @@ pub struct App {
     /// correctly, this can be unwrapped safely.
     pub view: Option<ViewProtocolServiceClient<BoxGrpcService>>,
     pub custody: CustodyProtocolServiceClient<BoxGrpcService>,
-    pub fvk: FullViewingKey,
-    pub wallet: KeyStore,
-    pub pd_url: Url,
+    pub config: PcliConfig,
 }
 
 impl App {
@@ -49,7 +46,7 @@ impl App {
     async fn sync(&mut self) -> Result<()> {
         let mut status_stream = ViewClient::status_stream(
             self.view.as_mut().expect("view service initialized"),
-            self.fvk.wallet_id(),
+            self.config.full_viewing_key.wallet_id(),
         )
         .await?;
 
@@ -103,11 +100,11 @@ async fn main() -> Result<()> {
     fs::create_dir_all(&opt.home)
         .with_context(|| format!("Failed to create home directory {}", opt.home))?;
 
-    // The keys command takes the home dir directly, since it may need to
+    // The init command takes the home dir directly, since it may need to
     // create the client state, so handle it specially here so that we can have
     // common code for the other subcommands.
-    if let Command::Keys(keys_cmd) = &opt.cmd {
-        keys_cmd.exec(opt.home.as_path())?;
+    if let Command::Init(init_cmd) = &opt.cmd {
+        init_cmd.exec(opt.home.as_path())?;
         return Ok(());
     }
 
@@ -135,7 +132,7 @@ async fn main() -> Result<()> {
     // concrete type
 
     match &cmd {
-        Command::Keys(_) => unreachable!("wallet command already executed"),
+        Command::Init(_) => unreachable!("init command already executed"),
         Command::Debug(_) => unreachable!("debug command already executed"),
         Command::Transaction(tx_cmd) => tx_cmd.exec(&mut app).await?,
         Command::View(view_cmd) => view_cmd.exec(&mut app).await?,

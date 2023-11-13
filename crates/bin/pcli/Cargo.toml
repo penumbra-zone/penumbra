@@ -1,6 +1,6 @@
 [package]
 name = "pcli"
-version = "0.62.0"
+version = "0.63.1"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"
 description = "The command-line interface for the Penumbra Zone"
@@ -86,7 +86,7 @@ indicatif = "0.16"
 http-body = "0.4.5"
 clap = { version = "3", features = ["derive", "env"] }
 camino = "1"
-url = "2"
+url = { version = "2", features = ["serde"] }
 colored_json = "2.1"
 toml = { version = "0.7", features = ["preserve_order"] }
 walkdir = "2"

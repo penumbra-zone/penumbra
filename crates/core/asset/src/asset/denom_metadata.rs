@@ -380,7 +380,7 @@ impl Eq for DenomMetadata {}
 
 impl PartialOrd for DenomMetadata {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.inner.base_denom.partial_cmp(&other.inner.base_denom)
+        Some(self.cmp(other))
     }
 }
 

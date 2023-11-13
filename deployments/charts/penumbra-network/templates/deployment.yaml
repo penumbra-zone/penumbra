@@ -12,6 +12,7 @@ metadata:
   labels:
     app: {{ $val_name }}
     app.kubernetes.io/component: genesis-validator
+    app.kubernetes.io/part-of: {{ include "penumbra-network.part_of" $ }}
     {{- include "penumbra-network.labels" $ | nindent 4 }}
 spec:
   replicas: 1
@@ -81,6 +82,8 @@ spec:
             - "0.0.0.0:9000"
             - --home
             - "/penumbra-config/{{ $val_name }}/node{{ $i }}/pd"
+          env:
+            {{- toYaml $.Values.containerEnv | nindent 12 }}
           ports:
             - name: pd-grpc
               containerPort: 8080

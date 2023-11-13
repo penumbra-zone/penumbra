@@ -30,7 +30,7 @@ static ACCOUNT_ID_DOMAIN_SEP: Lazy<Fq> =
     Lazy::new(|| Fq::from_le_bytes_mod_order(b"Penumbra_HashFVK"));
 
 /// The root viewing capability for all data related to a given spend authority.
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::FullViewingKey", into = "pb::FullViewingKey")]
 pub struct FullViewingKey {
     ak: VerificationKey<SpendAuth>,

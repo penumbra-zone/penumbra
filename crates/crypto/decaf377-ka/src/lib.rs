@@ -15,7 +15,7 @@ use zeroize::Zeroize;
 pub struct Public(pub [u8; 32]);
 
 /// A secret key used to perform key agreement using the counterparty's public key.
-#[derive(Clone, Zeroize)]
+#[derive(Clone, Zeroize, PartialEq, Eq)]
 #[zeroize(drop)]
 pub struct Secret(decaf377::Fr);
 

@@ -77,7 +77,7 @@ pub fn check_proving_key(file: &str) -> anyhow::Result<()> {
         #[cfg(not(feature = "download-proving-keys"))]
         {
             anyhow::bail!(
-                "proving key is too small; please enable the download-proving-keys feature"
+                "proving key is too small; please enable the download-proving-keys feature on the `penumbra-proof-params` crate, adding a direct dependency to enable the feature if necessary."
             );
         }
     }

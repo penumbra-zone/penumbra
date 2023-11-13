@@ -1,5 +1,11 @@
 name: Protobuf
-on: pull_request
+on:
+  # Exclude feature branches, only run if the PR is targeting main.
+  pull_request_target:
+    types:
+      - opened
+    branches:
+      - "main"
 jobs:
   lint:
     name: Lint protobuf
@@ -10,7 +16,7 @@ jobs:
         with:
           buf_api_token: ${{ secrets.BUF_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          input: 'proto'
+          # input: 'proto'
 
       - uses: bufbuild/buf-lint-action@v1
         with:
@@ -55,11 +61,11 @@ jobs:
           toolchain: stable
           override: false
 
-      - uses: bufbuild/buf-setup-action@v1.27.1
+      - uses: bufbuild/buf-setup-action@v1
         with:
           buf_api_token: ${{ secrets.BUF_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          input: 'proto'
+          # input: 'proto'
 
       - name: Install protobuf compiler
         shell: bash

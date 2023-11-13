@@ -1,25 +1,41 @@
 # Generating a Wallet
 
-On first installation of `pcli`, you will need to generate a fresh wallet to use with Penumbra. You
-should see something like this:
+On first installation of `pcli`, you will need to generate a fresh wallet to use with Penumbra.
 
+The `pcli init` command will generate a configuration file. To generate a new wallet, try:
 ```bash
-$ cargo run --quiet --release --bin pcli keys generate
-
-
-YOUR PRIVATE SEED PHRASE: [...]
+$ cargo run --quiet --release --bin pcli init soft-kms generate
+YOUR PRIVATE SEED PHRASE:
+[SEED PHRASE]
+Save this in a safe place!
 DO NOT SHARE WITH ANYONE!
-Saving backup wallet to /home/$USER/.local/share/penumbra-testnet-archive/.../custody.json
+Writing generated configs to [PATH TO PCLI DATA]
+```
+This uses the `soft-kms` backend, which saves the generated spend key in the config file.
+
+Alternatively, to import an existing wallet, try
+```bash
+$ cargo run --quiet --release --bin pcli init soft-kms import-phrase
+Enter seed phrase:
+Writing generated configs to [PATH TO PCLI DATA]
 ```
 
-Penumbra's design automatically creates many (`u64::MAX`) publicly unlinkable addresses which all
-correspond to your own wallet. When you first created your wallet above, `pcli` initialized all
-of your wallet addresses, which you can view like this:
+Penumbra's design automatically creates `2^32` (four billion) numbered accounts
+controlled by your wallet.
 
+To generate the address for a numbered account, use `pcli view address`:
 ```bash
 $ cargo run --quiet --release --bin pcli view address 0
 penumbrav2t1...
 ```
+You can also run `pcli view address` on an address to see which account it corresponds to:
+```bash
+$ cargo run --quiet --release --bin pcli view address penumbrav2t1...
+Address is viewable with this full viewing key. Account index is 0.
+```
+
+Addresses are opaque and do not reveal account information. Only you, or someone
+who has your viewing key, can decrypt the account information from the address.
 
 ### Getting testnet tokens on the [Discord] in the `#testnet-faucet` channel
 

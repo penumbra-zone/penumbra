@@ -70,11 +70,11 @@ impl Participant {
         })
     }
 
-    #[tracing::instrument(skip(self, parent))]
     pub async fn contribute<P: Phase>(
         &mut self,
         parent: &P::CRS,
     ) -> Result<Option<P::RawContribution>> {
+        tracing::info!("sending ContributeNow message to participant");
         self.tx
             .send(Ok(ParticipateResponse {
                 msg: Some(ResponseMsg::ContributeNow(ContributeNow {
@@ -89,6 +89,7 @@ impl Participant {
             msg: Some(RequestMsg::Contribution(contribution)),
         }) = msg
         {
+            tracing::info!("got Contribution message from participant, deserializing...");
             let deserialized =
                 tokio::task::spawn_blocking(move || P::deserialize_contribution(contribution))
                     .await??;

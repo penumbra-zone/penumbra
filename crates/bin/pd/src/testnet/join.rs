@@ -215,10 +215,8 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
             );
             seeds.push(peer_tm_address)
         // Otherwise, we check if we've found enough.
-        } else {
-            if peers.len() <= threshold {
-                peers.push(peer_tm_address)
-            }
+        } else if peers.len() <= threshold {
+            peers.push(peer_tm_address)
         }
     }
     if peers.len() < threshold && seeds.is_empty() {

@@ -62,3 +62,26 @@ releases:
       - persistence:
           enabled: true
           size: 10G
+
+  - name: penumbra-preview-cuiloa-node
+    chart: ../charts/penumbra-node
+    needs:
+      - penumbra-preview
+      # It's not strictly necessary to wait for node deploys, but doing so allows us to exercise
+      # the public HTTPS RPC endpoint for joining, which is nice.
+      - penumbra-preview-nodes
+    values:
+      - penumbra_bootstrap_node_cometbft_rpc_url: "https://rpc.testnet-preview.penumbra.zone"
+      - ingressRoute:
+          enabled: false
+      - image:
+          tag: main
+      - persistence:
+          enabled: true
+          size: 50G
+      - cometbft:
+          config:
+            indexer: psql
+      - part_of: penumbra-preview
+      - nodes:
+        - moniker: cuiloa

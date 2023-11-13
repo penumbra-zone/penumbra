@@ -14,7 +14,9 @@ use ibc_proto::ibc::core::client::v1::{
 
 use ibc_types::core::client::ClientId;
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
+use ibc_types::path::ClientStatePath;
 use ibc_types::TypeUrl;
+use penumbra_chain::component::StateReadExt;
 
 use std::str::FromStr;
 use tonic::{Response, Status};
@@ -34,13 +36,21 @@ impl ClientQuery for IbcQuery {
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
         let height = Height {
-            revision_number: 0,
+            revision_number: snapshot
+                .get_revision_number()
+                .await
+                .map_err(|e| tonic::Status::aborted(e.to_string()))?,
             revision_height: snapshot.version(),
         };
 
         // Query for client_state and associated proof.
         let (cs_opt, proof) = snapshot
-            .get_with_proof(client_id.to_string().as_bytes().to_vec())
+            .get_with_proof(
+                ClientStatePath(client_id.clone())
+                    .to_string()
+                    .as_bytes()
+                    .to_vec(),
+            )
             .await
             .map_err(|e| tonic::Status::aborted(format!("couldn't get client: {e}")))?;
 

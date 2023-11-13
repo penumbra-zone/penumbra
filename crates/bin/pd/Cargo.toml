@@ -1,6 +1,6 @@
 [package]
 name = "pd"
-version = "0.62.0"
+version = "0.63.1"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"
 description = "The node software for the Penumbra Zone"
@@ -10,7 +10,7 @@ license = "MIT OR Apache-2.0"
 publish = false
 # Pin a MSRV. Anything more recent than this value is OK.
 # If a lower version is used for build, the build will fail.
-rust-version = "1.65"
+rust-version = "1.73"
 
 [features]
 std = ["ibc-types/std"]
@@ -39,7 +39,7 @@ penumbra-compact-block = { path = "../../core/component/compact-block" }
 penumbra-chain = { path = "../../core/component/chain" }
 penumbra-transaction = { path = "../../core/transaction" }
 penumbra-app = { path = "../../core/app" }
-penumbra-wallet = { path = "../../wallet" }
+penumbra-custody = { path = "../../custody" }
 penumbra-tower-trace = { path = "../../util/tower-trace" }
 penumbra-tendermint-proxy = { path = "../../util/tendermint-proxy" }
 

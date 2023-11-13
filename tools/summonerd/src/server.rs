@@ -47,6 +47,7 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
         &self,
         request: Request<Streaming<pb::ParticipateRequest>>,
     ) -> Result<Response<Self::ParticipateStream>, Status> {
+        tracing::info!("new potential connection, parsing first message");
         let mut streaming = request.into_inner();
         let msg = streaming.message().await?;
         let address = if let Some(pb::ParticipateRequest {
@@ -86,15 +87,13 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
             }
             ContributionAllowed::Banned => {
                 tracing::debug!(?address, "is banned");
-                return Err(Status::permission_denied(format!(
-                    "nyo contwibution *cries* fow you"
-                )));
+                return Err(Status::permission_denied(
+                    "nyo contwibution *cries* fow you".to_string(),
+                ));
             }
             ContributionAllowed::AlreadyContributed => {
                 tracing::debug!(?address, "already contributed");
-                return Err(Status::permission_denied(format!(
-                    "Thanks again for your contribution! Participating once is enough to guarantee security, and we'd like to allow other people to participate as well."
-                )));
+                return Err(Status::permission_denied("Thanks again for your contribution! Participating once is enough to guarantee security, and we'd like to allow other people to participate as well.".to_string()));
             }
         };
         tracing::info!(?amount, ?address, "bid");

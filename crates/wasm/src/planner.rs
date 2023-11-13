@@ -24,11 +24,11 @@ use penumbra_governance::{
     proposal_state::Outcome as ProposalOutcome, DelegatorVotePlan, Proposal, ProposalDepositClaim,
     ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
 };
-use penumbra_ibc::{IbcAction, Ics20Withdrawal};
+use penumbra_ibc::IbcAction;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
-use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
+use penumbra_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, SpendPlan};
 use penumbra_stake::{rate::RateData, validator};
 use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
@@ -526,9 +526,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             );
         }
 
-        // If there are outputs, we check that a memo has been added. If not, we add a default memo.
+        // If there are outputs, we check that a memo has been added. If not, we add a blank memo.
         if self.plan.num_outputs() > 0 && self.plan.memo_plan.is_none() {
-            self.memo(MemoPlaintext::default())
+            self.memo(MemoPlaintext::blank_memo(self_address.clone()))
                 .expect("empty string is a valid memo");
         } else if self.plan.num_outputs() == 0 && self.plan.memo_plan.is_some() {
             anyhow::bail!("if no outputs, no memo should be added");

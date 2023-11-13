@@ -1,7 +1,20 @@
-//use std::io::{stdout, Write};
+use std::{
+    collections::BTreeMap,
+    io::{stdout, Write},
+};
 
-use anyhow::Result;
-//use serde::Serialize;
+use anyhow::{Context, Result};
+use futures::TryStreamExt;
+use penumbra_governance::Vote;
+use penumbra_proto::core::component::governance::v1alpha1::{
+    query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
+    AllTalliedDelegatorVotesForProposalRequest, ProposalDataRequest, ProposalListRequest,
+    ProposalListResponse, ValidatorVotesRequest, ValidatorVotesResponse,
+    VotingPowerAtProposalStartRequest,
+};
+use penumbra_stake::IdentityKey;
+use serde::Serialize;
+use serde_json::json;
 
 use crate::App;
 
@@ -36,152 +49,156 @@ pub enum PerProposalCmd {
 }
 
 impl GovernanceCmd {
-    pub async fn exec(&self, _app: &mut App) -> Result<()> {
+    pub async fn exec(&self, app: &mut App) -> Result<()> {
         // use PerProposalCmd::*;
 
+        let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
         match self {
-            GovernanceCmd::ListProposals { .. } => {
-                unimplemented!("governance component needs an RPC defined")
-                // below code is not usable outside of our own crates because
-                // it does raw state key accesses.
-                /*
-                let proposal_id_list: Vec<u64> = if *inactive {
-                    let next: u64 = client
-                        .key_proto(next_proposal_id())
-                        .await?
-                        .context("no proposal found")?;
-
-                    (0..next).collect()
-                } else {
-                    let mut unfinished = client
-                        .prefix_value(PrefixValueRequest {
-                            prefix: all_unfinished_proposals().into(),
-                            ..Default::default()
-                        })
-                        .await?
-                        .into_inner();
-                    let mut unfinished_proposals: Vec<u64> = Vec::new();
-                    while let Some(PrefixValueResponse { key, .. }) =
-                        unfinished.next().await.transpose()?
-                    {
-                        let proposal_id = u64::from_str(
-                            key.rsplit('/').next().context("key must contain a slash")?,
-                        )
-                        .context("proposal id was not a valid u64")?;
-                        unfinished_proposals.push(proposal_id);
-                    }
-                    unfinished_proposals
-                };
-
+            GovernanceCmd::ListProposals { inactive } => {
+                let proposals: Vec<ProposalListResponse> = client
+                    .proposal_list(ProposalListRequest {
+                        inactive: *inactive,
+                        ..Default::default()
+                    })
+                    .await?
+                    .into_inner()
+                    .try_collect::<Vec<_>>()
+                    .await
+                    .context("cannot process proposal list data")?;
                 let mut writer = stdout();
-                for proposal_id in proposal_id_list {
-                    let proposal: Proposal = client
-                        .key_domain(proposal_definition(proposal_id))
-                        .await?
-                        .context(format!("proposal {} not found", proposal_id))?;
-
+                for proposal_response in proposals {
+                    let proposal = proposal_response
+                        .proposal
+                        .expect("proposal should always be set");
                     let proposal_title = proposal.title;
 
-                    let proposal_state: ProposalState = client
-                        .key_domain(proposal_state(proposal_id))
-                        .await?
-                        .context(format!("proposal state for {} not found", proposal_id))?;
+                    let proposal_state = proposal_response
+                        .state
+                        .expect("proposal state should always be set");
+
+                    let proposal_id = proposal.id;
 
                     writeln!(
                         writer,
                         "#{proposal_id} {proposal_state:?}    {proposal_title}"
                     )?;
                 }
-                 */
+                Ok(())
             }
-            GovernanceCmd::Proposal { .. } => {
-                unimplemented!("governance component needs an RPC defined");
-                // below code is not usable outside of our own crates because
-                // it does raw state key accesses.
-                /*
-                    match query {
-                    Definition => {
-                        let proposal: Proposal = client
-                            .key_domain(proposal_definition(*proposal_id))
+            GovernanceCmd::Proposal { proposal_id, query } => {
+                match query {
+                    &PerProposalCmd::Definition => {
+                        let proposal = client
+                            .proposal_data(ProposalDataRequest {
+                                proposal_id: *proposal_id,
+                                ..Default::default()
+                            })
                             .await?
-                            .context(format!(
-                                "proposal definition for proposal {} not found",
-                                proposal_id
-                            ))?;
-                        toml(&proposal)?;
+                            .into_inner();
+                        toml(
+                            &proposal
+                                .proposal
+                                .expect("proposal should always be populated"),
+                        )?;
                     }
-                    State => {
-                        let state: ProposalState = client
-                            .key_domain(proposal_state(*proposal_id))
+                    PerProposalCmd::State => {
+                        let proposal = client
+                            .proposal_data(ProposalDataRequest {
+                                proposal_id: *proposal_id,
+                                ..Default::default()
+                            })
                             .await?
-                            .context(format!(
-                                "proposal state for proposal {} not found",
-                                proposal_id
-                            ))?;
-                        json(&state)?;
+                            .into_inner();
+                        json(
+                            &proposal
+                                .state
+                                .expect("proposal state should always be populated"),
+                        )?;
                     }
-                    Period => {
-                        let start: u64 = client
-                            .key_proto(proposal_voting_start(*proposal_id))
+                    PerProposalCmd::Period => {
+                        let proposal = client
+                            .proposal_data(ProposalDataRequest {
+                                proposal_id: *proposal_id,
+                                ..Default::default()
+                            })
                             .await?
-                            .context(format!(
-                                "proposal voting start for proposal {} not found",
-                                proposal_id
-                            ))?;
-                        let end: u64 = client
-                            .key_proto(proposal_voting_end(*proposal_id))
-                            .await?
-                            .context(format!(
-                                "proposal voting end for proposal {} not found",
-                                proposal_id
-                            ))?;
+                            .into_inner();
+                        let start: u64 = proposal.start_block_height;
+                        let end: u64 = proposal.end_block_height;
                         let period = json!({
                             "voting_start_block": start,
                             "voting_end_block": end,
                         });
                         json(&period)?;
                     }
-                    Tally => {
-                        let validator_votes: BTreeMap<IdentityKey, Vote> = client
-                            .prefix_domain::<Vote>(all_validator_votes_for_proposal(*proposal_id))
-                            .await?
-                            .and_then(|r| async move {
-                                let identity_key = IdentityKey::from_str(
-                                    r.0.rsplit('/').next().context("invalid key")?,
-                                )?;
-                                Ok((identity_key, r.1))
+                    PerProposalCmd::Tally => {
+                        let validator_votes: Vec<ValidatorVotesResponse> = client
+                            .validator_votes(ValidatorVotesRequest {
+                                proposal_id: *proposal_id,
+                                ..Default::default()
                             })
-                            .try_collect()
+                            .await?
+                            .into_inner()
+                            .try_collect::<Vec<_>>()
                             .await?;
 
                         let mut validator_votes_and_power: BTreeMap<IdentityKey, (Vote, u64)> =
                             BTreeMap::new();
-                        for (identity_key, vote) in validator_votes.iter() {
+                        for vote_response in validator_votes {
+                            let identity_key: IdentityKey = vote_response
+                                .identity_key
+                                .expect("identity key must be set for vote response")
+                                .try_into()?;
+                            let vote: Vote = vote_response
+                                .vote
+                                .expect("vote must be set for vote response")
+                                .try_into()?;
                             let power: u64 = client
-                                .key_proto(voting_power_at_proposal_start(*proposal_id, *identity_key))
+                                .voting_power_at_proposal_start(VotingPowerAtProposalStartRequest {
+                                    proposal_id: *proposal_id,
+                                    identity_key: Some(identity_key.into()),
+                                    ..Default::default()
+                                })
                                 .await
                                 .context("Error looking for validator power")?
-                                .context("validator power not found")?;
+                                .into_inner()
+                                .voting_power;
 
-                            validator_votes_and_power.insert(*identity_key, (*vote, power));
+                            validator_votes_and_power.insert(identity_key, (vote, power));
                         }
 
-                        let mut delegator_tallies: BTreeMap<IdentityKey, penumbra_governance::Tally> =
-                            client
-                                .prefix_domain::<penumbra_governance::Tally>(
-                                    all_tallied_delegator_votes_for_proposal(*proposal_id),
-                                )
-                                .await?
-                                .and_then(|r| async move {
-                                    Ok((
-                                        IdentityKey::from_str(
-                                            r.0.rsplit('/').next().context("invalid key")?,
-                                        )?,
-                                        r.1,
-                                    ))
-                                })
-                                .try_collect()
-                                .await?;
+                        let mut delegator_tallies: BTreeMap<
+                            IdentityKey,
+                            penumbra_governance::Tally,
+                        > = client
+                            .all_tallied_delegator_votes_for_proposal(
+                                AllTalliedDelegatorVotesForProposalRequest {
+                                    proposal_id: *proposal_id,
+                                    ..Default::default()
+                                },
+                            )
+                            .await?
+                            .into_inner()
+                            .map_ok(|response| {
+                                let identity_key: IdentityKey = response
+                                    .identity_key
+                                    .expect("identity key must be set for vote response")
+                                    .try_into()?;
+                                let tally: penumbra_governance::Tally = response
+                                    .tally
+                                    .expect("tally must be set for vote response")
+                                    .try_into()?;
+                                Ok::<(IdentityKey, penumbra_governance::Tally), anyhow::Error>((
+                                    identity_key,
+                                    tally,
+                                ))
+                            })
+                            // TODO: double iterator here is suboptimal but trying to collect
+                            // `Result<Vec<_>>` was annoying
+                            .try_collect::<Vec<_>>()
+                            .await?
+                            .into_iter()
+                            .collect::<Result<BTreeMap<_, _>>>()?;
 
                         // Combine the two mappings
                         let mut total = penumbra_governance::Tally::default();
@@ -226,20 +243,17 @@ impl GovernanceCmd {
                         }
 
                         json(&json!({
-                            "total": json_tally(&total),
-                            "details": all_votes_and_power,
+                        "total": json_tally(&total),
+                        "details": all_votes_and_power,
                         }))?;
                     }
-                },
-                */
+                };
+                Ok(())
             }
         }
-
-        // Ok(())
     }
 }
 
-/*
 fn json<T: Serialize>(value: &T) -> Result<()> {
     let mut writer = stdout();
     serde_json::to_writer_pretty(&mut writer, value)?;
@@ -267,4 +281,3 @@ fn toml<T: Serialize>(value: &T) -> Result<()> {
     writer.write_all(string.as_bytes())?;
     Ok(())
 }
- */

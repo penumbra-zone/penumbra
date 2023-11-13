@@ -22,7 +22,7 @@ use penumbra_stake::{
 };
 use penumbra_wallet::plan;
 
-use crate::App;
+use crate::{config::CustodyConfig, App};
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ValidatorCmd {
@@ -104,8 +104,14 @@ impl ValidatorCmd {
 
     // TODO: move use of sk into custody service
     pub async fn exec(&self, app: &mut App) -> Result<()> {
-        let sk = app.wallet.spend_key.clone();
-        let fvk = sk.full_viewing_key().clone();
+        let sk = match &app.config.custody {
+            CustodyConfig::SoftKms(config) => config.spend_key.clone(),
+            _ => {
+                anyhow::bail!("Validator commands require SoftKMS backend");
+            }
+        };
+        let fvk = app.config.full_viewing_key.clone();
+
         match self {
             ValidatorCmd::Identity { base64 } => {
                 let ik = IdentityKey(fvk.spend_verification_key().clone());
@@ -150,7 +156,7 @@ impl ValidatorCmd {
                 };
                 // Construct a new transaction and include the validator definition.
 
-                let wallet_id = app.fvk.wallet_id();
+                let wallet_id = app.config.full_viewing_key.wallet_id();
                 let plan = plan::validator_definition(
                     wallet_id,
                     app.view
@@ -206,7 +212,7 @@ impl ValidatorCmd {
                 // Construct a new transaction and include the validator definition.
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
-                let wallet_id = app.fvk.wallet_id();
+                let wallet_id = app.config.full_viewing_key.wallet_id();
 
                 let plan = plan::validator_vote(
                     wallet_id,

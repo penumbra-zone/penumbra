@@ -22,7 +22,7 @@ static SENTINEL_UPGRADE_ROOT: &str = "sentinel_root";
 
 #[async_trait]
 impl MsgHandler for MsgUpgradeClient {
-    async fn check_stateless(&self) -> Result<()> {
+    async fn check_stateless<H>(&self) -> Result<()> {
         Ok(())
     }
 
@@ -37,7 +37,7 @@ impl MsgHandler for MsgUpgradeClient {
     //
     // the first consensus state of the upgraded client uses a sentinel root, against which no
     // proofs will verify. subsequent client updates, post-upgrade, will provide usable roots.
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         let upgraded_client_state_tm = TendermintClientState::try_from(self.client_state.clone())

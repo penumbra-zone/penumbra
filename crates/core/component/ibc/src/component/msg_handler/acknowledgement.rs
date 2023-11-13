@@ -12,19 +12,21 @@ use crate::component::{
     channel::{StateReadExt as _, StateWriteExt as _},
     connection::StateReadExt as _,
     proof_verification::{commit_packet, PacketProofVerifier},
-    transfer::Ics20Transfer,
     MsgHandler,
 };
 
 #[async_trait]
 impl MsgHandler for MsgAcknowledgement {
-    async fn check_stateless(&self) -> Result<()> {
+    async fn check_stateless<H: AppHandlerCheck>(&self) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+        &self,
+        mut state: S,
+    ) -> Result<()> {
         tracing::debug!(msg = ?self);
         let channel = state
             .get_channel(&self.packet.chan_on_a, &self.packet.port_on_a)
@@ -73,7 +75,7 @@ impl MsgHandler for MsgAcknowledgement {
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
-            Ics20Transfer::acknowledge_packet_check(&mut state, self).await?;
+            H::acknowledge_packet_check(&mut state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }
@@ -113,7 +115,7 @@ impl MsgHandler for MsgAcknowledgement {
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
-            Ics20Transfer::acknowledge_packet_execute(state, self).await;
+            H::acknowledge_packet_execute(state, self).await;
         } else {
             anyhow::bail!("invalid port id");
         }

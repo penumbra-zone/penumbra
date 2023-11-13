@@ -2,10 +2,12 @@
 
 ### Installing the Rust toolchain
 
-This requires that you install a recent stable version
+This requires that you install a recent (>= 1.73) stable version
 of the Rust compiler, installation instructions for which you can find
 [here](https://www.rust-lang.org/learn/get-started). Don't forget to reload your shell so that
 `cargo` is available in your `\$PATH`!
+
+You can verify the rust compiler version by running `rustc --version` which should indicate version 1.73 or later.
 
 `pcli` requires `rustfmt` as part of the build process --- depending on your
 OS/install method for Rust, you may have to install that separately.
@@ -60,7 +62,7 @@ latest tag for the current
 [testnet](https://github.com/penumbra-zone/penumbra/releases):
 
 ```bash
-cd penumbra && git fetch && git checkout v0.62.0
+cd penumbra && git fetch && git checkout v0.63.1
 ```
 
 ### Building the `pcli` client software

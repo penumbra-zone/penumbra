@@ -16,13 +16,13 @@ use penumbra_storage::StateWrite;
 
 #[async_trait]
 impl MsgHandler for MsgConnectionOpenInit {
-    async fn check_stateless(&self) -> Result<()> {
+    async fn check_stateless<H>(&self) -> Result<()> {
         version_is_supported(self)?;
 
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         // check that the client with the specified ID exists

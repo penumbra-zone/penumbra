@@ -300,6 +300,12 @@ message Proposal {
 // Query operations for the governance component.
 service QueryService {
   rpc ProposalInfo(ProposalInfoRequest) returns (ProposalInfoResponse);
+  rpc ProposalList(ProposalListRequest) returns (stream ProposalListResponse);
+  rpc ProposalData(ProposalDataRequest) returns (ProposalDataResponse);
+  rpc NextProposalId(NextProposalIdRequest) returns (NextProposalIdResponse);
+  rpc ValidatorVotes(ValidatorVotesRequest) returns (stream ValidatorVotesResponse);
+  rpc VotingPowerAtProposalStart(VotingPowerAtProposalStartRequest) returns (VotingPowerAtProposalStartResponse);
+  rpc AllTalliedDelegatorVotesForProposal(AllTalliedDelegatorVotesForProposalRequest) returns (stream AllTalliedDelegatorVotesForProposalResponse);
   // Used for computing voting power ?
   rpc ProposalRateData(ProposalRateDataRequest) returns (stream ProposalRateDataResponse);
 }
@@ -318,6 +324,28 @@ message ProposalInfoResponse {
   uint64 start_position = 2;
 }
 
+message ProposalDataRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // The proposal id to request information on.
+  uint64 proposal_id = 2;
+}
+
+message ProposalDataResponse {
+  // The proposal metadata.
+  Proposal proposal = 1;
+  // The block height at which the proposal started voting.
+  uint64 start_block_height = 2;
+  // The block height at which the proposal ends voting.
+  uint64 end_block_height = 3;
+  // The position of the state commitment tree at which the proposal is considered to have started voting.
+  uint64 start_position = 4;
+  // The current state of the proposal.
+  ProposalState state = 5;
+  // The deposit amount paid for the proposal.
+  penumbra.core.num.v1alpha1.Amount proposal_deposit_amount = 6;
+}
+
 // Requests the validator rate data for a proposal.
 message ProposalRateDataRequest {
   // The expected chain id (empty string if no expectation).
@@ -329,6 +357,45 @@ message ProposalRateDataRequest {
 // The rate data for a single validator.
 message ProposalRateDataResponse {
   core.component.stake.v1alpha1.RateData rate_data = 1;
+}
+
+// Requests the list of all proposals.
+message ProposalListRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // Whether to include proposals that are no longer active.;
+  bool inactive = 2;
+  // TODO: we could filter by starting block height here?
+}
+
+// The data for a single proposal.
+message ProposalListResponse {
+  // The proposal metadata.
+  Proposal proposal = 1;
+  // The block height at which the proposal started voting.
+  uint64 start_block_height = 2;
+  // The block height at which the proposal ends voting.
+  uint64 end_block_height = 3;
+  // The position of the state commitment tree at which the proposal is considered to have started voting.
+  uint64 start_position = 4;
+  // The current state of the proposal.
+  ProposalState state = 5;
+}
+
+// Requests the list of all validator votes for a given proposal.
+message ValidatorVotesRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // The proposal id to request information on.
+  uint64 proposal_id = 2;
+}
+
+// The data for a single validator vote.
+message ValidatorVotesResponse {
+  // The vote.
+  governance.v1alpha1.Vote vote = 1;
+  // The validator identity.
+  keys.v1alpha1.IdentityKey identity_key = 2;
 }
 
 // Governance configuration data.
@@ -375,4 +442,45 @@ message ChangedAppParametersSet {
   ChangedAppParameters old = 1;
   // The new set of parameters the proposal is trying to enact.
   ChangedAppParameters new = 2;
+}
+
+message VotingPowerAtProposalStartRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // The proposal id to request information on.
+  uint64 proposal_id = 2;
+  // The validator identity key to request information on.
+  keys.v1alpha1.IdentityKey identity_key = 3;
+}
+
+message VotingPowerAtProposalStartResponse {
+  // The voting power for the given identity key at the start of the proposal.
+  // TODO: since we don't support optional fields in our protos any more,
+  // this will be set to 0 if the validator was not active at the start of the proposal.
+  // Is this potentially an issue?
+  uint64 voting_power = 1;
+}
+
+message AllTalliedDelegatorVotesForProposalRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // The proposal id to request information on.
+  uint64 proposal_id = 2;
+}
+
+message AllTalliedDelegatorVotesForProposalResponse {
+  // The tally of delegator votes for a given validator for the proposal.
+  Tally tally = 1;
+  // The validator identity associated with the tally.
+  keys.v1alpha1.IdentityKey identity_key = 2;
+}
+
+message NextProposalIdRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+}
+
+message NextProposalIdResponse {
+  // The next proposal ID.
+  uint64 next_proposal_id = 1;
 }

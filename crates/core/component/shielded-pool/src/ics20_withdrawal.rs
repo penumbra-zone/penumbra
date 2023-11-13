@@ -1,4 +1,4 @@
-use ibc_types::core::{channel::ChannelId, client::Height as IbcHeight};
+use ibc_types::core::{channel::ChannelId, channel::PortId, client::Height as IbcHeight};
 use penumbra_asset::{
     asset::{self, DenomMetadata},
     Balance, Value,
@@ -11,6 +11,9 @@ use penumbra_proto::{
 };
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+
+#[cfg(feature = "component")]
+use penumbra_ibc::component::packet::{IBCPacket, Unchecked};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Ics20Withdrawal", into = "pb::Ics20Withdrawal")]
@@ -33,6 +36,19 @@ pub struct Ics20Withdrawal {
     pub timeout_time: u64,
     // the source channel used for the withdrawal
     pub source_channel: ChannelId,
+}
+
+#[cfg(feature = "component")]
+impl From<Ics20Withdrawal> for IBCPacket<Unchecked> {
+    fn from(withdrawal: Ics20Withdrawal) -> Self {
+        Self::new(
+            PortId::transfer(),
+            withdrawal.source_channel.clone(),
+            withdrawal.timeout_height,
+            withdrawal.timeout_time,
+            withdrawal.packet_data(),
+        )
+    }
 }
 
 impl Ics20Withdrawal {

@@ -10,6 +10,10 @@ metadata:
   name: {{ $fn_name }}
   labels:
     {{- include "penumbra-node.labels" $ | nindent 4 }}
+    "app.kubernetes.io/component": fullnode
+    {{- if $.Values.part_of }}
+    "app.kubernetes.io/part-of": {{ $.Values.part_of }}
+    {{- end }}
 spec:
   replicas: 1
   strategy:
@@ -67,6 +71,23 @@ spec:
       {{- else }}
           emptyDir: {}
       {{- end }}
+      {{- if eq $.Values.cometbft.config.indexer "psql" }}
+      {{- if $.Values.persistence.enabled }}
+        - name: db
+          persistentVolumeClaim:
+            claimName: {{ $fn_name }}-db
+      {{- else }}
+          emptyDir: {}
+      {{- end }}
+      {{- end }}
+      {{- if eq $.Values.cometbft.config.indexer "psql" }}
+        - name: postgres-schema
+          configMap:
+            name: {{ include "penumbra-node.fullname" $ }}-postgres-schema
+            items:
+              - key: "postgres-cometbft-schema.sql"
+                path: "postgres-cometbft-schema.sql"
+      {{ end }}
       initContainers:
         - name: {{ $.Chart.Name }}-init
           securityContext:
@@ -99,6 +120,10 @@ spec:
                   --moniker {{ . | quote }} \
                   {{- end }}
                   {{ $.Values.penumbra_bootstrap_node_cometbft_rpc_url }}
+
+                  {{ if eq $.Values.cometbft.config.indexer "psql" -}}
+                  sed -i -e 's#^indexer.*#indexer = "psql"\npsql-conn = "{{ $.Values.cometbft.config.postgres_connection_url }}"#' /penumbra-config/testnet_data/node0/cometbft/config/config.toml
+                  {{- end }}
               fi
 
               # set ownership for pd user
@@ -145,6 +170,7 @@ spec:
             - 0.0.0.0:9000
             - --home
             - /penumbra-config/testnet_data/node0/pd
+            - --enable-expensive-rpc
           ports:
             - name: pd-grpc
               containerPort: 8080
@@ -193,6 +219,39 @@ spec:
             - name: config
               mountPath: /cometbft
               subPath: testnet_data/node0/cometbft
+      {{- if eq $.Values.cometbft.config.indexer "psql" }}
+        - name: postgres
+          securityContext:
+            {{- toYaml $.Values.postgres.securityContext | nindent 12 }}
+          image: "{{ $.Values.postgres.image.repository }}:{{ $.Values.postgres.image.tag }}"
+          imagePullPolicy: {{ $.Values.postgres.image.pullPolicy }}
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          # Lazy to hardcode these values, but the db connection is intra-cluster.
+          env:
+            - name: POSTGRES_DB
+              value: penumbra
+            - name: POSTGRES_USER
+              value: penumbra
+            - name: POSTGRES_PASSWORD
+              value: penumbra
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+            timeoutSeconds: 10
+            initialDelaySeconds: 10
+          resources:
+            {{- toYaml $.Values.postgres.resources | nindent 12 }}
+          volumeMounts:
+            - name: postgres-schema
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+            - name: db
+              mountPath: /var/lib/postgresql
+      {{ end }}
+
       {{- with $.Values.nodeSelector }}
       nodeSelector:
         {{- toYaml $ | nindent 8 }}

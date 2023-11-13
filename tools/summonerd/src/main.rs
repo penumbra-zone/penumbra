@@ -1,3 +1,4 @@
+mod config;
 mod coordinator;
 mod participant;
 mod penumbra_knower;
@@ -5,6 +6,7 @@ mod phase;
 mod queue;
 mod server;
 mod storage;
+mod web;
 
 use anyhow::Result;
 use ark_groth16::{ProvingKey, VerifyingKey};
@@ -31,13 +33,16 @@ use std::io::Read;
 use std::net::SocketAddr;
 use storage::Storage;
 use tonic::transport::Server;
+use tracing::Instrument;
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
 
+use crate::config::Config;
 use crate::phase::Phase1;
 use crate::phase::Phase2;
 use crate::phase::PhaseMarker;
 use crate::queue::ParticipantQueue;
+use crate::web::web_app;
 use crate::{penumbra_knower::PenumbraKnower, server::CoordinatorService};
 use penumbra_proof_setup::all::{Phase1CeremonyCRS, Phase1RawCeremonyCRS};
 
@@ -89,6 +94,7 @@ struct Opt {
 
 #[derive(Debug, clap::Subcommand)]
 /// Hello folks
+#[allow(clippy::large_enum_variant)]
 enum Command {
     /// Generate a phase 1 root (for testing purposes).
     GeneratePhase1 {
@@ -125,9 +131,17 @@ enum Command {
         #[clap(long, display_order = 900)]
         /// URL for Penumbra node to trail.
         node: Url,
-        #[clap(long, display_order = 901, default_value = "127.0.0.1:8081")]
-        /// Local bind address for summonerd.
-        listen: SocketAddr,
+        #[clap(long, display_order = 902, default_value = "127.0.0.1:8080")]
+        /// The address to bind the gRPC and web servers to.
+        bind_addr: SocketAddr,
+        #[clap(long, display_order = 1000)]
+        phase1_timeout_secs: Option<u64>,
+        #[clap(long, display_order = 1001)]
+        phase2_timeout_secs: Option<u64>,
+        #[clap(long, display_order = 1002)]
+        min_bid_u64: Option<u64>,
+        #[clap(long, display_order = 1002)]
+        max_strikes: Option<u64>,
     },
     /// Export the output of the ceremony
     Export {
@@ -154,14 +168,24 @@ impl Opt {
                 storage_dir,
                 fvk,
                 node,
-                listen,
+                bind_addr,
+                phase1_timeout_secs,
+                phase2_timeout_secs,
+                min_bid_u64,
+                max_strikes,
             } => {
+                let config = Config::default()
+                    .with_phase1_timeout_secs(phase1_timeout_secs)
+                    .with_phase2_timeout_secs(phase2_timeout_secs)
+                    .with_min_bid_u64(min_bid_u64)
+                    .with_max_strikes(max_strikes);
                 let marker = match phase {
                     1 => PhaseMarker::P1,
                     2 => PhaseMarker::P2,
                     _ => anyhow::bail!("Phase must be 1 or 2."),
                 };
-                let storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
+                let storage =
+                    Storage::load_or_initialize(config, ceremony_db(&storage_dir)).await?;
                 // Check if we've transitioned, for a nice error message
                 if marker == PhaseMarker::P2
                     && storage.transition_extra_information().await?.is_none()
@@ -172,27 +196,43 @@ impl Opt {
                     PenumbraKnower::load_or_initialize(storage_dir.join("penumbra.db"), &fvk, node)
                         .await?;
                 let queue = ParticipantQueue::new();
-                let coordinator = Coordinator::new(storage.clone(), queue.clone());
+                let coordinator = Coordinator::new(config, storage.clone(), queue.clone());
+                let coordinator_span = tracing::error_span!("coordinator");
                 let coordinator_handle = match marker {
-                    PhaseMarker::P1 => tokio::spawn(coordinator.run::<Phase1>()),
-                    PhaseMarker::P2 => tokio::spawn(coordinator.run::<Phase2>()),
+                    PhaseMarker::P1 => {
+                        tokio::spawn(coordinator.run::<Phase1>().instrument(coordinator_span))
+                    }
+                    PhaseMarker::P2 => {
+                        tokio::spawn(coordinator.run::<Phase2>().instrument(coordinator_span))
+                    }
                 };
-                let service = CoordinatorService::new(knower, storage, queue, marker);
-                let grpc_server =
-                    Server::builder()
-                        .accept_http1(true)
-                        .add_service(tonic_web::enable(
-                            CeremonyCoordinatorServiceServer::new(service)
-                                .max_encoding_message_size(max_message_size(marker))
-                                .max_decoding_message_size(max_message_size(marker)),
-                        ));
-                tracing::info!(?listen, "starting grpc server");
-                let server_handle = tokio::spawn(grpc_server.serve(listen));
+                let service =
+                    CoordinatorService::new(knower, storage.clone(), queue.clone(), marker);
+                let grpc_server = Server::builder().add_service(
+                    CeremonyCoordinatorServiceServer::new(service)
+                        .max_encoding_message_size(max_message_size(marker))
+                        .max_decoding_message_size(max_message_size(marker)),
+                );
+
+                let web_app = web_app(
+                    fvk.payment_address(0u32.into()).0,
+                    config,
+                    marker,
+                    queue,
+                    storage,
+                );
+
+                let router = grpc_server.into_router().merge(web_app);
+
+                tracing::info!(?bind_addr, "starting grpc and web server");
+                let server_handle =
+                    axum::Server::bind(&bind_addr).serve(router.into_make_service());
+
                 // TODO: better error reporting
                 // We error out if a service errors, rather than keep running
                 tokio::select! {
                     x = coordinator_handle => x?.map_err(|e| anyhow::anyhow!(e))?,
-                    x = server_handle => x?.map_err(|e| anyhow::anyhow!(e))?,
+                    x = server_handle => x.map_err(|e| anyhow::anyhow!(e))?,
                 };
                 Ok(())
             }
@@ -213,13 +253,17 @@ impl Opt {
                 // This is assumed to be valid as it's the starting point for the ceremony.
                 let phase_1_root = phase_1_raw_root.assume_valid();
 
-                let mut storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
+                let mut storage =
+                    Storage::load_or_initialize(Config::default(), ceremony_db(&storage_dir))
+                        .await?;
                 storage.set_root(phase_1_root).await?;
 
                 Ok(())
             }
             Command::Transition { storage_dir } => {
-                let mut storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
+                let mut storage =
+                    Storage::load_or_initialize(Config::default(), ceremony_db(&storage_dir))
+                        .await?;
 
                 let phase1_crs = match storage.phase1_current_crs().await? {
                     Some(x) => x,
@@ -234,7 +278,9 @@ impl Opt {
                 storage_dir,
                 target_dir,
             } => {
-                let storage = Storage::load_or_initialize(ceremony_db(&storage_dir)).await?;
+                let storage =
+                    Storage::load_or_initialize(Config::default(), ceremony_db(&storage_dir))
+                        .await?;
                 // Grab phase1 output
                 let phase1_crs = match storage.phase1_current_crs().await? {
                     Some(x) => x,
@@ -279,8 +325,8 @@ fn write_params(
     let vk_location = target_dir.join(format!("{}_vk.param", name));
     let id_location = target_dir.join(format!("{}_id.rs", name));
 
-    let pk_file = fs::File::create(&pk_location)?;
-    let vk_file = fs::File::create(&vk_location)?;
+    let pk_file = fs::File::create(pk_location)?;
+    let vk_file = fs::File::create(vk_location)?;
 
     let pk_writer = BufWriter::new(pk_file);
     let vk_writer = BufWriter::new(vk_file);

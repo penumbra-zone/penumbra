@@ -18,7 +18,7 @@ use penumbra_governance::{
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
 use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType, TypeUrl};
-use penumbra_shielded_pool::{OutputPlan, SpendPlan};
+use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use serde::{Deserialize, Serialize};
 

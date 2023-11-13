@@ -49,17 +49,9 @@ jobs:
           location: us-central1
 
       - name: install helmfile
-        run: |
-          helmfile_version="0.157.0"
-          helmfile_url="https://github.com/helmfile/helmfile/releases/download/v${helmfile_version}/helmfile_${helmfile_version}_linux_amd64.tar.gz"
-          mkdir -p /tmp/helmfile-download
-          cd /tmp/helmfile-download || exit 1
-          curl -SfL -O "$helmfile_url"
-          tar -xzf helmfile*.tar.gz
-          mkdir -p "$HOME/bin"
-          cp helmfile "$HOME/bin/"
-          export PATH="$HOME/bin:$PATH"
-          which helmfile
+        uses: mamezou-tech/setup-helmfile@v1.3.0
+        with:
+          helmfile-version: "v0.157.0"
 
       - name: deploy
         run: |-
@@ -75,6 +67,7 @@ jobs:
       - name: bounce osiris
         shell: bash
         run: |-
+          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
           # Set the exact version for the current testnet for Osiris, so deps match.
           kubectl set image deployments \
               -l "app.kubernetes.io/instance=osiris-testnet" \
@@ -86,6 +79,7 @@ jobs:
       - name: bounce galileo
         shell: bash
         run: |-
+          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
           # Set the exact version for the current testnet for Galileo, so deps match.
           kubectl set image deployments \
               -l "app.kubernetes.io/instance=galileo" \
