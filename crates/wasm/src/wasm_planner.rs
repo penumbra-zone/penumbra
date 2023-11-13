@@ -4,7 +4,7 @@ use rand_core::OsRng;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 use std::str::FromStr;
-use anyhow::{anyhow, Result};
+use anyhow::anyhow;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_dex::swap_claim::SwapClaimPlan;
 use penumbra_proto::{
@@ -20,20 +20,15 @@ use penumbra_proto::{
     crypto::tct::v1alpha1::StateCommitment,
     DomainType
 };
-use wasm_bindgen_test::console_log;
 use crate::error::WasmResult;
 use crate::planner::Planner;
 use crate::storage::IndexedDBStorage;
 use crate::swap_record::SwapRecord;
 use crate::utils;
-use indexed_db_futures::{IdbDatabase, IdbQuerySource};
 use penumbra_transaction::{
-    action::Action,
-    AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
+    WitnessData,
     plan::ActionPlan,
     plan::TransactionPlan,
-    memo::MemoCiphertext,
-
 };
 use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 
@@ -94,25 +89,23 @@ impl WasmPlanner {
         let full_viewing_key: FullViewingKey = FullViewingKey::from_str(full_viewing_key)
             .expect("The provided string is not a valid FullViewingKey");
 
-        let mut memo: Option<MemoCiphertext> = None;
         let mut memo_key: Option<PayloadKey> = None;
         if transaction_plan_.memo_plan.is_some() {
             let memo_plan = transaction_plan_
                 .memo_plan
                 .clone()
                 .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
-            memo = memo_plan.memo().ok();
             memo_key = Some(memo_plan.key);
         }
 
         let action = match action_plan_ {
             ActionPlan::Spend(spend_plan) => {
                 let spend = ActionPlan::Spend(spend_plan);
-                Some(spend.build_unauth(&full_viewing_key, &witness_data_, memo_key).unwrap())
+                Some(spend.build_unauth(&full_viewing_key, &witness_data_, memo_key).expect("Build spend action failed!"))
             }
             ActionPlan::Output(output_plan) => { 
                 let output = ActionPlan::Output(output_plan);
-                Some(output.build_unauth(&full_viewing_key, &witness_data_, memo_key).unwrap())
+                Some(output.build_unauth(&full_viewing_key, &witness_data_, memo_key).expect("Build output action failed!"))
             }
             _ => {
                 None
