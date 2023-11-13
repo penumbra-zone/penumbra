@@ -124,11 +124,6 @@ impl IndexedDBStorage {
     }
 
     pub async fn store_advice(&self, note: Note) -> WasmResult<()> {
-        // Do not insert advice for zero amounts, simply return Ok because this is fine
-        if u128::from(note.amount()) == 0u128 {
-            return Ok(());
-        }
-
         let tx = self
             .db
             .transaction_on_one_with_mode(&self.constants.tables.notes, Readwrite)?;
