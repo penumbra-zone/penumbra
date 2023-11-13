@@ -156,12 +156,7 @@ impl WasmPlanner {
     ///     memo: `MemoPlaintext`
     pub fn memo(&mut self, memo: JsValue) -> WasmResult<()> {
         utils::set_panic_hook();
-
-        console_log!("memo is (wasm_planner): {:?}", memo);
-
         let memo_proto: MemoPlaintext = serde_wasm_bindgen::from_value(memo)?;
-        console_log!("memo_proto is: {:?}", memo_proto);
-
         let _ = self.planner.memo(memo_proto.try_into()?);
         Ok(())
     }

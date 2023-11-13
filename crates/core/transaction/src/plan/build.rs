@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use anyhow::{anyhow, Context, Result};
 use ark_ff::Zero;
 use decaf377::Fr;
@@ -23,7 +24,6 @@ impl TransactionPlan {
         fvk: FullViewingKey,
         witness_data: WitnessData,
     ) -> Result<Transaction> {
-        console_log!("build_unauth_with_actions method!");
         let mut memo: Option<MemoCiphertext> = None;
         let mut memo_key: Option<PayloadKey> = None;
         if self.memo_plan.is_some() {
@@ -152,13 +152,12 @@ impl TransactionPlan {
         })
     }
 
-    pub fn authorize_with_auth<R: CryptoRng + RngCore>(
+    pub fn authorize_with_auth<R: CryptoRng + RngCore + Debug>(
         mut self,
         rng: &mut R,
         auth_data: &AuthorizationData,
         mut transaction: Transaction,
     ) -> Result<Transaction> {
-        console_log!("authorize!");
         // Do some basic input sanity-checking.
         let spend_count = transaction.spends().count();
         if auth_data.spend_auths.len() != spend_count {
@@ -217,10 +216,11 @@ impl TransactionPlan {
         {
             delegator_vote.auth_sig = auth_sig;
         }
-
+        
         // Compute the binding signature and assemble the transaction.
         let binding_signing_key = rdsa::SigningKey::from(synthetic_blinding_factor);
         let auth_hash = transaction.transaction_body.auth_hash();
+  
         let binding_sig = binding_signing_key.sign(rng, auth_hash.as_bytes());
         tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), ?auth_hash);
 
@@ -323,7 +323,6 @@ impl TransactionPlan {
 
         // For some reason, there's a performance hit where the authorize step is taking longer. Investigate this.
         // Additionally, missing swap actions.
-
         // 3. Slot in the auth data with TransactionPlan::authorize_with_aut, and return the completed transaction
         let tx = self.authorize_with_auth(&mut OsRng, &auth_data, transaction)?;
 
