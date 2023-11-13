@@ -1,36 +1,32 @@
+use crate::error::WasmResult;
+use crate::planner::Planner;
+use crate::storage::IndexedDBStorage;
+use crate::swap_record::SwapRecord;
+use crate::utils;
+use anyhow::anyhow;
 use ark_ff::UniformRand;
 use decaf377::Fq;
-use rand_core::OsRng;
-use wasm_bindgen::prelude::wasm_bindgen;
-use wasm_bindgen::JsValue;
-use std::str::FromStr;
-use anyhow::anyhow;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_dex::swap_claim::SwapClaimPlan;
+use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 use penumbra_proto::{
     core::{
         asset::v1alpha1::{DenomMetadata, Value},
         component::fee::v1alpha1::{Fee, GasPrices},
         component::ibc::v1alpha1::Ics20Withdrawal,
         keys::v1alpha1::Address,
-        transaction::v1alpha1::MemoPlaintext,
         transaction::v1alpha1 as pb,
+        transaction::v1alpha1::MemoPlaintext,
         transaction::v1alpha1::TransactionPlan as tp,
     },
     crypto::tct::v1alpha1::StateCommitment,
-    DomainType
+    DomainType,
 };
-use crate::error::WasmResult;
-use crate::planner::Planner;
-use crate::storage::IndexedDBStorage;
-use crate::swap_record::SwapRecord;
-use crate::utils;
-use penumbra_transaction::{
-    WitnessData,
-    plan::ActionPlan,
-    plan::TransactionPlan,
-};
-use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
+use penumbra_transaction::{plan::ActionPlan, plan::TransactionPlan, WitnessData};
+use rand_core::OsRng;
+use std::str::FromStr;
+use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::JsValue;
 
 #[wasm_bindgen]
 pub struct WasmPlanner {
@@ -69,17 +65,18 @@ impl WasmPlanner {
 
     #[wasm_bindgen]
     pub fn build_action(
-        &self, 
+        &self,
         transaction_plan: JsValue,
         action_plan: JsValue,
         full_viewing_key: &str,
         witness_data: JsValue,
     ) -> WasmResult<JsValue> {
         utils::set_panic_hook();
-        
-        let transaction_plan_proto: tp = serde_wasm_bindgen::from_value(transaction_plan.clone()).unwrap();
+
+        let transaction_plan_proto: tp =
+            serde_wasm_bindgen::from_value(transaction_plan.clone()).unwrap();
         let transaction_plan_: TransactionPlan = transaction_plan_proto.try_into().unwrap();
-        
+
         let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
         let witness_data_: WitnessData = witness_data_proto.try_into()?;
 
@@ -101,15 +98,21 @@ impl WasmPlanner {
         let action = match action_plan_ {
             ActionPlan::Spend(spend_plan) => {
                 let spend = ActionPlan::Spend(spend_plan);
-                Some(spend.build_unauth(&full_viewing_key, &witness_data_, memo_key).expect("Build spend action failed!"))
+                Some(
+                    spend
+                        .build_unauth(&full_viewing_key, &witness_data_, memo_key)
+                        .expect("Build spend action failed!"),
+                )
             }
-            ActionPlan::Output(output_plan) => { 
+            ActionPlan::Output(output_plan) => {
                 let output = ActionPlan::Output(output_plan);
-                Some(output.build_unauth(&full_viewing_key, &witness_data_, memo_key).expect("Build output action failed!"))
+                Some(
+                    output
+                        .build_unauth(&full_viewing_key, &witness_data_, memo_key)
+                        .expect("Build output action failed!"),
+                )
             }
-            _ => {
-                None
-            }
+            _ => None,
         };
 
         let action_result_proto = serde_wasm_bindgen::to_value(&Some(action))?;

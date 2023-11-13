@@ -1,3 +1,5 @@
+use crate::Action;
+use crate::WitnessData;
 use anyhow::{anyhow, Context, Result};
 use penumbra_asset::Balance;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
@@ -14,13 +16,11 @@ use penumbra_governance::{
     ValidatorVote,
 };
 use penumbra_ibc::{IbcAction, Ics20Withdrawal};
+use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType, TypeUrl};
 use penumbra_shielded_pool::{OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use serde::{Deserialize, Serialize};
-use crate::WitnessData;
-use crate::Action;
-use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
 ///

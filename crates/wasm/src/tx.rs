@@ -173,11 +173,14 @@ pub fn build_serial(
 
     let plan: TransactionPlan = plan_proto.try_into()?;
 
-    let tx: Transaction = plan
-        .build(&fvk, witness_data_proto.try_into()?, &auth_data_proto.try_into()?)?;
+    let tx: Transaction = plan.build(
+        &fvk,
+        witness_data_proto.try_into()?,
+        &auth_data_proto.try_into()?,
+    )?;
 
     let value = serde_wasm_bindgen::to_value(&tx.to_proto())?;
-    
+
     Ok(value)
 }
 
@@ -193,10 +196,10 @@ pub fn build_parallel(
     utils::set_panic_hook();
 
     let plan_proto: pb::TransactionPlan = serde_wasm_bindgen::from_value(transaction_plan)?;
-    
+
     let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
     let witness_data_: WitnessData = witness_data_proto.try_into()?;
-    
+
     let auth_data_proto: pb::AuthorizationData = serde_wasm_bindgen::from_value(auth_data)?;
     let auth_data_: AuthorizationData = auth_data_proto.try_into().unwrap();
 
@@ -205,8 +208,10 @@ pub fn build_parallel(
 
     let plan: TransactionPlan = plan_proto.try_into()?;
     let actions_: Vec<Action> = serde_wasm_bindgen::from_value(actions)?;
-    
-    let transaction = plan.clone().build_unauth_with_actions(actions_, fvk, witness_data_)?;
+
+    let transaction = plan
+        .clone()
+        .build_unauth_with_actions(actions_, fvk, witness_data_)?;
     let tx = plan.authorize_with_auth(&mut OsRng, &auth_data_, transaction)?;
 
     let value = serde_wasm_bindgen::to_value(&tx.to_proto())?;
