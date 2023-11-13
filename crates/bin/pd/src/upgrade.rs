@@ -23,7 +23,7 @@ pub async fn migrate(path_to_export: PathBuf, upgrade: Upgrade) -> anyhow::Resul
         Upgrade::Testnet60 => {
             let mut db_path = path_to_export.clone();
             db_path.push("rocksdb");
-            let storage = Storage::load(db_path).await?;
+            let storage = Storage::init(db_path).await?;
             let export_state = storage.latest_snapshot();
             let root_hash = export_state.root_hash().await.expect("can get root hash");
             let app_hash_pre_migration: AppHash = root_hash.into();

@@ -14,7 +14,7 @@ async fn test_disallow_empty_prefix() -> () {
     let tmpdir = tempfile::tempdir().expect("creating a temporary directory works");
     let db_path = tmpdir.into_path();
     let substore_prefixes = vec![""].into_iter().map(|s| s.to_string()).collect();
-    let _ = Storage::init(db_path, substore_prefixes).await.unwrap();
+    let _ = Storage::load(db_path, substore_prefixes).await.unwrap();
 }
 
 #[tokio::test]
@@ -28,7 +28,7 @@ async fn test_substore_simple() -> anyhow::Result<()> {
         .into_iter()
         .map(|s| s.to_string())
         .collect();
-    let storage = Storage::init(db_path, substore_prefixes).await?;
+    let storage = Storage::load(db_path, substore_prefixes).await?;
     let mut delta = StateDelta::new(storage.latest_snapshot());
 
     let key_a_1 = "prefix_a/key_1".to_string();
@@ -115,7 +115,7 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
         .into_iter()
         .map(|s| s.to_string())
         .collect();
-    let storage = Storage::init(db_path, substore_prefixes).await?;
+    let storage = Storage::load(db_path, substore_prefixes).await?;
     let mut delta = StateDelta::new(storage.latest_snapshot());
 
     let mut all_kv = vec![];
@@ -229,7 +229,7 @@ async fn test_substore_prefix_keys() -> anyhow::Result<()> {
         .into_iter()
         .map(|s| s.to_string())
         .collect();
-    let storage = Storage::init(db_path, substore_prefixes).await?;
+    let storage = Storage::load(db_path, substore_prefixes).await?;
     let mut delta = StateDelta::new(storage.latest_snapshot());
 
     let mut all_kv = vec![];
@@ -344,7 +344,7 @@ async fn test_substore_nv_prefix() -> anyhow::Result<()> {
         .into_iter()
         .map(|s| s.to_string())
         .collect();
-    let storage = Storage::init(db_path, substore_prefixes).await?;
+    let storage = Storage::load(db_path, substore_prefixes).await?;
     let mut delta = StateDelta::new(storage.latest_snapshot());
 
     let mut all_kv = vec![];
@@ -472,7 +472,7 @@ async fn test_substore_nv_range_queries_main_store() -> anyhow::Result<()> {
         .into_iter()
         .map(|s| s.to_string())
         .collect();
-    let storage = Storage::init(db_path, substore_prefixes).await?;
+    let storage = Storage::load(db_path, substore_prefixes).await?;
     let mut delta = StateDelta::new(storage.latest_snapshot());
 
     let mut all_kv = vec![];

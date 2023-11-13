@@ -22,7 +22,7 @@ impl TempStorage {
     pub async fn new() -> anyhow::Result<Self> {
         let dir = tempfile::tempdir()?;
         let db_filepath = dir.path().join("storage.db");
-        let inner = Storage::load(db_filepath.clone()).await?;
+        let inner = Storage::init(db_filepath.clone()).await?;
 
         Ok(TempStorage { inner, _dir: dir })
     }
