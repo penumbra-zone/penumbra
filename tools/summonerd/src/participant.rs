@@ -112,4 +112,10 @@ impl Participant {
         self.tx.send(Ok(response)).await?;
         Ok(())
     }
+
+    pub fn try_notify_timeout(&mut self) {
+        if let Err(e) = self.tx.try_send(Err(Status::deadline_exceeded("Unfortunately, it took too long to complete your contribution. We only allow a certain amount of time in order to allow as many people as possible to contribute. Your machine has too poor a network connection or processor to contribute fast enough. If you try again, you will run into this error again, and your contribution will still not be included. We kindly ask that you improve your machine if you would like to contribute."))) {
+            tracing::debug!(?e, "failed to notify of timeout");
+        }
+    }
 }
