@@ -1,16 +1,14 @@
 syntax = "proto3";
 package penumbra.core.component.stake.v1alpha1;
 
+import "penumbra/core/asset/v1alpha1/asset.proto";
 import "penumbra/core/keys/v1alpha1/keys.proto";
 import "penumbra/core/num/v1alpha1/num.proto";
-import "penumbra/core/asset/v1alpha1/asset.proto";
-
 
 // A Penumbra ZK undelegate claim proof.
 message ZKUndelegateClaimProof {
-    bytes inner = 1;
+  bytes inner = 1;
 }
-
 
 // Describes a validator's configuration data.
 message Validator {
@@ -113,7 +111,6 @@ message ValidatorState {
   }
   ValidatorStateEnum state = 1;
 }
-
 
 // Combines all validator info into a single packet.
 message ValidatorInfo {

@@ -16,7 +16,7 @@ use penumbra_dex::{
 };
 use penumbra_fee::Fee;
 use penumbra_governance::{DelegatorVote, ProposalSubmit, ProposalWithdraw, ValidatorVote};
-use penumbra_ibc::IbcAction;
+use penumbra_ibc::IbcRelay;
 use penumbra_keys::{FullViewingKey, PayloadKey};
 use penumbra_proto::{
     core::transaction::v1alpha1::{self as pbt},
@@ -198,7 +198,7 @@ impl Transaction {
                 | Action::Undelegate(_)
                 | Action::UndelegateClaim(_)
                 | Action::ValidatorDefinition(_)
-                | Action::IbcAction(_)
+                | Action::IbcRelay(_)
                 | Action::ProposalSubmit(_)
                 | Action::ProposalWithdraw(_)
                 | Action::ValidatorVote(_)
@@ -356,9 +356,9 @@ impl Transaction {
         })
     }
 
-    pub fn ibc_actions(&self) -> impl Iterator<Item = &IbcAction> {
+    pub fn ibc_actions(&self) -> impl Iterator<Item = &IbcRelay> {
         self.actions().filter_map(|action| {
-            if let Action::IbcAction(ibc_action) = action {
+            if let Action::IbcRelay(ibc_action) = action {
                 Some(ibc_action)
             } else {
                 None

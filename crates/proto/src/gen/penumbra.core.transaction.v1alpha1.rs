@@ -103,7 +103,7 @@ pub mod action {
             super::super::super::component::stake::v1alpha1::ValidatorDefinition,
         ),
         #[prost(message, tag = "17")]
-        IbcAction(super::super::super::component::ibc::v1alpha1::IbcAction),
+        IbcRelayAction(super::super::super::component::ibc::v1alpha1::IbcRelay),
         /// Governance:
         #[prost(message, tag = "18")]
         ProposalSubmit(
@@ -275,7 +275,7 @@ pub mod action_view {
             super::super::super::component::stake::v1alpha1::ValidatorDefinition,
         ),
         #[prost(message, tag = "17")]
-        IbcAction(super::super::super::component::ibc::v1alpha1::IbcAction),
+        IbcRelayAction(super::super::super::component::ibc::v1alpha1::IbcRelay),
         /// Governance:
         #[prost(message, tag = "18")]
         ProposalSubmit(
@@ -425,7 +425,7 @@ pub mod action_plan {
         ),
         /// This is just a message relayed to the chain.
         #[prost(message, tag = "17")]
-        IbcAction(super::super::super::component::ibc::v1alpha1::IbcAction),
+        IbcRelayAction(super::super::super::component::ibc::v1alpha1::IbcRelay),
         /// Governance:
         #[prost(message, tag = "18")]
         ProposalSubmit(

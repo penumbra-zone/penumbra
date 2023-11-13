@@ -4786,7 +4786,7 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.undelegations.is_empty() {
             len += 1;
         }
-        if !self.ibc_actions.is_empty() {
+        if !self.ibc_relay_actions.is_empty() {
             len += 1;
         }
         if !self.ics20_withdrawals.is_empty() {
@@ -4833,8 +4833,8 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.undelegations.is_empty() {
             struct_ser.serialize_field("undelegations", &self.undelegations)?;
         }
-        if !self.ibc_actions.is_empty() {
-            struct_ser.serialize_field("ibcActions", &self.ibc_actions)?;
+        if !self.ibc_relay_actions.is_empty() {
+            struct_ser.serialize_field("ibcRelayActions", &self.ibc_relay_actions)?;
         }
         if !self.ics20_withdrawals.is_empty() {
             struct_ser.serialize_field("ics20Withdrawals", &self.ics20_withdrawals)?;
@@ -4871,8 +4871,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "swapClaims",
             "delegations",
             "undelegations",
-            "ibc_actions",
-            "ibcActions",
+            "ibc_relay_actions",
+            "ibcRelayActions",
             "ics20_withdrawals",
             "ics20Withdrawals",
             "position_opens",
@@ -4895,7 +4895,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             SwapClaims,
             Delegations,
             Undelegations,
-            IbcActions,
+            IbcRelayActions,
             Ics20Withdrawals,
             PositionOpens,
             PositionCloses,
@@ -4931,7 +4931,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "swapClaims" | "swap_claims" => Ok(GeneratedField::SwapClaims),
                             "delegations" => Ok(GeneratedField::Delegations),
                             "undelegations" => Ok(GeneratedField::Undelegations),
-                            "ibcActions" | "ibc_actions" => Ok(GeneratedField::IbcActions),
+                            "ibcRelayActions" | "ibc_relay_actions" => Ok(GeneratedField::IbcRelayActions),
                             "ics20Withdrawals" | "ics20_withdrawals" => Ok(GeneratedField::Ics20Withdrawals),
                             "positionOpens" | "position_opens" => Ok(GeneratedField::PositionOpens),
                             "positionCloses" | "position_closes" => Ok(GeneratedField::PositionCloses),
@@ -4965,7 +4965,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut swap_claims__ = None;
                 let mut delegations__ = None;
                 let mut undelegations__ = None;
-                let mut ibc_actions__ = None;
+                let mut ibc_relay_actions__ = None;
                 let mut ics20_withdrawals__ = None;
                 let mut position_opens__ = None;
                 let mut position_closes__ = None;
@@ -5034,11 +5034,11 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             }
                             undelegations__ = Some(map_.next_value()?);
                         }
-                        GeneratedField::IbcActions => {
-                            if ibc_actions__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("ibcActions"));
+                        GeneratedField::IbcRelayActions => {
+                            if ibc_relay_actions__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("ibcRelayActions"));
                             }
-                            ibc_actions__ = Some(map_.next_value()?);
+                            ibc_relay_actions__ = Some(map_.next_value()?);
                         }
                         GeneratedField::Ics20Withdrawals => {
                             if ics20_withdrawals__.is_some() {
@@ -5077,7 +5077,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     swap_claims: swap_claims__.unwrap_or_default(),
                     delegations: delegations__.unwrap_or_default(),
                     undelegations: undelegations__.unwrap_or_default(),
-                    ibc_actions: ibc_actions__.unwrap_or_default(),
+                    ibc_relay_actions: ibc_relay_actions__.unwrap_or_default(),
                     ics20_withdrawals: ics20_withdrawals__.unwrap_or_default(),
                     position_opens: position_opens__.unwrap_or_default(),
                     position_closes: position_closes__.unwrap_or_default(),

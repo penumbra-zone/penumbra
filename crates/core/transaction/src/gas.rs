@@ -6,7 +6,7 @@ use penumbra_dex::{
     SwapClaim,
 };
 use penumbra_fee::Gas;
-use penumbra_ibc::IbcAction;
+use penumbra_ibc::IbcRelay;
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{Ics20Withdrawal, Output, Spend};
 use penumbra_stake::{
@@ -289,7 +289,7 @@ impl GasCost for Action {
             Action::DaoDeposit(deposit) => deposit.gas_cost(),
             Action::DaoSpend(spend) => spend.gas_cost(),
             Action::DaoOutput(output) => output.gas_cost(),
-            Action::IbcAction(x) => x.gas_cost(),
+            Action::IbcRelay(x) => x.gas_cost(),
             Action::ValidatorDefinition(x) => x.gas_cost(),
         }
     }
@@ -539,7 +539,7 @@ impl GasCost for DaoOutput {
     }
 }
 
-impl GasCost for IbcAction {
+impl GasCost for IbcRelay {
     fn gas_cost(&self) -> Gas {
         Gas {
             // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
@@ -550,12 +550,12 @@ impl GasCost for IbcAction {
             // For a IbcAction this is the byte size of a [`StatePayload`].
             compact_block_space: match self {
                 // RecvPacket will mint a note if successful.
-                IbcAction::RecvPacket(_) => std::mem::size_of::<StatePayload>() as u64,
+                IbcRelay::RecvPacket(_) => std::mem::size_of::<StatePayload>() as u64,
                 _ => 0u64,
             },
             // Includes a proof in the execution for RecvPacket (TODO: check the other variants).
             verification: match self {
-                IbcAction::RecvPacket(_) => 1000,
+                IbcRelay::RecvPacket(_) => 1000,
                 _ => 0u64,
             },
             // Execution cost is currently hardcoded at 10 for all Action variants.

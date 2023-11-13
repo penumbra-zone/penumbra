@@ -1,6 +1,6 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct IbcAction {
+pub struct IbcRelay {
     #[prost(message, optional, tag = "1")]
     pub raw_action: ::core::option::Option<::pbjson_types::Any>,
 }

@@ -5,7 +5,7 @@ use penumbra_dex::{
     swap_claim::SwapClaimView,
 };
 use penumbra_governance::{ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote};
-use penumbra_ibc::IbcAction;
+use penumbra_ibc::IbcRelay;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
 use penumbra_shielded_pool::Ics20Withdrawal;
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
@@ -29,7 +29,7 @@ pub enum ActionView {
     DelegatorVote(DelegatorVoteView),
     // Action types with transparent contents
     ValidatorDefinition(penumbra_stake::validator::Definition),
-    IbcAction(IbcAction),
+    IbcRelay(IbcRelay),
     ProposalSubmit(ProposalSubmit),
     ProposalWithdraw(ProposalWithdraw),
     ValidatorVote(ValidatorVote),
@@ -73,7 +73,7 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::Swap(x) => ActionView::Swap(x.try_into()?),
                 AV::SwapClaim(x) => ActionView::SwapClaim(x.try_into()?),
                 AV::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.try_into()?),
-                AV::IbcAction(x) => ActionView::IbcAction(x.try_into()?),
+                AV::IbcRelayAction(x) => ActionView::IbcRelay(x.try_into()?),
                 AV::ProposalSubmit(x) => ActionView::ProposalSubmit(x.try_into()?),
                 AV::ProposalWithdraw(x) => ActionView::ProposalWithdraw(x.try_into()?),
                 AV::ProposalDepositClaim(x) => ActionView::ProposalDepositClaim(x.try_into()?),
@@ -105,7 +105,7 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::Undelegate(x) => AV::Undelegate(x.into()),
                 ActionView::UndelegateClaim(x) => AV::UndelegateClaim(x.into()),
                 ActionView::ValidatorDefinition(x) => AV::ValidatorDefinition(x.into()),
-                ActionView::IbcAction(x) => AV::IbcAction(x.into()),
+                ActionView::IbcRelay(x) => AV::IbcRelayAction(x.into()),
                 ActionView::ProposalSubmit(x) => AV::ProposalSubmit(x.into()),
                 ActionView::ProposalWithdraw(x) => AV::ProposalWithdraw(x.into()),
                 ActionView::ValidatorVote(x) => AV::ValidatorVote(x.into()),
@@ -135,7 +135,7 @@ impl From<ActionView> for Action {
             ActionView::Undelegate(x) => Action::Undelegate(x),
             ActionView::UndelegateClaim(x) => Action::UndelegateClaim(x),
             ActionView::ValidatorDefinition(x) => Action::ValidatorDefinition(x),
-            ActionView::IbcAction(x) => Action::IbcAction(x),
+            ActionView::IbcRelay(x) => Action::IbcRelay(x),
             ActionView::ProposalSubmit(x) => Action::ProposalSubmit(x),
             ActionView::ProposalWithdraw(x) => Action::ProposalWithdraw(x),
             ActionView::ValidatorVote(x) => Action::ValidatorVote(x),

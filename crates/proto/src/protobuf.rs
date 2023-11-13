@@ -42,7 +42,7 @@ pub trait TypeUrl {
 // This should only be done here in cases where the domain type lives in a crate
 // that shouldn't depend on the Penumbra proto framework.
 
-use crate::penumbra::core::component::ibc::v1alpha1::IbcAction;
+use crate::penumbra::core::component::ibc::v1alpha1::IbcRelay;
 use crate::penumbra::core::keys::v1alpha1::SpendVerificationKey;
 use crate::penumbra::crypto::decaf377_rdsa::v1alpha1::{BindingSignature, SpendAuthSignature};
 
@@ -229,7 +229,7 @@ impl DomainType for ibc_types::lightclients::tendermint::consensus_state::Consen
     type Proto = Any;
 }
 
-impl<T> From<T> for IbcAction
+impl<T> From<T> for IbcRelay
 where
     T: ibc_types::DomainType + ibc_types::TypeUrl + Send + Sync + 'static,
     <T as TryFrom<<T as ibc_types::DomainType>::Proto>>::Error: Send + Sync + std::error::Error,

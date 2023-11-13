@@ -14,7 +14,7 @@ use penumbra_governance::{
     DelegatorVote, DelegatorVoteView, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw,
     ValidatorVote, VotingReceiptToken,
 };
-use penumbra_ibc::IbcAction;
+use penumbra_ibc::IbcRelay;
 use penumbra_shielded_pool::{Ics20Withdrawal, Note, Output, OutputView, Spend, SpendView};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 
@@ -195,13 +195,13 @@ impl IsAction for UndelegateClaim {
     }
 }
 
-impl IsAction for IbcAction {
+impl IsAction for IbcRelay {
     fn balance_commitment(&self) -> balance::Commitment {
         Default::default()
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::IbcAction(self.clone())
+        ActionView::IbcRelay(self.clone())
     }
 }
 

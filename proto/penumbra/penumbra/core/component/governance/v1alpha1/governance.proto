@@ -2,21 +2,20 @@ syntax = "proto3";
 package penumbra.core.component.governance.v1alpha1;
 
 import "google/protobuf/any.proto";
-
-import "penumbra/crypto/decaf377_rdsa/v1alpha1/decaf377_rdsa.proto";
-import "penumbra/core/num/v1alpha1/num.proto";
 import "penumbra/core/asset/v1alpha1/asset.proto";
-import "penumbra/core/keys/v1alpha1/keys.proto";
 import "penumbra/core/component/chain/v1alpha1/chain.proto";
-import "penumbra/core/component/fee/v1alpha1/fee.proto";
 import "penumbra/core/component/dao/v1alpha1/dao.proto";
+import "penumbra/core/component/fee/v1alpha1/fee.proto";
 import "penumbra/core/component/ibc/v1alpha1/ibc.proto";
-import "penumbra/core/component/stake/v1alpha1/stake.proto";
 import "penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto";
+import "penumbra/core/component/stake/v1alpha1/stake.proto";
+import "penumbra/core/keys/v1alpha1/keys.proto";
+import "penumbra/core/num/v1alpha1/num.proto";
+import "penumbra/crypto/decaf377_rdsa/v1alpha1/decaf377_rdsa.proto";
 
 // A Penumbra ZK delegator vote proof.
 message ZKDelegatorVoteProof {
-    bytes inner = 1;
+  bytes inner = 1;
 }
 
 message ProposalSubmit {
@@ -106,7 +105,6 @@ message DelegatorVoteView {
   }
 }
 
-
 message DelegatorVotePlan {
   // The proposal to vote on.
   uint64 proposal = 1;
@@ -129,20 +127,20 @@ message DelegatorVotePlan {
 }
 
 message DaoDeposit {
-    // The value to deposit into the DAO.
-    asset.v1alpha1.Value value = 1;
+  // The value to deposit into the DAO.
+  asset.v1alpha1.Value value = 1;
 }
 
 message DaoSpend {
-    // The value to spend from the DAO.
-    asset.v1alpha1.Value value = 1;
+  // The value to spend from the DAO.
+  asset.v1alpha1.Value value = 1;
 }
 
 message DaoOutput {
-    // The value to output from the DAO.
-    asset.v1alpha1.Value value = 1;
-    // The address to send the output to.
-    keys.v1alpha1.Address address = 2;
+  // The value to output from the DAO.
+  asset.v1alpha1.Value value = 1;
+  // The address to send the output to.
+  keys.v1alpha1.Address address = 2;
 }
 
 // A vote on a proposal.
@@ -193,8 +191,8 @@ message ProposalState {
 message ProposalOutcome {
   // Whether or not the proposal was withdrawn.
   message Withdrawn {
-      // The reason for withdrawing the proposal during the voting period.
-      string reason = 1;
+    // The reason for withdrawing the proposal during the voting period.
+    string reason = 1;
   }
 
   // The proposal was passed.
@@ -202,20 +200,20 @@ message ProposalOutcome {
 
   // The proposal did not pass.
   message Failed {
-      // Present if the proposal was withdrawn during the voting period.
-      Withdrawn withdrawn = 1;
+    // Present if the proposal was withdrawn during the voting period.
+    Withdrawn withdrawn = 1;
   }
 
   // The proposal did not pass, and was slashed.
   message Slashed {
-      // Present if the proposal was withdrawn during the voting period.
-      Withdrawn withdrawn = 1;
+    // Present if the proposal was withdrawn during the voting period.
+    Withdrawn withdrawn = 1;
   }
 
   oneof outcome {
-      Passed passed = 1;
-      Failed failed = 2;
-      Slashed slashed = 3;
+    Passed passed = 1;
+    Failed failed = 2;
+    Slashed slashed = 3;
   }
 }
 
@@ -423,18 +421,18 @@ message GenesisContent {
 // Note: must be kept in sync with AppParameters.
 // Each field here is optional.
 message ChangedAppParameters {
-    // Chain module parameters.
-    core.component.chain.v1alpha1.ChainParameters chain_params = 1;
-    // DAO module parameters.
-    core.component.dao.v1alpha1.DaoParameters dao_params = 2;
-    // Governance module parameters.
-    core.component.governance.v1alpha1.GovernanceParameters governance_params = 3;
-    // IBC module parameters.
-    core.component.ibc.v1alpha1.IbcParameters ibc_params = 4;
-    // Stake module parameters.
-    core.component.stake.v1alpha1.StakeParameters stake_params = 5;
-    // Fee module parameters.
-    core.component.fee.v1alpha1.FeeParameters fee_params = 6;
+  // Chain module parameters.
+  core.component.chain.v1alpha1.ChainParameters chain_params = 1;
+  // DAO module parameters.
+  core.component.dao.v1alpha1.DaoParameters dao_params = 2;
+  // Governance module parameters.
+  core.component.governance.v1alpha1.GovernanceParameters governance_params = 3;
+  // IBC module parameters.
+  core.component.ibc.v1alpha1.IbcParameters ibc_params = 4;
+  // Stake module parameters.
+  core.component.stake.v1alpha1.StakeParameters stake_params = 5;
+  // Fee module parameters.
+  core.component.fee.v1alpha1.FeeParameters fee_params = 6;
 }
 
 message ChangedAppParametersSet {

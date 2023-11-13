@@ -1,28 +1,28 @@
 syntax = "proto3";
 package penumbra.core.component.shielded_pool.v1alpha1;
 
-import "penumbra/crypto/tct/v1alpha1/tct.proto";
-import "penumbra/crypto/decaf377_rdsa/v1alpha1/decaf377_rdsa.proto";
 import "penumbra/core/asset/v1alpha1/asset.proto";
 import "penumbra/core/keys/v1alpha1/keys.proto";
 import "penumbra/core/num/v1alpha1/num.proto";
+import "penumbra/crypto/decaf377_rdsa/v1alpha1/decaf377_rdsa.proto";
+import "penumbra/crypto/tct/v1alpha1/tct.proto";
 
 message Note {
-    asset.v1alpha1.Value value = 1;
-    bytes rseed = 2;
-    keys.v1alpha1.Address address = 3;
+  asset.v1alpha1.Value value = 1;
+  bytes rseed = 2;
+  keys.v1alpha1.Address address = 3;
 }
 
 message NoteView {
-    asset.v1alpha1.ValueView value = 1;
-    bytes rseed = 2;
-    keys.v1alpha1.AddressView address = 3;
+  asset.v1alpha1.ValueView value = 1;
+  bytes rseed = 2;
+  keys.v1alpha1.AddressView address = 3;
 }
 
 // An encrypted note.
 // 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
 message NoteCiphertext {
-    bytes inner = 1;
+  bytes inner = 1;
 }
 
 // The body of an output description, including only the minimal
@@ -88,18 +88,18 @@ message SpendView {
 }
 
 message SpendPlan {
-    // The plaintext note we plan to spend.
-    Note note = 1;
-    // The position of the note we plan to spend.
-    uint64 position = 2;
-    // The randomizer to use for the spend.
-    bytes randomizer = 3;
-    // The blinding factor to use for the value commitment.
-    bytes value_blinding = 4;
-    // The first blinding factor to use for the ZK spend proof.
-    bytes proof_blinding_r = 5;
-    // The second blinding factor to use for the ZK spend proof.
-    bytes proof_blinding_s = 6;
+  // The plaintext note we plan to spend.
+  Note note = 1;
+  // The position of the note we plan to spend.
+  uint64 position = 2;
+  // The randomizer to use for the spend.
+  bytes randomizer = 3;
+  // The blinding factor to use for the value commitment.
+  bytes value_blinding = 4;
+  // The first blinding factor to use for the ZK spend proof.
+  bytes proof_blinding_r = 5;
+  // The second blinding factor to use for the ZK spend proof.
+  bytes proof_blinding_s = 6;
 }
 
 // Creates a new shielded note.
@@ -142,18 +142,18 @@ message OutputView {
 }
 
 message OutputPlan {
-    // The value to send to this output.
-    asset.v1alpha1.Value value = 1;
-    // The destination address to send it to.
-    keys.v1alpha1.Address dest_address = 2;
-    // The rseed to use for the new note.
-    bytes rseed = 3;
-    // The blinding factor to use for the value commitment.
-    bytes value_blinding = 4;
-    // The first blinding factor to use for the ZK output proof.
-    bytes proof_blinding_r = 5;
-    // The second blinding factor to use for the ZK output proof.
-    bytes proof_blinding_s = 6;
+  // The value to send to this output.
+  asset.v1alpha1.Value value = 1;
+  // The destination address to send it to.
+  keys.v1alpha1.Address dest_address = 2;
+  // The rseed to use for the new note.
+  bytes rseed = 3;
+  // The blinding factor to use for the value commitment.
+  bytes value_blinding = 4;
+  // The first blinding factor to use for the ZK output proof.
+  bytes proof_blinding_r = 5;
+  // The second blinding factor to use for the ZK output proof.
+  bytes proof_blinding_s = 6;
 }
 
 // Query operations for the shielded pool component.

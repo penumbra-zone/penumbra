@@ -77,8 +77,8 @@ pub struct TransactionPlannerRequest {
     #[prost(message, repeated, tag = "50")]
     pub undelegations: ::prost::alloc::vec::Vec<transaction_planner_request::Undelegate>,
     #[prost(message, repeated, tag = "60")]
-    pub ibc_actions: ::prost::alloc::vec::Vec<
-        super::super::core::component::ibc::v1alpha1::IbcAction,
+    pub ibc_relay_actions: ::prost::alloc::vec::Vec<
+        super::super::core::component::ibc::v1alpha1::IbcRelay,
     >,
     #[prost(message, repeated, tag = "61")]
     pub ics20_withdrawals: ::prost::alloc::vec::Vec<

@@ -13,7 +13,7 @@ use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::test_keys;
 use penumbra_custody::soft_kms;
 use penumbra_proto::{
-    core::{component::fee::v1alpha1::Fee, component::ibc::v1alpha1::IbcAction},
+    core::{component::fee::v1alpha1::Fee, component::ibc::v1alpha1::IbcRelay},
     custody::v1alpha1::{
         custody_protocol_service_client::CustodyProtocolServiceClient, AuthorizeRequest,
     },
@@ -109,7 +109,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     use ibc_types::DomainType;
     let msg_create_stargaze_client =
         MsgCreateClient::decode(msg_create_client_stargaze_raw.as_slice()).unwrap();
-    let create_client_action: IbcAction = msg_create_stargaze_client.into();
+    let create_client_action: IbcRelay = msg_create_stargaze_client.into();
 
     // 5.1. Generate a transaction plan sending funds to an address.
     let plan = view_client
@@ -124,7 +124,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
                     .into(),
                 ),
             }],
-            ibc_actions: vec![create_client_action],
+            ibc_relay_actions: vec![create_client_action],
             ..Default::default()
         })
         .await?

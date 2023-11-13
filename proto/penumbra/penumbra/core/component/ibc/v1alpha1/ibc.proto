@@ -1,14 +1,13 @@
 syntax = "proto3";
 package penumbra.core.component.ibc.v1alpha1;
 
-import "ibc/core/client/v1/client.proto";
 import "google/protobuf/any.proto";
-
+import "ibc/core/client/v1/client.proto";
+import "penumbra/core/asset/v1alpha1/asset.proto";
 import "penumbra/core/keys/v1alpha1/keys.proto";
 import "penumbra/core/num/v1alpha1/num.proto";
-import "penumbra/core/asset/v1alpha1/asset.proto";
 
-message IbcAction {
+message IbcRelay {
   .google.protobuf.Any raw_action = 1;
 }
 
@@ -31,7 +30,7 @@ message Ics20Withdrawal {
   num.v1alpha1.Amount amount = 1;
   asset.v1alpha1.Denom denom = 2;
 
-  // the address on the destination chain to send the transfer to 
+  // the address on the destination chain to send the transfer to
   string destination_chain_address = 3;
 
   // a "sender" penumbra address to use to return funds from this withdrawal.
@@ -65,7 +64,7 @@ message ConsensusState {
 }
 
 message VerifiedHeights {
-  repeated .ibc.core.client.v1.Height heights = 1; 
+  repeated .ibc.core.client.v1.Height heights = 1;
 }
 
 message ConnectionCounter {

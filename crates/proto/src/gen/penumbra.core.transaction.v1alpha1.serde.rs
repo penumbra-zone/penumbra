@@ -27,8 +27,8 @@ impl serde::Serialize for Action {
                 action::Action::ValidatorDefinition(v) => {
                     struct_ser.serialize_field("validatorDefinition", v)?;
                 }
-                action::Action::IbcAction(v) => {
-                    struct_ser.serialize_field("ibcAction", v)?;
+                action::Action::IbcRelayAction(v) => {
+                    struct_ser.serialize_field("ibcRelayAction", v)?;
                 }
                 action::Action::ProposalSubmit(v) => {
                     struct_ser.serialize_field("proposalSubmit", v)?;
@@ -97,8 +97,8 @@ impl<'de> serde::Deserialize<'de> for Action {
             "swapClaim",
             "validator_definition",
             "validatorDefinition",
-            "ibc_action",
-            "ibcAction",
+            "ibc_relay_action",
+            "ibcRelayAction",
             "proposal_submit",
             "proposalSubmit",
             "proposal_withdraw",
@@ -138,7 +138,7 @@ impl<'de> serde::Deserialize<'de> for Action {
             Swap,
             SwapClaim,
             ValidatorDefinition,
-            IbcAction,
+            IbcRelayAction,
             ProposalSubmit,
             ProposalWithdraw,
             ValidatorVote,
@@ -181,7 +181,7 @@ impl<'de> serde::Deserialize<'de> for Action {
                             "swap" => Ok(GeneratedField::Swap),
                             "swapClaim" | "swap_claim" => Ok(GeneratedField::SwapClaim),
                             "validatorDefinition" | "validator_definition" => Ok(GeneratedField::ValidatorDefinition),
-                            "ibcAction" | "ibc_action" => Ok(GeneratedField::IbcAction),
+                            "ibcRelayAction" | "ibc_relay_action" => Ok(GeneratedField::IbcRelayAction),
                             "proposalSubmit" | "proposal_submit" => Ok(GeneratedField::ProposalSubmit),
                             "proposalWithdraw" | "proposal_withdraw" => Ok(GeneratedField::ProposalWithdraw),
                             "validatorVote" | "validator_vote" => Ok(GeneratedField::ValidatorVote),
@@ -255,11 +255,11 @@ impl<'de> serde::Deserialize<'de> for Action {
                             action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::ValidatorDefinition)
 ;
                         }
-                        GeneratedField::IbcAction => {
+                        GeneratedField::IbcRelayAction => {
                             if action__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("ibcAction"));
+                                return Err(serde::de::Error::duplicate_field("ibcRelayAction"));
                             }
-                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::IbcAction)
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::IbcRelayAction)
 ;
                         }
                         GeneratedField::ProposalSubmit => {
@@ -413,8 +413,8 @@ impl serde::Serialize for ActionPlan {
                 action_plan::Action::ValidatorDefinition(v) => {
                     struct_ser.serialize_field("validatorDefinition", v)?;
                 }
-                action_plan::Action::IbcAction(v) => {
-                    struct_ser.serialize_field("ibcAction", v)?;
+                action_plan::Action::IbcRelayAction(v) => {
+                    struct_ser.serialize_field("ibcRelayAction", v)?;
                 }
                 action_plan::Action::ProposalSubmit(v) => {
                     struct_ser.serialize_field("proposalSubmit", v)?;
@@ -483,8 +483,8 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             "swapClaim",
             "validator_definition",
             "validatorDefinition",
-            "ibc_action",
-            "ibcAction",
+            "ibc_relay_action",
+            "ibcRelayAction",
             "proposal_submit",
             "proposalSubmit",
             "proposal_withdraw",
@@ -523,7 +523,7 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             Swap,
             SwapClaim,
             ValidatorDefinition,
-            IbcAction,
+            IbcRelayAction,
             ProposalSubmit,
             ProposalWithdraw,
             ValidatorVote,
@@ -566,7 +566,7 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             "swap" => Ok(GeneratedField::Swap),
                             "swapClaim" | "swap_claim" => Ok(GeneratedField::SwapClaim),
                             "validatorDefinition" | "validator_definition" => Ok(GeneratedField::ValidatorDefinition),
-                            "ibcAction" | "ibc_action" => Ok(GeneratedField::IbcAction),
+                            "ibcRelayAction" | "ibc_relay_action" => Ok(GeneratedField::IbcRelayAction),
                             "proposalSubmit" | "proposal_submit" => Ok(GeneratedField::ProposalSubmit),
                             "proposalWithdraw" | "proposal_withdraw" => Ok(GeneratedField::ProposalWithdraw),
                             "validatorVote" | "validator_vote" => Ok(GeneratedField::ValidatorVote),
@@ -640,11 +640,11 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::ValidatorDefinition)
 ;
                         }
-                        GeneratedField::IbcAction => {
+                        GeneratedField::IbcRelayAction => {
                             if action__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("ibcAction"));
+                                return Err(serde::de::Error::duplicate_field("ibcRelayAction"));
                             }
-                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::IbcAction)
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::IbcRelayAction)
 ;
                         }
                         GeneratedField::ProposalSubmit => {
@@ -798,8 +798,8 @@ impl serde::Serialize for ActionView {
                 action_view::ActionView::ValidatorDefinition(v) => {
                     struct_ser.serialize_field("validatorDefinition", v)?;
                 }
-                action_view::ActionView::IbcAction(v) => {
-                    struct_ser.serialize_field("ibcAction", v)?;
+                action_view::ActionView::IbcRelayAction(v) => {
+                    struct_ser.serialize_field("ibcRelayAction", v)?;
                 }
                 action_view::ActionView::ProposalSubmit(v) => {
                     struct_ser.serialize_field("proposalSubmit", v)?;
@@ -868,8 +868,8 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             "swapClaim",
             "validator_definition",
             "validatorDefinition",
-            "ibc_action",
-            "ibcAction",
+            "ibc_relay_action",
+            "ibcRelayAction",
             "proposal_submit",
             "proposalSubmit",
             "proposal_withdraw",
@@ -909,7 +909,7 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             Swap,
             SwapClaim,
             ValidatorDefinition,
-            IbcAction,
+            IbcRelayAction,
             ProposalSubmit,
             ProposalWithdraw,
             ValidatorVote,
@@ -952,7 +952,7 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                             "swap" => Ok(GeneratedField::Swap),
                             "swapClaim" | "swap_claim" => Ok(GeneratedField::SwapClaim),
                             "validatorDefinition" | "validator_definition" => Ok(GeneratedField::ValidatorDefinition),
-                            "ibcAction" | "ibc_action" => Ok(GeneratedField::IbcAction),
+                            "ibcRelayAction" | "ibc_relay_action" => Ok(GeneratedField::IbcRelayAction),
                             "proposalSubmit" | "proposal_submit" => Ok(GeneratedField::ProposalSubmit),
                             "proposalWithdraw" | "proposal_withdraw" => Ok(GeneratedField::ProposalWithdraw),
                             "validatorVote" | "validator_vote" => Ok(GeneratedField::ValidatorVote),
@@ -1026,11 +1026,11 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                             action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::ValidatorDefinition)
 ;
                         }
-                        GeneratedField::IbcAction => {
+                        GeneratedField::IbcRelayAction => {
                             if action_view__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("ibcAction"));
+                                return Err(serde::de::Error::duplicate_field("ibcRelayAction"));
                             }
-                            action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::IbcAction)
+                            action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::IbcRelayAction)
 ;
                         }
                         GeneratedField::ProposalSubmit => {

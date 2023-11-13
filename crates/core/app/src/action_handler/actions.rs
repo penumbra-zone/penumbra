@@ -38,7 +38,7 @@ impl ActionHandler for Action {
             Action::ProposalDepositClaim(action) => action.check_stateless(()).await,
             Action::Swap(action) => action.check_stateless(()).await,
             Action::Output(action) => action.check_stateless(()).await,
-            Action::IbcAction(action) => {
+            Action::IbcRelay(action) => {
                 action
                     .clone()
                     .with_handler::<Ics20Transfer>()
@@ -71,7 +71,7 @@ impl ActionHandler for Action {
             Action::SwapClaim(action) => action.check_stateful(state).await,
             Action::Spend(action) => action.check_stateful(state).await,
             Action::Output(action) => action.check_stateful(state).await,
-            Action::IbcAction(action) => {
+            Action::IbcRelay(action) => {
                 if !state.get_ibc_params().await?.ibc_enabled {
                     anyhow::bail!("transaction contains IBC actions, but IBC is not enabled");
                 }
@@ -108,7 +108,7 @@ impl ActionHandler for Action {
             Action::SwapClaim(action) => action.execute(state).await,
             Action::Spend(action) => action.execute(state).await,
             Action::Output(action) => action.execute(state).await,
-            Action::IbcAction(action) => {
+            Action::IbcRelay(action) => {
                 action
                     .clone()
                     .with_handler::<Ics20Transfer>()

@@ -1,12 +1,12 @@
 syntax = "proto3";
 package penumbra.core.component.compact_block.v1alpha1;
 
-import "penumbra/crypto/tct/v1alpha1/tct.proto";
-import "penumbra/core/component/sct/v1alpha1/sct.proto";
 import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/core/component/dex/v1alpha1/dex.proto";
 import "penumbra/core/component/fee/v1alpha1/fee.proto";
+import "penumbra/core/component/sct/v1alpha1/sct.proto";
 import "penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto";
+import "penumbra/crypto/tct/v1alpha1/tct.proto";
 
 // Contains the minimum data needed to update client state.
 message CompactBlock {

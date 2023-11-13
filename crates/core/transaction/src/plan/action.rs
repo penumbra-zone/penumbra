@@ -14,7 +14,7 @@ use penumbra_governance::{
     ValidatorVote,
 };
 
-use penumbra_ibc::IbcAction;
+use penumbra_ibc::IbcRelay;
 use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType, TypeUrl};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
@@ -45,7 +45,7 @@ pub enum ActionPlan {
     Swap(SwapPlan),
     /// Describes a swap claim.
     SwapClaim(SwapClaimPlan),
-    IbcAction(IbcAction),
+    IbcAction(IbcRelay),
     /// Propose a governance vote.
     ProposalSubmit(ProposalSubmit),
     /// Withdraw a proposed vote.
@@ -147,8 +147,8 @@ impl From<penumbra_stake::validator::Definition> for ActionPlan {
     }
 }
 
-impl From<IbcAction> for ActionPlan {
-    fn from(inner: IbcAction) -> ActionPlan {
+impl From<IbcRelay> for ActionPlan {
+    fn from(inner: IbcRelay) -> ActionPlan {
         ActionPlan::IbcAction(inner)
     }
 }
@@ -237,7 +237,7 @@ impl From<ActionPlan> for pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::Swap(inner.into())),
             },
             ActionPlan::IbcAction(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::IbcAction(inner.into())),
+                action: Some(pb_t::action_plan::Action::IbcRelayAction(inner.into())),
             },
             ActionPlan::ProposalSubmit(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::ProposalSubmit(inner.into())),
@@ -318,7 +318,7 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             pb_t::action_plan::Action::SwapClaim(inner) => {
                 Ok(ActionPlan::SwapClaim(inner.try_into()?))
             }
-            pb_t::action_plan::Action::IbcAction(inner) => {
+            pb_t::action_plan::Action::IbcRelayAction(inner) => {
                 Ok(ActionPlan::IbcAction(inner.try_into()?))
             }
             pb_t::action_plan::Action::ProposalSubmit(inner) => {
