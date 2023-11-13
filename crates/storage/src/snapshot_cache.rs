@@ -94,7 +94,7 @@ mod test {
         let dir = tempdir().expect("unable to create tempdir");
         let file_path = dir.path().join("snapshot-cache-testing.db");
 
-        Storage::load(file_path)
+        Storage::init(file_path)
             .await
             .expect("unable to load storage")
     }

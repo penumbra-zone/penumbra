@@ -284,7 +284,7 @@ async fn main() -> anyhow::Result<()> {
             let mut rocks_path = home.clone();
             rocks_path.push("rocksdb");
 
-            let storage = Storage::load(rocks_path)
+            let storage = Storage::init(rocks_path)
                 .await
                 .context("Unable to initialize RocksDB storage")?;
 
@@ -654,7 +654,7 @@ async fn main() -> anyhow::Result<()> {
 
             tracing::info!("pruning JMT tree");
             export_path.push("rocksdb");
-            let export = Storage::load(export_path).await?;
+            let export = Storage::init(export_path).await?;
             let _ = StateDelta::new(export.latest_snapshot());
             // TODO:
             // - add utilities in `penumbra_storage` to prune a tree
