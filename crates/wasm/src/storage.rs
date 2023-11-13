@@ -15,7 +15,6 @@ use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note};
 use crate::error::WasmResult;
 use crate::note_record::SpendableNoteRecord;
-use wasm_bindgen_test::console_log;
 use wasm_bindgen::JsValue;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -15,7 +15,6 @@ use crate::{
     AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
 };
 use crate::plan::ActionPlan;
-use wasm_bindgen_test::console_log;
 
 impl TransactionPlan {
     pub fn build_unauth_with_actions(
@@ -25,14 +24,12 @@ impl TransactionPlan {
         witness_data: WitnessData,
     ) -> Result<Transaction> {
         let mut memo: Option<MemoCiphertext> = None;
-        let mut memo_key: Option<PayloadKey> = None;
         if self.memo_plan.is_some() {
             let memo_plan = self
                 .memo_plan
                 .clone()
                 .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
             memo = memo_plan.memo().ok();
-            memo_key = Some(memo_plan.key);
         }
 
         // Build the transaction's swaps.
@@ -153,7 +150,7 @@ impl TransactionPlan {
     }
 
     pub fn authorize_with_auth<R: CryptoRng + RngCore + Debug>(
-        mut self,
+        &self,
         rng: &mut R,
         auth_data: &AuthorizationData,
         mut transaction: Transaction,
@@ -243,14 +240,12 @@ impl TransactionPlan {
         auth_data: &AuthorizationData,
     ) -> Result<Transaction> {
         // Derive memo
-        let mut memo: Option<MemoCiphertext> = None;
         let mut memo_key: Option<PayloadKey> = None;
         if self.memo_plan.is_some() {
             let memo_plan = self
                 .memo_plan
                 .clone()
                 .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
-            memo = memo_plan.memo().ok();
             memo_key = Some(memo_plan.key);
         }
 
@@ -259,12 +254,14 @@ impl TransactionPlan {
         // 1. Call ActionPlan::build_unauth on each action
         for spend_plan in self.spend_plans() {
             let spend = ActionPlan::Spend(spend_plan.to_owned());
-            let action = spend.build_unauth(&full_viewing_key, &witness_data, memo_key.clone()).unwrap();
+            let action = spend.build_unauth(full_viewing_key, &witness_data, memo_key.clone())
+                .expect("Build spend action failed!");
             actions.push(action);
         }
         for output_plan in self.output_plans() {
             let output = ActionPlan::Output(output_plan.to_owned());
-            let action = output.build_unauth(&full_viewing_key, &witness_data, memo_key.clone()).unwrap();
+            let action = output.build_unauth(full_viewing_key, &witness_data, memo_key.clone())
+                .expect("Build output action failed!");
             actions.push(action);
         }
 
@@ -272,7 +269,7 @@ impl TransactionPlan {
         let transaction = self.clone().build_unauth_with_actions(actions, full_viewing_key.to_owned(), witness_data)?;
         
         // 3. Slot in the auth data with TransactionPlan::authorize_with_aut, and return the completed transaction
-        let tx = self.authorize_with_auth(&mut OsRng, &auth_data, transaction)?;
+        let tx = self.authorize_with_auth(&mut OsRng, auth_data, transaction)?;
 
         Ok(tx)
     }
@@ -304,14 +301,14 @@ impl TransactionPlan {
         for spend_plan in self.spend_plans() {
             let spend = ActionPlan::Spend(spend_plan.to_owned());
             let action = tokio::spawn(async move {
-                spend.build_unauth(&full_viewing_key, &witness_data, memo_key.clone()).unwrap();
+                spend.build_unauth(full_viewing_key, &witness_data, memo_key.clone()).unwrap();
             });
             actions.push(action);
         }
         for output_plan in self.output_plans() {
             let output = ActionPlan::Output(output_plan.to_owned());
             let action = tokio::spawn(async move {
-                output.build_unauth(&full_viewing_key, &witness_data, memo_key.clone()).unwrap();
+                output.build_unauth(full_viewing_key, &witness_data, memo_key.clone()).unwrap();
             });
             actions.push(action);
         }
@@ -320,7 +317,7 @@ impl TransactionPlan {
         let transaction = self.clone().build_unauth_with_actions(actions, full_viewing_key.to_owned(), witness_data.to_owned())?;
         
         // 3. Slot in the auth data with TransactionPlan::authorize_with_aut, and return the completed transaction
-        let tx = self.authorize_with_auth(&mut OsRng, &auth_data, transaction)?;
+        let tx = self.authorize_with_auth(&mut OsRng, auth_data, transaction)?;
 
         Ok(tx)
     }
