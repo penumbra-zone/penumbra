@@ -22,6 +22,7 @@ use crate::storage::IndexedDBStorage;
 use crate::storage::IndexedDbConstants;
 use crate::utils;
 use crate::view_server::{load_tree, StoredTree};
+use penumbra_transaction::action::Action;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TxInfoResponse {
@@ -155,7 +156,7 @@ pub fn witness(transaction_plan: JsValue, stored_tree: JsValue) -> WasmResult<Js
 ///     auth_data: `pb::AuthorizationData`
 /// Returns: `pb::Transaction`
 #[wasm_bindgen]
-pub fn build(
+pub fn build_serial(
     full_viewing_key: &str,
     transaction_plan: JsValue,
     witness_data: JsValue,
@@ -173,10 +174,43 @@ pub fn build(
     let plan: TransactionPlan = plan_proto.try_into()?;
 
     let tx: Transaction = plan
-        .build(&fvk, witness_data_proto.try_into()?)?
-        .authorize(&mut OsRng, &auth_data_proto.try_into()?)?;
+        .build(&fvk, witness_data_proto.try_into()?, &auth_data_proto.try_into()?)?;
 
     let value = serde_wasm_bindgen::to_value(&tx.to_proto())?;
+    
+    Ok(value)
+}
+
+/// Build transaction in parallel
+#[wasm_bindgen]
+pub fn build_parallel(
+    actions: JsValue,
+    full_viewing_key: &str,
+    transaction_plan: JsValue,
+    witness_data: JsValue,
+    auth_data: JsValue,
+) -> WasmResult<JsValue> {
+    utils::set_panic_hook();
+
+    let plan_proto: pb::TransactionPlan = serde_wasm_bindgen::from_value(transaction_plan)?;
+    
+    let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
+    let witness_data_: WitnessData = witness_data_proto.try_into()?;
+    
+    let auth_data_proto: pb::AuthorizationData = serde_wasm_bindgen::from_value(auth_data)?;
+    let auth_data_: AuthorizationData = auth_data_proto.try_into().unwrap();
+
+    let fvk: FullViewingKey = FullViewingKey::from_str(full_viewing_key)
+        .expect("The provided string is not a valid FullViewingKey");
+
+    let plan: TransactionPlan = plan_proto.try_into()?;
+    let actions_: Vec<Action> = serde_wasm_bindgen::from_value(actions)?;
+    
+    let transaction = plan.clone().build_unauth_with_actions(actions_, fvk, witness_data_)?;
+    let tx = plan.authorize_with_auth(&mut OsRng, &auth_data_, transaction)?;
+
+    let value = serde_wasm_bindgen::to_value(&tx.to_proto())?;
+
     Ok(value)
 }
 
