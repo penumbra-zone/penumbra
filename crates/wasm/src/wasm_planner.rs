@@ -106,7 +106,11 @@ impl WasmPlanner {
                 Some(
                     spend
                         .build_unauth(&full_viewing_key, &witness_data_, memo_key)
+<<<<<<< HEAD
                         .unwrap(),
+=======
+                        .expect("Build spend action failed!"),
+>>>>>>> b919f1613 (fmt)
                 )
             }
             ActionPlan::Output(output_plan) => {
@@ -114,7 +118,11 @@ impl WasmPlanner {
                 Some(
                     output
                         .build_unauth(&full_viewing_key, &witness_data_, memo_key)
+<<<<<<< HEAD
                         .unwrap(),
+=======
+                        .expect("Build output action failed!"),
+>>>>>>> b919f1613 (fmt)
                 )
             }
             _ => None,

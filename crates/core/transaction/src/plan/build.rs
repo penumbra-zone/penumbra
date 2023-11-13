@@ -1,20 +1,20 @@
-use std::fmt::Debug;
 use anyhow::{anyhow, Context, Result};
 use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa as rdsa;
 use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
-use rand_core::{CryptoRng, RngCore};
 use rand_core::OsRng;
+use rand_core::{CryptoRng, RngCore};
+use std::fmt::Debug;
 
 use super::TransactionPlan;
+use crate::plan::ActionPlan;
 use crate::{
     action::Action,
     memo::MemoCiphertext,
     transaction::{DetectionData, TransactionParameters},
     AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
 };
-use crate::plan::ActionPlan;
 
 impl TransactionPlan {
     pub fn build_unauth_with_actions(
@@ -213,11 +213,11 @@ impl TransactionPlan {
         {
             delegator_vote.auth_sig = auth_sig;
         }
-        
+
         // Compute the binding signature and assemble the transaction.
         let binding_signing_key = rdsa::SigningKey::from(synthetic_blinding_factor);
         let auth_hash = transaction.transaction_body.auth_hash();
-  
+
         let binding_sig = binding_signing_key.sign(rng, auth_hash.as_bytes());
         tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), ?auth_hash);
 
@@ -254,21 +254,25 @@ impl TransactionPlan {
         // 1. Call ActionPlan::build_unauth on each action
         for spend_plan in self.spend_plans() {
             let spend = ActionPlan::Spend(spend_plan.to_owned());
-            let action = spend.build_unauth(full_viewing_key, &witness_data, memo_key.clone())
+            let action = spend
+                .build_unauth(full_viewing_key, &witness_data, memo_key.clone())
                 .expect("Build spend action failed!");
             actions.push(action);
         }
         for output_plan in self.output_plans() {
             let output = ActionPlan::Output(output_plan.to_owned());
-            let action = output.build_unauth(full_viewing_key, &witness_data, memo_key.clone())
+            let action = output
+                .build_unauth(full_viewing_key, &witness_data, memo_key.clone())
                 .expect("Build output action failed!");
             actions.push(action);
         }
 
         // 2. Pass actions to TransactionPlan::build_unauth_with_actions
-        let transaction = self.clone().build_unauth_with_actions(actions, full_viewing_key.to_owned(), witness_data)?;
-
-        // For some reason, there's a performance hit where the authorize step is taking longer. Investigate this.
+        let transaction = self.clone().build_unauth_with_actions(
+            actions,
+            full_viewing_key.to_owned(),
+            witness_data,
+        )?;
 
         // 3. Slot in the auth data with TransactionPlan::authorize_with_aut, and return the completed transaction
         let tx = self.authorize_with_auth(&mut OsRng, auth_data, transaction)?;
@@ -303,23 +307,29 @@ impl TransactionPlan {
         for spend_plan in self.spend_plans() {
             let spend = ActionPlan::Spend(spend_plan.to_owned());
             let action = tokio::spawn(async move {
-                spend.build_unauth(full_viewing_key, &witness_data, memo_key.clone()).unwrap();
+                spend
+                    .build_unauth(full_viewing_key, &witness_data, memo_key.clone())
+                    .unwrap();
             });
             actions.push(action);
         }
         for output_plan in self.output_plans() {
             let output = ActionPlan::Output(output_plan.to_owned());
             let action = tokio::spawn(async move {
-                output.build_unauth(full_viewing_key, &witness_data, memo_key.clone()).unwrap();
+                output
+                    .build_unauth(full_viewing_key, &witness_data, memo_key.clone())
+                    .unwrap();
             });
             actions.push(action);
         }
 
         // 2. Pass actions to TransactionPlan::build_unauth_with_actions
-        let transaction = self.clone().build_unauth_with_actions(actions, full_viewing_key.to_owned(), witness_data.to_owned())?;
+        let transaction = self.clone().build_unauth_with_actions(
+            actions,
+            full_viewing_key.to_owned(),
+            witness_data.to_owned(),
+        )?;
 
-        // For some reason, there's a performance hit where the authorize step is taking longer. Investigate this.
-        // Additionally, missing swap actions.
         // 3. Slot in the auth data with TransactionPlan::authorize_with_aut, and return the completed transaction
         let tx = self.authorize_with_auth(&mut OsRng, auth_data, transaction)?;
 
