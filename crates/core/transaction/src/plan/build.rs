@@ -308,8 +308,7 @@ impl TransactionPlan {
             let spend = ActionPlan::Spend(spend_plan.to_owned());
             let action = tokio::spawn(async move {
                 spend
-                    .build_unauth(full_viewing_key, &witness_data, memo_key.clone())
-                    .unwrap();
+                    .build_unauth(full_viewing_key, &witness_data, memo_key.clone())?;
             });
             actions.push(action);
         }
@@ -317,8 +316,7 @@ impl TransactionPlan {
             let output = ActionPlan::Output(output_plan.to_owned());
             let action = tokio::spawn(async move {
                 output
-                    .build_unauth(full_viewing_key, &witness_data, memo_key.clone())
-                    .unwrap();
+                    .build_unauth(full_viewing_key, &witness_data, memo_key.clone())?;
             });
             actions.push(action);
         }

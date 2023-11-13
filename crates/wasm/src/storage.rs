@@ -38,37 +38,34 @@ pub struct IndexedDBStorage {
 
 impl IndexedDBStorage {
     pub async fn new(constants: IndexedDbConstants) -> WasmResult<Self> {
-        let mut db_req: OpenDbRequest =
-            IdbDatabase::open_u32(&constants.name, constants.version).unwrap();
+        let mut db_req: OpenDbRequest = IdbDatabase::open_u32(&constants.name, constants.version)?;
 
         // Conditionally create object stores in the `IdbDatabase` database for testing purposes
         db_req.set_on_upgrade_needed(Some(|evt: &IdbVersionChangeEvent| -> Result<(), JsValue> {
             // Check if the object store exists; create it if it doesn't
             if evt.db().name() == "penumbra-db-wasm-test" {
                 let note_key: JsValue =
-                    serde_wasm_bindgen::to_value("noteCommitment.inner").unwrap();
+                    serde_wasm_bindgen::to_value("noteCommitment.inner")?;
                 let note_object_store_params = IdbObjectStoreParameters::new()
                     .key_path(Some(&IdbKeyPath::new(note_key)))
                     .to_owned();
                 let note_object_store = evt
                     .db()
-                    .create_object_store_with_params("SPENDABLE_NOTES", &note_object_store_params)
-                    .unwrap();
+                    .create_object_store_with_params("SPENDABLE_NOTES", &note_object_store_params)?;
 
                 let nullifier_key: JsValue =
-                    serde_wasm_bindgen::to_value("nullifier.inner").unwrap();
+                    serde_wasm_bindgen::to_value("nullifier.inner")?;
                 note_object_store
                     .create_index_with_params(
                         "nullifier",
                         &IdbKeyPath::new(nullifier_key),
                         web_sys::IdbIndexParameters::new().unique(false),
-                    )
-                    .unwrap();
-                evt.db().create_object_store("TREE_LAST_POSITION").unwrap();
-                evt.db().create_object_store("TREE_LAST_FORGOTTEN").unwrap();
+                    )?;
+                evt.db().create_object_store("TREE_LAST_POSITION")?;
+                evt.db().create_object_store("TREE_LAST_FORGOTTEN")?;
 
                 let commitment_key: JsValue =
-                    serde_wasm_bindgen::to_value("commitment.inner").unwrap();
+                    serde_wasm_bindgen::to_value("commitment.inner")?;
                 let commitment_object_store_params = IdbObjectStoreParameters::new()
                     .key_path(Some(&IdbKeyPath::new(commitment_key)))
                     .to_owned();
@@ -76,14 +73,13 @@ impl IndexedDBStorage {
                     .create_object_store_with_params(
                         "TREE_COMMITMENTS",
                         &commitment_object_store_params,
-                    )
-                    .unwrap();
-                evt.db().create_object_store("TREE_HASHES").unwrap();
+                    )?;
+                evt.db().create_object_store("TREE_HASHES")?;
             }
             Ok(())
         }));
 
-        let db: IdbDatabase = db_req.into_future().await.unwrap();
+        let db: IdbDatabase = db_req.into_future().await?;
 
         Ok(IndexedDBStorage { db, constants })
     }

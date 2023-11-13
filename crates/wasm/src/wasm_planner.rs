@@ -74,8 +74,8 @@ impl WasmPlanner {
         utils::set_panic_hook();
 
         let transaction_plan_proto: tp =
-            serde_wasm_bindgen::from_value(transaction_plan.clone()).unwrap();
-        let transaction_plan_: TransactionPlan = transaction_plan_proto.try_into().unwrap();
+            serde_wasm_bindgen::from_value(transaction_plan.clone())?;
+        let transaction_plan_: TransactionPlan = transaction_plan_proto.try_into()?;
 
         let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
         let witness_data_: WitnessData = witness_data_proto.try_into()?;
