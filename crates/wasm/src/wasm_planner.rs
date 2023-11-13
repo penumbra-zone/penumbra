@@ -1,24 +1,37 @@
-use ark_ff::UniformRand;
-use decaf377::Fq;
-use rand_core::OsRng;
-use wasm_bindgen::prelude::wasm_bindgen;
-use wasm_bindgen::JsValue;
-
-use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_dex::swap_claim::SwapClaimPlan;
-use penumbra_proto::core::asset::v1alpha1::{DenomMetadata, Value};
-use penumbra_proto::core::component::fee::v1alpha1::{Fee, GasPrices};
-use penumbra_proto::core::component::ibc::v1alpha1::Ics20Withdrawal;
-use penumbra_proto::core::keys::v1alpha1::{Address, AddressIndex};
-use penumbra_proto::core::transaction::v1alpha1::MemoPlaintext;
-use penumbra_proto::crypto::tct::v1alpha1::StateCommitment;
-use penumbra_proto::DomainType;
-
 use crate::error::WasmResult;
 use crate::planner::Planner;
 use crate::storage::IndexedDBStorage;
 use crate::swap_record::SwapRecord;
 use crate::utils;
+use anyhow::{anyhow, Result};
+use ark_ff::UniformRand;
+use decaf377::Fq;
+use indexed_db_futures::{IdbDatabase, IdbQuerySource};
+use penumbra_chain::params::{ChainParameters, FmdParameters};
+use penumbra_dex::swap_claim::SwapClaimPlan;
+use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
+use penumbra_proto::{
+    core::{
+        asset::v1alpha1::{DenomMetadata, Value},
+        component::fee::v1alpha1::{Fee, GasPrices},
+        component::ibc::v1alpha1::Ics20Withdrawal,
+        keys::v1alpha1::{Address, AddressIndex},
+        transaction::v1alpha1 as pb,
+        transaction::v1alpha1::MemoPlaintext,
+        transaction::v1alpha1::TransactionPlan as tp,
+    },
+    crypto::tct::v1alpha1::StateCommitment,
+    DomainType,
+};
+use penumbra_transaction::{
+    action::Action, memo::MemoCiphertext, plan::ActionPlan, plan::TransactionPlan,
+    AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
+};
+use rand_core::OsRng;
+use std::str::FromStr;
+use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::JsValue;
+use wasm_bindgen_test::console_log;
 
 #[wasm_bindgen]
 pub struct WasmPlanner {
@@ -55,6 +68,69 @@ impl WasmPlanner {
         Ok(planner)
     }
 
+    #[wasm_bindgen]
+    pub fn build_action(
+        &self,
+        transaction_plan: JsValue,
+        action_plan: JsValue,
+        full_viewing_key: &str,
+        witness_data: JsValue,
+    ) -> WasmResult<JsValue> {
+        utils::set_panic_hook();
+
+        let transaction_plan_proto: tp =
+            serde_wasm_bindgen::from_value(transaction_plan.clone()).unwrap();
+        let transaction_plan_: TransactionPlan = transaction_plan_proto.try_into().unwrap();
+
+        let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
+        let witness_data_: WitnessData = witness_data_proto.try_into()?;
+
+        let action_proto: pb::ActionPlan = serde_wasm_bindgen::from_value(action_plan)?;
+        let action_plan_: ActionPlan = action_proto.try_into()?;
+
+        let full_viewing_key: FullViewingKey = FullViewingKey::from_str(full_viewing_key)
+            .expect("The provided string is not a valid FullViewingKey");
+
+        let mut memo: Option<MemoCiphertext> = None;
+        let mut memo_key: Option<PayloadKey> = None;
+        if transaction_plan_.memo_plan.is_some() {
+            let memo_plan = transaction_plan_
+                .memo_plan
+                .clone()
+                .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
+            memo = memo_plan.memo().ok();
+            memo_key = Some(memo_plan.key);
+        }
+
+        let action = match action_plan_ {
+            ActionPlan::Spend(spend_plan) => {
+                let spend = ActionPlan::Spend(spend_plan);
+                Some(
+                    spend
+                        .build_unauth(&full_viewing_key, &witness_data_, memo_key)
+                        .unwrap(),
+                )
+            }
+            ActionPlan::Output(output_plan) => {
+                let output = ActionPlan::Output(output_plan);
+                Some(
+                    output
+                        .build_unauth(&full_viewing_key, &witness_data_, memo_key)
+                        .unwrap(),
+                )
+            }
+            _ => None,
+        };
+
+        let action_result_proto = serde_wasm_bindgen::to_value(&Some(action))?;
+        Ok(action_result_proto)
+    }
+
+    // Public getter for the 'db' field
+    pub fn get_storage(&self) -> *const IndexedDBStorage {
+        &self.storage
+    }
+
     /// Add expiry height to plan
     /// Arguments:
     ///     expiry_height: `u64`
@@ -81,7 +157,11 @@ impl WasmPlanner {
     pub fn memo(&mut self, memo: JsValue) -> WasmResult<()> {
         utils::set_panic_hook();
 
+        console_log!("memo is (wasm_planner): {:?}", memo);
+
         let memo_proto: MemoPlaintext = serde_wasm_bindgen::from_value(memo)?;
+        console_log!("memo_proto is: {:?}", memo_proto);
+
         let _ = self.planner.memo(memo_proto.try_into()?);
         Ok(())
     }
