@@ -179,11 +179,9 @@ mod tests {
         };
         let mut rng = OsRng;
         let tx = plan
-            .build_concurrent(&mut rng, fvk, witness_data)
+            .build_concurrent( fvk, &witness_data, &auth_data)
             .await
-            .expect("can build transaction")
-            .authorize(&mut rng, &auth_data)
-            .expect("can authorize transaction");
+            .expect("can't build transaction");
 
         let context = tx.context();
 
@@ -243,11 +241,9 @@ mod tests {
         };
         let mut rng = OsRng;
         let mut tx = plan
-            .build_concurrent(&mut rng, fvk, witness_data)
+            .build_concurrent(fvk, &witness_data, &auth_data)
             .await
-            .expect("can build transaction")
-            .authorize(&mut rng, &auth_data)
-            .expect("can authorize transaction");
+            .expect("can't build transaction");
 
         // Set the anchor to the wrong root.
         tx.anchor = wrong_root;
