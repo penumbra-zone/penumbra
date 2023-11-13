@@ -27,19 +27,20 @@ impl TransactionHashesCmd {
             .transaction_info(self.start_height, self.end_height)
             .await?;
 
-        table.set_header(vec!["Height", "Transaction Hash", "Sender", "Memo"]);
+        table.set_header(vec!["Height", "Transaction Hash", "Return Address", "Memo"]);
 
         for tx_info in txs {
-            let (sender, memo) = match tx_info.view.body_view.memo_view {
-                Some(MemoView::Visible { plaintext, .. }) => {
-                    (plaintext.sender.display_short_form(), plaintext.text)
-                }
+            let (return_address, memo) = match tx_info.view.body_view.memo_view {
+                Some(MemoView::Visible { plaintext, .. }) => (
+                    plaintext.return_address.display_short_form(),
+                    plaintext.text,
+                ),
                 _ => (String::new(), String::new()),
             };
             table.add_row(vec![
                 format!("{}", tx_info.height),
                 format!("{}", hex::encode(tx_info.id)),
-                format!("{}", sender),
+                format!("{}", return_address),
                 format!("{}", memo),
             ]);
         }

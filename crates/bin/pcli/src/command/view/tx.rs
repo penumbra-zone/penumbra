@@ -432,7 +432,7 @@ impl TxCmd {
                     } => {
                         metadata_table.add_row(vec![
                             "Transaction Memo Sender",
-                            &plaintext.sender.to_string(),
+                            &plaintext.return_address.to_string(),
                         ]);
                         metadata_table.add_row(vec!["Transaction Memo Text", &plaintext.text]);
                     }

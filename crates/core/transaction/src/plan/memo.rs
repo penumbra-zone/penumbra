@@ -38,10 +38,13 @@ impl DomainType for MemoPlan {
 
 impl From<MemoPlan> for pb::MemoPlan {
     fn from(msg: MemoPlan) -> Self {
-        let sender = Some(msg.plaintext.sender.into());
+        let return_address = Some(msg.plaintext.return_address.into());
         let text = msg.plaintext.text;
         Self {
-            plaintext: Some(pb::MemoPlaintext { sender, text }),
+            plaintext: Some(pb::MemoPlaintext {
+                return_address,
+                text,
+            }),
             key: msg.key.to_vec(),
         }
     }
@@ -55,10 +58,10 @@ impl TryFrom<pb::MemoPlan> for MemoPlan {
             .plaintext
             .clone()
             .ok_or_else(|| anyhow::anyhow!("memo plan missing memo plaintext"))?
-            .sender
-            .ok_or_else(|| anyhow::anyhow!("memo plaintext missing sender address"))?
+            .return_address
+            .ok_or_else(|| anyhow::anyhow!("memo plaintext missing return address"))?
             .try_into()
-            .context("sender address malformed")?;
+            .context("return address malformed")?;
 
         let text: String = msg
             .plaintext
@@ -68,7 +71,10 @@ impl TryFrom<pb::MemoPlan> for MemoPlan {
         let key = PayloadKey::try_from(msg.key.to_vec())?;
 
         Ok(Self {
-            plaintext: MemoPlaintext { sender, text },
+            plaintext: MemoPlaintext {
+                return_address: sender,
+                text,
+            },
             key,
         })
     }

@@ -19,7 +19,7 @@ message FungibleTokenPacketData {
   string denom = 1;
   // the token amount to be transferred
   string amount = 2;
-  // the sender address
+  // the return address
   string sender = 3;
   // the recipient address on the destination chain
   string receiver = 4;

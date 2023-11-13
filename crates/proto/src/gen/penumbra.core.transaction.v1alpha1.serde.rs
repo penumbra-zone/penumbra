@@ -1798,15 +1798,15 @@ impl serde::Serialize for MemoPlaintext {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.sender.is_some() {
+        if self.return_address.is_some() {
             len += 1;
         }
         if !self.text.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.MemoPlaintext", len)?;
-        if let Some(v) = self.sender.as_ref() {
-            struct_ser.serialize_field("sender", v)?;
+        if let Some(v) = self.return_address.as_ref() {
+            struct_ser.serialize_field("returnAddress", v)?;
         }
         if !self.text.is_empty() {
             struct_ser.serialize_field("text", &self.text)?;
@@ -1821,13 +1821,14 @@ impl<'de> serde::Deserialize<'de> for MemoPlaintext {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "sender",
+            "return_address",
+            "returnAddress",
             "text",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            Sender,
+            ReturnAddress,
             Text,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1850,7 +1851,7 @@ impl<'de> serde::Deserialize<'de> for MemoPlaintext {
                         E: serde::de::Error,
                     {
                         match value {
-                            "sender" => Ok(GeneratedField::Sender),
+                            "returnAddress" | "return_address" => Ok(GeneratedField::ReturnAddress),
                             "text" => Ok(GeneratedField::Text),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -1871,15 +1872,15 @@ impl<'de> serde::Deserialize<'de> for MemoPlaintext {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut sender__ = None;
+                let mut return_address__ = None;
                 let mut text__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::Sender => {
-                            if sender__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("sender"));
+                        GeneratedField::ReturnAddress => {
+                            if return_address__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("returnAddress"));
                             }
-                            sender__ = map_.next_value()?;
+                            return_address__ = map_.next_value()?;
                         }
                         GeneratedField::Text => {
                             if text__.is_some() {
@@ -1890,7 +1891,7 @@ impl<'de> serde::Deserialize<'de> for MemoPlaintext {
                     }
                 }
                 Ok(MemoPlaintext {
-                    sender: sender__,
+                    return_address: return_address__,
                     text: text__.unwrap_or_default(),
                 })
             }

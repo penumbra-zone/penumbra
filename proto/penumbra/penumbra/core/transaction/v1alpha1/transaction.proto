@@ -307,7 +307,7 @@ message MemoCiphertext {
 }
 
 message MemoPlaintext {
-  keys.v1alpha1.Address sender = 1;
+  keys.v1alpha1.Address return_address = 1;
   string text = 2;
 }
 

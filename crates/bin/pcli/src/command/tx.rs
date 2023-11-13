@@ -280,7 +280,7 @@ impl TxCmd {
                     .0;
 
                 let memo_plaintext = MemoPlaintext {
-                    sender: memo_ephemeral_address,
+                    return_address: memo_ephemeral_address,
                     text: memo.clone().unwrap_or_default(),
                 };
 

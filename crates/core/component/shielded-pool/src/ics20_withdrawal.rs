@@ -27,7 +27,7 @@ pub struct Ics20Withdrawal {
     // this should be an ephemeral address
     pub return_address: Address,
     // the height (on Penumbra) at which this transfer expires (and funds are sent
-    // back to the sender address?). NOTE: if funds are sent back to the sender,
+    // back to the return address?). NOTE: if funds are sent back to the sender,
     // we MUST verify a nonexistence proof before accepting the timeout, to
     // prevent relayer censorship attacks. The core IBC implementation does this
     // in its handling of validation of timeouts.

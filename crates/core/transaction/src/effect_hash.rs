@@ -604,7 +604,7 @@ mod tests {
         let mut rng = OsRng;
 
         let memo_plaintext = MemoPlaintext {
-            sender: Address::dummy(&mut rng),
+            return_address: Address::dummy(&mut rng),
             text: "".to_string(),
         };
         let plan = TransactionPlan {
