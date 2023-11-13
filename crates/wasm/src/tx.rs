@@ -221,7 +221,7 @@ pub fn build_parallel(
     let transaction = plan
         .clone()
         .build_unauth_with_actions(actions_, fvk, witness_data_)?;
-    
+
     let tx = plan.authorize_with_auth(&mut OsRng, &auth_data_, transaction)?;
 
     let value = serde_wasm_bindgen::to_value(&tx.to_proto())?;

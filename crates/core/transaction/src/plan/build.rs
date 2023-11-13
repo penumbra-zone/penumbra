@@ -17,9 +17,9 @@ use crate::{
 };
 
 impl TransactionPlan {
-    /// Builds a [`TransactionPlan`] by slotting in the 
-    /// provided prebuilt actions instead of using the 
-    /// [`ActionPlan`]s in the TransactionPlan. 
+    /// Builds a [`TransactionPlan`] by slotting in the
+    /// provided prebuilt actions instead of using the
+    /// [`ActionPlan`]s in the TransactionPlan.
     /// Arguments:
     ///     self: `TransactionPlan`
     ///     fvk: `FullViewingKey`
@@ -33,14 +33,14 @@ impl TransactionPlan {
     ) -> Result<Transaction> {
         // Add the memo.
         let mut memo: Option<MemoCiphertext> = None;
-        let mut memo_key: Option<PayloadKey> = None;
+        let mut _memo_key: Option<PayloadKey> = None;
         if self.memo_plan.is_some() {
             let memo_plan = self
                 .memo_plan
                 .clone()
                 .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
             memo = memo_plan.memo().ok();
-            memo_key = Some(memo_plan.key);
+            _memo_key = Some(memo_plan.key);
         }
 
         // Build the transaction's swaps.
@@ -160,7 +160,7 @@ impl TransactionPlan {
         })
     }
 
-    /// Slot in the [`AuthorizationData`] and derive the synthetic 
+    /// Slot in the [`AuthorizationData`] and derive the synthetic
     /// blinding factors needed to compute the binding signature
     /// and assemble the transaction.
     /// Arguments:
@@ -258,14 +258,14 @@ impl TransactionPlan {
         auth_data: &AuthorizationData,
     ) -> Result<Transaction> {
         // Add the memo.
-        let mut memo: Option<MemoCiphertext> = None;
+        let mut _memo: Option<MemoCiphertext> = None;
         let mut memo_key: Option<PayloadKey> = None;
         if self.memo_plan.is_some() {
             let memo_plan = self
                 .memo_plan
                 .clone()
                 .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
-            memo = memo_plan.memo().ok();
+            _memo = memo_plan.memo().ok();
             memo_key = Some(memo_plan.key);
         }
 
@@ -275,7 +275,7 @@ impl TransactionPlan {
         // outputs, etc.  This order has to align with the ordering in
         // TransactionPlan::effect_hash, which computes the auth hash of the
         // transaction we'll build here without actually building it.
-        
+
         // 1. Build each action.
         for spend_plan in self.spend_plans() {
             let spend = ActionPlan::Spend(spend_plan.to_owned());
@@ -301,7 +301,7 @@ impl TransactionPlan {
             witness_data,
         )?;
 
-        // 3. Slot in the authorization data with TransactionPlan::authorize_with_aut, 
+        // 3. Slot in the authorization data with TransactionPlan::authorize_with_aut,
         // and return the completed transaction.
         let tx = self.authorize_with_auth(&mut OsRng, auth_data, transaction)?;
 
@@ -338,8 +338,7 @@ impl TransactionPlan {
             let witness_data_: WitnessData = witness_data.clone();
             let spend = ActionPlan::Spend(spend_plan.to_owned());
             in_progress_spend_actions.push(tokio::spawn(async move {
-                spend
-                    .build_unauth(&fvk, &witness_data_, memo_key.clone())
+                spend.build_unauth(&fvk, &witness_data_, memo_key.clone())
             }));
         }
         for output_plan in self.output_plans() {
@@ -347,8 +346,7 @@ impl TransactionPlan {
             let witness_data_: WitnessData = witness_data.clone();
             let output = ActionPlan::Output(output_plan.to_owned());
             in_progress_output_actions.push(tokio::spawn(async move {
-                output
-                    .build_unauth(&fvk, &witness_data_, memo_key.clone())
+                output.build_unauth(&fvk, &witness_data_, memo_key.clone())
             }));
         }
 
@@ -376,7 +374,7 @@ impl TransactionPlan {
             witness_data.to_owned(),
         )?;
 
-        // 3. Slot in the authorization data with TransactionPlan::authorize_with_aut, 
+        // 3. Slot in the authorization data with TransactionPlan::authorize_with_aut,
         // and return the completed transaction.
         let tx = self.authorize_with_auth(&mut OsRng, auth_data, transaction)?;
 

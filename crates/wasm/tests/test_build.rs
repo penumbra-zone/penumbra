@@ -37,7 +37,7 @@ mod tests {
     use penumbra_wasm::{
         error::{WasmError, WasmResult},
         storage::IndexedDBStorage,
-        tx::{authorize, build_parallel, build, witness},
+        tx::{authorize, build, build_parallel, witness},
         utils,
         view_server::StoredTree,
         wasm_planner::WasmPlanner,
