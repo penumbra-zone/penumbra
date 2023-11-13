@@ -16,7 +16,7 @@ use penumbra_governance::{
     ValidatorVote,
 };
 
-use penumbra_ibc::{IbcAction, Ics20Withdrawal, IbcRelay};
+use penumbra_ibc::IbcRelay;
 use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType, TypeUrl};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
