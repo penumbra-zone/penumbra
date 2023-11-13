@@ -36,7 +36,7 @@ mod tests {
     };
     use penumbra_tct::{Forgotten, storage::StoreCommitment, structure::Hash};
     use penumbra_wasm::{
-        tx::{authorize, build_original, witness, build_serial, build_parallel}, 
+        tx::{authorize, witness, build_serial, build_parallel}, 
         view_server::StoredTree,
         wasm_planner::WasmPlanner,
         storage::IndexedDBStorage,

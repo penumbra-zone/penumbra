@@ -91,14 +91,12 @@ impl WasmPlanner {
         let full_viewing_key: FullViewingKey = FullViewingKey::from_str(full_viewing_key)
             .expect("The provided string is not a valid FullViewingKey");
 
-        let mut memo: Option<MemoCiphertext> = None;
         let mut memo_key: Option<PayloadKey> = None;
         if transaction_plan_.memo_plan.is_some() {
             let memo_plan = transaction_plan_
                 .memo_plan
                 .clone()
                 .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
-            memo = memo_plan.memo().ok();
             memo_key = Some(memo_plan.key);
         }
 

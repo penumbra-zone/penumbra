@@ -22,7 +22,7 @@ use crate::storage::IndexedDBStorage;
 use crate::storage::IndexedDbConstants;
 use crate::utils;
 use crate::view_server::{load_tree, StoredTree};
-use penumbra_transaction::action::Action;
+use penumbra_transaction::Action;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TxInfoResponse {
@@ -255,7 +255,6 @@ pub async fn transaction_info_inner(
     // Next, extend the TxP with the openings of commitments known to our view server
     // but not included in the transaction body, for instance spent notes or swap claim outputs.
     for action in tx.actions() {
-        use penumbra_transaction::Action;
         match action {
             Action::Spend(spend) => {
                 let nullifier = spend.body.nullifier;

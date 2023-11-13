@@ -1,3 +1,5 @@
+use crate::error::WasmResult;
+use crate::note_record::SpendableNoteRecord;
 use indexed_db_futures::{
     prelude::{IdbObjectStoreParameters, IdbOpenDbRequestLike, OpenDbRequest},
     IdbDatabase, IdbKeyPath, IdbQuerySource, IdbVersionChangeEvent,

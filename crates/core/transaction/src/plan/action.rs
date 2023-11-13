@@ -19,10 +19,8 @@ use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType, TypeUrl};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use serde::{Deserialize, Serialize};
-use crate::{WitnessData, Error};
+use crate::WitnessData;
 use crate::Action;
-use crate::Action::{Spend, Output};
-use wasm_bindgen_test::console_log;
 use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 
 /// A declaration of a planned [`Action`], for use in transaction creation.
@@ -96,7 +94,7 @@ impl ActionPlan {
                     .context(format!("could not get proof for {note_commitment:?}"))?;
 
                 let spend = Action::Spend(spend_plan.spend(
-                    &fvk,
+                    fvk,
                     [0; 64].into(),
                     auth_path.clone(),
                     witness_data.anchor,
@@ -107,7 +105,7 @@ impl ActionPlan {
             Output(output_plan) => {
                 let dummy_payload_key: PayloadKey = [0u8; 32].into();
                 let output = Action::Output(output_plan.output(
-                    &fvk.outgoing(),
+                    fvk.outgoing(),
                     memo_key.as_ref().unwrap_or(&dummy_payload_key),
                 ));
 
