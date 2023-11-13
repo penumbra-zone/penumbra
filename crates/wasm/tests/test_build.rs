@@ -37,7 +37,7 @@ mod tests {
     use penumbra_wasm::{
         error::{WasmError, WasmResult},
         storage::IndexedDBStorage,
-        tx::{authorize, build_parallel, build_serial, witness},
+        tx::{authorize, build_parallel, build, witness},
         utils,
         view_server::StoredTree,
         wasm_planner::WasmPlanner,
@@ -455,7 +455,7 @@ mod tests {
         .unwrap();
         console_log!("Parallel transaction is: {:?}", parallel_transaction);
 
-        let serial_transaction = build_serial(
+        let serial_transaction = build(
             full_viewing_key.clone(),
             transaction_plan.clone(),
             witness_data.as_ref().unwrap().clone(),

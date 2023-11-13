@@ -156,7 +156,7 @@ pub fn witness(transaction_plan: JsValue, stored_tree: JsValue) -> WasmResult<Js
 ///     auth_data: `pb::AuthorizationData`
 /// Returns: `pb::Transaction`
 #[wasm_bindgen]
-pub fn build_serial(
+pub fn build(
     full_viewing_key: &str,
     transaction_plan: JsValue,
     witness_data: JsValue,
