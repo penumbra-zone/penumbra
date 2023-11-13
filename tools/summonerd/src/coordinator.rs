@@ -51,11 +51,11 @@ impl Coordinator {
     }
 
     #[tracing::instrument(skip_all, fields(address = ?contributor.address().display_short_form()))]
-    async fn contribute<P: Phase>(&mut self, contributor: Participant) -> Result<()> {
+    async fn contribute<P: Phase>(&mut self, mut contributor: Participant) -> Result<()> {
         let address = contributor.address();
         match tokio::time::timeout(
             Duration::from_secs(P::contribution_time(self.config)),
-            self.contribute_inner::<P>(contributor),
+            self.contribute_inner::<P>(&mut contributor),
         )
         .await
         {
@@ -63,13 +63,14 @@ impl Coordinator {
             Err(_) => {
                 tracing::info!("STRIKE (timeout)");
                 self.storage.strike(&address).await?;
+                contributor.try_notify_timeout();
                 Ok(())
             }
             Ok(Err(e)) => Err(e),
         }
     }
 
-    async fn contribute_inner<P: Phase>(&mut self, mut contributor: Participant) -> Result<()> {
+    async fn contribute_inner<P: Phase>(&mut self, contributor: &mut Participant) -> Result<()> {
         let address = contributor.address();
         let parent = P::current_crs(&self.storage)
             .await?
