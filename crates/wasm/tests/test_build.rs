@@ -2,64 +2,86 @@ extern crate penumbra_wasm;
 
 #[cfg(test)]
 mod tests {
-    use std::vec;
-    use indexed_db_futures::prelude::{IdbObjectStore, IdbTransaction, IdbTransactionMode};
-    use indexed_db_futures::prelude::{OpenDbRequest, IdbObjectStoreParameters};
-    use indexed_db_futures::request::IdbOpenDbRequestLike;
-    use indexed_db_futures::{prelude, IdbVersionChangeEvent}; 
-    use penumbra_asset::asset::Id;
-    use penumbra_asset::balance::commitment;
-    use penumbra_proto::core::component::shielded_pool::v1alpha1::Spend;
-    use penumbra_proto::serializers::bech32str::full_viewing_key;
-    use penumbra_tct::Forgotten;
-    use penumbra_tct::storage::StoreCommitment;
-    use penumbra_wasm::tx::authorize;
-    // use penumbra_wasm::tx::build;
-    use penumbra_wasm::build::{self, build_parallel};
-    use penumbra_wasm::tx::witness;
-    use penumbra_wasm::view_server::StoredTree;
-    use penumbra_wasm::wasm_planner;
+    use anyhow::{anyhow, Context, Result};
     use wasm_bindgen_test::*;
-    use serde::{Serialize, Deserialize};
-    use serde_json::json;
-    extern crate serde;
-    use serde_json;
     use wasm_bindgen::JsValue;
+    use serde::{Serialize, Deserialize};
+    use serde_json;
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
-    use penumbra_proto::core::asset::v1alpha1::AssetId;
-    use penumbra_proto::view::v1alpha1::TransactionPlannerRequest;
-    use penumbra_proto::view::v1alpha1::transaction_planner_request as tpr;
-    use penumbra_proto::core::keys::v1alpha1::Address;
-    use penumbra_proto::core::asset::v1alpha1::Value;
-    use penumbra_proto::core::num::v1alpha1::Amount;
-    use web_sys::console;
-    use crate::penumbra_wasm::storage::{IndexedDBStorage, IndexedDbConstants, Tables};
-    use crate::penumbra_wasm::error::{WasmResult, WasmError};
-    use indexed_db_futures::{IdbDatabase, IdbQuerySource, IdbKeyPath};
-    use penumbra_wasm::utils;
-    use penumbra_proto::core::component::chain::v1alpha1::ChainParameters;
-    use penumbra_proto::core::component::chain::v1alpha1::FmdParameters;
-    use penumbra_proto::core::keys::v1alpha1::AddressIndex;
-    use crate::penumbra_wasm::wasm_planner::WasmPlanner;
-    use penumbra_proto::core::component::sct::v1alpha1::Nullifier;
-    use penumbra_proto::core::component::chain::v1alpha1::NoteSource;
-    use penumbra_proto::view::v1alpha1::SpendableNoteRecord;
-    use penumbra_proto::crypto::tct::v1alpha1::StateCommitment;
-    use penumbra_proto::core::transaction::v1alpha1::TransactionPlan;
-    use penumbra_proto::penumbra::core::num::v1alpha1 as pb;
-    use penumbra_proto::core::component::shielded_pool::v1alpha1::Note;
-    use js_sys::Array;
-    use serde_json::from_value;
-    use penumbra_tct::structure::Hash;
-    use penumbra_proto::core::transaction::v1alpha1 as ps;
-    use penumbra_transaction::AuthorizationData;
-    use penumbra_proto::DomainType;
     use rand_core::OsRng;
+    use indexed_db_futures::prelude::{
+        IdbObjectStore, IdbTransaction, IdbTransactionMode,
+        IdbDatabase, IdbQuerySource, IdbKeyPath
+    };
+    use penumbra_asset::{
+        asset::Id,
+        balance::commitment,
+    };
+    use penumbra_proto::{
+        crypto::tct::v1alpha1::StateCommitment,
+        serializers::bech32str::full_viewing_key,
+        DomainType,
+        view::v1alpha1::{SpendableNoteRecord, TransactionPlannerRequest},
+        core::{
+            asset::v1alpha1::{AssetId, Value},
+            keys::v1alpha1::{Address, AddressIndex}, 
+            num::v1alpha1::Amount,
+            component::{
+                chain::v1alpha1::{ChainParameters, FmdParameters, NoteSource},
+                sct::v1alpha1::Nullifier,
+                shielded_pool::v1alpha1::Note,
+            },
+            transaction::v1alpha1::{TransactionPlan as tp, MemoData, MemoPlaintext},
+        }
+    };
+    use penumbra_tct::{Forgotten, storage::StoreCommitment, structure::Hash};
+    use penumbra_wasm::{
+        tx::{authorize, build_original, witness, build_serial, build_parallel}, 
+        view_server::StoredTree,
+        wasm_planner::WasmPlanner,
+        storage::IndexedDBStorage,
+        error::{WasmResult, WasmError},
+        utils,
+    };
+    use penumbra_transaction::{
+        plan::{TransactionPlan, ActionPlan},
+        {AuthorizationData, Action},
+    };
 
     #[wasm_bindgen_test]
-    async fn mock_build() {
+    async fn mock_build_serial_and_parallel() {
         // Limit the use of Penumbra Rust libraries since we're mocking JS calls
-        // based on constructing objects according to protobuf definitions.
+        // that are based on constructing objects according to protobuf definitions.
+
+        // Define database parameters
+        #[derive(Clone, Debug, Serialize, Deserialize)]
+        pub struct IndexedDbConstants {
+            name: String,
+            version: u32,
+            tables: Tables,
+        }
+
+        #[derive(Clone, Debug, Serialize, Deserialize)]
+        pub struct Tables {
+            assets: String,
+            notes: String,
+            spendable_notes: String,
+            swaps: String,
+        }
+
+        // IndexDB tables and constants.
+        let tables: Tables = Tables { 
+            assets: "ASSETS".to_string(), 
+            notes: "NOTES".to_string(), 
+            spendable_notes: "SPENDABLE_NOTES".to_string(), 
+            swaps: "SWAPS".to_string(),
+        };
+        
+        let constants: IndexedDbConstants = IndexedDbConstants { 
+            name: "penumbra-db-wasm-test".to_string(), 
+            version: 1, 
+            tables,
+        };
     
         // Sample chain and fmd parameters.
         let chain_params = ChainParameters {
@@ -71,20 +93,6 @@ mod tests {
             precision_bits: 0u32,
             as_of_block_height: 1u64,
         }; 
-
-        // IndexDB tables and constants.
-        let tables: Tables = Tables { 
-            assets: "ASSETS".to_string(), 
-            notes: "NOTES".to_string(), 
-            spendable_notes: "SPENDABLE_NOTES".to_string(), 
-            swaps: "SWAPS".to_string(),
-        };
-
-        let constants: IndexedDbConstants = IndexedDbConstants { 
-            name: "penumbra-db-wasm".to_string(), 
-            version: 1, 
-            tables,
-        };
 
         // Serialize the parameters into `JsValue`.
         let js_chain_params_value: JsValue = serde_wasm_bindgen::to_value(&chain_params).unwrap();
@@ -98,7 +106,7 @@ mod tests {
             js_fmd_params_value
         ).await.unwrap();
 
-        // Create spendable UTXO note.
+        // Create spendable UTXO note in JSON format.
         let spendable_note_json = r#"
         {
             "note_commitment": {
@@ -141,7 +149,7 @@ mod tests {
         // Convert note to `SpendableNoteRecord`.
         let spendable_note: SpendableNoteRecord = serde_json::from_str(spendable_note_json).unwrap();
 
-        // Define neccessary parameters to mock `TransactionPlannerRequest`.
+        // Define neccessary parameters to mock `TransactionPlannerRequest` in JSON format.
         let address_json = r#"
         {
             "alt_bech32m": "penumbrav2t1ztjrnr9974u4308zxy3sc378sh0k2r8mh0xqt9525c78l9vlyxf2w7c087tlzp4pnk9a7ztvlrnp9lf7hqx3wsm9su4e7vchtav0ap3lpnedry5hfn22hnu9vvaxjpv0t8phvp",
@@ -163,29 +171,37 @@ mod tests {
         "#;
 
         // Convert fields to JsValue.
-        let address_original: Address = serde_json::from_str(address_json).unwrap();
-        let value_original: Value = serde_json::from_str(value_json).unwrap();
+        let address: Address = serde_json::from_str(address_json).unwrap();
+        let value: Value = serde_json::from_str(value_json).unwrap();
 
         // Add output action to plan.
         wasm_planner.output(
-            serde_wasm_bindgen::to_value(&value_original).unwrap(), 
-            serde_wasm_bindgen::to_value(&address_original).unwrap()
+            serde_wasm_bindgen::to_value(&value).unwrap(), 
+            serde_wasm_bindgen::to_value(&address).unwrap()
         );
 
-        // Retrieve database handle.
+        // Add memo to plan.
+        let memo: MemoPlaintext = MemoPlaintext {
+            sender: Some(address),
+            text: "sample memo".to_string(),
+        };
+        let memo_plan_deserialized = serde_wasm_bindgen::to_value(&memo).unwrap();
+        wasm_planner.memo(memo_plan_deserialized).unwrap();
+
+        // Retrieve private database handle use public getters.
         let storage = wasm_planner.get_storage();
         let storage_ref: &IndexedDBStorage = unsafe { &*storage };
-        let database = storage_ref.get_database();
-        let database_ref: &IdbDatabase = unsafe {&*database };
-        
-        // Define SCT structure. 
+        let database: *const IdbDatabase = storage_ref.get_database();
+        let database_ref: &IdbDatabase = unsafe { &*database };
+
+        // Define SCT-related structs. 
         #[derive(Clone, Debug, Serialize, Deserialize)]
         pub struct Position {
             epoch: u64,
             block: u64,
             commitment: u64,
         };  
-        
+
         #[derive(Clone, Debug, Serialize, Deserialize)]
         pub struct StoredPosition { Position: Position }
         
@@ -231,6 +247,7 @@ mod tests {
             commitments: Vec<StoreCommitment>,
         }
 
+        // Define a sample SCT update.
         let sctUpdates = SctUpdates {
             store_commitments: StoreCommitment {
                 commitment: Commitment { 
@@ -253,10 +270,14 @@ mod tests {
         };
 
         // Populate database with records (CRUD).
-        let tx_note: IdbTransaction = database_ref.transaction_on_one_with_mode("SPENDABLE_NOTES", IdbTransactionMode::Readwrite).unwrap();
-        let tx_tree_commitments: IdbTransaction = database_ref.transaction_on_one_with_mode("TREE_COMMITMENTS", IdbTransactionMode::Readwrite).unwrap();
-        let tx_tree_last_position: IdbTransaction = database_ref.transaction_on_one_with_mode("TREE_LAST_POSITION", IdbTransactionMode::Readwrite).unwrap();
-        let tx_tree_last_forgotten: IdbTransaction = database_ref.transaction_on_one_with_mode("TREE_LAST_FORGOTTEN", IdbTransactionMode::Readwrite).unwrap();
+        let tx_note: IdbTransaction = database_ref.transaction_on_one_with_mode(
+            "SPENDABLE_NOTES", IdbTransactionMode::Readwrite).unwrap();
+        let tx_tree_commitments: IdbTransaction = database_ref.transaction_on_one_with_mode(
+            "TREE_COMMITMENTS", IdbTransactionMode::Readwrite).unwrap();
+        let tx_tree_last_position: IdbTransaction = database_ref.transaction_on_one_with_mode(
+            "TREE_LAST_POSITION", IdbTransactionMode::Readwrite).unwrap();
+        let tx_tree_last_forgotten: IdbTransaction = database_ref.transaction_on_one_with_mode(
+            "TREE_LAST_FORGOTTEN", IdbTransactionMode::Readwrite).unwrap();
 
         let store_note: IdbObjectStore = tx_note.object_store("SPENDABLE_NOTES").unwrap();
         let store_tree_commitments: IdbObjectStore = tx_tree_commitments.object_store("TREE_COMMITMENTS").unwrap();
@@ -287,7 +308,7 @@ mod tests {
 
         // -------------- 1. Query transaction plan performing a spend -------------- 
 
-        let transaction_plan = wasm_planner.plan(refund_address_json).await.unwrap();
+        let transaction_plan: JsValue = wasm_planner.plan(refund_address_json).await.unwrap();
 
         // -------------- 2. Generate authorization data from spend key and transaction plan -------------- 
 
@@ -298,9 +319,9 @@ mod tests {
             transaction_plan.clone()
         ).unwrap();
 
-        // -------------- 3. Generate witness and build the planned transaction --------------
+        // -------------- 3. Generate witness --------------
 
-        // Retrieve SCT.
+        // Retrieve SCT from storage.
         let tx_last_position: IdbTransaction<'_> = database_ref.transaction_on_one("TREE_LAST_POSITION").unwrap();
         let store_last_position = tx_last_position.object_store("TREE_LAST_POSITION").unwrap();
         let value_last_position: Option<JsValue> = store_last_position.get_owned("last_position").unwrap().await.unwrap();
@@ -313,12 +334,12 @@ mod tests {
         let store_commitments = tx_commitments.object_store("TREE_COMMITMENTS").unwrap();
         let value_commitments = store_commitments.get_owned("MY7PmcrH4fhjFOoMIKEdF+x9EUhZ9CS/CIfVco7Y5wU=").unwrap().await.unwrap();
 
-        // Convert retrieved storage values to `JsValue`.
+        // Convert retrieved values to `JsValue`.
         let last_position_json: StoredPosition = serde_wasm_bindgen::from_value(value_last_position.unwrap()).unwrap();
         let last_forgotten_json: Forgotten = serde_wasm_bindgen::from_value(value_last_forgotten.unwrap()).unwrap();
         let commitments_jsvalue: StoreCommitment = serde_wasm_bindgen::from_value(JsValue::from(value_commitments.clone())).unwrap();
 
-        // Reconstruct SCT.
+        // Reconstruct SCT struct.
         let mut vec_store_commitments: Vec<StoreCommitment> = Vec::new();
         vec_store_commitments.push(commitments_jsvalue.clone());
 
@@ -338,14 +359,59 @@ mod tests {
         // Viewing key to reveal asset balances and transactions.
         let full_viewing_key = "penumbrafullviewingkey1mnm04x7yx5tyznswlp0sxs8nsxtgxr9p98dp0msuek8fzxuknuzawjpct8zdevcvm3tsph0wvsuw33x2q42e7sf29q904hwerma8xzgrxsgq2";
 
-        // Execute spend transaction and proof.
-        let transaction = build_parallel(
+        // Serialize transaction plan into `TransactionPlan`. 
+        let transaction_plan_serialized: tp = serde_wasm_bindgen::from_value(transaction_plan.clone()).unwrap();
+        let transaction_plan_conv: TransactionPlan = transaction_plan_serialized.try_into().unwrap();
+
+        // -------------- 4. Build the (1) Serial Transaction and (2) Parallel Transaction --------------
+
+        let mut actions: Vec<Action> = Vec::new();
+
+        for i in transaction_plan_conv.actions.clone() {
+            if let ActionPlan::Spend(ref spend_plan) = i {
+                let action_deserialize = serde_wasm_bindgen::to_value(&i).unwrap();
+                let action = wasm_planner.action_builder(
+                    transaction_plan.clone(), 
+                    action_deserialize, full_viewing_key.clone(), 
+                    witness_data.as_ref().unwrap().clone()
+                ).unwrap();
+                let action_serialize: Action = serde_wasm_bindgen::from_value(action.clone()).unwrap();
+                actions.push(action_serialize);
+            }
+        }
+
+        for i in transaction_plan_conv.actions {
+            if let ActionPlan::Output(ref output_plan) = i {
+                let action_deserialize = serde_wasm_bindgen::to_value(&i).unwrap();
+                let action = wasm_planner.action_builder(
+                    transaction_plan.clone(), 
+                    action_deserialize, 
+                    full_viewing_key.clone(), 
+                    witness_data.as_ref().unwrap().clone()
+                ).unwrap();
+                let action_serialize: Action = serde_wasm_bindgen::from_value(action.clone()).unwrap();
+                actions.push(action_serialize);
+            }
+        }
+
+        // Deserialize actions.
+        let action_deserialized = serde_wasm_bindgen::to_value(&actions).unwrap();
+
+        // Execute parallel spend transaction and generate proof.
+        let parallel_transaction = build_parallel(
+            action_deserialized,
             full_viewing_key, 
-            transaction_plan, 
-            witness_data.unwrap(), 
+            transaction_plan.clone(), 
+            witness_data.as_ref().unwrap().clone(),
             authorization_data.clone()
         ).unwrap();
+        console_log!("Parallel transaction is: {:?}", parallel_transaction);
 
-        console_log!("transaction is: {:?}", transaction);
+        let serial_transaction = build_serial(
+            full_viewing_key.clone(), transaction_plan.clone(), 
+            witness_data.as_ref().unwrap().clone(), 
+            authorization_data.clone()
+        ).unwrap();
+        console_log!("Serial transaction is: {:?}", serial_transaction);
     }
 }
