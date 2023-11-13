@@ -4,7 +4,6 @@ use std::{
 };
 
 use anyhow::anyhow;
-use rand_core::OsRng;
 
 use decaf377_ka as ka;
 use penumbra_asset::balance;
@@ -59,19 +58,16 @@ impl TryFrom<Vec<u8>> for MemoPlaintext {
     }
 }
 
-impl Default for MemoPlaintext {
-    fn default() -> Self {
-        let mut rng = OsRng;
-        MemoPlaintext {
-            sender: Address::dummy(&mut rng),
-            text: String::new(),
-        }
-    }
-}
-
 impl MemoPlaintext {
     pub fn to_vec(&self) -> Vec<u8> {
         self.into()
+    }
+
+    pub fn blank_memo(address: Address) -> MemoPlaintext {
+        MemoPlaintext {
+            sender: address,
+            text: String::new(),
+        }
     }
 }
 

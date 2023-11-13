@@ -93,7 +93,7 @@ where
     values,
     fee,
     dest_address,
-    source_address,
+    source_address_index,
     tx_memo
 ))]
 pub async fn send<V, R>(
@@ -103,22 +103,29 @@ pub async fn send<V, R>(
     values: &[Value],
     fee: Fee,
     dest_address: Address,
-    source_address: AddressIndex,
+    source_address_index: AddressIndex,
     tx_memo: Option<MemoPlaintext>,
 ) -> anyhow::Result<TransactionPlan>
 where
     V: ViewClient,
     R: RngCore + CryptoRng,
 {
-    tracing::debug!(?values, ?fee, ?dest_address, ?source_address, ?tx_memo);
+    tracing::debug!(
+        ?values,
+        ?fee,
+        ?dest_address,
+        ?source_address_index,
+        ?tx_memo
+    );
     let mut planner = Planner::new(rng);
     planner.fee(fee);
     for value in values.iter().cloned() {
         planner.output(value, dest_address);
     }
+    let source_address = view.address_by_index(source_address_index).await?;
     planner
-        .memo(tx_memo.unwrap_or_default())?
-        .plan(view, wallet_id, source_address)
+        .memo(tx_memo.unwrap_or_else(|| MemoPlaintext::blank_memo(source_address)))?
+        .plan(view, wallet_id, source_address_index)
         .await
         .context("can't build send transaction")
 }
@@ -239,7 +246,8 @@ where
             // chunks, ignoring the biggest notes in the remainder.
             for group in records.chunks_exact(SWEEP_COUNT) {
                 let mut planner = Planner::new(&mut rng);
-                planner.memo(MemoPlaintext::default())?;
+                let sender_addr = view.address_by_index(index).await?;
+                planner.memo(MemoPlaintext::blank_memo(sender_addr))?;
 
                 for record in group {
                     planner.spend(record.note.clone(), record.position);
