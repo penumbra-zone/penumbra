@@ -340,9 +340,6 @@ async fn build_dao_transaction(transaction_plan: TransactionPlan) -> Result<Tran
                 anchor: penumbra_tct::Tree::new().root(),
                 state_commitment_proofs: Default::default(),
             },
-        )?
-        .authorize(
-            &mut ChaCha20Rng::from_seed(*DAO_TRANSACTION_RNG_SEED),
             &AuthorizationData {
                 effect_hash,
                 spend_auths: Default::default(),

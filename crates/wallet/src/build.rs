@@ -43,11 +43,9 @@ where
     #[cfg(feature = "parallel")]
     {
         let tx = plan
-            .build_concurrent(&mut rng, fvk, witness_data)
+            .build_concurrent(fvk, &witness_data, &auth_data)
             .await
-            .map_err(|_| tonic::Status::failed_precondition("Error building transaction"))?
-            .authorize(&mut rng, &auth_data)
-            .map_err(|_| tonic::Status::failed_precondition("Error authorizing transaction"))?;
+            .map_err(|_| tonic::Status::failed_precondition("Error building transaction"))?;
 
         Ok(tx)
     }
