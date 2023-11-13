@@ -201,7 +201,7 @@ pub fn build_parallel(
     let witness_data_: WitnessData = witness_data_proto.try_into()?;
 
     let auth_data_proto: pb::AuthorizationData = serde_wasm_bindgen::from_value(auth_data)?;
-    let auth_data_: AuthorizationData = auth_data_proto.try_into().unwrap();
+    let auth_data_: AuthorizationData = auth_data_proto.try_into()?;
 
     let fvk: FullViewingKey = FullViewingKey::from_str(full_viewing_key)
         .expect("The provided string is not a valid FullViewingKey");
