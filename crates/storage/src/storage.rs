@@ -47,22 +47,80 @@ struct Inner {
 }
 
 impl Storage {
-    /// Initializes a new storage instance at the given path, along with a substore
-    /// defined by each of the provided prefixes.
-    pub async fn init(path: PathBuf, substore_prefixes: Vec<String>) -> Result<Self> {
+    /// Loads a storage instance from the given path, initializing it if necessary.
+    pub async fn load(path: PathBuf) -> Result<Self> {
+        let span = Span::current();
+        let default_prefixes = vec![];
+        let db_path = path.clone();
+        // initializing main storage instance.
+        let prefixes = tokio::task::Builder::new()
+            .name("config_rocksdb")
+            .spawn_blocking(move || {
+                span.in_scope(|| {
+                    let mut opts = Options::default();
+                    opts.create_if_missing(true);
+                    opts.create_missing_column_families(true);
+                    tracing::info!(?path, "opening rocksdb config column");
+
+                    // Hack(erwan): RocksDB requires us to specify all the column families
+                    // that we want to use upfront. This is problematic when we are initializing
+                    // a new database, because the call to `DBCommon<T>::list_cf` will fail
+                    // if the database manifest is not found. To work around this, we ignore
+                    // the error and assume that the database is empty.
+                    // Tracked in: https://github.com/rust-rocksdb/rust-rocksdb/issues/608
+                    let mut columns = DB::list_cf(&opts, path.clone()).unwrap_or_default();
+                    if columns.is_empty() {
+                        columns.push("config".to_string());
+                    }
+
+                    let db = DB::open_cf(&opts, path, columns).expect("can open database");
+                    let cf_config = db
+                        .cf_handle("config")
+                        .expect("config column family is created if missing");
+                    let config_iter = db.iterator_cf(cf_config, rocksdb::IteratorMode::Start);
+                    let mut prefixes = Vec::new();
+                    tracing::info!("reading prefixes from config column family");
+                    for i in config_iter {
+                        let (key, _) = i.expect("can read from iterator");
+                        prefixes.push(String::from_utf8(key.to_vec()).expect("prefix is utf8"));
+                    }
+
+                    for prefix in default_prefixes {
+                        if !prefixes.contains(&prefix) {
+                            db.put_cf(cf_config, prefix.as_bytes(), b"").unwrap();
+                            prefixes.push(prefix);
+                        }
+                    }
+
+                    std::mem::drop(db);
+                    prefixes
+                })
+            })?
+            .await?;
+
+        Storage::init(db_path, prefixes).await
+    }
+
+    /// Initializes a new storage instance at the given path. Takes a list of default prefixes
+    /// to initialize the storage configuration with.
+    /// Here is a high-level overview of the initialization process:
+    /// 1. Create a new RocksDB instance at the given path.
+    /// 2. Read the prefix list and create a [`SubstoreConfig`] for each prefix.
+    /// 3. Create a new [`MultistoreConfig`] from supplied prefixes.
+    /// 4. Initialize the substore cache with the latest version of each substore.
+    /// 5. Spawn a dispatcher task that forwards new snapshots to subscribers.
+    pub async fn init(path: PathBuf, prefixes: Vec<String>) -> Result<Self> {
         let span = Span::current();
 
         tokio::task::Builder::new()
             .name("open_rocksdb")
             .spawn_blocking(move || {
                 span.in_scope(|| {
-                    tracing::info!(?path, "opening rocksdb");
-
                     let mut substore_configs = Vec::new();
                     tracing::info!("initializing global store config");
                     let main_store = Arc::new(SubstoreConfig::new(""));
-                    for substore_prefix in substore_prefixes {
-                        tracing::debug!(?substore_prefix, "reading substore config");
+                    for substore_prefix in prefixes {
+                        tracing::info!(prefix = ?substore_prefix, "creating substore config for prefix");
                         if substore_prefix.is_empty() {
                             bail!("the empty prefix is reserved")
                         }
@@ -74,13 +132,6 @@ impl Storage {
                         substores: substore_configs.clone(),
                     };
 
-                    // RocksDB setup: define options, collect all the columns, and open the database.
-                    // Each substore defines a prefix and its own set of columns.
-                    // See [`crate::store::SubstoreConfig`] for more details.
-                    let mut opts = Options::default();
-                    opts.create_if_missing(true);
-                    opts.create_missing_column_families(true);
-
                     let mut substore_columns: Vec<&String> = substore_configs
                         .iter()
                         .flat_map(|config| config.columns())
@@ -88,19 +139,32 @@ impl Storage {
                     let mut columns: Vec<&String> = main_store.columns().collect();
                     columns.append(&mut substore_columns);
 
-                    let db = Arc::new(DB::open_cf(&opts, path, columns)?);
+                    tracing::info!(?path, "opening rocksdb");
+                    let cf_config_string = "config".to_string();
+                    // RocksDB setup: define options, collect all the columns, and open the database.
+                    // Each substore defines a prefix and its own set of columns.
+                    // See [`crate::store::SubstoreConfig`] for more details.
+                    let mut opts = Options::default();
+                    opts.create_if_missing(true);
+                    opts.create_missing_column_families(true);
+                    columns.push(&cf_config_string);
+
+                    let db = DB::open_cf(&opts, path, columns)?;
+                    let shared_db = Arc::new(db);
 
                     // Initialize the substore cache with the latest version of each substore.
                     // Note: for compatibility reasons with Tendermint/CometBFT, we set the "pre-genesis"
                     // jmt version to be u64::MAX, corresponding to -1 mod 2^64.
-                    let jmt_version = main_store.latest_version_from_db(&db)?.unwrap_or(u64::MAX);
+                    let jmt_version = main_store
+                        .latest_version_from_db(&shared_db)?
+                        .unwrap_or(u64::MAX);
 
                     let mut multistore_cache =
                         multistore::MultistoreCache::from_config(multistore_config.clone());
 
                     for substore_config in substore_configs {
                         let substore_version = substore_config
-                            .latest_version_from_db(&db)?
+                            .latest_version_from_db(&shared_db)?
                             .unwrap_or(u64::MAX);
 
                         multistore_cache.set_version(substore_config.clone(), substore_version);
@@ -114,7 +178,8 @@ impl Storage {
                     multistore_cache.set_version(main_store, jmt_version);
                     tracing::debug!(?jmt_version, "initializing main store");
 
-                    let latest_snapshot = Snapshot::new(db.clone(), jmt_version, multistore_cache);
+                    let latest_snapshot =
+                        Snapshot::new(shared_db.clone(), jmt_version, multistore_cache);
 
                     // A concurrent-safe ring buffer of the latest 10 snapshots.
                     let snapshots = RwLock::new(SnapshotCache::new(latest_snapshot.clone(), 10));
@@ -158,16 +223,11 @@ impl Storage {
                         tx_state,
                         multistore_config,
                         snapshots,
-                        db,
+                        db: shared_db,
                     })))
                 })
             })?
             .await?
-    }
-
-    // TODO: hack, will consolidate later in the pr.
-    pub async fn load(path: PathBuf) -> Result<Self> {
-        Storage::init(path, vec![]).await
     }
 
     /// Returns the latest version (block height) of the tree recorded by the
