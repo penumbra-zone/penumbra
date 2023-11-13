@@ -146,7 +146,7 @@ pub fn witness(transaction_plan: JsValue, stored_tree: JsValue) -> WasmResult<Js
     Ok(result)
 }
 
-/// Build tx
+/// Build serial tx
 /// Building a transaction may take some time,
 /// depending on CPU performance and number of actions in transaction_plan
 /// Arguments:
@@ -184,7 +184,16 @@ pub fn build_serial(
     Ok(value)
 }
 
-/// Build transaction in parallel
+/// Build parallel tx
+/// Building a transaction may take some time,
+/// depending on CPU performance and number of actions in transaction_plan
+/// Arguments:
+///     actions: `Vec<Actions>`
+///     full_viewing_key: `bech32m String`
+///     transaction_plan: `pb::TransactionPlan`
+///     witness_data: `pb::WitnessData`
+///     auth_data: `pb::AuthorizationData`
+/// Returns: `pb::Transaction`
 #[wasm_bindgen]
 pub fn build_parallel(
     actions: JsValue,
@@ -212,6 +221,7 @@ pub fn build_parallel(
     let transaction = plan
         .clone()
         .build_unauth_with_actions(actions_, fvk, witness_data_)?;
+    
     let tx = plan.authorize_with_auth(&mut OsRng, &auth_data_, transaction)?;
 
     let value = serde_wasm_bindgen::to_value(&tx.to_proto())?;
