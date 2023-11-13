@@ -68,6 +68,15 @@ impl WasmPlanner {
         Ok(planner)
     }
 
+    /// Builds a planned [`Action`] specified by
+    /// the [`ActionPlan`] in a [`TransactionPlan`]. 
+    /// Arguments:
+    ///     &self: `WasmPlanner`
+    ///     transaction_plan: `TransactionPlan`
+    ///     action_plan: `ActionPlan`
+    ///     full_viewing_key: `bech32m String`, 
+    ///     witness_data: `WitnessData``
+    /// Returns: `Action`
     #[wasm_bindgen]
     pub fn build_action(
         &self,
@@ -132,7 +141,7 @@ impl WasmPlanner {
         Ok(action_result_proto)
     }
 
-    // Public getter for the 'db' field
+    /// Public getter for the 'storage' field
     pub fn get_storage(&self) -> *const IndexedDBStorage {
         &self.storage
     }

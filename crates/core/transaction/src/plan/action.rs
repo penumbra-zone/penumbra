@@ -77,6 +77,14 @@ pub enum ActionPlan {
 }
 
 impl ActionPlan {
+    /// Builds a planned [`Action`] specified by
+    /// the [`ActionPlan`]. 
+    /// Arguments:
+    ///     &self: `ActionPlan`
+    ///     fvk: `FullViewingKey`
+    ///     witness_data: `&WitnessData`
+    ///     memo_key: `Option<PayloadKey>`
+    /// Returns: `Action`
     pub fn build_unauth(
         &self,
         fvk: &FullViewingKey,
