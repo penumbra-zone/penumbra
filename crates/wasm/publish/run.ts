@@ -2,7 +2,7 @@ import path from 'path';
 import { execSync } from 'child_process';
 import { readFileSync, writeFileSync } from 'fs';
 
-const TARGETS = ['web', 'nodejs', 'bundler'];
+const TARGETS = ['nodejs', 'bundler'];
 
 TARGETS.forEach(target => {
   // Run wasm-pack for each target

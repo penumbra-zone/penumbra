@@ -3,6 +3,7 @@ use decaf377::Fq;
 use rand_core::OsRng;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
+use wasm_bindgen_test::console_log;
 
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_dex::swap_claim::SwapClaimPlan;
@@ -178,8 +179,29 @@ impl WasmPlanner {
     /// Arguments:
     ///     withdrawal: `Ics20Withdrawal`
     pub fn ics20_withdrawal(&mut self, withdrawal: JsValue) -> WasmResult<()> {
+        console_log!("v3 about to do serde_wasm_bindgen::from_value");
+
+        // let withdrawal_proto: Ics20Withdrawal = withdrawal.into_serde().unwrap();
         let withdrawal_proto: Ics20Withdrawal = serde_wasm_bindgen::from_value(withdrawal)?;
+        console_log!(
+            "{}",
+            withdrawal_proto
+                .timeout_height
+                .clone()
+                .unwrap()
+                .revision_height
+        );
+        console_log!(
+            "{}",
+            withdrawal_proto
+                .timeout_height
+                .clone()
+                .unwrap()
+                .revision_number
+        );
+        console_log!("next withdrawal_proto.try_into()");
         self.planner.ics20_withdrawal(withdrawal_proto.try_into()?);
+        console_log!("all good");
         Ok(())
     }
 
