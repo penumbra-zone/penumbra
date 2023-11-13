@@ -370,7 +370,7 @@ mod tests {
         for i in transaction_plan_conv.actions.clone() {
             if let ActionPlan::Spend(ref spend_plan) = i {
                 let action_deserialize = serde_wasm_bindgen::to_value(&i).unwrap();
-                let action = wasm_planner.action_builder(
+                let action = wasm_planner.build_action(
                     transaction_plan.clone(), 
                     action_deserialize, full_viewing_key.clone(), 
                     witness_data.as_ref().unwrap().clone()
@@ -383,7 +383,7 @@ mod tests {
         for i in transaction_plan_conv.actions {
             if let ActionPlan::Output(ref output_plan) = i {
                 let action_deserialize = serde_wasm_bindgen::to_value(&i).unwrap();
-                let action = wasm_planner.action_builder(
+                let action = wasm_planner.build_action(
                     transaction_plan.clone(), 
                     action_deserialize, 
                     full_viewing_key.clone(), 
