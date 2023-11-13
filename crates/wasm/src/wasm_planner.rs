@@ -64,12 +64,12 @@ impl WasmPlanner {
     }
 
     /// Builds a planned [`Action`] specified by
-    /// the [`ActionPlan`] in a [`TransactionPlan`]. 
+    /// the [`ActionPlan`] in a [`TransactionPlan`].
     /// Arguments:
     ///     &self: `WasmPlanner`
     ///     transaction_plan: `TransactionPlan`
     ///     action_plan: `ActionPlan`
-    ///     full_viewing_key: `bech32m String`, 
+    ///     full_viewing_key: `bech32m String`,
     ///     witness_data: `WitnessData``
     /// Returns: `Action`
     #[wasm_bindgen]
@@ -82,8 +82,7 @@ impl WasmPlanner {
     ) -> WasmResult<JsValue> {
         utils::set_panic_hook();
 
-        let transaction_plan_proto: tp =
-            serde_wasm_bindgen::from_value(transaction_plan.clone())?;
+        let transaction_plan_proto: tp = serde_wasm_bindgen::from_value(transaction_plan.clone())?;
         let transaction_plan_: TransactionPlan = transaction_plan_proto.try_into()?;
 
         let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;

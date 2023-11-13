@@ -44,36 +44,32 @@ impl IndexedDBStorage {
         db_req.set_on_upgrade_needed(Some(|evt: &IdbVersionChangeEvent| -> Result<(), JsValue> {
             // Check if the object store exists; create it if it doesn't
             if evt.db().name() == "penumbra-db-wasm-test" {
-                let note_key: JsValue =
-                    serde_wasm_bindgen::to_value("noteCommitment.inner")?;
+                let note_key: JsValue = serde_wasm_bindgen::to_value("noteCommitment.inner")?;
                 let note_object_store_params = IdbObjectStoreParameters::new()
                     .key_path(Some(&IdbKeyPath::new(note_key)))
                     .to_owned();
-                let note_object_store = evt
-                    .db()
-                    .create_object_store_with_params("SPENDABLE_NOTES", &note_object_store_params)?;
+                let note_object_store = evt.db().create_object_store_with_params(
+                    "SPENDABLE_NOTES",
+                    &note_object_store_params,
+                )?;
 
-                let nullifier_key: JsValue =
-                    serde_wasm_bindgen::to_value("nullifier.inner")?;
-                note_object_store
-                    .create_index_with_params(
-                        "nullifier",
-                        &IdbKeyPath::new(nullifier_key),
-                        web_sys::IdbIndexParameters::new().unique(false),
-                    )?;
+                let nullifier_key: JsValue = serde_wasm_bindgen::to_value("nullifier.inner")?;
+                note_object_store.create_index_with_params(
+                    "nullifier",
+                    &IdbKeyPath::new(nullifier_key),
+                    web_sys::IdbIndexParameters::new().unique(false),
+                )?;
                 evt.db().create_object_store("TREE_LAST_POSITION")?;
                 evt.db().create_object_store("TREE_LAST_FORGOTTEN")?;
 
-                let commitment_key: JsValue =
-                    serde_wasm_bindgen::to_value("commitment.inner")?;
+                let commitment_key: JsValue = serde_wasm_bindgen::to_value("commitment.inner")?;
                 let commitment_object_store_params = IdbObjectStoreParameters::new()
                     .key_path(Some(&IdbKeyPath::new(commitment_key)))
                     .to_owned();
-                evt.db()
-                    .create_object_store_with_params(
-                        "TREE_COMMITMENTS",
-                        &commitment_object_store_params,
-                    )?;
+                evt.db().create_object_store_with_params(
+                    "TREE_COMMITMENTS",
+                    &commitment_object_store_params,
+                )?;
                 evt.db().create_object_store("TREE_HASHES")?;
             }
             Ok(())

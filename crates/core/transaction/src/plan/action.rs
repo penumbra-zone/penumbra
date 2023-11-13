@@ -78,7 +78,7 @@ pub enum ActionPlan {
 
 impl ActionPlan {
     /// Builds a planned [`Action`] specified by
-    /// the [`ActionPlan`]. 
+    /// the [`ActionPlan`].
     /// Arguments:
     ///     &self: `ActionPlan`
     ///     fvk: `FullViewingKey`
