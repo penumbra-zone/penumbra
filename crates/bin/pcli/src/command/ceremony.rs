@@ -53,7 +53,7 @@ async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -
     }
 
     let memo_plaintext = MemoPlaintext {
-        sender: app.config.full_viewing_key.payment_address(from).0,
+        return_address: app.config.full_viewing_key.payment_address(from).0,
         text: "E PLURIBUS UNUM".to_owned(),
     };
 

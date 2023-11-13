@@ -518,7 +518,7 @@ pub struct MemoCiphertext {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MemoPlaintext {
     #[prost(message, optional, tag = "1")]
-    pub sender: ::core::option::Option<super::super::keys::v1alpha1::Address>,
+    pub return_address: ::core::option::Option<super::super::keys::v1alpha1::Address>,
     #[prost(string, tag = "2")]
     pub text: ::prost::alloc::string::String,
 }

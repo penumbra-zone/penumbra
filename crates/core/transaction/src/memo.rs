@@ -25,14 +25,14 @@ pub struct MemoCiphertext(pub [u8; MEMO_CIPHERTEXT_LEN_BYTES]);
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MemoPlaintext {
-    pub sender: Address,
+    pub return_address: Address,
     pub text: String,
 }
 
 impl From<&MemoPlaintext> for Vec<u8> {
     fn from(plaintext: &MemoPlaintext) -> Vec<u8> {
         let mut bytes = vec![];
-        bytes.extend_from_slice(&plaintext.sender.to_vec());
+        bytes.extend_from_slice(&plaintext.return_address.to_vec());
         bytes.extend_from_slice(plaintext.text.as_bytes());
         bytes
     }
@@ -43,16 +43,16 @@ impl TryFrom<Vec<u8>> for MemoPlaintext {
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         if bytes.len() < 80 {
-            anyhow::bail!("malformed memo plaintext: missing sender address");
+            anyhow::bail!("malformed memo plaintext: missing return address");
         }
-        let sender_address_bytes = &bytes[..80];
-        let sender_address: Address = sender_address_bytes.try_into()?;
+        let return_address_bytes = &bytes[..80];
+        let return_address: Address = return_address_bytes.try_into()?;
         let text = String::from_utf8_lossy(&bytes[80..])
             .trim_end_matches(0u8 as char)
             .to_string();
 
         Ok(MemoPlaintext {
-            sender: sender_address,
+            return_address,
             text,
         })
     }
@@ -65,7 +65,7 @@ impl MemoPlaintext {
 
     pub fn blank_memo(address: Address) -> MemoPlaintext {
         MemoPlaintext {
-            sender: address,
+            return_address: address,
             text: String::new(),
         }
     }
@@ -99,14 +99,14 @@ impl MemoCiphertext {
     ) -> anyhow::Result<MemoPlaintext> {
         let plaintext_bytes = MemoCiphertext::decrypt_bytes(memo_key, ciphertext)?;
 
-        let sender_address_bytes = &plaintext_bytes[..80];
-        let sender_address: Address = sender_address_bytes.try_into()?;
+        let return_address_bytes = &plaintext_bytes[..80];
+        let return_address: Address = return_address_bytes.try_into()?;
         let text = String::from_utf8_lossy(&plaintext_bytes[80..])
             .trim_end_matches(0u8 as char)
             .to_string();
 
         Ok(MemoPlaintext {
-            sender: sender_address,
+            return_address: return_address,
             text,
         })
     }
@@ -151,14 +151,14 @@ impl MemoCiphertext {
             anyhow!("post-decryption, could not fit plaintext into memo size {MEMO_LEN_BYTES}")
         })?;
 
-        let sender_address_bytes = &plaintext_bytes[..80];
-        let sender_address: Address = sender_address_bytes.try_into()?;
+        let return_address_bytes = &plaintext_bytes[..80];
+        let return_address: Address = return_address_bytes.try_into()?;
         let text = String::from_utf8_lossy(&plaintext_bytes[80..])
             .trim_end_matches(0u8 as char)
             .to_string();
 
         Ok(MemoPlaintext {
-            sender: sender_address,
+            return_address: return_address,
             text,
         })
     }
@@ -181,7 +181,7 @@ impl TryFrom<&[u8]> for MemoCiphertext {
 impl From<MemoPlaintext> for pbt::MemoPlaintext {
     fn from(plaintext: MemoPlaintext) -> pbt::MemoPlaintext {
         pbt::MemoPlaintext {
-            sender: Some(plaintext.sender.into()),
+            return_address: Some(plaintext.return_address.into()),
             text: plaintext.text,
         }
     }
@@ -212,11 +212,11 @@ impl TryFrom<pbt::MemoPlaintext> for MemoPlaintext {
 
     fn try_from(msg: pbt::MemoPlaintext) -> Result<Self, Self::Error> {
         let sender = msg
-            .sender
-            .ok_or_else(|| anyhow::anyhow!("message missing sender address"))?
+            .return_address
+            .ok_or_else(|| anyhow::anyhow!("message missing return address"))?
             .try_into()?;
         Ok(Self {
-            sender,
+            return_address: sender,
             text: msg.text,
         })
     }
@@ -248,7 +248,7 @@ mod tests {
         // On the sender side, we have to encrypt the memo to put into the transaction-level,
         // and also the memo key to put on the action-level (output).
         let memo = MemoPlaintext {
-            sender: dest,
+            return_address: dest,
             text: String::from("Hi"),
         };
         let memo_key = PayloadKey::random_key(&mut OsRng);
@@ -296,7 +296,7 @@ mod tests {
         // On the sender side, we have to encrypt the memo to put into the transaction-level,
         // and also the memo key to put on the action-level (output).
         let memo = MemoPlaintext {
-            sender: dest,
+            return_address: dest,
             text: String::from("Hello, friend"),
         };
         let memo_key = PayloadKey::random_key(&mut OsRng);
@@ -345,7 +345,7 @@ mod tests {
             let memo_address = Address::dummy(&mut rng);
             let memo_text = s;
             let memo = MemoPlaintext {
-                sender: memo_address,
+                return_address: memo_address,
                 text: memo_text,
             };
             let ciphertext_result = MemoCiphertext::encrypt(memo_key.clone(), &memo);

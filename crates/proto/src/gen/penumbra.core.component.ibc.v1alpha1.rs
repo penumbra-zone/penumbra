@@ -16,7 +16,7 @@ pub struct FungibleTokenPacketData {
     /// the token amount to be transferred
     #[prost(string, tag = "2")]
     pub amount: ::prost::alloc::string::String,
-    /// the sender address
+    /// the return address
     #[prost(string, tag = "3")]
     pub sender: ::prost::alloc::string::String,
     /// the recipient address on the destination chain
