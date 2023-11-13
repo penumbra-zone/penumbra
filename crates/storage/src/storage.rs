@@ -87,7 +87,8 @@ impl Storage {
 
                     for prefix in default_prefixes {
                         if !prefixes.contains(&prefix) {
-                            db.put_cf(cf_config, prefix.as_bytes(), b"").unwrap();
+                            db.put_cf(cf_config, prefix.as_bytes(), b"")
+                                .expect("can write to db");
                             prefixes.push(prefix);
                         }
                     }
