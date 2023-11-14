@@ -105,7 +105,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "builder",
-          "expr": "rate(penumbra_pd_oblivious_client_compact_block_served_total[5m])",
+          "expr": "rate(penumbra_component_compact_block_compact_block_range_served_total[5m])",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -197,7 +197,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "builder",
-          "expr": "penumbra_pd_oblivious_client_compact_active_connections",
+          "expr": "penumbra_component_compact_block_compact_block_range_active_connections",
           "instant": false,
           "range": true,
           "refId": "A"

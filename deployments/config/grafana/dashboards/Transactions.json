@@ -147,18 +147,22 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "10.0.3",
+      "pluginVersion": "10.1.5",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
+          "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "penumbra_dex_path_search_duration_seconds_count{instance=\"penumbra-testnet-preview-val-0-metrics:9000\"}",
+          "expr": "avg(penumbra_dex_path_search_duration_seconds_count)",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
           "instant": false,
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "useBackend": false
         }
       ],
       "title": "DEX path search count",
@@ -188,6 +192,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -267,7 +272,7 @@
         "current": {
           "selected": false,
           "text": "Prometheus",
-          "value": "Prometheus"
+          "value": "PBFA97CFB590B2093"
         },
         "hide": 0,
         "includeAll": false,
