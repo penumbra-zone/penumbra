@@ -3,7 +3,9 @@
 //! This implementation only supports producing `SpendAuth` signatures, which
 //! use the conventional `decaf377` basepoint.
 
+use anyhow::anyhow;
 use frost_core::frost;
+use penumbra_proto::crypto::decaf377_frost::v1alpha1 as pb;
 use std::collections::HashMap;
 
 /// A FROST-related error.
@@ -43,13 +45,42 @@ pub mod round1 {
     ///
     /// This step can be batched if desired by the implementation. Each
     /// SigningCommitment can be used for exactly *one* signature.
-    pub type SigningCommitments = frost::round1::SigningCommitments<E>;
+    #[derive(Debug, Clone)]
+    pub struct SigningCommitments(frost::round1::SigningCommitments<E>);
 
-    /*
-    // TODO: doesn't seem like this is used directly?
-    /// A commitment to a signing nonce share.
-    pub type NonceCommitment = frost::round1::NonceCommitment<E>;
-     */
+    impl From<SigningCommitments> for pb::SigningCommitments {
+        fn from(value: SigningCommitments) -> Self {
+            Self {
+                hiding: Some(pb::NonceCommitment {
+                    element: value.0.hiding().serialize(),
+                }),
+                binding: Some(pb::NonceCommitment {
+                    element: value.0.binding().serialize(),
+                }),
+            }
+        }
+    }
+
+    impl TryFrom<pb::SigningCommitments> for SigningCommitments {
+        type Error = anyhow::Error;
+
+        fn try_from(value: pb::SigningCommitments) -> Result<Self, Self::Error> {
+            Ok(Self(frost::round1::SigningCommitments::new(
+                frost::round1::NonceCommitment::deserialize(
+                    value
+                        .hiding
+                        .ok_or(anyhow!("SigningCommitments missing hiding"))?
+                        .element,
+                )?,
+                frost::round1::NonceCommitment::deserialize(
+                    value
+                        .binding
+                        .ok_or(anyhow!("SigningCommitments missing binding"))?
+                        .element,
+                )?,
+            )))
+        }
+    }
 
     /// Performed once by each participant selected for the signing operation.
     ///
@@ -59,7 +90,8 @@ pub mod round1 {
     where
         RNG: CryptoRng + RngCore,
     {
-        frost::round1::commit::<E, RNG>(secret, rng)
+        let (a, b) = frost::round1::commit::<E, RNG>(secret, rng);
+        (a, SigningCommitments(b))
     }
 }
 
@@ -75,7 +107,26 @@ pub mod round2 {
 
     /// A FROST participant's signature share, which the Coordinator will
     /// aggregate with all other signer's shares into the joint signature.
-    pub type SignatureShare = frost::round2::SignatureShare<E>;
+    #[derive(Debug, Clone)]
+    pub struct SignatureShare(pub(crate) frost::round2::SignatureShare<E>);
+
+    impl From<SignatureShare> for pb::SignatureShare {
+        fn from(value: SignatureShare) -> Self {
+            pb::SignatureShare {
+                scalar: value.0.serialize(),
+            }
+        }
+    }
+
+    impl TryFrom<pb::SignatureShare> for SignatureShare {
+        type Error = anyhow::Error;
+
+        fn try_from(value: pb::SignatureShare) -> Result<Self, Self::Error> {
+            Ok(Self(frost::round2::SignatureShare::deserialize(
+                value.scalar,
+            )?))
+        }
+    }
 
     /// Performed once by each participant selected for the signing operation.
     ///
@@ -90,7 +141,7 @@ pub mod round2 {
         signer_nonces: &round1::SigningNonces,
         key_package: &keys::KeyPackage,
     ) -> Result<SignatureShare, Error> {
-        frost::round2::sign(signing_package, signer_nonces, key_package)
+        frost::round2::sign(signing_package, signer_nonces, key_package).map(SignatureShare)
     }
 
     /// Like [`sign`], but for producing signatures with a randomized verification key.
@@ -106,6 +157,7 @@ pub mod round2 {
             key_package,
             Randomizer::from_scalar(randomizer),
         )
+        .map(SignatureShare)
     }
 }
 
@@ -131,8 +183,14 @@ pub fn aggregate(
     signature_shares: &HashMap<Identifier, round2::SignatureShare>,
     pubkeys: &keys::PublicKeyPackage,
 ) -> Result<Signature<SpendAuth>, Error> {
-    let frost_sig = frost::aggregate(signing_package, signature_shares, pubkeys)?;
-    Ok(frost_sig.serialize())
+    let signature_shares = signature_shares
+        .iter()
+        .map(|(a, b)| (*a, b.0.clone()))
+        .collect();
+    let frost_sig = frost::aggregate(signing_package, &signature_shares, pubkeys)?;
+    Ok(TryInto::<[u8; 64]>::try_into(frost_sig.serialize())
+        .expect("serialization is valid")
+        .into())
 }
 
 /// Like [`aggregate`], but for generating signatures with a randomized
@@ -143,14 +201,20 @@ pub fn aggregate_randomized(
     pubkeys: &keys::PublicKeyPackage,
     randomizer: decaf377::Fr,
 ) -> Result<Signature<SpendAuth>, Error> {
+    let signature_shares = signature_shares
+        .iter()
+        .map(|(a, b)| (*a, b.0.clone()))
+        .collect();
     let frost_sig = frost_rerandomized::aggregate(
         signing_package,
-        signature_shares,
+        &signature_shares,
         pubkeys,
         &frost_rerandomized::RandomizedParams::from_randomizer(
             pubkeys.group_public(),
             frost_rerandomized::Randomizer::from_scalar(randomizer),
         ),
     )?;
-    Ok(frost_sig.serialize())
+    Ok(TryInto::<[u8; 64]>::try_into(frost_sig.serialize())
+        .expect("serialization is valid")
+        .into())
 }

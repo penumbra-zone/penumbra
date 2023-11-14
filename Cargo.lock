@@ -2062,6 +2062,7 @@ dependencies = [
 name = "decaf377-frost"
 version = "0.63.1"
 dependencies = [
+ "anyhow",
  "ark-ff",
  "blake2b_simd 0.5.11",
  "decaf377 0.5.0",

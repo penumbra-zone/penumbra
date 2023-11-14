@@ -102,6 +102,7 @@ fn main() -> anyhow::Result<()> {
                 "../../proto/penumbra/penumbra/core/num/v1alpha1/num.proto",
                 "../../proto/penumbra/penumbra/core/transaction/v1alpha1/transaction.proto",
                 "../../proto/penumbra/penumbra/crypto/decaf377_fmd/v1alpha1/decaf377_fmd.proto",
+                "../../proto/penumbra/penumbra/crypto/decaf377_frost/v1alpha1/decaf377_frost.proto",
                 "../../proto/penumbra/penumbra/crypto/decaf377_rdsa/v1alpha1/decaf377_rdsa.proto",
                 "../../proto/penumbra/penumbra/crypto/tct/v1alpha1/tct.proto",
                 "../../proto/penumbra/penumbra/custody/v1alpha1/custody.proto",

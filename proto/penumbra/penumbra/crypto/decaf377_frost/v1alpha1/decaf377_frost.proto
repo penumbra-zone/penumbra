@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package penumbra.crypto.decaf377_frost.v1alpha1;
+
+message VerifiableSecretSharingCommitment {
+  repeated bytes elements = 1; 
+}
+
+message DKGRound1Package {
+  VerifiableSecretSharingCommitment commitment = 1; 
+  bytes proof_of_knowledge = 2;
+}
+
+message SigningShare {
+  bytes scalar = 1;
+}
+
+message DKGRound2Package {
+  SigningShare signing_share = 1;
+}
+
+message NonceCommitment {
+  bytes element = 1;
+}
+
+message SigningCommitments {
+  NonceCommitment hiding = 1;
+  NonceCommitment binding = 2;
+}
+
+message SignatureShare {
+  bytes scalar = 1;
+}
+

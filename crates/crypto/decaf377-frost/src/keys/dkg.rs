@@ -1,6 +1,8 @@
 //! Distributed key generation without a trusted dealer.
+use anyhow::anyhow;
+use penumbra_proto::crypto::decaf377_frost::v1alpha1 as pb;
 
-// Copied from frost-ed25519 ("MIT or Apache-2.0")
+// Copied from frost-ed25519 ("MIT or Apache-2.0") (more or less)
 
 use super::*;
 
@@ -18,7 +20,41 @@ pub mod round1 {
 
     /// The package that must be broadcast by each participant to all other participants
     /// between the first and second parts of the DKG protocol (round 1).
-    pub type Package = frost::keys::dkg::round1::Package<E>;
+    #[derive(Debug, Clone)]
+    pub struct Package(pub(crate) frost::keys::dkg::round1::Package<E>);
+
+    impl From<Package> for pb::DkgRound1Package {
+        fn from(value: Package) -> Self {
+            Self {
+                commitment: Some(pb::VerifiableSecretSharingCommitment {
+                    elements: value
+                        .0
+                        .commitment()
+                        .serialize()
+                        .into_iter()
+                        .map(|x| x.to_vec())
+                        .collect(),
+                }),
+                proof_of_knowledge: value.0.proof_of_knowledge().serialize().to_vec(),
+            }
+        }
+    }
+
+    impl TryFrom<pb::DkgRound1Package> for Package {
+        type Error = anyhow::Error;
+
+        fn try_from(value: pb::DkgRound1Package) -> Result<Self, Self::Error> {
+            Ok(Self(frost::keys::dkg::round1::Package::new(
+                frost::keys::VerifiableSecretSharingCommitment::deserialize(
+                    value
+                        .commitment
+                        .ok_or(anyhow!("DkgRound1Package missing commitment"))?
+                        .elements,
+                )?,
+                frost_core::Signature::deserialize(value.proof_of_knowledge)?,
+            )))
+        }
+    }
 }
 
 /// DKG Round 2 structures.
@@ -40,7 +76,33 @@ pub mod round2 {
     /// # Security
     ///
     /// The package must be sent on an *confidential* and *authenticated* channel.
-    pub type Package = frost::keys::dkg::round2::Package<E>;
+    #[derive(Debug, Clone)]
+    pub struct Package(pub(crate) frost::keys::dkg::round2::Package<E>);
+
+    impl From<Package> for pb::DkgRound2Package {
+        fn from(value: Package) -> Self {
+            Self {
+                signing_share: Some(pb::SigningShare {
+                    scalar: value.0.secret_share().serialize(),
+                }),
+            }
+        }
+    }
+
+    impl TryFrom<pb::DkgRound2Package> for Package {
+        type Error = anyhow::Error;
+
+        fn try_from(value: pb::DkgRound2Package) -> Result<Self, Self::Error> {
+            Ok(Self(frost::keys::dkg::round2::Package::new(
+                frost::keys::SigningShare::deserialize(
+                    value
+                        .signing_share
+                        .ok_or(anyhow!("DkgRound2Package missing signing share"))?
+                        .scalar,
+                )?,
+            )))
+        }
+    }
 }
 
 /// Performs the first part of the distributed key generation protocol
@@ -56,6 +118,7 @@ pub fn part1<R: RngCore + CryptoRng>(
     mut rng: R,
 ) -> Result<(round1::SecretPackage, round1::Package), Error> {
     frost::keys::dkg::part1(identifier, max_signers, min_signers, &mut rng)
+        .map(|(a, b)| (a, round1::Package(b)))
 }
 
 /// Performs the second part of the distributed key generation protocol
@@ -69,9 +132,19 @@ pub fn part2(
     secret_package: round1::SecretPackage,
     round1_packages: &HashMap<Identifier, round1::Package>,
 ) -> Result<(round2::SecretPackage, HashMap<Identifier, round2::Package>), Error> {
-    frost::keys::dkg::part2(secret_package, round1_packages)
+    let round1_packages = round1_packages
+        .iter()
+        .map(|(a, b)| (*a, b.0.clone()))
+        .collect();
+    frost::keys::dkg::part2(secret_package, &round1_packages).map(|(a, b)| {
+        (
+            a,
+            b.into_iter()
+                .map(|(k, v)| (k, round2::Package(v)))
+                .collect(),
+        )
+    })
 }
-
 /// Performs the third and final part of the distributed key generation protocol
 /// for the participant holding the given [`round2::SecretPackage`],
 /// given the received [`round1::Package`]s and [`round2::Package`]s received from
@@ -86,5 +159,13 @@ pub fn part3(
     round1_packages: &HashMap<Identifier, round1::Package>,
     round2_packages: &HashMap<Identifier, round2::Package>,
 ) -> Result<(KeyPackage, PublicKeyPackage), Error> {
-    frost::keys::dkg::part3(round2_secret_package, round1_packages, round2_packages)
+    let round1_packages = round1_packages
+        .iter()
+        .map(|(a, b)| (*a, b.0.clone()))
+        .collect();
+    let round2_packages = round2_packages
+        .iter()
+        .map(|(a, b)| (*a, b.0.clone()))
+        .collect();
+    frost::keys::dkg::part3(round2_secret_package, &round1_packages, &round2_packages)
 }
