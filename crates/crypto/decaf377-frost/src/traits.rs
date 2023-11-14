@@ -98,7 +98,7 @@ impl Ciphersuite for Decaf377Rdsa {
     }
 
     fn H2(m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
-        Hasher::default().update(m).finalize_scalar()
+        Hasher::challenge().update(m).finalize_scalar()
     }
 
     fn H3(m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {

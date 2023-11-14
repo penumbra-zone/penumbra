@@ -17,6 +17,17 @@ impl Default for Hasher {
 }
 
 impl Hasher {
+    /// Create a hasher which matches the challenge generation of decaf377-rdsa
+    pub fn challenge() -> Self {
+        let state = Params::new()
+            .hash_length(64)
+            .personal(b"decaf377-rdsa---")
+            .to_state();
+        Self { state }
+    }
+}
+
+impl Hasher {
     /// Add `data` to the hash, and return `Self` for chaining.
     pub fn update(&mut self, data: impl AsRef<[u8]>) -> &mut Self {
         self.state.update(data.as_ref());
@@ -30,9 +41,7 @@ impl Hasher {
 
     /// Consume `self` to compute the hash output.
     pub fn finalize(&self) -> [u8; 32] {
-        self.state
-            .finalize()
-            .as_bytes()[..32]
+        self.state.finalize().as_bytes()[..32]
             .try_into()
             .expect("failed to convert blake2b hash to array")
     }
