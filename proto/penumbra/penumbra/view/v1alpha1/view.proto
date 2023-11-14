@@ -220,7 +220,6 @@ message TransactionPlannerResponse {
 
 message AddressByIndexRequest {
   core.keys.v1alpha1.AddressIndex address_index = 1;
-  bool display_confirm = 2;
 }
 
 message AddressByIndexResponse {

@@ -6,10 +6,9 @@ pub struct AuthorizeRequest {
     pub plan: ::core::option::Option<
         super::super::core::transaction::v1alpha1::TransactionPlan,
     >,
-    /// Identifies the FVK (and hence the spend authorization key) to use for signing.
-    #[prost(message, optional, tag = "2")]
-    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
     /// Optionally, pre-authorization data, if required by the custodian.
+    ///
+    /// Pre-authorization data is backend-specific, and backends are free to ignore it.
     ///
     /// Multiple `PreAuthorization` packets can be included in a single request,
     /// to support multi-party pre-authorizations.
@@ -54,6 +53,32 @@ pub mod pre_authorization {
         #[prost(message, tag = "1")]
         Ed25519(Ed25519),
     }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ExportFullViewingKeyRequest {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ExportFullViewingKeyResponse {
+    /// The full viewing key.
+    #[prost(message, optional, tag = "1")]
+    pub full_viewing_key: ::core::option::Option<
+        super::super::core::keys::v1alpha1::FullViewingKey,
+    >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ConfirmAddressRequest {
+    #[prost(message, optional, tag = "1")]
+    pub address_index: ::core::option::Option<
+        super::super::core::keys::v1alpha1::AddressIndex,
+    >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ConfirmAddressResponse {
+    #[prost(message, optional, tag = "1")]
+    pub address: ::core::option::Option<super::super::core::keys::v1alpha1::Address>,
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
@@ -185,6 +210,76 @@ pub mod custody_protocol_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        /// Requests the full viewing key from the custodian.
+        ///
+        /// Custody backends should decide whether to honor this request, and how to
+        /// control access to it.
+        pub async fn export_full_viewing_key(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ExportFullViewingKeyRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ExportFullViewingKeyResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.custody.v1alpha1.CustodyProtocolService/ExportFullViewingKey",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.custody.v1alpha1.CustodyProtocolService",
+                        "ExportFullViewingKey",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// Displays an address to a user for confirmation.
+        ///
+        /// Custody backends with user interaction should present the address to the
+        /// user and wait for explicit confirmation before returning.
+        ///
+        /// Non-interactive custody backends may return immediately.
+        pub async fn confirm_address(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ConfirmAddressRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ConfirmAddressResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.custody.v1alpha1.CustodyProtocolService/ConfirmAddress",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.custody.v1alpha1.CustodyProtocolService",
+                        "ConfirmAddress",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -201,6 +296,30 @@ pub mod custody_protocol_service_server {
             request: tonic::Request<super::AuthorizeRequest>,
         ) -> std::result::Result<
             tonic::Response<super::AuthorizeResponse>,
+            tonic::Status,
+        >;
+        /// Requests the full viewing key from the custodian.
+        ///
+        /// Custody backends should decide whether to honor this request, and how to
+        /// control access to it.
+        async fn export_full_viewing_key(
+            &self,
+            request: tonic::Request<super::ExportFullViewingKeyRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ExportFullViewingKeyResponse>,
+            tonic::Status,
+        >;
+        /// Displays an address to a user for confirmation.
+        ///
+        /// Custody backends with user interaction should present the address to the
+        /// user and wait for explicit confirmation before returning.
+        ///
+        /// Non-interactive custody backends may return immediately.
+        async fn confirm_address(
+            &self,
+            request: tonic::Request<super::ConfirmAddressRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ConfirmAddressResponse>,
             tonic::Status,
         >;
     }
@@ -327,6 +446,108 @@ pub mod custody_protocol_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = AuthorizeSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.custody.v1alpha1.CustodyProtocolService/ExportFullViewingKey" => {
+                    #[allow(non_camel_case_types)]
+                    struct ExportFullViewingKeySvc<T: CustodyProtocolService>(
+                        pub Arc<T>,
+                    );
+                    impl<
+                        T: CustodyProtocolService,
+                    > tonic::server::UnaryService<super::ExportFullViewingKeyRequest>
+                    for ExportFullViewingKeySvc<T> {
+                        type Response = super::ExportFullViewingKeyResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ExportFullViewingKeyRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as CustodyProtocolService>::export_full_viewing_key(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ExportFullViewingKeySvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.custody.v1alpha1.CustodyProtocolService/ConfirmAddress" => {
+                    #[allow(non_camel_case_types)]
+                    struct ConfirmAddressSvc<T: CustodyProtocolService>(pub Arc<T>);
+                    impl<
+                        T: CustodyProtocolService,
+                    > tonic::server::UnaryService<super::ConfirmAddressRequest>
+                    for ConfirmAddressSvc<T> {
+                        type Response = super::ConfirmAddressResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ConfirmAddressRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as CustodyProtocolService>::confirm_address(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ConfirmAddressSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

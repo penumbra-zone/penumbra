@@ -58,4 +58,41 @@ impl pb::custody_protocol_service_server::CustodyProtocolService for SoftKms {
 
         Ok(Response::new(authorization_response))
     }
+
+    async fn export_full_viewing_key(
+        &self,
+        _request: Request<pb::ExportFullViewingKeyRequest>,
+    ) -> Result<Response<pb::ExportFullViewingKeyResponse>, Status> {
+        Ok(Response::new(pb::ExportFullViewingKeyResponse {
+            full_viewing_key: Some(self.config.spend_key.full_viewing_key().clone().into()),
+        }))
+    }
+
+    async fn confirm_address(
+        &self,
+        request: Request<pb::ConfirmAddressRequest>,
+    ) -> Result<Response<pb::ConfirmAddressResponse>, Status> {
+        let address_index = request
+            .into_inner()
+            .address_index
+            .ok_or_else(|| {
+                Status::invalid_argument("missing address index in confirm address request")
+            })?
+            .try_into()
+            .map_err(|e| {
+                Status::invalid_argument(format!(
+                    "invalid address index in confirm address request: {e:#}"
+                ))
+            })?;
+
+        let (address, _dtk) = self
+            .config
+            .spend_key
+            .full_viewing_key()
+            .payment_address(address_index);
+
+        Ok(Response::new(pb::ConfirmAddressResponse {
+            address: Some(address.into()),
+        }))
+    }
 }
