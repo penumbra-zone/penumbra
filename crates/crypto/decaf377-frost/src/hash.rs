@@ -32,7 +32,7 @@ impl Hasher {
     pub fn finalize(&self) -> [u8; 32] {
         self.state
             .finalize()
-            .as_bytes()
+            .as_bytes()[..32]
             .try_into()
             .expect("failed to convert blake2b hash to array")
     }
