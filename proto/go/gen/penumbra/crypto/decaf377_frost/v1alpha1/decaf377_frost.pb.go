@@ -20,11 +20,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// A commitment to a polynomial, as a list of group elements.
 type VerifiableSecretSharingCommitment struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Each of these bytes should be the serialization of a group element.
 	Elements [][]byte `protobuf:"bytes,1,rep,name=elements,proto3" json:"elements,omitempty"`
 }
 
@@ -67,13 +69,16 @@ func (x *VerifiableSecretSharingCommitment) GetElements() [][]byte {
 	return nil
 }
 
+// The public package sent in round 1 of the DKG protocol.
 type DKGRound1Package struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Commitment       *VerifiableSecretSharingCommitment `protobuf:"bytes,1,opt,name=commitment,proto3" json:"commitment,omitempty"`
-	ProofOfKnowledge []byte                             `protobuf:"bytes,2,opt,name=proof_of_knowledge,json=proofOfKnowledge,proto3" json:"proof_of_knowledge,omitempty"`
+	// A commitment to the polynomial for secret sharing.
+	Commitment *VerifiableSecretSharingCommitment `protobuf:"bytes,1,opt,name=commitment,proto3" json:"commitment,omitempty"`
+	// A proof of knowledge of the underlying secret being shared.
+	ProofOfKnowledge []byte `protobuf:"bytes,2,opt,name=proof_of_knowledge,json=proofOfKnowledge,proto3" json:"proof_of_knowledge,omitempty"`
 }
 
 func (x *DKGRound1Package) Reset() {
@@ -122,11 +127,13 @@ func (x *DKGRound1Package) GetProofOfKnowledge() []byte {
 	return nil
 }
 
+// A share of the final signing key.
 type SigningShare struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// These bytes should be a valid scalar.
 	Scalar []byte `protobuf:"bytes,1,opt,name=scalar,proto3" json:"scalar,omitempty"`
 }
 
@@ -169,11 +176,13 @@ func (x *SigningShare) GetScalar() []byte {
 	return nil
 }
 
+// The per-participant package sent in round 2 of the DKG protocol.
 type DKGRound2Package struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// This is the share we're sending to that participant.
 	SigningShare *SigningShare `protobuf:"bytes,1,opt,name=signing_share,json=signingShare,proto3" json:"signing_share,omitempty"`
 }
 
@@ -216,11 +225,13 @@ func (x *DKGRound2Package) GetSigningShare() *SigningShare {
 	return nil
 }
 
+// Represents a commitment to a nonce value.
 type NonceCommitment struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// These bytes should be a valid group element.
 	Element []byte `protobuf:"bytes,1,opt,name=element,proto3" json:"element,omitempty"`
 }
 
@@ -263,12 +274,15 @@ func (x *NonceCommitment) GetElement() []byte {
 	return nil
 }
 
+// Represents the commitments to nonces needed for signing.
 type SigningCommitments struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Hiding  *NonceCommitment `protobuf:"bytes,1,opt,name=hiding,proto3" json:"hiding,omitempty"`
+	// One nonce to hide them.
+	Hiding *NonceCommitment `protobuf:"bytes,1,opt,name=hiding,proto3" json:"hiding,omitempty"`
+	// Another to bind them.
 	Binding *NonceCommitment `protobuf:"bytes,2,opt,name=binding,proto3" json:"binding,omitempty"`
 }
 
@@ -318,11 +332,13 @@ func (x *SigningCommitments) GetBinding() *NonceCommitment {
 	return nil
 }
 
+// A share of the final signature. These get aggregated to make the actual thing.
 type SignatureShare struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// These bytes should be a valid scalar.
 	Scalar []byte `protobuf:"bytes,1,opt,name=scalar,proto3" json:"scalar,omitempty"`
 }
 
