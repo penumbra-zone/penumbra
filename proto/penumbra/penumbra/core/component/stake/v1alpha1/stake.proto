@@ -230,7 +230,6 @@ service QueryService {
   rpc ValidatorStatus(ValidatorStatusRequest) returns (ValidatorStatusResponse);
   rpc ValidatorPenalty(ValidatorPenaltyRequest) returns (ValidatorPenaltyResponse);
   rpc CurrentValidatorRate(CurrentValidatorRateRequest) returns (CurrentValidatorRateResponse);
-  rpc NextValidatorRate(NextValidatorRateRequest) returns (NextValidatorRateResponse);
 }
 
 // Requests information on the chain's validators.
@@ -275,16 +274,6 @@ message CurrentValidatorRateRequest {
 }
 
 message CurrentValidatorRateResponse {
-  core.component.stake.v1alpha1.RateData data = 1;
-}
-
-message NextValidatorRateRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
-  core.keys.v1alpha1.IdentityKey identity_key = 2;
-}
-
-message NextValidatorRateResponse {
   core.component.stake.v1alpha1.RateData data = 1;
 }
 

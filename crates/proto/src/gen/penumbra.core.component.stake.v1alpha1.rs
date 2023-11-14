@@ -496,23 +496,6 @@ pub struct CurrentValidatorRateResponse {
     #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<RateData>,
 }
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct NextValidatorRateRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
-    pub identity_key: ::core::option::Option<
-        super::super::super::keys::v1alpha1::IdentityKey,
-    >,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct NextValidatorRateResponse {
-    #[prost(message, optional, tag = "1")]
-    pub data: ::core::option::Option<RateData>,
-}
 /// Staking configuration data.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -758,36 +741,6 @@ pub mod query_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
-        pub async fn next_validator_rate(
-            &mut self,
-            request: impl tonic::IntoRequest<super::NextValidatorRateRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::NextValidatorRateResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.core.component.stake.v1alpha1.QueryService/NextValidatorRate",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.component.stake.v1alpha1.QueryService",
-                        "NextValidatorRate",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
     }
 }
 /// Generated server implementations.
@@ -831,13 +784,6 @@ pub mod query_service_server {
             request: tonic::Request<super::CurrentValidatorRateRequest>,
         ) -> std::result::Result<
             tonic::Response<super::CurrentValidatorRateResponse>,
-            tonic::Status,
-        >;
-        async fn next_validator_rate(
-            &self,
-            request: tonic::Request<super::NextValidatorRateRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::NextValidatorRateResponse>,
             tonic::Status,
         >;
     }
@@ -1093,53 +1039,6 @@ pub mod query_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = CurrentValidatorRateSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/penumbra.core.component.stake.v1alpha1.QueryService/NextValidatorRate" => {
-                    #[allow(non_camel_case_types)]
-                    struct NextValidatorRateSvc<T: QueryService>(pub Arc<T>);
-                    impl<
-                        T: QueryService,
-                    > tonic::server::UnaryService<super::NextValidatorRateRequest>
-                    for NextValidatorRateSvc<T> {
-                        type Response = super::NextValidatorRateResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::NextValidatorRateRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as QueryService>::next_validator_rate(&inner, request)
-                                    .await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = NextValidatorRateSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
