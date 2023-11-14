@@ -19,15 +19,29 @@ import "penumbra/core/transaction/v1alpha1/transaction.proto";
 service CustodyProtocolService {
   // Requests authorization of the transaction with the given description.
   rpc Authorize(AuthorizeRequest) returns (AuthorizeResponse);
+
+  // Requests the full viewing key from the custodian.
+  //
+  // Custody backends should decide whether to honor this request, and how to
+  // control access to it.
+  rpc ExportFullViewingKey(ExportFullViewingKeyRequest) returns (ExportFullViewingKeyResponse);
+
+  // Displays an address to a user for confirmation.
+  //
+  // Custody backends with user interaction should present the address to the
+  // user and wait for explicit confirmation before returning.
+  //
+  // Non-interactive custody backends may return immediately.
+  rpc ConfirmAddress(ConfirmAddressRequest) returns (ConfirmAddressResponse);
 }
 
 message AuthorizeRequest {
   // The transaction plan to authorize.
   core.transaction.v1alpha1.TransactionPlan plan = 1;
-  // Identifies the FVK (and hence the spend authorization key) to use for signing.
-  core.keys.v1alpha1.WalletId wallet_id = 2;
 
   // Optionally, pre-authorization data, if required by the custodian.
+  //
+  // Pre-authorization data is backend-specific, and backends are free to ignore it.
   //
   // Multiple `PreAuthorization` packets can be included in a single request,
   // to support multi-party pre-authorizations.
@@ -54,4 +68,19 @@ message PreAuthorization {
   oneof pre_authorization {
     Ed25519 ed25519 = 1;
   }
+}
+
+message ExportFullViewingKeyRequest { }
+
+message ExportFullViewingKeyResponse {
+  // The full viewing key.
+  core.keys.v1alpha1.FullViewingKey full_viewing_key = 1;
+}
+
+message ConfirmAddressRequest {
+  core.keys.v1alpha1.AddressIndex address_index = 1;
+}
+
+message ConfirmAddressResponse {
+  core.keys.v1alpha1.Address address = 1;
 }
