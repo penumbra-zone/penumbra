@@ -13,6 +13,7 @@ members = [
   "crates/proto",
   "crates/storage",
   "crates/crypto/decaf377-fmd",
+  "crates/crypto/decaf377-frost",
   "crates/crypto/decaf377-ka",
   "crates/crypto/eddy",
   "crates/crypto/tct",
