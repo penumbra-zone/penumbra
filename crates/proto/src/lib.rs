@@ -301,6 +301,13 @@ pub mod penumbra {
             }
         }
 
+        pub mod decaf377_frost {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.crypto.decaf377_frost.v1alpha1.rs");
+                include!("gen/penumbra.crypto.decaf377_frost.v1alpha1.serde.rs");
+            }
+        }
+
         pub mod decaf377_rdsa {
             pub mod v1alpha1 {
                 include!("gen/penumbra.crypto.decaf377_rdsa.v1alpha1.rs");

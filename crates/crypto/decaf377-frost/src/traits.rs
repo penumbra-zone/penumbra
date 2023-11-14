@@ -1,6 +1,5 @@
 use ark_ff::{Field as _, One, UniformRand, Zero};
 use decaf377::{Element, FieldExt, Fr};
-use decaf377_rdsa::SpendAuth;
 pub use frost_core::{frost, Ciphersuite, Field, FieldError, Group, GroupError};
 use rand_core;
 
@@ -12,7 +11,7 @@ pub struct Decaf377ScalarField;
 impl Field for Decaf377ScalarField {
     type Scalar = Fr;
 
-    type Serialization = [u8; 32];
+    type Serialization = Vec<u8>;
 
     fn zero() -> Self::Scalar {
         Fr::zero()
@@ -31,15 +30,18 @@ impl Field for Decaf377ScalarField {
     }
 
     fn serialize(scalar: &Self::Scalar) -> Self::Serialization {
-        scalar.to_bytes()
+        scalar.to_bytes().to_vec()
     }
 
     fn little_endian_serialize(scalar: &Self::Scalar) -> Self::Serialization {
-        scalar.to_bytes()
+        Self::serialize(scalar)
     }
 
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Scalar, FieldError> {
-        Fr::from_bytes(*buf).map_err(|_| FieldError::MalformedScalar)
+        Fr::from_bytes(
+            TryInto::<[u8; 32]>::try_into(buf.clone()).map_err(|_| FieldError::MalformedScalar)?,
+        )
+        .map_err(|_| FieldError::MalformedScalar)
     }
 }
 
@@ -51,7 +53,7 @@ impl Group for Decaf377Group {
 
     type Element = Element;
 
-    type Serialization = [u8; 32];
+    type Serialization = Vec<u8>;
 
     fn cofactor() -> <Self::Field as Field>::Scalar {
         Fr::one()
@@ -66,13 +68,15 @@ impl Group for Decaf377Group {
     }
 
     fn serialize(element: &Self::Element) -> Self::Serialization {
-        element.vartime_compress().0
+        element.vartime_compress().0.to_vec()
     }
 
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Element, GroupError> {
-        decaf377::Encoding(*buf)
-            .vartime_decompress()
-            .map_err(|_| GroupError::MalformedElement)
+        decaf377::Encoding(
+            TryInto::<[u8; 32]>::try_into(buf.clone()).map_err(|_| GroupError::MalformedElement)?,
+        )
+        .vartime_decompress()
+        .map_err(|_| GroupError::MalformedElement)
     }
 }
 
@@ -87,7 +91,7 @@ impl Ciphersuite for Decaf377Rdsa {
 
     type HashOutput = [u8; 32];
 
-    type SignatureSerialization = crate::Signature<SpendAuth>;
+    type SignatureSerialization = Vec<u8>;
 
     fn H1(m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
         Hasher::default().update(b"rho").update(m).finalize_scalar()
@@ -119,5 +123,4 @@ impl Ciphersuite for Decaf377Rdsa {
     fn HID(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
         Some(Hasher::default().update(b"id").update(m).finalize_scalar())
     }
-
 }
