@@ -1,9 +1,7 @@
 use anyhow::Result;
-use directories::ProjectDirs;
 use serde::Serialize;
 use std::path::PathBuf;
 use std::process::Command;
-use walkdir::WalkDir;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum DebugCmd {
@@ -53,10 +51,8 @@ pub struct DebugInfo {
     uname: Option<String>,
     /// Status of directory for storing view info locally.
     pcli_data_directory: Option<std::path::PathBuf>,
-    /// Status of custody keyfile, containing key material for pcli.
-    pcli_keyfile: Option<std::path::PathBuf>,
-    /// Historical custody keyfiles, archived for safekeeping.
-    pcli_keyfiles_archived: Vec<String>,
+    /// Status of pcli config TOML, containing key material for pcli.
+    pcli_config_file: Option<std::path::PathBuf>,
 }
 
 impl DebugInfo {
@@ -69,8 +65,7 @@ impl DebugInfo {
             pcli_version: Self::get_pcli_version(),
             uname: Self::get_uname(),
             pcli_data_directory: dd.clone(),
-            pcli_keyfile: Self::get_pcli_custody_file(dd),
-            pcli_keyfiles_archived: Self::get_pcli_custody_files_archived(),
+            pcli_config_file: Self::get_pcli_config_file(dd),
         }
     }
     /// Attempt to retrieve version info for Tendermint by running
@@ -136,12 +131,12 @@ impl DebugInfo {
             false => None,
         }
     }
-    /// Check whether custody JSON file exists.
-    fn get_pcli_custody_file(data_dir: Option<PathBuf>) -> Option<PathBuf> {
+    /// Check pcli config TOML file exists.
+    fn get_pcli_config_file(data_dir: Option<PathBuf>) -> Option<PathBuf> {
         match data_dir {
             Some(dd) => {
                 let mut k = dd;
-                k.push("custody.json");
+                k.push("config.toml");
                 if k.exists() {
                     Some(k)
                 } else {
@@ -150,25 +145,5 @@ impl DebugInfo {
             }
             None => None,
         }
-    }
-    /// Check whether archived custody keyfiles are available on the system.
-    fn get_pcli_custody_files_archived() -> Vec<String> {
-        // Here we re-implement the path-building logic from
-        // `pcli::command::keys::archive_wallet`.
-        let archive_dir = ProjectDirs::from("zone", "penumbra", "penumbra-testnet-archive")
-            .expect("can build archive directory path");
-        let dd = archive_dir.data_dir();
-
-        // Walk archive directory and collect all "custody.json" files.
-        let mut archived_files = Vec::<String>::new();
-        for entry in WalkDir::new(dd.to_str().expect("can convert data dir to string")) {
-            let entry = entry.expect("have permissions to read directory from WalkDir");
-            if let Some(f) = entry.path().file_name() {
-                if f.to_str().unwrap_or("") == "custody.json" {
-                    archived_files.push(format!("{}", entry.path().display()));
-                }
-            }
-        }
-        archived_files
     }
 }
