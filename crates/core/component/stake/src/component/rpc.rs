@@ -6,9 +6,9 @@ use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{
     core::component::stake::v1alpha1::{
         query_service_server::QueryService, CurrentValidatorRateRequest,
-        CurrentValidatorRateResponse, NextValidatorRateRequest, NextValidatorRateResponse,
-        ValidatorInfoRequest, ValidatorInfoResponse, ValidatorPenaltyRequest,
-        ValidatorPenaltyResponse, ValidatorStatusRequest, ValidatorStatusResponse,
+        CurrentValidatorRateResponse, ValidatorInfoRequest, ValidatorInfoResponse,
+        ValidatorPenaltyRequest, ValidatorPenaltyResponse, ValidatorStatusRequest,
+        ValidatorStatusResponse,
     },
     DomainType,
 };
@@ -166,36 +166,6 @@ impl QueryService for Server {
                 data: Some(r.into()),
             })),
             None => Err(Status::not_found("current validator rate not found")),
-        }
-    }
-
-    #[instrument(skip(self, request))]
-    async fn next_validator_rate(
-        &self,
-        request: tonic::Request<NextValidatorRateRequest>,
-    ) -> Result<tonic::Response<NextValidatorRateResponse>, Status> {
-        let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
-        let identity_key = request
-            .into_inner()
-            .identity_key
-            .ok_or_else(|| tonic::Status::invalid_argument("empty message"))?
-            .try_into()
-            .map_err(|_| tonic::Status::invalid_argument("invalid identity key"))?;
-
-        let rate_data = state
-            .next_validator_rate(&identity_key)
-            .await
-            .map_err(|e| tonic::Status::internal(e.to_string()))?;
-
-        match rate_data {
-            Some(r) => Ok(tonic::Response::new(NextValidatorRateResponse {
-                data: Some(r.into()),
-            })),
-            None => Err(Status::not_found("next validator rate not found")),
         }
     }
 }

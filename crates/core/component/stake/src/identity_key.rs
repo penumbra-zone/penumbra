@@ -1,5 +1,5 @@
 use penumbra_proto::{
-    core::component::stake::v1alpha1::{CurrentValidatorRateRequest, NextValidatorRateRequest},
+    core::component::stake::v1alpha1::CurrentValidatorRateRequest,
     // TODO: why is this not in the keys crate?
     core::keys::v1alpha1 as pb,
     serializers::bech32str::{self, validator_identity_key::BECH32_PREFIX},
@@ -69,25 +69,6 @@ impl TryFrom<pb::IdentityKey> for IdentityKey {
     type Error = anyhow::Error;
     fn try_from(ik: pb::IdentityKey) -> Result<Self, Self::Error> {
         Ok(Self(ik.ik.as_slice().try_into()?))
-    }
-}
-
-impl From<IdentityKey> for NextValidatorRateRequest {
-    fn from(k: IdentityKey) -> Self {
-        NextValidatorRateRequest {
-            identity_key: Some(k.into()),
-            chain_id: Default::default(),
-        }
-    }
-}
-
-impl TryFrom<NextValidatorRateRequest> for IdentityKey {
-    type Error = anyhow::Error;
-    fn try_from(value: NextValidatorRateRequest) -> Result<Self, Self::Error> {
-        value
-            .identity_key
-            .ok_or_else(|| anyhow::anyhow!("empty NextValidatorRateRequest message"))?
-            .try_into()
     }
 }
 
