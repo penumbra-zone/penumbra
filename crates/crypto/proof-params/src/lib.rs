@@ -58,7 +58,7 @@ impl Deref for LazyProvingKey {
 pub static SPEND_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
     let mut spend_proving_key = LazyProvingKey::new();
 
-    #[cfg(feature = "proving-keys")]
+    #[cfg(all(feature = "proving-keys", not(target_arch = "wasm32")))]
     spend_proving_key.inner.get_or_init(proving_keys::spend_proving_parameters);
 
     spend_proving_key
@@ -76,7 +76,7 @@ pub mod spend {
 pub static OUTPUT_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
     let mut output_proving_key = LazyProvingKey::new();
 
-    #[cfg(feature = "proving-keys")]
+    #[cfg(all(feature = "proving-keys", not(target_arch = "wasm32")))]
     output_proving_key.inner.get_or_init(proving_keys::output_proving_parameters);
 
     output_proving_key
@@ -94,7 +94,7 @@ pub mod output {
 pub static SWAP_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
     let mut swap_proving_key = LazyProvingKey::new();
 
-    #[cfg(feature = "proving-keys")]
+    #[cfg(all(feature = "proving-keys", not(target_arch = "wasm32")))]
     swap_proving_key.inner.get_or_init(proving_keys::swap_proving_parameters);
 
     swap_proving_key
@@ -112,7 +112,7 @@ pub mod swap {
 pub static SWAPCLAIM_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
     let mut swap_claim_proving_key = LazyProvingKey::new();
 
-    #[cfg(feature = "proving-keys")]
+    #[cfg(all(feature = "proving-keys", not(target_arch = "wasm32")))]
     swap_claim_proving_key.inner.get_or_init(proving_keys::swapclaim_proving_parameters);
 
     swap_claim_proving_key
@@ -130,7 +130,7 @@ pub mod swapclaim {
 pub static UNDELEGATECLAIM_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
     let mut undelegate_claim_proving_key = LazyProvingKey::new();
 
-    #[cfg(feature = "proving-keys")]
+    #[cfg(all(feature = "proving-keys", not(target_arch = "wasm32")))]
     undelegate_claim_proving_key.inner.get_or_init(proving_keys::undelegateclaim_proving_parameters);
 
     undelegate_claim_proving_key
@@ -148,7 +148,7 @@ pub mod undelegateclaim {
 pub static DELEGATOR_VOTE_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
     let mut delegator_vote_proving_key = LazyProvingKey::new();
 
-    #[cfg(feature = "proving-keys")]
+    #[cfg(all(feature = "proving-keys", not(target_arch = "wasm32")))]
     delegator_vote_proving_key.inner.get_or_init(proving_keys::delegator_vote_proving_parameters);
 
     delegator_vote_proving_key
@@ -166,7 +166,7 @@ pub mod delegator_vote {
 pub static NULLIFIER_DERIVATION_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
     let mut nullifier_proving_key = LazyProvingKey::new();
 
-    #[cfg(feature = "proving-keys")]
+    #[cfg(all(feature = "proving-keys", not(target_arch = "wasm32")))]
     nullifier_proving_key.inner.get_or_init(proving_keys::nullifier_derivation_proving_parameters);
 
     nullifier_proving_key
