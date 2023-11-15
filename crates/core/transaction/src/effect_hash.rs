@@ -1,4 +1,3 @@
-use blake2b_simd::Params;
 use decaf377_fmd::Clue;
 use penumbra_chain::EffectHash;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
@@ -11,16 +10,17 @@ use penumbra_governance::{
     DelegatorVote, DelegatorVoteBody, Proposal, ProposalDepositClaim, ProposalSubmit,
     ProposalWithdraw, ValidatorVote, ValidatorVoteBody, Vote,
 };
+use penumbra_ibc::IbcRelay;
 use penumbra_keys::{FullViewingKey, PayloadKey};
+use penumbra_proto::TypeUrl;
 use penumbra_proto::{
     core::component::dex::v1alpha1 as pbd, core::component::fee::v1alpha1 as pbf,
     core::component::governance::v1alpha1 as pbg, core::component::ibc::v1alpha1 as pbi,
     core::component::shielded_pool::v1alpha1 as pb_sp, core::component::stake::v1alpha1 as pbs,
     core::transaction::v1alpha1 as pbt, crypto::decaf377_fmd::v1alpha1 as pb_fmd, Message,
 };
-use penumbra_proto::{DomainType, TypeUrl};
 use penumbra_shielded_pool::{output, spend, Ics20Withdrawal};
-use penumbra_stake::{Delegate, Undelegate, UndelegateClaimBody};
+use penumbra_stake::{validator, Delegate, Undelegate, UndelegateClaimBody};
 
 use crate::{
     memo::MemoCiphertext, plan::TransactionPlan, transaction::DetectionData, Action, Transaction,
@@ -139,100 +139,18 @@ impl TransactionPlan {
         let num_actions = self.actions.len() as u32;
         state.update(&num_actions.to_le_bytes());
 
-        // TransactionPlan::build builds the actions sorted by type, so hash the
-        // actions in the order they'll appear in the final transaction.
-        for spend in self.spend_plans() {
-            state.update(spend.spend_body(fvk).effect_hash().as_bytes());
-        }
-
         // If the memo_key is None, then there is no memo, and we populate the memo key
         // field with a dummy key.
         let dummy_payload_key: PayloadKey = [0u8; 32].into();
-        for output in self.output_plans() {
+
+        // Hash the effecting data of each action, in the order it appears in the plan,
+        // which will be the order it appears in the transaction.
+        for action_plan in &self.actions {
             state.update(
-                output
-                    .output_body(
-                        fvk.outgoing(),
-                        memo_key.as_ref().unwrap_or(&dummy_payload_key),
-                    )
-                    .effect_hash()
+                action_plan
+                    .effect_hash(fvk, memo_key.as_ref().unwrap_or(&dummy_payload_key))
                     .as_bytes(),
             );
-        }
-        for swap in self.swap_plans() {
-            state.update(swap.swap_body(fvk).effect_hash().as_bytes());
-        }
-        for swap_claim in self.swap_claim_plans() {
-            state.update(swap_claim.swap_claim_body(fvk).effect_hash().as_bytes());
-        }
-        for delegation in self.delegations() {
-            state.update(delegation.effect_hash().as_bytes());
-        }
-        for undelegation in self.undelegations() {
-            state.update(undelegation.effect_hash().as_bytes());
-        }
-        for plan in self.undelegate_claim_plans() {
-            state.update(plan.undelegate_claim_body().effect_hash().as_bytes());
-        }
-        for proposal_submit in self.proposal_submits() {
-            state.update(proposal_submit.effect_hash().as_bytes());
-        }
-        for proposal_withdraw in self.proposal_withdraws() {
-            state.update(proposal_withdraw.effect_hash().as_bytes());
-        }
-        for validator_vote in self.validator_votes() {
-            state.update(validator_vote.effect_hash().as_bytes());
-        }
-        for delegator_vote in self.delegator_vote_plans() {
-            state.update(
-                delegator_vote
-                    .delegator_vote_body(fvk)
-                    .effect_hash()
-                    .as_bytes(),
-            );
-        }
-        for proposal_deposit_claim in self.proposal_deposit_claims() {
-            state.update(proposal_deposit_claim.effect_hash().as_bytes());
-        }
-        // These are data payloads, so just hash them directly,
-        // since they are effecting data.
-        for payload in self.validator_definitions() {
-            let effect_hash = Params::default()
-                .personal(b"PAH:valdefnition")
-                .hash(&payload.encode_to_vec());
-            state.update(effect_hash.as_bytes());
-        }
-        for payload in self.ibc_actions() {
-            let effect_hash = Params::default()
-                .personal(b"PAH:ibc_action")
-                .hash(&payload.encode_to_vec());
-            state.update(effect_hash.as_bytes());
-        }
-        for dao_spend in self.dao_spends() {
-            state.update(dao_spend.effect_hash().as_bytes());
-        }
-        for dao_output in self.dao_outputs() {
-            state.update(dao_output.effect_hash().as_bytes());
-        }
-        for dao_deposit in self.dao_deposits() {
-            state.update(dao_deposit.effect_hash().as_bytes());
-        }
-        for position_open in self.position_openings() {
-            state.update(position_open.effect_hash().as_bytes());
-        }
-        for position_close in self.position_closings() {
-            state.update(position_close.effect_hash().as_bytes());
-        }
-        for position_withdraw in self.position_withdrawals() {
-            state.update(
-                position_withdraw
-                    .position_withdraw()
-                    .effect_hash()
-                    .as_bytes(),
-            );
-        }
-        for ics20_withdrawal in self.ics20_withdrawals() {
-            state.update(ics20_withdrawal.effect_hash().as_bytes());
         }
 
         EffectHash(state.finalize().as_array().clone())
@@ -254,22 +172,8 @@ impl EffectingData for Action {
             Action::ValidatorVote(vote) => vote.effect_hash(),
             Action::SwapClaim(swap_claim) => swap_claim.body.effect_hash(),
             Action::Swap(swap) => swap.body.effect_hash(),
-            // These are data payloads, so just hash them directly,
-            // since we consider them authorizing data.
-            Action::ValidatorDefinition(payload) => EffectHash(
-                Params::default()
-                    .personal(b"PAH:valdefnition")
-                    .hash(&payload.encode_to_vec())
-                    .as_array()
-                    .clone(),
-            ),
-            Action::IbcRelay(payload) => EffectHash(
-                Params::default()
-                    .personal(b"PAH:ibc_action")
-                    .hash(&payload.encode_to_vec())
-                    .as_array()
-                    .clone(),
-            ),
+            Action::ValidatorDefinition(defn) => defn.effect_hash(),
+            Action::IbcRelay(payload) => payload.effect_hash(),
             Action::PositionOpen(p) => p.effect_hash(),
             Action::PositionClose(p) => p.effect_hash(),
             Action::PositionWithdraw(p) => p.effect_hash(),
@@ -303,6 +207,20 @@ fn create_personalized_state(personalization: &str) -> blake2b_simd::State {
     state.update(personalization.as_bytes());
 
     state
+}
+
+impl EffectingData for validator::Definition {
+    fn effect_hash(&self) -> EffectHash {
+        let effecting_data: pbs::ValidatorDefinition = self.clone().into();
+        hash_proto_effecting_data(validator::Definition::TYPE_URL, &effecting_data)
+    }
+}
+
+impl EffectingData for IbcRelay {
+    fn effect_hash(&self) -> EffectHash {
+        let effecting_data: pbi::IbcRelay = self.clone().into();
+        hash_proto_effecting_data(IbcRelay::TYPE_URL, &effecting_data)
+    }
 }
 
 impl EffectingData for Ics20Withdrawal {
@@ -648,11 +566,7 @@ mod tests {
                 })
                 .collect(),
         };
-        let transaction = plan
-            .build(fvk, witness_data)
-            .unwrap()
-            .authorize(&mut OsRng, &auth_data)
-            .unwrap();
+        let transaction = plan.build(fvk, witness_data, &auth_data).unwrap();
 
         let transaction_effect_hash = transaction.effect_hash();
 
