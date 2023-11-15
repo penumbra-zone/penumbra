@@ -2,22 +2,23 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::NoteSource;
-use penumbra_storage::{StateRead, StateWrite};
-use penumbra_transaction::Transaction;
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
-use super::ActionHandler;
-
-mod stateful;
-mod stateless;
-
-use self::stateful::{claimed_anchor_is_valid, fee_greater_than_base_fee, fmd_parameters_valid};
+use penumbra_chain::NoteSource;
+use penumbra_storage::{StateRead, StateWrite};
+use penumbra_transaction::Transaction;
 use stateless::{
     check_memo_exists_if_outputs_absent_if_not, no_duplicate_spends, no_duplicate_votes,
     num_clues_equal_to_num_outputs, valid_binding_signature,
 };
+
+use super::ActionHandler;
+
+use self::stateful::{claimed_anchor_is_valid, fee_greater_than_base_fee, fmd_parameters_valid};
+
+mod stateful;
+mod stateless;
 
 #[async_trait]
 impl ActionHandler for Transaction {
@@ -105,6 +106,8 @@ impl ActionHandler for Transaction {
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use rand_core::OsRng;
+
     use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
     use penumbra_chain::test_keys;
     use penumbra_fee::Fee;
@@ -114,7 +117,6 @@ mod tests {
         plan::{CluePlan, TransactionPlan},
         WitnessData,
     };
-    use rand_core::OsRng;
 
     use crate::ActionHandler;
 
@@ -164,7 +166,7 @@ mod tests {
         // Build the transaction.
         let fvk = &test_keys::FULL_VIEWING_KEY;
         let sk = &test_keys::SPEND_KEY;
-        let auth_data = plan.authorize(OsRng, sk);
+        let auth_data = plan.authorize(OsRng, sk).unwrap();
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan
@@ -228,7 +230,7 @@ mod tests {
         // Build the transaction.
         let fvk = &test_keys::FULL_VIEWING_KEY;
         let sk = &test_keys::SPEND_KEY;
-        let auth_data = plan.authorize(OsRng, sk);
+        let auth_data = plan.authorize(OsRng, sk).unwrap();
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan

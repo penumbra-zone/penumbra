@@ -2,16 +2,18 @@ use anyhow::{anyhow, Context, Result};
 use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa as rdsa;
-use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 use rand_core::{CryptoRng, RngCore};
 
-use super::TransactionPlan;
+use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
+
 use crate::{
     action::Action,
     memo::MemoCiphertext,
     transaction::{DetectionData, TransactionParameters},
     AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
 };
+
+use super::TransactionPlan;
 
 impl TransactionPlan {
     /// Build the transaction this plan describes.
@@ -101,7 +103,7 @@ impl TransactionPlan {
         } else {
             let mut fmd_clues = Vec::new();
             for clue_plan in self.clue_plans() {
-                fmd_clues.push(clue_plan.clue());
+                fmd_clues.push(clue_plan.clue()?);
             }
             Some(DetectionData { fmd_clues })
         };
@@ -310,7 +312,7 @@ impl TransactionPlan {
         } else {
             let mut fmd_clues = Vec::new();
             for clue_plan in self.clue_plans() {
-                fmd_clues.push(clue_plan.clue());
+                fmd_clues.push(clue_plan.clue()?);
             }
             Some(DetectionData { fmd_clues })
         };

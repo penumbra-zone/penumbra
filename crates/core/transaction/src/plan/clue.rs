@@ -1,8 +1,8 @@
-use decaf377_fmd::{Clue, ExpandedClueKey};
+use rand::{CryptoRng, RngCore};
+
+use decaf377_fmd::{Clue, Error, ExpandedClueKey};
 use penumbra_keys::Address;
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
-
-use rand::{CryptoRng, RngCore};
 
 #[derive(Clone, Debug)]
 pub struct CluePlan {
@@ -28,12 +28,10 @@ impl CluePlan {
     }
 
     /// Create a [`Clue`] from the [`CluePlan`].
-    pub fn clue(&self) -> Clue {
+    pub fn clue(&self) -> Result<Clue, Error> {
         let clue_key = self.address.clue_key();
-        let expanded_clue_key = ExpandedClueKey::new(clue_key).expect("valid address");
-        expanded_clue_key
-            .create_clue_deterministic(self.precision_bits, self.rseed)
-            .expect("can construct clue key")
+        let expanded_clue_key = ExpandedClueKey::new(clue_key)?;
+        expanded_clue_key.create_clue_deterministic(self.precision_bits, self.rseed)
     }
 }
 

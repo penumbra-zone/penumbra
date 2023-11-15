@@ -6,16 +6,22 @@ use async_trait::async_trait;
 use decaf377::Fq;
 use decaf377_rdsa::{VerificationKey, VerificationKeyBytes};
 use once_cell::sync::Lazy;
+use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
+
 use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_dao::component::StateReadExt as _;
+use penumbra_governance::{
+    component::{StateReadExt as _, StateWriteExt as _},
+    proposal::{Proposal, ProposalPayload},
+    proposal_state::State as ProposalState,
+    ProposalNft, ProposalSubmit, VotingReceiptToken,
+};
 use penumbra_keys::keys::{FullViewingKey, NullifierKey};
 use penumbra_proto::DomainType;
 use penumbra_sct::component::StateReadExt as _;
 use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateDelta, StateRead, StateWrite};
-use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
-
 use penumbra_transaction::plan::TransactionPlan;
 use penumbra_transaction::Transaction;
 use penumbra_transaction::{AuthorizationData, WitnessData};
@@ -23,12 +29,6 @@ use penumbra_transaction::{AuthorizationData, WitnessData};
 use crate::action_handler::ActionHandler;
 use crate::dao_ext::DaoStateWriteExt;
 use crate::params::AppParameters;
-use penumbra_governance::{
-    component::{StateReadExt as _, StateWriteExt as _},
-    proposal::{Proposal, ProposalPayload},
-    proposal_state::State as ProposalState,
-    ProposalNft, ProposalSubmit, VotingReceiptToken,
-};
 
 // IMPORTANT: these length limits are enforced by consensus! Changing them will change which
 // transactions are accepted by the network, and so they *cannot* be changed without a network
@@ -332,7 +332,7 @@ static DAO_FULL_VIEWING_KEY: Lazy<FullViewingKey> = Lazy::new(|| {
 const DAO_TRANSACTION_RNG_SEED: &[u8; 32] = b"Penumbra DAO's tx build rng seed";
 
 async fn build_dao_transaction(transaction_plan: TransactionPlan) -> Result<Transaction> {
-    let effect_hash = transaction_plan.effect_hash(&DAO_FULL_VIEWING_KEY);
+    let effect_hash = transaction_plan.effect_hash(&DAO_FULL_VIEWING_KEY)?;
     transaction_plan
         .build(
             &DAO_FULL_VIEWING_KEY,

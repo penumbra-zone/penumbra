@@ -1,4 +1,6 @@
+use anyhow::Result;
 use blake2b_simd::Params;
+
 use decaf377_fmd::Clue;
 use penumbra_chain::EffectHash;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
@@ -96,7 +98,7 @@ impl TransactionPlan {
     /// This method does not require constructing the entire [`Transaction`],
     /// but it does require the associated [`FullViewingKey`] to derive
     /// effecting data that will be fed into the [`EffectHash`].
-    pub fn effect_hash(&self, fvk: &FullViewingKey) -> EffectHash {
+    pub fn effect_hash(&self, fvk: &FullViewingKey) -> Result<EffectHash> {
         // This implementation is identical to the one above, except that we
         // don't need to actually construct the entire `TransactionBody` with
         // complete `Action`s, we just need to construct the bodies of the
@@ -131,7 +133,7 @@ impl TransactionPlan {
                     .clue_plans
                     .iter()
                     .map(|clue_plan| clue_plan.clue())
-                    .collect(),
+                    .collect::<Result<Vec<_>, _>>()?,
             };
             state.update(detection_data.effect_hash().as_bytes());
         }
@@ -235,7 +237,7 @@ impl TransactionPlan {
             state.update(ics20_withdrawal.effect_hash().as_bytes());
         }
 
-        EffectHash(state.finalize().as_array().clone())
+        Ok(EffectHash(state.finalize().as_array().clone()))
     }
 }
 
@@ -522,6 +524,8 @@ impl EffectingData for MemoCiphertext {
 
 #[cfg(test)]
 mod tests {
+    use rand_core::OsRng;
+
     use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
     use penumbra_dex::{swap::SwapPlaintext, swap::SwapPlan, TradingPair};
     use penumbra_fee::Fee;
@@ -532,7 +536,6 @@ mod tests {
     use penumbra_shielded_pool::Note;
     use penumbra_shielded_pool::{OutputPlan, SpendPlan};
     use penumbra_tct as tct;
-    use rand_core::OsRng;
 
     use crate::{
         memo::MemoPlaintext,
@@ -633,9 +636,9 @@ mod tests {
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());
 
-        let plan_effect_hash = plan.effect_hash(fvk);
+        let plan_effect_hash = plan.effect_hash(fvk).unwrap();
 
-        let auth_data = plan.authorize(rng, &sk);
+        let auth_data = plan.authorize(rng, &sk).unwrap();
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan
