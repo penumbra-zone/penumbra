@@ -20,11 +20,6 @@ impl TransactionPlan {
     /// Builds a [`TransactionPlan`] by slotting in the
     /// provided prebuilt actions instead of using the
     /// [`ActionPlan`]s in the TransactionPlan.
-    /// Arguments:
-    ///     self: `TransactionPlan`
-    ///     fvk: `FullViewingKey`
-    ///     witness_data: `WitnessData`
-    /// Returns: `Transaction`
     pub fn build_unauth_with_actions(
         self,
         mut actions: Vec<Action>,
@@ -163,12 +158,6 @@ impl TransactionPlan {
     /// Slot in the [`AuthorizationData`] and derive the synthetic
     /// blinding factors needed to compute the binding signature
     /// and assemble the transaction.
-    /// Arguments:
-    ///     self: `TransactionPlan`
-    ///     rng: `&mut R`
-    ///     auth_data: `&AuthorizationData`
-    ///     transaction: `Transaction`
-    /// Returns: `Transaction`
     pub fn authorize_with_auth<R: CryptoRng + RngCore + Debug>(
         &self,
         rng: &mut R,
@@ -247,10 +236,6 @@ impl TransactionPlan {
     }
 
     /// Build the serial transaction this plan describes.
-    /// Arguments
-    ///     - `full_viewing_key`, the [`FullViewingKey`] for the source funds;
-    ///     - `witness_data`, the [`WitnessData`] used for proving;
-    ///     -  `auth_data`, the [`AuthorizationData`] required to sign transaction.
     pub fn build(
         self,
         full_viewing_key: &FullViewingKey,
