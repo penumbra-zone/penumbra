@@ -808,6 +808,12 @@ impl ViewProtocolService for ViewService {
                     let address = note.address();
                     address_views.insert(address, fvk.view_address(address));
                     asset_ids.insert(note.asset_id());
+
+                    // Also add an AddressView for the sender address in the memo.
+                    let memo = tx.decrypt_memo(&fvk).map_err(|_| {
+                        tonic::Status::internal("Error decrypting memo for OutputView")
+                    })?;
+                    address_views.insert(memo.return_address, fvk.view_address(address));
                 }
                 ActionView::Swap(SwapView::Visible { swap_plaintext, .. }) => {
                     let address = swap_plaintext.claim_address;

@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use penumbra_asset::asset;
-use penumbra_keys::{AddressView, PayloadKey};
+use penumbra_keys::{Address, AddressView, PayloadKey};
 use penumbra_proto::core::transaction::v1alpha1::{
     self as pb, NullifierWithNote, PayloadKeyWithCommitment,
 };
@@ -64,6 +64,13 @@ impl TransactionPerspective {
             address,
             value,
             rseed: note.rseed(),
+        }
+    }
+
+    pub fn view_address(&self, address: Address) -> AddressView {
+        match self.address_views.iter().find(|av| av.address() == address) {
+            Some(av) => av.clone(),
+            None => AddressView::Opaque { address },
         }
     }
 }
