@@ -52,18 +52,35 @@ impl IndexedDBStorage {
             .into_iter()
             .map(|js_value| serde_wasm_bindgen::from_value(js_value).ok())
             .filter_map(|note_option| {
-                note_option.and_then(|note: SpendableNoteRecord| match request.asset_id.clone() {
-                    Some(asset_id) => {
-                        if note.note.asset_id() == asset_id.try_into().expect("Invalid asset id")
-                            && note.height_spent.is_none()
-                        {
-                            Some(note)
-                        } else {
-                            None
+                note_option
+                    .and_then(|note: SpendableNoteRecord| match request.asset_id.clone() {
+                        Some(asset_id) => {
+                            if note.note.asset_id()
+                                == asset_id.try_into().expect("Invalid asset id")
+                                && note.height_spent.is_none()
+                            {
+                                Some(note)
+                            } else {
+                                None
+                            }
                         }
-                    }
-                    None => Some(note),
-                })
+                        None => Some(note),
+                    })
+                    .and_then(
+                        |note: SpendableNoteRecord| match request.address_index.clone() {
+                            Some(address_index) => {
+                                if note
+                                    .address_index
+                                    .eq(&address_index.try_into().expect("invalid address index"))
+                                {
+                                    Some(note)
+                                } else {
+                                    None
+                                }
+                            }
+                            None => Some(note),
+                        },
+                    )
             })
             .collect();
 
