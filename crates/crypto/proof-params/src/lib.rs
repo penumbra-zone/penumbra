@@ -4,7 +4,6 @@ use ark_serialize::CanonicalDeserialize;
 use decaf377::Bls12_377;
 use once_cell::sync::{Lazy, OnceCell};
 use std::ops::Deref;
-use lazy_static::lazy_static;
 
 /// The length of our Groth16 proofs in bytes.
 pub const GROTH16_PROOF_LENGTH_BYTES: usize = 192;
@@ -16,6 +15,7 @@ pub use traits::{
     DummyWitness, ProvingKeyExt, VerifyingKeyExt,
 };
 
+#[cfg(feature = "bundled-proving-keys")]
 mod proving_keys;
 
 #[derive(Debug, Default)]
@@ -25,15 +25,18 @@ pub struct LazyProvingKey {
 
 impl LazyProvingKey {
     pub fn new() -> Self {
-        LazyProvingKey { 
+        LazyProvingKey {
             inner: OnceCell::new(),
         }
     }
 
     pub fn load(&self, bytes: &[u8]) -> ProvingKey<Bls12_377> {
-        self.inner.get_or_init(|| 
-            ProvingKey::deserialize_uncompressed_unchecked(bytes).expect("Failed to deserialize ProvingKey!")
-        ).to_owned()
+        self.inner
+            .get_or_init(|| {
+                ProvingKey::deserialize_uncompressed_unchecked(bytes)
+                    .expect("Failed to deserialize ProvingKey!")
+            })
+            .to_owned()
     }
 }
 
@@ -45,15 +48,17 @@ impl Deref for LazyProvingKey {
     }
 }
 
-/// Note: Conditionally load the proving key objects if the 
-/// bundled-proving-keys is present. 
+/// Note: Conditionally load the proving key objects if the
+/// bundled-proving-keys is present.
 
 /// Proving key for the spend proof.
 pub static SPEND_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
-    let mut spend_proving_key = LazyProvingKey::new();
+    let spend_proving_key = LazyProvingKey::new();
 
     #[cfg(feature = "bundled-proving-keys")]
-    spend_proving_key.inner.get_or_init(proving_keys::spend_proving_parameters);
+    spend_proving_key
+        .inner
+        .get_or_init(proving_keys::spend_proving_parameters);
 
     spend_proving_key
 });
@@ -68,10 +73,12 @@ pub mod spend {
 
 /// Proving key for the output proof.
 pub static OUTPUT_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
-    let mut output_proving_key = LazyProvingKey::new();
+    let output_proving_key = LazyProvingKey::new();
 
     #[cfg(feature = "bundled-proving-keys")]
-    output_proving_key.inner.get_or_init(proving_keys::output_proving_parameters);
+    output_proving_key
+        .inner
+        .get_or_init(proving_keys::output_proving_parameters);
 
     output_proving_key
 });
@@ -86,10 +93,12 @@ pub mod output {
 
 /// Proving key for the swap proof.
 pub static SWAP_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
-    let mut swap_proving_key = LazyProvingKey::new();
+    let swap_proving_key = LazyProvingKey::new();
 
     #[cfg(feature = "bundled-proving-keys")]
-    swap_proving_key.inner.get_or_init(proving_keys::swap_proving_parameters);
+    swap_proving_key
+        .inner
+        .get_or_init(proving_keys::swap_proving_parameters);
 
     swap_proving_key
 });
@@ -104,10 +113,12 @@ pub mod swap {
 
 /// Proving key for the swap claim proof.
 pub static SWAPCLAIM_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
-    let mut swap_claim_proving_key = LazyProvingKey::new();
+    let swap_claim_proving_key = LazyProvingKey::new();
 
     #[cfg(feature = "bundled-proving-keys")]
-    swap_claim_proving_key.inner.get_or_init(proving_keys::swapclaim_proving_parameters);
+    swap_claim_proving_key
+        .inner
+        .get_or_init(proving_keys::swapclaim_proving_parameters);
 
     swap_claim_proving_key
 });
@@ -122,10 +133,12 @@ pub mod swapclaim {
 
 /// Proving key for the undelegateclaim proof.
 pub static UNDELEGATECLAIM_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
-    let mut undelegate_claim_proving_key = LazyProvingKey::new();
+    let undelegate_claim_proving_key = LazyProvingKey::new();
 
     #[cfg(feature = "bundled-proving-keys")]
-    undelegate_claim_proving_key.inner.get_or_init(proving_keys::undelegateclaim_proving_parameters);
+    undelegate_claim_proving_key
+        .inner
+        .get_or_init(proving_keys::undelegateclaim_proving_parameters);
 
     undelegate_claim_proving_key
 });
@@ -140,10 +153,12 @@ pub mod undelegateclaim {
 
 /// Proving key for the delegator vote proof.
 pub static DELEGATOR_VOTE_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
-    let mut delegator_vote_proving_key = LazyProvingKey::new();
+    let delegator_vote_proving_key = LazyProvingKey::new();
 
     #[cfg(feature = "bundled-proving-keys")]
-    delegator_vote_proving_key.inner.get_or_init(proving_keys::delegator_vote_proving_parameters);
+    delegator_vote_proving_key
+        .inner
+        .get_or_init(proving_keys::delegator_vote_proving_parameters);
 
     delegator_vote_proving_key
 });
@@ -158,10 +173,12 @@ pub mod delegator_vote {
 
 /// Proving key for the nullifier derivation proof.
 pub static NULLIFIER_DERIVATION_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
-    let mut nullifier_proving_key = LazyProvingKey::new();
+    let nullifier_proving_key = LazyProvingKey::new();
 
     #[cfg(feature = "bundled-proving-keys")]
-    nullifier_proving_key.inner.get_or_init(proving_keys::nullifier_derivation_proving_parameters);
+    nullifier_proving_key
+        .inner
+        .get_or_init(proving_keys::nullifier_derivation_proving_parameters);
 
     nullifier_proving_key
 });
