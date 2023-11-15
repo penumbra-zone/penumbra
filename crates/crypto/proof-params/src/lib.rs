@@ -16,18 +16,14 @@ pub use traits::{
     DummyWitness, ProvingKeyExt, VerifyingKeyExt,
 };
 
-#[cfg(feature = "proving-keys")]
 mod proving_keys;
 
-#[cfg(feature = "proving-keys")]
 #[derive(Debug, Default)]
 pub struct LazyProvingKey {
     inner: OnceCell<ProvingKey<Bls12_377>>,
 }
 
-#[cfg(feature = "proving-keys")]
 impl LazyProvingKey {
-    // Lazily construct proving key
     pub fn new() -> Self {
         LazyProvingKey { 
             inner: OnceCell::new(),
@@ -42,7 +38,6 @@ impl LazyProvingKey {
     }
 }
 
-#[cfg(feature = "proving-keys")]
 impl Deref for LazyProvingKey {
     type Target = ProvingKey<Bls12_377>;
 
@@ -51,14 +46,14 @@ impl Deref for LazyProvingKey {
     }
 }
 
-/// Note: Conditionally load the proving key objects in the crate
-/// unless the target is wasm. 
+/// Note: Conditionally load the proving key objects if the 
+/// bundled-proving-keys is present. 
 
 /// Proving key for the spend proof.
 pub static SPEND_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
     let mut spend_proving_key = LazyProvingKey::new();
 
-    #[cfg(all(feature = "proving-keys", not(target_arch = "wasm32")))]
+    #[cfg(feature = "bundled-proving-keys")]
     spend_proving_key.inner.get_or_init(proving_keys::spend_proving_parameters);
 
     spend_proving_key
@@ -76,7 +71,7 @@ pub mod spend {
 pub static OUTPUT_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
     let mut output_proving_key = LazyProvingKey::new();
 
-    #[cfg(all(feature = "proving-keys", not(target_arch = "wasm32")))]
+    #[cfg(feature = "bundled-proving-keys")]
     output_proving_key.inner.get_or_init(proving_keys::output_proving_parameters);
 
     output_proving_key
@@ -94,7 +89,7 @@ pub mod output {
 pub static SWAP_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
     let mut swap_proving_key = LazyProvingKey::new();
 
-    #[cfg(all(feature = "proving-keys", not(target_arch = "wasm32")))]
+    #[cfg(feature = "bundled-proving-keys")]
     swap_proving_key.inner.get_or_init(proving_keys::swap_proving_parameters);
 
     swap_proving_key
@@ -112,7 +107,7 @@ pub mod swap {
 pub static SWAPCLAIM_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
     let mut swap_claim_proving_key = LazyProvingKey::new();
 
-    #[cfg(all(feature = "proving-keys", not(target_arch = "wasm32")))]
+    #[cfg(feature = "bundled-proving-keys")]
     swap_claim_proving_key.inner.get_or_init(proving_keys::swapclaim_proving_parameters);
 
     swap_claim_proving_key
@@ -130,7 +125,7 @@ pub mod swapclaim {
 pub static UNDELEGATECLAIM_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
     let mut undelegate_claim_proving_key = LazyProvingKey::new();
 
-    #[cfg(all(feature = "proving-keys", not(target_arch = "wasm32")))]
+    #[cfg(feature = "bundled-proving-keys")]
     undelegate_claim_proving_key.inner.get_or_init(proving_keys::undelegateclaim_proving_parameters);
 
     undelegate_claim_proving_key
@@ -148,7 +143,7 @@ pub mod undelegateclaim {
 pub static DELEGATOR_VOTE_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
     let mut delegator_vote_proving_key = LazyProvingKey::new();
 
-    #[cfg(all(feature = "proving-keys", not(target_arch = "wasm32")))]
+    #[cfg(feature = "bundled-proving-keys")]
     delegator_vote_proving_key.inner.get_or_init(proving_keys::delegator_vote_proving_parameters);
 
     delegator_vote_proving_key
@@ -166,7 +161,7 @@ pub mod delegator_vote {
 pub static NULLIFIER_DERIVATION_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
     let mut nullifier_proving_key = LazyProvingKey::new();
 
-    #[cfg(all(feature = "proving-keys", not(target_arch = "wasm32")))]
+    #[cfg(feature = "bundled-proving-keys")]
     nullifier_proving_key.inner.get_or_init(proving_keys::nullifier_derivation_proving_parameters);
 
     nullifier_proving_key

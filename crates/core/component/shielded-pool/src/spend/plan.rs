@@ -59,8 +59,8 @@ impl SpendPlan {
     }
 
     /// Convenience method to construct the [`Spend`] described by this [`SpendPlan`].
-    #[cfg_attr(docsrs, doc(cfg(feature = "proving-keys")))]
-    #[cfg(feature = "proving-keys")]
+    // #[cfg_attr(docsrs, doc(cfg(feature = "proving-keys")))]
+    // #[cfg(feature = "proving-keys")]
     pub fn spend(
         &self,
         fvk: &FullViewingKey,
@@ -96,8 +96,8 @@ impl SpendPlan {
     }
 
     /// Construct the [`SpendProof`] required by the [`spend::Body`] described by this [`SpendPlan`].
-    #[cfg_attr(docsrs, doc(cfg(feature = "proving-keys")))]
-    #[cfg(feature = "proving-keys")]
+    // #[cfg_attr(docsrs, doc(cfg(feature = "proving-keys")))]
+    // #[cfg(feature = "proving-keys")]
     pub fn spend_proof(
         &self,
         fvk: &FullViewingKey,

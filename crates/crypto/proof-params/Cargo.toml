@@ -57,41 +57,41 @@ hex = {version = "0.4.3", optional=true}
 anyhow = "1"
 
 [features]
-proving-keys = []
+bundled-proving-keys = []
 download-proving-keys = ["regex", "reqwest", "serde_json", "sha2", "hex"]
 parallel = ["ark-ff/parallel", "decaf377/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel"]
 
 [[bench]]
 name = "nullifier_derivation"
 harness = false
-required-features = ["proving-keys", "parallel"]
+required-features = ["bundled-proving-keys", "parallel"]
 
 [[bench]]
 name = "output"
 harness = false
-required-features = ["proving-keys", "parallel"]
+required-features = ["bundled-proving-keys", "parallel"]
 
 [[bench]]
 name = "delegator_vote"
 harness = false
-required-features = ["proving-keys", "parallel"]
+required-features = ["bundled-proving-keys", "parallel"]
 
 [[bench]]
 name = "spend"
 harness = false
-required-features = ["proving-keys", "parallel"]
+required-features = ["bundled-proving-keys", "parallel"]
 
 [[bench]]
 name = "swap"
 harness = false
-required-features = ["proving-keys", "parallel"]
+required-features = ["bundled-proving-keys", "parallel"]
 
 [[bench]]
 name = "swap_claim"
 harness = false
-required-features = ["proving-keys", "parallel"]
+required-features = ["bundled-proving-keys", "parallel"]
 
 [[bench]]
 name = "undelegate_claim"
 harness = false
-required-features = ["proving-keys", "parallel"]
+required-features = ["bundled-proving-keys", "parallel"]
