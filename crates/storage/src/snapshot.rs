@@ -88,12 +88,11 @@ impl Snapshot {
         self.0.multistore_cache.get_version(prefix)
     }
 
-    /// Returns the root hash of this `State`.
+    /// Returns the root hash of the subtree corresponding to the given prefix.
+    /// If the prefix is empty, the root hash of the main tree is returned.
     ///
-    /// If the `State` is empty, the all-zeros hash will be returned as a placeholder value.
-    ///
-    /// This method may only be used on a clean [`State`] fork, and will error
-    /// if [`is_dirty`] returns `true`.
+    /// # Errors
+    /// Returns an error if the supplied prefix does not correspond to a known substore.
     pub async fn prefix_root_hash(&self, prefix: &str) -> Result<crate::RootHash> {
         let span = tracing::Span::current();
         let rocksdb_snapshot = self.0.snapshot.clone();
@@ -105,9 +104,9 @@ impl Snapshot {
             .config
             .find_substore(prefix.as_bytes());
 
-        // If a substore is not found, we default to the main store.
-        // But we want to avoid misleading a caller by returning
-        // `RootHash` that does not correspond to the queried prefix.
+        // If a substore is not found, `find_substore` will default to the main store.
+        // However, we do not want to mislead the caller by returning a root hash
+        // that does not correspond to the queried prefix, so we error out instead.
         if prefix != config.prefix {
             anyhow::bail!("requested substore does not exist")
         }
