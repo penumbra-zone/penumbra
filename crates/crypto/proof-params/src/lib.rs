@@ -30,11 +30,10 @@ impl LazyProvingKey {
         }
     }
 
-    pub fn load(&self, key: &str) -> ProvingKey<Bls12_377> {
-        self.inner.get_or_init(|| match key {
-            "spend_key" => proving_keys::spend_proving_parameters(),
-            _ => todo!()
-        }).clone()
+    pub fn load(&self, bytes: &[u8]) -> ProvingKey<Bls12_377> {
+        self.inner.get_or_init(|| 
+            ProvingKey::deserialize_uncompressed_unchecked(bytes).expect("Failed to deserialize ProvingKey!")
+        ).to_owned()
     }
 }
 
