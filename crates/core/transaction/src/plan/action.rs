@@ -1,7 +1,10 @@
 use crate::Action;
+use crate::EffectingData;
 use crate::WitnessData;
 use anyhow::{anyhow, Context, Result};
+use decaf377::Fr;
 use penumbra_asset::Balance;
+use penumbra_chain::EffectHash;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_dex::{
     lp::{
@@ -151,6 +154,36 @@ impl ActionPlan {
             Withdrawal(withdrawal) => withdrawal.balance(),
             // None of these contribute to transaction balance:
             IbcAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
+        }
+    }
+
+    /// Compute the effect hash of the action this plan will produce.
+    pub fn effect_hash(&self, fvk: &FullViewingKey, memo_key: &PayloadKey) -> EffectHash {
+        use ActionPlan::*;
+
+        match self {
+            Spend(plan) => plan.spend_body(fvk).effect_hash(),
+            Output(plan) => plan.output_body(fvk.outgoing(), memo_key).effect_hash(),
+            Delegate(plan) => plan.effect_hash(),
+            Undelegate(plan) => plan.effect_hash(),
+            UndelegateClaim(plan) => plan.undelegate_claim_body().effect_hash(),
+            ValidatorDefinition(plan) => plan.effect_hash(),
+            Swap(plan) => plan.swap_body(fvk).effect_hash(),
+            SwapClaim(plan) => plan.swap_claim_body(fvk).effect_hash(),
+            IbcAction(plan) => plan.effect_hash(),
+            ProposalSubmit(plan) => plan.effect_hash(),
+            ProposalWithdraw(plan) => plan.effect_hash(),
+            DelegatorVote(plan) => plan.delegator_vote_body(fvk).effect_hash(),
+            ValidatorVote(plan) => plan.effect_hash(),
+            ProposalDepositClaim(plan) => plan.effect_hash(),
+            PositionOpen(plan) => plan.effect_hash(),
+            PositionClose(plan) => plan.effect_hash(),
+            PositionWithdraw(plan) => plan.position_withdraw().effect_hash(),
+            PositionRewardClaim(_plan) => todo!("position reward claim plan is not implemented"),
+            DaoSpend(plan) => plan.effect_hash(),
+            DaoOutput(plan) => plan.effect_hash(),
+            DaoDeposit(plan) => plan.effect_hash(),
+            Withdrawal(plan) => plan.effect_hash(),
         }
     }
 }
