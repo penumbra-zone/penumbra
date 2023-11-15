@@ -157,6 +157,35 @@ impl ActionPlan {
         }
     }
 
+    pub fn value_blinding(&self) -> Fr {
+        use ActionPlan::*;
+
+        match self {
+            Spend(spend) => spend.value_blinding,
+            Output(_) => todo!(),
+            Delegate(_) => todo!(),
+            Undelegate(_) => todo!(),
+            UndelegateClaim(_) => todo!(),
+            ValidatorDefinition(_) => todo!(),
+            Swap(_) => todo!(),
+            SwapClaim(_) => todo!(),
+            IbcAction(_) => todo!(),
+            ProposalSubmit(_) => todo!(),
+            ProposalWithdraw(_) => todo!(),
+            DelegatorVote(_) => todo!(),
+            ValidatorVote(_) => todo!(),
+            ProposalDepositClaim(_) => todo!(),
+            PositionOpen(_) => todo!(),
+            PositionClose(_) => todo!(),
+            PositionWithdraw(_) => todo!(),
+            PositionRewardClaim(_) => todo!(),
+            DaoSpend(_) => todo!(),
+            DaoOutput(_) => todo!(),
+            DaoDeposit(_) => todo!(),
+            Withdrawal(_) => todo!(),
+        }
+    }
+
     /// Compute the effect hash of the action this plan will produce.
     pub fn effect_hash(&self, fvk: &FullViewingKey, memo_key: &PayloadKey) -> EffectHash {
         use ActionPlan::*;
