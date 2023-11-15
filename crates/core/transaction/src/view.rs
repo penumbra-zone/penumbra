@@ -1,6 +1,7 @@
 use anyhow::Context;
 use decaf377_rdsa::{Binding, Signature};
 use penumbra_fee::Fee;
+use penumbra_keys::AddressView;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
 
 use serde::{Deserialize, Serialize};
@@ -13,7 +14,7 @@ use penumbra_tct as tct;
 pub use transaction_perspective::TransactionPerspective;
 
 use crate::{
-    memo::{MemoCiphertext, MemoPlaintext},
+    memo::MemoCiphertext,
     transaction::{DetectionData, TransactionParameters},
     Action, Transaction, TransactionBody,
 };
@@ -44,12 +45,19 @@ pub struct TransactionBodyView {
 #[allow(clippy::large_enum_variant)]
 pub enum MemoView {
     Visible {
-        plaintext: MemoPlaintext,
+        plaintext: MemoPlaintextView,
         ciphertext: MemoCiphertext,
     },
     Opaque {
         ciphertext: MemoCiphertext,
     },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(try_from = "pbt::MemoPlaintextView", into = "pbt::MemoPlaintextView")]
+pub struct MemoPlaintextView {
+    pub return_address: AddressView,
+    pub text: String,
 }
 
 impl TransactionView {
@@ -272,5 +280,33 @@ impl TryFrom<pbt::MemoView> for MemoView {
                     .try_into()?,
             }),
         }
+    }
+}
+
+impl From<MemoPlaintextView> for pbt::MemoPlaintextView {
+    fn from(v: MemoPlaintextView) -> Self {
+        Self {
+            return_address: Some(v.return_address.into()),
+            text: v.text,
+        }
+    }
+}
+
+impl TryFrom<pbt::MemoPlaintextView> for MemoPlaintextView {
+    type Error = anyhow::Error;
+
+    fn try_from(v: pbt::MemoPlaintextView) -> Result<Self, Self::Error> {
+        let sender: AddressView = v
+            .return_address
+            .ok_or_else(|| anyhow::anyhow!("memo plan missing memo plaintext"))?
+            .try_into()
+            .context("return address malformed")?;
+
+        let text: String = v.text;
+
+        Ok(Self {
+            return_address: sender,
+            text,
+        })
     }
 }
