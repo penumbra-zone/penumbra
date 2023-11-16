@@ -1,6 +1,6 @@
+use anyhow::Context;
 #[cfg(feature = "bundled-proving-keys")]
 use std::io::Read;
-use anyhow::Context;
 
 fn main() {
     let proving_parameter_files = [
