@@ -60,7 +60,7 @@ latest tag for the current
 [testnet](https://github.com/penumbra-zone/penumbra/releases):
 
 ```bash
-cd penumbra && git fetch && git checkout v0.63.1
+cd penumbra && git fetch && git checkout v0.63.2
 ```
 
 ### Building the `pcli` client software
