@@ -4901,6 +4901,7 @@ dependencies = [
  "tower",
  "tower-abci",
  "tower-actor",
+ "tower-http 0.4.4",
  "tower-service",
  "tracing",
  "tracing-subscriber 0.3.18",

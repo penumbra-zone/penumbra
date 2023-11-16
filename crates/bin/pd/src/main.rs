@@ -31,6 +31,7 @@ use rand_core::OsRng;
 use tendermint_config::net::Address as TendermintAddress;
 use tokio::{net::TcpListener, runtime};
 use tonic::transport::Server;
+use tower_http::cors::CorsLayer;
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
 
@@ -380,6 +381,11 @@ async fn main() -> anyhow::Result<()> {
             use penumbra_shielded_pool::component::rpc::Server as ShieldedPoolServer;
             use penumbra_stake::component::rpc::Server as StakeServer;
 
+            // Set rather permissive CORS headers for pd's gRPC: the service
+            // should be accessible from arbitrary web contexts, such as localhost,
+            // or any FQDN that wants to reference its data.
+            let cors_layer = CorsLayer::permissive();
+
             let mut grpc_server = Server::builder()
                 .trace_fn(|req| match remote_addr(req) {
                     Some(remote_addr) => {
@@ -388,7 +394,13 @@ async fn main() -> anyhow::Result<()> {
                     None => tracing::error_span!("grpc"),
                 })
                 // Allow HTTP/1, which will be used by grpc-web connections.
+                // This is particularly important when running locally, as gRPC
+                // typically uses HTTP/2, which requires HTTPS. Accepting HTTP/2
+                // allows local applications such as web browsers to talk to pd.
                 .accept_http1(true)
+                // Add permissive CORS headers, so pd's gRPC services are accessible
+                // from arbitrary web contexts, including from localhost.
+                .layer(cors_layer)
                 // As part of #2932, we are disabling all timeouts until we circle back to our
                 // performance story.
                 // Sets a timeout for all gRPC requests, but note that in the case of streaming

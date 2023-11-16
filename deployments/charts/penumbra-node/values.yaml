@@ -86,8 +86,7 @@ ingressRoute:
   secretName: ""
   # Traefik middleware CRDs, to be applied to pd's gRPC service.
   # These config objects must already exist in the API, i.e. create them out of band.
-  middlewares:
-    - name: cors-allow-all
+  middlewares: []
 
 imagePullSecrets: []
 nameOverride: ""
