@@ -3443,16 +3443,23 @@ impl serde::Serialize for StatusResponse {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.sync_height != 0 {
+        if self.full_sync_height != 0 {
+            len += 1;
+        }
+        if self.partial_sync_height != 0 {
             len += 1;
         }
         if self.catching_up {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.StatusResponse", len)?;
-        if self.sync_height != 0 {
+        if self.full_sync_height != 0 {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("syncHeight", ToString::to_string(&self.sync_height).as_str())?;
+            struct_ser.serialize_field("fullSyncHeight", ToString::to_string(&self.full_sync_height).as_str())?;
+        }
+        if self.partial_sync_height != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("partialSyncHeight", ToString::to_string(&self.partial_sync_height).as_str())?;
         }
         if self.catching_up {
             struct_ser.serialize_field("catchingUp", &self.catching_up)?;
@@ -3467,15 +3474,18 @@ impl<'de> serde::Deserialize<'de> for StatusResponse {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "sync_height",
-            "syncHeight",
+            "full_sync_height",
+            "fullSyncHeight",
+            "partial_sync_height",
+            "partialSyncHeight",
             "catching_up",
             "catchingUp",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            SyncHeight,
+            FullSyncHeight,
+            PartialSyncHeight,
             CatchingUp,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3498,7 +3508,8 @@ impl<'de> serde::Deserialize<'de> for StatusResponse {
                         E: serde::de::Error,
                     {
                         match value {
-                            "syncHeight" | "sync_height" => Ok(GeneratedField::SyncHeight),
+                            "fullSyncHeight" | "full_sync_height" => Ok(GeneratedField::FullSyncHeight),
+                            "partialSyncHeight" | "partial_sync_height" => Ok(GeneratedField::PartialSyncHeight),
                             "catchingUp" | "catching_up" => Ok(GeneratedField::CatchingUp),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -3519,15 +3530,24 @@ impl<'de> serde::Deserialize<'de> for StatusResponse {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut sync_height__ = None;
+                let mut full_sync_height__ = None;
+                let mut partial_sync_height__ = None;
                 let mut catching_up__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::SyncHeight => {
-                            if sync_height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("syncHeight"));
+                        GeneratedField::FullSyncHeight => {
+                            if full_sync_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("fullSyncHeight"));
                             }
-                            sync_height__ = 
+                            full_sync_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::PartialSyncHeight => {
+                            if partial_sync_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("partialSyncHeight"));
+                            }
+                            partial_sync_height__ = 
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -3540,7 +3560,8 @@ impl<'de> serde::Deserialize<'de> for StatusResponse {
                     }
                 }
                 Ok(StatusResponse {
-                    sync_height: sync_height__.unwrap_or_default(),
+                    full_sync_height: full_sync_height__.unwrap_or_default(),
+                    partial_sync_height: partial_sync_height__.unwrap_or_default(),
                     catching_up: catching_up__.unwrap_or_default(),
                 })
             }
@@ -3651,7 +3672,10 @@ impl serde::Serialize for StatusStreamResponse {
         if self.latest_known_block_height != 0 {
             len += 1;
         }
-        if self.sync_height != 0 {
+        if self.full_sync_height != 0 {
+            len += 1;
+        }
+        if self.partial_sync_height != 0 {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.StatusStreamResponse", len)?;
@@ -3659,9 +3683,13 @@ impl serde::Serialize for StatusStreamResponse {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("latestKnownBlockHeight", ToString::to_string(&self.latest_known_block_height).as_str())?;
         }
-        if self.sync_height != 0 {
+        if self.full_sync_height != 0 {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("syncHeight", ToString::to_string(&self.sync_height).as_str())?;
+            struct_ser.serialize_field("fullSyncHeight", ToString::to_string(&self.full_sync_height).as_str())?;
+        }
+        if self.partial_sync_height != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("partialSyncHeight", ToString::to_string(&self.partial_sync_height).as_str())?;
         }
         struct_ser.end()
     }
@@ -3675,14 +3703,17 @@ impl<'de> serde::Deserialize<'de> for StatusStreamResponse {
         const FIELDS: &[&str] = &[
             "latest_known_block_height",
             "latestKnownBlockHeight",
-            "sync_height",
-            "syncHeight",
+            "full_sync_height",
+            "fullSyncHeight",
+            "partial_sync_height",
+            "partialSyncHeight",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             LatestKnownBlockHeight,
-            SyncHeight,
+            FullSyncHeight,
+            PartialSyncHeight,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3705,7 +3736,8 @@ impl<'de> serde::Deserialize<'de> for StatusStreamResponse {
                     {
                         match value {
                             "latestKnownBlockHeight" | "latest_known_block_height" => Ok(GeneratedField::LatestKnownBlockHeight),
-                            "syncHeight" | "sync_height" => Ok(GeneratedField::SyncHeight),
+                            "fullSyncHeight" | "full_sync_height" => Ok(GeneratedField::FullSyncHeight),
+                            "partialSyncHeight" | "partial_sync_height" => Ok(GeneratedField::PartialSyncHeight),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3726,7 +3758,8 @@ impl<'de> serde::Deserialize<'de> for StatusStreamResponse {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut latest_known_block_height__ = None;
-                let mut sync_height__ = None;
+                let mut full_sync_height__ = None;
+                let mut partial_sync_height__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::LatestKnownBlockHeight => {
@@ -3737,11 +3770,19 @@ impl<'de> serde::Deserialize<'de> for StatusStreamResponse {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::SyncHeight => {
-                            if sync_height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("syncHeight"));
+                        GeneratedField::FullSyncHeight => {
+                            if full_sync_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("fullSyncHeight"));
                             }
-                            sync_height__ = 
+                            full_sync_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::PartialSyncHeight => {
+                            if partial_sync_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("partialSyncHeight"));
+                            }
+                            partial_sync_height__ = 
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -3749,7 +3790,8 @@ impl<'de> serde::Deserialize<'de> for StatusStreamResponse {
                 }
                 Ok(StatusStreamResponse {
                     latest_known_block_height: latest_known_block_height__.unwrap_or_default(),
-                    sync_height: sync_height__.unwrap_or_default(),
+                    full_sync_height: full_sync_height__.unwrap_or_default(),
+                    partial_sync_height: partial_sync_height__.unwrap_or_default(),
                 })
             }
         }

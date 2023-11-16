@@ -3,7 +3,8 @@ use penumbra_proto::{view::v1alpha1 as pb, DomainType, TypeUrl};
 #[derive(Clone, Copy, Debug)]
 pub struct StatusStreamResponse {
     pub latest_known_block_height: u64,
-    pub sync_height: u64,
+    pub full_sync_height: u64,
+    pub partial_sync_height: u64,
 }
 
 impl TypeUrl for StatusStreamResponse {
@@ -20,7 +21,8 @@ impl TryFrom<pb::StatusStreamResponse> for StatusStreamResponse {
     fn try_from(proto: pb::StatusStreamResponse) -> Result<Self, Self::Error> {
         Ok(StatusStreamResponse {
             latest_known_block_height: proto.latest_known_block_height,
-            sync_height: proto.sync_height,
+            full_sync_height: proto.full_sync_height,
+            partial_sync_height: proto.partial_sync_height,
         })
     }
 }
@@ -29,7 +31,8 @@ impl From<StatusStreamResponse> for pb::StatusStreamResponse {
     fn from(msg: StatusStreamResponse) -> Self {
         pb::StatusStreamResponse {
             latest_known_block_height: msg.latest_known_block_height,
-            sync_height: msg.sync_height,
+            full_sync_height: msg.full_sync_height,
+            partial_sync_height: msg.partial_sync_height,
         }
     }
 }

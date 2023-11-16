@@ -279,13 +279,13 @@ impl ViewService {
 
     #[instrument(skip(self))]
     pub async fn status(&self) -> anyhow::Result<StatusResponse> {
-        let sync_height = self.storage.last_sync_height().await?.unwrap_or(0);
+        let full_sync_height = self.storage.last_sync_height().await?.unwrap_or(0);
 
         let (latest_known_block_height, node_catching_up) =
             self.latest_known_block_height().await?;
 
         let height_diff = latest_known_block_height
-            .checked_sub(sync_height)
+            .checked_sub(full_sync_height)
             .ok_or_else(|| anyhow!("sync height ahead of node height"))?;
 
         let catching_up = match (node_catching_up, height_diff) {
@@ -300,8 +300,9 @@ impl ViewService {
         };
 
         Ok(StatusResponse {
-            sync_height,
+            full_sync_height,
             catching_up,
+            partial_sync_height: full_sync_height, // Set these as the same for backwards compatibility following adding the partial_sync_height
         })
     }
 }
@@ -1048,7 +1049,8 @@ impl ViewProtocolService for ViewService {
             while let Some(sync_height) = sync_height_stream.next().await {
                 yield pb::StatusStreamResponse {
                     latest_known_block_height,
-                    sync_height,
+                    full_sync_height: sync_height,
+                    partial_sync_height: sync_height, // Set these as the same for backwards compatibility following adding the partial_sync_height
                 };
                 if sync_height >= latest_known_block_height {
                     break;

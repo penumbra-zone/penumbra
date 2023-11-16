@@ -60,12 +60,12 @@ impl App {
 
         eprintln!(
             "Scanning blocks from last sync height {} to latest height {}",
-            initial_status.sync_height, initial_status.latest_known_block_height,
+            initial_status.full_sync_height, initial_status.latest_known_block_height,
         );
 
         use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
         let progress_bar = ProgressBar::with_draw_target(
-            initial_status.latest_known_block_height - initial_status.sync_height,
+            initial_status.latest_known_block_height - initial_status.full_sync_height,
             ProgressDrawTarget::stdout(),
         )
         .with_style(
@@ -75,7 +75,7 @@ impl App {
         progress_bar.set_position(0);
 
         while let Some(status) = status_stream.next().await.transpose()? {
-            progress_bar.set_position(status.sync_height - initial_status.sync_height);
+            progress_bar.set_position(status.full_sync_height - initial_status.full_sync_height);
         }
         progress_bar.finish();
 
