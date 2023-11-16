@@ -133,6 +133,9 @@ impl ActionHandler for ProposalSubmit {
                 }
             }
             UpgradePlan { .. } => {}
+            UnplannedIbcUpgrade { .. } => todo!(),
+            FreezeIbcClient { .. } => todo!(),
+            UnfreezeIbcClient { .. } => todo!(),
         }
 
         Ok(())
@@ -203,6 +206,9 @@ impl ActionHandler for ProposalSubmit {
             ProposalPayload::UpgradePlan { .. } => {
                 // TODO(erwan): no stateful checks for upgrade plan.
             }
+            ProposalPayload::UnplannedIbcUpgrade { .. } => todo!(),
+            ProposalPayload::FreezeIbcClient { .. } => todo!(),
+            ProposalPayload::UnfreezeIbcClient { .. } => todo!(),
         }
 
         Ok(())

@@ -596,13 +596,13 @@ dependencies = [
 
 [[package]]
 name = "async-global-executor"
-version = "2.4.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b4353121d5644cdf2beb5726ab752e79a8db1ebb52031770ec47db31d245526"
+checksum = "05b1b633a2115cd122d73b955eadd9916c18c8f510ec9cd1686404c60ad1c29c"
 dependencies = [
  "async-channel 2.1.1",
  "async-executor",
- "async-io 2.2.1",
+ "async-io 2.2.2",
  "async-lock 3.2.0",
  "blocking",
  "futures-lite 2.1.0",
@@ -648,9 +648,9 @@ dependencies = [
 
 [[package]]
 name = "async-io"
-version = "2.2.1"
+version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6d3b15875ba253d1110c740755e246537483f152fa334f91abd7fe84c88b3ff"
+checksum = "6afaa937395a620e33dc6a742c593c01aced20aa376ffb0f628121198578ccc7"
 dependencies = [
  "async-lock 3.2.0",
  "cfg-if",
@@ -719,7 +719,7 @@ version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e47d90f65a225c4527103a8d747001fc56e375203592b25ad103e1ca13124c5"
 dependencies = [
- "async-io 2.2.1",
+ "async-io 2.2.2",
  "async-lock 2.8.0",
  "atomic-waker",
  "cfg-if",
@@ -1504,8 +1504,8 @@ dependencies = [
  "borsh",
  "futures",
  "hex",
- "ibc-proto",
- "ibc-types",
+ "ibc-proto 0.39.1",
+ "ibc-types 0.10.0",
  "ics23",
  "jmt",
  "metrics",
@@ -2463,9 +2463,9 @@ dependencies = [
 
 [[package]]
 name = "eyre"
-version = "0.6.10"
+version = "0.6.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bbb8258be8305fb0237d7b295f47bb24ff1b136a535f473baf40e70468515aa"
+checksum = "80f656be11ddf91bd709454d15d5bd896fbaf4cc3314e69349e4d1569f5b46cd"
 dependencies = [
  "indenter",
  "once_cell",
@@ -3283,16 +3283,48 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "345e31ea9be7b5b3e98bcd8a2a3b2376d2ab8663d455ba6ac83e53c1048510d6"
 dependencies = [
- "ibc-types-core-channel",
- "ibc-types-core-client",
- "ibc-types-core-commitment",
- "ibc-types-core-connection",
- "ibc-types-domain-type",
- "ibc-types-identifier",
- "ibc-types-lightclients-tendermint",
- "ibc-types-path",
- "ibc-types-timestamp",
- "ibc-types-transfer",
+ "ibc-types-core-channel 0.10.0",
+ "ibc-types-core-client 0.10.0",
+ "ibc-types-core-commitment 0.10.0",
+ "ibc-types-core-connection 0.10.0",
+ "ibc-types-domain-type 0.10.0",
+ "ibc-types-identifier 0.10.0",
+ "ibc-types-lightclients-tendermint 0.10.0",
+ "ibc-types-path 0.10.0",
+ "ibc-types-timestamp 0.10.0",
+ "ibc-types-transfer 0.10.0",
+]
+
+[[package]]
+name = "ibc-types-core-channel"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "27dea03dd567a054e9345894ff80b9ea1609e99050ff0e93535ba352b01075c9"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "derive_more",
+ "displaydoc",
+ "ibc-proto 0.37.1",
+ "ibc-types-core-client 0.7.0",
+ "ibc-types-core-commitment 0.7.0",
+ "ibc-types-core-connection 0.7.0",
+ "ibc-types-domain-type 0.7.0",
+ "ibc-types-identifier 0.7.0",
+ "ibc-types-timestamp 0.7.0",
+ "ics23",
+ "num-traits",
+ "proc-macro2 0.1.10",
+ "prost",
+ "safe-regex",
+ "serde",
+ "serde_json",
+ "sha2 0.10.8",
+ "subtle-encoding",
+ "tendermint",
+ "tendermint-proto",
+ "time 0.3.19",
+ "tracing",
 ]
 
 [[package]]
@@ -3305,13 +3337,13 @@ dependencies = [
  "bytes",
  "derive_more",
  "displaydoc",
- "ibc-proto",
- "ibc-types-core-client",
- "ibc-types-core-commitment",
- "ibc-types-core-connection",
- "ibc-types-domain-type",
- "ibc-types-identifier",
- "ibc-types-timestamp",
+ "ibc-proto 0.39.1",
+ "ibc-types-core-client 0.10.0",
+ "ibc-types-core-commitment 0.10.0",
+ "ibc-types-core-connection 0.10.0",
+ "ibc-types-domain-type 0.10.0",
+ "ibc-types-identifier 0.10.0",
+ "ibc-types-timestamp 0.10.0",
  "ics23",
  "num-traits",
  "proc-macro2 0.1.10",
@@ -3338,10 +3370,10 @@ dependencies = [
  "bytes",
  "derive_more",
  "displaydoc",
- "ibc-proto",
- "ibc-types-domain-type",
- "ibc-types-identifier",
- "ibc-types-timestamp",
+ "ibc-proto 0.39.1",
+ "ibc-types-domain-type 0.10.0",
+ "ibc-types-identifier 0.10.0",
+ "ibc-types-timestamp 0.10.0",
  "ics23",
  "num-traits",
  "prost",
@@ -3368,10 +3400,10 @@ dependencies = [
  "dyn-clone",
  "erased-serde",
  "hex",
- "ibc-proto",
- "ibc-types-domain-type",
- "ibc-types-identifier",
- "ibc-types-timestamp",
+ "ibc-proto 0.39.1",
+ "ibc-types-domain-type 0.10.0",
+ "ibc-types-identifier 0.10.0",
+ "ibc-types-timestamp 0.10.0",
  "ics23",
  "num-traits",
  "primitive-types",
@@ -3400,12 +3432,12 @@ dependencies = [
  "bytes",
  "derive_more",
  "displaydoc",
- "ibc-proto",
- "ibc-types-core-client",
- "ibc-types-core-commitment",
- "ibc-types-domain-type",
- "ibc-types-identifier",
- "ibc-types-timestamp",
+ "ibc-proto 0.39.1",
+ "ibc-types-core-client 0.10.0",
+ "ibc-types-core-commitment 0.10.0",
+ "ibc-types-domain-type 0.10.0",
+ "ibc-types-identifier 0.10.0",
+ "ibc-types-timestamp 0.10.0",
  "ics23",
  "num-traits",
  "prost",
@@ -3454,13 +3486,13 @@ dependencies = [
  "displaydoc",
  "dyn-clone",
  "erased-serde",
- "ibc-proto",
- "ibc-types-core-client",
- "ibc-types-core-commitment",
- "ibc-types-core-connection",
- "ibc-types-domain-type",
- "ibc-types-identifier",
- "ibc-types-timestamp",
+ "ibc-proto 0.39.1",
+ "ibc-types-core-client 0.10.0",
+ "ibc-types-core-commitment 0.10.0",
+ "ibc-types-core-connection 0.10.0",
+ "ibc-types-domain-type 0.10.0",
+ "ibc-types-identifier 0.10.0",
+ "ibc-types-timestamp 0.10.0",
  "ics23",
  "num-traits",
  "primitive-types",
@@ -3488,9 +3520,9 @@ dependencies = [
  "bytes",
  "derive_more",
  "displaydoc",
- "ibc-types-core-channel",
- "ibc-types-core-client",
- "ibc-types-core-connection",
+ "ibc-types-core-channel 0.10.0",
+ "ibc-types-core-client 0.10.0",
+ "ibc-types-core-connection 0.10.0",
  "num-traits",
  "prost",
  "serde",
@@ -4665,8 +4697,8 @@ dependencies = [
  "futures",
  "hex",
  "http-body",
- "ibc-proto",
- "ibc-types",
+ "ibc-proto 0.39.1",
+ "ibc-types 0.10.0",
  "indicatif",
  "jmt",
  "ndarray",
@@ -4738,8 +4770,8 @@ dependencies = [
  "hex",
  "http",
  "http-body",
- "ibc-proto",
- "ibc-types",
+ "ibc-proto 0.39.1",
+ "ibc-types 0.10.0",
  "metrics",
  "parking_lot 0.12.1",
  "penumbra-app",
@@ -4799,8 +4831,8 @@ dependencies = [
  "futures",
  "hex",
  "http",
- "ibc-proto",
- "ibc-types",
+ "ibc-proto 0.39.1",
+ "ibc-types 0.10.0",
  "ics23",
  "jmt",
  "metrics",
@@ -4925,8 +4957,8 @@ dependencies = [
  "ed25519-consensus",
  "futures",
  "hex",
- "ibc-proto",
- "ibc-types",
+ "ibc-proto 0.39.1",
+ "ibc-types 0.10.0",
  "im",
  "jmt",
  "metrics",
@@ -5074,7 +5106,7 @@ dependencies = [
  "cnidarium-component",
  "decaf377 0.5.0",
  "hex",
- "ibc-types",
+ "ibc-types 0.10.0",
  "ics23",
  "once_cell",
  "penumbra-asset",
@@ -5336,6 +5368,7 @@ dependencies = [
  "decaf377 0.5.0",
  "decaf377-rdsa",
  "futures",
+ "ibc-types 0.7.0",
  "im",
  "metrics",
  "once_cell",
@@ -5380,8 +5413,8 @@ dependencies = [
  "cnidarium",
  "cnidarium-component",
  "hex",
- "ibc-proto",
- "ibc-types",
+ "ibc-proto 0.39.1",
+ "ibc-types 0.10.0",
  "ics23",
  "metrics",
  "num-traits",
@@ -5596,8 +5629,8 @@ dependencies = [
  "decaf377-rdsa",
  "futures",
  "hex",
- "ibc-proto",
- "ibc-types",
+ "ibc-proto 0.39.1",
+ "ibc-types 0.10.0",
  "ics23",
  "pbjson 0.6.0",
  "pbjson-types",
@@ -5668,7 +5701,7 @@ dependencies = [
  "decaf377-ka",
  "decaf377-rdsa",
  "hex",
- "ibc-types",
+ "ibc-types 0.10.0",
  "im",
  "metrics",
  "once_cell",
@@ -5894,8 +5927,8 @@ dependencies = [
  "decaf377-rdsa",
  "derivative",
  "hex",
- "ibc-proto",
- "ibc-types",
+ "ibc-proto 0.39.1",
+ "ibc-types 0.10.0",
  "num-bigint",
  "once_cell",
  "pbjson-types",
@@ -5959,7 +5992,7 @@ dependencies = [
  "futures",
  "genawaiter",
  "hex",
- "ibc-types",
+ "ibc-types 0.10.0",
  "metrics",
  "once_cell",
  "parking_lot 0.12.1",
@@ -9318,9 +9351,9 @@ checksum = "dff9641d1cd4be8d1a070daf9e3773c5f67e78b4d9d42263020c057706765c04"
 
 [[package]]
 name = "winnow"
-version = "0.5.26"
+version = "0.5.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b67b5f0a4e7a27a64c651977932b9dc5667ca7fc31ac44b03ed37a0cf42fdfff"
+checksum = "6c830786f7720c2fd27a1a0e27a709dbd3c4d009b56d098fc742d4f4eab91fe2"
 dependencies = [
  "memchr",
 ]

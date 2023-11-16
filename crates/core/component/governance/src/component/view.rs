@@ -875,6 +875,12 @@ pub trait StateWriteExt: StateWrite {
                 tracing::info!(target_height = height, "upgrade plan proposal passed");
                 self.signal_upgrade(*height).await?;
             }
+            ProposalPayload::UnplannedIbcUpgrade {
+                connection_id,
+                new_config,
+            } => todo!(),
+            ProposalPayload::FreezeIbcClient { client_id } => todo!(),
+            ProposalPayload::UnfreezeIbcClient { client_id } => todo!(),
         }
 
         Ok(Ok(()))
