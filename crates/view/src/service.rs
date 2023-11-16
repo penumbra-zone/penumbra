@@ -809,7 +809,7 @@ impl ViewProtocolService for ViewService {
                     address_views.insert(address, fvk.view_address(address));
                     asset_ids.insert(note.asset_id());
 
-                    // Also add an AddressView for the sender address in the memo.
+                    // Also add an AddressView for the return address in the memo.
                     let memo = tx.decrypt_memo(&fvk).map_err(|_| {
                         tonic::Status::internal("Error decrypting memo for OutputView")
                     })?;

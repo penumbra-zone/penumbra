@@ -275,7 +275,7 @@ pub async fn transaction_info_inner(
                 address_views.insert(address, fvk.view_address(address));
                 asset_ids.insert(note.asset_id());
 
-                // Also add an AddressView for the sender address in the memo.
+                // Also add an AddressView for the return address in the memo.
                 let memo = tx.decrypt_memo(&fvk)?;
                 address_views.insert(memo.return_address, fvk.view_address(address));
             }
