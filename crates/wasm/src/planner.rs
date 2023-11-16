@@ -27,6 +27,7 @@ use penumbra_governance::{
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
+use penumbra_proto::core::keys::v1alpha1::AddressIndex;
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, SpendPlan};
 use penumbra_stake::{rate::RateData, validator};
@@ -94,14 +95,17 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Get all the note requests necessary to fulfill the current [`Balance`].
-    pub fn notes_requests(&self) -> (Vec<NotesRequest>, Vec<NotesForVotingRequest>) {
+    pub fn notes_requests(
+        &self,
+        source: Option<AddressIndex>,
+    ) -> (Vec<NotesRequest>, Vec<NotesForVotingRequest>) {
         (
             self.balance
                 .required()
                 .map(|Value { asset_id, amount }| NotesRequest {
                     wallet_id: None,
                     asset_id: Some(asset_id.into()),
-                    address_index: None,
+                    address_index: source.clone(),
                     amount_to_spend: Some(amount.into()),
                     include_spent: false,
                 })
@@ -117,7 +121,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                     )| NotesForVotingRequest {
                         wallet_id: None,
                         votable_at_height: *start_block_height,
-                        address_index: None,
+                        address_index: source.clone(),
                     },
                 )
                 .collect(),

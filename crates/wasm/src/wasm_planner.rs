@@ -9,7 +9,7 @@ use penumbra_dex::swap_claim::SwapClaimPlan;
 use penumbra_proto::core::asset::v1alpha1::{DenomMetadata, Value};
 use penumbra_proto::core::component::fee::v1alpha1::{Fee, GasPrices};
 use penumbra_proto::core::component::ibc::v1alpha1::Ics20Withdrawal;
-use penumbra_proto::core::keys::v1alpha1::Address;
+use penumbra_proto::core::keys::v1alpha1::{Address, AddressIndex};
 use penumbra_proto::core::transaction::v1alpha1::MemoPlaintext;
 use penumbra_proto::crypto::tct::v1alpha1::StateCommitment;
 use penumbra_proto::DomainType;
@@ -184,11 +184,13 @@ impl WasmPlanner {
     }
 
     /// Builds transaction plan.
-    /// Refund address provided in the case there is extra balances to be returned.
+    /// Refund address provided in the case there is extra balances to be returned
+    //  If source present, only spends funds from the given account.
     /// Arguments:
     ///     refund_address: `Address`
+    ///     source: `Option<AddressIndex>`
     /// Returns: `TransactionPlan`
-    pub async fn plan(&mut self, refund_address: JsValue) -> WasmResult<JsValue> {
+    pub async fn plan(&mut self, refund_address: JsValue, source: JsValue) -> WasmResult<JsValue> {
         utils::set_panic_hook();
 
         // Calculate the gas that needs to be paid for the transaction based on the configured gas prices.
@@ -199,7 +201,9 @@ impl WasmPlanner {
 
         let mut spendable_notes = Vec::new();
 
-        let (spendable_requests, _) = self.planner.notes_requests();
+        let source_address_index: Option<AddressIndex> = serde_wasm_bindgen::from_value(source)?;
+
+        let (spendable_requests, _) = self.planner.notes_requests(source_address_index);
         for request in spendable_requests {
             let notes = self.storage.get_notes(request);
             spendable_notes.extend(notes.await?);
