@@ -3,9 +3,10 @@ Description=Penumbra pd
 Wants=cometbft.service
 
 [Service]
-ExecStart=/usr/local/bin/pd start --home $HOME/.penumbra/testnet_data/node0/pd
-Restart=on-failure
-RestartSec=5
+ExecStart=/usr/local/bin/pd start
+# Consider overriding the home directory, e.g.
+# ExecStart=/usr/local/bin/pd start --home /var/www/.penumbra/testnet_data/node0/pd
+Restart=no
 User=$USER
 # Raise filehandle limit for tower-abci.
 LimitNOFILE=65536

@@ -27,7 +27,7 @@ export RUST_LOG="info,pd=debug,penumbra=debug,jmt=debug"
 To run `pd`, run
 
 ```shell
-cargo run --release --bin pd -- start  --home ~/.penumbra/testnet_data/node0/pd
+cargo run --release --bin pd -- start
 ```
 
 This will start but won't do anything yet, because CometBFT isn't running.
