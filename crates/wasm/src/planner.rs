@@ -119,10 +119,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                             start_block_height, ..
                         },
                     )| NotesForVotingRequest {
-                            wallet_id: None,
-                            votable_at_height: *start_block_height,
-                            address_index: source.clone(),
-                        },
+                        wallet_id: None,
+                        votable_at_height: *start_block_height,
+                        address_index: source.clone(),
+                    },
                 )
                 .collect(),
         )
