@@ -1,6 +1,7 @@
 use indexed_db_futures::prelude::OpenDbRequest;
 use indexed_db_futures::{IdbDatabase, IdbQuerySource};
 use serde::{Deserialize, Serialize};
+use wasm_bindgen::JsValue;
 use web_sys::IdbTransactionMode::Readwrite;
 
 use penumbra_asset::asset::{DenomMetadata, Id};
@@ -10,7 +11,7 @@ use penumbra_proto::DomainType;
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note};
 
-use crate::error::WasmResult;
+use crate::error::{WasmError, WasmResult};
 use crate::note_record::SpendableNoteRecord;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -46,45 +47,39 @@ impl IndexedDBStorage {
             .transaction_on_one(&self.constants.tables.spendable_notes)?;
         let store = idb_tx.object_store(&self.constants.tables.spendable_notes)?;
 
-        let values = store.get_all()?.await?;
-
-        let notes: Vec<SpendableNoteRecord> = values
+        let raw_values = store.get_all()?.await?;
+        let parsed_notes = raw_values
             .into_iter()
-            .map(|js_value| serde_wasm_bindgen::from_value(js_value).ok())
-            .filter_map(|note_option| {
-                note_option
-                    .and_then(|note: SpendableNoteRecord| match request.asset_id.clone() {
-                        Some(asset_id) => {
-                            if note.note.asset_id()
-                                == asset_id.try_into().expect("Invalid asset id")
-                                && note.height_spent.is_none()
-                            {
-                                Some(note)
-                            } else {
-                                None
-                            }
-                        }
-                        None => Some(note),
-                    })
-                    .and_then(
-                        |note: SpendableNoteRecord| match request.address_index.clone() {
-                            Some(address_index) => {
-                                if note
-                                    .address_index
-                                    .eq(&address_index.try_into().expect("invalid address index"))
-                                {
-                                    Some(note)
-                                } else {
-                                    None
-                                }
-                            }
-                            None => Some(note),
-                        },
-                    )
-            })
+            .filter_map(|js_value| self.parse_note(js_value, &request).ok())
             .collect();
 
-        Ok(notes)
+        Ok(parsed_notes)
+    }
+
+    fn parse_note(
+        &self,
+        js_value: JsValue,
+        request: &NotesRequest,
+    ) -> WasmResult<SpendableNoteRecord> {
+        let note: SpendableNoteRecord = serde_wasm_bindgen::from_value(js_value)?;
+
+        let asset_id_matches = match &request.asset_id {
+            Some(asset_id) => note.note.asset_id() == asset_id.clone().try_into()?,
+            None => true,
+        };
+
+        let address_index_matches = match &request.address_index {
+            Some(address_index) => note.address_index.eq(&address_index.clone().try_into()?),
+            None => true,
+        };
+
+        if asset_id_matches && address_index_matches && note.height_spent.is_none() {
+            Ok(note)
+        } else {
+            Err(WasmError::Anyhow(anyhow::anyhow!(
+                "Note does not match the request"
+            )))
+        }
     }
 
     pub async fn get_asset(&self, id: &Id) -> WasmResult<Option<DenomMetadata>> {
