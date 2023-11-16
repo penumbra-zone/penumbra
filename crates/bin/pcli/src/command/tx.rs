@@ -534,7 +534,7 @@ impl TxCmd {
                     .as_mut()
                     .context("view service must be initialized")?;
 
-                let current_height = view.status(wallet_id).await?.sync_height;
+                let current_height = view.status(wallet_id).await?.full_sync_height;
                 let mut client = ChainQueryServiceClient::new(channel.clone());
                 let current_epoch = client
                     .epoch_by_height(EpochByHeightRequest {

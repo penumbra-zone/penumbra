@@ -287,10 +287,12 @@ message StatusRequest {
 
 // Returns the status of the view service and whether it is synchronized with the chain state.
 message StatusResponse {
-  // The height the view service has synchronized to so far
-  uint64 sync_height = 1;
+  // The height the view service has synchronized to so far when doing a full linear sync
+  uint64 full_sync_height = 1;
+  // The height the view service has synchronized to so far when doing a partial sync
+  uint64 partial_sync_height = 2;
   // Whether the view service is catching up with the chain state
-  bool catching_up = 2;
+  bool catching_up = 3;
 }
 
 // Requests streaming updates on the sync height until the view service is synchronized.
@@ -301,8 +303,12 @@ message StatusStreamRequest {
 
 // A streaming sync status update
 message StatusStreamResponse {
+  // The latest known block height
   uint64 latest_known_block_height = 1;
-  uint64 sync_height = 2;
+  // The height the view service has synchronized to so far when doing a full linear sync
+  uint64 full_sync_height = 2;
+  // The height the view service has synchronized to so far when doing a partial sync
+  uint64 partial_sync_height = 3;
 }
 
 // A query for notes known by the view service.
