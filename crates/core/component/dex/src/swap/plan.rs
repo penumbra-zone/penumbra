@@ -54,8 +54,6 @@ impl SwapPlan {
     }
 
     /// Construct the [`SwapProof`] required by the [`swap::Body`] described by this [`SwapPlan`].
-    // #[cfg_attr(docsrs, doc(cfg(feature = "proving-keys")))]
-    // #[cfg(feature = "proving-keys")]
     pub fn swap_proof(&self) -> SwapProof {
         use penumbra_proof_params::SWAP_PROOF_PROVING_KEY;
 
