@@ -57,8 +57,9 @@ enum RootCommand {
     /// Starts the Penumbra daemon.
     Start {
         /// The path used to store all `pd`-related data and configuration.
+        /// If unset, defaults to ~/.penumbra/testnet_data/node0/pd.
         #[clap(long, env = "PENUMBRA_PD_HOME", display_order = 100)]
-        home: PathBuf,
+        home: Option<PathBuf>,
         /// Bind the ABCI server to this socket.
         ///
         /// The ABCI server is used by Tendermint to drive the application state.
@@ -291,10 +292,15 @@ async fn main() -> anyhow::Result<()> {
                 )
             }
 
-            let mut rocks_path = home.clone();
-            rocks_path.push("rocksdb");
+            // Unpack home directory. Accept an explicit path, but default
+            // to a sane value if unspecified.
+            let pd_home = match home {
+                Some(h) => h,
+                None => get_testnet_dir(None).join("node0").join("pd"),
+            };
+            let rocksdb_home = pd_home.join("rocksdb");
 
-            let storage = Storage::init(rocks_path)
+            let storage = Storage::init(rocksdb_home)
                 .await
                 .context("Unable to initialize RocksDB storage")?;
 
@@ -436,7 +442,7 @@ async fn main() -> anyhow::Result<()> {
                 use tokio_stream::wrappers::TcpListenerStream;
                 use tokio_util::compat::{FuturesAsyncReadCompatExt, TokioAsyncReadCompatExt};
 
-                let mut acme_cache = home.clone();
+                let mut acme_cache = pd_home.clone();
                 acme_cache.push("rustls_acme_cache");
 
                 let grpc_bind = grpc_bind.unwrap_or(

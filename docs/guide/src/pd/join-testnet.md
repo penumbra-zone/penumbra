@@ -49,14 +49,13 @@ the section above on resetting node state.
 
 ### Running `pd` and `cometbft`
 
-Next, run `pd` with the `--home` parameter pointed at the correct part of the
-testnet data directory.
+Next, run `pd`:
 
 ```shell
-cargo run --bin pd --release -- start --home ~/.penumbra/testnet_data/node0/pd
+cargo run --bin pd --release -- start
 ```
 
-Then (perhaps in another terminal), run CometBFT, also specifying `--home`:
+Then (perhaps in another terminal), run CometBFT, specifying `--home`:
 
 ```shell
 cometbft start --home ~/.penumbra/testnet_data/node0/cometbft
