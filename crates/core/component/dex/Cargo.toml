@@ -16,9 +16,9 @@ component = [
     "tokio",
     "tonic",
 ]
-default = ["component", "proving-keys"]
+default = ["component"]
 docsrs = []
-proving-keys = ["penumbra-proof-params/proving-keys"]
+# proving-keys = ["penumbra-proof-params/proving-keys"]
 parallel = [
     "penumbra-tct/parallel",
     "ark-ff/parallel",

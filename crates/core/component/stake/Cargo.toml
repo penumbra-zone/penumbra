@@ -23,8 +23,8 @@ component = [
     "tonic",
     "metrics",
 ]
-proving-keys = ["penumbra-proof-params/proving-keys"]
-default = ["component", "proving-keys"]
+# proving-keys = ["penumbra-proof-params/proving-keys"]
+default = ["component"]
 docsrs = []
 parallel = [
     "penumbra-tct/parallel",

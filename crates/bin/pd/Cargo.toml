@@ -13,7 +13,9 @@ publish = false
 rust-version = "1.73"
 
 [features]
+default = ["download-proving-keys"]
 std = ["ibc-types/std"]
+download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -120,6 +122,12 @@ clap = { version = "3", features = ["derive", "env"] }
 rustls-acme = "0.6"
 atty = "0.2"
 fs_extra = "1.3.0"
+
+[dev-dependencies]
+penumbra-proof-params = { path = "../../crypto/proof-params", features = [
+    "bundled-proving-keys",
+    "download-proving-keys",
+] }
 
 [build-dependencies]
 vergen = "5"
