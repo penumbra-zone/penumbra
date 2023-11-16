@@ -5,6 +5,7 @@ use decaf377_rdsa as rdsa;
 use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 use rand_core::OsRng;
 use rand_core::{CryptoRng, RngCore};
+use wasm_bindgen_test::console_log;
 use std::fmt::Debug;
 
 use super::TransactionPlan;
@@ -174,20 +175,12 @@ impl TransactionPlan {
             );
         }
 
-        // Derive the blinding factors from `TransactionPlan``.
+        // Derive the synthetic blinding factors from `TransactionPlan`.
         let mut synthetic_blinding_factor = Fr::zero();
 
-        for spend_plan in self.spend_plans() {
-            synthetic_blinding_factor += spend_plan.value_blinding;
-        }
-        for output_plan in self.output_plans() {
-            synthetic_blinding_factor += output_plan.value_blinding;
-        }
-        for swap_plan in self.swap_plans() {
-            synthetic_blinding_factor += swap_plan.fee_blinding;
-        }
-        for plan in self.undelegate_claim_plans() {
-            synthetic_blinding_factor += plan.balance_blinding;
+        // Accumulate the blinding factors. 
+        for action_plan in &self.actions {
+            synthetic_blinding_factor += action_plan.value_blinding();
         }
 
         // Overwrite the placeholder authorization signatures with the real `AuthorizationData`.
@@ -255,11 +248,6 @@ impl TransactionPlan {
         }
 
         let mut actions: Vec<Action> = Vec::new();
-
-        // We build the actions sorted by type, with all spends first, then all
-        // outputs, etc.  This order has to align with the ordering in
-        // TransactionPlan::effect_hash, which computes the auth hash of the
-        // transaction we'll build here without actually building it.
 
         // 1. Build each action.
         for spend_plan in self.spend_plans() {

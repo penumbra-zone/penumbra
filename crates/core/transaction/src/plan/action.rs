@@ -3,9 +3,11 @@ use crate::EffectingData;
 use crate::WitnessData;
 use anyhow::{anyhow, Context, Result};
 use decaf377::Fr;
+use ark_ff::Zero;
 use penumbra_asset::Balance;
 use penumbra_chain::EffectHash;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+
 use penumbra_dex::{
     lp::{
         action::{PositionClose, PositionOpen},
@@ -156,27 +158,27 @@ impl ActionPlan {
 
         match self {
             Spend(spend) => spend.value_blinding,
-            Output(_) => todo!(),
-            Delegate(_) => todo!(),
-            Undelegate(_) => todo!(),
-            UndelegateClaim(_) => todo!(),
-            ValidatorDefinition(_) => todo!(),
-            Swap(_) => todo!(),
-            SwapClaim(_) => todo!(),
-            IbcAction(_) => todo!(),
-            ProposalSubmit(_) => todo!(),
-            ProposalWithdraw(_) => todo!(),
-            DelegatorVote(_) => todo!(),
-            ValidatorVote(_) => todo!(),
-            ProposalDepositClaim(_) => todo!(),
-            PositionOpen(_) => todo!(),
-            PositionClose(_) => todo!(),
-            PositionWithdraw(_) => todo!(),
-            PositionRewardClaim(_) => todo!(),
-            DaoSpend(_) => todo!(),
-            DaoOutput(_) => todo!(),
-            DaoDeposit(_) => todo!(),
-            Withdrawal(_) => todo!(),
+            Output(output) => output.value_blinding,
+            Delegate(delegate) => Fr::zero(),
+            Undelegate(undelegate) => Fr::zero(),
+            UndelegateClaim(undelegate_claim) => undelegate_claim.balance_blinding,
+            ValidatorDefinition(_) => Fr::zero(),
+            Swap(swap) => swap.fee_blinding,
+            SwapClaim(_) => Fr::zero(),
+            IbcAction(_) => Fr::zero(),
+            ProposalSubmit(_) => Fr::zero(),
+            ProposalWithdraw(_) => Fr::zero(),
+            DelegatorVote(_) => Fr::zero(),
+            ValidatorVote(_) => Fr::zero(),
+            ProposalDepositClaim(_) => Fr::zero(),
+            PositionOpen(_) => Fr::zero(),
+            PositionClose(_) => Fr::zero(),
+            PositionWithdraw(_) => Fr::zero(),
+            PositionRewardClaim(_) => Fr::zero(),
+            DaoSpend(_) => Fr::zero(),
+            DaoOutput(_) => Fr::zero(),
+            DaoDeposit(_) => Fr::zero(),
+            Withdrawal(_) => Fr::zero(),
         }
     }
 
