@@ -1,3 +1,5 @@
+use std::future::IntoFuture;
+
 use indexed_db_futures::{
     prelude::{IdbObjectStoreParameters, IdbOpenDbRequestLike, OpenDbRequest},
     IdbDatabase, IdbKeyPath, IdbQuerySource, IdbVersionChangeEvent,
@@ -19,17 +21,17 @@ use wasm_bindgen::JsValue;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IndexedDbConstants {
-    name: String,
-    version: u32,
-    tables: Tables,
+    pub name: String,
+    pub version: u32,
+    pub tables: Tables,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Tables {
-    assets: String,
-    notes: String,
-    spendable_notes: String,
-    swaps: String,
+    pub assets: String,
+    pub notes: String,
+    pub spendable_notes: String,
+    pub swaps: String,
 }
 
 pub struct IndexedDBStorage {
@@ -41,7 +43,16 @@ impl IndexedDBStorage {
     pub async fn new(constants: IndexedDbConstants) -> WasmResult<Self> {
         let mut db_req: OpenDbRequest = IdbDatabase::open_u32(&constants.name, constants.version)?;
 
-        // Conditionally create object stores in the `IdbDatabase` database for testing purposes
+        // Conditionally mock sample `IdbDatabase` database for testing purposes
+        #[cfg(feature = "mock-database")]
+        let db_req = IndexedDBStorage::mock_test_database(db_req).into_future().await;
+
+        let db: IdbDatabase = db_req.into_future().await?;
+
+        Ok(IndexedDBStorage { db, constants })
+    }
+
+    pub async fn mock_test_database(mut db_req: OpenDbRequest) -> OpenDbRequest {
         db_req.set_on_upgrade_needed(Some(|evt: &IdbVersionChangeEvent| -> Result<(), JsValue> {
             // Check if the object store exists; create it if it doesn't
             if evt.db().name() == "penumbra-db-wasm-test" {
@@ -76,9 +87,7 @@ impl IndexedDBStorage {
             Ok(())
         }));
 
-        let db: IdbDatabase = db_req.into_future().await?;
-
-        Ok(IndexedDBStorage { db, constants })
+        db_req
     }
 
     pub fn get_database(&self) -> *const IdbDatabase {
