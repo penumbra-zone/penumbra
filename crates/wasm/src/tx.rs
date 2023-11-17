@@ -189,7 +189,6 @@ pub fn build(
 /// depending on CPU performance and number of actions in transaction_plan
 /// Arguments:
 ///     actions: `Vec<Actions>`
-///     full_viewing_key: `bech32m String`
 ///     transaction_plan: `pb::TransactionPlan`
 ///     witness_data: `pb::WitnessData`
 ///     auth_data: `pb::AuthorizationData`
@@ -197,7 +196,6 @@ pub fn build(
 #[wasm_bindgen]
 pub fn build_parallel(
     actions: JsValue,
-    full_viewing_key: &str,
     transaction_plan: JsValue,
     witness_data: JsValue,
     auth_data: JsValue,
@@ -212,15 +210,12 @@ pub fn build_parallel(
     let auth_data_proto: pb::AuthorizationData = serde_wasm_bindgen::from_value(auth_data)?;
     let auth_data_: AuthorizationData = auth_data_proto.try_into()?;
 
-    let fvk: FullViewingKey = FullViewingKey::from_str(full_viewing_key)
-        .expect("The provided string is not a valid FullViewingKey");
-
     let plan: TransactionPlan = plan_proto.try_into()?;
     let actions_: Vec<Action> = serde_wasm_bindgen::from_value(actions)?;
 
     let transaction = plan
         .clone()
-        .build_unauth_with_actions(actions_, fvk, witness_data_)?;
+        .build_unauth_with_actions(actions_, witness_data_)?;
 
     let tx = plan.apply_auth_data(&mut OsRng, &auth_data_, transaction)?;
 

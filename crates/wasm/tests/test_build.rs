@@ -181,7 +181,7 @@ mod tests {
 
         // Add memo to plan.
         let memo: MemoPlaintext = MemoPlaintext {
-            sender: Some(address),
+            return_address: Some(address),
             text: "sample memo".to_string(),
         };
         let memo_plan_deserialized = serde_wasm_bindgen::to_value(&memo).unwrap();
@@ -323,10 +323,14 @@ mod tests {
             inner: "ts1I61pd5+xWqlwcuPwsPOGbjevxAoQVymTXyHe60jLlY57WHcAuGsSwYuSxnOX+nTgEBm3MHn7mBlNTxqEkbnJwlNu6YUSDmA8D+aOqCT4=".to_string(),
         };
         let refund_address_json: JsValue = serde_wasm_bindgen::to_value(&refund_address).unwrap();
+        let source: JsValue = serde_wasm_bindgen::to_value(&None::<AddressIndex>).unwrap();
 
         // -------------- 1. Query transaction plan performing a spend --------------
 
-        let transaction_plan: JsValue = wasm_planner.plan(refund_address_json).await.unwrap();
+        let transaction_plan: JsValue = wasm_planner
+            .plan(refund_address_json, source)
+            .await
+            .unwrap();
 
         // -------------- 2. Generate authorization data from spend key and transaction plan --------------
 
@@ -447,7 +451,6 @@ mod tests {
         // Execute parallel spend transaction and generate proof.
         let parallel_transaction = build_parallel(
             action_deserialized,
-            full_viewing_key,
             transaction_plan.clone(),
             witness_data.as_ref().unwrap().clone(),
             authorization_data.clone(),

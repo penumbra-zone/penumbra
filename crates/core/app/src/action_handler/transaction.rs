@@ -239,7 +239,6 @@ mod tests {
                 })
                 .collect(),
         };
-        let mut rng = OsRng;
         let mut tx = plan
             .build_concurrent(fvk, &witness_data, &auth_data)
             .await

@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa as rdsa;
@@ -6,7 +6,6 @@ use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 use rand_core::OsRng;
 use rand_core::{CryptoRng, RngCore};
 use std::fmt::Debug;
-use wasm_bindgen_test::console_log;
 
 use super::TransactionPlan;
 use crate::plan::ActionPlan;
@@ -24,7 +23,6 @@ impl TransactionPlan {
     pub fn build_unauth_with_actions(
         self,
         actions: Vec<Action>,
-        fvk: FullViewingKey,
         witness_data: WitnessData,
     ) -> Result<Transaction> {
         // Add the memo.
@@ -180,11 +178,9 @@ impl TransactionPlan {
         // TODO: Handle other actions (swaps, swap claims, etc.).
 
         // 2. Pass in the prebuilt actions to the build method.
-        let transaction = self.clone().build_unauth_with_actions(
-            actions,
-            full_viewing_key.to_owned(),
-            witness_data,
-        )?;
+        let transaction = self
+            .clone()
+            .build_unauth_with_actions(actions, witness_data)?;
 
         // 3. Slot in the authorization data with TransactionPlan::authorize_with_aut,
         // and return the completed transaction.
@@ -253,11 +249,9 @@ impl TransactionPlan {
         // TODO: Collect other actions (swaps, swap claims, etc.).
 
         // 2. Pass prebuilt actions to the build method.
-        let transaction = self.clone().build_unauth_with_actions(
-            actions,
-            full_viewing_key.to_owned(),
-            witness_data.to_owned(),
-        )?;
+        let transaction = self
+            .clone()
+            .build_unauth_with_actions(actions, witness_data.to_owned())?;
 
         // 3. Slot in the authorization data with TransactionPlan::authorize_with_aut,
         // and return the completed transaction.
