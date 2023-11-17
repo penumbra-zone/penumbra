@@ -3,13 +3,13 @@ use crate::planner::Planner;
 use crate::storage::IndexedDBStorage;
 use crate::swap_record::SwapRecord;
 use crate::utils;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context};
 use ark_ff::UniformRand;
 use decaf377::Fq;
-use indexed_db_futures::{IdbDatabase, IdbQuerySource};
+use indexed_db_futures::IdbQuerySource;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
-use penumbra_governance::{delegator_vote, proposal};
+use penumbra_dex::swap_claim::SwapClaimPlan;
+
 use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 use penumbra_proto::{
     core::{
@@ -24,15 +24,11 @@ use penumbra_proto::{
     crypto::tct::v1alpha1::StateCommitment,
     DomainType,
 };
-use penumbra_transaction::{
-    action::Action, memo::MemoCiphertext, plan::ActionPlan, plan::TransactionPlan,
-    AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
-};
+use penumbra_transaction::{action::Action, plan::ActionPlan, plan::TransactionPlan, WitnessData};
 use rand_core::OsRng;
 use std::str::FromStr;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
-use wasm_bindgen_test::console_log;
 
 #[wasm_bindgen]
 pub struct WasmPlanner {

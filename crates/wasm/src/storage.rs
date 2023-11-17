@@ -16,7 +16,6 @@ use web_sys::IdbTransactionMode::Readwrite;
 use crate::error::{WasmError, WasmResult};
 use crate::note_record::SpendableNoteRecord;
 use wasm_bindgen::JsValue;
-use wasm_bindgen_test::console_log;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IndexedDbConstants {

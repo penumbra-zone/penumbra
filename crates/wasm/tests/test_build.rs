@@ -2,47 +2,36 @@ extern crate penumbra_wasm;
 
 #[cfg(test)]
 mod tests {
-    use anyhow::{anyhow, Context, Result};
+    use anyhow::Result;
     use serde::{Deserialize, Serialize};
     use serde_json;
     use wasm_bindgen::JsValue;
     use wasm_bindgen_test::*;
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
     use indexed_db_futures::prelude::{
-        IdbDatabase, IdbKeyPath, IdbObjectStore, IdbQuerySource, IdbTransaction, IdbTransactionMode,
+        IdbDatabase, IdbObjectStore, IdbQuerySource, IdbTransaction, IdbTransactionMode,
     };
-    use penumbra_asset::{asset::Id, balance::commitment};
+
     use penumbra_proto::{
         core::{
-            asset::v1alpha1::{AssetId, Value},
-            component::{
-                chain::v1alpha1::{ChainParameters, FmdParameters, NoteSource},
-                sct::v1alpha1::Nullifier,
-                shielded_pool::v1alpha1::Note,
-            },
+            asset::v1alpha1::Value,
+            component::chain::v1alpha1::{ChainParameters, FmdParameters},
             keys::v1alpha1::{Address, AddressIndex},
-            num::v1alpha1::Amount,
-            transaction::v1alpha1::{MemoData, MemoPlaintext, TransactionPlan as tp},
+            transaction::v1alpha1::{MemoPlaintext, TransactionPlan as tp},
         },
-        crypto::tct::v1alpha1::StateCommitment,
-        serializers::bech32str::full_viewing_key,
-        view::v1alpha1::{SpendableNoteRecord, TransactionPlannerRequest},
-        DomainType,
+        view::v1alpha1::SpendableNoteRecord,
     };
-    use penumbra_tct::{storage::StoreCommitment, structure::Hash, Forgotten};
+    use penumbra_tct::{structure::Hash, Forgotten};
     use penumbra_transaction::{
         plan::{ActionPlan, TransactionPlan},
-        {Action, AuthorizationData},
+        Action,
     };
     use penumbra_wasm::{
-        error::{WasmError, WasmResult},
+        error::WasmError,
         storage::IndexedDBStorage,
         tx::{authorize, build, build_parallel, witness},
-        utils,
-        view_server::StoredTree,
         wasm_planner::WasmPlanner,
     };
-    use rand_core::OsRng;
 
     #[wasm_bindgen_test]
     async fn mock_build_serial_and_parallel() {
@@ -412,13 +401,13 @@ mod tests {
         let mut actions: Vec<Action> = Vec::new();
 
         for i in transaction_plan_conv.actions.clone() {
-            if let ActionPlan::Spend(ref spend_plan) = i {
+            if let ActionPlan::Spend(ref _spend_plan) = i {
                 let action_deserialize = serde_wasm_bindgen::to_value(&i).unwrap();
                 let action = wasm_planner
                     .build_action(
                         transaction_plan.clone(),
                         action_deserialize,
-                        full_viewing_key.clone(),
+                        full_viewing_key,
                         witness_data.as_ref().unwrap().clone(),
                     )
                     .unwrap();
@@ -429,13 +418,13 @@ mod tests {
         }
 
         for i in transaction_plan_conv.actions {
-            if let ActionPlan::Output(ref output_plan) = i {
+            if let ActionPlan::Output(ref _output_plan) = i {
                 let action_deserialize = serde_wasm_bindgen::to_value(&i).unwrap();
                 let action = wasm_planner
                     .build_action(
                         transaction_plan.clone(),
                         action_deserialize,
-                        full_viewing_key.clone(),
+                        full_viewing_key,
                         witness_data.as_ref().unwrap().clone(),
                     )
                     .unwrap();
@@ -459,7 +448,7 @@ mod tests {
         console_log!("Parallel transaction is: {:?}", parallel_transaction);
 
         let serial_transaction = build(
-            full_viewing_key.clone(),
+            full_viewing_key,
             transaction_plan.clone(),
             witness_data.as_ref().unwrap().clone(),
             authorization_data.clone(),
