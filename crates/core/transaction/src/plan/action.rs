@@ -82,8 +82,14 @@ pub enum ActionPlan {
 }
 
 impl ActionPlan {
-    /// Builds a planned [`Action`] specified by
-    /// the [`ActionPlan`].
+    /// Builds a planned [`Action`] specified by this [`ActionPlan`].
+    ///
+    /// The resulting action is `unauth` in the sense that this method does not
+    /// have access to authorization data, so any required authorization data
+    /// will be filled in with dummy zero values, to be replaced later.
+    ///
+    /// This method is useful for controlling how a transaction's actions are
+    /// built (e.g., building them in parallel, or via Web Workers).
     pub fn build_unauth(
         &self,
         fvk: &FullViewingKey,
