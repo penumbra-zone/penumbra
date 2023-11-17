@@ -190,6 +190,16 @@ fn format_address(ivk: &IncomingViewingKey, address: &Address) -> String {
     }
 }
 
+fn format_full_address(ivk: &IncomingViewingKey, address: &Address) -> String {
+    if ivk.views_address(address) {
+        let account = ivk.index_for_diversifier(address.diversifier()).account;
+
+        format!("[account {account:?}]")
+    } else {
+        format!("{}", address)
+    }
+}
+
 fn format_position_row(asset_cache: &Cache, position: Position) -> String {
     let trading_pair = position.phi.pair;
     let denom_1 = asset_cache
@@ -431,8 +441,11 @@ impl TxCmd {
                         ciphertext: _,
                     } => {
                         metadata_table.add_row(vec![
-                            "Transaction Memo Sender",
-                            &plaintext.return_address.to_string(),
+                            "Transaction Memo Return Address",
+                            &format_full_address(
+                                fvk.incoming(),
+                                &plaintext.return_address.address(),
+                            ),
                         ]);
                         metadata_table.add_row(vec!["Transaction Memo Text", &plaintext.text]);
                     }

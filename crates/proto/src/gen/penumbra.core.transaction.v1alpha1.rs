@@ -524,6 +524,16 @@ pub struct MemoPlaintext {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MemoPlaintextView {
+    #[prost(message, optional, tag = "1")]
+    pub return_address: ::core::option::Option<
+        super::super::keys::v1alpha1::AddressView,
+    >,
+    #[prost(string, tag = "2")]
+    pub text: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MemoView {
     #[prost(oneof = "memo_view::MemoView", tags = "1, 2")]
     pub memo_view: ::core::option::Option<memo_view::MemoView>,
@@ -536,7 +546,7 @@ pub mod memo_view {
         #[prost(message, optional, tag = "1")]
         pub ciphertext: ::core::option::Option<super::MemoCiphertext>,
         #[prost(message, optional, tag = "2")]
-        pub plaintext: ::core::option::Option<super::MemoPlaintext>,
+        pub plaintext: ::core::option::Option<super::MemoPlaintextView>,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]

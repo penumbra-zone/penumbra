@@ -1,3 +1,4 @@
+#[cfg(feature = "bundled-proving-keys")]
 use anyhow::Context;
 #[cfg(feature = "bundled-proving-keys")]
 use std::io::Read;

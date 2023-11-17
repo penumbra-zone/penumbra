@@ -32,7 +32,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     memo::{MemoCiphertext, MemoPlaintext},
     view::{action_view::OutputView, MemoView, TransactionBodyView},
-    Action, ActionView, Id, IsAction, TransactionPerspective, TransactionView,
+    Action, ActionView, Id, IsAction, MemoPlaintextView, TransactionPerspective, TransactionView,
 };
 
 #[derive(Clone, Debug, Default)]
@@ -252,10 +252,16 @@ impl Transaction {
 
         let memo_view = match memo_ciphertext {
             Some(ciphertext) => match memo_plaintext {
-                Some(plaintext) => Some(MemoView::Visible {
-                    plaintext,
-                    ciphertext,
-                }),
+                Some(plaintext) => {
+                    let plaintext_view: MemoPlaintextView = MemoPlaintextView {
+                        return_address: txp.view_address(plaintext.return_address),
+                        text: plaintext.text,
+                    };
+                    Some(MemoView::Visible {
+                        plaintext: plaintext_view,
+                        ciphertext,
+                    })
+                }
                 None => Some(MemoView::Opaque { ciphertext }),
             },
             None => None,

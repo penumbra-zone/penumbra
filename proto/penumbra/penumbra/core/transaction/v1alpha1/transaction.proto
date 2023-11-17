@@ -311,10 +311,15 @@ message MemoPlaintext {
   string text = 2;
 }
 
+message MemoPlaintextView {
+  keys.v1alpha1.AddressView return_address = 1;
+  string text = 2;
+}
+
 message MemoView {
   message Visible {
     MemoCiphertext ciphertext = 1;
-    MemoPlaintext plaintext = 2;
+    MemoPlaintextView plaintext = 2;
   }
 
   message Opaque {

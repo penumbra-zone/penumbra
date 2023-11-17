@@ -331,11 +331,14 @@ pub struct StatusRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusResponse {
-    /// The height the view service has synchronized to so far
+    /// The height the view service has synchronized to so far when doing a full linear sync
     #[prost(uint64, tag = "1")]
-    pub sync_height: u64,
+    pub full_sync_height: u64,
+    /// The height the view service has synchronized to so far when doing a partial sync
+    #[prost(uint64, tag = "2")]
+    pub partial_sync_height: u64,
     /// Whether the view service is catching up with the chain state
-    #[prost(bool, tag = "2")]
+    #[prost(bool, tag = "3")]
     pub catching_up: bool,
 }
 /// Requests streaming updates on the sync height until the view service is synchronized.
@@ -350,10 +353,15 @@ pub struct StatusStreamRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatusStreamResponse {
+    /// The latest known block height
     #[prost(uint64, tag = "1")]
     pub latest_known_block_height: u64,
+    /// The height the view service has synchronized to so far when doing a full linear sync
     #[prost(uint64, tag = "2")]
-    pub sync_height: u64,
+    pub full_sync_height: u64,
+    /// The height the view service has synchronized to so far when doing a partial sync
+    #[prost(uint64, tag = "3")]
+    pub partial_sync_height: u64,
 }
 /// A query for notes known by the view service.
 ///

@@ -32,7 +32,7 @@ impl TransactionHashesCmd {
         for tx_info in txs {
             let (return_address, memo) = match tx_info.view.body_view.memo_view {
                 Some(MemoView::Visible { plaintext, .. }) => (
-                    plaintext.return_address.display_short_form(),
+                    plaintext.return_address.address().display_short_form(),
                     plaintext.text,
                 ),
                 _ => (String::new(), String::new()),
