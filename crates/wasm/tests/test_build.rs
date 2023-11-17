@@ -140,7 +140,7 @@ mod tests {
         // Define neccessary parameters to mock `TransactionPlannerRequest` in JSON format.
         let address_json = r#"
         {
-            "alt_bech32m": "penumbrav2t1ztjrnr9974u4308zxy3sc378sh0k2r8mh0xqt9525c78l9vlyxf2w7c087tlzp4pnk9a7ztvlrnp9lf7hqx3wsm9su4e7vchtav0ap3lpnedry5hfn22hnu9vvaxjpv0t8phvp",
+            "alt_bech32m": "penumbra1dugkjttfezh4gfkqs77377gnjlvmkkehusx6953udxeescc0qpgk6gqc0jmrsjq8xphzrg938843p0e63z09vt8lzzmef0q330e5njuwh4290n8pemcmx70sasym0lcjkstgzc",
             "inner": ""
         }
         "#;
@@ -178,7 +178,7 @@ mod tests {
         let memo_plan_deserialized = serde_wasm_bindgen::to_value(&memo).unwrap();
         wasm_planner.memo(memo_plan_deserialized).unwrap();
 
-        // Retrieve private database handle use public getters.
+        // Retrieve private database handle with public getters.
         let storage = wasm_planner.get_storage();
         let storage_ref: &IndexedDBStorage = unsafe { &*storage };
         let database: *const IdbDatabase = storage_ref.get_database();
@@ -425,9 +425,6 @@ mod tests {
                     serde_wasm_bindgen::from_value(action.clone()).unwrap();
                 actions.push(action_serialize);
             }
-        }
-
-        for i in transaction_plan_conv.actions {
             if let ActionPlan::Output(ref _output_plan) = i {
                 let action_deserialize = serde_wasm_bindgen::to_value(&i).unwrap();
                 let action = wasm_planner
