@@ -5,8 +5,8 @@ use decaf377_rdsa as rdsa;
 use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 use rand_core::OsRng;
 use rand_core::{CryptoRng, RngCore};
-use wasm_bindgen_test::console_log;
 use std::fmt::Debug;
+use wasm_bindgen_test::console_log;
 
 use super::TransactionPlan;
 use crate::plan::ActionPlan;
@@ -90,7 +90,7 @@ impl TransactionPlan {
         // Derive the synthetic blinding factors from `TransactionPlan`.
         let mut synthetic_blinding_factor = Fr::zero();
 
-        // Accumulate the blinding factors. 
+        // Accumulate the blinding factors.
         for action_plan in &self.actions {
             synthetic_blinding_factor += action_plan.value_blinding();
         }

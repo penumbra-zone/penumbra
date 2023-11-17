@@ -2,8 +2,8 @@ use crate::Action;
 use crate::EffectingData;
 use crate::WitnessData;
 use anyhow::{anyhow, Context, Result};
-use decaf377::Fr;
 use ark_ff::Zero;
+use decaf377::Fr;
 use penumbra_asset::Balance;
 use penumbra_chain::EffectHash;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
@@ -119,9 +119,7 @@ impl ActionPlan {
                 Ok(output)
             }
             Swap(swap_plan) => {
-                let swap = Action::Swap(swap_plan.swap(
-                    fvk,
-                ));
+                let swap = Action::Swap(swap_plan.swap(fvk));
 
                 Ok(swap)
             }
@@ -132,14 +130,12 @@ impl ActionPlan {
                     .get(&note_commitment)
                     .context(format!("could not get proof for {note_commitment:?}"))?;
 
-                let swap_claim = Action::SwapClaim(swap_claim_plan.swap_claim(
-                    &fvk, auth_path, 
-                ));
+                let swap_claim = Action::SwapClaim(swap_claim_plan.swap_claim(&fvk, auth_path));
 
                 Ok(swap_claim)
             }
             _ => {
-                // Handle other action ariants in the future that require this functionalty. 
+                // Handle other action ariants in the future that require this functionalty.
                 unimplemented!()
             }
         }
