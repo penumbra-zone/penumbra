@@ -141,13 +141,9 @@ impl Component for Distributions {
 
 #[async_trait]
 trait DistributionManager: StateWriteExt {
-    /// Compute the total issuance for this epoch.
-    // TODO(erwan): this is a stub implementation.
+    /// Compute the total new issuance of staking tokens for this epoch.
+    /// TODO(erwan): this is a stub implementation.
     async fn compute_new_issuance(&self) -> Result<u64> {
-        // This currently computes the new issuance by multiplying the total staking token ever
-        // issued by the base reward rate. This is a stand-in for a more accurate and good model of
-        // issuance, which will be implemented later. For now, this inflates the total issuance of
-        // staking tokens by a fixed ratio per epoch.
         let base_reward_rate: u64 = 0;
         let total_issued = self
             .total_issued()
@@ -156,5 +152,14 @@ trait DistributionManager: StateWriteExt {
         const BPS_SQUARED: u64 = 1_0000_0000; // reward rate is measured in basis points squared
         let new_issuance = total_issued * base_reward_rate / BPS_SQUARED;
         Ok(new_issuance)
+    }
+
+    /// Update the object store with the new issuance of staking tokens for this epoch.
+    /// TODO(erwan): this is a stub implementation.
+    async fn distribute(&mut self) -> Result<()> {
+        let new_issuance = self.compute_new_issuance().await?;
+        tracing::debug!(?new_issuance, "computed new issuance for epoch");
+        self.set_total_issued(new_issuance);
+        todo!()
     }
 }
