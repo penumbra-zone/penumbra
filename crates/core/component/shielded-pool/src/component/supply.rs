@@ -12,8 +12,8 @@ use crate::state_key;
 
 #[async_trait]
 pub trait SupplyRead: StateRead {
-    async fn token_supply(&self, asset_id: &asset::Id) -> Result<Option<u64>> {
-        self.get_proto(&state_key::token_supply(asset_id)).await
+    async fn token_supply(&self, asset_id: &asset::Id) -> Result<Option<Amount>> {
+        self.get(&state_key::token_supply(asset_id)).await
     }
 
     // TODO: refactor for new state model -- no more list of known asset IDs with fixed key
@@ -60,7 +60,7 @@ pub trait SupplyWrite: StateWrite {
     // #[instrument(skip(self, change))]
     async fn update_token_supply(&mut self, asset_id: &asset::Id, change: i128) -> Result<()> {
         let key = state_key::token_supply(asset_id);
-        let current_supply: Amount = self.get_proto(&key).await?.unwrap_or(0u64).into();
+        let current_supply: Amount = self.get(&key).await?.unwrap_or(0u64.into());
 
         // TODO: replace with a single checked_add_signed call when mixed_integer_ops lands in stable (1.66)
         let new_supply: Amount = if change < 0 {
