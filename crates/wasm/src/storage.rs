@@ -1,5 +1,3 @@
-use crate::error::WasmResult;
-use crate::note_record::SpendableNoteRecord;
 use indexed_db_futures::{
     prelude::{IdbObjectStoreParameters, IdbOpenDbRequestLike, OpenDbRequest},
     IdbDatabase, IdbKeyPath, IdbQuerySource, IdbVersionChangeEvent,
@@ -13,7 +11,6 @@ use penumbra_proto::{
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note};
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::JsValue;
 use web_sys::IdbTransactionMode::Readwrite;
 
 use crate::error::{WasmError, WasmResult};

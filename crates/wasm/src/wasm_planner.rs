@@ -3,7 +3,7 @@ use crate::planner::Planner;
 use crate::storage::IndexedDBStorage;
 use crate::swap_record::SwapRecord;
 use crate::utils;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::Fq;
 use indexed_db_futures::{IdbDatabase, IdbQuerySource};
@@ -32,7 +32,6 @@ use rand_core::OsRng;
 use std::str::FromStr;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
-use wasm_bindgen_test::console_log;
 use wasm_bindgen_test::console_log;
 
 #[wasm_bindgen]

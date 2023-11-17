@@ -5955,6 +5955,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "wasm-bindgen-test",
 ]
 
 [[package]]
@@ -6081,6 +6082,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "serde-wasm-bindgen",
+ "serde_json",
  "thiserror",
  "wasm-bindgen",
  "wasm-bindgen-futures",
