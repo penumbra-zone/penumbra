@@ -45,7 +45,9 @@ impl IndexedDBStorage {
 
         // Conditionally mock sample `IdbDatabase` database for testing purposes
         #[cfg(feature = "mock-database")]
-        let db_req = IndexedDBStorage::mock_test_database(db_req).into_future().await;
+        let db_req = IndexedDBStorage::mock_test_database(db_req)
+            .into_future()
+            .await;
 
         let db: IdbDatabase = db_req.into_future().await?;
 

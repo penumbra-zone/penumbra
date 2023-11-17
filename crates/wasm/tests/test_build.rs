@@ -28,7 +28,7 @@ mod tests {
     };
     use penumbra_wasm::{
         error::WasmError,
-        storage::{IndexedDBStorage, Tables, IndexedDbConstants},
+        storage::{IndexedDBStorage, IndexedDbConstants, Tables},
         tx::{authorize, build, build_parallel, witness},
         wasm_planner::WasmPlanner,
     };

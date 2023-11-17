@@ -83,7 +83,8 @@ impl WasmPlanner {
     ) -> WasmResult<JsValue> {
         utils::set_panic_hook();
 
-        let transaction_plan: TransactionPlan = serde_wasm_bindgen::from_value(transaction_plan.clone())?;
+        let transaction_plan: TransactionPlan =
+            serde_wasm_bindgen::from_value(transaction_plan.clone())?;
 
         let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
         let witness_data: WitnessData = witness_data_proto.try_into()?;
@@ -99,32 +100,21 @@ impl WasmPlanner {
         let action = match action_plan {
             ActionPlan::Spend(spend_plan) => {
                 let spend = ActionPlan::Spend(spend_plan);
-                Some(
-                    spend
-                        .build_unauth(&full_viewing_key, &witness_data, memo_key)?,
-                )
+                Some(spend.build_unauth(&full_viewing_key, &witness_data, memo_key)?)
             }
             ActionPlan::Output(output_plan) => {
                 let output = ActionPlan::Output(output_plan);
-                Some(
-                    output
-                        .build_unauth(&full_viewing_key, &witness_data, memo_key)?,
-                )
+                Some(output.build_unauth(&full_viewing_key, &witness_data, memo_key)?)
             }
 
             // TODO: Other action variants besides 'Spend' and 'Output' still require testing.
             ActionPlan::Swap(swap_plan) => {
                 let swap = ActionPlan::Swap(swap_plan);
-                Some(
-                    swap.build_unauth(&full_viewing_key, &witness_data, memo_key)?,
-                )
+                Some(swap.build_unauth(&full_viewing_key, &witness_data, memo_key)?)
             }
             ActionPlan::SwapClaim(swap_claim_plan) => {
                 let swap_claim = ActionPlan::SwapClaim(swap_claim_plan);
-                Some(
-                    swap_claim
-                        .build_unauth(&full_viewing_key, &witness_data, memo_key)?,
-                )
+                Some(swap_claim.build_unauth(&full_viewing_key, &witness_data, memo_key)?)
             }
             ActionPlan::Delegate(delegation) => Some(Action::Delegate(delegation)),
             ActionPlan::Undelegate(undelegation) => Some(Action::Undelegate(undelegation)),
