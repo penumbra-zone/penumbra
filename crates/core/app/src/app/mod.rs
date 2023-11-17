@@ -127,9 +127,9 @@ impl App {
                     },
                 );
 
-                Distributions::init_chain(&mut state_tx, Some(&())).await;
                 ShieldedPool::init_chain(&mut state_tx, Some(&app_state.shielded_pool_content))
                     .await;
+                Distributions::init_chain(&mut state_tx, Some(&())).await;
                 Staking::init_chain(&mut state_tx, Some(&app_state.stake_content)).await;
                 IBCComponent::init_chain(&mut state_tx, Some(&())).await;
                 Dex::init_chain(&mut state_tx, Some(&())).await;
@@ -138,8 +138,8 @@ impl App {
             }
             genesis::AppState::Checkpoint(_) => {
                 /* perform upgrade specific check */
-                Distributions::init_chain(&mut state_tx, None).await;
                 ShieldedPool::init_chain(&mut state_tx, None).await;
+                Distributions::init_chain(&mut state_tx, None).await;
                 Staking::init_chain(&mut state_tx, None).await;
                 IBCComponent::init_chain(&mut state_tx, None).await;
                 Dex::init_chain(&mut state_tx, None).await;
@@ -196,10 +196,10 @@ impl App {
 
         // Run each of the begin block handlers for each component, in sequence:
         let mut arc_state_tx = Arc::new(state_tx);
+        ShieldedPool::begin_block(&mut arc_state_tx, begin_block).await;
         Distributions::begin_block(&mut arc_state_tx, begin_block).await;
         IBCComponent::begin_block(&mut arc_state_tx, begin_block).await;
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
-        ShieldedPool::begin_block(&mut arc_state_tx, begin_block).await;
         Staking::begin_block(&mut arc_state_tx, begin_block).await;
         Fee::begin_block(&mut arc_state_tx, begin_block).await;
 
@@ -301,11 +301,11 @@ impl App {
         let state_tx = StateDelta::new(self.state.clone());
 
         let mut arc_state_tx = Arc::new(state_tx);
+        ShieldedPool::end_block(&mut arc_state_tx, end_block).await;
         Distributions::end_block(&mut arc_state_tx, end_block).await;
         IBCComponent::end_block(&mut arc_state_tx, end_block).await;
         Dex::end_block(&mut arc_state_tx, end_block).await;
         Governance::end_block(&mut arc_state_tx, end_block).await;
-        ShieldedPool::end_block(&mut arc_state_tx, end_block).await;
         Staking::end_block(&mut arc_state_tx, end_block).await;
         Fee::end_block(&mut arc_state_tx, end_block).await;
         let mut state_tx = Arc::try_unwrap(arc_state_tx)
