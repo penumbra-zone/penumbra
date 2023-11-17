@@ -118,9 +118,29 @@ impl ActionPlan {
 
                 Ok(output)
             }
+            Swap(swap_plan) => {
+                let swap = Action::Swap(swap_plan.swap(
+                    fvk,
+                ));
+
+                Ok(swap)
+            }
+            SwapClaim(swap_claim_plan) => {
+                let note_commitment = swap_claim_plan.swap_plaintext.swap_commitment();
+                let auth_path = witness_data
+                    .state_commitment_proofs
+                    .get(&note_commitment)
+                    .context(format!("could not get proof for {note_commitment:?}"))?;
+
+                let swap_claim = Action::SwapClaim(swap_claim_plan.swap_claim(
+                    &fvk, auth_path, 
+                ));
+
+                Ok(swap_claim)
+            }
             _ => {
-                // Handle other variants
-                todo!()
+                // Handle other action ariants in the future that require this functionalty. 
+                unimplemented!()
             }
         }
     }
