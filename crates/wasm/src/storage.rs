@@ -41,6 +41,7 @@ pub struct IndexedDBStorage {
 
 impl IndexedDBStorage {
     pub async fn new(constants: IndexedDbConstants) -> WasmResult<Self> {
+        #[allow(unused_mut)]
         let mut db_req: OpenDbRequest = IdbDatabase::open_u32(&constants.name, constants.version)?;
 
         // Conditionally mock sample `IdbDatabase` database for testing purposes

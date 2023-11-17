@@ -3,13 +3,13 @@ use crate::planner::Planner;
 use crate::storage::IndexedDBStorage;
 use crate::swap_record::SwapRecord;
 use crate::utils;
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use ark_ff::UniformRand;
 use decaf377::Fq;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_dex::swap_claim::SwapClaimPlan;
 
-use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
+use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     core::{
         asset::v1alpha1::{DenomMetadata, Value},
@@ -18,7 +18,6 @@ use penumbra_proto::{
         keys::v1alpha1::{Address, AddressIndex},
         transaction::v1alpha1 as pb,
         transaction::v1alpha1::MemoPlaintext,
-        transaction::v1alpha1::TransactionPlan as tp,
     },
     crypto::tct::v1alpha1::StateCommitment,
     DomainType,
