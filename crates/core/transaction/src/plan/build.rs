@@ -71,7 +71,7 @@ impl TransactionPlan {
     /// Slot in the [`AuthorizationData`] and derive the synthetic
     /// blinding factors needed to compute the binding signature
     /// and assemble the transaction.
-    pub fn authorize_with_auth<R: CryptoRng + RngCore + Debug>(
+    pub fn apply_auth_data<R: CryptoRng + RngCore + Debug>(
         &self,
         rng: &mut R,
         auth_data: &AuthorizationData,
@@ -188,7 +188,7 @@ impl TransactionPlan {
 
         // 3. Slot in the authorization data with TransactionPlan::authorize_with_aut,
         // and return the completed transaction.
-        let tx = self.authorize_with_auth(&mut OsRng, auth_data, transaction)?;
+        let tx = self.apply_auth_data(&mut OsRng, auth_data, transaction)?;
 
         Ok(tx)
     }
@@ -261,7 +261,7 @@ impl TransactionPlan {
 
         // 3. Slot in the authorization data with TransactionPlan::authorize_with_aut,
         // and return the completed transaction.
-        let tx = self.authorize_with_auth(&mut OsRng, auth_data, transaction)?;
+        let tx = self.apply_auth_data(&mut OsRng, auth_data, transaction)?;
 
         Ok(tx)
     }
