@@ -6,7 +6,6 @@ use crate::utils;
 use anyhow::{anyhow, Context};
 use ark_ff::UniformRand;
 use decaf377::Fq;
-use indexed_db_futures::IdbQuerySource;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_dex::swap_claim::SwapClaimPlan;
 

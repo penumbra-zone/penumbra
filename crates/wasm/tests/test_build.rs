@@ -163,10 +163,12 @@ mod tests {
         let value: Value = serde_json::from_str(value_json).unwrap();
 
         // Add output action to plan.
-        wasm_planner.output(
-            serde_wasm_bindgen::to_value(&value).unwrap(),
-            serde_wasm_bindgen::to_value(&address).unwrap(),
-        );
+        wasm_planner
+            .output(
+                serde_wasm_bindgen::to_value(&value).unwrap(),
+                serde_wasm_bindgen::to_value(&address).unwrap(),
+            )
+            .unwrap();
 
         // Add memo to plan.
         let memo: MemoPlaintext = MemoPlaintext {
@@ -188,9 +190,10 @@ mod tests {
             epoch: u64,
             block: u64,
             commitment: u64,
-        };
+        }
 
         #[derive(Clone, Debug, Serialize, Deserialize)]
+        #[allow(non_snake_case)]
         pub struct StoredPosition {
             Position: Position,
         }
@@ -227,7 +230,7 @@ mod tests {
             store_commitments: StoreCommitment,
             set_position: StoredPosition,
             set_forgotten: u64,
-        };
+        }
 
         #[derive(Clone, Debug, Serialize, Deserialize)]
         pub struct StoredTree {
@@ -238,6 +241,7 @@ mod tests {
         }
 
         // Define a sample SCT update.
+        #[allow(non_snake_case)]
         let sctUpdates = SctUpdates {
             store_commitments: StoreCommitment {
                 commitment: Commitment {
@@ -295,13 +299,19 @@ mod tests {
         let tree_last_forgotten_json_key: JsValue =
             serde_wasm_bindgen::to_value(&"last_forgotten").unwrap();
 
-        store_note.put_val(&spendable_note_json);
-        store_tree_commitments.put_val(&tree_commitments_json);
-        store_tree_last_position.put_key_val(&tree_position_json_key, &tree_position_json_value);
-        store_tree_last_forgotten.put_key_val(
-            &tree_last_forgotten_json_key,
-            &tree_last_forgotten_json_value,
-        );
+        store_note.put_val(&spendable_note_json).unwrap();
+        store_tree_commitments
+            .put_val(&tree_commitments_json)
+            .unwrap();
+        store_tree_last_position
+            .put_key_val(&tree_position_json_key, &tree_position_json_value)
+            .unwrap();
+        store_tree_last_forgotten
+            .put_key_val(
+                &tree_last_forgotten_json_key,
+                &tree_last_forgotten_json_value,
+            )
+            .unwrap();
 
         // Set refund address.
         #[derive(Clone, Debug, Serialize, Deserialize)]
