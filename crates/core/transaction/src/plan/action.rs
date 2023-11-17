@@ -98,7 +98,7 @@ impl ActionPlan {
     ) -> Result<Action> {
         use ActionPlan::*;
 
-        match self {
+        Ok(match self {
             Spend(spend_plan) => {
                 let note_commitment = spend_plan.note.commit();
                 let auth_path = witness_data
@@ -106,29 +106,23 @@ impl ActionPlan {
                     .get(&note_commitment)
                     .context(format!("could not get proof for {note_commitment:?}"))?;
 
-                let spend = Action::Spend(spend_plan.spend(
+                Action::Spend(spend_plan.spend(
                     fvk,
                     [0; 64].into(),
                     auth_path.clone(),
+                    // FIXME: why does this need the anchor? isn't that implied by the auth_path?
+                    // cf. delegator_vote
                     witness_data.anchor,
-                ));
-
-                Ok(spend)
+                ))
             }
             Output(output_plan) => {
                 let dummy_payload_key: PayloadKey = [0u8; 32].into();
-                let output = Action::Output(output_plan.output(
+                Action::Output(output_plan.output(
                     fvk.outgoing(),
                     memo_key.as_ref().unwrap_or(&dummy_payload_key),
-                ));
-
-                Ok(output)
+                ))
             }
-            Swap(swap_plan) => {
-                let swap = Action::Swap(swap_plan.swap(fvk));
-
-                Ok(swap)
-            }
+            Swap(swap_plan) => Action::Swap(swap_plan.swap(fvk)),
             SwapClaim(swap_claim_plan) => {
                 let note_commitment = swap_claim_plan.swap_plaintext.swap_commitment();
                 let auth_path = witness_data
@@ -136,15 +130,38 @@ impl ActionPlan {
                     .get(&note_commitment)
                     .context(format!("could not get proof for {note_commitment:?}"))?;
 
-                let swap_claim = Action::SwapClaim(swap_claim_plan.swap_claim(&fvk, auth_path));
-
-                Ok(swap_claim)
+                Action::SwapClaim(swap_claim_plan.swap_claim(&fvk, auth_path))
             }
-            _ => {
-                // Handle other action ariants in the future that require this functionalty.
-                unimplemented!()
+            Delegate(plan) => Action::Delegate(plan.clone()),
+            Undelegate(plan) => Action::Undelegate(plan.clone()),
+            UndelegateClaim(plan) => Action::UndelegateClaim(plan.undelegate_claim()),
+            ValidatorDefinition(plan) => Action::ValidatorDefinition(plan.clone()),
+            // Fixme: action name
+            IbcAction(plan) => Action::IbcRelay(plan.clone()),
+            ProposalSubmit(plan) => Action::ProposalSubmit(plan.clone()),
+            ProposalWithdraw(plan) => Action::ProposalWithdraw(plan.clone()),
+            DelegatorVote(plan) => {
+                let note_commitment = plan.staked_note.commit();
+                let auth_path = witness_data
+                    .state_commitment_proofs
+                    .get(&note_commitment)
+                    .context(format!("could not get proof for {note_commitment:?}"))?;
+                Action::DelegatorVote(plan.delegator_vote(fvk, [0; 64].into(), auth_path.clone()))
             }
-        }
+            ValidatorVote(plan) => Action::ValidatorVote(plan.clone()),
+            ProposalDepositClaim(plan) => Action::ProposalDepositClaim(plan.clone()),
+            PositionOpen(plan) => Action::PositionOpen(plan.clone()),
+            PositionClose(plan) => Action::PositionClose(plan.clone()),
+            PositionWithdraw(plan) => Action::PositionWithdraw(plan.position_withdraw()),
+            PositionRewardClaim(_plan) => unimplemented!(
+                "this api is wrong and needs to be fixed, but we don't do reward claims anyways"
+            ),
+            DaoSpend(plan) => Action::DaoSpend(plan.clone()),
+            DaoOutput(plan) => Action::DaoOutput(plan.clone()),
+            DaoDeposit(plan) => Action::DaoDeposit(plan.clone()),
+            // Fixme: action name
+            Withdrawal(plan) => Action::Ics20Withdrawal(plan.clone()),
+        })
     }
 
     pub fn balance(&self) -> Balance {
