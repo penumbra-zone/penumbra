@@ -134,6 +134,9 @@ mod tests {
         "#;
 
         // Convert note to `SpendableNoteRecord`.
+        // let spendable_note: SpendableNoteRecord =
+        //     serde_json::from_str(spendable_note_json).unwrap();
+
         let spendable_note: SpendableNoteRecord =
             serde_json::from_str(spendable_note_json).unwrap();
 

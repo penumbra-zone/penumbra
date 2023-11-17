@@ -152,7 +152,7 @@ impl TransactionPlan {
             .clone()
             .build_unauth_with_actions(actions, witness_data)?;
 
-        // 3. Slot in the authorization data with .apply_auth_data,
+        // 3. Slot in the authorization data with .apply_auth_data.
         let tx = self.apply_auth_data(&mut OsRng, auth_data, tx)?;
 
         // 4. Return the completed transaction.
@@ -197,7 +197,7 @@ impl TransactionPlan {
             .clone()
             .build_unauth_with_actions(actions, &*witness_data)?;
 
-        // 3. Slot in the authorization data with .apply_auth_data,
+        // 3. Slot in the authorization data with .apply_auth_data.
         let tx = self.apply_auth_data(&mut OsRng, auth_data, tx)?;
 
         // 4. Return the completed transaction.
