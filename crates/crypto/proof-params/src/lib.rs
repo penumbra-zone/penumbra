@@ -78,39 +78,6 @@ impl Deref for LazyProvingKey {
     }
 }
 
-// Note: Conditionally load the proving key objects if the
-// bundled-proving-keys feature is enabled.
-
-#[derive(Debug, Default)]
-pub struct LazyProvingKey {
-    inner: OnceCell<ProvingKey<Bls12_377>>,
-}
-
-impl LazyProvingKey {
-    pub fn new() -> Self {
-        LazyProvingKey {
-            inner: OnceCell::new(),
-        }
-    }
-
-    pub fn load(&self, bytes: &[u8]) -> ProvingKey<Bls12_377> {
-        self.inner
-            .get_or_init(|| {
-                ProvingKey::deserialize_uncompressed_unchecked(bytes)
-                    .expect("Failed to deserialize ProvingKey!")
-            })
-            .to_owned()
-    }
-}
-
-impl Deref for LazyProvingKey {
-    type Target = ProvingKey<Bls12_377>;
-
-    fn deref(&self) -> &Self::Target {
-        self.inner.get().expect("Proving key cannot be loaded!")
-    }
-}
-
 /// Note: Conditionally load the proving key objects if the
 /// bundled-proving-keys is present.
 
