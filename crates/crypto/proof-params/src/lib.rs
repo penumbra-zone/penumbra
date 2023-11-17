@@ -78,8 +78,8 @@ impl Deref for LazyProvingKey {
     }
 }
 
-/// Note: Conditionally load the proving key objects if the
-/// bundled-proving-keys is present.
+// Note: Conditionally load the proving key objects if the
+// bundled-proving-keys is present.
 
 /// Proving key for the spend proof.
 pub static SPEND_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
