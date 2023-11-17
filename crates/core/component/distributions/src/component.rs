@@ -9,14 +9,12 @@ use async_trait::async_trait;
 use penumbra_component::Component;
 // use penumbra_dex::{component::StateReadExt as _, component::StateWriteExt as _};
 // use penumbra_stake::{component::StateWriteExt as _, StateReadExt as _};
-use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{StateRead, StateWrite};
+use penumbra_asset::STAKING_TOKEN_ASSET_ID;
+use penumbra_shielded_pool::component::SupplyRead;
+use penumbra_storage::StateWrite;
 use tendermint::v0_37::abci;
 use tracing::instrument;
-// pub use view::{StateReadExt, StateWriteExt};
-use penumbra_asset::STAKING_TOKEN_ASSET_ID;
-use penumbra_num::Amount;
-use penumbra_shielded_pool::component::SupplyRead;
+pub use view::{StateReadExt, StateWriteExt};
 
 pub struct Distributions {}
 
@@ -142,21 +140,21 @@ impl Component for Distributions {
 }
 
 #[async_trait]
-pub trait StateReadExt: StateRead {
-    async fn total_issued(&self) -> Result<Option<u64>> {
-        self.get_proto(&state_key::total_issued()).await
+trait DistributionManager: StateWriteExt {
+    /// Compute the total issuance for this epoch.
+    // TODO(erwan): this is a stub implementation.
+    async fn compute_new_issuance(&self) -> Result<u64> {
+        // This currently computes the new issuance by multiplying the total staking token ever
+        // issued by the base reward rate. This is a stand-in for a more accurate and good model of
+        // issuance, which will be implemented later. For now, this inflates the total issuance of
+        // staking tokens by a fixed ratio per epoch.
+        let base_reward_rate: u64 = 0;
+        let total_issued = self
+            .total_issued()
+            .await?
+            .expect("total issuance has been initialized");
+        const BPS_SQUARED: u64 = 1_0000_0000; // reward rate is measured in basis points squared
+        let new_issuance = total_issued * base_reward_rate / BPS_SQUARED;
+        Ok(new_issuance)
     }
 }
-
-impl<T: StateRead> StateReadExt for T {}
-
-#[async_trait]
-
-pub trait StateWriteExt: StateWrite + StateReadExt {
-    /// Set the total amount of staking tokens issued.
-    fn set_total_issued(&mut self, total_issued: u64) {
-        let total = Amount::from(total_issued);
-        self.put(state_key::total_issued().to_string(), total)
-    }
-}
-impl<T: StateWrite> StateWriteExt for T {}

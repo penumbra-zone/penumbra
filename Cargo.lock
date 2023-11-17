@@ -5256,8 +5256,10 @@ version = "0.63.1"
 dependencies = [
  "anyhow",
  "async-trait",
+ "penumbra-asset",
  "penumbra-chain",
  "penumbra-component",
+ "penumbra-num",
  "penumbra-proto",
  "penumbra-shielded-pool",
  "penumbra-storage",
