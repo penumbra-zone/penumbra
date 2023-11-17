@@ -19,7 +19,7 @@ impl<T: StateRead> StateReadExt for T {}
 
 pub trait StateWriteExt: StateWrite + StateReadExt {
     /// Set the total amount of staking tokens issued.
-    fn set_total_issued(&mut self, total_issued: u64) {
+    fn set_total_issued(&mut self, total_issued: Amount) {
         let total = Amount::from(total_issued);
         self.put(state_key::total_issued().to_string(), total)
     }

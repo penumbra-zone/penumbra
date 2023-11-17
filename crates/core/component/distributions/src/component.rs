@@ -10,6 +10,7 @@ use penumbra_component::Component;
 // use penumbra_dex::{component::StateReadExt as _, component::StateWriteExt as _};
 // use penumbra_stake::{component::StateWriteExt as _, StateReadExt as _};
 use penumbra_asset::STAKING_TOKEN_ASSET_ID;
+use penumbra_num::Amount;
 use penumbra_shielded_pool::component::SupplyRead;
 use penumbra_storage::StateWrite;
 use tendermint::v0_37::abci;
@@ -143,7 +144,7 @@ impl Component for Distributions {
 trait DistributionManager: StateWriteExt {
     /// Compute the total new issuance of staking tokens for this epoch.
     /// TODO(erwan): this is a stub implementation.
-    async fn compute_new_issuance(&self) -> Result<u64> {
+    async fn compute_new_issuance(&self) -> Result<Amount> {
         let base_reward_rate: u64 = 0;
         let total_issued = self
             .total_issued()
@@ -151,7 +152,7 @@ trait DistributionManager: StateWriteExt {
             .expect("total issuance has been initialized");
         const BPS_SQUARED: u64 = 1_0000_0000; // reward rate is measured in basis points squared
         let new_issuance = total_issued * base_reward_rate / BPS_SQUARED;
-        Ok(new_issuance)
+        Ok(new_issuance.into())
     }
 
     /// Update the object store with the new issuance of staking tokens for this epoch.

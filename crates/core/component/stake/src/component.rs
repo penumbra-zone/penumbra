@@ -333,50 +333,49 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
         let chain_params = self.get_stake_params().await?;
 
+        // We are transitioning to the next epoch, so the "current" base rate in
+        // the state is now the previous base rate.
+        let prev_base_rate = self.current_base_rate().await?;
+        // TODO: This will change to be based on issuance.
         tracing::debug!("processing base rate");
-        // We are transitioning to the next epoch, so set "cur_base_rate" to the previous "next_base_rate", and
-        // update "next_base_rate".
-        let current_base_rate = self.next_base_rate().await?;
+        let next_base_rate = prev_base_rate.next(chain_params.base_reward_rate);
+        tracing::debug!(?prev_base_rate, ?next_base_rate);
 
-        let next_base_rate = current_base_rate.next(chain_params.base_reward_rate);
-
-        // rename to curr_rate so it lines up with next_rate (same # chars)
-        tracing::debug!(curr_base_rate = ?current_base_rate);
-        tracing::debug!(?next_base_rate);
-
-        // Update the base rates in the JMT:
-        self.set_base_rates(current_base_rate.clone(), next_base_rate.clone())
-            .await;
+        // Set the next base rate as the new "current" base rate.
+        self.set_base_rate(next_base_rate.clone());
 
         let validator_list = self.validator_list().await?;
         for validator in &validator_list {
-            // The old epoch's "next rate" is now the "current rate"...
-            let old_next_rate = self
-                .next_validator_rate(&validator.identity_key)
-                .await?
-                .ok_or_else(|| {
-                    anyhow::anyhow!("validator had ID in validator_list but rate not found in JMT")
-                })?;
-            // ... as soon as we apply any penalties recorded in the previous epoch.
-            let penalty = self
-                .penalty_in_epoch(&validator.identity_key, epoch_to_end.index)
-                .await?
-                .unwrap_or_default();
-            let current_rate = old_next_rate.slash(penalty);
-
+            // Grab the current validator state.
             let validator_state = self
                 .validator_state(&validator.identity_key)
                 .await?
                 .ok_or_else(|| {
                     anyhow::anyhow!("validator had ID in validator_list but state not found in JMT")
                 })?;
-            tracing::debug!(?validator, "processing validator rate updates");
 
-            let funding_streams = validator.funding_streams.clone();
+            // We are transitioning to the next epoch, so the "current" validator
+            // rate in the state is now the previous validator rate.
+            let prev_validator_rate = self
+                .current_validator_rate(&validator.identity_key)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!("validator had ID in validator_list but current_validator_rate not found in JMT")
+                })?;
 
-            let next_rate =
-                current_rate.next(&next_base_rate, funding_streams.as_ref(), &validator_state);
-            assert!(next_rate.epoch_index == epoch_to_end.index + 2);
+            // First, apply any penalty recorded in the epoch we are ending.
+            let penalty = self
+                .penalty_in_epoch(&validator.identity_key, epoch_to_end.index)
+                .await?
+                .unwrap_or_default();
+            let prev_validator_rate_with_penalty = prev_validator_rate.slash(penalty);
+
+            // Then compute the next validator rate, accounting for funding streams and validator state.
+            let next_validator_rate = prev_validator_rate_with_penalty.next(
+                &next_base_rate,
+                validator.funding_streams.as_ref(),
+                &validator_state,
+            );
 
             let total_delegations = delegations_by_validator
                 .get(&validator.identity_key)
@@ -397,8 +396,12 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 delegation_delta
             );
 
+            // Delegations and undelegations created in the previous epoch were created
+            // with the prev_validator_rate.  To compute the staking delta, we need to take
+            // an absolute value and then re-apply the sign, since .unbonded_amount operates
+            // on unsigned values.
             let abs_unbonded_amount =
-                current_rate.unbonded_amount(delegation_delta.unsigned_abs()) as i128;
+                prev_validator_rate.unbonded_amount(delegation_delta.unsigned_abs()) as i128;
             let staking_delta = if delegation_delta >= 0 {
                 // Net delegation: subtract the unbonded amount from the staking token supply
                 -abs_unbonded_amount
@@ -417,6 +420,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             self.update_token_supply(&STAKING_TOKEN_ASSET_ID, staking_delta)
                 .await?;
 
+            // Get the updated delegation token supply for use calculating voting power.
             let delegation_token_supply = self
                 .token_supply(&DelegationToken::from(validator.identity_key).id())
                 .await?
@@ -424,30 +428,24 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
             // Calculate the voting power in the newly beginning epoch
             let voting_power =
-                current_rate.voting_power(delegation_token_supply.into(), &current_base_rate);
+                next_validator_rate.voting_power(delegation_token_supply.into(), &next_base_rate);
             tracing::debug!(?voting_power);
 
             // Update the state of the validator within the validator set
             // with the newly starting epoch's calculated voting rate and power.
-            self.set_validator_rates(
-                &validator.identity_key,
-                current_rate.clone(),
-                next_rate.clone(),
-            );
+            self.set_validator_rates(&validator.identity_key, next_validator_rate.clone());
             self.set_validator_power(&validator.identity_key, voting_power)
                 .await?;
 
-            // Only Active validators produce commission rewards
-            // The validator *may* drop out of Active state during the next epoch,
-            // but the commission rewards for the ending epoch in which it was Active
-            // should still be rewarded.
+            // If the validator is Active, distribute its funding stream rewards
+            // for the preceding epoch.
             if validator_state == validator::State::Active {
                 // distribute validator commission
-                for stream in funding_streams {
+                for stream in &validator.funding_streams {
                     let commission_reward_amount = stream.reward_amount(
-                        delegation_token_supply,
+                        &prev_base_rate,
                         &next_base_rate,
-                        &current_base_rate,
+                        delegation_token_supply,
                     );
 
                     match stream.recipient() {
@@ -479,8 +477,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
             // rename to curr_rate so it lines up with next_rate (same # chars)
             let delegation_denom = DelegationToken::from(&validator.identity_key).denom();
-            tracing::debug!(curr_rate = ?current_rate);
-            tracing::debug!(?next_rate);
+            tracing::debug!(?prev_validator_rate);
+            tracing::debug!(?next_validator_rate);
             tracing::debug!(?delegation_delta);
             tracing::debug!(?delegation_token_supply);
             tracing::debug!(?delegation_denom);
@@ -760,18 +758,9 @@ pub(crate) trait StakingImpl: StateWriteExt {
         genesis_base_rate: &BaseRateData,
         validator: Validator,
     ) -> Result<()> {
-        // Delegations require knowing the rates for the
-        // next epoch, so pre-populate with 0 reward => exchange rate 1 for
-        // the current and next epochs.
         let cur_rate_data = RateData {
             identity_key: validator.identity_key.clone(),
             epoch_index: genesis_base_rate.epoch_index,
-            validator_reward_rate: 0,
-            validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
-        };
-        let next_rate_data = RateData {
-            identity_key: validator.identity_key.clone(),
-            epoch_index: genesis_base_rate.epoch_index + 1,
             validator_reward_rate: 0,
             validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
         };
@@ -790,7 +779,6 @@ pub(crate) trait StakingImpl: StateWriteExt {
         self.add_validator_inner(
             validator.clone(),
             cur_rate_data,
-            next_rate_data,
             // All genesis validators start in the "Active" state:
             validator::State::Active,
             // All genesis validators start in the "Bonded" bonding state:
@@ -812,19 +800,13 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
     /// Add a validator after genesis, which will start in Inactive
     /// state with no power assigned.
-    async fn add_validator(
-        &mut self,
-        validator: Validator,
-        cur_rate_data: RateData,
-        next_rate_data: RateData,
-    ) -> Result<()> {
+    async fn add_validator(&mut self, validator: Validator, cur_rate_data: RateData) -> Result<()> {
         // We explicitly do not call `update_tm_validator_power` here,
         // as a post-genesis validator should not have power reported
         // to Tendermint until it becomes Active.
         self.add_validator_inner(
             validator.clone(),
             cur_rate_data,
-            next_rate_data,
             // All post-genesis validators start in the "Inactive" state:
             validator::State::Inactive,
             // And post-genesis validators have "Unbonded" bonding state:
@@ -911,22 +893,12 @@ impl Component for Staking {
                     .expect("should be able to get initial epoch");
                 let epoch_index = starting_epoch.index;
 
-                // Delegations require knowing the rates for the next epoch, so
-                // pre-populate with 0 reward => exchange rate 1 for the current
-                // (index 0) and next (index 1) epochs for base rate data.
                 let genesis_base_rate = BaseRateData {
                     epoch_index,
                     base_reward_rate: 0,
                     base_exchange_rate: 1_0000_0000,
                 };
-                let next_base_rate = BaseRateData {
-                    epoch_index: epoch_index + 1,
-                    base_reward_rate: 0,
-                    base_exchange_rate: 1_0000_0000,
-                };
-                state
-                    .set_base_rates(genesis_base_rate.clone(), next_base_rate)
-                    .await;
+                state.set_base_rate(genesis_base_rate.clone());
 
                 // Compile totals of genesis allocations by denom, which we can use
                 // to compute the delegation tokens for each validator.
@@ -947,7 +919,7 @@ impl Component for Staking {
                         .await
                         .expect("should be able to get token supply")
                         .expect("should have token supply for known denom")
-                        as u128;
+                        .value();
                     genesis_allocations.insert(denom, genesis_allocation);
                 }
 
@@ -1111,23 +1083,13 @@ pub trait StateReadExt: StateRead {
             .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
     }
 
-    async fn next_base_rate(&self) -> Result<BaseRateData> {
-        self.get(state_key::next_base_rate())
-            .await
-            .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
-    }
-
+    // This is a normal fn returning a boxed future so it can be 'static with no inferred lifetime bound
     fn current_validator_rate(
         &self,
         identity_key: &IdentityKey,
     ) -> Pin<Box<dyn Future<Output = Result<Option<RateData>>> + Send + 'static>> {
         self.get(&state_key::current_rate_by_validator(identity_key))
             .boxed()
-    }
-
-    async fn next_validator_rate(&self, identity_key: &IdentityKey) -> Result<Option<RateData>> {
-        self.get(&state_key::next_rate_by_validator(identity_key))
-            .await
     }
 
     fn validator_power(&self, identity_key: &IdentityKey) -> ProtoFuture<u64, Self::GetRawFut> {
@@ -1187,7 +1149,7 @@ pub trait StateReadExt: StateRead {
     async fn validator_info(&self, identity_key: &IdentityKey) -> Result<Option<validator::Info>> {
         let validator = self.validator(identity_key).await?;
         let status = self.validator_status(identity_key).await?;
-        let rate_data = self.next_validator_rate(identity_key).await?;
+        let rate_data = self.current_validator_rate(identity_key).await?;
         match (validator, status, rate_data) {
             (Some(validator), Some(status), Some(rate_data)) => Ok(Some(validator::Info {
                 validator,
@@ -1361,10 +1323,9 @@ pub trait StateWriteExt: StateWrite {
     }
 
     #[instrument(skip(self))]
-    async fn set_base_rates(&mut self, current: BaseRateData, next: BaseRateData) {
-        tracing::debug!("setting base rates");
+    fn set_base_rate(&mut self, current: BaseRateData) {
+        tracing::debug!("setting base rate");
         self.put(state_key::current_base_rate().to_owned(), current);
-        self.put(state_key::next_base_rate().to_owned(), next);
     }
 
     #[instrument(skip(self))]
@@ -1384,18 +1345,12 @@ pub trait StateWriteExt: StateWrite {
     }
 
     #[instrument(skip(self))]
-    fn set_validator_rates(
-        &mut self,
-        identity_key: &IdentityKey,
-        current_rates: RateData,
-        next_rates: RateData,
-    ) {
+    fn set_validator_rates(&mut self, identity_key: &IdentityKey, current_rates: RateData) {
         tracing::debug!("setting validator rates");
         self.put(
             state_key::current_rate_by_validator(identity_key),
             current_rates,
         );
-        self.put(state_key::next_rate_by_validator(identity_key), next_rates);
     }
 
     async fn register_consensus_key(
@@ -1444,7 +1399,6 @@ pub trait StateWriteExt: StateWrite {
         &mut self,
         validator: Validator,
         current_rates: RateData,
-        next_rates: RateData,
         state: validator::State,
         bonding_state: validator::BondingState,
         power: u64,
@@ -1458,7 +1412,7 @@ pub trait StateWriteExt: StateWrite {
         self.register_denom(&DelegationToken::from(&id).denom())
             .await?;
 
-        self.set_validator_rates(&id, current_rates, next_rates);
+        self.set_validator_rates(&id, current_rates);
 
         // We can't call `set_validator_state` here because it requires an existing validator state,
         // so we manually initialize the state for new validators.
