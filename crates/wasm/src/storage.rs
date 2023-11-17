@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 use std::future::IntoFuture;
 
 use indexed_db_futures::{
