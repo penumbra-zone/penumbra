@@ -3,19 +3,16 @@ use penumbra_custody::{AuthorizeRequest, CustodyClient};
 use penumbra_keys::FullViewingKey;
 use penumbra_transaction::{plan::TransactionPlan, AuthorizationData, Transaction};
 use penumbra_view::ViewClient;
-use rand_core::{CryptoRng, RngCore};
 
-pub async fn build_transaction<V, C, R>(
+pub async fn build_transaction<V, C>(
     fvk: &FullViewingKey,
     view: &mut V,
     custody: &mut C,
-    mut rng: R,
     plan: TransactionPlan,
 ) -> Result<Transaction>
 where
     V: ViewClient,
     C: CustodyClient,
-    R: RngCore + CryptoRng,
 {
     // Get the authorization data from the custody service...
     let auth_data: AuthorizationData = custody

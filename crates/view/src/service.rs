@@ -1412,7 +1412,7 @@ impl ViewProtocolService for ViewService {
 
         let transaction = Some(
             transaction_plan
-                .build(&fvk, witness_data, &authorization_data)
+                .build(&fvk, &witness_data, &authorization_data)
                 .map_err(|_| tonic::Status::failed_precondition("Error building transaction"))?
                 .into(),
         );

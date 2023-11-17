@@ -335,7 +335,7 @@ async fn build_dao_transaction(transaction_plan: TransactionPlan) -> Result<Tran
     let effect_hash = transaction_plan.effect_hash(&DAO_FULL_VIEWING_KEY);
     transaction_plan.build(
         &DAO_FULL_VIEWING_KEY,
-        WitnessData {
+        &WitnessData {
             anchor: penumbra_tct::Tree::new().root(),
             state_commitment_proofs: Default::default(),
         },

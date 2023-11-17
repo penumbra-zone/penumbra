@@ -1,17 +1,15 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa as rdsa;
-use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
+use penumbra_keys::FullViewingKey;
 use rand_core::OsRng;
 use rand_core::{CryptoRng, RngCore};
 use std::fmt::Debug;
 
 use super::TransactionPlan;
-use crate::plan::ActionPlan;
 use crate::{
     action::Action,
-    memo::MemoCiphertext,
     transaction::{DetectionData, TransactionParameters},
     AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
 };
@@ -23,19 +21,14 @@ impl TransactionPlan {
     pub fn build_unauth_with_actions(
         self,
         actions: Vec<Action>,
-        witness_data: WitnessData,
+        witness_data: &WitnessData,
     ) -> Result<Transaction> {
-        // Add the memo.
-        let mut memo: Option<MemoCiphertext> = None;
-        let mut _memo_key: Option<PayloadKey> = None;
-        if self.memo_plan.is_some() {
-            let memo_plan = self
-                .memo_plan
-                .clone()
-                .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
-            memo = memo_plan.memo().ok();
-            _memo_key = Some(memo_plan.key);
-        }
+        // Add the memo if it is planned.
+        let memo = self
+            .memo_plan
+            .as_ref()
+            .map(|memo_plan| memo_plan.memo())
+            .transpose()?;
 
         // Add detection data when there are outputs.
         let detection_data: Option<DetectionData> = if self.num_outputs() == 0 {
@@ -142,50 +135,27 @@ impl TransactionPlan {
     pub fn build(
         self,
         full_viewing_key: &FullViewingKey,
-        witness_data: WitnessData,
+        witness_data: &WitnessData,
         auth_data: &AuthorizationData,
     ) -> Result<Transaction> {
-        // Add the memo.
-        let mut _memo: Option<MemoCiphertext> = None;
-        let mut memo_key: Option<PayloadKey> = None;
-        if self.memo_plan.is_some() {
-            let memo_plan = self
-                .memo_plan
-                .clone()
-                .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
-            _memo = memo_plan.memo().ok();
-            memo_key = Some(memo_plan.key);
-        }
-
-        let mut actions: Vec<Action> = Vec::new();
-
         // 1. Build each action.
-        for spend_plan in self.spend_plans() {
-            let spend = ActionPlan::Spend(spend_plan.to_owned());
-            let action = spend
-                .build_unauth(full_viewing_key, &witness_data, memo_key.clone())
-                .expect("Build spend action failed!");
-            actions.push(action);
-        }
-        for output_plan in self.output_plans() {
-            let output = ActionPlan::Output(output_plan.to_owned());
-            let action = output
-                .build_unauth(full_viewing_key, &witness_data, memo_key.clone())
-                .expect("Build output action failed!");
-            actions.push(action);
-        }
-
-        // TODO: Handle other actions (swaps, swap claims, etc.).
+        let actions = self
+            .actions
+            .iter()
+            .map(|action_plan| {
+                action_plan.build_unauth(full_viewing_key, witness_data, self.memo_key())
+            })
+            .collect::<Result<Vec<_>>>()?;
 
         // 2. Pass in the prebuilt actions to the build method.
-        let transaction = self
+        let tx = self
             .clone()
             .build_unauth_with_actions(actions, witness_data)?;
 
-        // 3. Slot in the authorization data with TransactionPlan::authorize_with_aut,
-        // and return the completed transaction.
-        let tx = self.apply_auth_data(&mut OsRng, auth_data, transaction)?;
+        // 3. Slot in the authorization data with .apply_auth_data,
+        let tx = self.apply_auth_data(&mut OsRng, auth_data, tx)?;
 
+        // 4. Return the completed transaction.
         Ok(tx)
     }
 
@@ -198,65 +168,39 @@ impl TransactionPlan {
         witness_data: &WitnessData,
         auth_data: &AuthorizationData,
     ) -> Result<Transaction> {
-        // Add the memo.
-        let mut _memo: Option<MemoCiphertext> = None;
-        let mut memo_key: Option<PayloadKey> = None;
-        if self.memo_plan.is_some() {
-            let memo_plan = self
-                .memo_plan
-                .clone()
-                .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
-            _memo = memo_plan.memo().ok();
-            memo_key = Some(memo_plan.key);
-        }
+        // Clone the witness data into an Arc so it can be shared between tasks.
+        let witness_data = std::sync::Arc::new(witness_data.clone());
 
-        let mut in_progress_spend_actions = Vec::new();
-        let mut in_progress_output_actions = Vec::new();
+        // 1. Build each action (concurrently).
+        let action_handles = self
+            .actions
+            .iter()
+            .cloned()
+            .map(|action_plan| {
+                let fvk2 = full_viewing_key.clone();
+                let witness_data2 = witness_data.clone(); // Arc
+                let memo_key2 = self.memo_key();
+                tokio::task::spawn_blocking(move || {
+                    action_plan.build_unauth(&fvk2, &*witness_data2, memo_key2)
+                })
+            })
+            .collect::<Vec<_>>();
 
-        // 1. Call ActionPlan::build_unauth on each action.
-        for spend_plan in self.spend_plans() {
-            let fvk = full_viewing_key.clone();
-            let witness_data_: WitnessData = witness_data.clone();
-            let spend = ActionPlan::Spend(spend_plan.to_owned());
-            in_progress_spend_actions.push(tokio::spawn(async move {
-                spend.build_unauth(&fvk, &witness_data_, memo_key.clone())
-            }));
-        }
-        for output_plan in self.output_plans() {
-            let fvk = full_viewing_key.clone();
-            let witness_data_: WitnessData = witness_data.clone();
-            let output = ActionPlan::Output(output_plan.to_owned());
-            in_progress_output_actions.push(tokio::spawn(async move {
-                output.build_unauth(&fvk, &witness_data_, memo_key.clone())
-            }));
-        }
-
-        // TODO: Handle other actions (swaps, swap claims, etc.).
-
-        // Actions with ZK proofs are slow to build and were done concurrently,
-        // so we resolve the corresponding `JoinHandle`s in the order the tasks were started.
+        // 1.5. Collect all of the actions.
         let mut actions = Vec::new();
-
-        // Collect the spend actions.
-        for action in in_progress_spend_actions {
-            actions.push(action.await?.expect("can form spend action"));
-        }
-        // Collect the output actions.
-        for action in in_progress_output_actions {
-            actions.push(action.await?.expect("can form output action"));
+        for handle in action_handles {
+            actions.push(handle.await??);
         }
 
-        // TODO: Collect other actions (swaps, swap claims, etc.).
-
-        // 2. Pass prebuilt actions to the build method.
-        let transaction = self
+        // 2. Pass in the prebuilt actions to the build method.
+        let tx = self
             .clone()
-            .build_unauth_with_actions(actions, witness_data.to_owned())?;
+            .build_unauth_with_actions(actions, &*witness_data)?;
 
-        // 3. Slot in the authorization data with TransactionPlan::authorize_with_aut,
-        // and return the completed transaction.
-        let tx = self.apply_auth_data(&mut OsRng, auth_data, transaction)?;
+        // 3. Slot in the authorization data with .apply_auth_data,
+        let tx = self.apply_auth_data(&mut OsRng, auth_data, tx)?;
 
+        // 4. Return the completed transaction.
         Ok(tx)
     }
 }

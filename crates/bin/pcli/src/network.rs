@@ -31,7 +31,6 @@ impl App {
             &self.config.full_viewing_key,
             self.view.as_mut().expect("view service initialized"),
             &mut self.custody,
-            OsRng,
             plan,
         );
         async move {

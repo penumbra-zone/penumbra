@@ -566,7 +566,7 @@ mod tests {
                 })
                 .collect(),
         };
-        let transaction = plan.build(fvk, witness_data, &auth_data).unwrap();
+        let transaction = plan.build(fvk, &witness_data, &auth_data).unwrap();
 
         let transaction_effect_hash = transaction.effect_hash();
 

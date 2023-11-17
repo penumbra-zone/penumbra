@@ -14,7 +14,7 @@ use penumbra_governance::{
     DelegatorVotePlan, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
 };
 use penumbra_ibc::IbcRelay;
-use penumbra_keys::Address;
+use penumbra_keys::{Address, PayloadKey};
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
@@ -288,6 +288,13 @@ impl TransactionPlan {
         }
 
         self.clue_plans = clue_plans;
+    }
+
+    /// Convenience method to grab the `MemoKey` from the plan.
+    pub fn memo_key(&self) -> Option<PayloadKey> {
+        self.memo_plan
+            .as_ref()
+            .map(|memo_plan| memo_plan.key.clone())
     }
 }
 

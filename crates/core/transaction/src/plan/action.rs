@@ -181,8 +181,8 @@ impl ActionPlan {
         match self {
             Spend(spend) => spend.value_blinding,
             Output(output) => output.value_blinding,
-            Delegate(delegate) => Fr::zero(),
-            Undelegate(undelegate) => Fr::zero(),
+            Delegate(_) => Fr::zero(),
+            Undelegate(_) => Fr::zero(),
             UndelegateClaim(undelegate_claim) => undelegate_claim.balance_blinding,
             ValidatorDefinition(_) => Fr::zero(),
             Swap(swap) => swap.fee_blinding,

@@ -175,7 +175,7 @@ pub fn build(
 
     let tx: Transaction = plan.build(
         &fvk,
-        witness_data_proto.try_into()?,
+        &witness_data_proto.try_into()?,
         &auth_data_proto.try_into()?,
     )?;
 
@@ -215,7 +215,7 @@ pub fn build_parallel(
 
     let transaction = plan
         .clone()
-        .build_unauth_with_actions(actions_, witness_data_)?;
+        .build_unauth_with_actions(actions_, &witness_data_)?;
 
     let tx = plan.apply_auth_data(&mut OsRng, &auth_data_, transaction)?;
 
