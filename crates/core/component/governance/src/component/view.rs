@@ -7,8 +7,12 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use futures::StreamExt;
+use ibc_types::core::client::Height as IbcHeight;
+use ibc_types::core::{client::ClientId, connection::ConnectionId};
 use penumbra_asset::{asset, Value, STAKING_TOKEN_DENOM};
 use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
+use penumbra_ibc::component::ClientStateReadExt as _;
+use penumbra_ibc::component::ClientStateWriteExt as _;
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_sct::{component::StateReadExt as _, Nullifier};
@@ -558,7 +562,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
 impl<T: StateRead + penumbra_stake::StateReadExt + ?Sized> StateReadExt for T {}
 
 #[async_trait]
-pub trait StateWriteExt: StateWrite {
+pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWriteExt {
     /// Writes the provided governance parameters to the JMT.
     fn put_governance_params(&mut self, params: GovernanceParameters) {
         // Note that the governance params have been updated:
@@ -878,9 +882,51 @@ pub trait StateWriteExt: StateWrite {
             ProposalPayload::UnplannedIbcUpgrade {
                 connection_id,
                 new_config,
-            } => todo!(),
-            ProposalPayload::FreezeIbcClient { client_id } => todo!(),
-            ProposalPayload::UnfreezeIbcClient { client_id } => todo!(),
+            } => {
+                let connection_id = &ConnectionId::from_str(connection_id)
+                    .map_err(|e| tonic::Status::aborted(format!("invalid connection id: {e}")))?;
+                tracing::info!(
+                    %connection_id,
+                    "unplanned IBC upgrade proposal passed");
+                // TODO: MsgConnectionOpenConfirm has various validation steps
+                // that aren't replicated here; are any of them needed?
+                // We need to at least validate the connection is existing (this probably
+                // should happen both here and when the proposal is made)
+                self.update_connection(connection_id, new_config.clone());
+
+                // TODO: do we need to record an ABCI event here?
+            }
+            ProposalPayload::FreezeIbcClient { client_id } => {
+                let client_id = &ClientId::from_str(client_id)
+                    .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
+                let block_height = self
+                    .get_block_height()
+                    .await
+                    .expect("block height should be set");
+                let client_state = self.get_client_state(client_id).await?;
+
+                // freeze the client
+                let epoch = self.epoch_by_height(block_height).await.map_err(|e| {
+                    tonic::Status::unknown(format!("could not get epoch for height: {e}"))
+                })?;
+                // TODO: is this the right conversion between JMT height and IBC height?
+                let ibc_height = IbcHeight::new(epoch.index, block_height - epoch.start_height)?;
+                let frozen_client = client_state.with_frozen_height(ibc_height);
+                self.put_client(client_id, frozen_client);
+
+                // TODO: do we need to record an ABCI event here?
+            }
+            ProposalPayload::UnfreezeIbcClient { client_id } => {
+                let client_id = &ClientId::from_str(client_id)
+                    .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
+                let client_state = self.get_client_state(client_id).await?;
+
+                // unfreeze the client
+                let unfrozen_client = client_state.unfrozen();
+                self.put_client(client_id, unfrozen_client);
+
+                // TODO: do we need to record an ABCI event here?
+            }
         }
 
         Ok(Ok(()))

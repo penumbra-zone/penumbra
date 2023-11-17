@@ -133,9 +133,26 @@ impl ActionHandler for ProposalSubmit {
                 }
             }
             UpgradePlan { .. } => {}
-            UnplannedIbcUpgrade { .. } => todo!(),
-            FreezeIbcClient { .. } => todo!(),
-            UnfreezeIbcClient { .. } => todo!(),
+            UnplannedIbcUpgrade {
+                connection_id,
+                new_config,
+            } => {
+                // Validate the connection ID can be decoded:
+                let connection_id: ConnectionId = ConnectionId::from_str(connection_id)
+                    .context("can't decode connection id from IBC proposal")?;
+
+                // TODO: any other stateless checks? `counterparty`?
+            }
+            FreezeIbcClient { client_id } => {
+                // Validate the client ID can be decoded:
+                let client_id = &ClientId::from_str(client_id)
+                    .context("can't decode client id from IBC proposal")?;
+            }
+            UnfreezeIbcClient { client_id } => {
+                // Validate the client ID can be decoded:
+                let client_id = &ClientId::from_str(client_id)
+                    .context("can't decode client id from IBC proposal")?;
+            }
         }
 
         Ok(())
@@ -206,9 +223,30 @@ impl ActionHandler for ProposalSubmit {
             ProposalPayload::UpgradePlan { .. } => {
                 // TODO(erwan): no stateful checks for upgrade plan.
             }
-            ProposalPayload::UnplannedIbcUpgrade { .. } => todo!(),
-            ProposalPayload::FreezeIbcClient { .. } => todo!(),
-            ProposalPayload::UnfreezeIbcClient { .. } => todo!(),
+            ProposalPayload::UnplannedIbcUpgrade { .. } => {
+                // TODO: which checks happen here?
+                todo!();
+            }
+            ProposalPayload::FreezeIbcClient { client_id } => {
+                // Validate the client isn't already frozen:
+                let client_id = &ClientId::from_str(client_id)
+                    .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
+                let client_state = self.get_client_state(client_id).await?;
+
+                if client_state.is_frozen() {
+                    anyhow::bail!("client is already frozen");
+                }
+            }
+            ProposalPayload::UnfreezeIbcClient { client_id } => {
+                // Validate the client is frozen:
+                let client_id = &ClientId::from_str(client_id)
+                    .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
+                let client_state = self.get_client_state(client_id).await?;
+
+                if !client_state.is_frozen() {
+                    anyhow::bail!("client is already unfrozen");
+                }
+            }
         }
 
         Ok(())

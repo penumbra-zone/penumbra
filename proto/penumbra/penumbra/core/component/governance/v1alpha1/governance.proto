@@ -2,6 +2,7 @@ syntax = "proto3";
 package penumbra.core.component.governance.v1alpha1;
 
 import "google/protobuf/any.proto";
+import "ibc/core/connection/v1/connection.proto";
 import "penumbra/core/asset/v1alpha1/asset.proto";
 import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/core/component/community_pool/v1alpha1/community_pool.proto";
@@ -246,6 +247,9 @@ message Proposal {
   ParameterChange parameter_change = 7;
   CommunityPoolSpend community_pool_spend = 8;
   UpgradePlan upgrade_plan = 9;
+  UnplannedIbcUpgrade unplanned_ibc_upgrade = 10;
+  FreezeIbcClient freeze_ibc_client = 11;
+  UnfreezeIbcClient unfreeze_ibc_client = 12;
 
   // A signaling proposal is meant to register a vote on-chain, but does not have an automatic
   // effect when passed.
@@ -294,6 +298,23 @@ message Proposal {
   // will halt at the specified height.
   message UpgradePlan {
     uint64 height = 1;
+  }
+
+  // An unplanned IBC upgrade is a proposal to update an IBC connection with new configuration
+  // outside of the normal IBC upgrade process.
+  message UnplannedIbcUpgrade {
+    string connection_id = 1;
+    .ibc.core.connection.v1.ConnectionEnd new_config = 2;
+  }
+
+  // Freeze an existing IBC client.
+  message FreezeIbcClient {
+    string client_id = 1;
+  }
+
+  // Unreeze an existing IBC client.
+  message UnfreezeIbcClient {
+    string client_id = 1;
   }
 }
 
