@@ -14,7 +14,6 @@ use penumbra_proto::DomainType;
 use penumbra_sct::component::StateReadExt as _;
 use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_storage::{StateDelta, StateRead, StateWrite};
-use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
 
 use penumbra_transaction::plan::TransactionPlan;
 use penumbra_transaction::Transaction;
@@ -324,31 +323,20 @@ static DAO_FULL_VIEWING_KEY: Lazy<FullViewingKey> = Lazy::new(|| {
     FullViewingKey::from_components(ak, nk)
 });
 
-/// The seed used for the random number generator used when constructing transactions made by the
-/// DAO.
-///
-/// It is arbitary, but must be deterministic in order to ensure that every node in the network
-/// constructs a byte-for-byte identical transaction.
-const DAO_TRANSACTION_RNG_SEED: &[u8; 32] = b"Penumbra DAO's tx build rng seed";
-
 async fn build_dao_transaction(transaction_plan: TransactionPlan) -> Result<Transaction> {
     let effect_hash = transaction_plan.effect_hash(&DAO_FULL_VIEWING_KEY);
-    transaction_plan
-        .build(
-            &DAO_FULL_VIEWING_KEY,
-            WitnessData {
-                anchor: penumbra_tct::Tree::new().root(),
-                state_commitment_proofs: Default::default(),
-            },
-        )?
-        .authorize(
-            &mut ChaCha20Rng::from_seed(*DAO_TRANSACTION_RNG_SEED),
-            &AuthorizationData {
-                effect_hash,
-                spend_auths: Default::default(),
-                delegator_vote_auths: Default::default(),
-            },
-        )
+    transaction_plan.build(
+        &DAO_FULL_VIEWING_KEY,
+        &WitnessData {
+            anchor: penumbra_tct::Tree::new().root(),
+            state_commitment_proofs: Default::default(),
+        },
+        &AuthorizationData {
+            effect_hash,
+            spend_auths: Default::default(),
+            delegator_vote_auths: Default::default(),
+        },
+    )
 }
 
 #[cfg(test)]

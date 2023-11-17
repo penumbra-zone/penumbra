@@ -50,7 +50,7 @@ impl PayloadKind {
 /// Represents a symmetric `ChaCha20Poly1305` key.
 ///
 /// Used for encrypting and decrypting notes, swaps, memos, and memo keys.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct PayloadKey(Key);
 
 impl PayloadKey {

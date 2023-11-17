@@ -1,18 +1,21 @@
-use indexed_db_futures::prelude::OpenDbRequest;
-use indexed_db_futures::{IdbDatabase, IdbQuerySource};
-use serde::{Deserialize, Serialize};
-use wasm_bindgen::JsValue;
-use web_sys::IdbTransactionMode::Readwrite;
-
+use indexed_db_futures::{
+    prelude::{IdbObjectStoreParameters, IdbOpenDbRequestLike, OpenDbRequest},
+    IdbDatabase, IdbKeyPath, IdbQuerySource, IdbVersionChangeEvent,
+};
 use penumbra_asset::asset::{DenomMetadata, Id};
-use penumbra_proto::crypto::tct::v1alpha1::StateCommitment;
-use penumbra_proto::view::v1alpha1::{NotesRequest, SwapRecord};
-use penumbra_proto::DomainType;
+use penumbra_proto::{
+    crypto::tct::v1alpha1::StateCommitment,
+    view::v1alpha1::{NotesRequest, SwapRecord},
+    DomainType,
+};
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note};
+use serde::{Deserialize, Serialize};
+use web_sys::IdbTransactionMode::Readwrite;
 
 use crate::error::{WasmError, WasmResult};
 use crate::note_record::SpendableNoteRecord;
+use wasm_bindgen::JsValue;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IndexedDbConstants {
@@ -36,9 +39,50 @@ pub struct IndexedDBStorage {
 
 impl IndexedDBStorage {
     pub async fn new(constants: IndexedDbConstants) -> WasmResult<Self> {
-        let db_req: OpenDbRequest = IdbDatabase::open_u32(&constants.name, constants.version)?;
+        let mut db_req: OpenDbRequest = IdbDatabase::open_u32(&constants.name, constants.version)?;
+
+        // Conditionally create object stores in the `IdbDatabase` database for testing purposes
+        db_req.set_on_upgrade_needed(Some(|evt: &IdbVersionChangeEvent| -> Result<(), JsValue> {
+            // Check if the object store exists; create it if it doesn't
+            if evt.db().name() == "penumbra-db-wasm-test" {
+                let note_key: JsValue = serde_wasm_bindgen::to_value("noteCommitment.inner")?;
+                let note_object_store_params = IdbObjectStoreParameters::new()
+                    .key_path(Some(&IdbKeyPath::new(note_key)))
+                    .to_owned();
+                let note_object_store = evt.db().create_object_store_with_params(
+                    "SPENDABLE_NOTES",
+                    &note_object_store_params,
+                )?;
+
+                let nullifier_key: JsValue = serde_wasm_bindgen::to_value("nullifier.inner")?;
+                note_object_store.create_index_with_params(
+                    "nullifier",
+                    &IdbKeyPath::new(nullifier_key),
+                    web_sys::IdbIndexParameters::new().unique(false),
+                )?;
+                evt.db().create_object_store("TREE_LAST_POSITION")?;
+                evt.db().create_object_store("TREE_LAST_FORGOTTEN")?;
+
+                let commitment_key: JsValue = serde_wasm_bindgen::to_value("commitment.inner")?;
+                let commitment_object_store_params = IdbObjectStoreParameters::new()
+                    .key_path(Some(&IdbKeyPath::new(commitment_key)))
+                    .to_owned();
+                evt.db().create_object_store_with_params(
+                    "TREE_COMMITMENTS",
+                    &commitment_object_store_params,
+                )?;
+                evt.db().create_object_store("TREE_HASHES")?;
+            }
+            Ok(())
+        }));
+
         let db: IdbDatabase = db_req.into_future().await?;
+
         Ok(IndexedDBStorage { db, constants })
+    }
+
+    pub fn get_database(&self) -> *const IdbDatabase {
+        &self.db
     }
 
     pub async fn get_notes(&self, request: NotesRequest) -> WasmResult<Vec<SpendableNoteRecord>> {

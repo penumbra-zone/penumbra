@@ -1,24 +1,33 @@
-use ark_ff::UniformRand;
-use decaf377::Fq;
-use rand_core::OsRng;
-use wasm_bindgen::prelude::wasm_bindgen;
-use wasm_bindgen::JsValue;
-
-use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_dex::swap_claim::SwapClaimPlan;
-use penumbra_proto::core::asset::v1alpha1::{DenomMetadata, Value};
-use penumbra_proto::core::component::fee::v1alpha1::{Fee, GasPrices};
-use penumbra_proto::core::component::ibc::v1alpha1::Ics20Withdrawal;
-use penumbra_proto::core::keys::v1alpha1::{Address, AddressIndex};
-use penumbra_proto::core::transaction::v1alpha1::MemoPlaintext;
-use penumbra_proto::crypto::tct::v1alpha1::StateCommitment;
-use penumbra_proto::DomainType;
-
 use crate::error::WasmResult;
 use crate::planner::Planner;
 use crate::storage::IndexedDBStorage;
 use crate::swap_record::SwapRecord;
 use crate::utils;
+use anyhow::{anyhow, Context};
+use ark_ff::UniformRand;
+use decaf377::Fq;
+use penumbra_chain::params::{ChainParameters, FmdParameters};
+use penumbra_dex::swap_claim::SwapClaimPlan;
+
+use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
+use penumbra_proto::{
+    core::{
+        asset::v1alpha1::{DenomMetadata, Value},
+        component::fee::v1alpha1::{Fee, GasPrices},
+        component::ibc::v1alpha1::Ics20Withdrawal,
+        keys::v1alpha1::{Address, AddressIndex},
+        transaction::v1alpha1 as pb,
+        transaction::v1alpha1::MemoPlaintext,
+        transaction::v1alpha1::TransactionPlan as tp,
+    },
+    crypto::tct::v1alpha1::StateCommitment,
+    DomainType,
+};
+use penumbra_transaction::{action::Action, plan::ActionPlan, plan::TransactionPlan, WitnessData};
+use rand_core::OsRng;
+use std::str::FromStr;
+use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::JsValue;
 
 #[wasm_bindgen]
 pub struct WasmPlanner {
@@ -55,6 +64,141 @@ impl WasmPlanner {
         Ok(planner)
     }
 
+    /// Builds a planned [`Action`] specified by
+    /// the [`ActionPlan`] in a [`TransactionPlan`].
+    /// Arguments:
+    ///     &self: `WasmPlanner`
+    ///     transaction_plan: `TransactionPlan`
+    ///     action_plan: `ActionPlan`
+    ///     full_viewing_key: `bech32m String`,
+    ///     witness_data: `WitnessData``
+    /// Returns: `Action`
+    #[wasm_bindgen]
+    pub fn build_action(
+        &self,
+        transaction_plan: JsValue,
+        action_plan: JsValue,
+        full_viewing_key: &str,
+        witness_data: JsValue,
+    ) -> WasmResult<JsValue> {
+        utils::set_panic_hook();
+
+        let transaction_plan_proto: tp = serde_wasm_bindgen::from_value(transaction_plan.clone())?;
+        let transaction_plan_: TransactionPlan = transaction_plan_proto.try_into()?;
+
+        let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
+        let witness_data_: WitnessData = witness_data_proto.try_into()?;
+
+        let action_proto: pb::ActionPlan = serde_wasm_bindgen::from_value(action_plan)?;
+        let action_plan_: ActionPlan = action_proto.try_into()?;
+
+        let full_viewing_key: FullViewingKey = FullViewingKey::from_str(full_viewing_key)
+            .expect("The provided string is not a valid FullViewingKey");
+
+        let mut memo_key: Option<PayloadKey> = None;
+        if transaction_plan_.memo_plan.is_some() {
+            let memo_plan = transaction_plan_
+                .memo_plan
+                .clone()
+                .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
+            memo_key = Some(memo_plan.key);
+        }
+
+        let action = match action_plan_ {
+            ActionPlan::Spend(spend_plan) => {
+                let spend = ActionPlan::Spend(spend_plan);
+                Some(
+                    spend
+                        .build_unauth(&full_viewing_key, &witness_data_, memo_key)
+                        .expect("Build spend action failed!"),
+                )
+            }
+            ActionPlan::Output(output_plan) => {
+                let output = ActionPlan::Output(output_plan);
+                Some(
+                    output
+                        .build_unauth(&full_viewing_key, &witness_data_, memo_key)
+                        .expect("Build output action failed!"),
+                )
+            }
+
+            // TODO: Other action variants besides 'Spend' and 'Output' still require testing.
+            ActionPlan::Swap(swap_plan) => {
+                let swap = ActionPlan::Swap(swap_plan);
+                Some(
+                    swap.build_unauth(&full_viewing_key, &witness_data_, memo_key)
+                        .expect("Build swap action failed!"),
+                )
+            }
+            ActionPlan::SwapClaim(swap_claim_plan) => {
+                let swap_claim = ActionPlan::SwapClaim(swap_claim_plan);
+                Some(
+                    swap_claim
+                        .build_unauth(&full_viewing_key, &witness_data_, memo_key)
+                        .expect("Build swap claim action failed!"),
+                )
+            }
+            ActionPlan::Delegate(delegation) => Some(Action::Delegate(delegation)),
+            ActionPlan::Undelegate(undelegation) => Some(Action::Undelegate(undelegation)),
+            ActionPlan::UndelegateClaim(undelegate_claim) => {
+                let undelegate_claim = undelegate_claim.undelegate_claim();
+                Some(Action::UndelegateClaim(undelegate_claim))
+            }
+            ActionPlan::ProposalSubmit(proposal_submit) => {
+                Some(Action::ProposalSubmit(proposal_submit))
+            }
+            ActionPlan::ProposalWithdraw(proposal_withdraw) => {
+                Some(Action::ProposalWithdraw(proposal_withdraw))
+            }
+            ActionPlan::ValidatorVote(validator_vote) => {
+                Some(Action::ValidatorVote(validator_vote))
+            }
+            ActionPlan::DelegatorVote(delegator_vote) => {
+                let note_commitment = delegator_vote.staked_note.commit();
+                let auth_path = witness_data_
+                    .state_commitment_proofs
+                    .get(&note_commitment)
+                    .context(format!("could not get proof for {note_commitment:?}"))?;
+
+                Some(Action::DelegatorVote(delegator_vote.delegator_vote(
+                    &full_viewing_key,
+                    [0; 64].into(),
+                    auth_path.clone(),
+                )))
+            }
+            ActionPlan::ProposalDepositClaim(proposal_deposit_claim) => {
+                Some(Action::ProposalDepositClaim(proposal_deposit_claim))
+            }
+            ActionPlan::ValidatorDefinition(validator_definition) => {
+                Some(Action::ValidatorDefinition(validator_definition))
+            }
+            ActionPlan::IbcAction(ibc_action) => Some(Action::IbcRelay(ibc_action)),
+            ActionPlan::DaoSpend(dao_spend) => Some(Action::DaoSpend(dao_spend)),
+            ActionPlan::DaoOutput(dao_output) => Some(Action::DaoOutput(dao_output)),
+            ActionPlan::DaoDeposit(dao_deposit) => Some(Action::DaoDeposit(dao_deposit)),
+            ActionPlan::PositionOpen(position_open) => Some(Action::PositionOpen(position_open)),
+            ActionPlan::PositionClose(position_close) => {
+                Some(Action::PositionClose(position_close))
+            }
+            ActionPlan::PositionWithdraw(position_withdrawn) => Some(Action::PositionWithdraw(
+                position_withdrawn.position_withdraw(),
+            )),
+            ActionPlan::Withdrawal(ics20_withdrawal) => {
+                Some(Action::Ics20Withdrawal(ics20_withdrawal))
+            }
+            // TODO: Should we handle `PositionRewardClaim`?
+            _ => None,
+        };
+
+        let action_result_proto = serde_wasm_bindgen::to_value(&Some(action))?;
+        Ok(action_result_proto)
+    }
+
+    /// Public getter for the 'storage' field
+    pub fn get_storage(&self) -> *const IndexedDBStorage {
+        &self.storage
+    }
+
     /// Add expiry height to plan
     /// Arguments:
     ///     expiry_height: `u64`
@@ -80,7 +224,6 @@ impl WasmPlanner {
     ///     memo: `MemoPlaintext`
     pub fn memo(&mut self, memo: JsValue) -> WasmResult<()> {
         utils::set_panic_hook();
-
         let memo_proto: MemoPlaintext = serde_wasm_bindgen::from_value(memo)?;
         let _ = self.planner.memo(memo_proto.try_into()?);
         Ok(())

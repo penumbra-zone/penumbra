@@ -22,6 +22,7 @@ use crate::storage::IndexedDBStorage;
 use crate::storage::IndexedDbConstants;
 use crate::utils;
 use crate::view_server::{load_tree, StoredTree};
+use penumbra_transaction::Action;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TxInfoResponse {
@@ -145,7 +146,7 @@ pub fn witness(transaction_plan: JsValue, stored_tree: JsValue) -> WasmResult<Js
     Ok(result)
 }
 
-/// Build tx
+/// Build serial tx
 /// Building a transaction may take some time,
 /// depending on CPU performance and number of actions in transaction_plan
 /// Arguments:
@@ -172,11 +173,54 @@ pub fn build(
 
     let plan: TransactionPlan = plan_proto.try_into()?;
 
-    let tx: Transaction = plan
-        .build(&fvk, witness_data_proto.try_into()?)?
-        .authorize(&mut OsRng, &auth_data_proto.try_into()?)?;
+    let tx: Transaction = plan.build(
+        &fvk,
+        &witness_data_proto.try_into()?,
+        &auth_data_proto.try_into()?,
+    )?;
 
     let value = serde_wasm_bindgen::to_value(&tx.to_proto())?;
+
+    Ok(value)
+}
+
+/// Build parallel tx
+/// Building a transaction may take some time,
+/// depending on CPU performance and number of actions in transaction_plan
+/// Arguments:
+///     actions: `Vec<Actions>`
+///     transaction_plan: `pb::TransactionPlan`
+///     witness_data: `pb::WitnessData`
+///     auth_data: `pb::AuthorizationData`
+/// Returns: `pb::Transaction`
+#[wasm_bindgen]
+pub fn build_parallel(
+    actions: JsValue,
+    transaction_plan: JsValue,
+    witness_data: JsValue,
+    auth_data: JsValue,
+) -> WasmResult<JsValue> {
+    utils::set_panic_hook();
+
+    let plan_proto: pb::TransactionPlan = serde_wasm_bindgen::from_value(transaction_plan)?;
+    let plan: TransactionPlan = plan_proto.try_into()?;
+
+    let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
+    let witness_data_: WitnessData = witness_data_proto.try_into()?;
+
+    let auth_data_proto: pb::AuthorizationData = serde_wasm_bindgen::from_value(auth_data)?;
+    let auth_data_: AuthorizationData = auth_data_proto.try_into()?;
+
+    let actions_: Vec<Action> = serde_wasm_bindgen::from_value(actions)?;
+
+    let transaction = plan
+        .clone()
+        .build_unauth_with_actions(actions_, &witness_data_)?;
+
+    let tx = plan.apply_auth_data(&mut OsRng, &auth_data_, transaction)?;
+
+    let value = serde_wasm_bindgen::to_value(&tx.to_proto())?;
+
     Ok(value)
 }
 
@@ -221,7 +265,6 @@ pub async fn transaction_info_inner(
     // Next, extend the TxP with the openings of commitments known to our view server
     // but not included in the transaction body, for instance spent notes or swap claim outputs.
     for action in tx.actions() {
-        use penumbra_transaction::Action;
         match action {
             Action::Spend(spend) => {
                 let nullifier = spend.body.nullifier;

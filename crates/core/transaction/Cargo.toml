@@ -57,6 +57,7 @@ serde_json = "1"
 tracing = "0.1"
 tokio = { version = "1.21.1", features = ["full"], optional = true }
 clap = { version = "3", features = ["derive"], optional = true }
+wasm-bindgen-test = "0.3.37"
 
 [dev-dependencies]
 proptest = "1"

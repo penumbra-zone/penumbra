@@ -127,6 +127,7 @@ impl PositionRewardClaimPlan {
         todo!()
     }
 
+    // FIXME: why is there an auth sig here??
     /// Convenience method to construct the [`PositionRewardClaim`] described by this [`PositionRewardClaimPlan`].
     pub fn position_reward_claim(
         &self,

@@ -1,6 +1,13 @@
-use anyhow::anyhow;
+use crate::Action;
+use crate::EffectingData;
+use crate::WitnessData;
+use anyhow::{anyhow, Context, Result};
+use ark_ff::Zero;
+use decaf377::Fr;
 use penumbra_asset::Balance;
+use penumbra_chain::EffectHash;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+
 use penumbra_dex::{
     lp::{
         action::{PositionClose, PositionOpen},
@@ -15,6 +22,7 @@ use penumbra_governance::{
 };
 
 use penumbra_ibc::IbcRelay;
+use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
 use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType, TypeUrl};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
@@ -74,6 +82,88 @@ pub enum ActionPlan {
 }
 
 impl ActionPlan {
+    /// Builds a planned [`Action`] specified by this [`ActionPlan`].
+    ///
+    /// The resulting action is `unauth` in the sense that this method does not
+    /// have access to authorization data, so any required authorization data
+    /// will be filled in with dummy zero values, to be replaced later.
+    ///
+    /// This method is useful for controlling how a transaction's actions are
+    /// built (e.g., building them in parallel, or via Web Workers).
+    pub fn build_unauth(
+        &self,
+        fvk: &FullViewingKey,
+        witness_data: &WitnessData,
+        memo_key: Option<PayloadKey>,
+    ) -> Result<Action> {
+        use ActionPlan::*;
+
+        Ok(match self {
+            Spend(spend_plan) => {
+                let note_commitment = spend_plan.note.commit();
+                let auth_path = witness_data
+                    .state_commitment_proofs
+                    .get(&note_commitment)
+                    .context(format!("could not get proof for {note_commitment:?}"))?;
+
+                Action::Spend(spend_plan.spend(
+                    fvk,
+                    [0; 64].into(),
+                    auth_path.clone(),
+                    // FIXME: why does this need the anchor? isn't that implied by the auth_path?
+                    // cf. delegator_vote
+                    witness_data.anchor,
+                ))
+            }
+            Output(output_plan) => {
+                let dummy_payload_key: PayloadKey = [0u8; 32].into();
+                Action::Output(output_plan.output(
+                    fvk.outgoing(),
+                    memo_key.as_ref().unwrap_or(&dummy_payload_key),
+                ))
+            }
+            Swap(swap_plan) => Action::Swap(swap_plan.swap(fvk)),
+            SwapClaim(swap_claim_plan) => {
+                let note_commitment = swap_claim_plan.swap_plaintext.swap_commitment();
+                let auth_path = witness_data
+                    .state_commitment_proofs
+                    .get(&note_commitment)
+                    .context(format!("could not get proof for {note_commitment:?}"))?;
+
+                Action::SwapClaim(swap_claim_plan.swap_claim(&fvk, auth_path))
+            }
+            Delegate(plan) => Action::Delegate(plan.clone()),
+            Undelegate(plan) => Action::Undelegate(plan.clone()),
+            UndelegateClaim(plan) => Action::UndelegateClaim(plan.undelegate_claim()),
+            ValidatorDefinition(plan) => Action::ValidatorDefinition(plan.clone()),
+            // Fixme: action name
+            IbcAction(plan) => Action::IbcRelay(plan.clone()),
+            ProposalSubmit(plan) => Action::ProposalSubmit(plan.clone()),
+            ProposalWithdraw(plan) => Action::ProposalWithdraw(plan.clone()),
+            DelegatorVote(plan) => {
+                let note_commitment = plan.staked_note.commit();
+                let auth_path = witness_data
+                    .state_commitment_proofs
+                    .get(&note_commitment)
+                    .context(format!("could not get proof for {note_commitment:?}"))?;
+                Action::DelegatorVote(plan.delegator_vote(fvk, [0; 64].into(), auth_path.clone()))
+            }
+            ValidatorVote(plan) => Action::ValidatorVote(plan.clone()),
+            ProposalDepositClaim(plan) => Action::ProposalDepositClaim(plan.clone()),
+            PositionOpen(plan) => Action::PositionOpen(plan.clone()),
+            PositionClose(plan) => Action::PositionClose(plan.clone()),
+            PositionWithdraw(plan) => Action::PositionWithdraw(plan.position_withdraw()),
+            PositionRewardClaim(_plan) => unimplemented!(
+                "this api is wrong and needs to be fixed, but we don't do reward claims anyways"
+            ),
+            DaoSpend(plan) => Action::DaoSpend(plan.clone()),
+            DaoOutput(plan) => Action::DaoOutput(plan.clone()),
+            DaoDeposit(plan) => Action::DaoDeposit(plan.clone()),
+            // Fixme: action name
+            Withdrawal(plan) => Action::Ics20Withdrawal(plan.clone()),
+        })
+    }
+
     pub fn balance(&self) -> Balance {
         use ActionPlan::*;
 
@@ -99,6 +189,65 @@ impl ActionPlan {
             Withdrawal(withdrawal) => withdrawal.balance(),
             // None of these contribute to transaction balance:
             IbcAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
+        }
+    }
+
+    pub fn value_blinding(&self) -> Fr {
+        use ActionPlan::*;
+
+        match self {
+            Spend(spend) => spend.value_blinding,
+            Output(output) => output.value_blinding,
+            Delegate(_) => Fr::zero(),
+            Undelegate(_) => Fr::zero(),
+            UndelegateClaim(undelegate_claim) => undelegate_claim.balance_blinding,
+            ValidatorDefinition(_) => Fr::zero(),
+            Swap(swap) => swap.fee_blinding,
+            SwapClaim(_) => Fr::zero(),
+            IbcAction(_) => Fr::zero(),
+            ProposalSubmit(_) => Fr::zero(),
+            ProposalWithdraw(_) => Fr::zero(),
+            DelegatorVote(_) => Fr::zero(),
+            ValidatorVote(_) => Fr::zero(),
+            ProposalDepositClaim(_) => Fr::zero(),
+            PositionOpen(_) => Fr::zero(),
+            PositionClose(_) => Fr::zero(),
+            PositionWithdraw(_) => Fr::zero(),
+            PositionRewardClaim(_) => Fr::zero(),
+            DaoSpend(_) => Fr::zero(),
+            DaoOutput(_) => Fr::zero(),
+            DaoDeposit(_) => Fr::zero(),
+            Withdrawal(_) => Fr::zero(),
+        }
+    }
+
+    /// Compute the effect hash of the action this plan will produce.
+    pub fn effect_hash(&self, fvk: &FullViewingKey, memo_key: &PayloadKey) -> EffectHash {
+        use ActionPlan::*;
+
+        match self {
+            Spend(plan) => plan.spend_body(fvk).effect_hash(),
+            Output(plan) => plan.output_body(fvk.outgoing(), memo_key).effect_hash(),
+            Delegate(plan) => plan.effect_hash(),
+            Undelegate(plan) => plan.effect_hash(),
+            UndelegateClaim(plan) => plan.undelegate_claim_body().effect_hash(),
+            ValidatorDefinition(plan) => plan.effect_hash(),
+            Swap(plan) => plan.swap_body(fvk).effect_hash(),
+            SwapClaim(plan) => plan.swap_claim_body(fvk).effect_hash(),
+            IbcAction(plan) => plan.effect_hash(),
+            ProposalSubmit(plan) => plan.effect_hash(),
+            ProposalWithdraw(plan) => plan.effect_hash(),
+            DelegatorVote(plan) => plan.delegator_vote_body(fvk).effect_hash(),
+            ValidatorVote(plan) => plan.effect_hash(),
+            ProposalDepositClaim(plan) => plan.effect_hash(),
+            PositionOpen(plan) => plan.effect_hash(),
+            PositionClose(plan) => plan.effect_hash(),
+            PositionWithdraw(plan) => plan.position_withdraw().effect_hash(),
+            PositionRewardClaim(_plan) => todo!("position reward claim plan is not implemented"),
+            DaoSpend(plan) => plan.effect_hash(),
+            DaoOutput(plan) => plan.effect_hash(),
+            DaoDeposit(plan) => plan.effect_hash(),
+            Withdrawal(plan) => plan.effect_hash(),
         }
     }
 }
