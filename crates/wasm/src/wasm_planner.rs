@@ -104,14 +104,13 @@ impl WasmPlanner {
             memo_key = Some(memo_plan.key);
         }
 
-        //
         let action = match action_plan_ {
             ActionPlan::Spend(spend_plan) => {
                 let spend = ActionPlan::Spend(spend_plan);
                 Some(
                     spend
                         .build_unauth(&full_viewing_key, &witness_data_, memo_key)
-                        .unwrap(),
+                        .expect("Build spend action failed!"),
                 )
             }
             ActionPlan::Output(output_plan) => {
@@ -119,7 +118,7 @@ impl WasmPlanner {
                 Some(
                     output
                         .build_unauth(&full_viewing_key, &witness_data_, memo_key)
-                        .unwrap(),
+                        .expect("Build output action failed!"),
                 )
             }
 
@@ -128,7 +127,7 @@ impl WasmPlanner {
                 let swap = ActionPlan::Swap(swap_plan);
                 Some(
                     swap.build_unauth(&full_viewing_key, &witness_data_, memo_key)
-                        .expect("Build output action failed!"),
+                        .expect("Build swap action failed!"),
                 )
             }
             ActionPlan::SwapClaim(swap_claim_plan) => {
@@ -136,7 +135,7 @@ impl WasmPlanner {
                 Some(
                     swap_claim
                         .build_unauth(&full_viewing_key, &witness_data_, memo_key)
-                        .expect("Build output action failed!"),
+                        .expect("Build swap claim action failed!"),
                 )
             }
             ActionPlan::Delegate(delegation) => Some(Action::Delegate(delegation)),

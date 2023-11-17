@@ -203,6 +203,7 @@ pub fn build_parallel(
     utils::set_panic_hook();
 
     let plan_proto: pb::TransactionPlan = serde_wasm_bindgen::from_value(transaction_plan)?;
+    let plan: TransactionPlan = plan_proto.try_into()?;
 
     let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
     let witness_data_: WitnessData = witness_data_proto.try_into()?;
@@ -210,7 +211,6 @@ pub fn build_parallel(
     let auth_data_proto: pb::AuthorizationData = serde_wasm_bindgen::from_value(auth_data)?;
     let auth_data_: AuthorizationData = auth_data_proto.try_into()?;
 
-    let plan: TransactionPlan = plan_proto.try_into()?;
     let actions_: Vec<Action> = serde_wasm_bindgen::from_value(actions)?;
 
     let transaction = plan
