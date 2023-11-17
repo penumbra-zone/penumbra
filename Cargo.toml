@@ -49,6 +49,7 @@ members = [
   "crates/test/tct-property-test",
   "crates/misc/measure",
   "crates/misc/tct-visualize",
+  "crates/bench",
   "tools/summonerd",
 ]
 

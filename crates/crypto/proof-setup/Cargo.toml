@@ -21,12 +21,6 @@ penumbra-proof-params = { path = "../proof-params" }
 penumbra-proto = { path = "../../proto" }
 penumbra-shielded-pool = { path = "../../core/component/shielded-pool/" }
 penumbra-stake = { path = "../../core/component/stake/", features = ["component"] }
-penumbra-num = { path = "../../core/num/" }
-penumbra-asset = { path = "../../core/asset/" }
-penumbra-keys = { path = "../../core/keys/" }
-penumbra-tct = { path = "../tct/", features = ["r1cs"] }
-penumbra-fee = { path = "../../core/component/fee/" }
-penumbra-sct = { path = "../../core/component/sct/" }
 rayon = { version = "1.8.0", optional = true }
 
 [dev-dependencies]
@@ -40,41 +34,6 @@ rand_chacha = "0.3.1"
 [[bench]]
 name = "all"
 harness = false
-
-[[bench]]
-name = "nullifier_derivation"
-harness = false
-required-features = ["proving-keys", "parallel"]
-
-[[bench]]
-name = "output"
-harness = false
-required-features = ["proving-keys", "parallel"]
-
-[[bench]]
-name = "delegator_vote"
-harness = false
-required-features = ["proving-keys", "parallel"]
-
-[[bench]]
-name = "spend"
-harness = false
-required-features = ["proving-keys", "parallel"]
-
-[[bench]]
-name = "swap"
-harness = false
-required-features = ["proving-keys", "parallel"]
-
-[[bench]]
-name = "swap_claim"
-harness = false
-required-features = ["proving-keys", "parallel"]
-
-[[bench]]
-name = "undelegate_claim"
-harness = false
-required-features = ["proving-keys", "parallel"]
 
 [features]
 default = []
