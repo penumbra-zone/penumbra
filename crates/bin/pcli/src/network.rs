@@ -5,7 +5,6 @@ use penumbra_proto::{
 };
 use penumbra_transaction::{plan::TransactionPlan, Id as TransactionId, Transaction};
 use penumbra_view::ViewClient;
-use rand_core::OsRng;
 use std::future::Future;
 use tonic::transport::{Channel, ClientTlsConfig};
 use tracing::instrument;
