@@ -1,7 +1,7 @@
-#[cfg(feature = "proving-keys")]
-use std::io::Read;
-
+#[cfg(feature = "bundled-proving-keys")]
 use anyhow::Context;
+#[cfg(feature = "bundled-proving-keys")]
+use std::io::Read;
 
 fn main() {
     let proving_parameter_files = [
@@ -29,7 +29,7 @@ fn main() {
         println!("cargo:rerun-if-changed={file}");
     }
 
-    #[cfg(feature = "proving-keys")]
+    #[cfg(feature = "bundled-proving-keys")]
     {
         for file in proving_parameter_files {
             check_proving_key(file)
@@ -39,7 +39,7 @@ fn main() {
     }
 }
 
-#[cfg(feature = "proving-keys")]
+#[cfg(feature = "bundled-proving-keys")]
 /// Check that the proving key is not a Git LFS pointer.
 pub fn check_proving_key(file: &str) -> anyhow::Result<()> {
     let mut bytes = Vec::new();

@@ -15,8 +15,8 @@ component = [
     "tokio-stream",
     "tokio",
 ]
-proving-keys = ["penumbra-proof-params/proving-keys"]
-default = ["std", "component", "proving-keys"]
+# proving-keys = ["penumbra-proof-params/proving-keys"]
+default = ["std", "component"]
 std = ["ark-ff/std"]
 docsrs = []
 

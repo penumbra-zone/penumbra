@@ -106,7 +106,7 @@ tempfile = "3.3.0"
 regex = "1.6.0"
 penumbra-governance            = { path = "../../core/component/governance", default-features = false }
 penumbra-proof-params = { path = "../../crypto/proof-params", features = [
-    "proving-keys",
+    "bundled-proving-keys",
     "download-proving-keys",
 ] }
 
