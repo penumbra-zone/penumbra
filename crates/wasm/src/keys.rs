@@ -31,9 +31,7 @@ pub fn load_proving_key(parameters: JsValue, key_type: &str) {
         "swap" => &SWAP_PROOF_PROVING_KEY,
         "swap_claim" => &SWAPCLAIM_PROOF_PROVING_KEY,
         "undelegate_claim" => &UNDELEGATECLAIM_PROOF_PROVING_KEY,
-        _ => {
-            todo!()
-        }
+        _ => unimplemented!(),
     };
 
     // Load proving key.
