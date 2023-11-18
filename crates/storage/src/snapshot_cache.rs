@@ -78,6 +78,11 @@ impl SnapshotCache {
             .map(Clone::clone)
             .filter(|s| s.version() == version)
     }
+
+    /// Empties the cache.
+    pub fn clear(&mut self) {
+        self.cache.clear();
+    }
 }
 
 #[cfg(test)]
