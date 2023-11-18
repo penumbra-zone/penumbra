@@ -9,11 +9,9 @@ use penumbra_proof_params::{
     DELEGATOR_VOTE_PROOF_PROVING_KEY, NULLIFIER_DERIVATION_PROOF_PROVING_KEY,
     OUTPUT_PROOF_PROVING_KEY, SPEND_PROOF_PROVING_KEY, SWAPCLAIM_PROOF_PROVING_KEY,
     SWAP_PROOF_PROVING_KEY, UNDELEGATECLAIM_PROOF_PROVING_KEY,
-    LazyProvingKey
 };
 use penumbra_proto::{core::keys::v1alpha1 as pb, serializers::bech32str, DomainType};
 use wasm_bindgen_futures::js_sys::Uint8Array;
-use wasm_bindgen_test::console_log;
 
 use crate::error::WasmResult;
 use crate::utils;
@@ -24,7 +22,7 @@ pub fn load_proving_key(parameters: JsValue, key_type: &str) {
     let parameters_bytes: Vec<u8> = Uint8Array::new(&parameters).to_vec();
     let parameters_slice: &[u8] = &parameters_bytes;
 
-    // Map key type with proving keys. 
+    // Map key type with proving keys.
     let proving_key_map = match key_type {
         "spend" => &SPEND_PROOF_PROVING_KEY,
         "output" => &OUTPUT_PROOF_PROVING_KEY,
@@ -33,10 +31,12 @@ pub fn load_proving_key(parameters: JsValue, key_type: &str) {
         "swap" => &SWAP_PROOF_PROVING_KEY,
         "swap_claim" => &SWAPCLAIM_PROOF_PROVING_KEY,
         "undelegate_claim" => &UNDELEGATECLAIM_PROOF_PROVING_KEY,
-        _ => { todo!() }
+        _ => {
+            todo!()
+        }
     };
-    
-    // Load proving key. 
+
+    // Load proving key.
     let _ = proving_key_map.try_load(parameters_slice);
 }
 
