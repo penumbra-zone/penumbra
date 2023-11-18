@@ -22,7 +22,7 @@ jobs:
           # we must duplicate the rustflags from `.cargo/config.toml`.
           RUSTFLAGS: "-D warnings --cfg tokio_unstable"
       - name: Run tests with nextest
-        run: cargo nextest run --release
+        run: cargo nextest run --release --features migration
         env:
           CARGO_TERM_COLOR: always
 
