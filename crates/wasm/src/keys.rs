@@ -6,9 +6,55 @@ use wasm_bindgen::prelude::*;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use penumbra_keys::{Address, FullViewingKey};
 use penumbra_proto::{core::keys::v1alpha1 as pb, serializers::bech32str, DomainType};
+use wasm_bindgen_futures::js_sys::Uint8Array;
+use wasm_bindgen_test::console_log;
+use penumbra_proof_params::{
+    SPEND_PROOF_PROVING_KEY, 
+    OUTPUT_PROOF_PROVING_KEY, 
+    DELEGATOR_VOTE_PROOF_PROVING_KEY, 
+    NULLIFIER_DERIVATION_PROOF_PROVING_KEY, 
+    SWAP_PROOF_PROVING_KEY, 
+    SWAPCLAIM_PROOF_PROVING_KEY, 
+    UNDELEGATECLAIM_PROOF_PROVING_KEY
+};
 
 use crate::error::WasmResult;
 use crate::utils;
+
+#[wasm_bindgen]
+pub fn load_proving_key(parameters: JsValue, key_type: &str) {
+    // Deserialize JsValue into &[u8]. 
+    let parameters_array = Uint8Array::new(&parameters);
+    let parameters_bytes: Vec<u8> = parameters_array.to_vec();
+    let parameters_slice: &[u8] = &parameters_bytes;
+
+    match key_type {
+        "spend" => {
+            SPEND_PROOF_PROVING_KEY.try_load(parameters_slice);
+        }
+        "output" => {
+            OUTPUT_PROOF_PROVING_KEY.try_load(parameters_slice);
+        }
+        "delegator_vote" => {
+            DELEGATOR_VOTE_PROOF_PROVING_KEY.try_load(parameters_slice);
+        }
+        "nullifier_derivation" => {
+            NULLIFIER_DERIVATION_PROOF_PROVING_KEY.try_load(parameters_slice);
+        }
+        "swap" => {
+            SWAP_PROOF_PROVING_KEY.try_load(parameters_slice);
+        }
+        "swap_claim" => {
+            SWAPCLAIM_PROOF_PROVING_KEY.try_load(parameters_slice);
+        }
+        "undelegate_claim" => {
+            UNDELEGATECLAIM_PROOF_PROVING_KEY.try_load(parameters_slice);
+        }
+        _ => {
+            console_log!("Unknown key type!");
+        }
+    }
+}
 
 /// generate a spend key from a seed phrase
 /// Arguments:

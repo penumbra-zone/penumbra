@@ -29,6 +29,7 @@ penumbra-stake         = { path = "../core/component/stake", default-features = 
 penumbra-governance    = { path = "../core/component/governance", default-features = false }
 penumbra-tct           = { path = "../crypto/tct" }
 penumbra-transaction   = { path = "../core/transaction", default-features = false }
+penumbra-proof-params  = { path = "../crypto/proof-params", default-features = false }
 
 anyhow                   = "1.0.75"
 ark-ff                   = { version = "0.4.2", features = ["std"] }
