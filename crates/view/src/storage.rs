@@ -220,6 +220,13 @@ impl Storage {
                 [dao_params_bytes],
             )?;
 
+            let distributions_params_bytes =
+                &DistributionsParameters::encode_to_vec(&params.distributions_params)[..];
+            tx.execute(
+                "INSERT INTO distributions_params (bytes) VALUES (?1)",
+                [distributions_params_bytes],
+            )?;
+
             let governance_params_bytes =
                 &GovernanceParameters::encode_to_vec(&params.governance_params)[..];
             tx.execute(
@@ -1374,6 +1381,12 @@ impl Storage {
                 dbtx.execute(
                     "UPDATE dao_params SET bytes = ?1",
                     [dao_params_bytes],
+                )?;
+
+                let distributions_params_bytes = &DistributionsParameters::encode_to_vec(&params.distributions_params)[..];
+                dbtx.execute(
+                    "UPDATE distributions_params SET bytes = ?1",
+                    [distributions_params_bytes],
                 )?;
 
                 let governance_params_bytes =
