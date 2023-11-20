@@ -11,6 +11,7 @@ CREATE TABLE governance_params (bytes BLOB NOT NULL);
 CREATE TABLE chain_params (bytes BLOB NOT NULL);
 CREATE TABLE dao_params (bytes BLOB NOT NULL);
 CREATE TABLE fee_params (bytes BLOB NOT NULL);
+CREATE TABLE distributions_params (bytes BLOB NOT NULL);
 CREATE TABLE fmd_parameters (bytes BLOB NOT NULL);
 CREATE TABLE full_viewing_key (bytes BLOB NOT NULL);
 CREATE TABLE sync_height (height BIGINT NOT NULL);
