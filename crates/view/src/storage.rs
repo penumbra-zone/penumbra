@@ -11,9 +11,9 @@ use penumbra_dex::{
     lp::position::{self, Position, State},
     TradingPair,
 };
+use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::{FeeParameters, GasPrices};
 use penumbra_governance::params::GovernanceParameters;
-use penumbra_distributions::params::DistributionsParameters;
 use penumbra_ibc::params::IBCParameters;
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_num::Amount;
