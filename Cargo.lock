@@ -5265,6 +5265,7 @@ dependencies = [
  "penumbra-proto",
  "penumbra-shielded-pool",
  "penumbra-storage",
+ "serde",
  "tendermint",
  "tracing",
 ]
@@ -5339,6 +5340,7 @@ dependencies = [
  "penumbra-chain",
  "penumbra-component",
  "penumbra-dao",
+ "penumbra-distributions",
  "penumbra-fee",
  "penumbra-ibc",
  "penumbra-keys",
@@ -5990,6 +5992,7 @@ dependencies = [
  "penumbra-compact-block",
  "penumbra-dao",
  "penumbra-dex",
+ "penumbra-distributions",
  "penumbra-fee",
  "penumbra-governance",
  "penumbra-ibc",

@@ -27,4 +27,6 @@ anyhow = "1"
 tracing = "0.1"
 tendermint = "0.34.0"
 
+serde = { version = "1", features = ["derive"] }
+
 [dev-dependencies]

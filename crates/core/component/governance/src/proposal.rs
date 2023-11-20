@@ -8,6 +8,7 @@ use penumbra_chain::params::ChainParameters;
 use penumbra_dao::params::DaoParameters;
 use penumbra_fee::params::FeeParameters;
 use penumbra_ibc::params::IBCParameters;
+use penumbra_distributions::params::DistributionsParameters;
 use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_stake::params::StakeParameters;
 
@@ -370,6 +371,7 @@ impl ProposalPayload {
 pub struct ChangedAppParameters {
     pub chain_params: Option<ChainParameters>,
     pub dao_params: Option<DaoParameters>,
+    pub distributions_params: Option<DistributionsParameters>,
     pub ibc_params: Option<IBCParameters>,
     pub stake_params: Option<StakeParameters>,
     pub fee_params: Option<FeeParameters>,
@@ -391,11 +393,12 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
     fn try_from(msg: pb::ChangedAppParameters) -> anyhow::Result<Self> {
         Ok(ChangedAppParameters {
             chain_params: msg.chain_params.map(TryInto::try_into).transpose()?,
-            stake_params: msg.stake_params.map(TryInto::try_into).transpose()?,
-            ibc_params: msg.ibc_params.map(TryInto::try_into).transpose()?,
-            governance_params: msg.governance_params.map(TryInto::try_into).transpose()?,
             dao_params: msg.dao_params.map(TryInto::try_into).transpose()?,
+            distributions_params: msg.distributions_params.map(TryInto::try_into).transpose()?,
             fee_params: msg.fee_params.map(TryInto::try_into).transpose()?,
+            governance_params: msg.governance_params.map(TryInto::try_into).transpose()?,
+            ibc_params: msg.ibc_params.map(TryInto::try_into).transpose()?,
+            stake_params: msg.stake_params.map(TryInto::try_into).transpose()?,
         })
     }
 }
@@ -404,11 +407,12 @@ impl From<ChangedAppParameters> for pb::ChangedAppParameters {
     fn from(params: ChangedAppParameters) -> Self {
         pb::ChangedAppParameters {
             chain_params: params.chain_params.map(Into::into),
-            stake_params: params.stake_params.map(Into::into),
-            ibc_params: params.ibc_params.map(Into::into),
-            governance_params: params.governance_params.map(Into::into),
             dao_params: params.dao_params.map(Into::into),
+            distributions_params: params.distributions_params.map(Into::into),
             fee_params: params.fee_params.map(Into::into),
+            governance_params: params.governance_params.map(Into::into),
+            ibc_params: params.ibc_params.map(Into::into),
+            stake_params: params.stake_params.map(Into::into),
         }
     }
 }

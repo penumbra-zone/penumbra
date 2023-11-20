@@ -3,6 +3,7 @@ use std::fmt::Display;
 use anyhow::Result;
 use penumbra_chain::params::{ChainParameters, Ratio};
 use penumbra_dao::params::DaoParameters;
+use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::FeeParameters;
 use penumbra_governance::{params::GovernanceParameters, proposal::ChangedAppParameters};
 use penumbra_ibc::params::IBCParameters;
@@ -50,6 +51,10 @@ impl AppParameters {
                     proposal_slash_threshold,
                 },
             fee_params: FeeParameters {},
+            distributions_params:
+                DistributionsParameters {
+                    staking_issuance_per_block: _,
+                },
             dao_params:
                 DaoParameters {
                     dao_spend_proposals_enabled: _,
@@ -128,6 +133,10 @@ impl AppParameters {
                     proposal_slash_threshold,
                 },
             fee_params: FeeParameters {},
+            distributions_params:
+                DistributionsParameters {
+                    staking_issuance_per_block: _,
+                },
             dao_params:
                 DaoParameters {
                     dao_spend_proposals_enabled: _,
@@ -209,10 +218,11 @@ impl AppParameters {
         ChangedAppParameters {
             chain_params: Some(self.chain_params.clone()),
             dao_params: Some(self.dao_params.clone()),
-            ibc_params: Some(self.ibc_params.clone()),
-            stake_params: Some(self.stake_params.clone()),
+            distributions_params: Some(self.distributions_params.clone()),
             fee_params: Some(self.fee_params.clone()),
             governance_params: Some(self.governance_params.clone()),
+            ibc_params: Some(self.ibc_params.clone()),
+            stake_params: Some(self.stake_params.clone()),
         }
     }
 
@@ -231,27 +241,13 @@ impl AppParameters {
                 || new.ibc_params.is_none()
                 || new.governance_params.is_none()
                 || new.fee_params.is_none()
-                || new.dao_params.is_none())
+                || new.dao_params.is_none()
+                || new.distributions_params.is_none())
         {
             anyhow::bail!("all parameters must be specified if no old parameters are provided");
         }
 
         Ok(AppParameters {
-            stake_params: new.stake_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .stake_params
-                    .clone()
-            }),
-            ibc_params: new.ibc_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .ibc_params
-                    .clone()
-            }),
-            governance_params: new.governance_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .governance_params
-                    .clone()
-            }),
             chain_params: new.chain_params.clone().unwrap_or_else(|| {
                 old.expect("old should be set if new has any None values")
                     .chain_params
@@ -262,9 +258,29 @@ impl AppParameters {
                     .dao_params
                     .clone()
             }),
+            distributions_params: new.distributions_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .distributions_params
+                    .clone()
+            }),
             fee_params: new.fee_params.clone().unwrap_or_else(|| {
                 old.expect("old should be set if new has any None values")
                     .fee_params
+                    .clone()
+            }),
+            governance_params: new.governance_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .governance_params
+                    .clone()
+            }),
+            ibc_params: new.ibc_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .ibc_params
+                    .clone()
+            }),
+            stake_params: new.stake_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .stake_params
                     .clone()
             }),
         })

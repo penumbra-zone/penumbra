@@ -92,6 +92,7 @@ impl ProposalKindCmd {
                     stake_params: None,
                     fee_params: None,
                     governance_params: None,
+                    distributions_params: None,
                 }),
             },
             ProposalKindCmd::DaoSpend { transaction_plan } => {
