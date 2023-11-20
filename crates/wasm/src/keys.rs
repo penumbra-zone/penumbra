@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use anyhow;
 use rand_core::OsRng;
 use wasm_bindgen::prelude::*;
 
@@ -16,11 +17,15 @@ use wasm_bindgen_futures::js_sys::Uint8Array;
 use crate::error::WasmResult;
 use crate::utils;
 
+/// Loads the proving key as a collection of bytes, and to sets the keys in memory
+/// dynamicaly at runtime. Failure to bundle the proving keys in the wasm binary
+/// or call the load function will fail to generate a proof. Consumers of this
+/// function will additionally require downloading the proving key parameter `.bin`
+/// file for each key type.
 #[wasm_bindgen]
-pub fn load_proving_key(parameters: JsValue, key_type: &str) {
-    // Deserialize JsValue into &[u8].
+pub fn load_proving_key(parameters: JsValue, key_type: &str) -> WasmResult<()> {
+    // Deserialize JsValue into Vec<u8>.
     let parameters_bytes: Vec<u8> = Uint8Array::new(&parameters).to_vec();
-    let parameters_slice: &[u8] = &parameters_bytes;
 
     // Map key type with proving keys.
     let proving_key_map = match key_type {
@@ -31,11 +36,12 @@ pub fn load_proving_key(parameters: JsValue, key_type: &str) {
         "swap" => &SWAP_PROOF_PROVING_KEY,
         "swap_claim" => &SWAPCLAIM_PROOF_PROVING_KEY,
         "undelegate_claim" => &UNDELEGATECLAIM_PROOF_PROVING_KEY,
-        _ => unimplemented!(),
+        _ => return Err(anyhow::anyhow!("Unsupported key type").into()),
     };
 
     // Load proving key.
-    let _ = proving_key_map.try_load(parameters_slice);
+    proving_key_map.try_load(&parameters_bytes)?;
+    Ok(())
 }
 
 /// generate a spend key from a seed phrase
