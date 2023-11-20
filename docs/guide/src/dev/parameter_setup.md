@@ -36,7 +36,6 @@ Then edit `penumbra-proof-params` to reference the new parameters created in
 We have benchmarks for all proofs in the `penumbra-bench` crate. You can run them via:
 
 ```shell
-cd crates/bench
 cargo bench
 ```
 

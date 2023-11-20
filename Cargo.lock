@@ -5062,6 +5062,50 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-bench"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "ark-ec",
+ "ark-ff",
+ "ark-groth16",
+ "ark-r1cs-std",
+ "ark-relations",
+ "ark-serialize",
+ "ark-snark",
+ "ark-std",
+ "bech32",
+ "criterion 0.4.0",
+ "decaf377 0.5.0",
+ "decaf377-fmd",
+ "decaf377-ka",
+ "decaf377-rdsa",
+ "hex",
+ "num-bigint",
+ "once_cell",
+ "penumbra-asset",
+ "penumbra-dao",
+ "penumbra-dex",
+ "penumbra-fee",
+ "penumbra-governance",
+ "penumbra-keys",
+ "penumbra-num",
+ "penumbra-proof-params",
+ "penumbra-sct",
+ "penumbra-shielded-pool",
+ "penumbra-stake",
+ "penumbra-tct",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2 0.10.8",
+ "tracing",
+]
+
+[[package]]
 name = "penumbra-chain"
 version = "0.63.1"
 dependencies = [
@@ -5562,19 +5606,13 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "criterion 0.4.0",
  "decaf377 0.5.0",
- "penumbra-asset",
  "penumbra-dao",
  "penumbra-dex",
- "penumbra-fee",
  "penumbra-governance",
- "penumbra-keys",
- "penumbra-num",
  "penumbra-proof-params",
  "penumbra-proto",
- "penumbra-sct",
  "penumbra-shielded-pool",
  "penumbra-stake",
- "penumbra-tct",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rayon",
