@@ -13,7 +13,7 @@ jobs:
       cancel-in-progress: true
     environment: smoke-test
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           lfs: true
       - uses: actions-rs/toolchain@v1
