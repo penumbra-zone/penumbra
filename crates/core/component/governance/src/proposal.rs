@@ -6,9 +6,9 @@ use std::str::FromStr;
 use crate::params::GovernanceParameters;
 use penumbra_chain::params::ChainParameters;
 use penumbra_dao::params::DaoParameters;
+use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::params::FeeParameters;
 use penumbra_ibc::params::IBCParameters;
-use penumbra_distributions::params::DistributionsParameters;
 use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_stake::params::StakeParameters;
 
@@ -394,7 +394,10 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
         Ok(ChangedAppParameters {
             chain_params: msg.chain_params.map(TryInto::try_into).transpose()?,
             dao_params: msg.dao_params.map(TryInto::try_into).transpose()?,
-            distributions_params: msg.distributions_params.map(TryInto::try_into).transpose()?,
+            distributions_params: msg
+                .distributions_params
+                .map(TryInto::try_into)
+                .transpose()?,
             fee_params: msg.fee_params.map(TryInto::try_into).transpose()?,
             governance_params: msg.governance_params.map(TryInto::try_into).transpose()?,
             ibc_params: msg.ibc_params.map(TryInto::try_into).transpose()?,

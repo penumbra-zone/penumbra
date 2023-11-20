@@ -1,7 +1,7 @@
 use penumbra_chain::params::ChainParameters;
 use penumbra_dao::params::DaoParameters;
-use penumbra_fee::FeeParameters;
 use penumbra_distributions::DistributionsParameters;
+use penumbra_fee::FeeParameters;
 use penumbra_governance::params::GovernanceParameters;
 use penumbra_ibc::params::IBCParameters;
 use penumbra_proto::core::app::v1alpha1 as pb;
