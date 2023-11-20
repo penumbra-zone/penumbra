@@ -20,7 +20,9 @@ on:
 # that was just merged.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Don't cancel mid-run, as an interrupted `helmfile sync` can create broken release
+  # states in the kube API server that require manual cleanup.
+  cancel-in-progress: false
 
 jobs:
   build-container:
