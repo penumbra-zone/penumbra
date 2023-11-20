@@ -29,15 +29,13 @@ impl MultistoreConfig {
     /// If the key is an exact match for the prefix, the main store is returned instead.
     pub fn route_key_str<'a>(&self, key: &'a str) -> (&'a str, Arc<SubstoreConfig>) {
         let config = self.find_substore(key.as_bytes());
-        if key == config.prefix || config.prefix == "" {
+        if key == config.prefix {
             return (key, self.main_store.clone());
         }
 
         let key = key
             .strip_prefix(&config.prefix)
-            .expect("key has the prefix of the matched substore")
-            .strip_prefix(&"/")
-            .unwrap();
+            .expect("key has the prefix of the matched substore");
         (key, config)
     }
 
@@ -46,16 +44,13 @@ impl MultistoreConfig {
     /// If the key is an exact match for the prefix, the main store is returned instead.
     pub fn route_key_bytes<'a>(&self, key: &'a [u8]) -> (&'a [u8], Arc<SubstoreConfig>) {
         let config = self.find_substore(key);
-        if key == config.prefix.as_bytes() || config.prefix == "" {
+        if key == config.prefix.as_bytes() {
             return (key, self.main_store.clone());
         }
 
         let key = key
             .strip_prefix(config.prefix.as_bytes())
-            .expect("key has the prefix of the matched substore")
-            .strip_prefix("/".as_bytes())
-            .unwrap();
-
+            .expect("key has the prefix of the matched substore");
         (key, config)
     }
 
