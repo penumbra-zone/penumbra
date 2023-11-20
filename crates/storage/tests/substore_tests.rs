@@ -21,6 +21,65 @@ async fn test_disallow_empty_prefix() -> () {
 }
 
 #[tokio::test]
+async fn test_substore_proofs() -> anyhow::Result<()> {
+    let _ = tracing_subscriber::fmt::try_init();
+    let tmpdir = tempfile::tempdir()?;
+    let db_path = tmpdir.into_path();
+    let substore_prefixes = vec!["ibc/", "prefix_b", "prefix_c"]
+        .into_iter()
+        .map(|s| s.to_string())
+        .collect();
+    let storage = Storage::load(db_path, substore_prefixes).await?;
+    let mut delta = StateDelta::new(storage.latest_snapshot());
+
+    let key_a_1 = "ibc/key_1".to_string();
+    let value_a_1 = "value_1a".as_bytes().to_vec();
+    delta.put_raw(key_a_1.clone(), value_a_1.clone());
+
+    storage.commit(delta).await?;
+
+    let snapshot = storage.latest_snapshot();
+
+    pub static PENUMBRA_PROOF_SPECS: Lazy<Vec<ics23::ProofSpec>> = Lazy::new(|| {
+        vec![
+            penumbra_storage::ics23_spec(),
+            penumbra_storage::ics23_spec(),
+        ]
+    });
+
+    // check that we can verify proofs back to the root for the new value.
+    let root = snapshot.root_hash().await?;
+    let (retreived_value, proof) = snapshot.get_with_proof(key_a_1.into()).await?;
+    assert_eq!(Some(value_a_1), retreived_value.clone());
+    let merkle_path = MerklePath {
+        key_path: vec!["ibc/".to_string(), "key_1".to_string()],
+    };
+    let merkle_root = MerkleRoot {
+        hash: root.0.to_vec(),
+    };
+    proof.verify_membership(
+        &PENUMBRA_PROOF_SPECS,
+        merkle_root.clone(),
+        merkle_path,
+        retreived_value.unwrap(),
+        0,
+    )?;
+
+    // check that non-existence proofs work
+    let (retreived_value, nex_proof) = snapshot.get_with_proof("ibc/doesntexist".into()).await?;
+    assert_eq!(retreived_value, None);
+
+    tracing::debug!(?retreived_value, ?nex_proof, "got non-existence proof");
+
+    let merkle_path = MerklePath {
+        key_path: vec!["ibc/".to_string(), "doesntexist".to_string()],
+    };
+    nex_proof.verify_non_membership(&PENUMBRA_PROOF_SPECS, merkle_root, merkle_path)?;
+
+    Ok(())
+}
+
+#[tokio::test]
 /// Test that we can create a storage with multiple substores, that we can write to them, and that
 /// we can read from them.
 async fn test_substore_simple() -> anyhow::Result<()> {
@@ -90,31 +149,6 @@ async fn test_substore_simple() -> anyhow::Result<()> {
     assert_eq!(retrieved_value_a2, value_a_2);
     let retrieved_value_a1 = snapshot.get_raw(key_a_1.as_str()).await?.unwrap();
     assert_eq!(retrieved_value_a1, value_a_1);
-
-    pub static PENUMBRA_PROOF_SPECS: Lazy<Vec<ics23::ProofSpec>> = Lazy::new(|| {
-        vec![
-            penumbra_storage::ics23_spec(),
-            penumbra_storage::ics23_spec(),
-        ]
-    });
-
-    // check that we can verify proofs back to the root for the new value.
-    let root = snapshot.root_hash().await?;
-    let (value_a2_2, proof) = snapshot.get_with_proof(key_a_2.into()).await?;
-    assert_eq!(value_a2_2, Some(retrieved_value_a2.clone()));
-    let merkle_path = MerklePath {
-        key_path: vec!["prefix_a".to_string(), "key_2".to_string()],
-    };
-    let merkle_root = MerkleRoot {
-        hash: root.0.to_vec(),
-    };
-    proof.verify_membership(
-        &PENUMBRA_PROOF_SPECS,
-        merkle_root,
-        merkle_path,
-        retrieved_value_a2,
-        0,
-    )?;
 
     // Retrieve the substore root hash again, and check that it has changed.
     assert_ne!(global_root_hash_1, global_root_hash_2); // sanity check.
