@@ -185,7 +185,7 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
     let mut kv_b = vec![];
     let mut kv_main = vec![];
     for i in 0..10 {
-        let key_a_i = format!("prefix_a/key_{}", i);
+        let key_a_i = format!("prefix_akey_{}", i);
         let value_a_i = format!("value_{}a", i).as_bytes().to_vec();
         delta.put_raw(key_a_i.clone(), value_a_i.clone());
         all_kv.push((key_a_i.clone(), value_a_i.clone()));
@@ -193,7 +193,7 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
     }
 
     for i in 0..10 {
-        let key_b_i = format!("prefix_b/key_{}", i);
+        let key_b_i = format!("prefix_bkey_{}", i);
         let value_b_i = format!("value_{}b", i).as_bytes().to_vec();
         delta.put_raw(key_b_i.clone(), value_b_i.clone());
         all_kv.push((key_b_i.clone(), value_b_i.clone()));
@@ -216,7 +216,7 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_a/{key}");
+        let key = format!("prefix_a{key}");
         if counter >= kv_a.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
             panic!("prefix_keys query returned too many entries")
@@ -237,7 +237,7 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_b/{key}");
+        let key = format!("prefix_b{key}");
 
         if counter >= kv_b.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
@@ -330,7 +330,7 @@ async fn test_substore_prefix_keys() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_a/{key}");
+        let key = format!("prefix_a{key}");
         if counter >= kv_a.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
             panic!("prefix_keys query returned too many entries")
@@ -351,7 +351,7 @@ async fn test_substore_prefix_keys() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_b/{key}");
+        let key = format!("prefix_b{key}");
 
         if counter >= kv_b.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
@@ -447,7 +447,7 @@ async fn test_substore_nv_prefix() -> anyhow::Result<()> {
         let (raw_key, raw_value) = res?;
         let key = String::from_utf8(raw_key)?;
         let value = String::from_utf8(raw_value)?;
-        let key = format!("prefix_a/{key}");
+        let key = format!("prefix_a{key}");
         if counter >= kv_a.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
             panic!("prefix_keys query returned too many entries")
@@ -473,7 +473,7 @@ async fn test_substore_nv_prefix() -> anyhow::Result<()> {
         let (raw_key, raw_value) = res?;
         let key = String::from_utf8(raw_key)?;
         let value = String::from_utf8(raw_value)?;
-        let key = format!("prefix_b/{key}");
+        let key = format!("prefix_b{key}");
 
         if counter >= kv_b.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
