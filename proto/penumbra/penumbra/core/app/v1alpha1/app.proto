@@ -4,6 +4,7 @@ package penumbra.core.app.v1alpha1;
 import "ibc/core/commitment/v1/commitment.proto";
 import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/core/component/dao/v1alpha1/dao.proto";
+import "penumbra/core/component/distributions/v1alpha1/distributions.proto";
 import "penumbra/core/component/fee/v1alpha1/fee.proto";
 import "penumbra/core/component/governance/v1alpha1/governance.proto";
 import "penumbra/core/component/ibc/v1alpha1/ibc.proto";
@@ -73,6 +74,8 @@ message AppParameters {
   core.component.stake.v1alpha1.StakeParameters stake_params = 5;
   // Fee module parameters.
   core.component.fee.v1alpha1.FeeParameters fee_params = 6;
+  // Distributions module parameters.
+  core.component.distributions.v1alpha1.DistributionsParameters distributions_params = 7;
 }
 
 // Requests the global configuration data for the app.
@@ -107,4 +110,6 @@ message GenesisContent {
   core.component.dao.v1alpha1.GenesisContent dao_content = 6;
   // Fee module genesis state.
   core.component.fee.v1alpha1.GenesisContent fee_content = 7;
+  // Distributions module genesis state.
+  core.component.distributions.v1alpha1.GenesisContent distributions_content = 8;
 }

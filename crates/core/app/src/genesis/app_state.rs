@@ -1,5 +1,6 @@
 use penumbra_chain::genesis::Content as ChainContent;
 use penumbra_dao::genesis::Content as DaoContent;
+use penumbra_distributions::genesis::Content as DistributionsContent;
 use penumbra_fee::genesis::Content as FeeContent;
 use penumbra_governance::genesis::Content as GovernanceContent;
 use penumbra_ibc::genesis::Content as IBCContent;
@@ -36,6 +37,8 @@ pub struct Content {
     pub dao_content: DaoContent,
     /// Fee module genesis state.
     pub fee_content: FeeContent,
+    /// Distributions module genesis state.
+    pub distributions_content: DistributionsContent,
 }
 
 impl TypeUrl for Content {
@@ -77,6 +80,7 @@ impl From<Content> for pb::GenesisContent {
             dao_content: Some(value.dao_content.into()),
             shielded_pool_content: Some(value.shielded_pool_content.into()),
             fee_content: Some(value.fee_content.into()),
+            distributions_content: Some(value.distributions_content.into()),
         }
     }
 }
@@ -131,6 +135,10 @@ impl TryFrom<pb::GenesisContent> for Content {
             fee_content: msg
                 .fee_content
                 .ok_or_else(|| anyhow::anyhow!("proto response missing fee content"))?
+                .try_into()?,
+            distributions_content: msg
+                .distributions_content
+                .ok_or_else(|| anyhow::anyhow!("proto response missing distributions content"))?
                 .try_into()?,
         })
     }

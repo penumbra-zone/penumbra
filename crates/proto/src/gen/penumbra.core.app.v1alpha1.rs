@@ -87,6 +87,11 @@ pub struct AppParameters {
     pub fee_params: ::core::option::Option<
         super::super::component::fee::v1alpha1::FeeParameters,
     >,
+    /// Distributions module parameters.
+    #[prost(message, optional, tag = "7")]
+    pub distributions_params: ::core::option::Option<
+        super::super::component::distributions::v1alpha1::DistributionsParameters,
+    >,
 }
 /// Requests the global configuration data for the app.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -156,6 +161,11 @@ pub struct GenesisContent {
     #[prost(message, optional, tag = "7")]
     pub fee_content: ::core::option::Option<
         super::super::component::fee::v1alpha1::GenesisContent,
+    >,
+    /// Distributions module genesis state.
+    #[prost(message, optional, tag = "8")]
+    pub distributions_content: ::core::option::Option<
+        super::super::component::distributions::v1alpha1::GenesisContent,
     >,
 }
 /// Generated client implementations.

@@ -13,6 +13,7 @@ use penumbra_dex::{
 };
 use penumbra_fee::{FeeParameters, GasPrices};
 use penumbra_governance::params::GovernanceParameters;
+use penumbra_distributions::params::DistributionsParameters;
 use penumbra_ibc::params::IBCParameters;
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_num::Amount;
@@ -582,6 +583,11 @@ impl Storage {
                 .prepare_cached("SELECT bytes FROM fee_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
                 .ok_or_else(|| anyhow!("missing fee params"))?;
+            let distributions_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM distributions_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing distributions params"))?;
 
             Ok(AppParameters {
                 chain_params: ChainParameters::decode(chain_bytes.as_slice())?,
@@ -590,6 +596,9 @@ impl Storage {
                 governance_params: GovernanceParameters::decode(governance_bytes.as_slice())?,
                 dao_params: DaoParameters::decode(dao_bytes.as_slice())?,
                 fee_params: FeeParameters::decode(fee_bytes.as_slice())?,
+                distributions_params: DistributionsParameters::decode(
+                    distributions_bytes.as_slice(),
+                )?,
             })
         })
         .await?

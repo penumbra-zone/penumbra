@@ -10,7 +10,7 @@ use penumbra_component::Component;
 use penumbra_dao::component::StateWriteExt as _;
 use penumbra_dao::StateReadExt as _;
 use penumbra_dex::component::{Dex, SwapManager};
-use penumbra_distributions::component::Distributions;
+use penumbra_distributions::component::{Distributions, StateReadExt as _, StateWriteExt as _};
 use penumbra_fee::component::{Fee, StateReadExt as _, StateWriteExt as _};
 use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
@@ -101,6 +101,9 @@ impl App {
                     .put_governance_params(app_state.governance_content.governance_params.clone());
                 state_tx.put_ibc_params(app_state.ibc_content.ibc_params.clone());
                 state_tx.put_fee_params(app_state.fee_content.fee_params.clone());
+                state_tx.put_distributions_params(
+                    app_state.distributions_content.distributions_params.clone(),
+                );
 
                 // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
                 state_tx.put_current_fmd_parameters(FmdParameters::default());
@@ -620,7 +623,6 @@ impl App {
         app_hash
     }
 
-    // TODO: should this just be returned by `commit`? both are called during every `EndBlock`
     pub fn tendermint_validator_updates(&self) -> Vec<Update> {
         self.state
             .tendermint_validator_updates()
@@ -645,6 +647,7 @@ pub trait StateReadExt: StateRead {
             || self.ibc_params_updated()
             || self.dao_params_updated()
             || self.stake_params_updated()
+            || self.distributions_params_updated()
             || self.chain_params_updated()
     }
 
@@ -656,14 +659,16 @@ pub trait StateReadExt: StateRead {
         let governance_params = self.get_governance_params().await?;
         let dao_params = self.get_dao_params().await?;
         let fee_params = self.get_fee_params().await?;
+        let distributions_params = self.get_distributions_params().await?;
 
         Ok(AppParameters {
             chain_params,
-            stake_params,
-            ibc_params,
-            governance_params,
             dao_params,
+            distributions_params,
             fee_params,
+            governance_params,
+            ibc_params,
+            stake_params,
         })
     }
 }
@@ -676,6 +681,7 @@ impl<
             + penumbra_dao::component::StateReadExt
             + penumbra_chain::component::StateReadExt
             + penumbra_ibc::component::StateReadExt
+            + penumbra_distributions::component::StateReadExt
             + ?Sized,
     > StateReadExt for T
 {
