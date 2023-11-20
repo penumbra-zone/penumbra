@@ -65,19 +65,37 @@ impl Snapshot {
         let db = self.0.db.clone();
         let mut proofs = vec![];
 
-        let main_store_config = self.0.multistore_cache.config.main_store.clone();
-        let main_version = self
-            .substore_version(&main_store_config)
-            .unwrap_or(u64::MAX);
-
-        let (_, substore_config) = self.0.multistore_cache.config.route_key_bytes(&key);
+        let (substore_key, substore_config) = self.0.multistore_cache.config.route_key_bytes(&key);
+        let substore_key_bytes = substore_key.to_vec();
         let substore_version = self.substore_version(&substore_config).unwrap_or(u64::MAX);
         let key_to_substore_root = substore_config.prefix.clone();
 
+        let substore = store::substore::SubstoreSnapshot {
+            config: substore_config,
+            rocksdb_snapshot: rocksdb_snapshot.clone(),
+            version: substore_version,
+            db: db.clone(),
+        };
+
+        let (substore_value, substore_commitment_proof) = tokio::task::Builder::new()
+            .name("Snapshot::get_with_proof")
+            .spawn_blocking({
+                let span = span.clone();
+                move || span.in_scope(|| substore.get_with_proof(substore_key_bytes))
+            })?
+            .await??;
+
+        proofs.push(substore_commitment_proof);
+
+        // in the case where we request a proof for a key that is in a substore, also get a proof from the root to the substore key.
         if key_to_substore_root != "" {
+            let main_store_config = self.0.multistore_cache.config.main_store.clone();
+            let main_version = self
+                .substore_version(&main_store_config)
+                .unwrap_or(u64::MAX);
             let mainstore = store::substore::SubstoreSnapshot {
                 config: main_store_config,
-                rocksdb_snapshot: rocksdb_snapshot.clone(),
+                rocksdb_snapshot,
                 version: main_version,
                 db: db.clone(),
             };
@@ -92,20 +110,6 @@ impl Snapshot {
 
             proofs.push(main_commitment_proof);
         }
-
-        let substore = store::substore::SubstoreSnapshot {
-            config: substore_config,
-            rocksdb_snapshot,
-            version: substore_version,
-            db: db.clone(),
-        };
-
-        let (substore_value, substore_commitment_proof) = tokio::task::Builder::new()
-            .name("Snapshot::get_with_proof")
-            .spawn_blocking(move || span.in_scope(|| substore.get_with_proof(key)))?
-            .await??;
-
-        proofs.push(substore_commitment_proof);
 
         Ok((
             substore_value,
