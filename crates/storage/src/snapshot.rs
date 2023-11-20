@@ -2,6 +2,7 @@ use std::{any::Any, sync::Arc};
 
 use anyhow::Result;
 use async_trait::async_trait;
+use ibc_types::core::commitment::MerkleProof;
 use tokio::sync::mpsc;
 use tracing::Span;
 
@@ -58,27 +59,60 @@ impl Snapshot {
     /// Returns some value corresponding to the key, along with an ICS23 existence proof
     /// up to the current JMT root hash. If the key is not present, returns `None` and a
     /// non-existence proof.
-    pub async fn get_with_proof(
-        &self,
-        key: Vec<u8>,
-    ) -> Result<(Option<Vec<u8>>, ics23::CommitmentProof)> {
+    pub async fn get_with_proof(&self, key: Vec<u8>) -> Result<(Option<Vec<u8>>, MerkleProof)> {
         let span = tracing::Span::current();
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
+        let mut proofs = vec![];
 
-        let (_, config) = self.0.multistore_cache.config.route_key_bytes(&key);
-        let version = self.substore_version(&config).unwrap_or(u64::MAX);
+        let main_store_config = self.0.multistore_cache.config.main_store.clone();
+        let main_version = self
+            .substore_version(&main_store_config)
+            .unwrap_or(u64::MAX);
+
+        let (_, substore_config) = self.0.multistore_cache.config.route_key_bytes(&key);
+        let substore_version = self.substore_version(&substore_config).unwrap_or(u64::MAX);
+        let key_to_substore_root = substore_config.prefix.clone();
+
+        if key_to_substore_root != "" {
+            let mainstore = store::substore::SubstoreSnapshot {
+                config: main_store_config,
+                rocksdb_snapshot: rocksdb_snapshot.clone(),
+                version: main_version,
+                db: db.clone(),
+            };
+
+            let (_, main_commitment_proof) = tokio::task::Builder::new()
+                .name("Snapshot::get_with_proof")
+                .spawn_blocking({
+                    let span = span.clone();
+                    move || span.in_scope(|| mainstore.get_with_proof(key_to_substore_root.into()))
+                })?
+                .await??;
+
+            proofs.push(main_commitment_proof);
+        }
 
         let substore = store::substore::SubstoreSnapshot {
-            config,
+            config: substore_config,
             rocksdb_snapshot,
-            version,
-            db,
+            version: substore_version,
+            db: db.clone(),
         };
-        tokio::task::Builder::new()
+
+        let (substore_value, substore_commitment_proof) = tokio::task::Builder::new()
             .name("Snapshot::get_with_proof")
             .spawn_blocking(move || span.in_scope(|| substore.get_with_proof(key)))?
-            .await?
+            .await??;
+
+        proofs.push(substore_commitment_proof);
+
+        Ok((
+            substore_value,
+            MerkleProof {
+                proofs: proofs.clone(),
+            },
+        ))
     }
 
     pub fn prefix_version(&self, prefix: &str) -> Result<Option<jmt::Version>> {

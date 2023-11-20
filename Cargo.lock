@@ -5796,6 +5796,7 @@ dependencies = [
  "futures",
  "hex",
  "ibc-proto",
+ "ibc-types",
  "ics23",
  "jmt",
  "metrics",
