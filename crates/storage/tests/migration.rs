@@ -1,13 +1,11 @@
 #![cfg(feature = "migration")]
 use jmt::RootHash;
-//use jmt::RootHash;
 use penumbra_storage::StateDelta;
 use penumbra_storage::StateRead;
 use penumbra_storage::StateWrite;
 use penumbra_storage::Storage;
 use tempfile;
 use tokio;
-// use tokio_stream::StreamExt;
 
 /*
  * Migration tests.
