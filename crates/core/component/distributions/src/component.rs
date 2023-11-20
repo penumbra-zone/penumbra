@@ -7,11 +7,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use penumbra_component::Component;
-// use penumbra_dex::{component::StateReadExt as _, component::StateWriteExt as _};
-// use penumbra_stake::{component::StateWriteExt as _, StateReadExt as _};
-use penumbra_asset::STAKING_TOKEN_ASSET_ID;
 use penumbra_num::Amount;
-use penumbra_shielded_pool::component::SupplyRead;
 use penumbra_storage::StateWrite;
 use tendermint::v0_37::abci;
 use tracing::instrument;
@@ -23,25 +19,11 @@ pub struct Distributions {}
 impl Component for Distributions {
     type AppState = ();
 
-    #[instrument(name = "distributions", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
+    #[instrument(name = "distributions", skip(_state, app_state))]
+    async fn init_chain<S: StateWrite>(mut _state: S, app_state: Option<&Self::AppState>) {
         match app_state {
             None => { /* Checkpoint -- no-op */ }
-            Some(_) => {
-                let genesis_issuance = state
-                    .token_supply(&*STAKING_TOKEN_ASSET_ID)
-                    .await
-                    .expect("supply is valid")
-                    .expect("shielded pool component has tallied genesis issuance");
-                tracing::debug!(
-                    "total genesis issuance of staking token: {}",
-                    genesis_issuance
-                );
-                // TODO(erwan): it's not yet totally clear if it is necessary, or even desirable, for the
-                // distributions component to track the total issuance. The shielded pool component
-                // already does that. We do it anyway for now so that we can write the rest of the scaffolding.
-                state.set_staking_token_issuance_for_epoch(genesis_issuance);
-            }
+            Some(_) => { /* no-op, future check of genesis chain parameters? */ }
         };
     }
 
