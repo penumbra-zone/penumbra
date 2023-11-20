@@ -53,6 +53,12 @@ pub trait StateReadExt: StateRead {
             .map(|params| params.epoch_duration)
     }
 
+    async fn get_epoch_for_height(&self, height: u64) -> Result<Epoch> {
+        self.get(&state_key::epoch_by_height(height))
+            .await?
+            .ok_or_else(|| anyhow!("missing epoch for height"))
+    }
+
     /// Gets the chain ID.
     async fn get_chain_id(&self) -> Result<String> {
         // this might be a bit wasteful -- does it matter?  who knows, at this

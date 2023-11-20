@@ -21,8 +21,8 @@ pub trait StateReadExt: StateRead {
             .ok_or_else(|| anyhow::anyhow!("Missing DistributionsParameters"))
     }
 
-    async fn total_issued(&self) -> Result<Option<u64>> {
-        self.get_proto(&state_key::total_issued()).await
+    fn get_staking_token_issuance_for_epoch(&self) -> Option<Amount> {
+        self.object_get(&state_key::staking_token_issuance_for_epoch())
     }
 }
 
@@ -30,10 +30,9 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 #[async_trait]
 
 pub trait StateWriteExt: StateWrite + StateReadExt {
-    /// Set the total amount of staking tokens issued.
-    fn set_total_issued(&mut self, total_issued: Amount) {
-        let total = Amount::from(total_issued);
-        self.put(state_key::total_issued().to_string(), total)
+    /// Set the total amount of staking tokens issued for this epoch.
+    fn set_staking_token_issuance_for_epoch(&mut self, issuance: Amount) {
+        self.object_put(state_key::staking_token_issuance_for_epoch(), issuance);
     }
 
     /// Set the Distributions parameters in the JMT.
