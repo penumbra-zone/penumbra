@@ -5800,6 +5800,7 @@ dependencies = [
  "ics23",
  "jmt",
  "metrics",
+ "once_cell",
  "parking_lot 0.12.1",
  "pbjson 0.5.1",
  "pin-project",

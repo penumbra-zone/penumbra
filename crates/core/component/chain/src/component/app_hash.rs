@@ -7,8 +7,12 @@ use penumbra_storage::{RootHash, Snapshot};
 use sha2::{Digest, Sha256};
 use tendermint::merkle::proof::ProofOps as TendermintMerkleProof;
 
-pub static PENUMBRA_PROOF_SPECS: Lazy<Vec<ics23::ProofSpec>> =
-    Lazy::new(|| vec![penumbra_storage::ics23_spec(), apphash_spec()]);
+pub static PENUMBRA_PROOF_SPECS: Lazy<Vec<ics23::ProofSpec>> = Lazy::new(|| {
+    vec![
+        penumbra_storage::ics23_spec(),
+        penumbra_storage::ics23_spec(),
+    ]
+});
 
 pub static PENUMBRA_COMMITMENT_PREFIX: Lazy<MerklePrefix> = Lazy::new(|| MerklePrefix {
     key_prefix: APPHASH_DOMSEP.as_bytes().to_vec(),

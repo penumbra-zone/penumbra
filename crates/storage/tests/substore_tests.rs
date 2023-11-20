@@ -1,4 +1,7 @@
+use ibc_types::core::commitment::MerklePath;
+use ibc_types::core::commitment::MerkleRoot;
 use jmt::RootHash;
+use once_cell::sync::Lazy;
 use penumbra_storage::StateDelta;
 use penumbra_storage::StateRead;
 use penumbra_storage::StateWrite;
@@ -88,6 +91,31 @@ async fn test_substore_simple() -> anyhow::Result<()> {
     let retrieved_value_a1 = snapshot.get_raw(key_a_1.as_str()).await?.unwrap();
     assert_eq!(retrieved_value_a1, value_a_1);
 
+    pub static PENUMBRA_PROOF_SPECS: Lazy<Vec<ics23::ProofSpec>> = Lazy::new(|| {
+        vec![
+            penumbra_storage::ics23_spec(),
+            penumbra_storage::ics23_spec(),
+        ]
+    });
+
+    // check that we can verify proofs back to the root for the new value.
+    let root = snapshot.root_hash().await?;
+    let (value_a2_2, proof) = snapshot.get_with_proof(key_a_2.into()).await?;
+    assert_eq!(value_a2_2, Some(retrieved_value_a2.clone()));
+    let merkle_path = MerklePath {
+        key_path: vec!["prefix_a".to_string(), "key_2".to_string()],
+    };
+    let merkle_root = MerkleRoot {
+        hash: root.0.to_vec(),
+    };
+    proof.verify_membership(
+        &PENUMBRA_PROOF_SPECS,
+        merkle_root,
+        merkle_path,
+        retrieved_value_a2,
+        0,
+    )?;
+
     // Retrieve the substore root hash again, and check that it has changed.
     assert_ne!(global_root_hash_1, global_root_hash_2); // sanity check.
     let prefix_a_root_hash = snapshot.prefix_root_hash("prefix_a").await?;
@@ -154,7 +182,7 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_a{key}");
+        let key = format!("prefix_a/{key}");
         if counter >= kv_a.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
             panic!("prefix_keys query returned too many entries")
@@ -175,7 +203,7 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_b{key}");
+        let key = format!("prefix_b/{key}");
 
         if counter >= kv_b.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
@@ -268,7 +296,7 @@ async fn test_substore_prefix_keys() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_a{key}");
+        let key = format!("prefix_a/{key}");
         if counter >= kv_a.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
             panic!("prefix_keys query returned too many entries")
@@ -289,7 +317,7 @@ async fn test_substore_prefix_keys() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_b{key}");
+        let key = format!("prefix_b/{key}");
 
         if counter >= kv_b.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
@@ -385,7 +413,7 @@ async fn test_substore_nv_prefix() -> anyhow::Result<()> {
         let (raw_key, raw_value) = res?;
         let key = String::from_utf8(raw_key)?;
         let value = String::from_utf8(raw_value)?;
-        let key = format!("prefix_a{key}");
+        let key = format!("prefix_a/{key}");
         if counter >= kv_a.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
             panic!("prefix_keys query returned too many entries")
@@ -411,7 +439,7 @@ async fn test_substore_nv_prefix() -> anyhow::Result<()> {
         let (raw_key, raw_value) = res?;
         let key = String::from_utf8(raw_key)?;
         let value = String::from_utf8(raw_value)?;
-        let key = format!("prefix_b{key}");
+        let key = format!("prefix_b/{key}");
 
         if counter >= kv_b.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
