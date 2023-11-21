@@ -9,6 +9,13 @@ pub struct GetTxRequest {
     #[prost(bool, tag = "2")]
     pub prove: bool,
 }
+impl ::prost::Name for GetTxRequest {
+    const NAME: &'static str = "GetTxRequest";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
+}
 /// GetTxResponse is the response type for the GetTx RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -25,6 +32,13 @@ pub struct GetTxResponse {
     #[prost(bytes = "vec", tag = "5")]
     pub tx: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for GetTxResponse {
+    const NAME: &'static str = "GetTxResponse";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxResult {
@@ -37,6 +51,13 @@ pub struct TxResult {
     #[prost(message, repeated, tag = "4")]
     pub tags: ::prost::alloc::vec::Vec<Tag>,
 }
+impl ::prost::Name for TxResult {
+    const NAME: &'static str = "TxResult";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Tag {
@@ -47,6 +68,13 @@ pub struct Tag {
     #[prost(bool, tag = "3")]
     pub index: bool,
 }
+impl ::prost::Name for Tag {
+    const NAME: &'static str = "Tag";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
+}
 /// BroadcastTxAsyncRequest is the request type for the BroadcastTxAsync RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -55,6 +83,13 @@ pub struct BroadcastTxAsyncRequest {
     pub params: ::prost::alloc::vec::Vec<u8>,
     #[prost(uint64, tag = "2")]
     pub req_id: u64,
+}
+impl ::prost::Name for BroadcastTxAsyncRequest {
+    const NAME: &'static str = "BroadcastTxAsyncRequest";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
 }
 /// BroadcastTxAsyncResponse is the response type for the BroadcastTxAsync RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -69,6 +104,13 @@ pub struct BroadcastTxAsyncResponse {
     #[prost(bytes = "vec", tag = "4")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for BroadcastTxAsyncResponse {
+    const NAME: &'static str = "BroadcastTxAsyncResponse";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
+}
 /// BroadcastTxSyncRequest is the request type for the BroadcastTxSync RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -77,6 +119,13 @@ pub struct BroadcastTxSyncRequest {
     pub params: ::prost::alloc::vec::Vec<u8>,
     #[prost(uint64, tag = "2")]
     pub req_id: u64,
+}
+impl ::prost::Name for BroadcastTxSyncRequest {
+    const NAME: &'static str = "BroadcastTxSyncRequest";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
 }
 /// BroadcastTxSyncResponse is the response type for the BroadcastTxSync RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -91,10 +140,24 @@ pub struct BroadcastTxSyncResponse {
     #[prost(bytes = "vec", tag = "4")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for BroadcastTxSyncResponse {
+    const NAME: &'static str = "BroadcastTxSyncResponse";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
+}
 /// GetStatusRequest is the request type for the Query/GetStatus RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetStatusRequest {}
+impl ::prost::Name for GetStatusRequest {
+    const NAME: &'static str = "GetStatusRequest";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
+}
 /// GetStatusResponse is the response type for the Query/GetStatus RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -109,6 +172,13 @@ pub struct GetStatusResponse {
     pub validator_info: ::core::option::Option<
         super::super::super::super::tendermint::types::Validator,
     >,
+}
+impl ::prost::Name for GetStatusResponse {
+    const NAME: &'static str = "GetStatusResponse";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -130,6 +200,13 @@ pub struct SyncInfo {
     #[prost(bool, tag = "9")]
     pub catching_up: bool,
 }
+impl ::prost::Name for SyncInfo {
+    const NAME: &'static str = "SyncInfo";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
+}
 /// ABCIQueryRequest defines the request structure for the ABCIQuery gRPC query.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -142,6 +219,13 @@ pub struct AbciQueryRequest {
     pub height: i64,
     #[prost(bool, tag = "4")]
     pub prove: bool,
+}
+impl ::prost::Name for AbciQueryRequest {
+    const NAME: &'static str = "ABCIQueryRequest";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
 }
 /// ABCIQueryResponse defines the response structure for the ABCIQuery gRPC query.
 ///
@@ -173,12 +257,26 @@ pub struct AbciQueryResponse {
     #[prost(string, tag = "10")]
     pub codespace: ::prost::alloc::string::String,
 }
+impl ::prost::Name for AbciQueryResponse {
+    const NAME: &'static str = "ABCIQueryResponse";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
+}
 /// GetBlockByHeightRequest is the request type for the Query/GetBlockByHeight RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetBlockByHeightRequest {
     #[prost(int64, tag = "1")]
     pub height: i64,
+}
+impl ::prost::Name for GetBlockByHeightRequest {
+    const NAME: &'static str = "GetBlockByHeightRequest";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
 }
 /// GetBlockByHeightResponse is the response type for the Query/GetBlockByHeight RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -192,6 +290,13 @@ pub struct GetBlockByHeightResponse {
     pub block: ::core::option::Option<
         super::super::super::super::tendermint::types::Block,
     >,
+}
+impl ::prost::Name for GetBlockByHeightResponse {
+    const NAME: &'static str = "GetBlockByHeightResponse";
+    const PACKAGE: &'static str = "penumbra.util.tendermint_proxy.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.util.tendermint_proxy.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]

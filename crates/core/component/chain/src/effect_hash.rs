@@ -1,6 +1,4 @@
-use penumbra_proto::{
-    penumbra::core::component::chain::v1alpha1 as pb_crypto, DomainType, TypeUrl,
-};
+use penumbra_proto::{penumbra::core::component::chain::v1alpha1 as pb_crypto, DomainType};
 
 /// Something that can be hashed to produce an [`EffectHash`].
 pub trait EffectingData {
@@ -34,10 +32,6 @@ impl std::fmt::Debug for EffectHash {
             .field(&hex::encode(self.0))
             .finish()
     }
-}
-
-impl TypeUrl for EffectHash {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.EffectHash";
 }
 
 impl DomainType for EffectHash {

@@ -10,7 +10,7 @@ use ark_ff::fields::PrimeField;
 use decaf377::Fq;
 use penumbra_num::Amount;
 use penumbra_proto::{
-    penumbra::core::asset::v1alpha1 as pb, view::v1alpha1::AssetsResponse, DomainType, TypeUrl,
+    penumbra::core::asset::v1alpha1 as pb, view::v1alpha1::AssetsResponse, DomainType,
 };
 use serde::{Deserialize, Serialize};
 
@@ -45,10 +45,6 @@ pub(super) struct Inner {
     symbol: String,
     uri: String,
     uri_hash: String,
-}
-
-impl TypeUrl for DenomMetadata {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.DenomMetadata";
 }
 
 impl DomainType for DenomMetadata {

@@ -3,9 +3,7 @@ use ark_serialize::CanonicalDeserialize;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use penumbra_num::Amount;
-use penumbra_proto::{
-    penumbra::core::asset::v1alpha1 as pb, serializers::bech32str, DomainType, TypeUrl,
-};
+use penumbra_proto::{penumbra::core::asset::v1alpha1 as pb, serializers::bech32str, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::Value;
@@ -64,10 +62,6 @@ impl TryFrom<pb::AssetId> for Id {
             ))
         }
     }
-}
-
-impl TypeUrl for Id {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.AssetId";
 }
 
 impl DomainType for Id {

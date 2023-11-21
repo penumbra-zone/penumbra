@@ -5,6 +5,15 @@ pub struct ZkDelegatorVoteProof {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ZkDelegatorVoteProof {
+    const NAME: &'static str = "ZKDelegatorVoteProof";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalSubmit {
@@ -17,6 +26,15 @@ pub struct ProposalSubmit {
         super::super::super::num::v1alpha1::Amount,
     >,
 }
+impl ::prost::Name for ProposalSubmit {
+    const NAME: &'static str = "ProposalSubmit";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalWithdraw {
@@ -26,6 +44,15 @@ pub struct ProposalWithdraw {
     /// The reason for the proposal being withdrawn.
     #[prost(string, tag = "2")]
     pub reason: ::prost::alloc::string::String,
+}
+impl ::prost::Name for ProposalWithdraw {
+    const NAME: &'static str = "ProposalWithdraw";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -42,6 +69,15 @@ pub struct ProposalDepositClaim {
     #[prost(message, optional, tag = "3")]
     pub outcome: ::core::option::Option<ProposalOutcome>,
 }
+impl ::prost::Name for ProposalDepositClaim {
+    const NAME: &'static str = "ProposalDepositClaim";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorVote {
@@ -54,11 +90,29 @@ pub struct ValidatorVote {
         super::super::super::super::crypto::decaf377_rdsa::v1alpha1::SpendAuthSignature,
     >,
 }
+impl ::prost::Name for ValidatorVote {
+    const NAME: &'static str = "ValidatorVote";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorVoteReason {
     #[prost(string, tag = "1")]
     pub reason: ::prost::alloc::string::String,
+}
+impl ::prost::Name for ValidatorVoteReason {
+    const NAME: &'static str = "ValidatorVoteReason";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -83,6 +137,15 @@ pub struct ValidatorVoteBody {
     #[prost(message, optional, tag = "5")]
     pub reason: ::core::option::Option<ValidatorVoteReason>,
 }
+impl ::prost::Name for ValidatorVoteBody {
+    const NAME: &'static str = "ValidatorVoteBody";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelegatorVote {
@@ -97,6 +160,15 @@ pub struct DelegatorVote {
     /// The vote proof is authorizing data.
     #[prost(message, optional, tag = "3")]
     pub proof: ::core::option::Option<ZkDelegatorVoteProof>,
+}
+impl ::prost::Name for DelegatorVote {
+    const NAME: &'static str = "DelegatorVote";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -125,6 +197,15 @@ pub struct DelegatorVoteBody {
     #[prost(bytes = "vec", tag = "7")]
     pub rk: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for DelegatorVoteBody {
+    const NAME: &'static str = "DelegatorVoteBody";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DelegatorVoteView {
@@ -143,11 +224,31 @@ pub mod delegator_vote_view {
             super::super::super::shielded_pool::v1alpha1::NoteView,
         >,
     }
+    impl ::prost::Name for Visible {
+        const NAME: &'static str = "Visible";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.DelegatorVoteView.{}",
+                Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Opaque {
         #[prost(message, optional, tag = "1")]
         pub delegator_vote: ::core::option::Option<super::DelegatorVote>,
+    }
+    impl ::prost::Name for Opaque {
+        const NAME: &'static str = "Opaque";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.DelegatorVoteView.{}",
+                Self::NAME
+            )
+        }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -156,6 +257,15 @@ pub mod delegator_vote_view {
         Visible(Visible),
         #[prost(message, tag = "2")]
         Opaque(Opaque),
+    }
+}
+impl ::prost::Name for DelegatorVoteView {
+    const NAME: &'static str = "DelegatorVoteView";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -191,6 +301,15 @@ pub struct DelegatorVotePlan {
     #[prost(bytes = "vec", tag = "9")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for DelegatorVotePlan {
+    const NAME: &'static str = "DelegatorVotePlan";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DaoDeposit {
@@ -198,12 +317,30 @@ pub struct DaoDeposit {
     #[prost(message, optional, tag = "1")]
     pub value: ::core::option::Option<super::super::super::asset::v1alpha1::Value>,
 }
+impl ::prost::Name for DaoDeposit {
+    const NAME: &'static str = "DaoDeposit";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DaoSpend {
     /// The value to spend from the DAO.
     #[prost(message, optional, tag = "1")]
     pub value: ::core::option::Option<super::super::super::asset::v1alpha1::Value>,
+}
+impl ::prost::Name for DaoSpend {
+    const NAME: &'static str = "DaoSpend";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -214,6 +351,15 @@ pub struct DaoOutput {
     /// The address to send the output to.
     #[prost(message, optional, tag = "2")]
     pub address: ::core::option::Option<super::super::super::keys::v1alpha1::Address>,
+}
+impl ::prost::Name for DaoOutput {
+    const NAME: &'static str = "DaoOutput";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// A vote on a proposal.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -269,6 +415,15 @@ pub mod vote {
         }
     }
 }
+impl ::prost::Name for Vote {
+    const NAME: &'static str = "Vote";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// The current state of a proposal.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -283,6 +438,16 @@ pub mod proposal_state {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Voting {}
+    impl ::prost::Name for Voting {
+        const NAME: &'static str = "Voting";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.ProposalState.{}",
+                Self::NAME
+            )
+        }
+    }
     /// The proposal has been withdrawn but the voting period is not yet concluded.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -291,6 +456,16 @@ pub mod proposal_state {
         #[prost(string, tag = "1")]
         pub reason: ::prost::alloc::string::String,
     }
+    impl ::prost::Name for Withdrawn {
+        const NAME: &'static str = "Withdrawn";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.ProposalState.{}",
+                Self::NAME
+            )
+        }
+    }
     /// The voting period has ended, and the proposal has been assigned an outcome.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -298,12 +473,32 @@ pub mod proposal_state {
         #[prost(message, optional, tag = "1")]
         pub outcome: ::core::option::Option<super::ProposalOutcome>,
     }
+    impl ::prost::Name for Finished {
+        const NAME: &'static str = "Finished";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.ProposalState.{}",
+                Self::NAME
+            )
+        }
+    }
     /// The voting period has ended, and the original proposer has claimed their deposit.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Claimed {
         #[prost(message, optional, tag = "1")]
         pub outcome: ::core::option::Option<super::ProposalOutcome>,
+    }
+    impl ::prost::Name for Claimed {
+        const NAME: &'static str = "Claimed";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.ProposalState.{}",
+                Self::NAME
+            )
+        }
     }
     /// The state of the proposal.
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -317,6 +512,15 @@ pub mod proposal_state {
         Finished(Finished),
         #[prost(message, tag = "5")]
         Claimed(Claimed),
+    }
+}
+impl ::prost::Name for ProposalState {
+    const NAME: &'static str = "ProposalState";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
     }
 }
 /// The outcome of a concluded proposal.
@@ -336,10 +540,30 @@ pub mod proposal_outcome {
         #[prost(string, tag = "1")]
         pub reason: ::prost::alloc::string::String,
     }
+    impl ::prost::Name for Withdrawn {
+        const NAME: &'static str = "Withdrawn";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.ProposalOutcome.{}",
+                Self::NAME
+            )
+        }
+    }
     /// The proposal was passed.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Passed {}
+    impl ::prost::Name for Passed {
+        const NAME: &'static str = "Passed";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.ProposalOutcome.{}",
+                Self::NAME
+            )
+        }
+    }
     /// The proposal did not pass.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -348,6 +572,16 @@ pub mod proposal_outcome {
         #[prost(message, optional, tag = "1")]
         pub withdrawn: ::core::option::Option<Withdrawn>,
     }
+    impl ::prost::Name for Failed {
+        const NAME: &'static str = "Failed";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.ProposalOutcome.{}",
+                Self::NAME
+            )
+        }
+    }
     /// The proposal did not pass, and was slashed.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -355,6 +589,16 @@ pub mod proposal_outcome {
         /// Present if the proposal was withdrawn during the voting period.
         #[prost(message, optional, tag = "1")]
         pub withdrawn: ::core::option::Option<Withdrawn>,
+    }
+    impl ::prost::Name for Slashed {
+        const NAME: &'static str = "Slashed";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.ProposalOutcome.{}",
+                Self::NAME
+            )
+        }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -365,6 +609,15 @@ pub mod proposal_outcome {
         Failed(Failed),
         #[prost(message, tag = "3")]
         Slashed(Slashed),
+    }
+}
+impl ::prost::Name for ProposalOutcome {
+    const NAME: &'static str = "ProposalOutcome";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
     }
 }
 /// A tally of votes on a proposal.
@@ -380,6 +633,15 @@ pub struct Tally {
     /// The number of abstentions.
     #[prost(uint64, tag = "3")]
     pub abstain: u64,
+}
+impl ::prost::Name for Tally {
+    const NAME: &'static str = "Tally";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// A proposal to be voted upon.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -419,6 +681,15 @@ pub mod proposal {
         #[prost(string, tag = "1")]
         pub commit: ::prost::alloc::string::String,
     }
+    impl ::prost::Name for Signaling {
+        const NAME: &'static str = "Signaling";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
+            )
+        }
+    }
     /// An emergency proposal can be passed instantaneously by a 2/3 majority of validators, without
     /// waiting for the voting period to expire.
     ///
@@ -430,6 +701,15 @@ pub mod proposal {
         /// If `true`, the chain will halt immediately when the proposal is passed.
         #[prost(bool, tag = "1")]
         pub halt_chain: bool,
+    }
+    impl ::prost::Name for Emergency {
+        const NAME: &'static str = "Emergency";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
+            )
+        }
     }
     /// A parameter change proposal describes a replacement of the app parameters, which should take
     /// effect when the proposal is passed.
@@ -447,6 +727,15 @@ pub mod proposal {
         #[prost(message, optional, tag = "2")]
         pub new_parameters: ::core::option::Option<super::ChangedAppParameters>,
     }
+    impl ::prost::Name for ParameterChange {
+        const NAME: &'static str = "ParameterChange";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
+            )
+        }
+    }
     /// A DAO spend proposal describes zero or more transactions to execute on behalf of the DAO, with
     /// access to its funds, and zero or more scheduled transactions from previous passed proposals to
     /// cancel.
@@ -459,6 +748,15 @@ pub mod proposal {
         #[prost(message, optional, tag = "2")]
         pub transaction_plan: ::core::option::Option<::pbjson_types::Any>,
     }
+    impl ::prost::Name for DaoSpend {
+        const NAME: &'static str = "DaoSpend";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
+            )
+        }
+    }
     /// An upgrade plan describes a candidate upgrade to be executed at a certain height. If passed, the chain
     /// will halt at the specified height.
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -466,6 +764,24 @@ pub mod proposal {
     pub struct UpgradePlan {
         #[prost(uint64, tag = "1")]
         pub height: u64,
+    }
+    impl ::prost::Name for UpgradePlan {
+        const NAME: &'static str = "UpgradePlan";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for Proposal {
+    const NAME: &'static str = "Proposal";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -478,6 +794,15 @@ pub struct ProposalInfoRequest {
     #[prost(uint64, tag = "2")]
     pub proposal_id: u64,
 }
+impl ::prost::Name for ProposalInfoRequest {
+    const NAME: &'static str = "ProposalInfoRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalInfoResponse {
@@ -488,6 +813,15 @@ pub struct ProposalInfoResponse {
     #[prost(uint64, tag = "2")]
     pub start_position: u64,
 }
+impl ::prost::Name for ProposalInfoResponse {
+    const NAME: &'static str = "ProposalInfoResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalDataRequest {
@@ -497,6 +831,15 @@ pub struct ProposalDataRequest {
     /// The proposal id to request information on.
     #[prost(uint64, tag = "2")]
     pub proposal_id: u64,
+}
+impl ::prost::Name for ProposalDataRequest {
+    const NAME: &'static str = "ProposalDataRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -522,6 +865,15 @@ pub struct ProposalDataResponse {
         super::super::super::num::v1alpha1::Amount,
     >,
 }
+impl ::prost::Name for ProposalDataResponse {
+    const NAME: &'static str = "ProposalDataResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// Requests the validator rate data for a proposal.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -533,12 +885,30 @@ pub struct ProposalRateDataRequest {
     #[prost(uint64, tag = "2")]
     pub proposal_id: u64,
 }
+impl ::prost::Name for ProposalRateDataRequest {
+    const NAME: &'static str = "ProposalRateDataRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// The rate data for a single validator.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalRateDataResponse {
     #[prost(message, optional, tag = "1")]
     pub rate_data: ::core::option::Option<super::super::stake::v1alpha1::RateData>,
+}
+impl ::prost::Name for ProposalRateDataResponse {
+    const NAME: &'static str = "ProposalRateDataResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// Requests the list of all proposals.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -552,6 +922,15 @@ pub struct ProposalListRequest {
     /// TODO: we could filter by starting block height here?
     #[prost(bool, tag = "2")]
     pub inactive: bool,
+}
+impl ::prost::Name for ProposalListRequest {
+    const NAME: &'static str = "ProposalListRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// The data for a single proposal.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -573,6 +952,15 @@ pub struct ProposalListResponse {
     #[prost(message, optional, tag = "5")]
     pub state: ::core::option::Option<ProposalState>,
 }
+impl ::prost::Name for ProposalListResponse {
+    const NAME: &'static str = "ProposalListResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// Requests the list of all validator votes for a given proposal.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -583,6 +971,15 @@ pub struct ValidatorVotesRequest {
     /// The proposal id to request information on.
     #[prost(uint64, tag = "2")]
     pub proposal_id: u64,
+}
+impl ::prost::Name for ValidatorVotesRequest {
+    const NAME: &'static str = "ValidatorVotesRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// The data for a single validator vote.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -596,6 +993,15 @@ pub struct ValidatorVotesResponse {
     pub identity_key: ::core::option::Option<
         super::super::super::keys::v1alpha1::IdentityKey,
     >,
+}
+impl ::prost::Name for ValidatorVotesResponse {
+    const NAME: &'static str = "ValidatorVotesResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// Governance configuration data.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -621,6 +1027,15 @@ pub struct GovernanceParameters {
     #[prost(string, tag = "5")]
     pub proposal_slash_threshold: ::prost::alloc::string::String,
 }
+impl ::prost::Name for GovernanceParameters {
+    const NAME: &'static str = "GovernanceParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// Governance genesis state.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -628,6 +1043,15 @@ pub struct GenesisContent {
     /// Governance parameters.
     #[prost(message, optional, tag = "1")]
     pub governance_params: ::core::option::Option<GovernanceParameters>,
+}
+impl ::prost::Name for GenesisContent {
+    const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// Note: must be kept in sync with AppParameters.
 /// Each field here is optional.
@@ -662,6 +1086,15 @@ pub struct ChangedAppParameters {
         super::super::distributions::v1alpha1::DistributionsParameters,
     >,
 }
+impl ::prost::Name for ChangedAppParameters {
+    const NAME: &'static str = "ChangedAppParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChangedAppParametersSet {
@@ -671,6 +1104,15 @@ pub struct ChangedAppParametersSet {
     /// The new set of parameters the proposal is trying to enact.
     #[prost(message, optional, tag = "2")]
     pub new: ::core::option::Option<ChangedAppParameters>,
+}
+impl ::prost::Name for ChangedAppParametersSet {
+    const NAME: &'static str = "ChangedAppParametersSet";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -687,6 +1129,15 @@ pub struct VotingPowerAtProposalStartRequest {
         super::super::super::keys::v1alpha1::IdentityKey,
     >,
 }
+impl ::prost::Name for VotingPowerAtProposalStartRequest {
+    const NAME: &'static str = "VotingPowerAtProposalStartRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VotingPowerAtProposalStartResponse {
@@ -697,6 +1148,15 @@ pub struct VotingPowerAtProposalStartResponse {
     #[prost(uint64, tag = "1")]
     pub voting_power: u64,
 }
+impl ::prost::Name for VotingPowerAtProposalStartResponse {
+    const NAME: &'static str = "VotingPowerAtProposalStartResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AllTalliedDelegatorVotesForProposalRequest {
@@ -706,6 +1166,15 @@ pub struct AllTalliedDelegatorVotesForProposalRequest {
     /// The proposal id to request information on.
     #[prost(uint64, tag = "2")]
     pub proposal_id: u64,
+}
+impl ::prost::Name for AllTalliedDelegatorVotesForProposalRequest {
+    const NAME: &'static str = "AllTalliedDelegatorVotesForProposalRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -719,6 +1188,15 @@ pub struct AllTalliedDelegatorVotesForProposalResponse {
         super::super::super::keys::v1alpha1::IdentityKey,
     >,
 }
+impl ::prost::Name for AllTalliedDelegatorVotesForProposalResponse {
+    const NAME: &'static str = "AllTalliedDelegatorVotesForProposalResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NextProposalIdRequest {
@@ -726,12 +1204,30 @@ pub struct NextProposalIdRequest {
     #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
 }
+impl ::prost::Name for NextProposalIdRequest {
+    const NAME: &'static str = "NextProposalIdRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NextProposalIdResponse {
     /// The next proposal ID.
     #[prost(uint64, tag = "1")]
     pub next_proposal_id: u64,
+}
+impl ::prost::Name for NextProposalIdResponse {
+    const NAME: &'static str = "NextProposalIdResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]

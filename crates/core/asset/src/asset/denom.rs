@@ -1,4 +1,4 @@
-use penumbra_proto::{penumbra::core::asset::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::asset::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 /// An asset denomination.
 ///
@@ -8,10 +8,6 @@ use serde::{Deserialize, Serialize};
 #[serde(try_from = "pb::Denom", into = "pb::Denom")]
 pub struct Denom {
     pub denom: String,
-}
-
-impl TypeUrl for Denom {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Denom";
 }
 
 impl DomainType for Denom {

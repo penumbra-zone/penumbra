@@ -15,6 +15,13 @@ pub struct InfoRequest {
     #[prost(string, tag = "4")]
     pub abci_version: ::prost::alloc::string::String,
 }
+impl ::prost::Name for InfoRequest {
+    const NAME: &'static str = "InfoRequest";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Contains information about the chain state as known by the node.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -35,6 +42,13 @@ pub struct InfoResponse {
     #[prost(bytes = "vec", tag = "5")]
     pub last_block_app_hash: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for InfoResponse {
+    const NAME: &'static str = "InfoResponse";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
+}
 /// The root identity key material for a shard operator.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -42,6 +56,13 @@ pub struct ShardIdentityKey {
     /// An Ed25519 key.
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ShardIdentityKey {
+    const NAME: &'static str = "ShardIdentityKey";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
 }
 /// The key that Tendermint will use to identify a validator.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -51,6 +72,13 @@ pub struct ConsensusKey {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ConsensusKey {
+    const NAME: &'static str = "ConsensusKey";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A subkey a shard uses to sign messages sent to the ledger.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -58,6 +86,13 @@ pub struct ShardMessageKey {
     /// An Ed25519 key.
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ShardMessageKey {
+    const NAME: &'static str = "ShardMessageKey";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
 }
 /// The threshold key share controlled by a shard operator.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -67,6 +102,13 @@ pub struct ShardKey {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ShardKey {
+    const NAME: &'static str = "ShardKey";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A signature over a message sent to the ledger by a shard.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -74,6 +116,13 @@ pub struct ShardMessageSignature {
     /// An Ed25519 signature.
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ShardMessageSignature {
+    const NAME: &'static str = "ShardMessageSignature";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A description of one of the operators of a threshold key share (shard).
 ///
@@ -99,6 +148,13 @@ pub struct ShardDescription {
     #[prost(string, tag = "4")]
     pub label: ::prost::alloc::string::String,
 }
+impl ::prost::Name for ShardDescription {
+    const NAME: &'static str = "ShardDescription";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A self-authenticating `ShardDescription`, signed with the `ShardIdentityKey`.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -107,6 +163,13 @@ pub struct ShardOperator {
     pub description: ::core::option::Option<ShardDescription>,
     #[prost(bytes = "vec", tag = "2")]
     pub sig: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ShardOperator {
+    const NAME: &'static str = "ShardOperator";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
 }
 /// The genesis data describing the set of shard operators who jointly control
 /// the Narsil instance.
@@ -123,6 +186,13 @@ pub struct GenesisData {
     /// The number of shards required to sign a message (the `t` in `t-of-n`).
     #[prost(uint32, tag = "2")]
     pub threshold: u32,
+}
+impl ::prost::Name for GenesisData {
+    const NAME: &'static str = "GenesisData";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Describes the Penumbra wallet id jointly controlled by the Narsil instance.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -143,6 +213,13 @@ pub struct WalletInfo {
     #[prost(message, repeated, tag = "2")]
     pub participants: ::prost::alloc::vec::Vec<ShardInfo>,
 }
+impl ::prost::Name for WalletInfo {
+    const NAME: &'static str = "WalletInfo";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Describes a single shard of the Narsil instance.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -158,6 +235,13 @@ pub struct ShardInfo {
     /// The shard operator's identity key, used to identify the operator of this shard.
     #[prost(message, optional, tag = "3")]
     pub identity_key: ::core::option::Option<ShardIdentityKey>,
+}
+impl ::prost::Name for ShardInfo {
+    const NAME: &'static str = "ShardInfo";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Transaction authorization requests are identified by the proposed
 /// transaction's effect hash.
@@ -178,6 +262,13 @@ pub struct RequestIndex {
         super::super::super::core::component::chain::v1alpha1::EffectHash,
     >,
 }
+impl ::prost::Name for RequestIndex {
+    const NAME: &'static str = "RequestIndex";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Identifies a particular signing ceremony.
 ///
 /// Ceremonies are identified first by request index and then by a sub-index for
@@ -190,6 +281,13 @@ pub struct CeremonyIndex {
     #[prost(uint64, tag = "2")]
     pub ceremony_index: u64,
 }
+impl ::prost::Name for CeremonyIndex {
+    const NAME: &'static str = "CeremonyIndex";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A committee of shards assigned to carry out a particular signing ceremony.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -198,6 +296,13 @@ pub struct Committee {
     pub ceremony: ::core::option::Option<CeremonyIndex>,
     #[prost(message, repeated, tag = "2")]
     pub participants: ::prost::alloc::vec::Vec<ShardInfo>,
+}
+impl ::prost::Name for Committee {
+    const NAME: &'static str = "Committee";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Records a failed ceremony and the reason why it failed.
 ///
@@ -213,15 +318,51 @@ pub mod ceremony_failure {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Timeout {}
+    impl ::prost::Name for Timeout {
+        const NAME: &'static str = "Timeout";
+        const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.narsil.ledger.v1alpha1.CeremonyFailure.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct BadCommitment {}
+    impl ::prost::Name for BadCommitment {
+        const NAME: &'static str = "BadCommitment";
+        const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.narsil.ledger.v1alpha1.CeremonyFailure.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct BadShare {}
+    impl ::prost::Name for BadShare {
+        const NAME: &'static str = "BadShare";
+        const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.narsil.ledger.v1alpha1.CeremonyFailure.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Canceled {}
+    impl ::prost::Name for Canceled {
+        const NAME: &'static str = "Canceled";
+        const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.narsil.ledger.v1alpha1.CeremonyFailure.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Failure {
@@ -233,6 +374,13 @@ pub mod ceremony_failure {
         BadShare(BadShare),
         #[prost(message, tag = "4")]
         Canceled(Canceled),
+    }
+}
+impl ::prost::Name for CeremonyFailure {
+    const NAME: &'static str = "CeremonyFailure";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
     }
 }
 /// The data recorded on-chain about the current state of a signing ceremony.
@@ -267,6 +415,15 @@ pub mod ceremony_state {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Pending {}
+    impl ::prost::Name for Pending {
+        const NAME: &'static str = "Pending";
+        const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.narsil.ledger.v1alpha1.CeremonyState.{}", Self::NAME
+            )
+        }
+    }
     /// A ceremony that has started round 1.
     ///
     /// The committee has been chosen and the ledger is waiting to record round 1 contributions from all committee members.
@@ -279,6 +436,15 @@ pub mod ceremony_state {
         /// A list of commitment messages received so far (begins empty).
         #[prost(message, repeated, tag = "2")]
         pub commitments: ::prost::alloc::vec::Vec<super::AuthorizeCommitment>,
+    }
+    impl ::prost::Name for StartedRound1 {
+        const NAME: &'static str = "StartedRound1";
+        const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.narsil.ledger.v1alpha1.CeremonyState.{}", Self::NAME
+            )
+        }
     }
     /// A ceremony that has started round 2.
     ///
@@ -295,6 +461,15 @@ pub mod ceremony_state {
         /// A list of authorization share messages received so far (begins empty).
         #[prost(message, repeated, tag = "3")]
         pub shares: ::prost::alloc::vec::Vec<super::AuthorizeShare>,
+    }
+    impl ::prost::Name for StartedRound2 {
+        const NAME: &'static str = "StartedRound2";
+        const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.narsil.ledger.v1alpha1.CeremonyState.{}", Self::NAME
+            )
+        }
     }
     /// A ceremony that has successfully finished.
     ///
@@ -317,6 +492,15 @@ pub mod ceremony_state {
             super::super::super::super::core::transaction::v1alpha1::AuthorizationData,
         >,
     }
+    impl ::prost::Name for Finished {
+        const NAME: &'static str = "Finished";
+        const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.narsil.ledger.v1alpha1.CeremonyState.{}", Self::NAME
+            )
+        }
+    }
     /// A ceremony that failed.
     ///
     /// The transcript of the ceremony is recorded along with the reason for the failure.
@@ -336,6 +520,15 @@ pub mod ceremony_state {
         #[prost(message, optional, tag = "4")]
         pub failure: ::core::option::Option<super::CeremonyFailure>,
     }
+    impl ::prost::Name for Failed {
+        const NAME: &'static str = "Failed";
+        const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.narsil.ledger.v1alpha1.CeremonyState.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum State {
@@ -349,6 +542,13 @@ pub mod ceremony_state {
         Finished(Finished),
         #[prost(message, tag = "5")]
         Failed(Failed),
+    }
+}
+impl ::prost::Name for CeremonyState {
+    const NAME: &'static str = "CeremonyState";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
     }
 }
 /// A packet of data sent to the Narsil ledger.
@@ -393,6 +593,13 @@ pub mod narsil_packet {
         DkgRound2(super::DkgRound2),
     }
 }
+impl ::prost::Name for NarsilPacket {
+    const NAME: &'static str = "NarsilPacket";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A wrapper around the FROST commitment message, exchanged in round 1 of the
 /// signing protocol for a single signature.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -401,6 +608,13 @@ pub struct FrostCommitment {
     #[prost(bytes = "vec", tag = "1")]
     pub payload: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for FrostCommitment {
+    const NAME: &'static str = "FrostCommitment";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A wrapper around the FROST signature share, exchanged in round 2 of the
 /// signing protocol for a single signature.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -408,6 +622,13 @@ pub struct FrostCommitment {
 pub struct FrostSignatureShare {
     #[prost(bytes = "vec", tag = "1")]
     pub payload: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for FrostSignatureShare {
+    const NAME: &'static str = "FrostSignatureShare";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A Narsil shard's commitment message for a single ceremony, which may perform
 /// multiple signatures (one for each spend in the `AuthorizeRequest`'s
@@ -434,6 +655,22 @@ pub mod authorize_commitment {
         pub ceremony_index: ::core::option::Option<super::CeremonyIndex>,
         #[prost(message, repeated, tag = "2")]
         pub commitments: ::prost::alloc::vec::Vec<super::FrostCommitment>,
+    }
+    impl ::prost::Name for Body {
+        const NAME: &'static str = "Body";
+        const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.narsil.ledger.v1alpha1.AuthorizeCommitment.{}", Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for AuthorizeCommitment {
+    const NAME: &'static str = "AuthorizeCommitment";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
     }
 }
 /// A Narsil shard's signature share message for a single ceremony, which may perform
@@ -462,6 +699,22 @@ pub mod authorize_share {
         #[prost(message, repeated, tag = "2")]
         pub commitments: ::prost::alloc::vec::Vec<super::FrostCommitment>,
     }
+    impl ::prost::Name for Body {
+        const NAME: &'static str = "Body";
+        const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.narsil.ledger.v1alpha1.AuthorizeShare.{}", Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for AuthorizeShare {
+    const NAME: &'static str = "AuthorizeShare";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A shard operator's round 1 contribution to the DKG ceremony.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -474,6 +727,13 @@ pub struct DkgRound1 {
     #[prost(message, optional, tag = "3")]
     pub signature: ::core::option::Option<ShardMessageSignature>,
 }
+impl ::prost::Name for DkgRound1 {
+    const NAME: &'static str = "DkgRound1";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A shard operator's round 2 contribution to the DKG ceremony.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -484,6 +744,13 @@ pub struct DkgRound2 {
     pub signer: ::core::option::Option<ShardMessageKey>,
     #[prost(message, optional, tag = "3")]
     pub signature: ::core::option::Option<ShardMessageSignature>,
+}
+impl ::prost::Name for DkgRound2 {
+    const NAME: &'static str = "DkgRound2";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
+    }
 }
 /// The data recorded on-chain about the current state of the DKG ceremony.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -499,6 +766,15 @@ pub mod dkg_state {
         #[prost(message, repeated, tag = "1")]
         pub round_1_messages: ::prost::alloc::vec::Vec<super::DkgRound1>,
     }
+    impl ::prost::Name for StartedRound1 {
+        const NAME: &'static str = "StartedRound1";
+        const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.narsil.ledger.v1alpha1.DkgState.{}", Self::NAME
+            )
+        }
+    }
     /// The DKG has started round 2, and the ledger is waiting to record contributions from shard operators.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -509,6 +785,15 @@ pub mod dkg_state {
         /// A list of round 2 messages received so far (begins empty).
         #[prost(message, repeated, tag = "2")]
         pub round_2_messages: ::prost::alloc::vec::Vec<super::DkgRound2>,
+    }
+    impl ::prost::Name for StartedRound2 {
+        const NAME: &'static str = "StartedRound2";
+        const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.narsil.ledger.v1alpha1.DkgState.{}", Self::NAME
+            )
+        }
     }
     /// The DKG has finished successfully, producing the jointly-controlled `WalletInfo`.
     ///
@@ -525,6 +810,22 @@ pub mod dkg_state {
         /// The jointly-controlled `WalletInfo` resulting from the DKG.
         #[prost(message, optional, tag = "3")]
         pub wallet_info: ::core::option::Option<super::WalletInfo>,
+    }
+    impl ::prost::Name for Finished {
+        const NAME: &'static str = "Finished";
+        const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.narsil.ledger.v1alpha1.DkgState.{}", Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for DkgState {
+    const NAME: &'static str = "DkgState";
+    const PACKAGE: &'static str = "penumbra.narsil.ledger.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.narsil.ledger.v1alpha1.{}", Self::NAME)
     }
 }
 /// Generated client implementations.

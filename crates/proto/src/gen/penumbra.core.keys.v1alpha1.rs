@@ -17,6 +17,13 @@ pub struct Address {
     #[prost(string, tag = "2")]
     pub alt_bech32m: ::prost::alloc::string::String,
 }
+impl ::prost::Name for Address {
+    const NAME: &'static str = "Address";
+    const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.keys.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AddressView {
@@ -35,11 +42,29 @@ pub mod address_view {
         #[prost(message, optional, tag = "3")]
         pub wallet_id: ::core::option::Option<super::WalletId>,
     }
+    impl ::prost::Name for Visible {
+        const NAME: &'static str = "Visible";
+        const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.keys.v1alpha1.AddressView.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Opaque {
         #[prost(message, optional, tag = "1")]
         pub address: ::core::option::Option<super::Address>,
+    }
+    impl ::prost::Name for Opaque {
+        const NAME: &'static str = "Opaque";
+        const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.keys.v1alpha1.AddressView.{}", Self::NAME
+            )
+        }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -50,11 +75,25 @@ pub mod address_view {
         Opaque(Opaque),
     }
 }
+impl ::prost::Name for AddressView {
+    const NAME: &'static str = "AddressView";
+    const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.keys.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PayloadKey {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for PayloadKey {
+    const NAME: &'static str = "PayloadKey";
+    const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.keys.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -62,11 +101,25 @@ pub struct SpendKey {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for SpendKey {
+    const NAME: &'static str = "SpendKey";
+    const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.keys.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpendVerificationKey {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for SpendVerificationKey {
+    const NAME: &'static str = "SpendVerificationKey";
+    const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.keys.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -74,17 +127,38 @@ pub struct FullViewingKey {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for FullViewingKey {
+    const NAME: &'static str = "FullViewingKey";
+    const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.keys.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WalletId {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for WalletId {
+    const NAME: &'static str = "WalletId";
+    const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.keys.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Diversifier {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for Diversifier {
+    const NAME: &'static str = "Diversifier";
+    const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.keys.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -94,12 +168,26 @@ pub struct AddressIndex {
     #[prost(bytes = "vec", tag = "3")]
     pub randomizer: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for AddressIndex {
+    const NAME: &'static str = "AddressIndex";
+    const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.keys.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A validator's identity key (decaf377-rdsa spendauth verification key).
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IdentityKey {
     #[prost(bytes = "vec", tag = "1")]
     pub ik: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for IdentityKey {
+    const NAME: &'static str = "IdentityKey";
+    const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.keys.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A validator's governance key (decaf377-rdsa spendauth verification key).
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -108,9 +196,23 @@ pub struct GovernanceKey {
     #[prost(bytes = "vec", tag = "1")]
     pub gk: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for GovernanceKey {
+    const NAME: &'static str = "GovernanceKey";
+    const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.keys.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusKey {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ConsensusKey {
+    const NAME: &'static str = "ConsensusKey";
+    const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.keys.v1alpha1.{}", Self::NAME)
+    }
 }

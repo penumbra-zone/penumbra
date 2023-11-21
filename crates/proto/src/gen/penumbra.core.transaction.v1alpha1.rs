@@ -14,12 +14,26 @@ pub struct Transaction {
         super::super::super::crypto::tct::v1alpha1::MerkleRoot,
     >,
 }
+impl ::prost::Name for Transaction {
+    const NAME: &'static str = "Transaction";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A transaction ID, the Sha256 hash of a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Id {
     #[prost(bytes = "vec", tag = "1")]
     pub hash: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for Id {
+    const NAME: &'static str = "Id";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
 }
 /// The body of a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -41,6 +55,13 @@ pub struct TransactionBody {
     #[prost(message, optional, tag = "5")]
     pub memo_data: ::core::option::Option<MemoData>,
 }
+impl ::prost::Name for TransactionBody {
+    const NAME: &'static str = "TransactionBody";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Represents the encrypted memo data.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -49,6 +70,13 @@ pub struct MemoData {
     /// outputs in the actions of the transaction. 528 bytes.
     #[prost(bytes = "vec", tag = "1")]
     pub encrypted_memo: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for MemoData {
+    const NAME: &'static str = "MemoData";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
 }
 /// The parameters determining if a transaction should be accepted by the chain.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -64,6 +92,13 @@ pub struct TransactionParameters {
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
 }
+impl ::prost::Name for TransactionParameters {
+    const NAME: &'static str = "TransactionParameters";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Detection data used by a detection server performing Fuzzy Message Detection.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -73,6 +108,13 @@ pub struct DetectionData {
     pub fmd_clues: ::prost::alloc::vec::Vec<
         super::super::super::crypto::decaf377_fmd::v1alpha1::Clue,
     >,
+}
+impl ::prost::Name for DetectionData {
+    const NAME: &'static str = "DetectionData";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A state change performed by a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -158,6 +200,13 @@ pub mod action {
         Ics20Withdrawal(super::super::super::component::ibc::v1alpha1::Ics20Withdrawal),
     }
 }
+impl ::prost::Name for Action {
+    const NAME: &'static str = "Action";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A transaction perspective is a bundle of key material and commitment openings
 /// that allow generating a view of a transaction from that perspective.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -185,6 +234,13 @@ pub struct TransactionPerspective {
     #[prost(message, optional, tag = "6")]
     pub transaction_id: ::core::option::Option<Id>,
 }
+impl ::prost::Name for TransactionPerspective {
+    const NAME: &'static str = "TransactionPerspective";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PayloadKeyWithCommitment {
@@ -194,6 +250,13 @@ pub struct PayloadKeyWithCommitment {
     pub commitment: ::core::option::Option<
         super::super::super::crypto::tct::v1alpha1::StateCommitment,
     >,
+}
+impl ::prost::Name for PayloadKeyWithCommitment {
+    const NAME: &'static str = "PayloadKeyWithCommitment";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -206,6 +269,13 @@ pub struct NullifierWithNote {
     pub note: ::core::option::Option<
         super::super::component::shielded_pool::v1alpha1::Note,
     >,
+}
+impl ::prost::Name for NullifierWithNote {
+    const NAME: &'static str = "NullifierWithNote";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
 }
 /// View of a Penumbra transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -223,6 +293,13 @@ pub struct TransactionView {
     pub anchor: ::core::option::Option<
         super::super::super::crypto::tct::v1alpha1::MerkleRoot,
     >,
+}
+impl ::prost::Name for TransactionView {
+    const NAME: &'static str = "TransactionView";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -244,6 +321,13 @@ pub struct TransactionBodyView {
     /// outputs in the actions of this transaction.
     #[prost(message, optional, tag = "5")]
     pub memo_view: ::core::option::Option<MemoView>,
+}
+impl ::prost::Name for TransactionBodyView {
+    const NAME: &'static str = "TransactionBodyView";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A view of a specific state change action performed by a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -331,6 +415,13 @@ pub mod action_view {
         Ics20Withdrawal(super::super::super::component::ibc::v1alpha1::Ics20Withdrawal),
     }
 }
+impl ::prost::Name for ActionView {
+    const NAME: &'static str = "ActionView";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
+}
 /// The data required to authorize a transaction plan.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -353,6 +444,13 @@ pub struct AuthorizationData {
         super::super::super::crypto::decaf377_rdsa::v1alpha1::SpendAuthSignature,
     >,
 }
+impl ::prost::Name for AuthorizationData {
+    const NAME: &'static str = "AuthorizationData";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
+}
 /// The data required for proving when building a transaction from a plan.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -368,6 +466,13 @@ pub struct WitnessData {
     pub state_commitment_proofs: ::prost::alloc::vec::Vec<
         super::super::super::crypto::tct::v1alpha1::StateCommitmentProof,
     >,
+}
+impl ::prost::Name for WitnessData {
+    const NAME: &'static str = "WitnessData";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Describes a planned transaction. Permits clients to prepare a transaction
 /// prior submission, so that a user can review it prior to authorizing its execution.
@@ -391,6 +496,13 @@ pub struct TransactionPlan {
     /// Planning interface for constructing an optional Memo for the Transaction.
     #[prost(message, optional, tag = "6")]
     pub memo_plan: ::core::option::Option<MemoPlan>,
+}
+impl ::prost::Name for TransactionPlan {
+    const NAME: &'static str = "TransactionPlan";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Describes a planned transaction action.
 ///
@@ -483,6 +595,13 @@ pub mod action_plan {
         DaoDeposit(super::super::super::component::governance::v1alpha1::DaoDeposit),
     }
 }
+impl ::prost::Name for ActionPlan {
+    const NAME: &'static str = "ActionPlan";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Describes a plan for forming a `Clue`.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -497,6 +616,13 @@ pub struct CluePlan {
     #[prost(uint64, tag = "3")]
     pub precision_bits: u64,
 }
+impl ::prost::Name for CluePlan {
+    const NAME: &'static str = "CluePlan";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Describes a plan for forming a `Memo`.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -508,11 +634,25 @@ pub struct MemoPlan {
     #[prost(bytes = "vec", tag = "2")]
     pub key: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for MemoPlan {
+    const NAME: &'static str = "MemoPlan";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MemoCiphertext {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for MemoCiphertext {
+    const NAME: &'static str = "MemoCiphertext";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -521,6 +661,13 @@ pub struct MemoPlaintext {
     pub return_address: ::core::option::Option<super::super::keys::v1alpha1::Address>,
     #[prost(string, tag = "2")]
     pub text: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MemoPlaintext {
+    const NAME: &'static str = "MemoPlaintext";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -531,6 +678,13 @@ pub struct MemoPlaintextView {
     >,
     #[prost(string, tag = "2")]
     pub text: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MemoPlaintextView {
+    const NAME: &'static str = "MemoPlaintextView";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -548,11 +702,29 @@ pub mod memo_view {
         #[prost(message, optional, tag = "2")]
         pub plaintext: ::core::option::Option<super::MemoPlaintextView>,
     }
+    impl ::prost::Name for Visible {
+        const NAME: &'static str = "Visible";
+        const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.transaction.v1alpha1.MemoView.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Opaque {
         #[prost(message, optional, tag = "1")]
         pub ciphertext: ::core::option::Option<super::MemoCiphertext>,
+    }
+    impl ::prost::Name for Opaque {
+        const NAME: &'static str = "Opaque";
+        const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.transaction.v1alpha1.MemoView.{}", Self::NAME
+            )
+        }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -561,5 +733,12 @@ pub mod memo_view {
         Visible(Visible),
         #[prost(message, tag = "2")]
         Opaque(Opaque),
+    }
+}
+impl ::prost::Name for MemoView {
+    const NAME: &'static str = "MemoView";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
     }
 }

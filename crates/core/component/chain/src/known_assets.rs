@@ -1,14 +1,10 @@
 use penumbra_asset::asset::{self, DenomMetadata};
-use penumbra_proto::{penumbra::core::component::chain::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::chain::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(try_from = "pb::KnownAssets", into = "pb::KnownAssets")]
 pub struct KnownAssets(pub Vec<DenomMetadata>);
-
-impl TypeUrl for KnownAssets {
-    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.KnownAssets";
-}
 
 impl DomainType for KnownAssets {
     type Proto = pb::KnownAssets;

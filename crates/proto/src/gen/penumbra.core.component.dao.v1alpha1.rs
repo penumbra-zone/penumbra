@@ -6,6 +6,13 @@ pub struct DaoParameters {
     #[prost(bool, tag = "1")]
     pub dao_spend_proposals_enabled: bool,
 }
+impl ::prost::Name for DaoParameters {
+    const NAME: &'static str = "DaoParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.dao.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dao.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Dao genesis state.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -13,6 +20,13 @@ pub struct GenesisContent {
     /// Dao parameters.
     #[prost(message, optional, tag = "1")]
     pub dao_params: ::core::option::Option<DaoParameters>,
+}
+impl ::prost::Name for GenesisContent {
+    const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.component.dao.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dao.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Requests the list of all asset balances associated with the DAO.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -27,6 +41,13 @@ pub struct DaoAssetBalancesRequest {
         super::super::super::asset::v1alpha1::AssetId,
     >,
 }
+impl ::prost::Name for DaoAssetBalancesRequest {
+    const NAME: &'static str = "DaoAssetBalancesRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.dao.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dao.v1alpha1.{}", Self::NAME)
+    }
+}
 /// The DAO's balance of a single asset.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -34,6 +55,13 @@ pub struct DaoAssetBalancesResponse {
     /// The balance for a single asset.
     #[prost(message, optional, tag = "1")]
     pub balance: ::core::option::Option<super::super::super::asset::v1alpha1::Value>,
+}
+impl ::prost::Name for DaoAssetBalancesResponse {
+    const NAME: &'static str = "DaoAssetBalancesResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.dao.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dao.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]

@@ -5,12 +5,26 @@ pub struct ZkSwapProof {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ZkSwapProof {
+    const NAME: &'static str = "ZKSwapProof";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A Penumbra ZK swap claim proof.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ZkSwapClaimProof {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ZkSwapClaimProof {
+    const NAME: &'static str = "ZKSwapClaimProof";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A transaction action that submits a swap to the dex.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -22,6 +36,13 @@ pub struct Swap {
     /// Encapsulates the authorized fields of the Swap action, used in signing.
     #[prost(message, optional, tag = "4")]
     pub body: ::core::option::Option<SwapBody>,
+}
+impl ::prost::Name for Swap {
+    const NAME: &'static str = "Swap";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A transaction action that obtains assets previously confirmed
 /// via a Swap transaction. Does not include a spend authorization
@@ -39,6 +60,13 @@ pub struct SwapClaim {
     /// The epoch duration of the chain when the swap claim took place.
     #[prost(uint64, tag = "7")]
     pub epoch_duration: u64,
+}
+impl ::prost::Name for SwapClaim {
+    const NAME: &'static str = "SwapClaim";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Encapsulates the authorized fields of the SwapClaim action, used in signing.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -63,6 +91,13 @@ pub struct SwapClaimBody {
     /// Input and output amounts, and asset IDs for the assets in the swap.
     #[prost(message, optional, tag = "6")]
     pub output_data: ::core::option::Option<BatchSwapOutputData>,
+}
+impl ::prost::Name for SwapClaimBody {
+    const NAME: &'static str = "SwapClaimBody";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 /// The authorized data of a Swap transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -89,6 +124,13 @@ pub struct SwapBody {
     #[prost(message, optional, tag = "5")]
     pub payload: ::core::option::Option<SwapPayload>,
 }
+impl ::prost::Name for SwapBody {
+    const NAME: &'static str = "SwapBody";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapPayload {
@@ -98,6 +140,13 @@ pub struct SwapPayload {
     >,
     #[prost(bytes = "vec", tag = "2")]
     pub encrypted_swap: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for SwapPayload {
+    const NAME: &'static str = "SwapPayload";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -123,6 +172,13 @@ pub struct SwapPlaintext {
     #[prost(bytes = "vec", tag = "6")]
     pub rseed: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for SwapPlaintext {
+    const NAME: &'static str = "SwapPlaintext";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapPlan {
@@ -138,6 +194,13 @@ pub struct SwapPlan {
     /// The second blinding factor to use for the ZK swap proof.
     #[prost(bytes = "vec", tag = "4")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for SwapPlan {
+    const NAME: &'static str = "SwapPlan";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -161,6 +224,13 @@ pub struct SwapClaimPlan {
     #[prost(bytes = "vec", tag = "6")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for SwapClaimPlan {
+    const NAME: &'static str = "SwapClaimPlan";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapView {
@@ -177,11 +247,29 @@ pub mod swap_view {
         #[prost(message, optional, tag = "3")]
         pub swap_plaintext: ::core::option::Option<super::SwapPlaintext>,
     }
+    impl ::prost::Name for Visible {
+        const NAME: &'static str = "Visible";
+        const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.dex.v1alpha1.SwapView.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Opaque {
         #[prost(message, optional, tag = "1")]
         pub swap: ::core::option::Option<super::Swap>,
+    }
+    impl ::prost::Name for Opaque {
+        const NAME: &'static str = "Opaque";
+        const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.dex.v1alpha1.SwapView.{}", Self::NAME
+            )
+        }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -190,6 +278,13 @@ pub mod swap_view {
         Visible(Visible),
         #[prost(message, tag = "2")]
         Opaque(Opaque),
+    }
+}
+impl ::prost::Name for SwapView {
+    const NAME: &'static str = "SwapView";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -214,11 +309,29 @@ pub mod swap_claim_view {
             super::super::super::shielded_pool::v1alpha1::NoteView,
         >,
     }
+    impl ::prost::Name for Visible {
+        const NAME: &'static str = "Visible";
+        const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.dex.v1alpha1.SwapClaimView.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Opaque {
         #[prost(message, optional, tag = "1")]
         pub swap_claim: ::core::option::Option<super::SwapClaim>,
+    }
+    impl ::prost::Name for Opaque {
+        const NAME: &'static str = "Opaque";
+        const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.dex.v1alpha1.SwapClaimView.{}", Self::NAME
+            )
+        }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -227,6 +340,13 @@ pub mod swap_claim_view {
         Visible(Visible),
         #[prost(message, tag = "2")]
         Opaque(Opaque),
+    }
+}
+impl ::prost::Name for SwapClaimView {
+    const NAME: &'static str = "SwapClaimView";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
     }
 }
 /// Holds two asset IDs. Ordering doesn't reflect trading direction. Instead, we
@@ -242,6 +362,13 @@ pub struct TradingPair {
     #[prost(message, optional, tag = "2")]
     pub asset_2: ::core::option::Option<super::super::super::asset::v1alpha1::AssetId>,
 }
+impl ::prost::Name for TradingPair {
+    const NAME: &'static str = "TradingPair";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Encodes a trading pair starting from asset `start`
 /// and ending on asset `end`.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -253,6 +380,13 @@ pub struct DirectedTradingPair {
     /// The end asset of the pair.
     #[prost(message, optional, tag = "2")]
     pub end: ::core::option::Option<super::super::super::asset::v1alpha1::AssetId>,
+}
+impl ::prost::Name for DirectedTradingPair {
+    const NAME: &'static str = "DirectedTradingPair";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Records the result of a batch swap on-chain.
 ///
@@ -289,6 +423,13 @@ pub struct BatchSwapOutputData {
     #[prost(uint64, tag = "9")]
     pub epoch_starting_height: u64,
 }
+impl ::prost::Name for BatchSwapOutputData {
+    const NAME: &'static str = "BatchSwapOutputData";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 /// The trading function for a specific pair.
 /// For a pair (asset_1, asset_2), a trading function is defined by:
 /// `phi(R) = p*R_1 + q*R_2` and `gamma = 1 - fee`.
@@ -300,6 +441,13 @@ pub struct TradingFunction {
     pub component: ::core::option::Option<BareTradingFunction>,
     #[prost(message, optional, tag = "2")]
     pub pair: ::core::option::Option<TradingPair>,
+}
+impl ::prost::Name for TradingFunction {
+    const NAME: &'static str = "TradingFunction";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 /// The minimum amount of data describing a trading function.
 ///
@@ -318,6 +466,13 @@ pub struct BareTradingFunction {
     #[prost(message, optional, tag = "3")]
     pub q: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
 }
+impl ::prost::Name for BareTradingFunction {
+    const NAME: &'static str = "BareTradingFunction";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 /// The reserves of a position.
 ///
 /// Like a position, this implicitly treats the trading function as being
@@ -331,6 +486,13 @@ pub struct Reserves {
     pub r1: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
     #[prost(message, optional, tag = "2")]
     pub r2: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
+}
+impl ::prost::Name for Reserves {
+    const NAME: &'static str = "Reserves";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Data identifying a position.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -354,6 +516,13 @@ pub struct Position {
     #[prost(bool, tag = "5")]
     pub close_on_fill: bool,
 }
+impl ::prost::Name for Position {
+    const NAME: &'static str = "Position";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A hash of a `Position`.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -370,6 +539,13 @@ pub struct PositionId {
     /// `alt_bech32m` set.
     #[prost(string, tag = "2")]
     pub alt_bech32m: ::prost::alloc::string::String,
+}
+impl ::prost::Name for PositionId {
+    const NAME: &'static str = "PositionId";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 /// The state of a position.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -434,6 +610,13 @@ pub mod position_state {
         }
     }
 }
+impl ::prost::Name for PositionState {
+    const NAME: &'static str = "PositionState";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 /// An LPNFT tracking both ownership and state of a position.
 ///
 /// Tracking the state as part of the LPNFT means that all LP-related actions can
@@ -457,6 +640,13 @@ pub struct LpNft {
     #[prost(message, optional, tag = "2")]
     pub state: ::core::option::Option<PositionState>,
 }
+impl ::prost::Name for LpNft {
+    const NAME: &'static str = "LpNft";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A transaction action that opens a new position.
 ///
 /// This action's contribution to the transaction's value balance is to consume
@@ -470,6 +660,13 @@ pub struct PositionOpen {
     /// are unchanged over the entire lifetime of the position.
     #[prost(message, optional, tag = "1")]
     pub position: ::core::option::Option<Position>,
+}
+impl ::prost::Name for PositionOpen {
+    const NAME: &'static str = "PositionOpen";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A transaction action that closes a position.
 ///
@@ -485,6 +682,13 @@ pub struct PositionOpen {
 pub struct PositionClose {
     #[prost(message, optional, tag = "1")]
     pub position_id: ::core::option::Option<PositionId>,
+}
+impl ::prost::Name for PositionClose {
+    const NAME: &'static str = "PositionClose";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A transaction action that withdraws funds from a closed position.
 ///
@@ -504,6 +708,13 @@ pub struct PositionWithdraw {
         super::super::super::asset::v1alpha1::BalanceCommitment,
     >,
 }
+impl ::prost::Name for PositionWithdraw {
+    const NAME: &'static str = "PositionWithdraw";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A transaction action that claims retroactive rewards for a historical
 /// position.
 ///
@@ -521,6 +732,13 @@ pub struct PositionRewardClaim {
     pub rewards_commitment: ::core::option::Option<
         super::super::super::asset::v1alpha1::BalanceCommitment,
     >,
+}
+impl ::prost::Name for PositionRewardClaim {
+    const NAME: &'static str = "PositionRewardClaim";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Contains the entire execution of a particular swap.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -547,6 +765,22 @@ pub mod swap_execution {
             super::super::super::super::asset::v1alpha1::Value,
         >,
     }
+    impl ::prost::Name for Trace {
+        const NAME: &'static str = "Trace";
+        const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.dex.v1alpha1.SwapExecution.{}", Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for SwapExecution {
+    const NAME: &'static str = "SwapExecution";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Contains private and public data for withdrawing funds from a closed position.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -559,12 +793,26 @@ pub struct PositionWithdrawPlan {
     #[prost(message, optional, tag = "3")]
     pub pair: ::core::option::Option<TradingPair>,
 }
+impl ::prost::Name for PositionWithdrawPlan {
+    const NAME: &'static str = "PositionWithdrawPlan";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Contains private and public data for claiming rewards from a position.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PositionRewardClaimPlan {
     #[prost(message, optional, tag = "1")]
     pub reserves: ::core::option::Option<Reserves>,
+}
+impl ::prost::Name for PositionRewardClaimPlan {
+    const NAME: &'static str = "PositionRewardClaimPlan";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Requests batch swap data associated with a given height and trading pair from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -578,11 +826,25 @@ pub struct BatchSwapOutputDataRequest {
     #[prost(message, optional, tag = "3")]
     pub trading_pair: ::core::option::Option<TradingPair>,
 }
+impl ::prost::Name for BatchSwapOutputDataRequest {
+    const NAME: &'static str = "BatchSwapOutputDataRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchSwapOutputDataResponse {
     #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<BatchSwapOutputData>,
+}
+impl ::prost::Name for BatchSwapOutputDataResponse {
+    const NAME: &'static str = "BatchSwapOutputDataResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -595,11 +857,25 @@ pub struct SwapExecutionRequest {
     #[prost(message, optional, tag = "3")]
     pub trading_pair: ::core::option::Option<DirectedTradingPair>,
 }
+impl ::prost::Name for SwapExecutionRequest {
+    const NAME: &'static str = "SwapExecutionRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapExecutionResponse {
     #[prost(message, optional, tag = "1")]
     pub swap_execution: ::core::option::Option<SwapExecution>,
+}
+impl ::prost::Name for SwapExecutionResponse {
+    const NAME: &'static str = "SwapExecutionResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -610,6 +886,13 @@ pub struct ArbExecutionRequest {
     #[prost(uint64, tag = "2")]
     pub height: u64,
 }
+impl ::prost::Name for ArbExecutionRequest {
+    const NAME: &'static str = "ArbExecutionRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ArbExecutionResponse {
@@ -617,6 +900,13 @@ pub struct ArbExecutionResponse {
     pub swap_execution: ::core::option::Option<SwapExecution>,
     #[prost(uint64, tag = "2")]
     pub height: u64,
+}
+impl ::prost::Name for ArbExecutionResponse {
+    const NAME: &'static str = "ArbExecutionResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -634,6 +924,13 @@ pub struct SwapExecutionsRequest {
     #[prost(message, optional, tag = "4")]
     pub trading_pair: ::core::option::Option<DirectedTradingPair>,
 }
+impl ::prost::Name for SwapExecutionsRequest {
+    const NAME: &'static str = "SwapExecutionsRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapExecutionsResponse {
@@ -643,6 +940,13 @@ pub struct SwapExecutionsResponse {
     pub height: u64,
     #[prost(message, optional, tag = "3")]
     pub trading_pair: ::core::option::Option<DirectedTradingPair>,
+}
+impl ::prost::Name for SwapExecutionsResponse {
+    const NAME: &'static str = "SwapExecutionsResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -657,6 +961,13 @@ pub struct ArbExecutionsRequest {
     #[prost(uint64, tag = "3")]
     pub end_height: u64,
 }
+impl ::prost::Name for ArbExecutionsRequest {
+    const NAME: &'static str = "ArbExecutionsRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ArbExecutionsResponse {
@@ -664,6 +975,13 @@ pub struct ArbExecutionsResponse {
     pub swap_execution: ::core::option::Option<SwapExecution>,
     #[prost(uint64, tag = "2")]
     pub height: u64,
+}
+impl ::prost::Name for ArbExecutionsResponse {
+    const NAME: &'static str = "ArbExecutionsResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -675,11 +993,25 @@ pub struct LiquidityPositionsRequest {
     #[prost(bool, tag = "4")]
     pub include_closed: bool,
 }
+impl ::prost::Name for LiquidityPositionsRequest {
+    const NAME: &'static str = "LiquidityPositionsRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionsResponse {
     #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<Position>,
+}
+impl ::prost::Name for LiquidityPositionsResponse {
+    const NAME: &'static str = "LiquidityPositionsResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -690,11 +1022,25 @@ pub struct LiquidityPositionByIdRequest {
     #[prost(message, optional, tag = "2")]
     pub position_id: ::core::option::Option<PositionId>,
 }
+impl ::prost::Name for LiquidityPositionByIdRequest {
+    const NAME: &'static str = "LiquidityPositionByIdRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionByIdResponse {
     #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<Position>,
+}
+impl ::prost::Name for LiquidityPositionByIdResponse {
+    const NAME: &'static str = "LiquidityPositionByIdResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -705,11 +1051,25 @@ pub struct LiquidityPositionsByIdRequest {
     #[prost(message, repeated, tag = "2")]
     pub position_id: ::prost::alloc::vec::Vec<PositionId>,
 }
+impl ::prost::Name for LiquidityPositionsByIdRequest {
+    const NAME: &'static str = "LiquidityPositionsByIdRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionsByIdResponse {
     #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<Position>,
+}
+impl ::prost::Name for LiquidityPositionsByIdResponse {
+    const NAME: &'static str = "LiquidityPositionsByIdResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -724,11 +1084,25 @@ pub struct LiquidityPositionsByPriceRequest {
     #[prost(uint64, tag = "5")]
     pub limit: u64,
 }
+impl ::prost::Name for LiquidityPositionsByPriceRequest {
+    const NAME: &'static str = "LiquidityPositionsByPriceRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionsByPriceResponse {
     #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<Position>,
+}
+impl ::prost::Name for LiquidityPositionsByPriceResponse {
+    const NAME: &'static str = "LiquidityPositionsByPriceResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -738,6 +1112,13 @@ pub struct SpreadRequest {
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub trading_pair: ::core::option::Option<TradingPair>,
+}
+impl ::prost::Name for SpreadRequest {
+    const NAME: &'static str = "SpreadRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -754,6 +1135,13 @@ pub struct SpreadResponse {
     /// An approximation of the effective price when trading 2 => 1.
     #[prost(double, tag = "4")]
     pub approx_effective_price_2_to_1: f64,
+}
+impl ::prost::Name for SpreadResponse {
+    const NAME: &'static str = "SpreadResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -778,9 +1166,29 @@ pub mod simulate_trade_request {
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct SingleHop {}
+        impl ::prost::Name for SingleHop {
+            const NAME: &'static str = "SingleHop";
+            const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+            fn full_name() -> ::prost::alloc::string::String {
+                ::prost::alloc::format!(
+                    "penumbra.core.component.dex.v1alpha1.SimulateTradeRequest.Routing.{}",
+                    Self::NAME
+                )
+            }
+        }
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct Default {}
+        impl ::prost::Name for Default {
+            const NAME: &'static str = "Default";
+            const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+            fn full_name() -> ::prost::alloc::string::String {
+                ::prost::alloc::format!(
+                    "penumbra.core.component.dex.v1alpha1.SimulateTradeRequest.Routing.{}",
+                    Self::NAME
+                )
+            }
+        }
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Oneof)]
         pub enum Setting {
@@ -790,12 +1198,36 @@ pub mod simulate_trade_request {
             SingleHop(SingleHop),
         }
     }
+    impl ::prost::Name for Routing {
+        const NAME: &'static str = "Routing";
+        const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.dex.v1alpha1.SimulateTradeRequest.{}",
+                Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for SimulateTradeRequest {
+    const NAME: &'static str = "SimulateTradeRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SimulateTradeResponse {
     #[prost(message, optional, tag = "1")]
     pub output: ::core::option::Option<SwapExecution>,
+}
+impl ::prost::Name for SimulateTradeResponse {
+    const NAME: &'static str = "SimulateTradeResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]

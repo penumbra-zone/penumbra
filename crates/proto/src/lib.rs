@@ -32,8 +32,6 @@ mod protobuf;
 pub use protobuf::DomainType;
 pub use protobuf::TypeUrl;
 
-pub mod type_names;
-
 #[cfg(feature = "penumbra-storage")]
 pub mod state;
 #[cfg(feature = "penumbra-storage")]
