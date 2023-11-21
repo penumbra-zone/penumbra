@@ -2,7 +2,7 @@ use anyhow::Context;
 use penumbra_asset::Balance;
 use penumbra_fee::Fee;
 use penumbra_proof_params::GROTH16_PROOF_LENGTH_BYTES;
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};
@@ -24,10 +24,6 @@ impl SwapClaim {
     pub fn balance(&self) -> Balance {
         self.body.fee.value().into()
     }
-}
-
-impl TypeUrl for SwapClaim {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapClaim";
 }
 
 impl DomainType for SwapClaim {
@@ -74,10 +70,6 @@ pub struct Body {
     pub output_1_commitment: tct::StateCommitment,
     pub output_2_commitment: tct::StateCommitment,
     pub output_data: BatchSwapOutputData,
-}
-
-impl TypeUrl for Body {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapClaimBody";
 }
 
 impl DomainType for Body {

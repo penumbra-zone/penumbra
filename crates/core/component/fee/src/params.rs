@@ -1,15 +1,11 @@
 use penumbra_proto::penumbra::core::component::fee::v1alpha1 as pb;
 
-use penumbra_proto::{DomainType, TypeUrl};
+use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(try_from = "pb::FeeParameters", into = "pb::FeeParameters")]
 pub struct FeeParameters {}
-
-impl TypeUrl for FeeParameters {
-    const TYPE_URL: &'static str = "/penumbra.core.component.fee.v1alpha1.FeeParameters";
-}
 
 impl DomainType for FeeParameters {
     type Proto = pb::FeeParameters;

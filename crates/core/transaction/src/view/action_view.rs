@@ -6,7 +6,7 @@ use penumbra_dex::{
 };
 use penumbra_governance::{ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote};
 use penumbra_ibc::IbcRelay;
-use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType, TypeUrl};
+use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use penumbra_shielded_pool::Ics20Withdrawal;
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 use serde::{Deserialize, Serialize};
@@ -45,10 +45,6 @@ pub enum ActionView {
     DaoDeposit(DaoDeposit),
     DaoSpend(DaoSpend),
     DaoOutput(DaoOutput),
-}
-
-impl TypeUrl for ActionView {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.ActionView";
 }
 
 impl DomainType for ActionView {

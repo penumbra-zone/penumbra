@@ -4,7 +4,7 @@ use std::convert::{TryFrom, TryInto};
 
 use penumbra_asset::{Balance, Value};
 // TODO: why are the Dao actions not in the dao protos?
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::DaoDeposit", into = "pb::DaoDeposit")]
@@ -17,10 +17,6 @@ impl DaoDeposit {
         // Deposits into the DAO require value
         -Balance::from(self.value)
     }
-}
-
-impl TypeUrl for DaoDeposit {
-    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.DaoDeposit";
 }
 
 impl DomainType for DaoDeposit {

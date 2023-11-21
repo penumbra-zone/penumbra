@@ -12,7 +12,7 @@ use penumbra_keys::{
     symmetric::{OvkWrappedKey, PayloadKey, PayloadKind, WrappedMemoKey},
     Address,
 };
-use penumbra_proto::{core::transaction::v1alpha1 as pbt, TypeUrl};
+use penumbra_proto::core::transaction::v1alpha1 as pbt;
 use penumbra_shielded_pool::{note, Note};
 
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
@@ -193,10 +193,6 @@ impl TryFrom<pbt::MemoCiphertext> for MemoCiphertext {
     fn try_from(msg: pbt::MemoCiphertext) -> Result<Self, Self::Error> {
         MemoCiphertext::try_from(msg.inner.to_vec().as_slice())
     }
-}
-
-impl TypeUrl for MemoCiphertext {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.MemoCiphertext";
 }
 
 impl From<MemoCiphertext> for pbt::MemoCiphertext {

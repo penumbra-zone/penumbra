@@ -2,7 +2,7 @@ use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_asset::{balance, Balance, Value};
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -68,10 +68,6 @@ impl PositionWithdrawPlan {
 
         balance
     }
-}
-
-impl TypeUrl for PositionWithdrawPlan {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.PositionWithdrawPlan";
 }
 
 impl DomainType for PositionWithdrawPlan {
@@ -141,10 +137,6 @@ impl PositionRewardClaimPlan {
     pub fn balance(&self) -> Balance {
         todo!()
     }
-}
-
-impl TypeUrl for PositionRewardClaimPlan {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.PositionRewardClaimPlan";
 }
 
 impl DomainType for PositionRewardClaimPlan {

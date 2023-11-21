@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use penumbra_asset::{balance, Balance, Value};
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
 
 use super::{position, position::Position, LpNft};
 
@@ -97,10 +97,6 @@ pub struct PositionRewardClaim {
     pub rewards_commitment: balance::Commitment,
 }
 
-impl TypeUrl for PositionOpen {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.PositionOpen";
-}
-
 impl DomainType for PositionOpen {
     type Proto = pb::PositionOpen;
 }
@@ -126,10 +122,6 @@ impl TryFrom<pb::PositionOpen> for PositionOpen {
     }
 }
 
-impl TypeUrl for PositionClose {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.PositionClose";
-}
-
 impl DomainType for PositionClose {
     type Proto = pb::PositionClose;
 }
@@ -153,10 +145,6 @@ impl TryFrom<pb::PositionClose> for PositionClose {
                 .try_into()?,
         })
     }
-}
-
-impl TypeUrl for PositionWithdraw {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.PositionWithdraw";
 }
 
 impl DomainType for PositionWithdraw {
@@ -187,10 +175,6 @@ impl TryFrom<pb::PositionWithdraw> for PositionWithdraw {
                 .try_into()?,
         })
     }
-}
-
-impl TypeUrl for PositionRewardClaim {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.PositionRewardClaim";
 }
 
 impl DomainType for PositionRewardClaim {

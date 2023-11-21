@@ -3,7 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use anyhow::{Context, Error};
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use penumbra_asset::balance;
-use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType};
 use penumbra_sct::Nullifier;
 use serde::{Deserialize, Serialize};
 
@@ -22,10 +22,6 @@ pub struct Body {
     pub balance_commitment: balance::Commitment,
     pub nullifier: Nullifier,
     pub rk: VerificationKey<SpendAuth>,
-}
-
-impl TypeUrl for Spend {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.Spend";
 }
 
 impl DomainType for Spend {
@@ -68,10 +64,6 @@ impl TryFrom<pb::Spend> for Spend {
             proof,
         })
     }
-}
-
-impl TypeUrl for Body {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.SpendBody";
 }
 
 impl DomainType for Body {

@@ -7,7 +7,7 @@ use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
     penumbra::core::component::ibc::v1alpha1::{self as pb, FungibleTokenPacketData},
-    DomainType, TypeUrl,
+    DomainType,
 };
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -81,10 +81,6 @@ impl Ics20Withdrawal {
 
         Ok(())
     }
-}
-
-impl TypeUrl for Ics20Withdrawal {
-    const TYPE_URL: &'static str = "/penumbra.core.ibc.v1alpha1.Ics20Withdrawal";
 }
 
 impl DomainType for Ics20Withdrawal {

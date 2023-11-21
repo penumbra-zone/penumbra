@@ -1,5 +1,5 @@
 use decaf377::FieldExt;
-use penumbra_proto::{penumbra::crypto::tct::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::crypto::tct::v1alpha1 as pb, DomainType};
 use poseidon377::Fq;
 
 /// A commitment to a note or swap.
@@ -24,10 +24,6 @@ impl StateCommitment {
         let bytes = hex::decode(str)?;
         Ok(StateCommitment::try_from(&bytes[..])?)
     }
-}
-
-impl TypeUrl for StateCommitment {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.StateCommitment";
 }
 
 impl DomainType for StateCommitment {

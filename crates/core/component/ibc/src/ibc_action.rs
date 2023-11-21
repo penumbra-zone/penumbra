@@ -13,7 +13,7 @@ use ibc_types::DomainType as IbcTypesDomainType;
 use ibc_types::TypeUrl as IbcTypesTypeUrl;
 
 use penumbra_proto::penumbra::core::component::ibc::v1alpha1::{self as pb};
-use penumbra_proto::{DomainType, TypeUrl};
+use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -110,10 +110,6 @@ impl IbcRelay {
             }
         }
     }
-}
-
-impl TypeUrl for IbcRelay {
-    const TYPE_URL: &'static str = "/penumbra.core.ibc.v1alpha1.IbcAction";
 }
 
 impl DomainType for IbcRelay {

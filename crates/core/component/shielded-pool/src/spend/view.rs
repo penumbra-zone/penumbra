@@ -1,4 +1,4 @@
-use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pbt, DomainType, TypeUrl};
+use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{NoteView, Spend};
@@ -9,10 +9,6 @@ use crate::{NoteView, Spend};
 pub enum SpendView {
     Visible { spend: Spend, note: NoteView },
     Opaque { spend: Spend },
-}
-
-impl TypeUrl for SpendView {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.SpendView";
 }
 
 impl DomainType for SpendView {

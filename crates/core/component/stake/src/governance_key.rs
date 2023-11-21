@@ -3,7 +3,6 @@ use penumbra_proto::{
     core::keys::v1alpha1 as pb,
     serializers::bech32str::{self, validator_governance_key::BECH32_PREFIX},
     DomainType,
-    TypeUrl,
 };
 use serde::{Deserialize, Serialize};
 
@@ -46,10 +45,6 @@ impl std::fmt::Debug for GovernanceKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         <GovernanceKey as std::fmt::Display>::fmt(self, f)
     }
-}
-
-impl TypeUrl for GovernanceKey {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.GovernanceKey";
 }
 
 impl DomainType for GovernanceKey {

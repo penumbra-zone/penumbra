@@ -1,5 +1,5 @@
 use penumbra_proto::core::component::stake::v1alpha1 as pb;
-use penumbra_proto::{DomainType, TypeUrl};
+use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -18,10 +18,6 @@ pub struct StakeParameters {
     pub signed_blocks_window_len: u64,
     /// The maximum number of blocks in the window each validator can miss signing without slashing.
     pub missed_blocks_maximum: u64,
-}
-
-impl TypeUrl for StakeParameters {
-    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.StakeParameters";
 }
 
 impl DomainType for StakeParameters {

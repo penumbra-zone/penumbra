@@ -1,5 +1,5 @@
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::validator::Validator;
@@ -10,10 +10,6 @@ use crate::validator::Validator;
 pub struct Definition {
     pub validator: Validator,
     pub auth_sig: Signature<SpendAuth>,
-}
-
-impl TypeUrl for Definition {
-    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.ValidatorDefinition";
 }
 
 impl DomainType for Definition {

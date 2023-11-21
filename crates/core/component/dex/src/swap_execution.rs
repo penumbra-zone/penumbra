@@ -1,7 +1,7 @@
 use anyhow::Result;
 use penumbra_asset::Value;
 use penumbra_num::fixpoint::U128x128;
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// Contains the summary data of a trade, for client consumption.
@@ -27,9 +27,6 @@ impl SwapExecution {
         let price = U128x128::ratio(input.amount, output.amount)?;
         Ok(Some(price))
     }
-}
-impl TypeUrl for SwapExecution {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapExecution";
 }
 
 impl DomainType for SwapExecution {

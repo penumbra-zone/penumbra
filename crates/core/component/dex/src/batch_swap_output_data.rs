@@ -7,7 +7,7 @@ use ark_r1cs_std::{
 };
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{r1cs::FqVar, Fq};
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use penumbra_num::fixpoint::{bit_constrain, U128x128, U128x128Var};
@@ -193,10 +193,6 @@ impl AllocVar<BatchSwapOutputData, Fq> for BatchSwapOutputDataVar {
             epoch_starting_height,
         })
     }
-}
-
-impl TypeUrl for BatchSwapOutputData {
-    const TYPE_URL: &'static str = "/penumbra.dex.v1alpha1.BatchSwapOutputData";
 }
 
 impl DomainType for BatchSwapOutputData {

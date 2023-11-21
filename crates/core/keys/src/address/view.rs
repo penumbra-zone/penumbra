@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::{penumbra::core::keys::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::keys::v1alpha1 as pb, DomainType};
 
 use crate::keys::{AddressIndex, WalletId};
 
@@ -31,10 +31,6 @@ impl AddressView {
             AddressView::Visible { address, .. } => *address,
         }
     }
-}
-
-impl TypeUrl for AddressView {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.AddressView";
 }
 
 impl DomainType for AddressView {

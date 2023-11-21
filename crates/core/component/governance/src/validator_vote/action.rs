@@ -1,5 +1,5 @@
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 use penumbra_stake::{GovernanceKey, IdentityKey};
 use serde::{Deserialize, Serialize};
 
@@ -99,10 +99,6 @@ impl TryFrom<pb::ValidatorVoteBody> for ValidatorVoteBody {
     }
 }
 
-impl TypeUrl for ValidatorVoteBody {
-    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ValidatorVoteBody";
-}
-
 impl DomainType for ValidatorVoteBody {
     type Proto = pb::ValidatorVoteBody;
 }
@@ -124,10 +120,6 @@ impl TryFrom<pb::ValidatorVoteReason> for ValidatorVoteReason {
     fn try_from(msg: pb::ValidatorVoteReason) -> Result<Self, Self::Error> {
         Ok(ValidatorVoteReason(msg.reason))
     }
-}
-
-impl TypeUrl for ValidatorVoteReason {
-    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ValidatorVoteReason";
 }
 
 impl DomainType for ValidatorVoteReason {

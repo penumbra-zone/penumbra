@@ -2,7 +2,7 @@ use decaf377::{FieldExt, Fq, Fr};
 use penumbra_asset::{asset, balance, Balance};
 use penumbra_num::Amount;
 use penumbra_proof_params::UNDELEGATECLAIM_PROOF_PROVING_KEY;
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 
 use serde::{Deserialize, Serialize};
 
@@ -81,10 +81,6 @@ impl UndelegateClaimPlan {
         self.penalty
             .balance_for_claim(self.unbonding_id(), self.unbonding_amount)
     }
-}
-
-impl TypeUrl for UndelegateClaimPlan {
-    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.UndelegateClaimPlan";
 }
 
 impl DomainType for UndelegateClaimPlan {

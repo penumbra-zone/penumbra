@@ -1,4 +1,4 @@
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use super::{Swap, SwapPlaintext};
@@ -14,10 +14,6 @@ pub enum SwapView {
     Opaque {
         swap: Swap,
     },
-}
-
-impl TypeUrl for SwapView {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapView";
 }
 
 impl DomainType for SwapView {

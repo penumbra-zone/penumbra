@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use penumbra_asset::{Balance, Value};
 use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 
 use crate::ProposalNft;
 
@@ -51,10 +51,6 @@ impl TryFrom<pb::ProposalWithdraw> for ProposalWithdraw {
             reason: msg.reason,
         })
     }
-}
-
-impl TypeUrl for ProposalWithdraw {
-    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ProposalWithdraw";
 }
 
 impl DomainType for ProposalWithdraw {

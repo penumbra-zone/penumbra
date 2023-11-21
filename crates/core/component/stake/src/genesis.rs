@@ -1,5 +1,5 @@
 use anyhow::Context;
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::params::StakeParameters;
@@ -11,9 +11,6 @@ pub struct Content {
     pub stake_params: StakeParameters,
     /// The initial validator set.
     pub validators: Vec<pb::Validator>,
-}
-impl TypeUrl for Content {
-    const TYPE_URL: &'static str = "/penumbra.stake.v1alpha1.GenesisContent";
 }
 
 impl DomainType for Content {

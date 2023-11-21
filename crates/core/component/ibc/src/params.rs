@@ -1,5 +1,5 @@
 use penumbra_proto::core::component::ibc::v1alpha1 as pb;
-use penumbra_proto::{DomainType, TypeUrl};
+use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -11,10 +11,6 @@ pub struct IBCParameters {
     pub inbound_ics20_transfers_enabled: bool,
     /// Whether outbound ICS-20 transfers are enabled
     pub outbound_ics20_transfers_enabled: bool,
-}
-
-impl TypeUrl for IBCParameters {
-    const TYPE_URL: &'static str = "/penumbra.core.ibc.v1alpha1.IbcParameters";
 }
 
 impl DomainType for IBCParameters {

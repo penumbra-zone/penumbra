@@ -1,5 +1,5 @@
 use penumbra_proto::core::component::distributions::v1alpha1 as pb;
-use penumbra_proto::{DomainType, TypeUrl};
+use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -9,10 +9,6 @@ use serde::{Deserialize, Serialize};
 )]
 pub struct DistributionsParameters {
     pub staking_issuance_per_block: u64,
-}
-
-impl TypeUrl for DistributionsParameters {
-    const TYPE_URL: &'static str = "/penumbra.core.distributions.v1alpha1.DistributionsParameters";
 }
 
 impl DomainType for DistributionsParameters {

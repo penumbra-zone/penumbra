@@ -5,7 +5,7 @@ use penumbra_asset::{balance, Balance, Value};
 use penumbra_num::Amount;
 use penumbra_proto::{
     core::component::dex::v1alpha1 as pbc, penumbra::core::component::dex::v1alpha1 as pb,
-    DomainType, TypeUrl,
+    DomainType,
 };
 use serde::{Deserialize, Serialize};
 
@@ -37,10 +37,6 @@ impl Swap {
 
         commitment_input_1 + commitment_input_2 + self.body.fee_commitment
     }
-}
-
-impl TypeUrl for Swap {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.Swap";
 }
 
 impl DomainType for Swap {
@@ -83,10 +79,6 @@ pub struct Body {
     pub delta_2_i: Amount,
     pub fee_commitment: balance::Commitment,
     pub payload: SwapPayload,
-}
-
-impl TypeUrl for Body {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapBody";
 }
 
 impl DomainType for Body {

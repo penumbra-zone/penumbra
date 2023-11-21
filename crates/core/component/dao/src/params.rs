@@ -1,5 +1,5 @@
 use penumbra_proto::core::component::dao::v1alpha1 as pb;
-use penumbra_proto::{DomainType, TypeUrl};
+use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -7,10 +7,6 @@ use serde::{Deserialize, Serialize};
 pub struct DaoParameters {
     /// Whether DAO spend proposals are enabled.
     pub dao_spend_proposals_enabled: bool,
-}
-
-impl TypeUrl for DaoParameters {
-    const TYPE_URL: &'static str = "/penumbra.core.dao.v1alpha1.DaoParameters";
 }
 
 impl DomainType for DaoParameters {

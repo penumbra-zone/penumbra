@@ -8,7 +8,7 @@ use std::{
 // TODO(proto): eliminate these imports
 use penumbra_proto::penumbra::core::component::chain::v1alpha1 as pb_chain;
 
-use penumbra_proto::{DomainType, TypeUrl};
+use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -19,10 +19,6 @@ use serde::{Deserialize, Serialize};
 pub struct ChainParameters {
     pub chain_id: String,
     pub epoch_duration: u64,
-}
-
-impl TypeUrl for ChainParameters {
-    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.ChainParameters";
 }
 
 impl DomainType for ChainParameters {
@@ -67,10 +63,6 @@ pub struct FmdParameters {
     pub precision_bits: u8,
     /// The block height at which these parameters became effective.
     pub as_of_block_height: u64,
-}
-
-impl TypeUrl for FmdParameters {
-    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alph1.FmdParameters";
 }
 
 impl DomainType for FmdParameters {

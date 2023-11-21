@@ -20,7 +20,7 @@ use penumbra_ibc::IbcRelay;
 use penumbra_keys::{FullViewingKey, PayloadKey};
 use penumbra_proto::{
     core::transaction::v1alpha1::{self as pbt},
-    DomainType, Message, TypeUrl,
+    DomainType, Message,
 };
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{Note, Output, Spend};
@@ -526,10 +526,6 @@ impl From<TransactionBody> for Vec<u8> {
     }
 }
 
-impl TypeUrl for TransactionParameters {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.TransactionParameters";
-}
-
 impl DomainType for TransactionParameters {
     type Proto = pbt::TransactionParameters;
 }
@@ -552,10 +548,6 @@ impl From<TransactionParameters> for pbt::TransactionParameters {
             chain_id: msg.chain_id,
         }
     }
-}
-
-impl TypeUrl for DetectionData {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.DetectionData";
 }
 
 impl DomainType for DetectionData {
@@ -581,10 +573,6 @@ impl From<DetectionData> for pbt::DetectionData {
 
         pbt::DetectionData { fmd_clues }
     }
-}
-
-impl TypeUrl for TransactionBody {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.TransactionBody";
 }
 
 impl DomainType for TransactionBody {
@@ -668,10 +656,6 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             memo,
         })
     }
-}
-
-impl TypeUrl for Transaction {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.Transaction";
 }
 
 impl DomainType for Transaction {

@@ -1,5 +1,5 @@
 use penumbra_keys::PayloadKey;
-use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pbt, DomainType, TypeUrl};
+use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::NoteView;
@@ -17,10 +17,6 @@ pub enum OutputView {
     Opaque {
         output: Output,
     },
-}
-
-impl TypeUrl for OutputView {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.OutputView";
 }
 
 impl DomainType for OutputView {

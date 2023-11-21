@@ -9,7 +9,6 @@ use once_cell::sync::Lazy;
 use penumbra_fee::Fee;
 use penumbra_proto::{
     core::keys::v1alpha1 as pb_keys, penumbra::core::component::dex::v1alpha1 as pb, DomainType,
-    TypeUrl,
 };
 use penumbra_tct::StateCommitment;
 use poseidon377::{hash_1, hash_4, hash_7};
@@ -274,10 +273,6 @@ impl AllocVar<SwapPlaintext, Fq> for SwapPlaintextVar {
             rseed,
         })
     }
-}
-
-impl TypeUrl for SwapPlaintext {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapPlaintext";
 }
 
 impl DomainType for SwapPlaintext {

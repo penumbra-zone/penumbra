@@ -1,4 +1,4 @@
-use penumbra_proto::{custody::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{custody::v1alpha1 as pb, DomainType};
 use penumbra_transaction::plan::TransactionPlan;
 use serde::{Deserialize, Serialize};
 
@@ -34,10 +34,6 @@ impl Ed25519 {
     }
 }
 
-impl TypeUrl for PreAuthorization {
-    const TYPE_URL: &'static str = "/penumbra.custody.v1alpha1.PreAuthorization";
-}
-
 impl DomainType for PreAuthorization {
     type Proto = pb::PreAuthorization;
 }
@@ -66,10 +62,6 @@ impl From<PreAuthorization> for pb::PreAuthorization {
             }),
         }
     }
-}
-
-impl TypeUrl for Ed25519 {
-    const TYPE_URL: &'static str = "/penumbra.custody.v1alpha1.PreAuthorization.Ed25519";
 }
 
 impl DomainType for Ed25519 {

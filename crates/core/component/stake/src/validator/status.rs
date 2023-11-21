@@ -1,4 +1,4 @@
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{validator::BondingState, validator::State, IdentityKey};
@@ -20,10 +20,6 @@ pub struct Status {
     pub state: State,
     /// Represents the bonding status of the validator's stake pool.
     pub bonding_state: BondingState,
-}
-
-impl TypeUrl for Status {
-    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.ValidatorStatus";
 }
 
 impl DomainType for Status {

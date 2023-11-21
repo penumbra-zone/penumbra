@@ -1,6 +1,6 @@
 use penumbra_asset::{Balance, Value};
 use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{DelegationToken, IdentityKey, UnbondingToken};
@@ -48,10 +48,6 @@ impl Undelegate {
     pub fn delegation_token(&self) -> DelegationToken {
         DelegationToken::new(self.validator_identity.clone())
     }
-}
-
-impl TypeUrl for Undelegate {
-    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.Undelegate";
 }
 
 impl DomainType for Undelegate {

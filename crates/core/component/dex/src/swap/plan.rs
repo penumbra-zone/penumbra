@@ -4,7 +4,7 @@ use ark_ff::{UniformRand, Zero};
 use decaf377::{FieldExt, Fq, Fr};
 use penumbra_asset::{balance, Balance, Value};
 use penumbra_keys::FullViewingKey;
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -106,10 +106,6 @@ impl SwapPlan {
         balance -= value_fee;
         balance
     }
-}
-
-impl TypeUrl for SwapPlan {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapPlan";
 }
 
 impl DomainType for SwapPlan {

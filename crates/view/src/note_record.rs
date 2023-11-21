@@ -1,7 +1,7 @@
 use penumbra_asset::Value;
 use penumbra_chain::NoteSource;
 use penumbra_keys::keys::AddressIndex;
-use penumbra_proto::{view::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{view::v1alpha1 as pb, DomainType};
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note, Rseed};
 use penumbra_tct as tct;
@@ -21,10 +21,6 @@ pub struct SpendableNoteRecord {
     pub height_spent: Option<u64>,
     pub position: tct::Position,
     pub source: NoteSource,
-}
-
-impl TypeUrl for SpendableNoteRecord {
-    const TYPE_URL: &'static str = "/penumbra.view.v1alpha1.SpendableNoteRecord";
 }
 
 impl DomainType for SpendableNoteRecord {

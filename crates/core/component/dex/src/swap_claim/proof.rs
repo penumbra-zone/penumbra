@@ -8,7 +8,7 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use decaf377::{r1cs::FqVar, Bls12_377, Fq};
 use penumbra_fee::Fee;
-use penumbra_proto::{core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::component::dex::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
 
@@ -405,10 +405,6 @@ impl SwapClaimProof {
             .then_some(())
             .ok_or_else(|| anyhow::anyhow!("swapclaim proof did not verify"))
     }
-}
-
-impl TypeUrl for SwapClaimProof {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.ZKSwapClaimProof";
 }
 
 impl DomainType for SwapClaimProof {
