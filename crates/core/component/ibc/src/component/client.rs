@@ -125,7 +125,10 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
             ibc_types::lightclients::tendermint::client_type().to_string(),
         );
 
-        self.put(ClientStatePath(client_id.clone()).to_string(), client_state);
+        self.put(
+            IBC_COMMITMENT_PREFIX.apply_string(ClientStatePath(client_id.clone()).to_string()),
+            client_state,
+        );
     }
 
     fn put_verified_heights(&mut self, client_id: &ClientId, verified_heights: VerifiedHeights) {
