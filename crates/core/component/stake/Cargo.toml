@@ -15,6 +15,7 @@ component = [
     "penumbra-sct/component",
     "penumbra-shielded-pool/component",
     "penumbra-dao/component",
+    "penumbra-distributions/component",
     "tokio",
     "im",
     "futures",
