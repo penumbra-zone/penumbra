@@ -3,7 +3,7 @@ use std::ops::{Add, AddAssign};
 use penumbra_chain::params::Ratio;
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 
 use crate::{
     params::GovernanceParameters,
@@ -55,10 +55,6 @@ impl From<pb::Tally> for Tally {
             abstain: tally.abstain,
         }
     }
-}
-
-impl TypeUrl for Tally {
-    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.Tally";
 }
 
 impl DomainType for Tally {

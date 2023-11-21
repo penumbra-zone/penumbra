@@ -15,7 +15,7 @@ use penumbra_governance::{
 };
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::{Address, PayloadKey};
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use rand::{CryptoRng, Rng};
@@ -296,10 +296,6 @@ impl TransactionPlan {
             .as_ref()
             .map(|memo_plan| memo_plan.key.clone())
     }
-}
-
-impl TypeUrl for TransactionPlan {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.TransactionPlan";
 }
 
 impl DomainType for TransactionPlan {

@@ -5,7 +5,7 @@ use penumbra_keys::{
     FullViewingKey,
 };
 use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 
@@ -123,10 +123,6 @@ impl SwapClaimPlan {
 
         value_fee.into()
     }
-}
-
-impl TypeUrl for SwapClaimPlan {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapClaimPlan";
 }
 
 impl DomainType for SwapClaimPlan {

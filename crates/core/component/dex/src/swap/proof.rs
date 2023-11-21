@@ -12,7 +12,7 @@ use decaf377::{Fq, Fr};
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 use penumbra_fee::Fee;
-use penumbra_proto::{core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::component::dex::v1alpha1 as pb, DomainType};
 use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
 
@@ -231,10 +231,6 @@ impl SwapProof {
             .then_some(())
             .ok_or_else(|| anyhow::anyhow!("a swap proof did not verify"))
     }
-}
-
-impl TypeUrl for SwapProof {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.ZKSwapProof";
 }
 
 impl DomainType for SwapProof {

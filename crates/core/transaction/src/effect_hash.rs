@@ -12,7 +12,6 @@ use penumbra_governance::{
 };
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::{FullViewingKey, PayloadKey};
-use penumbra_proto::TypeUrl;
 use penumbra_proto::{
     core::component::dex::v1alpha1 as pbd, core::component::fee::v1alpha1 as pbf,
     core::component::governance::v1alpha1 as pbg, core::component::ibc::v1alpha1 as pbi,

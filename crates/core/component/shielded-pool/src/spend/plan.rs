@@ -3,7 +3,7 @@ use decaf377::{FieldExt, Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_keys::{Address, FullViewingKey};
-use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
@@ -125,10 +125,6 @@ impl SpendPlan {
         }
         .into()
     }
-}
-
-impl TypeUrl for SpendPlan {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.SpendPlan";
 }
 
 impl DomainType for SpendPlan {

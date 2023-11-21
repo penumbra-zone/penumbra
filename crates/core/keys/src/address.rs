@@ -4,9 +4,7 @@ use anyhow::Context;
 use ark_serialize::CanonicalDeserialize;
 use decaf377::Fq;
 use f4jumble::{f4jumble, f4jumble_inv};
-use penumbra_proto::{
-    penumbra::core::keys::v1alpha1 as pb, serializers::bech32str, DomainType, TypeUrl,
-};
+use penumbra_proto::{penumbra::core::keys::v1alpha1 as pb, serializers::bech32str, DomainType};
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
@@ -150,10 +148,6 @@ impl Address {
 
         format!("{}…", &full_address[0..num_chars_to_display])
     }
-}
-
-impl TypeUrl for Address {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Address";
 }
 
 impl DomainType for Address {

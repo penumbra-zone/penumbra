@@ -3,14 +3,10 @@ use ibc_proto::google::protobuf::Any;
 use ibc_types::core::client::Height;
 use ibc_types::core::connection::{ChainId, ConnectionId};
 use ibc_types::lightclients::tendermint::TrustThreshold;
-use penumbra_proto::{penumbra::core::component::ibc::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::ibc::v1alpha1 as pb, DomainType};
 
 #[derive(Clone, Debug)]
 pub struct ClientCounter(pub u64);
-
-impl TypeUrl for ClientCounter {
-    const TYPE_URL: &'static str = "/penumbra.core.ibc.v1alpha1.ClientCounter";
-}
 
 impl DomainType for ClientCounter {
     type Proto = pb::ClientCounter;
@@ -33,10 +29,6 @@ impl From<ClientCounter> for pb::ClientCounter {
 #[derive(Clone, Debug)]
 pub struct VerifiedHeights {
     pub heights: Vec<Height>,
-}
-
-impl TypeUrl for VerifiedHeights {
-    const TYPE_URL: &'static str = "/penumbra.core.ibc.v1alpha1.VerifiedHeights";
 }
 
 impl DomainType for VerifiedHeights {
@@ -66,10 +58,6 @@ impl From<VerifiedHeights> for pb::VerifiedHeights {
 #[derive(Clone, Debug, Default)]
 pub struct ClientConnections {
     pub connection_ids: Vec<ConnectionId>,
-}
-
-impl TypeUrl for ClientConnections {
-    const TYPE_URL: &'static str = "/penumbra.core.ibc.v1alpha1.ClientConnections";
 }
 
 impl DomainType for ClientConnections {

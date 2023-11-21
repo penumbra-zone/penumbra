@@ -8,9 +8,7 @@ use poseidon377::hash_2;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::{
-    penumbra::core::keys::v1alpha1 as pb, serializers::bech32str, DomainType, TypeUrl,
-};
+use penumbra_proto::{penumbra::core::keys::v1alpha1 as pb, serializers::bech32str, DomainType};
 
 use crate::keys::wallet_id::WalletId;
 use crate::{
@@ -138,10 +136,6 @@ impl FullViewingKey {
             .expect("hash is 32 bytes");
         WalletId(hash)
     }
-}
-
-impl TypeUrl for FullViewingKey {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha.FullViewingKey";
 }
 
 impl DomainType for FullViewingKey {

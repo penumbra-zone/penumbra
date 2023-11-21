@@ -20,10 +20,6 @@ pub use registry::{Registry, REGISTRY};
 //     pub denom: DenomMetadata,
 // }
 
-// impl TypeUrl for Asset {
-//     const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Asset";
-// }
-
 // impl DomainType for Asset {
 //     type Proto = pb::Asset;
 // }

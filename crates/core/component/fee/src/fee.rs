@@ -1,5 +1,5 @@
 use anyhow::Context;
-use penumbra_proto::{penumbra::core::component::fee::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::fee::v1alpha1 as pb, DomainType};
 
 use decaf377::Fr;
 use penumbra_asset::{asset, balance, Balance, Value, STAKING_TOKEN_ASSET_ID};
@@ -41,10 +41,6 @@ impl Fee {
     pub fn format(&self, cache: &asset::Cache) -> String {
         self.0.format(cache)
     }
-}
-
-impl TypeUrl for Fee {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Fee";
 }
 
 impl DomainType for Fee {

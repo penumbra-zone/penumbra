@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_asset::balance;
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 
 use crate::{ActionView, IsAction, TransactionPerspective};
 use serde::{Deserialize, Serialize};
@@ -144,10 +144,6 @@ impl IsAction for Action {
             Action::IbcRelay(x) => ActionView::IbcRelay(x.to_owned()),
         }
     }
-}
-
-impl TypeUrl for Action {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.Action";
 }
 
 impl DomainType for Action {

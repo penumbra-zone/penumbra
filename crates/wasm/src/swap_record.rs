@@ -1,6 +1,6 @@
 use penumbra_chain::NoteSource;
 use penumbra_dex::{swap::SwapPlaintext, BatchSwapOutputData};
-use penumbra_proto::{view::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{view::v1alpha1 as pb, DomainType};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 use std::convert::{TryFrom, TryInto};
@@ -17,10 +17,6 @@ pub struct SwapRecord {
     pub output_data: BatchSwapOutputData,
     pub height_claimed: Option<u64>,
     pub source: NoteSource,
-}
-
-impl TypeUrl for SwapRecord {
-    const TYPE_URL: &'static str = "/penumbra.view.v1alpha1.SwapRecord";
 }
 
 impl DomainType for SwapRecord {

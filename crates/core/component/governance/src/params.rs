@@ -2,7 +2,7 @@ use anyhow::Context;
 use penumbra_chain::params::Ratio;
 use penumbra_num::Amount;
 use penumbra_proto::core::component::governance::v1alpha1 as pb;
-use penumbra_proto::{DomainType, TypeUrl};
+use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -22,10 +22,6 @@ pub struct GovernanceParameters {
     pub proposal_pass_threshold: Ratio,
     /// The threshold for a proposal to be slashed, as a ratio of "no" votes over all total votes.
     pub proposal_slash_threshold: Ratio,
-}
-
-impl TypeUrl for GovernanceParameters {
-    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.GovernanceParameters";
 }
 
 impl DomainType for GovernanceParameters {

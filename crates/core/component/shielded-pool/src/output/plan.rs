@@ -7,7 +7,7 @@ use penumbra_keys::{
     symmetric::WrappedMemoKey,
     Address, PayloadKey,
 };
-use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
@@ -124,10 +124,6 @@ impl OutputPlan {
     pub fn balance(&self) -> Balance {
         -Balance::from(self.value)
     }
-}
-
-impl TypeUrl for OutputPlan {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.OutputPlan";
 }
 
 impl DomainType for OutputPlan {

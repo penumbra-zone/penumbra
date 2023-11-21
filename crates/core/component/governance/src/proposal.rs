@@ -9,7 +9,7 @@ use penumbra_dao::params::DaoParameters;
 use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::params::FeeParameters;
 use penumbra_ibc::params::IBCParameters;
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 use penumbra_stake::params::StakeParameters;
 
 /// A governance proposal.
@@ -134,10 +134,6 @@ impl TryFrom<pb::Proposal> for Proposal {
             },
         })
     }
-}
-
-impl TypeUrl for Proposal {
-    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.Proposal";
 }
 
 impl DomainType for Proposal {
@@ -378,11 +374,6 @@ pub struct ChangedAppParameters {
     pub governance_params: Option<GovernanceParameters>,
 }
 
-impl TypeUrl for ChangedAppParameters {
-    const TYPE_URL: &'static str =
-        "/penumbra.core.component.governance.v1alpha1.ChangedAppParameters";
-}
-
 impl DomainType for ChangedAppParameters {
     type Proto = pb::ChangedAppParameters;
 }
@@ -430,11 +421,6 @@ impl From<ChangedAppParameters> for pb::ChangedAppParameters {
 pub struct ChangedAppParametersSet {
     pub old: ChangedAppParameters,
     pub new: ChangedAppParameters,
-}
-
-impl TypeUrl for ChangedAppParametersSet {
-    const TYPE_URL: &'static str =
-        "/penumbra.core.component.governance.v1alpha1.ChangedAppParametersSet";
 }
 
 impl DomainType for ChangedAppParametersSet {

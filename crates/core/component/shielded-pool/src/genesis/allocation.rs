@@ -1,8 +1,6 @@
 use penumbra_keys::Address;
 use penumbra_num::Amount;
-use penumbra_proto::{
-    penumbra::core::component::shielded_pool::v1alpha1 as pb, DomainType, TypeUrl,
-};
+use penumbra_proto::{penumbra::core::component::shielded_pool::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// A (transparent) genesis allocation.
@@ -55,11 +53,6 @@ impl std::fmt::Debug for Allocation {
             .field("address", &self.address.to_string())
             .finish()
     }
-}
-
-impl TypeUrl for Allocation {
-    // TODO: verify!
-    const TYPE_URL: &'static str = "/penumbra.core.chain.v1alpha1.genesis_app_state.Allocation";
 }
 
 impl DomainType for Allocation {

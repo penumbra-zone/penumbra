@@ -1,4 +1,4 @@
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
@@ -32,10 +32,6 @@ impl std::fmt::Display for State {
             }
         }
     }
-}
-
-impl TypeUrl for State {
-    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.BondingState";
 }
 
 impl DomainType for State {

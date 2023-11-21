@@ -1,6 +1,4 @@
-use penumbra_proto::{
-    penumbra::core::component::shielded_pool::v1alpha1 as pb, DomainType, TypeUrl,
-};
+use penumbra_proto::{penumbra::core::component::shielded_pool::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 mod allocation;
@@ -12,10 +10,6 @@ pub use allocation::Allocation;
 pub struct Content {
     /// The initial token allocations.
     pub allocations: Vec<Allocation>,
-}
-
-impl TypeUrl for Content {
-    const TYPE_URL: &'static str = "/penumbra.shielded_pool.v1alpha1.GenesisContent";
 }
 
 impl DomainType for Content {

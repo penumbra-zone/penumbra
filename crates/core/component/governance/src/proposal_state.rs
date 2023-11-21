@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::ProposalState", into = "pb::ProposalState")]
@@ -68,10 +68,6 @@ impl State {
             },
         }
     }
-}
-
-impl TypeUrl for State {
-    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ProposalState";
 }
 
 impl DomainType for State {
@@ -243,10 +239,6 @@ impl TryFrom<Withdrawn<String>> for Withdrawn<()> {
     }
 }
 
-impl TypeUrl for Outcome<String> {
-    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ProposalOutcome";
-}
-
 impl DomainType for Outcome<String> {
     type Proto = pb::ProposalOutcome;
 }
@@ -317,10 +309,6 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
             },
         )
     }
-}
-
-impl TypeUrl for Outcome<()> {
-    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ProposalOutcome";
 }
 
 impl DomainType for Outcome<()> {

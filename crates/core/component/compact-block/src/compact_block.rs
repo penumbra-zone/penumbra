@@ -6,7 +6,7 @@ use penumbra_dex::{BatchSwapOutputData, TradingPair};
 use penumbra_fee::GasPrices;
 use penumbra_proto::{
     core::component::compact_block::v1alpha1::CompactBlockRangeResponse,
-    penumbra::core::component::compact_block::v1alpha1 as pb, DomainType, TypeUrl,
+    penumbra::core::component::compact_block::v1alpha1 as pb, DomainType,
 };
 use penumbra_sct::Nullifier;
 use penumbra_tct::builder::{block, epoch};
@@ -71,10 +71,6 @@ impl CompactBlock {
             || self.app_parameters_updated // need to save latest app parameters
             || self.gas_prices.is_some() // need to save latest gas prices
     }
-}
-
-impl TypeUrl for CompactBlock {
-    const TYPE_URL: &'static str = "/penumbra.core.component.compact_block.v1alpha1.CompactBlock";
 }
 
 impl DomainType for CompactBlock {

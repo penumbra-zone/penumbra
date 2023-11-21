@@ -4,7 +4,7 @@ use std::convert::{TryFrom, TryInto};
 
 use penumbra_asset::{Balance, Value};
 use penumbra_keys::Address;
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::DaoOutput", into = "pb::DaoOutput")]
@@ -18,10 +18,6 @@ impl DaoOutput {
         // Outputs from the DAO require value
         -Balance::from(self.value)
     }
-}
-
-impl TypeUrl for DaoOutput {
-    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.DaoOutput";
 }
 
 impl DomainType for DaoOutput {

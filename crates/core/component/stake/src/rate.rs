@@ -2,7 +2,7 @@
 
 use penumbra_num::Amount;
 use penumbra_proto::core::component::stake::v1alpha1::CurrentValidatorRateResponse;
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{validator::State, FundingStream, IdentityKey};
@@ -188,10 +188,6 @@ impl BaseRateData {
     }
 }
 
-impl TypeUrl for RateData {
-    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.RateData";
-}
-
 impl DomainType for RateData {
     type Proto = pb::RateData;
 }
@@ -220,10 +216,6 @@ impl TryFrom<pb::RateData> for RateData {
             validator_exchange_rate: v.validator_exchange_rate,
         })
     }
-}
-
-impl TypeUrl for BaseRateData {
-    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.BaseRateData";
 }
 
 impl DomainType for BaseRateData {

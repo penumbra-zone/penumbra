@@ -5,7 +5,7 @@ use penumbra_asset::{
     Balance, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, TypeUrl};
+use penumbra_proto::penumbra::core::component::governance::v1alpha1 as pb;
 
 use crate::proposal_state::{Outcome, Withdrawn};
 
@@ -52,10 +52,6 @@ impl TryFrom<pb::ProposalDepositClaim> for ProposalDepositClaim {
                 .try_into()?,
         })
     }
-}
-
-impl TypeUrl for ProposalDepositClaim {
-    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.ProposalDepositClaim";
 }
 
 impl ProposalDepositClaim {

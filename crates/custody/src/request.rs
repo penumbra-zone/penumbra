@@ -1,4 +1,4 @@
-use penumbra_proto::{custody::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{custody::v1alpha1 as pb, DomainType};
 use penumbra_transaction::plan::TransactionPlan;
 
 use crate::PreAuthorization;
@@ -10,10 +10,6 @@ pub struct AuthorizeRequest {
     pub plan: TransactionPlan,
     /// Optionally, pre-authorization data, if required by the custodian.
     pub pre_authorizations: Vec<PreAuthorization>,
-}
-
-impl TypeUrl for AuthorizeRequest {
-    const TYPE_URL: &'static str = "/penumbra.custody.v1alpha1.AuthorizeRequest";
 }
 
 impl DomainType for AuthorizeRequest {

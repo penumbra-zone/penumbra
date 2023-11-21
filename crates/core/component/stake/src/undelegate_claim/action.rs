@@ -1,5 +1,5 @@
 use penumbra_asset::balance;
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{IdentityKey, Penalty, UndelegateClaimProof};
@@ -22,10 +22,6 @@ pub struct UndelegateClaimBody {
 pub struct UndelegateClaim {
     pub body: UndelegateClaimBody,
     pub proof: UndelegateClaimProof,
-}
-
-impl TypeUrl for UndelegateClaimBody {
-    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.UndelegateClaimBody";
 }
 
 impl DomainType for UndelegateClaimBody {
@@ -62,10 +58,6 @@ impl TryFrom<pb::UndelegateClaimBody> for UndelegateClaimBody {
                 .try_into()?,
         })
     }
-}
-
-impl TypeUrl for UndelegateClaim {
-    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.UndelegateClaim";
 }
 
 impl DomainType for UndelegateClaim {

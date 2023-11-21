@@ -1,4 +1,4 @@
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pbd, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pbd, DomainType};
 use penumbra_shielded_pool::NoteView;
 use serde::{Deserialize, Serialize};
 
@@ -16,10 +16,6 @@ pub enum SwapClaimView {
     Opaque {
         swap_claim: SwapClaim,
     },
-}
-
-impl TypeUrl for SwapClaimView {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.SwapClaimView";
 }
 
 impl DomainType for SwapClaimView {

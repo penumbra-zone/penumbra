@@ -1,9 +1,9 @@
 use anyhow::{Context, Error};
 use serde::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 use penumbra_asset::{Balance, Value};
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::DaoSpend", into = "pb::DaoSpend")]
@@ -16,10 +16,6 @@ impl DaoSpend {
         // Spends from the DAO produce value
         Balance::from(self.value)
     }
-}
-
-impl TypeUrl for DaoSpend {
-    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.DaoSpend";
 }
 
 impl DomainType for DaoSpend {

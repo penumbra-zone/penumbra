@@ -3,7 +3,7 @@ use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::{AllocVar, EqGadget};
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{FieldExt, Fq};
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display, Formatter},
@@ -34,10 +34,6 @@ impl DirectedTradingPair {
             end: self.start,
         }
     }
-}
-
-impl TypeUrl for DirectedTradingPair {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.DirectedTradingPair";
 }
 
 impl DomainType for DirectedTradingPair {
@@ -133,10 +129,6 @@ impl TryFrom<[u8; 64]> for TradingPair {
         }
         Ok(result)
     }
-}
-
-impl TypeUrl for TradingPair {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.TradingPair";
 }
 
 /// Represents a trading pair in R1CS.

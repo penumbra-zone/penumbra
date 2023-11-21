@@ -1,4 +1,4 @@
-use penumbra_proto::{core::component::governance::v1alpha1 as pbt, DomainType, TypeUrl};
+use penumbra_proto::{core::component::governance::v1alpha1 as pbt, DomainType};
 use penumbra_shielded_pool::NoteView;
 use serde::{Deserialize, Serialize};
 
@@ -15,10 +15,6 @@ pub enum DelegatorVoteView {
     Opaque {
         delegator_vote: DelegatorVote,
     },
-}
-
-impl TypeUrl for DelegatorVoteView {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.DelegatorVoteView";
 }
 
 impl DomainType for DelegatorVoteView {

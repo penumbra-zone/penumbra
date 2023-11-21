@@ -1,7 +1,7 @@
 use std::{iter::Sum, ops::Add};
 
 use penumbra_num::Amount;
-use penumbra_proto::{core::component::fee::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::component::fee::v1alpha1 as pb, DomainType};
 
 /// Represents the different resources that a transaction can consume,
 /// for purposes of calculating multidimensional fees based on real
@@ -72,10 +72,6 @@ impl GasPrices {
                 + self.execution_price * gas.execution / 1_000,
         )
     }
-}
-
-impl TypeUrl for GasPrices {
-    const TYPE_URL: &'static str = "/penumbra.core.component.fee.v1alpha1.GasPrices";
 }
 
 impl DomainType for GasPrices {

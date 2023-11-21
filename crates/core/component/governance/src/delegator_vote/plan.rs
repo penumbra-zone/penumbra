@@ -6,7 +6,7 @@ use penumbra_asset::{Balance, Value};
 use penumbra_keys::FullViewingKey;
 use penumbra_num::Amount;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
-use penumbra_proto::{core::component::governance::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::component::governance::v1alpha1 as pb, DomainType};
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::Note;
 use penumbra_tct as tct;
@@ -199,10 +199,6 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
             proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes)?,
         })
     }
-}
-
-impl TypeUrl for DelegatorVotePlan {
-    const TYPE_URL: &'static str = "/penumbra.core.governance.v1alpha1.DelegatorVotePlan";
 }
 
 impl DomainType for DelegatorVotePlan {

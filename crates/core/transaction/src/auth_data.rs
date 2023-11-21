@@ -1,6 +1,6 @@
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_chain::EffectHash;
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 
 /// Authorization data returned in response to a
 /// [`TransactionDescription`](crate::TransactionDescription).
@@ -14,10 +14,6 @@ pub struct AuthorizationData {
     /// The required delegator vote authorization signatures, returned in the same order as the
     /// DelegatorVote actions in the original request.
     pub delegator_vote_auths: Vec<Signature<SpendAuth>>,
-}
-
-impl TypeUrl for AuthorizationData {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.AuthorizationData";
 }
 
 impl DomainType for AuthorizationData {

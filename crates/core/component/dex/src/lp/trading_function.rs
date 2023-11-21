@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use penumbra_asset::{asset, Value};
 use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
@@ -180,10 +180,6 @@ impl From<TradingFunction> for pb::TradingFunction {
             pair: Some(phi.pair.into()),
         }
     }
-}
-
-impl TypeUrl for TradingFunction {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.TradingFunction";
 }
 
 impl DomainType for TradingFunction {
@@ -453,10 +449,6 @@ impl BareTradingFunction {
     pub fn compose(&self, _phi: BareTradingFunction) -> BareTradingFunction {
         unimplemented!()
     }
-}
-
-impl TypeUrl for BareTradingFunction {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.BareTradingFunction";
 }
 
 impl DomainType for BareTradingFunction {

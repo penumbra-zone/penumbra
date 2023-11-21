@@ -1,5 +1,5 @@
 use penumbra_asset::asset;
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
 use regex::Regex;
 
 use super::position::{Id, State};
@@ -116,10 +116,6 @@ impl std::cmp::PartialEq for LpNft {
 }
 
 impl std::cmp::Eq for LpNft {}
-
-impl TypeUrl for LpNft {
-    const TYPE_URL: &'static str = "/penumbra.core.dex.v1alpha1.LpNft";
-}
 
 impl DomainType for LpNft {
     type Proto = pb::LpNft;

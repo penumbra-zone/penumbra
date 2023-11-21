@@ -1,5 +1,5 @@
 use anyhow::Context;
-use penumbra_proto::{penumbra::core::component::fee::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::fee::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{params::FeeParameters, GasPrices};
@@ -37,10 +37,6 @@ impl TryFrom<pb::GenesisContent> for Content {
                 .try_into()?,
         })
     }
-}
-
-impl TypeUrl for Content {
-    const TYPE_URL: &'static str = "/penumbra.core.component.fee.v1alpha1.GenesisContent";
 }
 
 impl DomainType for Content {

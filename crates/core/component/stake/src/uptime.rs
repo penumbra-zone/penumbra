@@ -1,6 +1,6 @@
 use bitvec::prelude::*;
 
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// Records information on a validator's uptime.
@@ -77,10 +77,6 @@ impl Uptime {
     pub fn num_missed_blocks(&self) -> usize {
         self.signatures.iter_zeros().len()
     }
-}
-
-impl TypeUrl for Uptime {
-    const TYPE_URL: &'static str = "/penumbra.core.stake.v1alpha1.Uptime";
 }
 
 impl DomainType for Uptime {

@@ -5,7 +5,7 @@ use penumbra_asset::balance;
 use penumbra_keys::symmetric::{OvkWrappedKey, WrappedMemoKey};
 use penumbra_proto::{
     core::component::shielded_pool::v1alpha1 as pb,
-    penumbra::core::component::shielded_pool::v1alpha1 as pbc, DomainType, TypeUrl,
+    penumbra::core::component::shielded_pool::v1alpha1 as pbc, DomainType,
 };
 use serde::{Deserialize, Serialize};
 
@@ -24,10 +24,6 @@ pub struct Body {
     pub balance_commitment: balance::Commitment,
     pub ovk_wrapped_key: OvkWrappedKey,
     pub wrapped_memo_key: WrappedMemoKey,
-}
-
-impl TypeUrl for Output {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.Output";
 }
 
 impl DomainType for Output {
@@ -60,10 +56,6 @@ impl TryFrom<pb::Output> for Output {
                 .context("output proof malformed")?,
         })
     }
-}
-
-impl TypeUrl for Body {
-    const TYPE_URL: &'static str = "/penumbra.core.transaction.v1alpha1.OutputBody";
 }
 
 impl DomainType for Body {

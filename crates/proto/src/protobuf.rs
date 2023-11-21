@@ -48,16 +48,6 @@ use crate::penumbra::crypto::decaf377_rdsa::v1alpha1::{BindingSignature, SpendAu
 
 use decaf377_rdsa::{Binding, Signature, SpendAuth, VerificationKey};
 
-impl TypeUrl for Signature<SpendAuth> {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.SpendAuthSignature";
-}
-impl TypeUrl for Signature<Binding> {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.BindingSignature";
-}
-impl TypeUrl for VerificationKey<SpendAuth> {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.SpendVerificationKey";
-}
-
 impl DomainType for Signature<SpendAuth> {
     type Proto = SpendAuthSignature;
 }
@@ -117,10 +107,6 @@ impl TryFrom<SpendVerificationKey> for VerificationKey<SpendAuth> {
 use crate::penumbra::crypto::decaf377_fmd::v1alpha1::Clue as ProtoClue;
 use decaf377_fmd::Clue;
 
-impl TypeUrl for Clue {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Clue";
-}
-
 impl DomainType for Clue {
     type Proto = ProtoClue;
 }
@@ -151,10 +137,6 @@ impl TryFrom<ProtoClue> for Clue {
 // this redefines its proto, because the encodings are consensus-critical
 // and we don't vendor all of the tendermint protos.
 use crate::penumbra::core::keys::v1alpha1::ConsensusKey;
-
-impl TypeUrl for tendermint::PublicKey {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.ConsensusKey";
-}
 
 impl DomainType for tendermint::PublicKey {
     type Proto = ConsensusKey;
@@ -190,26 +172,18 @@ use ibc_types::core::client::Height;
 use ibc_types::core::connection::{ClientPaths, ConnectionEnd};
 use ibc_types::lightclients::tendermint::client_state::ClientState;
 
-impl TypeUrl for ClientPaths {
-    const TYPE_URL: &'static str = "/ibc.core.connection.v1.ClientPaths";
-}
-impl DomainType for ClientPaths {
-    type Proto = RawClientPaths;
-}
-impl TypeUrl for ConnectionEnd {
-    const TYPE_URL: &'static str = "/ibc.core.connection.v1.ConnectionEnd";
-}
-impl TypeUrl for ChannelEnd {
-    const TYPE_URL: &'static str = "/ibc.core.channel.v1.Channel";
-}
-impl TypeUrl for Height {
-    const TYPE_URL: &'static str = "/ibc.core.client.v1.Height";
-}
+// TODO: Remove when ibc_types is updated to autogenerate Name trait
 impl TypeUrl for ibc_types::lightclients::tendermint::client_state::ClientState {
     const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.ClientState";
 }
 impl TypeUrl for ibc_types::lightclients::tendermint::consensus_state::ConsensusState {
     const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.ConsensusState";
+}
+impl TypeUrl for ClientPaths {
+    const TYPE_URL: &'static str = "/ibc.core.connection.v1.ClientPaths";
+}
+impl DomainType for ClientPaths {
+    type Proto = RawClientPaths;
 }
 
 impl DomainType for ConnectionEnd {
