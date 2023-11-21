@@ -4,6 +4,13 @@ pub struct BalanceCommitment {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for BalanceCommitment {
+    const NAME: &'static str = "BalanceCommitment";
+    const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.asset.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A Penumbra asset ID.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -29,11 +36,25 @@ pub struct AssetId {
     #[prost(string, tag = "3")]
     pub alt_base_denom: ::prost::alloc::string::String,
 }
+impl ::prost::Name for AssetId {
+    const NAME: &'static str = "AssetId";
+    const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.asset.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Denom {
     #[prost(string, tag = "1")]
     pub denom: ::prost::alloc::string::String,
+}
+impl ::prost::Name for Denom {
+    const NAME: &'static str = "Denom";
+    const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.asset.v1alpha1.{}", Self::NAME)
+    }
 }
 /// DenomMetadata represents a struct that describes a basic token.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -69,6 +90,13 @@ pub struct DenomMetadata {
     #[prost(message, optional, tag = "1984")]
     pub penumbra_asset_id: ::core::option::Option<AssetId>,
 }
+impl ::prost::Name for DenomMetadata {
+    const NAME: &'static str = "DenomMetadata";
+    const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.asset.v1alpha1.{}", Self::NAME)
+    }
+}
 /// DenomUnit represents a struct that describes a given denomination unit of the basic token.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -87,6 +115,13 @@ pub struct DenomUnit {
     #[prost(string, repeated, tag = "3")]
     pub aliases: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
+impl ::prost::Name for DenomUnit {
+    const NAME: &'static str = "DenomUnit";
+    const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.asset.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Value {
@@ -94,6 +129,13 @@ pub struct Value {
     pub amount: ::core::option::Option<super::super::num::v1alpha1::Amount>,
     #[prost(message, optional, tag = "2")]
     pub asset_id: ::core::option::Option<AssetId>,
+}
+impl ::prost::Name for Value {
+    const NAME: &'static str = "Value";
+    const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.asset.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Represents a value of a known or unknown denomination.
 ///
@@ -121,6 +163,15 @@ pub mod value_view {
         #[prost(message, optional, tag = "2")]
         pub denom: ::core::option::Option<super::DenomMetadata>,
     }
+    impl ::prost::Name for KnownDenom {
+        const NAME: &'static str = "KnownDenom";
+        const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.asset.v1alpha1.ValueView.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct UnknownDenom {
@@ -129,6 +180,15 @@ pub mod value_view {
         #[prost(message, optional, tag = "2")]
         pub asset_id: ::core::option::Option<super::AssetId>,
     }
+    impl ::prost::Name for UnknownDenom {
+        const NAME: &'static str = "UnknownDenom";
+        const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.asset.v1alpha1.ValueView.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum ValueView {
@@ -136,5 +196,12 @@ pub mod value_view {
         KnownDenom(KnownDenom),
         #[prost(message, tag = "2")]
         UnknownDenom(UnknownDenom),
+    }
+}
+impl ::prost::Name for ValueView {
+    const NAME: &'static str = "ValueView";
+    const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.asset.v1alpha1.{}", Self::NAME)
     }
 }

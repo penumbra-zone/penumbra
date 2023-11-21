@@ -4,7 +4,7 @@ use penumbra_distributions::genesis::Content as DistributionsContent;
 use penumbra_fee::genesis::Content as FeeContent;
 use penumbra_governance::genesis::Content as GovernanceContent;
 use penumbra_ibc::genesis::Content as IBCContent;
-use penumbra_proto::{penumbra::core::app::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::app::v1alpha1 as pb, DomainType};
 use penumbra_shielded_pool::genesis::Content as ShieldedPoolContent;
 use penumbra_stake::genesis::Content as StakeContent;
 use serde::{Deserialize, Serialize};
@@ -39,10 +39,6 @@ pub struct Content {
     pub fee_content: FeeContent,
     /// Distributions module genesis state.
     pub distributions_content: DistributionsContent,
-}
-
-impl TypeUrl for Content {
-    const TYPE_URL: &'static str = "/penumbra.core.app.v1alpha1.GenesisContent";
 }
 
 impl DomainType for Content {
@@ -142,10 +138,6 @@ impl TryFrom<pb::GenesisContent> for Content {
                 .try_into()?,
         })
     }
-}
-
-impl TypeUrl for AppState {
-    const TYPE_URL: &'static str = "/penumbra.core.app.v1alpha1.GenesisAppState";
 }
 
 impl DomainType for AppState {

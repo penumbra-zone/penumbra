@@ -12,7 +12,7 @@ use std::{
 
 use anyhow::Context;
 use penumbra_num::{Amount, AmountVar};
-use penumbra_proto::{penumbra::core::asset::v1alpha1 as pb, DomainType, TypeUrl};
+use penumbra_proto::{penumbra::core::asset::v1alpha1 as pb, DomainType};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -104,16 +104,8 @@ impl From<ValueView> for Value {
     }
 }
 
-impl TypeUrl for Value {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.Value";
-}
-
 impl DomainType for Value {
     type Proto = pb::Value;
-}
-
-impl TypeUrl for ValueView {
-    const TYPE_URL: &'static str = "/penumbra.core.crypto.v1alpha1.ValueView";
 }
 
 impl DomainType for ValueView {

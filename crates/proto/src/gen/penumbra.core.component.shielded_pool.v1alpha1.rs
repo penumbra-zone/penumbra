@@ -8,6 +8,15 @@ pub struct Note {
     #[prost(message, optional, tag = "3")]
     pub address: ::core::option::Option<super::super::super::keys::v1alpha1::Address>,
 }
+impl ::prost::Name for Note {
+    const NAME: &'static str = "Note";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NoteView {
@@ -20,6 +29,15 @@ pub struct NoteView {
         super::super::super::keys::v1alpha1::AddressView,
     >,
 }
+impl ::prost::Name for NoteView {
+    const NAME: &'static str = "NoteView";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// An encrypted note.
 /// 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -27,6 +45,15 @@ pub struct NoteView {
 pub struct NoteCiphertext {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for NoteCiphertext {
+    const NAME: &'static str = "NoteCiphertext";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// The body of an output description, including only the minimal
 /// data required to scan and process the output.
@@ -46,12 +73,30 @@ pub struct NotePayload {
     #[prost(message, optional, tag = "3")]
     pub encrypted_note: ::core::option::Option<NoteCiphertext>,
 }
+impl ::prost::Name for NotePayload {
+    const NAME: &'static str = "NotePayload";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// A Penumbra ZK output proof.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ZkOutputProof {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ZkOutputProof {
+    const NAME: &'static str = "ZKOutputProof";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// A Penumbra ZK spend proof.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -60,12 +105,30 @@ pub struct ZkSpendProof {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ZkSpendProof {
+    const NAME: &'static str = "ZKSpendProof";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// A Penumbra ZK nullifier derivation proof.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ZkNullifierDerivationProof {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ZkNullifierDerivationProof {
+    const NAME: &'static str = "ZKNullifierDerivationProof";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// Spends a shielded note.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -82,6 +145,15 @@ pub struct Spend {
     /// The proof that the spend is well-formed is authorizing data.
     #[prost(message, optional, tag = "3")]
     pub proof: ::core::option::Option<ZkSpendProof>,
+}
+impl ::prost::Name for Spend {
+    const NAME: &'static str = "Spend";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// The body of a spend description, containing only the effecting data
 /// describing changes to the ledger, and not the authorizing data that allows
@@ -101,6 +173,15 @@ pub struct SpendBody {
     #[prost(bytes = "vec", tag = "4")]
     pub rk: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for SpendBody {
+    const NAME: &'static str = "SpendBody";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpendView {
@@ -117,11 +198,29 @@ pub mod spend_view {
         #[prost(message, optional, tag = "2")]
         pub note: ::core::option::Option<super::NoteView>,
     }
+    impl ::prost::Name for Visible {
+        const NAME: &'static str = "Visible";
+        const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.shielded_pool.v1alpha1.SpendView.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Opaque {
         #[prost(message, optional, tag = "1")]
         pub spend: ::core::option::Option<super::Spend>,
+    }
+    impl ::prost::Name for Opaque {
+        const NAME: &'static str = "Opaque";
+        const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.shielded_pool.v1alpha1.SpendView.{}", Self::NAME
+            )
+        }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -130,6 +229,15 @@ pub mod spend_view {
         Visible(Visible),
         #[prost(message, tag = "2")]
         Opaque(Opaque),
+    }
+}
+impl ::prost::Name for SpendView {
+    const NAME: &'static str = "SpendView";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -154,6 +262,15 @@ pub struct SpendPlan {
     #[prost(bytes = "vec", tag = "6")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for SpendPlan {
+    const NAME: &'static str = "SpendPlan";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// Creates a new shielded note.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -164,6 +281,15 @@ pub struct Output {
     /// The output proof is authorizing data.
     #[prost(message, optional, tag = "2")]
     pub proof: ::core::option::Option<ZkOutputProof>,
+}
+impl ::prost::Name for Output {
+    const NAME: &'static str = "Output";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// The body of an output description, containing only the effecting data
 /// describing changes to the ledger, and not the authorizing data that allows
@@ -187,6 +313,15 @@ pub struct OutputBody {
     #[prost(bytes = "vec", tag = "4")]
     pub ovk_wrapped_key: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for OutputBody {
+    const NAME: &'static str = "OutputBody";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OutputView {
@@ -207,11 +342,31 @@ pub mod output_view {
             super::super::super::super::keys::v1alpha1::PayloadKey,
         >,
     }
+    impl ::prost::Name for Visible {
+        const NAME: &'static str = "Visible";
+        const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.shielded_pool.v1alpha1.OutputView.{}",
+                Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Opaque {
         #[prost(message, optional, tag = "1")]
         pub output: ::core::option::Option<super::Output>,
+    }
+    impl ::prost::Name for Opaque {
+        const NAME: &'static str = "Opaque";
+        const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.shielded_pool.v1alpha1.OutputView.{}",
+                Self::NAME
+            )
+        }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -220,6 +375,15 @@ pub mod output_view {
         Visible(Visible),
         #[prost(message, tag = "2")]
         Opaque(Opaque),
+    }
+}
+impl ::prost::Name for OutputView {
+    const NAME: &'static str = "OutputView";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -246,6 +410,15 @@ pub struct OutputPlan {
     #[prost(bytes = "vec", tag = "6")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for OutputPlan {
+    const NAME: &'static str = "OutputPlan";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// Requests information on an asset by asset id
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -257,6 +430,15 @@ pub struct DenomMetadataByIdRequest {
     #[prost(message, optional, tag = "2")]
     pub asset_id: ::core::option::Option<super::super::super::asset::v1alpha1::AssetId>,
 }
+impl ::prost::Name for DenomMetadataByIdRequest {
+    const NAME: &'static str = "DenomMetadataByIdRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DenomMetadataByIdResponse {
@@ -267,6 +449,15 @@ pub struct DenomMetadataByIdResponse {
     pub denom_metadata: ::core::option::Option<
         super::super::super::asset::v1alpha1::DenomMetadata,
     >,
+}
+impl ::prost::Name for DenomMetadataByIdResponse {
+    const NAME: &'static str = "DenomMetadataByIdResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// Genesis data for the shielded pool component.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -291,6 +482,25 @@ pub mod genesis_content {
         pub address: ::core::option::Option<
             super::super::super::super::keys::v1alpha1::Address,
         >,
+    }
+    impl ::prost::Name for Allocation {
+        const NAME: &'static str = "Allocation";
+        const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.shielded_pool.v1alpha1.GenesisContent.{}",
+                Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for GenesisContent {
+    const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
     }
 }
 /// Generated client implementations.

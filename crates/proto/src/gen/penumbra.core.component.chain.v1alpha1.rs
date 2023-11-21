@@ -5,6 +5,13 @@ pub struct EffectHash {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for EffectHash {
+    const NAME: &'static str = "EffectHash";
+    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Global chain configuration data, such as chain ID, epoch duration, etc.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -15,6 +22,13 @@ pub struct ChainParameters {
     /// The duration of each epoch, in number of blocks.
     #[prost(uint64, tag = "2")]
     pub epoch_duration: u64,
+}
+impl ::prost::Name for ChainParameters {
+    const NAME: &'static str = "ChainParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
+    }
 }
 /// The ratio between two numbers, used in governance to describe vote thresholds and quorums.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -27,6 +41,13 @@ pub struct Ratio {
     #[prost(uint64, tag = "2")]
     pub denominator: u64,
 }
+impl ::prost::Name for Ratio {
+    const NAME: &'static str = "Ratio";
+    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Parameters for Fuzzy Message Detection
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -36,6 +57,13 @@ pub struct FmdParameters {
     #[prost(uint64, tag = "2")]
     pub as_of_block_height: u64,
 }
+impl ::prost::Name for FmdParameters {
+    const NAME: &'static str = "FmdParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct KnownAssets {
@@ -44,12 +72,26 @@ pub struct KnownAssets {
         super::super::super::asset::v1alpha1::DenomMetadata,
     >,
 }
+impl ::prost::Name for KnownAssets {
+    const NAME: &'static str = "KnownAssets";
+    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A spicy transaction ID
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NoteSource {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for NoteSource {
+    const NAME: &'static str = "NoteSource";
+    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A NoteSource paired with the height at which the note was spent
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -60,6 +102,13 @@ pub struct SpendInfo {
     #[prost(uint64, tag = "2")]
     pub spend_height: u64,
 }
+impl ::prost::Name for SpendInfo {
+    const NAME: &'static str = "SpendInfo";
+    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Chain-specific genesis content.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -67,6 +116,13 @@ pub struct GenesisContent {
     /// The ChainParameters present at genesis.
     #[prost(message, optional, tag = "1")]
     pub chain_params: ::core::option::Option<ChainParameters>,
+}
+impl ::prost::Name for GenesisContent {
+    const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -76,17 +132,38 @@ pub struct Epoch {
     #[prost(uint64, tag = "2")]
     pub start_height: u64,
 }
+impl ::prost::Name for Epoch {
+    const NAME: &'static str = "Epoch";
+    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EpochByHeightRequest {
     #[prost(uint64, tag = "1")]
     pub height: u64,
 }
+impl ::prost::Name for EpochByHeightRequest {
+    const NAME: &'static str = "EpochByHeightRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EpochByHeightResponse {
     #[prost(message, optional, tag = "1")]
     pub epoch: ::core::option::Option<Epoch>,
+}
+impl ::prost::Name for EpochByHeightResponse {
+    const NAME: &'static str = "EpochByHeightResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]

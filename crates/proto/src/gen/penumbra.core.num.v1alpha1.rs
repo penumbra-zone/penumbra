@@ -11,3 +11,10 @@ pub struct Amount {
     #[prost(uint64, tag = "2")]
     pub hi: u64,
 }
+impl ::prost::Name for Amount {
+    const NAME: &'static str = "Amount";
+    const PACKAGE: &'static str = "penumbra.core.num.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.num.v1alpha1.{}", Self::NAME)
+    }
+}

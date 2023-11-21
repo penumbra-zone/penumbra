@@ -4,6 +4,13 @@ pub struct IbcRelay {
     #[prost(message, optional, tag = "1")]
     pub raw_action: ::core::option::Option<::pbjson_types::Any>,
 }
+impl ::prost::Name for IbcRelay {
+    const NAME: &'static str = "IbcRelay";
+    const PACKAGE: &'static str = "penumbra.core.component.ibc.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.ibc.v1alpha1.{}", Self::NAME)
+    }
+}
 /// FungibleTokenPacketData defines a struct for the packet payload
 /// See FungibleTokenPacketData spec:
 /// <https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures>
@@ -22,6 +29,13 @@ pub struct FungibleTokenPacketData {
     /// the recipient address on the destination chain
     #[prost(string, tag = "4")]
     pub receiver: ::prost::alloc::string::String,
+}
+impl ::prost::Name for FungibleTokenPacketData {
+    const NAME: &'static str = "FungibleTokenPacketData";
+    const PACKAGE: &'static str = "penumbra.core.component.ibc.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.ibc.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A Penumbra transaction action requesting an ICS20 transfer.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -53,6 +67,13 @@ pub struct Ics20Withdrawal {
     #[prost(string, tag = "7")]
     pub source_channel: ::prost::alloc::string::String,
 }
+impl ::prost::Name for Ics20Withdrawal {
+    const NAME: &'static str = "Ics20Withdrawal";
+    const PACKAGE: &'static str = "penumbra.core.component.ibc.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.ibc.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientData {
@@ -66,11 +87,25 @@ pub struct ClientData {
     #[prost(uint64, tag = "4")]
     pub processed_height: u64,
 }
+impl ::prost::Name for ClientData {
+    const NAME: &'static str = "ClientData";
+    const PACKAGE: &'static str = "penumbra.core.component.ibc.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.ibc.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientCounter {
     #[prost(uint64, tag = "1")]
     pub counter: u64,
+}
+impl ::prost::Name for ClientCounter {
+    const NAME: &'static str = "ClientCounter";
+    const PACKAGE: &'static str = "penumbra.core.component.ibc.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.ibc.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -78,11 +113,25 @@ pub struct ConsensusState {
     #[prost(message, optional, tag = "1")]
     pub consensus_state: ::core::option::Option<::pbjson_types::Any>,
 }
+impl ::prost::Name for ConsensusState {
+    const NAME: &'static str = "ConsensusState";
+    const PACKAGE: &'static str = "penumbra.core.component.ibc.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.ibc.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VerifiedHeights {
     #[prost(message, repeated, tag = "1")]
     pub heights: ::prost::alloc::vec::Vec<::ibc_proto::ibc::core::client::v1::Height>,
+}
+impl ::prost::Name for VerifiedHeights {
+    const NAME: &'static str = "VerifiedHeights";
+    const PACKAGE: &'static str = "penumbra.core.component.ibc.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.ibc.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -90,11 +139,25 @@ pub struct ConnectionCounter {
     #[prost(uint64, tag = "1")]
     pub counter: u64,
 }
+impl ::prost::Name for ConnectionCounter {
+    const NAME: &'static str = "ConnectionCounter";
+    const PACKAGE: &'static str = "penumbra.core.component.ibc.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.ibc.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientConnections {
     #[prost(string, repeated, tag = "1")]
     pub connections: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+impl ::prost::Name for ClientConnections {
+    const NAME: &'static str = "ClientConnections";
+    const PACKAGE: &'static str = "penumbra.core.component.ibc.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.ibc.v1alpha1.{}", Self::NAME)
+    }
 }
 /// IBC configuration data.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -110,6 +173,13 @@ pub struct IbcParameters {
     #[prost(bool, tag = "3")]
     pub outbound_ics20_transfers_enabled: bool,
 }
+impl ::prost::Name for IbcParameters {
+    const NAME: &'static str = "IbcParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.ibc.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.ibc.v1alpha1.{}", Self::NAME)
+    }
+}
 /// IBC genesis state.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -117,4 +187,11 @@ pub struct GenesisContent {
     /// IBC parameters.
     #[prost(message, optional, tag = "1")]
     pub ibc_params: ::core::option::Option<IbcParameters>,
+}
+impl ::prost::Name for GenesisContent {
+    const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.component.ibc.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.ibc.v1alpha1.{}", Self::NAME)
+    }
 }

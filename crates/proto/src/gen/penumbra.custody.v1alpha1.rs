@@ -15,6 +15,13 @@ pub struct AuthorizeRequest {
     #[prost(message, repeated, tag = "3")]
     pub pre_authorizations: ::prost::alloc::vec::Vec<PreAuthorization>,
 }
+impl ::prost::Name for AuthorizeRequest {
+    const NAME: &'static str = "AuthorizeRequest";
+    const PACKAGE: &'static str = "penumbra.custody.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.custody.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeResponse {
@@ -22,6 +29,13 @@ pub struct AuthorizeResponse {
     pub data: ::core::option::Option<
         super::super::core::transaction::v1alpha1::AuthorizationData,
     >,
+}
+impl ::prost::Name for AuthorizeResponse {
+    const NAME: &'static str = "AuthorizeResponse";
+    const PACKAGE: &'static str = "penumbra.custody.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.custody.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A pre-authorization packet.  This allows a custodian to delegate (partial)
 /// signing authority to other authorization mechanisms.  Details of how a
@@ -47,6 +61,15 @@ pub mod pre_authorization {
         #[prost(bytes = "vec", tag = "2")]
         pub sig: ::prost::alloc::vec::Vec<u8>,
     }
+    impl ::prost::Name for Ed25519 {
+        const NAME: &'static str = "Ed25519";
+        const PACKAGE: &'static str = "penumbra.custody.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.custody.v1alpha1.PreAuthorization.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum PreAuthorization {
@@ -54,9 +77,23 @@ pub mod pre_authorization {
         Ed25519(Ed25519),
     }
 }
+impl ::prost::Name for PreAuthorization {
+    const NAME: &'static str = "PreAuthorization";
+    const PACKAGE: &'static str = "penumbra.custody.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.custody.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ExportFullViewingKeyRequest {}
+impl ::prost::Name for ExportFullViewingKeyRequest {
+    const NAME: &'static str = "ExportFullViewingKeyRequest";
+    const PACKAGE: &'static str = "penumbra.custody.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.custody.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ExportFullViewingKeyResponse {
@@ -66,6 +103,13 @@ pub struct ExportFullViewingKeyResponse {
         super::super::core::keys::v1alpha1::FullViewingKey,
     >,
 }
+impl ::prost::Name for ExportFullViewingKeyResponse {
+    const NAME: &'static str = "ExportFullViewingKeyResponse";
+    const PACKAGE: &'static str = "penumbra.custody.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.custody.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConfirmAddressRequest {
@@ -74,11 +118,25 @@ pub struct ConfirmAddressRequest {
         super::super::core::keys::v1alpha1::AddressIndex,
     >,
 }
+impl ::prost::Name for ConfirmAddressRequest {
+    const NAME: &'static str = "ConfirmAddressRequest";
+    const PACKAGE: &'static str = "penumbra.custody.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.custody.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConfirmAddressResponse {
     #[prost(message, optional, tag = "1")]
     pub address: ::core::option::Option<super::super::core::keys::v1alpha1::Address>,
+}
+impl ::prost::Name for ConfirmAddressResponse {
+    const NAME: &'static str = "ConfirmAddressResponse";
+    const PACKAGE: &'static str = "penumbra.custody.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.custody.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]

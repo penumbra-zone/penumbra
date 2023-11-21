@@ -56,10 +56,12 @@ fn main() -> anyhow::Result<()> {
 
     config
         .out_dir(&target_dir)
-        .file_descriptor_set_path(&target_dir.join(descriptor_file_name));
+        .file_descriptor_set_path(&target_dir.join(descriptor_file_name))
+        .enable_type_names();
     storage_config
         .out_dir(&storage_target_dir)
-        .file_descriptor_set_path(&storage_target_dir.join(descriptor_file_name));
+        .file_descriptor_set_path(&storage_target_dir.join(descriptor_file_name))
+        .enable_type_names();
 
     let rpc_doc_attr = r#"#[cfg(feature = "rpc")]"#;
 

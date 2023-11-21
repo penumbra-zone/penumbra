@@ -8,7 +8,7 @@ publish = false
 anyhow = "1"
 prost = "0.12.2"
 prost-types = "0.12"
-prost-build = "0.12"
+prost-build = "0.12.3"
 tonic-build = { version = "0.10.0", features = ["cleanup-markdown"] }
 pbjson = "0.6"
 pbjson-types = "0.6"

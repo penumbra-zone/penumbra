@@ -5,6 +5,13 @@ pub struct ZkUndelegateClaimProof {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ZkUndelegateClaimProof {
+    const NAME: &'static str = "ZKUndelegateClaimProof";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Describes a validator's configuration data.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -45,6 +52,13 @@ pub struct Validator {
         super::super::super::keys::v1alpha1::GovernanceKey,
     >,
 }
+impl ::prost::Name for Validator {
+    const NAME: &'static str = "Validator";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 /// For storing the list of keys of known validators.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -53,6 +67,13 @@ pub struct ValidatorList {
     pub validator_keys: ::prost::alloc::vec::Vec<
         super::super::super::keys::v1alpha1::IdentityKey,
     >,
+}
+impl ::prost::Name for ValidatorList {
+    const NAME: &'static str = "ValidatorList";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A portion of a validator's commission.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -75,6 +96,15 @@ pub mod funding_stream {
         #[prost(uint32, tag = "2")]
         pub rate_bps: u32,
     }
+    impl ::prost::Name for ToAddress {
+        const NAME: &'static str = "ToAddress";
+        const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.stake.v1alpha1.FundingStream.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ToDao {
@@ -82,6 +112,15 @@ pub mod funding_stream {
         /// allocated to this funding stream, specified in basis points.
         #[prost(uint32, tag = "2")]
         pub rate_bps: u32,
+    }
+    impl ::prost::Name for ToDao {
+        const NAME: &'static str = "ToDao";
+        const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.stake.v1alpha1.FundingStream.{}", Self::NAME
+            )
+        }
     }
     /// The recipient of the funding stream.
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -91,6 +130,13 @@ pub mod funding_stream {
         ToAddress(ToAddress),
         #[prost(message, tag = "2")]
         ToDao(ToDao),
+    }
+}
+impl ::prost::Name for FundingStream {
+    const NAME: &'static str = "FundingStream";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
     }
 }
 /// Describes the reward and exchange rates and voting power for a validator in some epoch.
@@ -108,6 +154,13 @@ pub struct RateData {
     #[prost(uint64, tag = "5")]
     pub validator_exchange_rate: u64,
 }
+impl ::prost::Name for RateData {
+    const NAME: &'static str = "RateData";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Describes the base reward and exchange rates in some epoch.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -118,6 +171,13 @@ pub struct BaseRateData {
     pub base_reward_rate: u64,
     #[prost(uint64, tag = "3")]
     pub base_exchange_rate: u64,
+}
+impl ::prost::Name for BaseRateData {
+    const NAME: &'static str = "BaseRateData";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Describes the current state of a validator on-chain
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -133,6 +193,13 @@ pub struct ValidatorStatus {
     pub voting_power: u64,
     #[prost(message, optional, tag = "4")]
     pub bonding_state: ::core::option::Option<BondingState>,
+}
+impl ::prost::Name for ValidatorStatus {
+    const NAME: &'static str = "ValidatorStatus";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Describes the unbonding state of a validator's stake pool.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -186,6 +253,13 @@ pub mod bonding_state {
                 _ => None,
             }
         }
+    }
+}
+impl ::prost::Name for BondingState {
+    const NAME: &'static str = "BondingState";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
     }
 }
 /// Describes the state of a validator
@@ -246,6 +320,13 @@ pub mod validator_state {
         }
     }
 }
+impl ::prost::Name for ValidatorState {
+    const NAME: &'static str = "ValidatorState";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Combines all validator info into a single packet.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -257,6 +338,13 @@ pub struct ValidatorInfo {
     #[prost(message, optional, tag = "3")]
     pub rate_data: ::core::option::Option<RateData>,
 }
+impl ::prost::Name for ValidatorInfo {
+    const NAME: &'static str = "ValidatorInfo";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A transaction action (re)defining a validator.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -267,6 +355,13 @@ pub struct ValidatorDefinition {
     /// A signature by the validator's identity key over the validator data.
     #[prost(bytes = "vec", tag = "2")]
     pub auth_sig: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for ValidatorDefinition {
+    const NAME: &'static str = "ValidatorDefinition";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A transaction action adding stake to a validator's delegation pool.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -297,6 +392,13 @@ pub struct Delegate {
         super::super::super::num::v1alpha1::Amount,
     >,
 }
+impl ::prost::Name for Delegate {
+    const NAME: &'static str = "Delegate";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A transaction action withdrawing stake from a validator's delegation pool.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -324,6 +426,13 @@ pub struct Undelegate {
         super::super::super::num::v1alpha1::Amount,
     >,
 }
+impl ::prost::Name for Undelegate {
+    const NAME: &'static str = "Undelegate";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A transaction action finishing an undelegation, converting (slashable)
 /// "unbonding tokens" to (unslashable) staking tokens.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -333,6 +442,13 @@ pub struct UndelegateClaim {
     pub body: ::core::option::Option<UndelegateClaimBody>,
     #[prost(bytes = "vec", tag = "2")]
     pub proof: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for UndelegateClaim {
+    const NAME: &'static str = "UndelegateClaim";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -354,6 +470,13 @@ pub struct UndelegateClaimBody {
     pub balance_commitment: ::core::option::Option<
         super::super::super::asset::v1alpha1::BalanceCommitment,
     >,
+}
+impl ::prost::Name for UndelegateClaimBody {
+    const NAME: &'static str = "UndelegateClaimBody";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -386,6 +509,13 @@ pub struct UndelegateClaimPlan {
     #[prost(bytes = "vec", tag = "8")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for UndelegateClaimPlan {
+    const NAME: &'static str = "UndelegateClaimPlan";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A list of pending delegations and undelegations.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -394,6 +524,13 @@ pub struct DelegationChanges {
     pub delegations: ::prost::alloc::vec::Vec<Delegate>,
     #[prost(message, repeated, tag = "2")]
     pub undelegations: ::prost::alloc::vec::Vec<Undelegate>,
+}
+impl ::prost::Name for DelegationChanges {
+    const NAME: &'static str = "DelegationChanges";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Track's a validator's uptime.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -406,6 +543,13 @@ pub struct Uptime {
     #[prost(bytes = "vec", tag = "3")]
     pub bitvec: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for Uptime {
+    const NAME: &'static str = "Uptime";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Tracks our view of Tendermint's view of the validator set, so we can keep it
 /// from getting confused.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -416,12 +560,26 @@ pub struct CurrentConsensusKeys {
         super::super::super::keys::v1alpha1::ConsensusKey,
     >,
 }
+impl ::prost::Name for CurrentConsensusKeys {
+    const NAME: &'static str = "CurrentConsensusKeys";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Tracks slashing penalties applied to a validator in some epoch.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Penalty {
     #[prost(uint64, tag = "1")]
     pub inner: u64,
+}
+impl ::prost::Name for Penalty {
+    const NAME: &'static str = "Penalty";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Requests information on the chain's validators.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -434,11 +592,25 @@ pub struct ValidatorInfoRequest {
     #[prost(bool, tag = "2")]
     pub show_inactive: bool,
 }
+impl ::prost::Name for ValidatorInfoRequest {
+    const NAME: &'static str = "ValidatorInfoRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorInfoResponse {
     #[prost(message, optional, tag = "1")]
     pub validator_info: ::core::option::Option<ValidatorInfo>,
+}
+impl ::prost::Name for ValidatorInfoResponse {
+    const NAME: &'static str = "ValidatorInfoResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -451,11 +623,25 @@ pub struct ValidatorStatusRequest {
         super::super::super::keys::v1alpha1::IdentityKey,
     >,
 }
+impl ::prost::Name for ValidatorStatusRequest {
+    const NAME: &'static str = "ValidatorStatusRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorStatusResponse {
     #[prost(message, optional, tag = "1")]
     pub status: ::core::option::Option<ValidatorStatus>,
+}
+impl ::prost::Name for ValidatorStatusResponse {
+    const NAME: &'static str = "ValidatorStatusResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Requests the compounded penalty for a validator over a range of epochs.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -473,11 +659,25 @@ pub struct ValidatorPenaltyRequest {
     #[prost(uint64, tag = "4")]
     pub end_epoch_index: u64,
 }
+impl ::prost::Name for ValidatorPenaltyRequest {
+    const NAME: &'static str = "ValidatorPenaltyRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorPenaltyResponse {
     #[prost(message, optional, tag = "1")]
     pub penalty: ::core::option::Option<Penalty>,
+}
+impl ::prost::Name for ValidatorPenaltyResponse {
+    const NAME: &'static str = "ValidatorPenaltyResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -490,11 +690,25 @@ pub struct CurrentValidatorRateRequest {
         super::super::super::keys::v1alpha1::IdentityKey,
     >,
 }
+impl ::prost::Name for CurrentValidatorRateRequest {
+    const NAME: &'static str = "CurrentValidatorRateRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CurrentValidatorRateResponse {
     #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<RateData>,
+}
+impl ::prost::Name for CurrentValidatorRateResponse {
+    const NAME: &'static str = "CurrentValidatorRateResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Staking configuration data.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -522,6 +736,13 @@ pub struct StakeParameters {
     #[prost(uint64, tag = "7")]
     pub missed_blocks_maximum: u64,
 }
+impl ::prost::Name for StakeParameters {
+    const NAME: &'static str = "StakeParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Genesis data for the staking component.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -532,6 +753,13 @@ pub struct GenesisContent {
     /// The list of validators present at genesis.
     #[prost(message, repeated, tag = "2")]
     pub validators: ::prost::alloc::vec::Vec<Validator>,
+}
+impl ::prost::Name for GenesisContent {
+    const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]

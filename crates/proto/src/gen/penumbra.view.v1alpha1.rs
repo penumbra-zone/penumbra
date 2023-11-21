@@ -12,6 +12,13 @@ pub struct AuthorizeAndBuildRequest {
         super::super::core::transaction::v1alpha1::AuthorizationData,
     >,
 }
+impl ::prost::Name for AuthorizeAndBuildRequest {
+    const NAME: &'static str = "AuthorizeAndBuildRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeAndBuildResponse {
@@ -20,6 +27,13 @@ pub struct AuthorizeAndBuildResponse {
     pub transaction: ::core::option::Option<
         super::super::core::transaction::v1alpha1::Transaction,
     >,
+}
+impl ::prost::Name for AuthorizeAndBuildResponse {
+    const NAME: &'static str = "AuthorizeAndBuildResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -33,6 +47,13 @@ pub struct BroadcastTransactionRequest {
     #[prost(bool, tag = "2")]
     pub await_detection: bool,
 }
+impl ::prost::Name for BroadcastTransactionRequest {
+    const NAME: &'static str = "BroadcastTransactionRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BroadcastTransactionResponse {
@@ -43,6 +64,13 @@ pub struct BroadcastTransactionResponse {
     /// Will not be included unless await_detection was true.
     #[prost(uint64, tag = "2")]
     pub detection_height: u64,
+}
+impl ::prost::Name for BroadcastTransactionResponse {
+    const NAME: &'static str = "BroadcastTransactionResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -114,6 +142,15 @@ pub mod transaction_planner_request {
             super::super::super::core::keys::v1alpha1::Address,
         >,
     }
+    impl ::prost::Name for Output {
+        const NAME: &'static str = "Output";
+        const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1alpha1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Swap {
@@ -138,6 +175,15 @@ pub mod transaction_planner_request {
             super::super::super::core::keys::v1alpha1::Address,
         >,
     }
+    impl ::prost::Name for Swap {
+        const NAME: &'static str = "Swap";
+        const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1alpha1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct SwapClaim {
@@ -148,6 +194,15 @@ pub mod transaction_planner_request {
         pub swap_commitment: ::core::option::Option<
             super::super::super::crypto::tct::v1alpha1::StateCommitment,
         >,
+    }
+    impl ::prost::Name for SwapClaim {
+        const NAME: &'static str = "SwapClaim";
+        const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1alpha1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -161,6 +216,15 @@ pub mod transaction_planner_request {
             super::super::super::core::component::stake::v1alpha1::RateData,
         >,
     }
+    impl ::prost::Name for Delegate {
+        const NAME: &'static str = "Delegate";
+        const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1alpha1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Undelegate {
@@ -172,6 +236,15 @@ pub mod transaction_planner_request {
         pub rate_data: ::core::option::Option<
             super::super::super::core::component::stake::v1alpha1::RateData,
         >,
+    }
+    impl ::prost::Name for Undelegate {
+        const NAME: &'static str = "Undelegate";
+        const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1alpha1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -185,6 +258,15 @@ pub mod transaction_planner_request {
             super::super::super::core::component::dex::v1alpha1::Position,
         >,
     }
+    impl ::prost::Name for PositionOpen {
+        const NAME: &'static str = "PositionOpen";
+        const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1alpha1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct PositionClose {
@@ -193,6 +275,15 @@ pub mod transaction_planner_request {
         pub position_id: ::core::option::Option<
             super::super::super::core::component::dex::v1alpha1::PositionId,
         >,
+    }
+    impl ::prost::Name for PositionClose {
+        const NAME: &'static str = "PositionClose";
+        const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1alpha1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -213,6 +304,22 @@ pub mod transaction_planner_request {
             super::super::super::core::component::dex::v1alpha1::TradingPair,
         >,
     }
+    impl ::prost::Name for PositionWithdraw {
+        const NAME: &'static str = "PositionWithdraw";
+        const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1alpha1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for TransactionPlannerRequest {
+    const NAME: &'static str = "TransactionPlannerRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -222,6 +329,13 @@ pub struct TransactionPlannerResponse {
         super::super::core::transaction::v1alpha1::TransactionPlan,
     >,
 }
+impl ::prost::Name for TransactionPlannerResponse {
+    const NAME: &'static str = "TransactionPlannerResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AddressByIndexRequest {
@@ -230,26 +344,61 @@ pub struct AddressByIndexRequest {
         super::super::core::keys::v1alpha1::AddressIndex,
     >,
 }
+impl ::prost::Name for AddressByIndexRequest {
+    const NAME: &'static str = "AddressByIndexRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AddressByIndexResponse {
     #[prost(message, optional, tag = "1")]
     pub address: ::core::option::Option<super::super::core::keys::v1alpha1::Address>,
 }
+impl ::prost::Name for AddressByIndexResponse {
+    const NAME: &'static str = "AddressByIndexResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WalletIdRequest {}
+impl ::prost::Name for WalletIdRequest {
+    const NAME: &'static str = "WalletIdRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WalletIdResponse {
     #[prost(message, optional, tag = "1")]
     pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
+impl ::prost::Name for WalletIdResponse {
+    const NAME: &'static str = "WalletIdResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IndexByAddressRequest {
     #[prost(message, optional, tag = "1")]
     pub address: ::core::option::Option<super::super::core::keys::v1alpha1::Address>,
+}
+impl ::prost::Name for IndexByAddressRequest {
+    const NAME: &'static str = "IndexByAddressRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -259,6 +408,13 @@ pub struct IndexByAddressResponse {
     pub address_index: ::core::option::Option<
         super::super::core::keys::v1alpha1::AddressIndex,
     >,
+}
+impl ::prost::Name for IndexByAddressResponse {
+    const NAME: &'static str = "IndexByAddressResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -270,11 +426,25 @@ pub struct EphemeralAddressRequest {
     #[prost(bool, tag = "2")]
     pub display_confirm: bool,
 }
+impl ::prost::Name for EphemeralAddressRequest {
+    const NAME: &'static str = "EphemeralAddressRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EphemeralAddressResponse {
     #[prost(message, optional, tag = "1")]
     pub address: ::core::option::Option<super::super::core::keys::v1alpha1::Address>,
+}
+impl ::prost::Name for EphemeralAddressResponse {
+    const NAME: &'static str = "EphemeralAddressResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -290,6 +460,13 @@ pub struct BalancesRequest {
         super::super::core::asset::v1alpha1::AssetId,
     >,
 }
+impl ::prost::Name for BalancesRequest {
+    const NAME: &'static str = "BalancesRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BalancesResponse {
@@ -300,6 +477,13 @@ pub struct BalancesResponse {
     #[prost(message, optional, tag = "2")]
     pub balance: ::core::option::Option<super::super::core::asset::v1alpha1::Value>,
 }
+impl ::prost::Name for BalancesResponse {
+    const NAME: &'static str = "BalancesResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Scaffolding for bearer-token authentication for the ViewService.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -307,17 +491,38 @@ pub struct ViewAuthToken {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for ViewAuthToken {
+    const NAME: &'static str = "ViewAuthToken";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ViewAuthRequest {
     #[prost(message, optional, tag = "1")]
     pub fvk: ::core::option::Option<super::super::core::keys::v1alpha1::FullViewingKey>,
 }
+impl ::prost::Name for ViewAuthRequest {
+    const NAME: &'static str = "ViewAuthRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ViewAuthResponse {
     #[prost(message, optional, tag = "1")]
     pub token: ::core::option::Option<ViewAuthToken>,
+}
+impl ::prost::Name for ViewAuthResponse {
+    const NAME: &'static str = "ViewAuthResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Requests sync status of the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -326,6 +531,13 @@ pub struct StatusRequest {
     /// Identifies the wallet id to query.
     #[prost(message, optional, tag = "14")]
     pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
+}
+impl ::prost::Name for StatusRequest {
+    const NAME: &'static str = "StatusRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Returns the status of the view service and whether it is synchronized with the chain state.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -341,6 +553,13 @@ pub struct StatusResponse {
     #[prost(bool, tag = "3")]
     pub catching_up: bool,
 }
+impl ::prost::Name for StatusResponse {
+    const NAME: &'static str = "StatusResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Requests streaming updates on the sync height until the view service is synchronized.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -348,6 +567,13 @@ pub struct StatusStreamRequest {
     /// Identifies the wallet id to query.
     #[prost(message, optional, tag = "14")]
     pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
+}
+impl ::prost::Name for StatusStreamRequest {
+    const NAME: &'static str = "StatusStreamRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A streaming sync status update
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -362,6 +588,13 @@ pub struct StatusStreamResponse {
     /// The height the view service has synchronized to so far when doing a partial sync
     #[prost(uint64, tag = "3")]
     pub partial_sync_height: u64,
+}
+impl ::prost::Name for StatusStreamResponse {
+    const NAME: &'static str = "StatusStreamResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A query for notes known by the view service.
 ///
@@ -392,6 +625,13 @@ pub struct NotesRequest {
     #[prost(message, optional, tag = "14")]
     pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
+impl ::prost::Name for NotesRequest {
+    const NAME: &'static str = "NotesRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 /// A query for notes to be used for voting on a proposal.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -407,6 +647,13 @@ pub struct NotesForVotingRequest {
     /// Identifies the wallet id to query.
     #[prost(message, optional, tag = "14")]
     pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
+}
+impl ::prost::Name for NotesForVotingRequest {
+    const NAME: &'static str = "NotesForVotingRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -425,6 +672,13 @@ pub struct WitnessRequest {
     #[prost(message, optional, tag = "14")]
     pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
+impl ::prost::Name for WitnessRequest {
+    const NAME: &'static str = "WitnessRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WitnessResponse {
@@ -432,6 +686,13 @@ pub struct WitnessResponse {
     pub witness_data: ::core::option::Option<
         super::super::core::transaction::v1alpha1::WitnessData,
     >,
+}
+impl ::prost::Name for WitnessResponse {
+    const NAME: &'static str = "WitnessResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -445,6 +706,13 @@ pub struct WitnessAndBuildRequest {
         super::super::core::transaction::v1alpha1::AuthorizationData,
     >,
 }
+impl ::prost::Name for WitnessAndBuildRequest {
+    const NAME: &'static str = "WitnessAndBuildRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WitnessAndBuildResponse {
@@ -452,6 +720,13 @@ pub struct WitnessAndBuildResponse {
     pub transaction: ::core::option::Option<
         super::super::core::transaction::v1alpha1::Transaction,
     >,
+}
+impl ::prost::Name for WitnessAndBuildResponse {
+    const NAME: &'static str = "WitnessAndBuildResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Requests all assets known to the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -482,6 +757,13 @@ pub struct AssetsRequest {
     #[prost(bool, tag = "7")]
     pub include_voting_receipt_tokens: bool,
 }
+impl ::prost::Name for AssetsRequest {
+    const NAME: &'static str = "AssetsRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Requests all assets known to the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -491,10 +773,24 @@ pub struct AssetsResponse {
         super::super::core::asset::v1alpha1::DenomMetadata,
     >,
 }
+impl ::prost::Name for AssetsResponse {
+    const NAME: &'static str = "AssetsResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Requests the current app parameters from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AppParametersRequest {}
+impl ::prost::Name for AppParametersRequest {
+    const NAME: &'static str = "AppParametersRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AppParametersResponse {
@@ -503,10 +799,24 @@ pub struct AppParametersResponse {
         super::super::core::app::v1alpha1::AppParameters,
     >,
 }
+impl ::prost::Name for AppParametersResponse {
+    const NAME: &'static str = "AppParametersResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Requests the current gas prices from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GasPricesRequest {}
+impl ::prost::Name for GasPricesRequest {
+    const NAME: &'static str = "GasPricesRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GasPricesResponse {
@@ -515,10 +825,24 @@ pub struct GasPricesResponse {
         super::super::core::component::fee::v1alpha1::GasPrices,
     >,
 }
+impl ::prost::Name for GasPricesResponse {
+    const NAME: &'static str = "GasPricesResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Requests the current FMD parameters from the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FmdParametersRequest {}
+impl ::prost::Name for FmdParametersRequest {
+    const NAME: &'static str = "FMDParametersRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FmdParametersResponse {
@@ -526,6 +850,13 @@ pub struct FmdParametersResponse {
     pub parameters: ::core::option::Option<
         super::super::core::component::chain::v1alpha1::FmdParameters,
     >,
+}
+impl ::prost::Name for FmdParametersResponse {
+    const NAME: &'static str = "FMDParametersResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -541,11 +872,25 @@ pub struct NoteByCommitmentRequest {
     #[prost(message, optional, tag = "14")]
     pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
+impl ::prost::Name for NoteByCommitmentRequest {
+    const NAME: &'static str = "NoteByCommitmentRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NoteByCommitmentResponse {
     #[prost(message, optional, tag = "1")]
     pub spendable_note: ::core::option::Option<SpendableNoteRecord>,
+}
+impl ::prost::Name for NoteByCommitmentResponse {
+    const NAME: &'static str = "NoteByCommitmentResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -561,11 +906,25 @@ pub struct SwapByCommitmentRequest {
     #[prost(message, optional, tag = "14")]
     pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
+impl ::prost::Name for SwapByCommitmentRequest {
+    const NAME: &'static str = "SwapByCommitmentRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapByCommitmentResponse {
     #[prost(message, optional, tag = "1")]
     pub swap: ::core::option::Option<SwapRecord>,
+}
+impl ::prost::Name for SwapByCommitmentResponse {
+    const NAME: &'static str = "SwapByCommitmentResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -574,11 +933,25 @@ pub struct UnclaimedSwapsRequest {
     #[prost(message, optional, tag = "1")]
     pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
+impl ::prost::Name for UnclaimedSwapsRequest {
+    const NAME: &'static str = "UnclaimedSwapsRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UnclaimedSwapsResponse {
     #[prost(message, optional, tag = "1")]
     pub swap: ::core::option::Option<SwapRecord>,
+}
+impl ::prost::Name for UnclaimedSwapsResponse {
+    const NAME: &'static str = "UnclaimedSwapsResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -593,11 +966,25 @@ pub struct NullifierStatusRequest {
     #[prost(message, optional, tag = "14")]
     pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
+impl ::prost::Name for NullifierStatusRequest {
+    const NAME: &'static str = "NullifierStatusRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NullifierStatusResponse {
     #[prost(bool, tag = "1")]
     pub spent: bool,
+}
+impl ::prost::Name for NullifierStatusResponse {
+    const NAME: &'static str = "NullifierStatusResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -605,6 +992,13 @@ pub struct TransactionInfoByHashRequest {
     /// The transaction hash to query for.
     #[prost(message, optional, tag = "2")]
     pub id: ::core::option::Option<super::super::core::transaction::v1alpha1::Id>,
+}
+impl ::prost::Name for TransactionInfoByHashRequest {
+    const NAME: &'static str = "TransactionInfoByHashRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -615,6 +1009,13 @@ pub struct TransactionInfoRequest {
     /// If present, return only transactions before this height.
     #[prost(uint64, tag = "2")]
     pub end_height: u64,
+}
+impl ::prost::Name for TransactionInfoRequest {
+    const NAME: &'static str = "TransactionInfoRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -641,11 +1042,25 @@ pub struct TransactionInfo {
         super::super::core::transaction::v1alpha1::TransactionView,
     >,
 }
+impl ::prost::Name for TransactionInfo {
+    const NAME: &'static str = "TransactionInfo";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionInfoResponse {
     #[prost(message, optional, tag = "1")]
     pub tx_info: ::core::option::Option<TransactionInfo>,
+}
+impl ::prost::Name for TransactionInfoResponse {
+    const NAME: &'static str = "TransactionInfoResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -653,11 +1068,25 @@ pub struct TransactionInfoByHashResponse {
     #[prost(message, optional, tag = "1")]
     pub tx_info: ::core::option::Option<TransactionInfo>,
 }
+impl ::prost::Name for TransactionInfoByHashResponse {
+    const NAME: &'static str = "TransactionInfoByHashResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NotesResponse {
     #[prost(message, optional, tag = "1")]
     pub note_record: ::core::option::Option<SpendableNoteRecord>,
+}
+impl ::prost::Name for NotesResponse {
+    const NAME: &'static str = "NotesResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -668,6 +1097,13 @@ pub struct NotesForVotingResponse {
     pub identity_key: ::core::option::Option<
         super::super::core::keys::v1alpha1::IdentityKey,
     >,
+}
+impl ::prost::Name for NotesForVotingResponse {
+    const NAME: &'static str = "NotesForVotingResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 /// A note plaintext with associated metadata about its status.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -708,6 +1144,13 @@ pub struct SpendableNoteRecord {
         super::super::core::component::chain::v1alpha1::NoteSource,
     >,
 }
+impl ::prost::Name for SpendableNoteRecord {
+    const NAME: &'static str = "SpendableNoteRecord";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapRecord {
@@ -736,6 +1179,13 @@ pub struct SwapRecord {
         super::super::core::component::chain::v1alpha1::NoteSource,
     >,
 }
+impl ::prost::Name for SwapRecord {
+    const NAME: &'static str = "SwapRecord";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OwnedPositionIdsRequest {
@@ -750,6 +1200,13 @@ pub struct OwnedPositionIdsRequest {
         super::super::core::component::dex::v1alpha1::TradingPair,
     >,
 }
+impl ::prost::Name for OwnedPositionIdsRequest {
+    const NAME: &'static str = "OwnedPositionIdsRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OwnedPositionIdsResponse {
@@ -757,6 +1214,13 @@ pub struct OwnedPositionIdsResponse {
     pub position_id: ::core::option::Option<
         super::super::core::component::dex::v1alpha1::PositionId,
     >,
+}
+impl ::prost::Name for OwnedPositionIdsResponse {
+    const NAME: &'static str = "OwnedPositionIdsResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]

@@ -15,6 +15,15 @@ pub mod participate_request {
             super::super::super::super::core::keys::v1alpha1::Address,
         >,
     }
+    impl ::prost::Name for Identify {
+        const NAME: &'static str = "Identify";
+        const PACKAGE: &'static str = "penumbra.tools.summoning.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.tools.summoning.v1alpha1.ParticipateRequest.{}", Self::NAME
+            )
+        }
+    }
     /// Sent by the participant after getting a `ContributeNow` message.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -26,6 +35,15 @@ pub mod participate_request {
         #[prost(message, optional, tag = "3")]
         pub parent_hashes: ::core::option::Option<super::CeremonyParentHashes>,
     }
+    impl ::prost::Name for Contribution {
+        const NAME: &'static str = "Contribution";
+        const PACKAGE: &'static str = "penumbra.tools.summoning.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.tools.summoning.v1alpha1.ParticipateRequest.{}", Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Msg {
@@ -33,6 +51,13 @@ pub mod participate_request {
         Identify(Identify),
         #[prost(message, tag = "2")]
         Contribution(Contribution),
+    }
+}
+impl ::prost::Name for ParticipateRequest {
+    const NAME: &'static str = "ParticipateRequest";
+    const PACKAGE: &'static str = "penumbra.tools.summoning.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.tools.summoning.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -53,6 +78,13 @@ pub struct CeremonyCrs {
     #[prost(bytes = "vec", tag = "106")]
     pub nullifer_derivation_crs: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for CeremonyCrs {
+    const NAME: &'static str = "CeremonyCrs";
+    const PACKAGE: &'static str = "penumbra.tools.summoning.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.tools.summoning.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CeremonyLinkingProof {
@@ -71,6 +103,13 @@ pub struct CeremonyLinkingProof {
     #[prost(bytes = "vec", tag = "106")]
     pub nullifer_derivation_crs: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for CeremonyLinkingProof {
+    const NAME: &'static str = "CeremonyLinkingProof";
+    const PACKAGE: &'static str = "penumbra.tools.summoning.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.tools.summoning.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CeremonyParentHashes {
@@ -88,6 +127,13 @@ pub struct CeremonyParentHashes {
     pub swap_claim: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "106")]
     pub nullifer_derivation_crs: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for CeremonyParentHashes {
+    const NAME: &'static str = "CeremonyParentHashes";
+    const PACKAGE: &'static str = "penumbra.tools.summoning.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.tools.summoning.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -118,6 +164,15 @@ pub mod participate_response {
             super::super::super::super::core::num::v1alpha1::Amount,
         >,
     }
+    impl ::prost::Name for Position {
+        const NAME: &'static str = "Position";
+        const PACKAGE: &'static str = "penumbra.tools.summoning.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.tools.summoning.v1alpha1.ParticipateResponse.{}", Self::NAME
+            )
+        }
+    }
     /// Sent to the participant to inform them that they should contribute now.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -126,12 +181,30 @@ pub mod participate_response {
         #[prost(message, optional, tag = "1")]
         pub parent: ::core::option::Option<super::CeremonyCrs>,
     }
+    impl ::prost::Name for ContributeNow {
+        const NAME: &'static str = "ContributeNow";
+        const PACKAGE: &'static str = "penumbra.tools.summoning.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.tools.summoning.v1alpha1.ParticipateResponse.{}", Self::NAME
+            )
+        }
+    }
     /// Sent to the participant to confim their contribution was accepted.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Confirm {
         #[prost(uint64, tag = "1")]
         pub slot: u64,
+    }
+    impl ::prost::Name for Confirm {
+        const NAME: &'static str = "Confirm";
+        const PACKAGE: &'static str = "penumbra.tools.summoning.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.tools.summoning.v1alpha1.ParticipateResponse.{}", Self::NAME
+            )
+        }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -142,6 +215,13 @@ pub mod participate_response {
         ContributeNow(ContributeNow),
         #[prost(message, tag = "3")]
         Confirm(Confirm),
+    }
+}
+impl ::prost::Name for ParticipateResponse {
+    const NAME: &'static str = "ParticipateResponse";
+    const PACKAGE: &'static str = "penumbra.tools.summoning.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.tools.summoning.v1alpha1.{}", Self::NAME)
     }
 }
 /// Generated client implementations.

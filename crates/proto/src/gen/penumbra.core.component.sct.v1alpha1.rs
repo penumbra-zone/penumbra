@@ -4,6 +4,13 @@ pub struct Nullifier {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for Nullifier {
+    const NAME: &'static str = "Nullifier";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionByNoteRequest {
@@ -15,11 +22,25 @@ pub struct TransactionByNoteRequest {
         super::super::super::super::crypto::tct::v1alpha1::StateCommitment,
     >,
 }
+impl ::prost::Name for TransactionByNoteRequest {
+    const NAME: &'static str = "TransactionByNoteRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionByNoteResponse {
     #[prost(message, optional, tag = "1")]
     pub note_source: ::core::option::Option<super::super::chain::v1alpha1::NoteSource>,
+}
+impl ::prost::Name for TransactionByNoteResponse {
+    const NAME: &'static str = "TransactionByNoteResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]

@@ -40,6 +40,15 @@ pub struct CompactBlock {
     #[prost(message, optional, tag = "7")]
     pub gas_prices: ::core::option::Option<super::super::fee::v1alpha1::GasPrices>,
 }
+impl ::prost::Name for CompactBlock {
+    const NAME: &'static str = "CompactBlock";
+    const PACKAGE: &'static str = "penumbra.core.component.compact_block.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.compact_block.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatePayload {
@@ -56,6 +65,16 @@ pub mod state_payload {
             super::super::super::super::super::crypto::tct::v1alpha1::StateCommitment,
         >,
     }
+    impl ::prost::Name for RolledUp {
+        const NAME: &'static str = "RolledUp";
+        const PACKAGE: &'static str = "penumbra.core.component.compact_block.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.compact_block.v1alpha1.StatePayload.{}",
+                Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Note {
@@ -67,6 +86,16 @@ pub mod state_payload {
         pub note: ::core::option::Option<
             super::super::super::shielded_pool::v1alpha1::NotePayload,
         >,
+    }
+    impl ::prost::Name for Note {
+        const NAME: &'static str = "Note";
+        const PACKAGE: &'static str = "penumbra.core.component.compact_block.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.compact_block.v1alpha1.StatePayload.{}",
+                Self::NAME
+            )
+        }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -80,6 +109,16 @@ pub mod state_payload {
             super::super::super::dex::v1alpha1::SwapPayload,
         >,
     }
+    impl ::prost::Name for Swap {
+        const NAME: &'static str = "Swap";
+        const PACKAGE: &'static str = "penumbra.core.component.compact_block.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.compact_block.v1alpha1.StatePayload.{}",
+                Self::NAME
+            )
+        }
+    }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum StatePayload {
@@ -89,6 +128,15 @@ pub mod state_payload {
         Note(Note),
         #[prost(message, tag = "3")]
         Swap(Swap),
+    }
+}
+impl ::prost::Name for StatePayload {
+    const NAME: &'static str = "StatePayload";
+    const PACKAGE: &'static str = "penumbra.core.component.compact_block.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.compact_block.v1alpha1.{}", Self::NAME
+        )
     }
 }
 /// Requests a range of compact block data.
@@ -109,11 +157,29 @@ pub struct CompactBlockRangeRequest {
     #[prost(bool, tag = "4")]
     pub keep_alive: bool,
 }
+impl ::prost::Name for CompactBlockRangeRequest {
+    const NAME: &'static str = "CompactBlockRangeRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.compact_block.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.compact_block.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CompactBlockRangeResponse {
     #[prost(message, optional, tag = "1")]
     pub compact_block: ::core::option::Option<CompactBlock>,
+}
+impl ::prost::Name for CompactBlockRangeResponse {
+    const NAME: &'static str = "CompactBlockRangeResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.compact_block.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.compact_block.v1alpha1.{}", Self::NAME
+        )
+    }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]

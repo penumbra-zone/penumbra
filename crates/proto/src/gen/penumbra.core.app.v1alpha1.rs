@@ -14,6 +14,13 @@ pub struct KeyValueRequest {
     #[prost(bool, tag = "3")]
     pub proof: bool,
 }
+impl ::prost::Name for KeyValueRequest {
+    const NAME: &'static str = "KeyValueRequest";
+    const PACKAGE: &'static str = "penumbra.core.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.app.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct KeyValueResponse {
@@ -34,6 +41,22 @@ pub mod key_value_response {
         #[prost(bytes = "vec", tag = "1")]
         pub value: ::prost::alloc::vec::Vec<u8>,
     }
+    impl ::prost::Name for Value {
+        const NAME: &'static str = "Value";
+        const PACKAGE: &'static str = "penumbra.core.app.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.app.v1alpha1.KeyValueResponse.{}", Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for KeyValueResponse {
+    const NAME: &'static str = "KeyValueResponse";
+    const PACKAGE: &'static str = "penumbra.core.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.app.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Performs a prefixed key-value query, by string prefix.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -46,6 +69,13 @@ pub struct PrefixValueRequest {
     #[prost(string, tag = "2")]
     pub prefix: ::prost::alloc::string::String,
 }
+impl ::prost::Name for PrefixValueRequest {
+    const NAME: &'static str = "PrefixValueRequest";
+    const PACKAGE: &'static str = "penumbra.core.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.app.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PrefixValueResponse {
@@ -53,6 +83,13 @@ pub struct PrefixValueResponse {
     pub key: ::prost::alloc::string::String,
     #[prost(bytes = "vec", tag = "2")]
     pub value: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for PrefixValueResponse {
+    const NAME: &'static str = "PrefixValueResponse";
+    const PACKAGE: &'static str = "penumbra.core.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.app.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -93,6 +130,13 @@ pub struct AppParameters {
         super::super::component::distributions::v1alpha1::DistributionsParameters,
     >,
 }
+impl ::prost::Name for AppParameters {
+    const NAME: &'static str = "AppParameters";
+    const PACKAGE: &'static str = "penumbra.core.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.app.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Requests the global configuration data for the app.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -101,11 +145,25 @@ pub struct AppParametersRequest {
     #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
 }
+impl ::prost::Name for AppParametersRequest {
+    const NAME: &'static str = "AppParametersRequest";
+    const PACKAGE: &'static str = "penumbra.core.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.app.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AppParametersResponse {
     #[prost(message, optional, tag = "1")]
     pub app_parameters: ::core::option::Option<AppParameters>,
+}
+impl ::prost::Name for AppParametersResponse {
+    const NAME: &'static str = "AppParametersResponse";
+    const PACKAGE: &'static str = "penumbra.core.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.app.v1alpha1.{}", Self::NAME)
+    }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -122,6 +180,13 @@ pub mod genesis_app_state {
         GenesisContent(super::GenesisContent),
         #[prost(bytes, tag = "2")]
         GenesisCheckpoint(::prost::alloc::vec::Vec<u8>),
+    }
+}
+impl ::prost::Name for GenesisAppState {
+    const NAME: &'static str = "GenesisAppState";
+    const PACKAGE: &'static str = "penumbra.core.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.app.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -167,6 +232,13 @@ pub struct GenesisContent {
     pub distributions_content: ::core::option::Option<
         super::super::component::distributions::v1alpha1::GenesisContent,
     >,
+}
+impl ::prost::Name for GenesisContent {
+    const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.app.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]

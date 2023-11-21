@@ -10,6 +10,13 @@ pub struct Fee {
     #[prost(message, optional, tag = "2")]
     pub asset_id: ::core::option::Option<super::super::super::asset::v1alpha1::AssetId>,
 }
+impl ::prost::Name for Fee {
+    const NAME: &'static str = "Fee";
+    const PACKAGE: &'static str = "penumbra.core.component.fee.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.fee.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GasPrices {
@@ -26,10 +33,24 @@ pub struct GasPrices {
     #[prost(uint64, tag = "4")]
     pub execution_price: u64,
 }
+impl ::prost::Name for GasPrices {
+    const NAME: &'static str = "GasPrices";
+    const PACKAGE: &'static str = "penumbra.core.component.fee.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.fee.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Fee component configuration data.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FeeParameters {}
+impl ::prost::Name for FeeParameters {
+    const NAME: &'static str = "FeeParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.fee.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.fee.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Fee-specific genesis content.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -40,4 +61,11 @@ pub struct GenesisContent {
     /// The initial gas prices.
     #[prost(message, optional, tag = "2")]
     pub gas_prices: ::core::option::Option<GasPrices>,
+}
+impl ::prost::Name for GenesisContent {
+    const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.component.fee.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.fee.v1alpha1.{}", Self::NAME)
+    }
 }
