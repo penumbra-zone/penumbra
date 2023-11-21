@@ -6,7 +6,7 @@ use penumbra_governance::params::GovernanceParameters;
 use penumbra_ibc::params::IBCParameters;
 use penumbra_proto::core::app::v1alpha1 as pb;
 use penumbra_proto::view::v1alpha1 as pb_view;
-use penumbra_proto::{DomainType, TypeUrl};
+use penumbra_proto::DomainType;
 use penumbra_stake::params::StakeParameters;
 use serde::{Deserialize, Serialize};
 
@@ -22,10 +22,6 @@ pub struct AppParameters {
     pub governance_params: GovernanceParameters,
     pub ibc_params: IBCParameters,
     pub stake_params: StakeParameters,
-}
-
-impl TypeUrl for AppParameters {
-    const TYPE_URL: &'static str = "/penumbra.core.app.v1alpha1.AppParameters";
 }
 
 impl DomainType for AppParameters {
