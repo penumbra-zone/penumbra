@@ -55,7 +55,7 @@ tracing-subscriber = "0.2"
 tonic = "0.10"
 url = "2"
 bytes = { version = "1", features = ["serde"] }
-prost = "0.12"
+prost = "0.12.2"
 futures = "0.3"
 hex = "0.4"
 metrics = "0.19.0"
