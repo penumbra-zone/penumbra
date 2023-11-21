@@ -18,7 +18,7 @@ pub mod params;
 mod version;
 
 mod prefix;
-pub use prefix::{IBC_COMMITMENT_PREFIX, IBC_PROOF_SPECS};
+pub use prefix::{IBC_COMMITMENT_PREFIX, IBC_PROOF_SPECS, IBC_SUBSTORE_PREFIX};
 
 pub use ibc_action::IbcRelay;
 pub use ibc_token::IbcToken;

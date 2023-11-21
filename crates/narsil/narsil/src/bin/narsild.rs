@@ -132,7 +132,7 @@ async fn main() -> anyhow::Result<()> {
             let mut rocks_path = home.clone();
             rocks_path.push("rocksdb");
 
-            let storage = Storage::init(rocks_path)
+            let storage = Storage::init(rocks_path, vec![])
                 .await
                 .context("Unable to initialize RocksDB storage")?;
 

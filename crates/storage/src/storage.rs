@@ -48,9 +48,8 @@ struct Inner {
 
 impl Storage {
     /// Loads a storage instance from the given path, initializing it if necessary.
-    pub async fn init(path: PathBuf) -> Result<Self> {
+    pub async fn load(path: PathBuf, default_prefixes: Vec<String>) -> Result<Self> {
         let span = Span::current();
-        let default_prefixes = vec![];
         let db_path = path.clone();
         // initializing main storage instance.
         let prefixes = tokio::task::Builder::new()
@@ -99,7 +98,7 @@ impl Storage {
             })?
             .await?;
 
-        Storage::load(db_path, prefixes).await
+        Storage::init(db_path, prefixes).await
     }
 
     /// Initializes a new storage instance at the given path. Takes a list of default prefixes
@@ -110,7 +109,7 @@ impl Storage {
     /// 3. Create a new [`MultistoreConfig`] from supplied prefixes.
     /// 4. Initialize the substore cache with the latest version of each substore.
     /// 5. Spawn a dispatcher task that forwards new snapshots to subscribers.
-    pub async fn load(path: PathBuf, prefixes: Vec<String>) -> Result<Self> {
+    pub async fn init(path: PathBuf, prefixes: Vec<String>) -> Result<Self> {
         let span = Span::current();
 
         tokio::task::Builder::new()

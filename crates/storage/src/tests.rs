@@ -6,7 +6,7 @@ use futures::StreamExt;
 async fn delete_nonexistent_key() -> anyhow::Result<()> {
     let tmpdir = tempfile::tempdir()?;
     // Initialize an empty Storage in the new directory
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
 
     let mut state_init = StateDelta::new(storage.latest_snapshot());
     state_init.delete("nonexist".to_string());
@@ -23,21 +23,21 @@ async fn db_lock_is_released() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let tmpdir = tempfile::tempdir()?;
 
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
     storage.release().await;
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
     storage.release().await;
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
     storage.release().await;
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
     storage.release().await;
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
     storage.release().await;
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
     storage.release().await;
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
     storage.release().await;
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
     storage.release().await;
 
     Ok(())
@@ -49,7 +49,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     let tmpdir = tempfile::tempdir()?;
 
     // Initialize an empty Storage in the new directory
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
 
     // Version -1 to Version 0 writes
     //
@@ -635,7 +635,7 @@ async fn simple_flow() -> anyhow::Result<()> {
     std::mem::drop(state1);
 
     // Now reload the storage from the same directory...
-    let storage_a = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage_a = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
     let state1a = storage_a.latest_snapshot();
 
     // Check that we reload at the correct version ...
@@ -805,7 +805,7 @@ async fn simple_flow() -> anyhow::Result<()> {
 async fn range_queries_basic() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let tmpdir = tempfile::tempdir()?;
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
 
     let mut state_init = StateDelta::new(storage.latest_snapshot());
 
@@ -1137,7 +1137,7 @@ async fn range_query_overwrites() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let tmpdir = tempfile::tempdir()?;
 
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
 
     let state_init = StateDelta::new(storage.latest_snapshot());
     // Check that reads on an empty state return Ok(None)
@@ -1154,7 +1154,7 @@ async fn range_query_prepend_peeked_value() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let tmpdir = tempfile::tempdir()?;
 
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
 
     let mut state_init = StateDelta::new(storage.latest_snapshot());
     state_init.nonverifiable_put_raw(b"b".to_vec(), b"beluga".to_vec());
@@ -1232,7 +1232,7 @@ async fn range_query_ordering() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let tmpdir = tempfile::tempdir()?;
 
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
 
     let mut state_init = StateDelta::new(storage.latest_snapshot());
     let mut range = state_init.nonverifiable_range_raw(None, ..)?;
@@ -1295,7 +1295,7 @@ async fn range_query_bad_range() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let tmpdir = tempfile::tempdir()?;
 
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
 
     let state_init = StateDelta::new(storage.latest_snapshot());
 
@@ -1325,7 +1325,7 @@ async fn range_query_storage_basic() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let tmpdir = tempfile::tempdir()?;
 
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
     let mut delta = StateDelta::new(storage.latest_snapshot());
 
     for height in 0..100 {
@@ -1411,7 +1411,7 @@ async fn range_query_storage() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let tmpdir = tempfile::tempdir()?;
 
-    let storage = Storage::init(tmpdir.path().to_owned()).await?;
+    let storage = Storage::load(tmpdir.path().to_owned(), vec![]).await?;
     let mut delta = StateDelta::new(storage.latest_snapshot());
 
     delta.nonverifiable_put_raw(b"a/aaaaa".to_vec(), b"1".to_vec());

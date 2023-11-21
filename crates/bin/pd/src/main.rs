@@ -21,6 +21,7 @@ use pd::testnet::{
     join::testnet_join,
 };
 use pd::upgrade::{self, Upgrade};
+use penumbra_app::SUBSTORE_PREFIXES;
 use penumbra_proto::core::component::dex::v1alpha1::simulation_service_server::SimulationServiceServer;
 use penumbra_proto::util::tendermint_proxy::v1alpha1::tendermint_proxy_service_server::TendermintProxyServiceServer;
 use penumbra_storage::{StateDelta, Storage};
@@ -300,7 +301,7 @@ async fn main() -> anyhow::Result<()> {
             };
             let rocksdb_home = pd_home.join("rocksdb");
 
-            let storage = Storage::init(rocksdb_home)
+            let storage = Storage::load(rocksdb_home, SUBSTORE_PREFIXES.to_vec())
                 .await
                 .context("Unable to initialize RocksDB storage")?;
 
@@ -676,7 +677,7 @@ async fn main() -> anyhow::Result<()> {
 
             tracing::info!("pruning JMT tree");
             export_path.push("rocksdb");
-            let export = Storage::init(export_path).await?;
+            let export = Storage::load(export_path, SUBSTORE_PREFIXES.to_vec()).await?;
             let _ = StateDelta::new(export.latest_snapshot());
             // TODO:
             // - add utilities in `penumbra_storage` to prune a tree
