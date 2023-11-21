@@ -23,7 +23,7 @@
 // Requires nightly.
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
-pub use prost::Message;
+pub use prost::{Message, Name};
 
 /// Helper methods used for shaping the JSON (and other Serde) formats derived from the protos.
 pub mod serializers;
