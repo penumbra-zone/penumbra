@@ -17,6 +17,8 @@ use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::client_counter::{ClientCounter, VerifiedHeights};
+use crate::prefix::MerklePrefixExt;
+use crate::IBC_COMMITMENT_PREFIX;
 
 use super::state_key;
 
@@ -118,7 +120,8 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 
     fn put_client(&mut self, client_id: &ClientId, client_state: TendermintClientState) {
         self.put_proto(
-            ibc_types::path::ClientTypePath(client_id.clone()).to_string(),
+            IBC_COMMITMENT_PREFIX
+                .apply_string(ibc_types::path::ClientTypePath(client_id.clone()).to_string()),
             ibc_types::lightclients::tendermint::client_type().to_string(),
         );
 
@@ -157,7 +160,8 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         consensus_state: TendermintConsensusState,
     ) -> Result<()> {
         self.put(
-            ClientConsensusStatePath::new(&client_id, &height).to_string(),
+            IBC_COMMITMENT_PREFIX
+                .apply_string(ClientConsensusStatePath::new(&client_id, &height).to_string()),
             consensus_state,
         );
 
@@ -202,15 +206,19 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn get_client_type(&self, client_id: &ClientId) -> Result<ClientType> {
-        self.get_proto(&ClientTypePath(client_id.clone()).to_string())
-            .await?
-            .context(format!("could not find client type for {client_id}"))
-            .map(ClientType::new)
+        self.get_proto(
+            &IBC_COMMITMENT_PREFIX.apply_string(ClientTypePath(client_id.clone()).to_string()),
+        )
+        .await?
+        .context(format!("could not find client type for {client_id}"))
+        .map(ClientType::new)
     }
 
     async fn get_client_state(&self, client_id: &ClientId) -> Result<TendermintClientState> {
         let client_state = self
-            .get(&ClientStatePath(client_id.clone()).to_string())
+            .get(
+                &IBC_COMMITMENT_PREFIX.apply_string(ClientStatePath(client_id.clone()).to_string()),
+            )
             .await?;
 
         client_state.context(format!("could not find client state for {client_id}"))
@@ -244,13 +252,16 @@ pub trait StateReadExt: StateRead {
         height: Height,
         client_id: ClientId,
     ) -> Result<TendermintConsensusState> {
-        self.get(&ClientConsensusStatePath::new(&client_id, &height).to_string())
-            .await?
-            .ok_or_else(|| {
-                anyhow::anyhow!(
+        self.get(
+            &IBC_COMMITMENT_PREFIX
+                .apply_string(ClientConsensusStatePath::new(&client_id, &height).to_string()),
+        )
+        .await?
+        .ok_or_else(|| {
+            anyhow::anyhow!(
                 "counterparty consensus state not found for client {client_id} at height {height}"
             )
-            })
+        })
     }
 
     async fn get_client_update_height(

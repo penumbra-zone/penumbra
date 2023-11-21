@@ -1,4 +1,6 @@
 use crate::component::proof_verification::{commit_acknowledgement, commit_packet};
+use crate::prefix::MerklePrefixExt;
+use crate::IBC_COMMITMENT_PREFIX;
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -28,42 +30,46 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 
     fn put_channel(&mut self, channel_id: &ChannelId, port_id: &PortId, channel: ChannelEnd) {
         self.put(
-            ChannelEndPath::new(port_id, channel_id).to_string(),
+            IBC_COMMITMENT_PREFIX
+                .apply_string(ChannelEndPath::new(port_id, channel_id).to_string()),
             channel,
         );
     }
 
     fn put_ack_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
         self.put_raw(
-            SeqAckPath::new(port_id, channel_id).to_string(),
+            IBC_COMMITMENT_PREFIX.apply_string(SeqAckPath::new(port_id, channel_id).to_string()),
             sequence.to_be_bytes().to_vec(),
         );
     }
 
     fn put_recv_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
         self.put_raw(
-            SeqRecvPath::new(port_id, channel_id).to_string(),
+            IBC_COMMITMENT_PREFIX.apply_string(SeqRecvPath::new(port_id, channel_id).to_string()),
             sequence.to_be_bytes().to_vec(),
         );
     }
 
     fn put_send_sequence(&mut self, channel_id: &ChannelId, port_id: &PortId, sequence: u64) {
         self.put_raw(
-            SeqSendPath::new(port_id, channel_id).to_string(),
+            IBC_COMMITMENT_PREFIX.apply_string(SeqSendPath::new(port_id, channel_id).to_string()),
             sequence.to_be_bytes().to_vec(),
         );
     }
 
     fn put_packet_receipt(&mut self, packet: &Packet) {
         self.put_raw(
-            ReceiptPath::new(&packet.port_on_b, &packet.chan_on_b, packet.sequence).to_string(),
+            IBC_COMMITMENT_PREFIX.apply_string(
+                ReceiptPath::new(&packet.port_on_b, &packet.chan_on_b, packet.sequence).to_string(),
+            ),
             "1".into(),
         );
     }
 
     fn put_packet_commitment(&mut self, packet: &Packet) {
-        let commitment_key =
-            CommitmentPath::new(&packet.port_on_a, &packet.chan_on_a, packet.sequence).to_string();
+        let commitment_key = IBC_COMMITMENT_PREFIX.apply_string(
+            CommitmentPath::new(&packet.port_on_a, &packet.chan_on_a, packet.sequence).to_string(),
+        );
         let packet_hash = commit_packet(packet);
 
         self.put_raw(commitment_key, packet_hash);
@@ -76,7 +82,9 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         sequence: u64,
     ) {
         self.put_raw(
-            CommitmentPath::new(port_id, channel_id, sequence.into()).to_string(),
+            IBC_COMMITMENT_PREFIX.apply_string(
+                CommitmentPath::new(port_id, channel_id, sequence.into()).to_string(),
+            ),
             vec![],
         );
     }
@@ -89,7 +97,8 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         acknowledgement: &[u8],
     ) {
         self.put_raw(
-            AckPath::new(port_id, channel_id, sequence.into()).to_string(),
+            IBC_COMMITMENT_PREFIX
+                .apply_string(AckPath::new(port_id, channel_id, sequence.into()).to_string()),
             commit_acknowledgement(acknowledgement),
         );
     }
@@ -110,13 +119,19 @@ pub trait StateReadExt: StateRead {
         channel_id: &ChannelId,
         port_id: &PortId,
     ) -> Result<Option<ChannelEnd>> {
-        self.get(&ChannelEndPath::new(port_id, channel_id).to_string())
-            .await
+        self.get(
+            &IBC_COMMITMENT_PREFIX
+                .apply_string(ChannelEndPath::new(port_id, channel_id).to_string()),
+        )
+        .await
     }
 
     async fn get_recv_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
         if let Some(be_bytes) = self
-            .get_raw(&SeqRecvPath::new(port_id, channel_id).to_string())
+            .get_raw(
+                &IBC_COMMITMENT_PREFIX
+                    .apply_string(SeqRecvPath::new(port_id, channel_id).to_string()),
+            )
             .await?
         {
             // Parse big endian bytes into u64
@@ -133,7 +148,10 @@ pub trait StateReadExt: StateRead {
 
     async fn get_ack_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
         if let Some(be_bytes) = self
-            .get_raw(&SeqAckPath::new(port_id, channel_id).to_string())
+            .get_raw(
+                &IBC_COMMITMENT_PREFIX
+                    .apply_string(SeqAckPath::new(port_id, channel_id).to_string()),
+            )
             .await?
         {
             // Parse big endian bytes into u64
@@ -150,7 +168,10 @@ pub trait StateReadExt: StateRead {
 
     async fn get_send_sequence(&self, channel_id: &ChannelId, port_id: &PortId) -> Result<u64> {
         if let Some(be_bytes) = self
-            .get_raw(&SeqSendPath::new(port_id, channel_id).to_string())
+            .get_raw(
+                &IBC_COMMITMENT_PREFIX
+                    .apply_string(SeqSendPath::new(port_id, channel_id).to_string()),
+            )
             .await?
         {
             // Parse big endian bytes into u64
@@ -166,9 +187,9 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn seen_packet(&self, packet: &Packet) -> Result<bool> {
-        self.get_raw(
-            &ReceiptPath::new(&packet.port_on_b, &packet.chan_on_b, packet.sequence).to_string(),
-        )
+        self.get_raw(&IBC_COMMITMENT_PREFIX.apply_string(
+            ReceiptPath::new(&packet.port_on_b, &packet.chan_on_b, packet.sequence).to_string(),
+        ))
         .await
         .map(|res| res.is_some())
     }
@@ -180,17 +201,22 @@ pub trait StateReadExt: StateRead {
         sequence: u64,
     ) -> Result<bool> {
         // TODO: make this logic more explicit
-        self.get_raw(&ReceiptPath::new(port_id, channel_id, sequence.into()).to_string())
-            .await
-            .map(|res| res.filter(|s| !s.is_empty()))
-            .map(|res| res.is_some())
+        self.get_raw(
+            &IBC_COMMITMENT_PREFIX
+                .apply_string(ReceiptPath::new(port_id, channel_id, sequence.into()).to_string()),
+        )
+        .await
+        .map(|res| res.filter(|s| !s.is_empty()))
+        .map(|res| res.is_some())
     }
 
     async fn get_packet_commitment(&self, packet: &Packet) -> Result<Option<Vec<u8>>> {
         let commitment = self
             .get_raw(
-                &CommitmentPath::new(&packet.port_on_a, &packet.chan_on_a, packet.sequence)
-                    .to_string(),
+                &IBC_COMMITMENT_PREFIX.apply_string(
+                    CommitmentPath::new(&packet.port_on_a, &packet.chan_on_a, packet.sequence)
+                        .to_string(),
+                ),
             )
             .await?;
 
@@ -211,7 +237,9 @@ pub trait StateReadExt: StateRead {
         sequence: u64,
     ) -> Result<Option<Vec<u8>>> {
         let commitment = self
-            .get_raw(&CommitmentPath::new(port_id, channel_id, sequence.into()).to_string())
+            .get_raw(&IBC_COMMITMENT_PREFIX.apply_string(
+                CommitmentPath::new(port_id, channel_id, sequence.into()).to_string(),
+            ))
             .await?;
 
         // this is for the special case where the commitment is empty, we consider this None.
@@ -230,8 +258,11 @@ pub trait StateReadExt: StateRead {
         channel_id: &ChannelId,
         sequence: u64,
     ) -> Result<Option<Vec<u8>>> {
-        self.get_raw(&AckPath::new(port_id, channel_id, sequence.into()).to_string())
-            .await
+        self.get_raw(
+            &IBC_COMMITMENT_PREFIX
+                .apply_string(AckPath::new(port_id, channel_id, sequence.into()).to_string()),
+        )
+        .await
     }
 }
 

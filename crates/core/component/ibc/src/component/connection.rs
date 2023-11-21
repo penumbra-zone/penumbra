@@ -14,6 +14,8 @@ use ibc_types::{
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
 
+use crate::{prefix::MerklePrefixExt, IBC_COMMITMENT_PREFIX};
+
 use super::{connection_counter::ConnectionCounter, state_key};
 
 #[async_trait]
@@ -23,7 +25,7 @@ pub trait StateWriteExt: StateWrite {
     }
     fn put_client_connection(&mut self, client_id: &ClientId, paths: ClientPaths) {
         self.put(
-            ClientConnectionPath::new(client_id).to_string(),
+            IBC_COMMITMENT_PREFIX.apply_string(ClientConnectionPath::new(client_id).to_string()),
             paths.clone(),
         );
     }
@@ -36,7 +38,7 @@ pub trait StateWriteExt: StateWrite {
         connection: ConnectionEnd,
     ) -> Result<()> {
         self.put(
-            ConnectionPath::new(connection_id).to_string(),
+            IBC_COMMITMENT_PREFIX.apply_string(ConnectionPath::new(connection_id).to_string()),
             connection.clone(),
         );
 
@@ -55,7 +57,7 @@ pub trait StateWriteExt: StateWrite {
 
     fn update_connection(&mut self, connection_id: &ConnectionId, connection: ConnectionEnd) {
         self.put(
-            ConnectionPath::new(connection_id).to_string(),
+            IBC_COMMITMENT_PREFIX.apply_string(ConnectionPath::new(connection_id).to_string()),
             connection.clone(),
         );
     }
@@ -72,14 +74,18 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn get_connection(&self, connection_id: &ConnectionId) -> Result<Option<ConnectionEnd>> {
-        self.get(&ConnectionPath::new(connection_id).to_string())
-            .await
+        self.get(
+            &IBC_COMMITMENT_PREFIX.apply_string(ConnectionPath::new(connection_id).to_string()),
+        )
+        .await
     }
 
     async fn get_client_connections(&self, client_id: &ClientId) -> Result<ClientPaths> {
-        self.get(&ClientConnectionPath::new(client_id).to_string())
-            .await
-            .map(|paths| paths.unwrap_or(ClientPaths { paths: vec![] }))
+        self.get(
+            &IBC_COMMITMENT_PREFIX.apply_string(ClientConnectionPath::new(client_id).to_string()),
+        )
+        .await
+        .map(|paths| paths.unwrap_or(ClientPaths { paths: vec![] }))
     }
 }
 
