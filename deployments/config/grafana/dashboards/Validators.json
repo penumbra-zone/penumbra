@@ -138,7 +138,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "penumbra_stake_validators_active{role=\"consensus\"}",
+          "expr": "penumbra_stake_validators_active",
           "refId": "A"
         },
         {
@@ -146,7 +146,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "penumbra_stake_validators_disabled{role=\"consensus\"}",
+          "expr": "penumbra_stake_validators_disabled",
           "hide": false,
           "refId": "B"
         },
@@ -155,7 +155,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "penumbra_stake_validators_inactive{role=\"consensus\"}",
+          "expr": "penumbra_stake_validators_inactive",
           "hide": false,
           "refId": "C"
         },
@@ -164,7 +164,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "penumbra_stake_validators_jailed{role=\"consensus\"}",
+          "expr": "penumbra_stake_validators_jailed",
           "hide": false,
           "refId": "D"
         },
@@ -173,7 +173,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "penumbra_stake_validators_tombstoned{role=\"consensus\"}",
+          "expr": "penumbra_stake_validators_tombstoned",
           "hide": false,
           "refId": "E"
         }
@@ -260,7 +260,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "penumbra_stake_missed_blocks{role=\"consensus\"}",
+          "expr": "penumbra_stake_missed_blocks",
           "refId": "A"
         }
       ],
