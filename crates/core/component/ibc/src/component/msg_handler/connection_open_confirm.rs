@@ -6,7 +6,7 @@ use ibc_types::{
     },
     path::ConnectionPath,
 };
-use penumbra_chain::component::PENUMBRA_COMMITMENT_PREFIX;
+use penumbra_chain::component::PENUMBRA_IBC_COMMITMENT_PREFIX;
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::{
@@ -47,7 +47,7 @@ impl MsgHandler for MsgConnectionOpenConfirm {
             counterparty: Counterparty {
                 client_id: connection.client_id.clone(),
                 connection_id: Some(self.conn_id_on_b.clone()),
-                prefix: PENUMBRA_COMMITMENT_PREFIX.clone(),
+                prefix: PENUMBRA_IBC_COMMITMENT_PREFIX.clone(),
             },
             versions: connection.versions.to_vec(),
             delay_period: connection.delay_period,

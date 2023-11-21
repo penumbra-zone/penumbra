@@ -26,7 +26,7 @@ use ibc_types::core::channel::{ChannelId, PortId};
 use ibc_types::core::client::ClientId;
 use ibc_types::core::connection::ConnectionId;
 use ibc_types::core::connection::IdentifiedConnectionEnd;
-use penumbra_chain::component::{AppHashRead, StateReadExt};
+use penumbra_chain::component::StateReadExt;
 use penumbra_ibc::component::ChannelStateReadExt as _;
 use penumbra_ibc::component::ClientStateReadExt as _;
 use penumbra_ibc::component::ConnectionStateReadExt as _;
@@ -84,7 +84,7 @@ impl Info {
 
         tracing::info!(?info, state_version = ?state.version(), last_block_height = ?last_block_height, "reporting height in info query");
 
-        let last_block_app_hash = state.app_hash().await?.0.to_vec().try_into()?;
+        let last_block_app_hash = state.root_hash().await?.0.to_vec().try_into()?;
 
         Ok(response::Info {
             data: "penumbra".to_string(),
@@ -140,14 +140,46 @@ impl Info {
 
                 let key = hex::decode(&query.data).unwrap_or_else(|_| query.data.to_vec());
 
-                let rsp = snapshot
-                    .get_with_proof_to_apphash_tm(key.clone())
-                    .await
-                    .with_context(|| {
-                        format!("failed to get key {}", String::from_utf8_lossy(&key))
-                    })?;
+                let (value, proof) =
+                    snapshot
+                        .get_with_proof(key.clone())
+                        .await
+                        .with_context(|| {
+                            format!("failed to get key {}", String::from_utf8_lossy(&key))
+                        })?;
 
-                let (value, proof_ops) = rsp;
+                let mut ops = vec![];
+                for commitment_proof in proof.proofs {
+                    match commitment_proof
+                        .clone()
+                        .proof
+                        .expect("should have non empty commitment proofs")
+                    {
+                        ics23::commitment_proof::Proof::Exist(x_proof) => {
+                            let proof_op = tendermint::merkle::proof::ProofOp {
+                                field_type: "jmt:v".to_string(),
+                                key: x_proof.key,
+                                data: commitment_proof.encode_to_vec(),
+                            };
+                            ops.push(proof_op);
+                        }
+                        ics23::commitment_proof::Proof::Nonexist(nx_proof) => {
+                            let proof_op = tendermint::merkle::proof::ProofOp {
+                                field_type: "jmt:v".to_string(),
+                                key: nx_proof.key,
+                                data: commitment_proof.encode_to_vec(),
+                            };
+                            ops.push(proof_op);
+                        }
+                        ics23::commitment_proof::Proof::Batch(_) => {
+                            anyhow::bail!("batch proofs not supported in abci query")
+                        }
+                        ics23::commitment_proof::Proof::Compressed(_) => {
+                            anyhow::bail!("compressed proofs not supported in abci query")
+                        }
+                    }
+                }
+                let proof_ops = tendermint::merkle::proof::ProofOps { ops };
                 let value = value.unwrap_or_else(Vec::new);
 
                 Ok(response::Query {

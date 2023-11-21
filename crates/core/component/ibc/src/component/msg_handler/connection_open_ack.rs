@@ -6,7 +6,7 @@ use ibc_types::core::{
 };
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
-use penumbra_chain::component::{StateReadExt as _, PENUMBRA_COMMITMENT_PREFIX};
+use penumbra_chain::component::{StateReadExt as _, PENUMBRA_IBC_COMMITMENT_PREFIX};
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::{
@@ -52,7 +52,7 @@ impl MsgHandler for MsgConnectionOpenAck {
         let expected_counterparty = Counterparty {
             client_id: connection.client_id.clone(), // client ID (local)
             connection_id: Some(self.conn_id_on_a.clone()), // connection ID (local)
-            prefix: PENUMBRA_COMMITMENT_PREFIX.clone(), // commitment prefix (local)
+            prefix: PENUMBRA_IBC_COMMITMENT_PREFIX.clone(), // commitment prefix (local)
         };
 
         // the connection we expect the counterparty to have committed

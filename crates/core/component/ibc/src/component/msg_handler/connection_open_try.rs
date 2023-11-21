@@ -11,7 +11,7 @@ use ibc_types::{
         State as ConnectionState,
     },
 };
-use penumbra_chain::component::{StateReadExt as _, PENUMBRA_COMMITMENT_PREFIX};
+use penumbra_chain::component::{StateReadExt as _, PENUMBRA_IBC_COMMITMENT_PREFIX};
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::{
@@ -76,7 +76,7 @@ impl MsgHandler for MsgConnectionOpenTry {
             counterparty: Counterparty {
                 client_id: self.client_id_on_b.clone(),
                 connection_id: None,
-                prefix: PENUMBRA_COMMITMENT_PREFIX.clone(),
+                prefix: PENUMBRA_IBC_COMMITMENT_PREFIX.clone(),
             },
             versions: self.versions_on_a.clone(),
             delay_period: self.delay_period,

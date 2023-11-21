@@ -1,8 +1,9 @@
 use std::path::PathBuf;
 
+use jmt::RootHash;
 use penumbra_app::genesis;
 use penumbra_chain::{
-    component::{AppHash, StateReadExt, StateWriteExt},
+    component::{StateReadExt, StateWriteExt},
     genesis::Content as ChainContent,
 };
 use penumbra_stake::{genesis::Content as StakeContent, StateReadExt as _};
@@ -26,7 +27,7 @@ pub async fn migrate(path_to_export: PathBuf, upgrade: Upgrade) -> anyhow::Resul
             let storage = Storage::init(db_path).await?;
             let export_state = storage.latest_snapshot();
             let root_hash = export_state.root_hash().await.expect("can get root hash");
-            let app_hash_pre_migration: AppHash = root_hash.into();
+            let app_hash_pre_migration: RootHash = root_hash.into();
             let height = export_state
                 .get_block_height()
                 .await
@@ -39,14 +40,14 @@ pub async fn migrate(path_to_export: PathBuf, upgrade: Upgrade) -> anyhow::Resul
             delta.put_raw("testnet_60_forked".to_string(), "done".into());
             delta.put_block_height(0u64);
             let root_hash = storage.commit_in_place(delta).await?;
-            let app_hash_post_migration: AppHash = root_hash.into();
+            let app_hash_post_migration: RootHash = root_hash.into();
             tracing::info!(?app_hash_post_migration, "app hash post upgrade");
 
             /* --------- collecting genesis data -------- */
             tracing::info!("generating genesis");
             let migrated_state = storage.latest_snapshot();
             let root_hash = migrated_state.root_hash().await.expect("can get root hash");
-            let app_hash: AppHash = root_hash.into();
+            let app_hash: RootHash = root_hash.into();
             tracing::info!(?root_hash, "root hash post upgrade2");
             let chain_params = migrated_state
                 .get_chain_params()
