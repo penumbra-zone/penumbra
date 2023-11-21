@@ -45,10 +45,22 @@ use penumbra_ibc::component::{
 //
 // A simple way of doing this is by parsing the denom, looking for a prefix that is only
 // appended in the case of a bridged token. That is what this logic does.
-fn is_source(source_port: &PortId, source_channel: &ChannelId, denom: &DenomMetadata) -> bool {
+//
+// note that in the case of a refund, eg. when this function is called from `onTimeoutPacket`,
+// the logic is inverted, as a prefix will only be prepended in the case the token is bridged in.
+fn is_source(
+    source_port: &PortId,
+    source_channel: &ChannelId,
+    denom: &DenomMetadata,
+    is_refund: bool,
+) -> bool {
     let prefix = format!("{source_port}/{source_channel}/");
 
-    denom.starts_with(&prefix)
+    if is_refund {
+        !denom.starts_with(&prefix)
+    } else {
+        denom.starts_with(&prefix)
+    }
 }
 
 #[derive(Clone)]
@@ -183,7 +195,7 @@ impl AppHandlerCheck for Ics20Transfer {
         let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
         let denom: asset::DenomMetadata = packet_data.denom.as_str().try_into()?;
 
-        if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom) {
+        if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom, true) {
             // check if we have enough balance to refund tokens to sender
             let value_balance: Amount = state
                 .get(&state_key::ics20_value_balance(
@@ -238,7 +250,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
     // NOTE: here we assume we are chain A.
 
     // 2. check if we are the source chain for the denom.
-    if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom) {
+    if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom, false) {
         // mint tokens to receiver in the amount of packet_data.amount in the denom of denom (with
         // the source removed, since we're the source)
         let prefix = format!(
@@ -362,7 +374,7 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
         asset_id: denom.id(),
     };
 
-    if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom) {
+    if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom, true) {
         // sender was source chain, unescrow tokens back to sender
         let value_balance: Amount = state
             .get(&state_key::ics20_value_balance(
