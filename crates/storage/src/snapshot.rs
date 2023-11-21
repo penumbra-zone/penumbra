@@ -88,7 +88,7 @@ impl Snapshot {
         proofs.push(substore_commitment_proof);
 
         // in the case where we request a proof for a key that is in a substore, also get a proof from the root to the substore key.
-        if key_to_substore_root != "" {
+        if !key_to_substore_root.is_empty() {
             let main_store_config = self.0.multistore_cache.config.main_store.clone();
             let main_version = self
                 .substore_version(&main_store_config)
@@ -97,7 +97,7 @@ impl Snapshot {
                 config: main_store_config,
                 rocksdb_snapshot,
                 version: main_version,
-                db: db.clone(),
+                db,
             };
 
             let (_, main_commitment_proof) = tokio::task::Builder::new()
