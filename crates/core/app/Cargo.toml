@@ -55,7 +55,7 @@ bitvec = "1"
 hex = "0.4"
 base64 = "0.20"
 tempfile = "3.3.0"
-prost = "0.12.2"
+prost = "0.12.3"
 rand_chacha = "0.3"
 parking_lot = "0.12"
 
