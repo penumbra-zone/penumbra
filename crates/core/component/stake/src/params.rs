@@ -18,6 +18,8 @@ pub struct StakeParameters {
     pub signed_blocks_window_len: u64,
     /// The maximum number of blocks in the window each validator can miss signing without slashing.
     pub missed_blocks_maximum: u64,
+    /// The minimum amount of stake required to be part of the validator index.
+    pub min_threshold_stake: u64,
 }
 
 impl TypeUrl for StakeParameters {
@@ -40,6 +42,7 @@ impl TryFrom<pb::StakeParameters> for StakeParameters {
             base_reward_rate: msg.base_reward_rate,
             missed_blocks_maximum: msg.missed_blocks_maximum,
             signed_blocks_window_len: msg.signed_blocks_window_len,
+            min_threshold_stake: msg.min_threshold_stake,
         })
     }
 }
@@ -54,6 +57,7 @@ impl From<StakeParameters> for pb::StakeParameters {
             slashing_penalty_downtime: params.slashing_penalty_downtime,
             slashing_penalty_misbehavior: params.slashing_penalty_misbehavior,
             base_reward_rate: params.base_reward_rate,
+            min_threshold_stake: params.min_threshold_stake,
         }
     }
 }
@@ -74,6 +78,7 @@ impl Default for StakeParameters {
             slashing_penalty_downtime: 1_0000,
             // 3bps -> 11% return over 365 epochs
             base_reward_rate: 3_0000,
+            min_threshold_stake: 0,
         }
     }
 }

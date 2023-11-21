@@ -521,6 +521,9 @@ pub struct StakeParameters {
     /// The maximum number of blocks in the window each validator can miss signing without slashing.
     #[prost(uint64, tag = "7")]
     pub missed_blocks_maximum: u64,
+    /// The minimum amount of stake for a validator to be part of validator indices.
+    #[prost(uint64, tag = "8")]
+    pub min_threshold_stake: u64,
 }
 /// Genesis data for the staking component.
 #[allow(clippy::derive_partial_eq_without_eq)]
