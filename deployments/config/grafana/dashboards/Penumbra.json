@@ -30,7 +30,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -108,7 +108,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "rate(penumbra_storage_get_raw_duration_seconds_sum[5m]) / rate(penumbra_storage_get_raw_duration_seconds_count[5m])",
@@ -123,7 +123,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -201,7 +201,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "rate(penumbra_storage_nonverifiable_get_raw_duration_seconds_sum[5m]) / rate(penumbra_storage_nonverifiable_get_raw_duration_seconds_count[5m])",
@@ -540,172 +540,6 @@
             }
           },
           "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "Active Validators"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 24,
-        "x": 0,
-        "y": 32
-      },
-      "id": 6,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "exemplar": true,
-          "expr": "group(penumbra_stake_validators_active{worker=\"\\\"consensus\\\"\"}) by (worker)",
-          "interval": "",
-          "legendFormat": "Active Validators",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "exemplar": true,
-          "expr": "group(penumbra_stake_validators_inactive{worker=\"\\\"consensus\\\"\"}) by (worker)",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Inactive Validators",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "exemplar": true,
-          "expr": "group(penumbra_stake_validators_disabled{worker=\"\\\"consensus\\\"\"}) by (worker)",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Disabled Validators",
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "exemplar": true,
-          "expr": "group(penumbra_stake_validators_jailed{worker=\"\\\"consensus\\\"\"}) by (worker)",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Jailed Validators",
-          "refId": "D"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "exemplar": true,
-          "expr": "group(penumbra_stake_validators_tombstoned{worker=\"\\\"consensus\\\"\"}) by (worker)",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "Tombstoned Validators",
-          "refId": "E"
-        }
-      ],
-      "title": "Validators",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -725,8 +559,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 41
+        "x": 12,
+        "y": 16
       },
       "id": 4,
       "options": {
@@ -817,9 +651,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 49
+        "w": 12,
+        "x": 12,
+        "y": 8
       },
       "id": 2,
       "options": {
@@ -841,7 +675,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(penumbra_stake_validators_active{worker=\"\\\"consensus\\\"\"})",
+          "expr": "sum(penumbra_stake_validators_active)",
           "interval": "",
           "legendFormat": "Active Validators",
           "refId": "A"
@@ -852,7 +686,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(penumbra_stake_validators_inactive{worker=\"\\\"consensus\\\"\"})",
+          "expr": "sum(penumbra_stake_validators_inactive)",
           "hide": false,
           "interval": "",
           "legendFormat": "Inactive Validators",
@@ -864,7 +698,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(penumbra_stake_validators_disabled{worker=\"\\\"consensus\\\"\"})",
+          "expr": "sum(penumbra_stake_validators_disabled)",
           "hide": false,
           "interval": "",
           "legendFormat": "Disabled Validators",
@@ -876,10 +710,10 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(penumbra_stake_validators_tombstoned{worker=\"\\\"consensus\\\"\"})",
+          "expr": "sum(penumbra_stake_validators_tombstoned)",
           "hide": false,
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "Tombstoned Validators",
           "refId": "D"
         },
         {
@@ -888,7 +722,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum(penumbra_stake_validators_jailed{worker=\"\\\"consensus\\\"\"})",
+          "expr": "sum(penumbra_stake_validators_jailed)",
           "hide": false,
           "interval": "",
           "legendFormat": "Jailed Validators",
