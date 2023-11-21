@@ -17,9 +17,9 @@ penumbra-storage = { path = "../../../storage", optional = true }
 penumbra-component = { path = "../component", optional = true }
 penumbra-chain = { path = "../chain", default-features = false }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
-penumbra-asset = { path = "../../../core/asset", default-features = false  } 
-penumbra-num = { path = "../../../core/num", default-features = false  } 
-penumbra-keys = { path = "../../../core/keys", default-features = false  } 
+penumbra-asset = { path = "../../../core/asset", default-features = false  }
+penumbra-num = { path = "../../../core/num", default-features = false  }
+penumbra-keys = { path = "../../../core/keys", default-features = false  }
 
 # Crates.io deps
 ark-ff = { version = "0.4", default_features = false }
@@ -27,7 +27,7 @@ async-trait = "0.1.52"
 hex = "0.4"
 anyhow = "1"
 tracing = "0.1"
-prost = "0.12"
+prost = "0.12.2"
 serde = { version = "1", features = ["derive"] }
 metrics = "0.19.0"
 pbjson-types = "0.6.0"
