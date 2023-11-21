@@ -2,7 +2,7 @@ use ibc_proto::google::protobuf::Any;
 use ibc_types::core::client::Height;
 use ibc_types::core::connection::{ChainId, ConnectionId};
 use ibc_types::lightclients::tendermint::TrustThreshold;
-use penumbra_chain::component::PENUMBRA_PROOF_SPECS;
+use penumbra_chain::component::PENUMBRA_IBC_PROOF_SPECS;
 use penumbra_proto::{penumbra::core::component::ibc::v1alpha1 as pb, DomainType, TypeUrl};
 
 #[derive(Clone, Debug)]
@@ -241,11 +241,11 @@ pub fn validate_penumbra_client_state(
     }
 
     // check client proof specs match penumbra proof specs
-    if PENUMBRA_PROOF_SPECS.clone() != tm_client_state.proof_specs {
+    if PENUMBRA_IBC_PROOF_SPECS.clone() != tm_client_state.proof_specs {
         // allow legacy proof specs without prehash_key_before_comparison
         let mut spec_with_prehash_key = tm_client_state.proof_specs.clone();
         spec_with_prehash_key[0].prehash_key_before_comparison = true;
-        if PENUMBRA_PROOF_SPECS.clone() != spec_with_prehash_key {
+        if PENUMBRA_IBC_PROOF_SPECS.clone() != spec_with_prehash_key {
             anyhow::bail!("invalid client state: proof specs do not match");
         }
     }

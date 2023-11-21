@@ -5,9 +5,8 @@ use std::sync::Arc;
 // and instead implement narsil-specific state accessors or extract
 // the common accessors elsewhere to avoid mingling penumbra-specific logic.
 use penumbra_app::genesis;
-use penumbra_chain::component::AppHash;
 use penumbra_proto::{core::transaction::v1alpha1::Transaction, Message};
-use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, Storage};
+use penumbra_storage::{ArcStateDeltaExt, RootHash, Snapshot, StateDelta, Storage};
 use tendermint::{abci, validator::Update};
 
 /// The Narsil application.
@@ -70,7 +69,7 @@ impl App {
     ///
     /// This method also resets `self` as if it were constructed
     /// as an empty state over top of the newly written storage.
-    pub async fn commit(&mut self, storage: Storage) -> AppHash {
+    pub async fn commit(&mut self, storage: Storage) -> RootHash {
         // We need to extract the State we've built up to commit it.  Fill in a dummy state.
         let dummy_state = StateDelta::new(storage.latest_snapshot());
         let state = Arc::try_unwrap(std::mem::replace(&mut self.state, Arc::new(dummy_state)))
@@ -82,14 +81,12 @@ impl App {
             .await
             .expect("must be able to successfully commit to storage");
 
-        let app_hash: AppHash = jmt_root.into();
-
-        tracing::debug!(?app_hash, "finished committing state");
+        tracing::debug!(?jmt_root, "finished committing state");
 
         // Get the latest version of the state, now that we've committed it.
         self.state = Arc::new(StateDelta::new(storage.latest_snapshot()));
 
-        app_hash
+        jmt_root
     }
 
     // TODO: should this just be returned by `commit`? both are called during every `EndBlock`

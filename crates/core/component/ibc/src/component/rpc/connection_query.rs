@@ -13,7 +13,6 @@ use ibc_proto::ibc::core::connection::v1::{
 use ibc_types::core::connection::{ConnectionId, IdentifiedConnectionEnd};
 use ibc_types::path::ConnectionPath;
 use ibc_types::DomainType;
-use penumbra_chain::component::AppHashRead;
 use prost::Message;
 use std::str::FromStr;
 
@@ -33,7 +32,7 @@ impl ConnectionQuery for IbcQuery {
             .map_err(|e| tonic::Status::aborted(format!("invalid connection id: {e}")))?;
 
         let (conn, proof) = snapshot
-            .get_with_proof_to_apphash(
+            .get_with_proof(
                 ConnectionPath::new(connection_id)
                     .to_string()
                     .as_bytes()

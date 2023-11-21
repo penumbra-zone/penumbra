@@ -15,6 +15,7 @@ use ibc_proto::ibc::core::client::v1::{
 use ibc_types::core::client::ClientId;
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::path::ClientStatePath;
+use ibc_types::DomainType;
 use ibc_types::TypeUrl;
 use penumbra_chain::component::StateReadExt;
 
@@ -22,7 +23,6 @@ use std::str::FromStr;
 use tonic::{Response, Status};
 
 use crate::component::ClientStateReadExt;
-use prost::Message;
 
 use super::IbcQuery;
 

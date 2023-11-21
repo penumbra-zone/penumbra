@@ -185,7 +185,7 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
     let mut kv_b = vec![];
     let mut kv_main = vec![];
     for i in 0..10 {
-        let key_a_i = format!("prefix_akey_{}", i);
+        let key_a_i = format!("prefix_a/key_{}", i);
         let value_a_i = format!("value_{}a", i).as_bytes().to_vec();
         delta.put_raw(key_a_i.clone(), value_a_i.clone());
         all_kv.push((key_a_i.clone(), value_a_i.clone()));
@@ -193,7 +193,7 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
     }
 
     for i in 0..10 {
-        let key_b_i = format!("prefix_bkey_{}", i);
+        let key_b_i = format!("prefix_b/key_{}", i);
         let value_b_i = format!("value_{}b", i).as_bytes().to_vec();
         delta.put_raw(key_b_i.clone(), value_b_i.clone());
         all_kv.push((key_b_i.clone(), value_b_i.clone()));

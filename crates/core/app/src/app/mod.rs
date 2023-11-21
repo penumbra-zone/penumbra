@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::component::{AppHash, StateReadExt as _, StateWriteExt as _};
+use jmt::RootHash;
+use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_chain::params::FmdParameters;
 use penumbra_compact_block::component::StateWriteExt as _;
 use penumbra_compact_block::CompactBlock;
@@ -569,7 +570,7 @@ impl App {
     ///
     /// This method also resets `self` as if it were constructed
     /// as an empty state over top of the newly written storage.
-    pub async fn commit(&mut self, storage: Storage) -> AppHash {
+    pub async fn commit(&mut self, storage: Storage) -> RootHash {
         // We need to extract the State we've built up to commit it.  Fill in a dummy state.
         let dummy_state = StateDelta::new(storage.latest_snapshot());
         let mut state = Arc::try_unwrap(std::mem::replace(&mut self.state, Arc::new(dummy_state)))
@@ -613,14 +614,12 @@ impl App {
             std::process::exit(0);
         }
 
-        let app_hash: AppHash = jmt_root.into();
-
-        tracing::debug!(?app_hash, "finished committing state");
+        tracing::debug!(?jmt_root, "finished committing state");
 
         // Get the latest version of the state, now that we've committed it.
         self.state = Arc::new(StateDelta::new(storage.latest_snapshot()));
 
-        app_hash
+        jmt_root
     }
 
     pub fn tendermint_validator_updates(&self) -> Vec<Update> {

@@ -1,7 +1,7 @@
 use std::pin::Pin;
 
 use futures::{StreamExt, TryStreamExt};
-use penumbra_chain::component::{AppHashRead, StateReadExt as _};
+use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::core::app::v1alpha1::{
     key_value_response::Value, query_service_server::QueryService, AppParametersRequest,
     AppParametersResponse, KeyValueRequest, KeyValueResponse, PrefixValueRequest,
@@ -75,7 +75,7 @@ impl QueryService for Server {
         // TODO(erwan): we are unconditionally generating the proof here; we shouldn't do that if the
         // request doesn't ask for it
         let (some_value, proof) = state
-            .get_with_proof_to_apphash(request.key.into_bytes())
+            .get_with_proof(request.key.into_bytes())
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
