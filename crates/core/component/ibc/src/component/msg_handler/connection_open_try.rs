@@ -1,5 +1,6 @@
 use crate::component::proof_verification;
 use crate::version::pick_connection_version;
+use crate::IBC_COMMITMENT_PREFIX;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
@@ -11,7 +12,7 @@ use ibc_types::{
         State as ConnectionState,
     },
 };
-use penumbra_chain::component::{StateReadExt as _, PENUMBRA_IBC_COMMITMENT_PREFIX};
+use penumbra_chain::component::StateReadExt as _;
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::{
@@ -76,7 +77,7 @@ impl MsgHandler for MsgConnectionOpenTry {
             counterparty: Counterparty {
                 client_id: self.client_id_on_b.clone(),
                 connection_id: None,
-                prefix: PENUMBRA_IBC_COMMITMENT_PREFIX.clone(),
+                prefix: IBC_COMMITMENT_PREFIX.clone(),
             },
             versions: self.versions_on_a.clone(),
             delay_period: self.delay_period,
