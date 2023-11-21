@@ -9,6 +9,11 @@ pub use dao_ext::DaoStateReadExt;
 pub use mock_client::MockClient;
 pub use temp_storage_ext::TempStorageExt;
 
+use once_cell::sync::Lazy;
+
+pub static SUBSTORE_PREFIXES: Lazy<Vec<String>> =
+    Lazy::new(|| vec![penumbra_ibc::IBC_SUBSTORE_PREFIX.to_string()]);
+
 pub mod app;
 pub mod genesis;
 pub mod params;
