@@ -22,6 +22,9 @@ use penumbra_chain::{
 };
 use penumbra_component::Component;
 use penumbra_dao::component::StateWriteExt as _;
+
+use penumbra_distributions::component::StateReadExt as _;
+use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{
     state::future::{DomainFuture, ProtoFuture},
     StateReadProto, StateWriteProto,
@@ -296,8 +299,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
     #[instrument(skip(self, epoch_to_end), fields(index = epoch_to_end.index))]
     async fn end_epoch(&mut self, epoch_to_end: Epoch) -> Result<()> {
-        // calculate rate data for next rate, move previous next rate to cur rate,
-        // and save the next rate data. ensure that non-Active validators maintain constant rates.
+        // Collect all the delegation changes that occurred in the epoch we are ending.
         let mut delegations_by_validator = BTreeMap::<IdentityKey, Vec<Delegate>>::new();
         let mut undelegations_by_validator = BTreeMap::<IdentityKey, Vec<Undelegate>>::new();
 
@@ -324,21 +326,53 @@ pub(crate) trait StakingImpl: StateWriteExt {
                     .push(u);
             }
         }
+
         tracing::debug!(
             total_delegations = ?delegations_by_validator.values().map(|v| v.len())
                 .sum::<usize>(),
             total_undelegations = ?undelegations_by_validator.values().map(|v| v.len())
                 .sum::<usize>(),
+                epoch_start_height = epoch_to_end.start_height,
+                epoch_end_height = end_height,
+                "calculated delegation changes for epoch"
         );
-
-        let chain_params = self.get_stake_params().await?;
 
         // We are transitioning to the next epoch, so the "current" base rate in
         // the state is now the previous base rate.
         let prev_base_rate = self.current_base_rate().await?;
-        // TODO: This will change to be based on issuance.
+
+        tracing::debug!(
+            "fetching the issuance budget for this epoch from the distributions component"
+        );
+
+        // Fetch the issuance budget for the epoch we are ending.
+        let issuance_budget_for_epoch = self
+            .get_staking_token_issuance_for_epoch()
+            .expect("issuance budget is always set by the distributions component");
+
+        tracing::debug!(
+            ?issuance_budget_for_epoch,
+            "calculating base rate for next epoch from issuance budget"
+        );
+
+        // Compute the base reward rate for the upcoming epoch based on the total amount
+        // of active stake and the issuance budget given to us by the distribution component.
         tracing::debug!("processing base rate");
-        let next_base_rate = prev_base_rate.next(chain_params.base_reward_rate);
+        let bps_squared = Amount::from(1_0000_0000u128);
+        let issuance_budget_for_epoch_bps = issuance_budget_for_epoch * bps_squared;
+
+        let total_active_stake_previous_epoch = self.total_active_stake().await?;
+        let base_reward_rate: Amount = U128x128::ratio(
+            issuance_budget_for_epoch_bps,
+            total_active_stake_previous_epoch,
+        )
+        .expect("total active stake is nonzero")
+        .round_down()
+        .try_into()
+        .expect("rounded to an integral value");
+
+        // MERGEBLOCK(erwan): unsafe casting to `u64`. Should we use `Amount`s?
+        let next_base_rate = prev_base_rate.next(base_reward_rate.value() as u64);
         tracing::debug!(?prev_base_rate, ?next_base_rate);
 
         // Set the next base rate as the new "current" base rate.
@@ -1005,11 +1039,11 @@ impl Component for Staking {
     #[instrument(name = "staking", skip(state))]
     async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> anyhow::Result<()> {
         let state = Arc::get_mut(state).context("state should be unique")?;
-        let cur_epoch = state
+        let epoch_ending = state
             .get_current_epoch()
             .await
             .context("should be able to get current epoch during end_epoch")?;
-        state.end_epoch(cur_epoch).await?;
+        state.end_epoch(epoch_ending).await?;
         // Since we only update the validator set at epoch boundaries,
         // we only need to build the validator set updates here in end_epoch.
         state
@@ -1195,6 +1229,8 @@ pub trait StateReadExt: StateRead {
         }
     }
 
+    /// Returns a list of all known validator identity keys.
+    // TODO(erwan): #2921.
     fn validator_identity_list(
         &self,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<IdentityKey>>> + Send + 'static>> {
@@ -1216,9 +1252,10 @@ pub trait StateReadExt: StateRead {
         .boxed()
     }
 
+    /// Returns a list of all known validators metadata.
+    // TODO(erwan): #2921.
     async fn validator_list(&self) -> Result<Vec<Validator>> {
         self.prefix(state_key::validators::list())
-            // The prefix stream returns keys and values, but we only want the values.
             .map_ok(|(_key, validator)| validator)
             .try_collect()
             .await
@@ -1453,6 +1490,54 @@ pub trait StateWriteExt: StateWrite {
     ) {
         tracing::debug!(?state, "set bonding state");
         self.put(state_key::bonding_state_by_validator(identity_key), state);
+    }
+
+    /// Calculate the amount of stake that is delegated to the currently active validator set,
+    /// denominated in the staking token.
+    #[instrument(skip(self))]
+    async fn total_active_stake(&self) -> Result<Amount> {
+        let validator_list = self.validator_identity_list().await?;
+
+        let mut total_active_stake: u64 = 0;
+        for validator_identity in &validator_list {
+            let validator_state =
+                self.validator_state(validator_identity)
+                    .await?
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "validator had ID in validator_list but state not found in JMT"
+                        )
+                    })?;
+            if validator_state != validator::State::Active {
+                continue;
+            }
+
+            let delegation_token_supply = self
+                .token_supply(&DelegationToken::from(validator_identity).id())
+                .await?
+                .expect("delegation token should be known");
+
+            let validator_rate = self
+                .current_validator_rate(validator_identity)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!("validator had ID in validator_list but rate not found in JMT")
+                })?;
+
+            // Add the validator's unbonded amount to the total active stake
+            total_active_stake = total_active_stake
+                .checked_add(
+                    validator_rate
+                        .unbonded_amount(delegation_token_supply.into())
+                        .try_into()
+                        .map_err(|_| {
+                            anyhow::anyhow!("validator rate unbonded amount overflowed u64")
+                        })?,
+                )
+                .ok_or_else(|| anyhow::anyhow!("total active stake overflowed u64"))?;
+        }
+
+        Ok(total_active_stake.into())
     }
 }
 

@@ -5728,6 +5728,7 @@ dependencies = [
  "penumbra-chain",
  "penumbra-component",
  "penumbra-dao",
+ "penumbra-distributions",
  "penumbra-keys",
  "penumbra-num",
  "penumbra-proof-params",
