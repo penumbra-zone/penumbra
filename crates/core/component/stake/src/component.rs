@@ -373,7 +373,14 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
         // MERGEBLOCK(erwan): unsafe casting to `u64`. Should we use `Amount`s?
         let next_base_rate = prev_base_rate.next(base_reward_rate.value() as u64);
-        tracing::debug!(?prev_base_rate, ?next_base_rate);
+        tracing::debug!(
+            ?prev_base_rate,
+            ?next_base_rate,
+            ?base_reward_rate,
+            ?total_active_stake_previous_epoch,
+            ?issuance_budget_for_epoch,
+            "calculated base rate for the upcoming epoch"
+        );
 
         // Set the next base rate as the new "current" base rate.
         self.set_base_rate(next_base_rate.clone());
