@@ -6,11 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# Workspace deps
-penumbra-num = { path = "../../core/num/" }
-penumbra-asset = { path = "../../core/asset/" }
-penumbra-keys = { path = "../../core/keys/" }
-
 # Git deps
 decaf377 = { version = "0.5", features = ["r1cs"] }
 
@@ -36,15 +31,7 @@ bech32 = "0.8.1"
 lazy_static = "1.4.0"
 
 [dev-dependencies]
-penumbra-tct = { path = "../tct/", features = ["r1cs"] }
 criterion = { version = "0.4", features = ["html_reports"] }
-penumbra-dex = { path = "../../core/component/dex/" }
-penumbra-dao = { path = "../../core/component/dao/" }
-penumbra-stake = { path = "../../core/component/stake/" }
-penumbra-shielded-pool = { path = "../../core/component/shielded-pool/" }
-penumbra-governance = { path = "../../core/component/governance/" }
-penumbra-fee = { path = "../../core/component/fee/" }
-penumbra-sct = { path = "../../core/component/sct/" }
 decaf377-fmd = { path = "../decaf377-fmd/" }
 decaf377-ka = { path = "../decaf377-ka/" }
 decaf377-rdsa = "0.7"
@@ -77,38 +64,3 @@ parallel = [
     "ark-std/parallel",
     "ark-r1cs-std/parallel",
 ]
-
-[[bench]]
-name = "nullifier_derivation"
-harness = false
-required-features = ["bundled-proving-keys", "parallel"]
-
-[[bench]]
-name = "output"
-harness = false
-required-features = ["bundled-proving-keys", "parallel"]
-
-[[bench]]
-name = "delegator_vote"
-harness = false
-required-features = ["bundled-proving-keys", "parallel"]
-
-[[bench]]
-name = "spend"
-harness = false
-required-features = ["bundled-proving-keys", "parallel"]
-
-[[bench]]
-name = "swap"
-harness = false
-required-features = ["bundled-proving-keys", "parallel"]
-
-[[bench]]
-name = "swap_claim"
-harness = false
-required-features = ["bundled-proving-keys", "parallel"]
-
-[[bench]]
-name = "undelegate_claim"
-harness = false
-required-features = ["bundled-proving-keys", "parallel"]
