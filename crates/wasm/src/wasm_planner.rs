@@ -3,13 +3,13 @@ use crate::planner::Planner;
 use crate::storage::IndexedDBStorage;
 use crate::swap_record::SwapRecord;
 use crate::utils;
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use ark_ff::UniformRand;
 use decaf377::Fq;
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_dex::swap_claim::SwapClaimPlan;
 
-use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
+use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     core::{
         asset::v1alpha1::{DenomMetadata, Value},
@@ -18,7 +18,6 @@ use penumbra_proto::{
         keys::v1alpha1::{Address, AddressIndex},
         transaction::v1alpha1 as pb,
         transaction::v1alpha1::MemoPlaintext,
-        transaction::v1alpha1::TransactionPlan as tp,
     },
     crypto::tct::v1alpha1::StateCommitment,
     DomainType,
@@ -83,60 +82,38 @@ impl WasmPlanner {
     ) -> WasmResult<JsValue> {
         utils::set_panic_hook();
 
-        let transaction_plan_proto: tp = serde_wasm_bindgen::from_value(transaction_plan.clone())?;
-        let transaction_plan_: TransactionPlan = transaction_plan_proto.try_into()?;
+        let transaction_plan: TransactionPlan =
+            serde_wasm_bindgen::from_value(transaction_plan.clone())?;
 
         let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
-        let witness_data_: WitnessData = witness_data_proto.try_into()?;
+        let witness_data: WitnessData = witness_data_proto.try_into()?;
 
-        let action_proto: pb::ActionPlan = serde_wasm_bindgen::from_value(action_plan)?;
-        let action_plan_: ActionPlan = action_proto.try_into()?;
+        let action_plan: ActionPlan = serde_wasm_bindgen::from_value(action_plan)?;
 
-        let full_viewing_key: FullViewingKey = FullViewingKey::from_str(full_viewing_key)
-            .expect("The provided string is not a valid FullViewingKey");
+        let full_viewing_key: FullViewingKey = FullViewingKey::from_str(full_viewing_key)?;
 
-        let mut memo_key: Option<PayloadKey> = None;
-        if transaction_plan_.memo_plan.is_some() {
-            let memo_plan = transaction_plan_
-                .memo_plan
-                .clone()
-                .ok_or_else(|| anyhow!("missing memo_plan in TransactionPlan"))?;
-            memo_key = Some(memo_plan.key);
-        }
+        let memo_key = transaction_plan
+            .memo_plan
+            .map(|memo_plan| memo_plan.key.clone());
 
-        let action = match action_plan_ {
+        let action = match action_plan {
             ActionPlan::Spend(spend_plan) => {
                 let spend = ActionPlan::Spend(spend_plan);
-                Some(
-                    spend
-                        .build_unauth(&full_viewing_key, &witness_data_, memo_key)
-                        .expect("Build spend action failed!"),
-                )
+                Some(spend.build_unauth(&full_viewing_key, &witness_data, memo_key)?)
             }
             ActionPlan::Output(output_plan) => {
                 let output = ActionPlan::Output(output_plan);
-                Some(
-                    output
-                        .build_unauth(&full_viewing_key, &witness_data_, memo_key)
-                        .expect("Build output action failed!"),
-                )
+                Some(output.build_unauth(&full_viewing_key, &witness_data, memo_key)?)
             }
 
             // TODO: Other action variants besides 'Spend' and 'Output' still require testing.
             ActionPlan::Swap(swap_plan) => {
                 let swap = ActionPlan::Swap(swap_plan);
-                Some(
-                    swap.build_unauth(&full_viewing_key, &witness_data_, memo_key)
-                        .expect("Build swap action failed!"),
-                )
+                Some(swap.build_unauth(&full_viewing_key, &witness_data, memo_key)?)
             }
             ActionPlan::SwapClaim(swap_claim_plan) => {
                 let swap_claim = ActionPlan::SwapClaim(swap_claim_plan);
-                Some(
-                    swap_claim
-                        .build_unauth(&full_viewing_key, &witness_data_, memo_key)
-                        .expect("Build swap claim action failed!"),
-                )
+                Some(swap_claim.build_unauth(&full_viewing_key, &witness_data, memo_key)?)
             }
             ActionPlan::Delegate(delegation) => Some(Action::Delegate(delegation)),
             ActionPlan::Undelegate(undelegation) => Some(Action::Undelegate(undelegation)),
@@ -155,7 +132,7 @@ impl WasmPlanner {
             }
             ActionPlan::DelegatorVote(delegator_vote) => {
                 let note_commitment = delegator_vote.staked_note.commit();
-                let auth_path = witness_data_
+                let auth_path = witness_data
                     .state_commitment_proofs
                     .get(&note_commitment)
                     .context(format!("could not get proof for {note_commitment:?}"))?;
