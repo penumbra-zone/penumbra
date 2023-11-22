@@ -33,10 +33,9 @@ Then edit `penumbra-proof-params` to reference the new parameters created in
 
 ## Circuit Benchmarks
 
-We have benchmarks for all proofs in the `penumbra-proof-params` crate. You can run them via:
+We have benchmarks for all proofs in the `penumbra-bench` crate. You can run them via:
 
 ```shell
-cd crates/crypto/proof-params
 cargo bench
 ```
 
