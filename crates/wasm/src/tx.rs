@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::convert::TryInto;
 use std::str::FromStr;
 
+use anyhow::anyhow;
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::Error;
@@ -15,6 +16,7 @@ use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, Transa
 use penumbra_proto::DomainType;
 use penumbra_tct::{Proof, StateCommitment};
 use penumbra_transaction::plan::TransactionPlan;
+use penumbra_transaction::Action;
 use penumbra_transaction::{AuthorizationData, Transaction, WitnessData};
 
 use crate::error::WasmResult;
@@ -22,7 +24,6 @@ use crate::storage::IndexedDBStorage;
 use crate::storage::IndexedDbConstants;
 use crate::utils;
 use crate::view_server::{load_tree, StoredTree};
-use penumbra_transaction::Action;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TxInfoResponse {
@@ -97,8 +98,7 @@ pub fn witness(transaction_plan: JsValue, stored_tree: JsValue) -> WasmResult<Js
 
     let plan: TransactionPlan = plan_proto.try_into()?;
 
-    let stored_tree: StoredTree =
-        serde_wasm_bindgen::from_value(stored_tree).expect("able to parse StoredTree from JS");
+    let stored_tree: StoredTree = serde_wasm_bindgen::from_value(stored_tree)?;
 
     let sct = load_tree(stored_tree);
 
@@ -116,10 +116,13 @@ pub fn witness(transaction_plan: JsValue, stored_tree: JsValue) -> WasmResult<Js
 
     // Obtain an auth path for each requested note commitment
 
-    let auth_paths: Vec<Proof> = note_commitments
+    let auth_paths = note_commitments
         .iter()
-        .map(|nc| sct.witness(*nc).expect("note commitment is in the SCT"))
-        .collect::<Vec<Proof>>();
+        .map(|nc| {
+            sct.witness(*nc)
+                .ok_or(anyhow!("note commitment is in the SCT"))
+        })
+        .collect::<Result<Vec<Proof>, anyhow::Error>>()?;
 
     // Release the read lock on the SCT
     drop(sct);
@@ -168,8 +171,7 @@ pub fn build(
     let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
     let auth_data_proto: pb::AuthorizationData = serde_wasm_bindgen::from_value(auth_data)?;
 
-    let fvk = FullViewingKey::from_str(full_viewing_key)
-        .expect("The provided string is not a valid FullViewingKey");
+    let fvk = FullViewingKey::from_str(full_viewing_key)?;
 
     let plan: TransactionPlan = plan_proto.try_into()?;
 
@@ -255,9 +257,7 @@ pub async fn transaction_info_inner(
 
     // First, create a TxP with the payload keys visible to our FVK and no other data.
     let mut txp = penumbra_transaction::TransactionPerspective {
-        payload_keys: tx
-            .payload_keys(&fvk)
-            .expect("Error generating payload keys"),
+        payload_keys: tx.payload_keys(&fvk)?,
         ..Default::default()
     };
 
@@ -279,12 +279,16 @@ pub async fn transaction_info_inner(
                 let output_1_record = storage
                     .get_note(&claim.body.output_1_commitment)
                     .await?
-                    .expect("Error generating TxP: SwapClaim output 1 commitment not found");
+                    .ok_or(anyhow!(
+                        "Error generating TxP: SwapClaim output 1 commitment not found",
+                    ))?;
 
                 let output_2_record = storage
                     .get_note(&claim.body.output_2_commitment)
                     .await?
-                    .expect("Error generating TxP: SwapClaim output 2 commitment not found");
+                    .ok_or(anyhow!(
+                        "Error generating TxP: SwapClaim output 2 commitment not found"
+                    ))?;
 
                 txp.advice_notes
                     .insert(claim.body.output_1_commitment, output_1_record.note.clone());
