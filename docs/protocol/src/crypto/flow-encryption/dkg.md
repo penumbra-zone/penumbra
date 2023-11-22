@@ -89,7 +89,7 @@ of communication.
 
 ### Robustness
 
-FROST DKG trades of simplicity and efficiency in favor of *robustness*. A
+FROST DKG trades off simplicity and efficiency in favor of *robustness*. A
 single participant can cause the DKG to abort by contributing an invalid share
 or by refusing to produce a key share. [Gennaro, Jarecki, Krawczyk, and Tal
 Rabin][gennaro] presented an alternative instantiation of Pedersen's DKG, which
