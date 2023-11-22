@@ -28,6 +28,7 @@ mod tests {
     };
     use penumbra_wasm::{
         error::WasmError,
+        keys::load_proving_key,
         storage::{IndexedDBStorage, IndexedDbConstants, Tables},
         tx::{authorize, build, build_parallel, witness},
         wasm_planner::WasmPlanner,
@@ -37,6 +38,56 @@ mod tests {
     async fn mock_build_serial_and_parallel() {
         // Limit the use of Penumbra Rust libraries since we're mocking JS calls
         // that are based on constructing objects according to protobuf definitions.
+
+        // Load the proving key parameters as byte arrays.
+        let spend_key: &[u8] = include_bytes!("../../crypto/proof-params/src/gen/spend_pk.bin");
+        let output_key: &[u8] = include_bytes!("../../crypto/proof-params/src/gen/output_pk.bin");
+        let delegator_vote_key: &[u8] =
+            include_bytes!("../../crypto/proof-params/src/gen/delegator_vote_pk.bin");
+        let nullifier_derivation_key: &[u8] =
+            include_bytes!("../../crypto/proof-params/src/gen/nullifier_derivation_pk.bin");
+        let swap_key: &[u8] = include_bytes!("../../crypto/proof-params/src/gen/swap_pk.bin");
+        let swap_claim_key: &[u8] =
+            include_bytes!("../../crypto/proof-params/src/gen/swapclaim_pk.bin");
+        let undelegate_claim_key: &[u8] =
+            include_bytes!("../../crypto/proof-params/src/gen/undelegateclaim_pk.bin");
+
+        // Serialize &[u8] to JsValue.
+        let spend_key_js: JsValue = serde_wasm_bindgen::to_value(&spend_key).unwrap();
+        let output_key_js: JsValue = serde_wasm_bindgen::to_value(&output_key).unwrap();
+        let delegator_vote_key_js: JsValue =
+            serde_wasm_bindgen::to_value(&delegator_vote_key).unwrap();
+        let nullifier_derivation_key_js: JsValue =
+            serde_wasm_bindgen::to_value(&nullifier_derivation_key).unwrap();
+        let swap_key_js: JsValue = serde_wasm_bindgen::to_value(&swap_key).unwrap();
+        let swap_claim_key_js: JsValue = serde_wasm_bindgen::to_value(&swap_claim_key).unwrap();
+        let undelegate_claim_key_js: JsValue =
+            serde_wasm_bindgen::to_value(&undelegate_claim_key).unwrap();
+
+        // Dynamically load the proving keys at runtime for each key type.
+        load_proving_key(spend_key_js, "spend");
+        load_proving_key(output_key_js, "output");
+        load_proving_key(delegator_vote_key_js, "delegator_vote");
+        load_proving_key(nullifier_derivation_key_js, "nullifier_derivation");
+        load_proving_key(swap_key_js, "swap");
+        load_proving_key(swap_claim_key_js, "swap_claim");
+        load_proving_key(undelegate_claim_key_js, "undelegate_claim");
+
+        // Define database parameters.
+        #[derive(Clone, Debug, Serialize, Deserialize)]
+        pub struct IndexedDbConstants {
+            name: String,
+            version: u32,
+            tables: Tables,
+        }
+
+        #[derive(Clone, Debug, Serialize, Deserialize)]
+        pub struct Tables {
+            assets: String,
+            notes: String,
+            spendable_notes: String,
+            swaps: String,
+        }
 
         // Define `IndexDB` table parameters and constants.
         let tables: Tables = Tables {

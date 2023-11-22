@@ -20,14 +20,15 @@ penumbra-chain         = { path = "../core/component/chain", default-features = 
 penumbra-compact-block = { path = "../core/component/compact-block", default-features = false }
 penumbra-dex           = { path = "../core/component/dex", default-features = false }
 penumbra-fee           = { path = "../core/component/fee", default-features = false }
+penumbra-governance    = { path = "../core/component/governance", default-features = false }
 penumbra-ibc           = { path = "../core/component/ibc", default-features = false }
 penumbra-keys          = { path = "../core/keys" }
 penumbra-num           = { path = "../core/num" }
+penumbra-proof-params  = { path = "../crypto/proof-params", default-features = false }
 penumbra-proto         = { path = "../proto", default-features = false }
 penumbra-sct           = { path = "../core/component/sct", default-features = false }
 penumbra-shielded-pool = { path = "../core/component/shielded-pool", default-features = false }
 penumbra-stake         = { path = "../core/component/stake", default-features = false }
-penumbra-governance    = { path = "../core/component/governance", default-features = false }
 penumbra-tct           = { path = "../crypto/tct" }
 penumbra-transaction   = { path = "../core/transaction", default-features = false }
 
