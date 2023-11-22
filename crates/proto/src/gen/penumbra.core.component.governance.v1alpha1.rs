@@ -656,6 +656,11 @@ pub struct ChangedAppParameters {
     /// Fee module parameters.
     #[prost(message, optional, tag = "6")]
     pub fee_params: ::core::option::Option<super::super::fee::v1alpha1::FeeParameters>,
+    /// Distributions module parameters.
+    #[prost(message, optional, tag = "7")]
+    pub distributions_params: ::core::option::Option<
+        super::super::distributions::v1alpha1::DistributionsParameters,
+    >,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

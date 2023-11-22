@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           lfs: true
 
@@ -66,7 +66,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Log in to the Docker Hub container registry (for pulls)
         uses: docker/login-action@v2
@@ -106,7 +106,7 @@ jobs:
       - penumbra
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       # We use the GHA Repository Dispatch functionality to trigger a container
       # build in the penumbra-zone/osiris repo.
       - name: Trigger remote build
@@ -129,7 +129,7 @@ jobs:
       - penumbra
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       # We use the GHA Repository Dispatch functionality to trigger a container
       # build in the penumbra-zone/galileo repo.
       - name: Trigger remote build
@@ -155,7 +155,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # We use the GHA Repository Dispatch functionality to trigger a container
       # build in the penumbra-zone/hermes repo.
@@ -178,7 +178,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Log in to the Docker Hub container registry (for pulls)
         uses: docker/login-action@v2

@@ -246,6 +246,9 @@ impl serde::Serialize for ChangedAppParameters {
         if self.fee_params.is_some() {
             len += 1;
         }
+        if self.distributions_params.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ChangedAppParameters", len)?;
         if let Some(v) = self.chain_params.as_ref() {
             struct_ser.serialize_field("chainParams", v)?;
@@ -264,6 +267,9 @@ impl serde::Serialize for ChangedAppParameters {
         }
         if let Some(v) = self.fee_params.as_ref() {
             struct_ser.serialize_field("feeParams", v)?;
+        }
+        if let Some(v) = self.distributions_params.as_ref() {
+            struct_ser.serialize_field("distributionsParams", v)?;
         }
         struct_ser.end()
     }
@@ -287,6 +293,8 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
             "stakeParams",
             "fee_params",
             "feeParams",
+            "distributions_params",
+            "distributionsParams",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -297,6 +305,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
             IbcParams,
             StakeParams,
             FeeParams,
+            DistributionsParams,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -324,6 +333,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                             "ibcParams" | "ibc_params" => Ok(GeneratedField::IbcParams),
                             "stakeParams" | "stake_params" => Ok(GeneratedField::StakeParams),
                             "feeParams" | "fee_params" => Ok(GeneratedField::FeeParams),
+                            "distributionsParams" | "distributions_params" => Ok(GeneratedField::DistributionsParams),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -349,6 +359,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                 let mut ibc_params__ = None;
                 let mut stake_params__ = None;
                 let mut fee_params__ = None;
+                let mut distributions_params__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ChainParams => {
@@ -387,6 +398,12 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                             }
                             fee_params__ = map_.next_value()?;
                         }
+                        GeneratedField::DistributionsParams => {
+                            if distributions_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("distributionsParams"));
+                            }
+                            distributions_params__ = map_.next_value()?;
+                        }
                     }
                 }
                 Ok(ChangedAppParameters {
@@ -396,6 +413,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                     ibc_params: ibc_params__,
                     stake_params: stake_params__,
                     fee_params: fee_params__,
+                    distributions_params: distributions_params__,
                 })
             }
         }

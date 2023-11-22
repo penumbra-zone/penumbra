@@ -4,3 +4,7 @@
 #[cfg_attr(docsrs, doc(cfg(feature = "component")))]
 #[cfg(feature = "component")]
 pub mod component;
+
+pub mod genesis;
+pub mod params;
+pub use params::DistributionsParameters;

@@ -81,11 +81,16 @@ impl Snapshot {
             .await?
     }
 
-    pub fn substore_version(
-        &self,
-        prefix: &Arc<store::substore::SubstoreConfig>,
-    ) -> Option<jmt::Version> {
-        self.0.multistore_cache.get_version(prefix)
+    pub fn prefix_version(&self, prefix: &str) -> Result<Option<jmt::Version>> {
+        let config = self
+            .0
+            .multistore_cache
+            .config
+            .find_substore(prefix.as_bytes());
+        if prefix != config.prefix {
+            anyhow::bail!("requested substore (prefix={prefix}) does not exist")
+        }
+        Ok(self.substore_version(&config))
     }
 
     /// Returns the root hash of the subtree corresponding to the given prefix.
@@ -108,7 +113,7 @@ impl Snapshot {
         // However, we do not want to mislead the caller by returning a root hash
         // that does not correspond to the queried prefix, so we error out instead.
         if prefix != config.prefix {
-            anyhow::bail!("requested substore does not exist")
+            anyhow::bail!("requested substore (prefix={prefix}) does not exist")
         }
 
         let version = self
@@ -136,6 +141,13 @@ impl Snapshot {
 
     pub async fn root_hash(&self) -> Result<crate::RootHash> {
         self.prefix_root_hash("").await
+    }
+
+    pub(crate) fn substore_version(
+        &self,
+        prefix: &Arc<store::substore::SubstoreConfig>,
+    ) -> Option<jmt::Version> {
+        self.0.multistore_cache.get_version(prefix)
     }
 }
 

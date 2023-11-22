@@ -1,0 +1,38 @@
+---
+# Convenient ad-hoc action to destroy the Galileo deployment.
+# Since starting the summoning ceremony, load has been very high on Galileo.
+# Despite perf improvements, the bot can still act up. This action
+# allow a one-time action to destroy the bot deployment. To restore it,
+# `helmfile sync <galileo>` is required on the infra repo.
+# TODO: add an "enable faucet" action.
+name: Disable faucet
+on:
+  # Only run ad-hoc, never automatically.
+  workflow_dispatch:
+
+jobs:
+  disable-faucet:
+    name: Disable faucet
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - id: gcloudauth
+        uses: google-github-actions/auth@v0
+        with:
+          workload_identity_provider: 'projects/1006847873719/locations/global/workloadIdentityPools/gh-runner-pool/providers/my-provider'
+          service_account: 'github-actions@penumbra-sl-testnet.iam.gserviceaccount.com'
+
+      - name: get gke credentials
+        uses: google-github-actions/get-gke-credentials@v0
+        with:
+          cluster_name: testnet
+          project_id: penumbra-sl-testnet
+          location: us-central1
+
+      - name: delete galileo deployment
+        run: kubectl delete deployment galileo || true

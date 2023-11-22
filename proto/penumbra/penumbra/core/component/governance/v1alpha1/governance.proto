@@ -5,6 +5,7 @@ import "google/protobuf/any.proto";
 import "penumbra/core/asset/v1alpha1/asset.proto";
 import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/core/component/dao/v1alpha1/dao.proto";
+import "penumbra/core/component/distributions/v1alpha1/distributions.proto";
 import "penumbra/core/component/fee/v1alpha1/fee.proto";
 import "penumbra/core/component/ibc/v1alpha1/ibc.proto";
 import "penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto";
@@ -433,6 +434,8 @@ message ChangedAppParameters {
   core.component.stake.v1alpha1.StakeParameters stake_params = 5;
   // Fee module parameters.
   core.component.fee.v1alpha1.FeeParameters fee_params = 6;
+  // Distributions module parameters.
+  core.component.distributions.v1alpha1.DistributionsParameters distributions_params = 7;
 }
 
 message ChangedAppParametersSet {

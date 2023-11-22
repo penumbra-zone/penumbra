@@ -217,14 +217,12 @@ pub mod penumbra {
                 }
             }
 
-            /*
             pub mod distributions {
                 pub mod v1alpha1 {
                     include!("gen/penumbra.core.component.distributions.v1alpha1.rs");
                     include!("gen/penumbra.core.component.distributions.v1alpha1.serde.rs");
                 }
             }
-            */
 
             pub mod fee {
                 pub mod v1alpha1 {

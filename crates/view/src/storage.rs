@@ -11,6 +11,7 @@ use penumbra_dex::{
     lp::position::{self, Position, State},
     TradingPair,
 };
+use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::{FeeParameters, GasPrices};
 use penumbra_governance::params::GovernanceParameters;
 use penumbra_ibc::params::IBCParameters;
@@ -217,6 +218,13 @@ impl Storage {
             tx.execute(
                 "INSERT INTO dao_params (bytes) VALUES (?1)",
                 [dao_params_bytes],
+            )?;
+
+            let distributions_params_bytes =
+                &DistributionsParameters::encode_to_vec(&params.distributions_params)[..];
+            tx.execute(
+                "INSERT INTO distributions_params (bytes) VALUES (?1)",
+                [distributions_params_bytes],
             )?;
 
             let governance_params_bytes =
@@ -582,6 +590,11 @@ impl Storage {
                 .prepare_cached("SELECT bytes FROM fee_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
                 .ok_or_else(|| anyhow!("missing fee params"))?;
+            let distributions_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM distributions_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing distributions params"))?;
 
             Ok(AppParameters {
                 chain_params: ChainParameters::decode(chain_bytes.as_slice())?,
@@ -590,6 +603,9 @@ impl Storage {
                 governance_params: GovernanceParameters::decode(governance_bytes.as_slice())?,
                 dao_params: DaoParameters::decode(dao_bytes.as_slice())?,
                 fee_params: FeeParameters::decode(fee_bytes.as_slice())?,
+                distributions_params: DistributionsParameters::decode(
+                    distributions_bytes.as_slice(),
+                )?,
             })
         })
         .await?
@@ -1365,6 +1381,12 @@ impl Storage {
                 dbtx.execute(
                     "UPDATE dao_params SET bytes = ?1",
                     [dao_params_bytes],
+                )?;
+
+                let distributions_params_bytes = &DistributionsParameters::encode_to_vec(&params.distributions_params)[..];
+                dbtx.execute(
+                    "UPDATE distributions_params SET bytes = ?1",
+                    [distributions_params_bytes],
                 )?;
 
                 let governance_params_bytes =

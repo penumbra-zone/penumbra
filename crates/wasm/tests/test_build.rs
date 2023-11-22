@@ -29,7 +29,7 @@ mod tests {
     use penumbra_wasm::{
         error::WasmError,
         keys::load_proving_key,
-        storage::IndexedDBStorage,
+        storage::{IndexedDBStorage, IndexedDbConstants, Tables},
         tx::{authorize, build, build_parallel, witness},
         wasm_planner::WasmPlanner,
     };
@@ -89,7 +89,7 @@ mod tests {
             swaps: String,
         }
 
-        // IndexDB tables and constants.
+        // Define `IndexDB` table parameters and constants.
         let tables: Tables = Tables {
             assets: "ASSETS".to_string(),
             notes: "NOTES".to_string(),
@@ -489,6 +489,7 @@ mod tests {
         .unwrap();
         console_log!("Parallel transaction is: {:?}", parallel_transaction);
 
+        // Execute serial spend transaction and generate proof.
         let serial_transaction = build(
             full_viewing_key,
             transaction_plan.clone(),

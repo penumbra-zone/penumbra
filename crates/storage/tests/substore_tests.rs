@@ -311,7 +311,7 @@ async fn test_substore_prefix_keys() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_raw(query_prefix);
     while let Some(res) = range.next().await {
         let (key, value) = res?;
-        tracing::debug!(?key, ?value, ?query_prefix, "iterating over key/value pair");
+        tracing::debug!(?key, ?query_prefix, "iterating over key/value pair");
 
         if counter >= kv_main.len() {
             tracing::debug!(?key, ?value, ?query_prefix, "unexpected key/value pair");

@@ -6,7 +6,7 @@ jobs:
     name: Test Suite
     runs-on: buildjet-16vcpu-ubuntu-2004
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           lfs: true
       - name: Install rust toolchain
@@ -22,7 +22,7 @@ jobs:
           # we must duplicate the rustflags from `.cargo/config.toml`.
           RUSTFLAGS: "-D warnings --cfg tokio_unstable"
       - name: Run tests with nextest
-        run: cargo nextest run --release
+        run: cargo nextest run --release --features migration
         env:
           CARGO_TERM_COLOR: always
 
@@ -30,7 +30,7 @@ jobs:
     name: Rustfmt
     runs-on: buildjet-16vcpu-ubuntu-2004
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -43,7 +43,7 @@ jobs:
     name: Check for warnings
     runs-on: buildjet-16vcpu-ubuntu-2004
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           lfs: true
       - name: Install rust toolchain
@@ -57,7 +57,7 @@ jobs:
     name: Check that rustdocs build OK
     runs-on: buildjet-16vcpu-ubuntu-2004
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           lfs: true
       - name: Install rust toolchain
@@ -72,7 +72,7 @@ jobs:
     name: Build WASM
     runs-on: buildjet-16vcpu-ubuntu-2004
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           lfs: true
       - name: Install rust toolchain
