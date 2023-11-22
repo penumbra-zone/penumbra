@@ -532,7 +532,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // If there are outputs, we check that a memo has been added. If not, we add a blank memo.
         if self.plan.num_outputs() > 0 && self.plan.memo_plan.is_none() {
-            self.memo(MemoPlaintext::blank_memo(self_address.clone()))?;
+            self.memo(MemoPlaintext::blank_memo(self_address))?;
         } else if self.plan.num_outputs() == 0 && self.plan.memo_plan.is_some() {
             anyhow::bail!("if no outputs, no memo should be added");
         }

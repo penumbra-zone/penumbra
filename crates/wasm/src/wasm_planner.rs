@@ -1,14 +1,14 @@
-use crate::error::WasmResult;
-use crate::planner::Planner;
-use crate::storage::IndexedDBStorage;
-use crate::swap_record::SwapRecord;
-use crate::utils;
-use anyhow::Context;
+use std::str::FromStr;
+
+use anyhow::{anyhow, Context};
 use ark_ff::UniformRand;
 use decaf377::Fq;
+use rand_core::OsRng;
+use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::JsValue;
+
 use penumbra_chain::params::{ChainParameters, FmdParameters};
 use penumbra_dex::swap_claim::SwapClaimPlan;
-
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     core::{
@@ -23,10 +23,12 @@ use penumbra_proto::{
     DomainType,
 };
 use penumbra_transaction::{action::Action, plan::ActionPlan, plan::TransactionPlan, WitnessData};
-use rand_core::OsRng;
-use std::str::FromStr;
-use wasm_bindgen::prelude::wasm_bindgen;
-use wasm_bindgen::JsValue;
+
+use crate::error::WasmResult;
+use crate::planner::Planner;
+use crate::storage::IndexedDBStorage;
+use crate::swap_record::SwapRecord;
+use crate::utils;
 
 #[wasm_bindgen]
 pub struct WasmPlanner {
@@ -92,9 +94,7 @@ impl WasmPlanner {
 
         let full_viewing_key: FullViewingKey = FullViewingKey::from_str(full_viewing_key)?;
 
-        let memo_key = transaction_plan
-            .memo_plan
-            .map(|memo_plan| memo_plan.key.clone());
+        let memo_key = transaction_plan.memo_plan.map(|memo_plan| memo_plan.key);
 
         let action = match action_plan {
             ActionPlan::Spend(spend_plan) => {
@@ -248,7 +248,7 @@ impl WasmPlanner {
             .storage
             .get_swap_by_commitment(swap_commitment_proto)
             .await?
-            .expect("Swap record not found")
+            .ok_or(anyhow!("Swap record not found"))?
             .try_into()?;
 
         let swap_claim_plan = SwapClaimPlan {
