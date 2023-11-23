@@ -1,6 +1,6 @@
 import path from 'path';
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 
 const TARGETS = ['web', 'nodejs', 'bundler'];
 
@@ -12,6 +12,36 @@ TARGETS.forEach(target => {
       stdio: 'inherit',
     },
   );
+
+  if (target === 'bundler') {
+    // Copy binary files to the package directory
+    const binaryDir = path.join(process.cwd(), '../../crypto/proof-params/src/gen/');
+    const targetPackageDir = path.join(process.cwd(), `${target}`);
+
+    // Ensure the target binary directory exists
+    if (existsSync(binaryDir)) {
+      const targetBinaryDir = path.join(targetPackageDir, 'bin');
+      if (!existsSync(targetBinaryDir)) {
+        mkdirSync(targetBinaryDir);
+      }
+
+      // Copy binary files to the package directory
+      const binaryFiles = [
+        'delegator_vote_pk.bin', 
+        'nullifier_derivation_pk.bin',
+        'output_pk.bin',
+        'spend_pk.bin',
+        'swap_pk.bin',
+        'swapclaim_pk.bin',
+        'undelegateclaim_pk.bin'
+      ]; 
+      binaryFiles.forEach(file => {
+        const sourcePath = path.join(binaryDir, file);
+        const targetPath = path.join(targetBinaryDir, file);
+        copyFileSync(sourcePath, targetPath);
+      });
+    }
+  }
 
   // Rename package to target-specific names
   const packageJsonPath = path.join(process.cwd(), `${target}/package.json`);
