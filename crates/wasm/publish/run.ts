@@ -46,6 +46,9 @@ TARGETS.forEach(target => {
   // Rename package to target-specific names
   const packageJsonPath = path.join(process.cwd(), `${target}/package.json`);
   const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+  if (!packageJson.files.includes('bin')) {
+    packageJson.files.push('bin');
+  }
   packageJson.name = `@penumbra-zone/wasm-${target}`;
   writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2), 'utf-8');
 
