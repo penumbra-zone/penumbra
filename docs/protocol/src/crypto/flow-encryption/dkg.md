@@ -27,7 +27,7 @@ participants (validators) must be able to verify that counterparty participants
 (other validators) are contributing to the DKG honestly, without the use of a
 trusted dealer. This can be achieved using something similar to [Feldman's
 Verifiable Secret Sharing][feldman] protocol, where each participant shares a
-commitment to their share which is visable to all other participants. In
+commitment to their share which is visible to all other participants. In
 addition, our DKG must be able to tolerate *rogue-key attacks*: that is, it
 must tolerate the instance where a validator maliciously chooses their share
 based on the value of the other validator's shares in order to cancel out other
@@ -59,7 +59,7 @@ non-participating observer must be able to verify the correct execution of the
 DKG.
 
 Of the schemes listed, Fouque-Stern has the lowest round complexity, however
-the scheme is uses Pallier which is not compatible with our encryption scheme.
+the scheme uses Pallier which is not compatible with our encryption scheme.
 The scheme described in that paper uses pairings, and thus is also not
 compatible with our scheme. In addition, `O(n*log*n)` communication complexity
 is not important for our scheme, since our vote extensions *already* require
