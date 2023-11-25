@@ -8,12 +8,12 @@ use rand_core::{CryptoRng, RngCore};
 use std::fmt::Debug;
 
 use super::TransactionPlan;
+use crate::ActionPlan;
 use crate::{
     action::Action,
     transaction::{DetectionData, TransactionParameters},
     AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
 };
-use crate::ActionPlan;
 
 impl TransactionPlan {
     /// Builds a [`TransactionPlan`] by slotting in the
@@ -144,7 +144,12 @@ impl TransactionPlan {
             .actions
             .iter()
             .map(|action_plan| {
-                ActionPlan::build_unauth(action_plan.clone(), full_viewing_key, witness_data, self.memo_key())
+                ActionPlan::build_unauth(
+                    action_plan.clone(),
+                    full_viewing_key,
+                    witness_data,
+                    self.memo_key(),
+                )
             })
             .collect::<Result<Vec<_>>>()?;
 
