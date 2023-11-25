@@ -31,6 +31,7 @@ mod tests {
         keys::load_proving_key,
         storage::{IndexedDBStorage, IndexedDbConstants, Tables},
         tx::{authorize, build, build_parallel, witness},
+        build::build_action,
         wasm_planner::WasmPlanner,
     };
 
@@ -448,8 +449,7 @@ mod tests {
         for i in transaction_plan_conv.actions.clone() {
             if let ActionPlan::Spend(ref _spend_plan) = i {
                 let action_deserialize = serde_wasm_bindgen::to_value(&i).unwrap();
-                let action = wasm_planner
-                    .build_action(
+                let action = build_action(
                         transaction_plan.clone(),
                         action_deserialize,
                         full_viewing_key,
@@ -462,8 +462,7 @@ mod tests {
             }
             if let ActionPlan::Output(ref _output_plan) = i {
                 let action_deserialize = serde_wasm_bindgen::to_value(&i).unwrap();
-                let action = wasm_planner
-                    .build_action(
+                let action = build_action(
                         transaction_plan.clone(),
                         action_deserialize,
                         full_viewing_key,
