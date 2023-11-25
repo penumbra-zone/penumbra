@@ -1,13 +1,13 @@
-use anyhow;
-use wasm_bindgen::JsValue;
-use wasm_bindgen::prelude::wasm_bindgen;
 use crate::error::WasmResult;
+use anyhow::Context;
 use std::str::FromStr;
+use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::JsValue;
 
 use crate::utils;
-use penumbra_transaction::{action::Action, plan::ActionPlan, plan::TransactionPlan, WitnessData};
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::core::transaction::v1alpha1 as pb;
+use penumbra_transaction::{action::Action, plan::ActionPlan, plan::TransactionPlan, WitnessData};
 
 /// Builds a planned [`Action`] specified by
 /// the [`ActionPlan`] in a [`TransactionPlan`].
@@ -69,9 +69,7 @@ pub fn build_action(
         ActionPlan::ProposalWithdraw(proposal_withdraw) => {
             Some(Action::ProposalWithdraw(proposal_withdraw))
         }
-        ActionPlan::ValidatorVote(validator_vote) => {
-            Some(Action::ValidatorVote(validator_vote))
-        }
+        ActionPlan::ValidatorVote(validator_vote) => Some(Action::ValidatorVote(validator_vote)),
         ActionPlan::DelegatorVote(delegator_vote) => {
             let note_commitment = delegator_vote.staked_note.commit();
             let auth_path = witness_data
@@ -96,15 +94,11 @@ pub fn build_action(
         ActionPlan::DaoOutput(dao_output) => Some(Action::DaoOutput(dao_output)),
         ActionPlan::DaoDeposit(dao_deposit) => Some(Action::DaoDeposit(dao_deposit)),
         ActionPlan::PositionOpen(position_open) => Some(Action::PositionOpen(position_open)),
-        ActionPlan::PositionClose(position_close) => {
-            Some(Action::PositionClose(position_close))
-        }
+        ActionPlan::PositionClose(position_close) => Some(Action::PositionClose(position_close)),
         ActionPlan::PositionWithdraw(position_withdrawn) => Some(Action::PositionWithdraw(
             position_withdrawn.position_withdraw(),
         )),
-        ActionPlan::Withdrawal(ics20_withdrawal) => {
-            Some(Action::Ics20Withdrawal(ics20_withdrawal))
-        }
+        ActionPlan::Withdrawal(ics20_withdrawal) => Some(Action::Ics20Withdrawal(ics20_withdrawal)),
         _ => return Err(anyhow::anyhow!("Unsupported action type").into()),
     };
 
