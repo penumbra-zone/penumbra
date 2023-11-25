@@ -31,6 +31,7 @@ pub mod plan;
 pub mod view;
 
 pub use action::Action;
+pub use plan::ActionPlan;
 pub use auth_data::AuthorizationData;
 pub use auth_hash::{AuthHash, AuthorizingData};
 pub use effect_hash::EffectingData;
