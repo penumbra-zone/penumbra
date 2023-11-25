@@ -130,7 +130,7 @@ impl ActionPlan {
                     .get(&note_commitment)
                     .context(format!("could not get proof for {note_commitment:?}"))?;
 
-                Action::SwapClaim(swap_claim_plan.swap_claim(&fvk, auth_path))
+                Action::SwapClaim(swap_claim_plan.swap_claim(fvk, auth_path))
             }
             Delegate(plan) => Action::Delegate(plan.clone()),
             Undelegate(plan) => Action::Undelegate(plan.clone()),

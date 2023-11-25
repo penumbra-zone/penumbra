@@ -1,14 +1,12 @@
 use crate::error::WasmResult;
-use anyhow::Context;
 use std::str::FromStr;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
-use wasm_bindgen_test::*;
 
 use crate::utils;
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::core::transaction::v1alpha1 as pb;
-use penumbra_transaction::{action::Action, plan::ActionPlan, plan::TransactionPlan, WitnessData};
+use penumbra_transaction::{plan::ActionPlan, plan::TransactionPlan, WitnessData};
 
 /// Builds a planned [`Action`] specified by
 /// the [`ActionPlan`] in a [`TransactionPlan`].
