@@ -98,8 +98,14 @@ impl Participant {
             tracing::info!("got Contribution message from participant, deserializing...");
             let deserialized =
                 tokio::task::spawn_blocking(move || P::deserialize_contribution(contribution))
-                    .await??;
-            Ok(Some(deserialized))
+                    // Only bubble up JoinHandle errors here...
+                    .await?;
+            // ... so that if there's a deserialization error we return None.
+            // (ideally this code would be structured differently, so that we didn't have to carefully
+            // distinguish between different kinds of errors, and just treat any error occurring in the context
+            // of a participant as a failed contribution, but we don't want to do any more refactoring than
+            // is necessary to this code.)
+            Ok(deserialized.ok())
         } else {
             Ok(None)
         }
