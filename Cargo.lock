@@ -5129,11 +5129,16 @@ name = "penumbra-custody"
 version = "0.63.1"
 dependencies = [
  "anyhow",
+ "ark-ff",
  "base64 0.20.0",
  "bytes",
+ "decaf377 0.5.0",
+ "decaf377-frost",
+ "decaf377-rdsa",
  "ed25519-consensus",
  "futures",
  "hex",
+ "penumbra-chain",
  "penumbra-keys",
  "penumbra-proto",
  "penumbra-transaction",

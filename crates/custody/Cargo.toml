@@ -7,8 +7,13 @@ edition = "2021"
 
 [dependencies]
 # Workspace dependencies
-penumbra-proto = { path = "../proto" , features = ["rpc"] }
+ark-ff = "0.4"
+decaf377 = "0.5"
+decaf377-rdsa = "0.7"
+decaf377-frost = { path = "../crypto/decaf377-frost" }
+penumbra-chain = { path = "../core/component/chain" }
 penumbra-keys = { path = "../core/keys" }
+penumbra-proto = { path = "../proto" , features = ["rpc"] }
 penumbra-transaction = { path = "../core/transaction" }
 
 tokio = { version = "1.21.1", features = ["full"]}
