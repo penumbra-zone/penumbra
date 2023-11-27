@@ -4,19 +4,17 @@
 //! supports lightweight, copy-on-write snapshots and transactional semantics.
 //! The [`Storage`] type is a handle for an instance of a backing store,
 //! implemented using RocksDB.  The storage records a sequence of versioned
-//! [`State`]s.  The [`State`] type is a lightweight snapshot of a particular
+//! [`Snapshot`]s.  The [`Snapshot`] type is a lightweight snapshot of a particular
 //! version of the chain state.
 //!
-//! Each [`State`] instance can also be used as a copy-on-write fork to build up
-//! changes before committing them to persistent storage.  The
-//! [`StateTransaction`] type collects a group of writes, which can then be
-//! applied to the (in-memory) [`State`] fork.  Finally, the changes accumulated
-//! in the [`State`] instance can be committed to the persistent [`Storage`].
+//! Each [`Snapshot] instance can be used as a copy-on-write fork to build up changes
+//! before committing them to persistent storage. This is done using [`StateDelta`]s
+//! that collect a group of writes into a flattened [`Cache`] that can be committed to
+//! [`Storage`].
 //!
-//! Reads are performed with the [`StateRead`] trait, implemented by both
-//! [`State`] and [`StateTransaction`], and reflect any currently cached writes.
-//! Writes are performed with the [`StateWrite`] trait, which is only
-//! implemented for [`StateTransaction`].
+//! Reads are performed with the [`StateRead`] trait, implemented by [`Snapshot`]
+//! and [`StateDelta`], and reflect any currently cached writes. Writes are performed
+//! with [`StateWrite`]  trait, which is only implemented for (possibly nested) [`StateDelta`]s.
 //!
 //! The storage system provides two data stores:
 //!
@@ -31,8 +29,8 @@
 //! application-specific indexes of the verifiable consensus state.
 //!
 //! While the primary key-value store records byte values, it is intended for
-//! use with Protobuf-encoded data.  To this end, the [`StateRead`] and
-//! [`StateWrite`] traits have provided methods that use the
+//! use with Protobuf-encoded data.  To this end, the [`StateReadProto`] and
+//! [`StateWriteProto`] traits have provided methods that use the
 //! [`penumbra_proto::Protobuf`] trait to automatically (de)serialize into proto
 //! or domain types, allowing its use as an object store.
 #![deny(clippy::unwrap_used)]
@@ -59,9 +57,10 @@ pub use cache::Cache;
 pub use delta::{ArcStateDeltaExt, StateDelta};
 pub use escaped_byte_slice::EscapedByteSlice;
 pub use jmt::{ics23_spec, RootHash};
-pub use read::StateRead;
 pub use snapshot::Snapshot;
 pub use storage::{Storage, TempStorage};
+
+pub use read::StateRead;
 pub use write::StateWrite;
 
 pub mod future;
