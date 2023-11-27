@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_proto::custody::v1alpha1::{self as pb};
-use penumbra_transaction::AuthorizationData;
+use penumbra_transaction::{plan::TransactionPlan, AuthorizationData};
 use tonic::{async_trait, Request, Response, Status};
 
 use crate::AuthorizeRequest;
@@ -47,9 +47,12 @@ pub trait Terminal {
 /// of the spend key, which is not enough to sign on its own. Instead,
 /// other signers with the same type of configuration need to cooperate
 /// to help produce a signature.
-pub struct Threshold {}
+pub struct Threshold<T> {
+    config: Config,
+    terminal: T,
+}
 
-impl Threshold {
+impl<T: Terminal> Threshold<T> {
     /// Try and create the necessary signatures to authorize the transaction plan.
     async fn authorize(&self, _request: AuthorizeRequest) -> Result<AuthorizationData> {
         todo!()
@@ -57,19 +60,21 @@ impl Threshold {
 
     /// Return the full viewing key.
     fn export_full_viewing_key(&self) -> FullViewingKey {
-        todo!()
+        self.config.fvk.clone()
     }
 
     /// Get the address associated with an index.
     ///
     /// This is just to match the API of the custody trait.
-    fn confirm_address(&self, _index: AddressIndex) -> Address {
-        todo!()
+    fn confirm_address(&self, index: AddressIndex) -> Address {
+        self.config.fvk.payment_address(index).0
     }
 }
 
 #[async_trait]
-impl pb::custody_protocol_service_server::CustodyProtocolService for Threshold {
+impl<T: Terminal + Sync + Send + 'static>
+    pb::custody_protocol_service_server::CustodyProtocolService for Threshold<T>
+{
     async fn authorize(
         &self,
         request: Request<pb::AuthorizeRequest>,
