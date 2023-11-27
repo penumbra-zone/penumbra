@@ -6,8 +6,40 @@ use tonic::{async_trait, Request, Response, Status};
 
 use crate::AuthorizeRequest;
 
+use self::config::Config;
+
 mod config;
 mod sign;
+
+/// A trait abstracting over the kind of terminal interface we expect.
+///
+/// This is mainly used to accomodate the kind of interaction we have with the CLI
+/// interface, but it can also be plugged in with more general backends.
+#[async_trait]
+pub trait Terminal {
+    /// Have a user confirm that they want to sign this transaction.
+    ///
+    /// In an actual terminal, this should display the transaction in a human readable
+    /// form, and then get feedback from the user.
+    async fn confirm_transaction(&self, transaction: &TransactionPlan) -> bool;
+
+    /// Push an explanatory message to the terminal.
+    ///
+    /// This message has no relation to the actual protocol, it just allows explaining
+    /// what subsequent data means, and what the user needs to do.
+    ///
+    /// Backends can replace this with a no-op.
+    async fn explain(&self, msg: &str);
+
+    /// Broadcast a message to other users.
+    async fn broadcast(&self, data: &str);
+
+    /// Wait for a response from *some* other user, it doesn't matter which.
+    ///
+    /// This function should not return None spuriously, when it does,
+    /// it should continue to return None until a message is broadcast.
+    async fn next_response(&self) -> Option<String>;
+}
 
 /// A custody backend using threshold signing.  
 ///
