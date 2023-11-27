@@ -81,7 +81,7 @@ operating the orchestration.
     name = "summonerd",
     about = "Penumbra summoning ceremony coordinator",
     long_about = LONG_HELP,
-    version = env!("VERGEN_GIT_SEMVER"),
+    version,
 )]
 struct Opt {
     /// Enable Tokio Console support.

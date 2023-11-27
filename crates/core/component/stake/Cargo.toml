@@ -89,6 +89,3 @@ ed25519-consensus = "2"
 rand_chacha = "0.3"
 tracing-subscriber = "0.3"
 proptest = "1"
-
-[build-dependencies]
-vergen = "5"

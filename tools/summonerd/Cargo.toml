@@ -54,7 +54,3 @@ r2d2 = "0.8"
 r2d2_sqlite = { version = "0.22", git = "https://github.com/penumbra-zone/r2d2-sqlite.git", features = [
     "bundled",
 ] }
-
-[build-dependencies]
-vergen = "5"
-

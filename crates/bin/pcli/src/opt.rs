@@ -22,11 +22,7 @@ use penumbra_view::ViewService;
 use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Parser)]
-#[clap(
-    name = "pcli",
-    about = "The Penumbra command-line interface.",
-    version = env!("VERGEN_GIT_SEMVER"),
-)]
+#[clap(name = "pcli", about = "The Penumbra command-line interface.", version)]
 pub struct Opt {
     #[clap(subcommand)]
     pub cmd: Command,

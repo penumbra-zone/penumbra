@@ -28,7 +28,7 @@ use url::Url;
 #[clap(
     name = "penumbra-measure",
     about = "A developer tool for measuring things about Penumbra.",
-    version = env!("VERGEN_GIT_SEMVER"),
+    version
 )]
 pub struct Opt {
     /// The URL for the gRPC endpoint of the remote pd node.

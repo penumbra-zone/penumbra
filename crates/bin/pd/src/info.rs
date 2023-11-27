@@ -43,7 +43,7 @@ use tracing::Instrument;
 
 use penumbra_tower_trace::v037::RequestExt;
 
-const ABCI_INFO_VERSION: &str = env!("VERGEN_GIT_SEMVER");
+const ABCI_INFO_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Implements service traits for Tonic gRPC services.
 ///

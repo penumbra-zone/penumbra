@@ -2350,26 +2350,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c34f04666d835ff5d62e058c3995147c06f42fe86ff053337632bca83e42702d"
 
 [[package]]
-name = "enum-iterator"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2953d1df47ac0eb70086ccabf0275aa8da8591a28bd358ee2b52bd9f9e3ff9e9"
-dependencies = [
- "enum-iterator-derive",
-]
-
-[[package]]
-name = "enum-iterator-derive"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8958699f9359f0b04e691a13850d48b7de329138023876d07cbd024c2c820598"
-dependencies = [
- "proc-macro2 1.0.69",
- "quote 1.0.33",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2810,18 +2790,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "getset"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e45727250e75cc04ff2846a66397da8ef2b3db8e40e0cef4df67950a07621eb9"
-dependencies = [
- "proc-macro-error 1.0.4",
- "proc-macro2 1.0.69",
- "quote 1.0.33",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "ghash"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2836,19 +2804,6 @@ name = "gimli"
 version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6fb8d784f27acf97159b40fc4db5ecd8aa23b9ad5ef69cdd136d3bc80665f0c0"
-
-[[package]]
-name = "git2"
-version = "0.18.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbf97ba92db08df386e10c8ede66a2a0369bd277090afd8710e19e38de9ec0cd"
-dependencies = [
- "bitflags 2.4.1",
- "libc",
- "libgit2-sys",
- "log",
- "url",
-]
 
 [[package]]
 name = "glob"
@@ -3879,18 +3834,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "libgit2-sys"
-version = "0.16.1+1.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2a2bb3680b094add03bb3732ec520ece34da31a8cd2d633d1389d0f0fb60d0c"
-dependencies = [
- "cc",
- "libc",
- "libz-sys",
- "pkg-config",
-]
-
-[[package]]
 name = "libloading"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3951,7 +3894,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d97137b25e321a73eef1418d1d5d2eda4d77e12813f8e6dead84bc52c5870a7b"
 dependencies = [
  "cc",
- "libc",
  "pkg-config",
  "vcpkg",
 ]
@@ -4257,7 +4199,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
- "vergen",
 ]
 
 [[package]]
@@ -4315,15 +4256,6 @@ name = "normalize-line-endings"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61807f77802ff30975e01f4f071c8ba10c022052f98b3294119f3e615d13e5be"
-
-[[package]]
-name = "ntapi"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c28774a7fd2fbb4f0babd8237ce554b73af68021b5f695a3cebd6c59bac0980f"
-dependencies = [
- "winapi",
-]
 
 [[package]]
 name = "nu-ansi-term"
@@ -4758,7 +4690,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
- "vergen",
  "walkdir",
 ]
 
@@ -4814,7 +4745,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.2.25",
  "url",
- "vergen",
 ]
 
 [[package]]
@@ -4906,7 +4836,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
- "vergen",
 ]
 
 [[package]]
@@ -5012,7 +4941,6 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber 0.3.18",
- "vergen",
 ]
 
 [[package]]
@@ -5204,7 +5132,6 @@ dependencies = [
  "toml 0.5.11",
  "tonic",
  "tracing",
- "vergen",
 ]
 
 [[package]]
@@ -5513,7 +5440,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
- "vergen",
 ]
 
 [[package]]
@@ -5782,7 +5708,6 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber 0.3.18",
- "vergen",
 ]
 
 [[package]]
@@ -6053,7 +5978,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.2.25",
  "url",
- "vergen",
 ]
 
 [[package]]
@@ -7989,7 +7913,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
- "vergen",
 ]
 
 [[package]]
@@ -8052,21 +7975,6 @@ dependencies = [
  "quote 1.0.33",
  "syn 1.0.109",
  "unicode-xid 0.2.4",
-]
-
-[[package]]
-name = "sysinfo"
-version = "0.19.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e7de153d0438a648bb71e06e300e54fc641685e96af96d49b843f43172d341c"
-dependencies = [
- "cfg-if",
- "core-foundation-sys",
- "doc-comment",
- "libc",
- "ntapi",
- "once_cell",
- "winapi",
 ]
 
 [[package]]
@@ -8950,24 +8858,6 @@ name = "vcpkg"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
-
-[[package]]
-name = "vergen"
-version = "5.1.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6cf88d94e969e7956d924ba70741316796177fa0c79a2c9f4ab04998d96e966e"
-dependencies = [
- "anyhow",
- "cfg-if",
- "chrono",
- "enum-iterator",
- "getset",
- "git2",
- "rustc_version 0.4.0",
- "rustversion",
- "sysinfo",
- "thiserror",
-]
 
 [[package]]
 name = "version_check"

@@ -71,9 +71,6 @@ rand_core = "0.6"
 rand_chacha = "0.3"
 tracing-subscriber = "0.3"
 
-[build-dependencies]
-vergen = "5"
-
 [features]
 default = ["std"]
 std = ["ark-ff/std", "ibc-types/std"]

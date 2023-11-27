@@ -163,7 +163,7 @@ impl Storage {
                 anyhow::bail!(
                     "can't load view database created by client version {} using client version {}: they have different schemata, so you need to reset your view database and resynchronize",
                     database_client_version,
-                    env!("VERGEN_GIT_SEMVER"),
+                    env!("CARGO_PKG_VERSION"),
                 );
             }
 
@@ -254,7 +254,7 @@ impl Storage {
             // Insert the client version into the database
             tx.execute(
                 "INSERT INTO client_version (client_version) VALUES (?1)",
-                [env!("VERGEN_GIT_SEMVER")],
+                [env!("CARGO_PKG_VERSION")],
             )?;
 
             tx.commit()?;

@@ -5,9 +5,6 @@
 !Cargo.toml
 !Cargo.lock
 !.cargo/
-# git directory for vergen. unfortunately, breaks cache
-# on every commit.
-!.git/
 
 # testnets for 'pd testnet generate' defaults
 !testnets/

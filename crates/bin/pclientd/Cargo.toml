@@ -69,6 +69,3 @@ penumbra-proof-params = { path = "../../crypto/proof-params", features = [
     "bundled-proving-keys",
     "download-proving-keys",
 ] }
-
-[build-dependencies]
-vergen = "5"

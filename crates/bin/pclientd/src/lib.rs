@@ -1,4 +1,3 @@
-use std::env;
 use std::net::SocketAddr;
 use std::path::Path;
 
@@ -71,11 +70,7 @@ fn default_home() -> Utf8PathBuf {
 }
 
 #[derive(Debug, Parser)]
-#[clap(
-    name = "pclientd",
-    about = "The Penumbra view daemon.",
-    version = env!("VERGEN_GIT_SEMVER"),
-)]
+#[clap(name = "pclientd", about = "The Penumbra view daemon.", version)]
 pub struct Opt {
     /// Command to run.
     #[clap(subcommand)]
