@@ -9,6 +9,7 @@ use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub struct Config {
+    pub threshold: u16,
     pub key_package: frost::keys::KeyPackage,
     pub public_key_package: frost::keys::PublicKeyPackage,
     pub signing_key: SigningKey,
@@ -65,6 +66,7 @@ impl Config {
                     t,
                 );
                 Self {
+                    threshold: t,
                     key_package,
                     public_key_package: public_key_package.clone(),
                     signing_key,

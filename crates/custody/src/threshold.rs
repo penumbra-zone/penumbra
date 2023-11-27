@@ -1,7 +1,12 @@
 use anyhow::{anyhow, Result};
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
-use penumbra_proto::custody::v1alpha1::{self as pb};
+use penumbra_proto::{
+    custody::v1alpha1::{self as pb},
+    DomainType,
+};
 use penumbra_transaction::{plan::TransactionPlan, AuthorizationData};
+use rand_core::OsRng;
+use serde::{Deserialize, Serialize};
 use tonic::{async_trait, Request, Response, Status};
 
 use crate::AuthorizeRequest;
@@ -10,6 +15,24 @@ use self::config::Config;
 
 mod config;
 mod sign;
+
+fn to_json<T>(data: &T) -> Result<String>
+where
+    T: DomainType,
+    anyhow::Error: From<<T as TryFrom<<T as DomainType>::Proto>>::Error>,
+    <T as DomainType>::Proto: Serialize,
+{
+    Ok(serde_json::to_string(&data.to_proto())?)
+}
+
+fn from_json<'a, T: DomainType>(data: &'a str) -> Result<T>
+where
+    T: DomainType,
+    anyhow::Error: From<<T as TryFrom<<T as DomainType>::Proto>>::Error>,
+    <T as DomainType>::Proto: Deserialize<'a>,
+{
+    Ok(serde_json::from_str::<<T as DomainType>::Proto>(data)?.try_into()?)
+}
 
 /// A trait abstracting over the kind of terminal interface we expect.
 ///
@@ -21,7 +44,7 @@ pub trait Terminal {
     ///
     /// In an actual terminal, this should display the transaction in a human readable
     /// form, and then get feedback from the user.
-    async fn confirm_transaction(&self, transaction: &TransactionPlan) -> bool;
+    async fn confirm_transaction(&self, transaction: &TransactionPlan) -> Result<bool>;
 
     /// Push an explanatory message to the terminal.
     ///
@@ -29,16 +52,16 @@ pub trait Terminal {
     /// what subsequent data means, and what the user needs to do.
     ///
     /// Backends can replace this with a no-op.
-    async fn explain(&self, msg: &str);
+    async fn explain(&self, msg: &str) -> Result<()>;
 
     /// Broadcast a message to other users.
-    async fn broadcast(&self, data: &str);
+    async fn broadcast(&self, data: &str) -> Result<()>;
 
     /// Wait for a response from *some* other user, it doesn't matter which.
     ///
     /// This function should not return None spuriously, when it does,
     /// it should continue to return None until a message is broadcast.
-    async fn next_response(&self) -> Option<String>;
+    async fn next_response(&self) -> Result<Option<String>>;
 }
 
 /// A custody backend using threshold signing.  
@@ -54,8 +77,63 @@ pub struct Threshold<T> {
 
 impl<T: Terminal> Threshold<T> {
     /// Try and create the necessary signatures to authorize the transaction plan.
-    async fn authorize(&self, _request: AuthorizeRequest) -> Result<AuthorizationData> {
-        todo!()
+    async fn authorize(&self, request: AuthorizeRequest) -> Result<AuthorizationData> {
+        let plan = request.plan;
+
+        // Round 1
+        let (round1_message, state1) = sign::coordinator_round1(&mut OsRng, &self.config, plan)?;
+        self.terminal
+            .explain("Send this message to the other signers:")
+            .await?;
+        self.terminal.broadcast(&to_json(&round1_message)?).await?;
+        self.terminal
+            .explain(&format!(
+                "Now, gather at least {} replies from the other signers, and paste them below:",
+                self.config.threshold
+            ))
+            .await?;
+        let round1_replies = {
+            let mut acc = Vec::new();
+            // We need 1 less, since we've already included ourselves.
+            for _ in 1..self.config.threshold {
+                let reply_str = self
+                    .terminal
+                    .next_response()
+                    .await?
+                    .ok_or(anyhow!("expected round1 reply"))?;
+                let reply = from_json::<sign::FollowerRound1>(&reply_str)?;
+                acc.push(reply);
+            }
+            acc
+        };
+        // Round 2
+        let (round2_message, state2) =
+            sign::coordinator_round2(&self.config, state1, &round1_replies)?;
+        self.terminal
+            .explain("Send this message to the other signers:")
+            .await?;
+        self.terminal.broadcast(&to_json(&round2_message)?).await?;
+        self.terminal
+            .explain(
+                "Now, gather the replies from the *same* signers as Round 1, and paste them below:",
+            )
+            .await?;
+        let round2_replies = {
+            let mut acc = Vec::new();
+            // We need 1 less, since we've already included ourselves.
+            for _ in 1..self.config.threshold {
+                let reply_str = self
+                    .terminal
+                    .next_response()
+                    .await?
+                    .ok_or(anyhow!("expected round2 reply"))?;
+                let reply = from_json::<sign::FollowerRound2>(&reply_str)?;
+                acc.push(reply);
+            }
+            acc
+        };
+        // Round 3
+        sign::coordinator_round3(&self.config, state2, &round2_replies)
     }
 
     /// Return the full viewing key.
