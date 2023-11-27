@@ -68,7 +68,9 @@ impl IBCPacket<Unchecked> {
             m: std::marker::PhantomData,
         }
     }
+}
 
+impl<S: CheckStatus> IBCPacket<S> {
     pub fn source_port(&self) -> &PortId {
         &self.source_port
     }
