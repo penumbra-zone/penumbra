@@ -11,7 +11,7 @@ use tonic::{async_trait, Request, Response, Status};
 
 use crate::AuthorizeRequest;
 
-use self::config::Config;
+pub use self::config::Config;
 
 mod config;
 mod sign;
