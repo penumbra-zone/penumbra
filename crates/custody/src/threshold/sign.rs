@@ -22,6 +22,15 @@ pub struct CoordinatorRound1 {
     plan: TransactionPlan,
 }
 
+impl CoordinatorRound1 {
+    /// View the transaction plan associated with the first message.
+    ///
+    /// We need this method to be able to prompt users correctly.
+    pub fn plan(&self) -> &TransactionPlan {
+        &self.plan
+    }
+}
+
 impl From<CoordinatorRound1> for pb::CoordinatorRound1 {
     fn from(value: CoordinatorRound1) -> Self {
         Self {

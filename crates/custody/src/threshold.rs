@@ -64,6 +64,50 @@ pub trait Terminal {
     async fn next_response(&self) -> Result<Option<String>>;
 }
 
+/// Act as a follower in the signing protocol.
+///
+/// All this function does is produce side effects on the terminal, potentially returning
+/// early if the user on the other end did not want to sign the transaction.
+pub async fn follow(config: &Config, terminal: &impl Terminal) -> Result<()> {
+    // Round 1
+    terminal
+        .explain("Paste the coordinator's first message:")
+        .await?;
+    let round1_message: sign::CoordinatorRound1 = {
+        let string = terminal
+            .next_response()
+            .await?
+            .ok_or(anyhow!("expected message from coordinator"))?;
+        from_json(&string)?
+    };
+    if !terminal.confirm_transaction(&round1_message.plan()).await? {
+        return Ok(());
+    }
+    let (round1_reply, round1_state) = sign::follower_round1(&mut OsRng, config, round1_message)?;
+    terminal
+        .explain("Send this message to the coordinator:")
+        .await?;
+    terminal.broadcast(&to_json(&round1_reply)?).await?;
+    // Round 2
+    terminal
+        .explain("Paste the coordinator's second message:")
+        .await?;
+    let round2_message: sign::CoordinatorRound2 = {
+        let string = terminal
+            .next_response()
+            .await?
+            .ok_or(anyhow!("expected message from coordinator"))?;
+        from_json(&string)?
+    };
+    let round2_reply = sign::follower_round2(config, round1_state, round2_message)?;
+    terminal
+        .explain("Send this message to the coordinator:")
+        .await?;
+    terminal.broadcast(&to_json(&round2_reply)?).await?;
+
+    Ok(())
+}
+
 /// A custody backend using threshold signing.  
 ///
 /// This backend is initialized with a full viewing key, but only a share
