@@ -131,7 +131,6 @@ penumbra-proof-params = { path = "../../crypto/proof-params", features = [
 ] }
 
 [build-dependencies]
-vergen = "5"
 anyhow = "1"
 
 [package.metadata.dist]

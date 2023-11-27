@@ -30,11 +30,7 @@ use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
 
 #[derive(Debug, Parser)]
-#[clap(
-    name = "narsild",
-    about = "The narsil daemon.",
-    version = env!("VERGEN_GIT_SEMVER"),
-)]
+#[clap(name = "narsild", about = "The narsil daemon.", version)]
 struct Opt {
     /// Enable Tokio Console support.
     #[clap(long)]

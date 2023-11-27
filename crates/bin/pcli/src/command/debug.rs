@@ -110,7 +110,7 @@ impl DebugInfo {
     }
     /// Return the version for `pcli` baked in at compile time.
     fn get_pcli_version() -> String {
-        env!("VERGEN_GIT_SEMVER").to_string()
+        env!("CARGO_PKG_VERSION").to_string()
     }
     /// Attempt to find `pd` on PATH, and return its version number. Depending on deployment,
     /// `pd` may not be on the path; it may in a container context elsewhere.

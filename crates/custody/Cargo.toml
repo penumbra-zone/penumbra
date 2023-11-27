@@ -26,8 +26,5 @@ rand_core = "0.6"
 ed25519-consensus = "2.1"
 base64 = "0.20"
 
-[build-dependencies]
-vergen = "5"
-
 [dev-dependencies]
 toml = "0.5"

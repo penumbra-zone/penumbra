@@ -40,11 +40,7 @@ use penumbra_tower_trace::v037::RequestExt;
 use tendermint::v0_37::abci::{ConsensusRequest, MempoolRequest};
 
 #[derive(Debug, Parser)]
-#[clap(
-    name = "pd",
-    about = "The Penumbra daemon.",
-    version = env!("VERGEN_GIT_SEMVER"),
-)]
+#[clap(name = "pd", about = "The Penumbra daemon.", version)]
 struct Opt {
     /// Enable Tokio Console support.
     #[clap(long)]
