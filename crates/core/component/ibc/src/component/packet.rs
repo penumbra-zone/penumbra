@@ -68,6 +68,26 @@ impl IBCPacket<Unchecked> {
             m: std::marker::PhantomData,
         }
     }
+
+    pub fn source_port(&self) -> &PortId {
+        &self.source_port
+    }
+
+    pub fn source_channel(&self) -> &ChannelId {
+        &self.source_channel
+    }
+
+    pub fn timeout_height(&self) -> &Height {
+        &self.timeout_height
+    }
+
+    pub fn timeout_timestamp(&self) -> u64 {
+        self.timeout_timestamp
+    }
+
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
 }
 
 #[async_trait]
