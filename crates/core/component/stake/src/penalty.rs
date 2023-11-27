@@ -22,6 +22,20 @@ use penumbra_num::{fixpoint::bit_constrain, Amount, AmountVar};
 pub struct Penalty(pub u64);
 
 impl Penalty {
+    /// Create a `Penalty` from a percentage e.g.
+    /// `Penalty::from_percent(1)` is a 1% penalty.
+    /// `Penalty::from_percent(100)` is a 100% penalty.
+    pub fn from_percent(percent: u64) -> Self {
+        Penalty::from_bps(percent * 100)
+    }
+
+    /// Create a `Penalty` from a basis point e.g.
+    /// `Penalty::from_bps(1)` is a 1 bps penalty.
+    /// `Penalty::from_bps(100)` is a 100 bps penalty.
+    pub fn from_bps(bps: u64) -> Self {
+        Penalty(bps * 10_000)
+    }
+
     /// Compound this `Penalty` with another `Penalty`.
     pub fn compound(&self, other: Penalty) -> Penalty {
         // We want to compute q sth (1 - q) = (1-p1)(1-p2)
@@ -109,6 +123,34 @@ impl From<&PenaltyVar> for AmountVar {
 impl PenaltyVar {
     pub fn apply_to(&self, amount: AmountVar) -> Result<AmountVar, SynthesisError> {
         let penalty = self.value().unwrap_or(Penalty(0));
+        /* Bound analysis
+         *      `penalty_amount = amount * (1_0000_0000 - penalty) / 1_0000_0000`
+         * Order of operations:
+         *      1. cst:  `penalty` cast to u128 (infallible)
+         *      2. sub:  `1_0000_0000 - penalty`
+         *      3. mul:  `amount * (1_0000_0000 - penalty)`
+         *      4. div:  `amount * (1_0000_0000 - penalty) / 1_0000_0000`
+         *
+         * Units:
+         *      `amount`                    : staking tokens to undelegate (128 bits)
+         *      `penalty`                   : a bps^2 penalty factor between 0 and 10^8 (64 bits)
+         *      `staking_token_unit_amount` : 10^6 ~ 2^20
+         *      `bps_squared_constant`      : 10^8 ~ 2^27
+         *
+         * Overflow condition: `amount * (1_0000_0000 - penalty) > 2^128 - 1`
+         * Undeflow condition: `penalty` > 10^8 (penalty is greater than 100%)
+         *
+         * Boundary: If penalty is 0, then `amount * 1_0000_0000 = amount * 2^27`
+         * With `amount` as 2^(x+20) - 1, where x is log2(staking tokens):
+         *    What quantity of staking tokens would cause an overflow? (for 128 bits)
+         *    Find x: 2^(x+20) * 2^27 < 2^128
+         *    True for x < 81 (~10^24 staking tokens), so an overflow for 128 bits is implausible.
+         *
+         *    What quantity of staking tokens would cause an overflow? (for 64 bits)
+         *    Find x: 2^(x+20) * 2^27 < 2^64
+         *    True for x < 17 (~10^5 staking tokens), so an overflow for 64 bits is possible and plausible.
+         *
+         */
 
         // Out of circuit penalized amount computation:
         let amount_bytes = &amount.value().unwrap_or(Amount::from(0u64)).to_le_bytes()[0..16];
