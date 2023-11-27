@@ -108,6 +108,7 @@ fn main() -> anyhow::Result<()> {
                 "../../proto/penumbra/penumbra/crypto/decaf377_rdsa/v1alpha1/decaf377_rdsa.proto",
                 "../../proto/penumbra/penumbra/crypto/tct/v1alpha1/tct.proto",
                 "../../proto/penumbra/penumbra/custody/v1alpha1/custody.proto",
+                "../../proto/penumbra/penumbra/custody/threshold/v1alpha1/threshold.proto",
                 "../../proto/penumbra/penumbra/narsil/ledger/v1alpha1/ledger.proto",
                 // Also included in the storage crate directly.
                 "../../proto/penumbra/penumbra/storage/v1alpha1/storage.proto",

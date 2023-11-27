@@ -322,6 +322,13 @@ pub mod penumbra {
 
     /// Custody protocol structures.
     pub mod custody {
+        pub mod threshold {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.custody.threshold.v1alpha1.rs");
+                include!("gen/penumbra.custody.threshold.v1alpha1.serde.rs");
+            }
+        }
+
         pub mod v1alpha1 {
             include!("gen/penumbra.custody.v1alpha1.rs");
             include!("gen/penumbra.custody.v1alpha1.serde.rs");
