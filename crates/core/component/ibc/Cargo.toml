@@ -28,7 +28,7 @@ penumbra-num = { path = "../../../core/num", default-features = false }
 penumbra-keys = { path = "../../../core/keys", default-features = false }
 
 # Penumbra dependencies
-ibc-types = { version = "0.7.0", default-features = false }
+ibc-types = { version = "0.10.0", default-features = false }
 ibc-proto = { version = "0.37.0", default-features = false }
 
 # Crates.io deps

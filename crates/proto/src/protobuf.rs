@@ -1,11 +1,11 @@
+use crate::Name;
 use std::convert::{From, TryFrom};
 
 /// A marker type that captures the relationships between a domain type (`Self`) and a protobuf type (`Self::Proto`).
 pub trait DomainType
 where
     Self: Clone + Sized + TryFrom<Self::Proto>,
-    // TODO: Add prost::Name once we have implemented them all
-    Self::Proto: prost::Message + Default + From<Self> + Send + Sync + 'static,
+    Self::Proto: prost::Name + prost::Message + Default + From<Self> + Send + Sync + 'static,
     anyhow::Error: From<<Self as TryFrom<Self::Proto>>::Error>,
 {
     type Proto;
@@ -30,11 +30,6 @@ where
             .try_into()
             .map_err(Into::into)
     }
-}
-
-/// A type that can be encoded to a protobuf `Any` message.
-pub trait TypeUrl {
-    const TYPE_URL: &'static str;
 }
 
 // Implementations on foreign types.
@@ -172,16 +167,6 @@ use ibc_types::core::client::Height;
 use ibc_types::core::connection::{ClientPaths, ConnectionEnd};
 use ibc_types::lightclients::tendermint::client_state::ClientState;
 
-// TODO: Remove when ibc_types is updated to autogenerate Name trait
-impl TypeUrl for ibc_types::lightclients::tendermint::client_state::ClientState {
-    const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.ClientState";
-}
-impl TypeUrl for ibc_types::lightclients::tendermint::consensus_state::ConsensusState {
-    const TYPE_URL: &'static str = "/ibc.lightclients.tendermint.v1.ConsensusState";
-}
-impl TypeUrl for ClientPaths {
-    const TYPE_URL: &'static str = "/ibc.core.connection.v1.ClientPaths";
-}
 impl DomainType for ClientPaths {
     type Proto = RawClientPaths;
 }
@@ -205,13 +190,13 @@ impl DomainType for ibc_types::lightclients::tendermint::consensus_state::Consen
 
 impl<T> From<T> for IbcRelay
 where
-    T: ibc_types::DomainType + ibc_types::TypeUrl + Send + Sync + 'static,
+    T: ibc_types::DomainType + Send + Sync + 'static,
     <T as TryFrom<<T as ibc_types::DomainType>::Proto>>::Error: Send + Sync + std::error::Error,
 {
     fn from(v: T) -> Self {
         let value_bytes = v.encode_to_vec();
         let any = pbjson_types::Any {
-            type_url: T::TYPE_URL.to_string(),
+            type_url: <T as ibc_types::DomainType>::Proto::type_url(),
             value: value_bytes.into(),
         };
 
