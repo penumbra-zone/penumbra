@@ -51,7 +51,7 @@ jmt = "0.9"
 # External dependencies
 ibc-types = { version = "0.10.0", features = ["std", "with_serde"] }
 
-ibc-proto = { version = "0.37.0" }
+ibc-proto = { version = "0.39.0" }
 ark-ff = { version = "0.4", default-features = false }
 atty = "0.2"
 ed25519-consensus = "2"

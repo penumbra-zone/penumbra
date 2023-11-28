@@ -59,7 +59,7 @@ tendermint = "0.34.0"
 tendermint-light-client-verifier = "0.34.0"
 ibc-types = { version = "0.10.0" }
 
-ibc-proto = { version = "0.37.0", default-features = false, features = ["server"] }
+ibc-proto = { version = "0.39.0", default-features = false, features = ["server"] }
 prost = "0.12.3"
 toml = "0.5"
 # We don't need this crate at all, but its upstream published a breaking change as

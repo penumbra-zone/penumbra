@@ -174,6 +174,7 @@ impl DomainType for ClientPaths {
 impl DomainType for ConnectionEnd {
     type Proto = RawConnectionEnd;
 }
+
 impl DomainType for ChannelEnd {
     type Proto = RawChannel;
 }
