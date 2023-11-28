@@ -22,6 +22,8 @@ use jmt::storage::TreeWriter;
 pub struct SubstoreConfig {
     /// The prefix of the substore. If empty, it is the root-level store config.
     pub prefix: String,
+    /// The prefix of the substore including the trailing slash.
+    pub prefix_with_delimiter: String,
     /// name: "substore-{prefix}-jmt"
     /// role: persists the logical structure of the JMT
     /// maps: `storage::DbNodeKey` to `jmt::Node`
@@ -56,6 +58,7 @@ impl SubstoreConfig {
             cf_jmt_values: format!("substore-{}-jmt-values", prefix),
             cf_jmt_keys_by_keyhash: format!("substore-{}-jmt-keys-by-keyhash", prefix),
             cf_nonverifiable: format!("substore-{}-nonverifiable", prefix),
+            prefix_with_delimiter: format!("{}/", prefix),
             prefix,
         }
     }
