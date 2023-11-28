@@ -1,7 +1,7 @@
 use crate::component::client::StateReadExt;
 
 use core::time::Duration;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::Protobuf;
 use ibc_types::path::{ClientConsensusStatePath, ClientUpgradePath};
 use ibc_types::DomainType;
 use ibc_types::{

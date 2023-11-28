@@ -144,7 +144,7 @@ impl MsgHandler for MsgUpdateClient {
                         TENDERMINT_CLIENT_TYPE.to_string(),
                     ), // TODO: hardcoded
                     consensus_height: trusted_header.height(),
-                    header: <ibc_types::lightclients::tendermint::header::Header as ibc_proto::protobuf::Protobuf<ibc_proto::ibc::lightclients::tendermint::v1::Header>>::encode_vec(&trusted_header),
+                    header: <ibc_types::lightclients::tendermint::header::Header as ibc_proto::Protobuf<ibc_proto::ibc::lightclients::tendermint::v1::Header>>::encode_vec(trusted_header),
                 }
                 .into(),
             );

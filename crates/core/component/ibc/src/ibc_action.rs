@@ -1,3 +1,23 @@
+use ibc_proto::ibc::core::{
+    channel::v1::{
+        MsgAcknowledgement as RawMsgAcknowledgement,
+        MsgChannelCloseConfirm as RawMsgChannelCloseConfirm,
+        MsgChannelCloseInit as RawMsgChannelCloseInit, MsgChannelOpenAck as RawMsgChannelOpenAck,
+        MsgChannelOpenConfirm as RawMsgChannelOpenConfirm,
+        MsgChannelOpenInit as RawMsgChannelOpenInit, MsgChannelOpenTry as RawMsgChannelOpenTry,
+        MsgRecvPacket as RawMsgRecvPacket, MsgTimeout as RawMsgTimeout,
+    },
+    client::v1::{
+        MsgCreateClient as RawMsgCreateClient, MsgSubmitMisbehaviour as RawMsgSubmitMisbehaviour,
+        MsgUpdateClient as RawMsgUpdateClient, MsgUpgradeClient as RawMsgUpgradeClient,
+    },
+    connection::v1::{
+        MsgConnectionOpenAck as RawMsgConnectionOpenAck,
+        MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm,
+        MsgConnectionOpenInit as RawMsgConnectionOpenInit,
+        MsgConnectionOpenTry as RawMsgConnectionOpenTry,
+    },
+};
 use ibc_types::core::{
     channel::msgs::{
         MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
@@ -12,7 +32,7 @@ use ibc_types::core::{
 use ibc_types::DomainType as IbcTypesDomainType;
 
 use penumbra_proto::penumbra::core::component::ibc::v1alpha1::{self as pb};
-use penumbra_proto::DomainType;
+use penumbra_proto::{DomainType, Name};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -125,68 +145,93 @@ impl TryFrom<pb::IbcRelay> for IbcRelay {
         let action_type = raw_action.type_url.as_str();
         let raw_action_bytes = raw_action.value.clone();
 
+        // fn calls not allowed in patterns
+        let msg_create_client_type_url = RawMsgCreateClient::type_url();
+        let msg_update_client_type_url = RawMsgUpdateClient::type_url();
+        let msg_upgrade_client_type_url = RawMsgUpgradeClient::type_url();
+        // TODO: Check this - this variant was not handled previously in this trait impl
+        let msg_submit_misbehavior_type_url = RawMsgSubmitMisbehaviour::type_url();
+        let msg_connection_open_init_type_url = RawMsgConnectionOpenInit::type_url();
+        let msg_connection_open_try_type_url = RawMsgConnectionOpenTry::type_url();
+        let msg_connection_open_ack_type_url = RawMsgConnectionOpenAck::type_url();
+        let msg_connection_open_confirm_type_url = RawMsgConnectionOpenConfirm::type_url();
+        let msg_acknowledgement_type_url = RawMsgAcknowledgement::type_url();
+        let msg_channel_open_init_type_url = RawMsgChannelOpenInit::type_url();
+        let msg_channel_open_try_type_url = RawMsgChannelOpenTry::type_url();
+        let msg_channel_open_ack_type_url = RawMsgChannelOpenAck::type_url();
+        let msg_channel_open_confirm_type_url = RawMsgChannelOpenConfirm::type_url();
+        let msg_channel_close_init_type_url = RawMsgChannelCloseInit::type_url();
+        let msg_channel_close_confirm_type_url = RawMsgChannelCloseConfirm::type_url();
+        let msg_recv_packet_type_url = RawMsgRecvPacket::type_url();
+        let msg_timeout_type_url = RawMsgTimeout::type_url();
+
         Ok(match action_type {
-            MsgCreateClient::TYPE_URL => {
+            msg_create_client_type_url => {
                 let msg = MsgCreateClient::decode(raw_action_bytes)?;
                 IbcRelay::CreateClient(msg)
             }
-            MsgUpdateClient::TYPE_URL => {
+            msg_update_client_type_url => {
                 let msg = MsgUpdateClient::decode(raw_action_bytes)?;
                 IbcRelay::UpdateClient(msg)
             }
-            MsgUpgradeClient::TYPE_URL => {
+            msg_upgrade_client_type_url => {
                 let msg = MsgUpgradeClient::decode(raw_action_bytes)?;
                 IbcRelay::UpgradeClient(msg)
             }
-            MsgConnectionOpenInit::TYPE_URL => {
+            // new
+            msg_submit_misbehavior_type_url => {
+                let msg = MsgSubmitMisbehaviour::decode(raw_action_bytes)?;
+                IbcRelay::SubmitMisbehavior(msg)
+            }
+            msg_connection_open_init_type_url => {
                 let msg = MsgConnectionOpenInit::decode(raw_action_bytes)?;
                 IbcRelay::ConnectionOpenInit(msg)
             }
-            MsgConnectionOpenTry::TYPE_URL => {
+            msg_connection_open_try_type_url => {
                 let msg = MsgConnectionOpenTry::decode(raw_action_bytes)?;
                 IbcRelay::ConnectionOpenTry(msg)
             }
-            MsgConnectionOpenAck::TYPE_URL => {
+            msg_connection_open_ack_type_url => {
                 let msg = MsgConnectionOpenAck::decode(raw_action_bytes)?;
                 IbcRelay::ConnectionOpenAck(msg)
             }
-            MsgConnectionOpenConfirm::TYPE_URL => {
+            msg_connection_open_confirm_type_url => {
                 let msg = MsgConnectionOpenConfirm::decode(raw_action_bytes)?;
                 IbcRelay::ConnectionOpenConfirm(msg)
             }
-            MsgAcknowledgement::TYPE_URL => {
+            msg_acknowledgement_type_url => {
                 let msg = MsgAcknowledgement::decode(raw_action_bytes)?;
                 IbcRelay::Acknowledgement(msg)
             }
-            MsgChannelOpenInit::TYPE_URL => {
+            msg_channel_open_init_type_url => {
                 let msg = MsgChannelOpenInit::decode(raw_action_bytes)?;
                 IbcRelay::ChannelOpenInit(msg)
             }
-            MsgChannelOpenTry::TYPE_URL => {
+            msg_channel_open_try_type_url => {
                 let msg = MsgChannelOpenTry::decode(raw_action_bytes)?;
                 IbcRelay::ChannelOpenTry(msg)
             }
-            MsgChannelOpenAck::TYPE_URL => {
+            msg_channel_open_ack_type_url => {
                 let msg = MsgChannelOpenAck::decode(raw_action_bytes)?;
                 IbcRelay::ChannelOpenAck(msg)
             }
-            MsgChannelOpenConfirm::TYPE_URL => {
+            msg_channel_open_confirm_type_url => {
                 let msg = MsgChannelOpenConfirm::decode(raw_action_bytes)?;
                 IbcRelay::ChannelOpenConfirm(msg)
             }
-            MsgChannelCloseInit::TYPE_URL => {
+            msg_channel_close_init_type_url => {
                 let msg = MsgChannelCloseInit::decode(raw_action_bytes)?;
                 IbcRelay::ChannelCloseInit(msg)
             }
-            MsgChannelCloseConfirm::TYPE_URL => {
+            msg_channel_close_confirm_type_url => {
                 let msg = MsgChannelCloseConfirm::decode(raw_action_bytes)?;
                 IbcRelay::ChannelCloseConfirm(msg)
             }
-            MsgRecvPacket::TYPE_URL => {
+            msg_recv_packet_type_url => {
                 let msg = MsgRecvPacket::decode(raw_action_bytes)?;
                 IbcRelay::RecvPacket(msg)
             }
-            MsgTimeout::TYPE_URL => {
+            msg_timeout_type_url => {
                 let msg = MsgTimeout::decode(raw_action_bytes)?;
                 IbcRelay::Timeout(msg)
             }
@@ -199,71 +244,71 @@ impl From<IbcRelay> for pb::IbcRelay {
     fn from(value: IbcRelay) -> Self {
         let raw_action = match value {
             IbcRelay::CreateClient(msg) => pbjson_types::Any {
-                type_url: MsgCreateClient::TYPE_URL.to_string(),
+                type_url: RawMsgCreateClient::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::UpdateClient(msg) => pbjson_types::Any {
-                type_url: MsgUpdateClient::TYPE_URL.to_string(),
+                type_url: RawMsgUpdateClient::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::UpgradeClient(msg) => pbjson_types::Any {
-                type_url: MsgUpgradeClient::TYPE_URL.to_string(),
+                type_url: RawMsgUpgradeClient::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::SubmitMisbehavior(msg) => pbjson_types::Any {
-                type_url: MsgSubmitMisbehaviour::TYPE_URL.to_string(),
+                type_url: RawMsgSubmitMisbehaviour::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::ConnectionOpenInit(msg) => pbjson_types::Any {
-                type_url: MsgConnectionOpenInit::TYPE_URL.to_string(),
+                type_url: RawMsgConnectionOpenInit::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::ConnectionOpenTry(msg) => pbjson_types::Any {
-                type_url: MsgConnectionOpenTry::TYPE_URL.to_string(),
+                type_url: RawMsgConnectionOpenTry::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::ConnectionOpenAck(msg) => pbjson_types::Any {
-                type_url: MsgConnectionOpenAck::TYPE_URL.to_string(),
+                type_url: RawMsgConnectionOpenAck::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::ConnectionOpenConfirm(msg) => pbjson_types::Any {
-                type_url: MsgConnectionOpenConfirm::TYPE_URL.to_string(),
+                type_url: RawMsgConnectionOpenConfirm::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::Acknowledgement(msg) => pbjson_types::Any {
-                type_url: MsgAcknowledgement::TYPE_URL.to_string(),
+                type_url: RawMsgAcknowledgement::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::ChannelOpenInit(msg) => pbjson_types::Any {
-                type_url: MsgChannelOpenInit::TYPE_URL.to_string(),
+                type_url: RawMsgChannelOpenInit::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::ChannelOpenTry(msg) => pbjson_types::Any {
-                type_url: MsgChannelOpenTry::TYPE_URL.to_string(),
+                type_url: RawMsgChannelOpenTry::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::ChannelOpenAck(msg) => pbjson_types::Any {
-                type_url: MsgChannelOpenAck::TYPE_URL.to_string(),
+                type_url: RawMsgChannelOpenAck::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::ChannelOpenConfirm(msg) => pbjson_types::Any {
-                type_url: MsgChannelOpenConfirm::TYPE_URL.to_string(),
+                type_url: RawMsgChannelOpenConfirm::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::ChannelCloseInit(msg) => pbjson_types::Any {
-                type_url: MsgChannelCloseInit::TYPE_URL.to_string(),
+                type_url: RawMsgChannelCloseInit::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::ChannelCloseConfirm(msg) => pbjson_types::Any {
-                type_url: MsgChannelCloseConfirm::TYPE_URL.to_string(),
+                type_url: RawMsgChannelCloseConfirm::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::RecvPacket(msg) => pbjson_types::Any {
-                type_url: MsgRecvPacket::TYPE_URL.to_string(),
+                type_url: RawMsgRecvPacket::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::Timeout(msg) => pbjson_types::Any {
-                type_url: MsgTimeout::TYPE_URL.to_string(),
+                type_url: RawMsgTimeout::type_url(),
                 value: msg.encode_to_vec().into(),
             },
             IbcRelay::Unknown(raw_action) => raw_action,
