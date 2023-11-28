@@ -13,10 +13,9 @@ use ibc_proto::ibc::core::client::v1::{
 };
 
 use ibc_types::core::client::ClientId;
-use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
+use ibc_types::lightclients::tendermint::client_state::TENDERMINT_CLIENT_STATE_TYPE_URL;
 use ibc_types::path::ClientStatePath;
 use ibc_types::DomainType;
-use ibc_types::TypeUrl;
 use penumbra_chain::component::StateReadExt;
 
 use std::str::FromStr;
@@ -59,7 +58,7 @@ impl ClientQuery for IbcQuery {
             // If found, convert to a suitable type to match
             // https://docs.rs/ibc-proto/0.36.1/ibc_proto/ibc/core/client/v1/struct.QueryClientStateResponse.html
             Some(c) => ibc_proto::google::protobuf::Any {
-                type_url: TendermintClientState::TYPE_URL.to_string(),
+                type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
                 value: c,
             },
             None => {
