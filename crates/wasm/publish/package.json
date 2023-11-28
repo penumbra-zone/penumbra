@@ -6,7 +6,8 @@
   "scripts": {
     "format": "prettier --write .",
     "compile-wasm": "tsc && node build/run.js",
-    "publish-wasm": "npm run compile-wasm -- --publish"
+    "publish-wasm": "npm run compile-wasm -- --publish",
+    "publish-wasm-bundle": "npm run compile-wasm -- --publish --bundle"
   },
   "dependencies": {
     "wasm-pack": "^0.12.1"

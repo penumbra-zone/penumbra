@@ -7,7 +7,7 @@ use Rust functionality via .wasm.
 # Install wasm-pack first: https://rustwasm.github.io/wasm-pack/installer/
 
 npm install
-npm run publish-wasm
+npm run publish-wasm-bundle
 ```
 
 We have a release github action that runs these on every release.
