@@ -24,13 +24,13 @@ proposal` subcommand.
 To list all the active proposals by their ID, use:
 
 ```bash
-cargo run --release --bin pcli query governance list-proposals
+pcli query governance list-proposals
 ```
 
 Other proposal query commands all follow the form:
 
 ```bash
-cargo run --release --bin pcli query governance proposal [PROPOSAL_ID] [QUERY]
+pcli query governance proposal [PROPOSAL_ID] [QUERY]
 ```
 
 These are the queries currently defined:
@@ -56,7 +56,7 @@ can vote on it using the `tx vote` subcommand of `pcli`. For example, if you wan
 proposal 1, you would do:
 
 ```bash
-cargo run --release --bin pcli tx vote yes --on 1
+pcli tx vote yes --on 1
 ```
 
 When you vote as a delegator (but _not_ when you vote as a validator), you will receive
@@ -71,7 +71,7 @@ If you are a validator who was active when the proposal started, you can vote on
 would do:
 
 ```bash
-cargo run --release --bin pcli validator vote yes --on 1
+pcli validator vote yes --on 1
 ```
 
 ### Eligibility And Voting Power
@@ -164,7 +164,7 @@ To submit a proposal, first generate a proposal template for the kind of proposa
 submit. For example, suppose we want to create a signaling proposal:
 
 ```bash
-cargo run --release --bin pcli tx proposal template signaling --file proposal.toml
+pcli tx proposal template signaling --file proposal.toml
 ```
 
 This outputs a TOML template for the proposal to the file `proposal.toml`, where you can edit the
@@ -179,7 +179,7 @@ specify the proposal deposit in this action; it is determined automatically base
 parameters.
 
 ```bash
-cargo run --release --bin pcli tx proposal submit --file proposal.toml
+pcli tx proposal submit --file proposal.toml
 ```
 
 The proposal deposit will be immediately escrowed and the proposal voting period will start in the
@@ -234,8 +234,7 @@ community consensus), you can do so before voting concludes. Note that this does
 to losing your deposit by slashing, as withdrawn proposals can still be voted on and slashed.
 
 ```bash
-cargo run --release --bin pcli \
-    tx proposal withdraw 0 \
+pcli tx proposal withdraw 0 \
     --reason "some human-readable reason for withdrawal"
 ```
 
@@ -252,7 +251,7 @@ concludes, you can claim your proposal deposit using the `tx proposal deposit-cl
 say:
 
 ```bash
-cargo run --release --bin pcli tx proposal deposit-claim 1
+pcli tx proposal deposit-claim 1
 ```
 
 This will _consume_ your proposal deposit NFT (either the original or the one you received after
@@ -268,7 +267,7 @@ Anyone can contribute any amount of any denomination to the Penumbra DAO. To do 
 command `pcli tx dao-deposit`, like so:
 
 ```bash
-cargo run --release --bin pcli tx dao-deposit 100penumbra
+pcli tx dao-deposit 100penumbra
 ```
 
 Funds contributed to the DAO cannot be withdrawn except by a successful DAO spend governance
@@ -278,7 +277,7 @@ To query the current DAO balance, use `pcli query dao balance` with the **base d
 asset or its asset ID (display denominations are not currently accepted). For example:
 
 ```bash
-cargo run --release --bin pcli query dao balance upenumbra
+pcli query dao balance upenumbra
 ```
 
 DAO spend proposals are only accepted for voting if they would not overdraw the current funds in the

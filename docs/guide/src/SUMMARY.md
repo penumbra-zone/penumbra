@@ -7,7 +7,6 @@
   - [Viewing Balances](./pcli/balance.md)
   - [Sending Transactions](./pcli/transaction.md)
   - [Using Governance](./pcli/governance.md)
-  - [Using `pcli` with `pclientd`](./pcli/pclientd.md)
 - [Running a `pd` fullnode](./pd.md)
   - [Installing `pd`](./pd/install.md)
   - [Joining a Testnet](./pd/join-testnet.md)
