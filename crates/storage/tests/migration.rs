@@ -100,7 +100,7 @@ async fn test_substore_migration() -> anyhow::Result<()> {
         let mut keys: Vec<String> = vec![];
         let mut values: Vec<Vec<u8>> = vec![];
         for substore in all_substores.iter() {
-            let key = format!("{substore}key_{i}");
+            let key = format!("{substore}/key_{i}");
             let value = format!("{substore}value_{i}").as_bytes().to_vec();
             tracing::debug!(?key, "initializing substore {substore} with key-value pair");
             delta.put_raw(key.clone(), value.clone());
@@ -153,7 +153,7 @@ async fn test_substore_migration() -> anyhow::Result<()> {
 
     // Start by writing a key in every substore, including the main store.
     for substore in all_substores.iter() {
-        let key = format!("{substore}migration", substore = substore);
+        let key = format!("{substore}/migration", substore = substore);
         let value = format!("{substore}migration data", substore = substore)
             .as_bytes()
             .to_vec();

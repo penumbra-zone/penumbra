@@ -37,7 +37,15 @@ async fn test_route_key_cases() -> () {
         "prefix_a/key_1",
         "prefix_akey_1",
         "prefix_a/",
-        "prefix_a",
+        // TODO(erwan): Making sure that there are no collisions between
+        // `prefix_a/` and `prefix_a` is important. However, in practice
+        // `prefix_a` stores the root hash of the substore, so 1/ it will
+        // not containt the value we put in it since it got overwritten
+        // during the commit step, 2/ it will be disallowed shortly
+        // in a follow-up PR. When we do that, we can remove the commented
+        // out test case below. And instead replace it with a vector that
+        // checks that we are NOT able to write to `prefix_a` directly.
+        // "prefix_a", <- this should be disallowed.
         "prefix_b/key_1",
     ];
     let values = vec![
