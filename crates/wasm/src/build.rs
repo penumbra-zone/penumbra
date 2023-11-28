@@ -5,8 +5,10 @@ use wasm_bindgen::JsValue;
 
 use crate::utils;
 use penumbra_keys::FullViewingKey;
-use penumbra_proto::core::transaction::v1alpha1 as pb;
-use penumbra_transaction::{plan::ActionPlan, plan::TransactionPlan, WitnessData};
+use penumbra_transaction::{
+    plan::{ActionPlan, TransactionPlan},
+    WitnessData,
+};
 
 /// Builds a planned [`Action`] specified by
 /// the [`ActionPlan`] in a [`TransactionPlan`].
@@ -28,8 +30,7 @@ pub fn build_action(
     let transaction_plan: TransactionPlan =
         serde_wasm_bindgen::from_value(transaction_plan.clone())?;
 
-    let witness_data_proto: pb::WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
-    let witness_data: WitnessData = witness_data_proto.try_into()?;
+    let witness: WitnessData = serde_wasm_bindgen::from_value(witness_data)?;
 
     let action_plan: ActionPlan = serde_wasm_bindgen::from_value(action_plan)?;
 
@@ -37,8 +38,8 @@ pub fn build_action(
 
     let memo_key = transaction_plan.memo_plan.map(|memo_plan| memo_plan.key);
 
-    let action = ActionPlan::build_unauth(action_plan, &full_viewing_key, &witness_data, memo_key)?;
+    let action = ActionPlan::build_unauth(action_plan, &full_viewing_key, &witness, memo_key)?;
 
-    let action_result_proto = serde_wasm_bindgen::to_value(&Some(action))?;
-    Ok(action_result_proto)
+    let result = serde_wasm_bindgen::to_value(&action)?;
+    Ok(result)
 }

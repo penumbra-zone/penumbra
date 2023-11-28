@@ -68,7 +68,6 @@ impl WasmPlanner {
     /// Add expiry height to plan
     /// Arguments:
     ///     expiry_height: `u64`
-    #[wasm_bindgen]
     pub fn expiry_height(&mut self, expiry_height: u64) -> WasmResult<()> {
         utils::set_panic_hook();
 
@@ -79,7 +78,6 @@ impl WasmPlanner {
     /// Set gas prices
     /// Arguments:
     ///     gas_prices: `GasPrices`
-    #[wasm_bindgen]
     pub fn set_gas_prices(&mut self, gas_prices: JsValue) -> WasmResult<()> {
         let gas_prices_proto: GasPrices = serde_wasm_bindgen::from_value(gas_prices)?;
         self.planner.set_gas_prices(gas_prices_proto.try_into()?);
@@ -89,7 +87,6 @@ impl WasmPlanner {
     /// Add memo to plan
     /// Arguments:
     ///     memo: `MemoPlaintext`
-    #[wasm_bindgen]
     pub fn memo(&mut self, memo: JsValue) -> WasmResult<()> {
         utils::set_panic_hook();
         let memo_proto: MemoPlaintext = serde_wasm_bindgen::from_value(memo)?;
@@ -100,7 +97,6 @@ impl WasmPlanner {
     /// Add fee to plan
     /// Arguments:
     ///     fee: `Fee`
-    #[wasm_bindgen]
     pub fn fee(&mut self, fee: JsValue) -> WasmResult<()> {
         utils::set_panic_hook();
 
@@ -114,7 +110,6 @@ impl WasmPlanner {
     /// Arguments:
     ///     value: `Value`
     ///     address: `Address`
-    #[wasm_bindgen]
     pub fn output(&mut self, value: JsValue, address: JsValue) -> WasmResult<()> {
         utils::set_panic_hook();
 
@@ -130,7 +125,6 @@ impl WasmPlanner {
     /// Add swap claim to plan
     /// Arguments:
     ///     swap_commitment: `StateCommitment`
-    #[wasm_bindgen]
     pub async fn swap_claim(&mut self, swap_commitment: JsValue) -> WasmResult<()> {
         utils::set_panic_hook();
 
