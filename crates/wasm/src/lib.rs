@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 extern crate core;
 
+pub mod build;
 pub mod error;
 pub mod keys;
 pub mod note_record;

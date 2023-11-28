@@ -27,6 +27,7 @@ mod tests {
         Action,
     };
     use penumbra_wasm::{
+        build::build_action,
         error::WasmError,
         keys::load_proving_key,
         storage::IndexedDBStorage,
@@ -451,28 +452,26 @@ mod tests {
         for i in transaction_plan_conv.actions.clone() {
             if let ActionPlan::Spend(ref _spend_plan) = i {
                 let action_deserialize = serde_wasm_bindgen::to_value(&i).unwrap();
-                let action = wasm_planner
-                    .build_action(
-                        transaction_plan.clone(),
-                        action_deserialize,
-                        full_viewing_key,
-                        witness_data.as_ref().unwrap().clone(),
-                    )
-                    .unwrap();
+                let action = build_action(
+                    transaction_plan.clone(),
+                    action_deserialize,
+                    full_viewing_key,
+                    witness_data.as_ref().unwrap().clone(),
+                )
+                .unwrap();
                 let action_serialize: Action =
                     serde_wasm_bindgen::from_value(action.clone()).unwrap();
                 actions.push(action_serialize);
             }
             if let ActionPlan::Output(ref _output_plan) = i {
                 let action_deserialize = serde_wasm_bindgen::to_value(&i).unwrap();
-                let action = wasm_planner
-                    .build_action(
-                        transaction_plan.clone(),
-                        action_deserialize,
-                        full_viewing_key,
-                        witness_data.as_ref().unwrap().clone(),
-                    )
-                    .unwrap();
+                let action = build_action(
+                    transaction_plan.clone(),
+                    action_deserialize,
+                    full_viewing_key,
+                    witness_data.as_ref().unwrap().clone(),
+                )
+                .unwrap();
                 let action_serialize: Action =
                     serde_wasm_bindgen::from_value(action.clone()).unwrap();
                 actions.push(action_serialize);

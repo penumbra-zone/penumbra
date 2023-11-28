@@ -8,6 +8,7 @@ use rand_core::{CryptoRng, RngCore};
 use std::fmt::Debug;
 
 use super::TransactionPlan;
+use crate::ActionPlan;
 use crate::{
     action::Action,
     transaction::{DetectionData, TransactionParameters},
@@ -143,7 +144,12 @@ impl TransactionPlan {
             .actions
             .iter()
             .map(|action_plan| {
-                action_plan.build_unauth(full_viewing_key, witness_data, self.memo_key())
+                ActionPlan::build_unauth(
+                    action_plan.clone(),
+                    full_viewing_key,
+                    witness_data,
+                    self.memo_key(),
+                )
             })
             .collect::<Result<Vec<_>>>()?;
 
@@ -181,7 +187,7 @@ impl TransactionPlan {
                 let witness_data2 = witness_data.clone(); // Arc
                 let memo_key2 = self.memo_key();
                 tokio::task::spawn_blocking(move || {
-                    action_plan.build_unauth(&fvk2, &*witness_data2, memo_key2)
+                    ActionPlan::build_unauth(action_plan, &fvk2, &*witness_data2, memo_key2)
                 })
             })
             .collect::<Vec<_>>();

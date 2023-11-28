@@ -3,8 +3,10 @@ use std::collections::BTreeMap;
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType, TypeUrl};
 use penumbra_shielded_pool::note;
 use penumbra_tct as tct;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(try_from = "pb::WitnessData", into = "pb::WitnessData")]
 pub struct WitnessData {
     pub anchor: tct::Root,
     pub state_commitment_proofs: BTreeMap<note::StateCommitment, tct::Proof>,

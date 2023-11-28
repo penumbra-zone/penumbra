@@ -37,6 +37,7 @@ pub use effect_hash::EffectingData;
 pub use error::Error;
 pub use id::Id;
 pub use is_action::IsAction;
+pub use plan::ActionPlan;
 pub use transaction::{Transaction, TransactionBody, TransactionParameters};
 pub use view::{ActionView, MemoPlaintextView, MemoView, TransactionPerspective, TransactionView};
 pub use witness_data::WitnessData;

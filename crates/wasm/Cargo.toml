@@ -50,3 +50,6 @@ web-sys                  = { version = "0.3.64", features = ["console"] }
 [dev-dependencies]
 wasm-bindgen-test        = "0.3.37"
 serde_json               = "1.0.107"
+
+[profile.release]
+lto = true

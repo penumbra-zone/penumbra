@@ -91,14 +91,14 @@ impl ActionPlan {
     /// This method is useful for controlling how a transaction's actions are
     /// built (e.g., building them in parallel, or via Web Workers).
     pub fn build_unauth(
-        &self,
+        action_plan: ActionPlan,
         fvk: &FullViewingKey,
         witness_data: &WitnessData,
         memo_key: Option<PayloadKey>,
     ) -> Result<Action> {
         use ActionPlan::*;
 
-        Ok(match self {
+        Ok(match action_plan {
             Spend(spend_plan) => {
                 let note_commitment = spend_plan.note.commit();
                 let auth_path = witness_data
@@ -130,7 +130,7 @@ impl ActionPlan {
                     .get(&note_commitment)
                     .context(format!("could not get proof for {note_commitment:?}"))?;
 
-                Action::SwapClaim(swap_claim_plan.swap_claim(&fvk, auth_path))
+                Action::SwapClaim(swap_claim_plan.swap_claim(fvk, auth_path))
             }
             Delegate(plan) => Action::Delegate(plan.clone()),
             Undelegate(plan) => Action::Undelegate(plan.clone()),
