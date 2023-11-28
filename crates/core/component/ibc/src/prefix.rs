@@ -45,7 +45,7 @@ mod vendored {
     }
 }
 
-/// the ICS23 proof spec for penumbra's IBC state; this can be used to verify proofs
+/// The ICS23 proof spec for penumbra's IBC state; this can be used to verify proofs
 /// for other substores in the penumbra state, provided that the data is indeed inside a substore
 /// (as opposed to directly in the root store.)
 pub static IBC_PROOF_SPECS: Lazy<Vec<ics23::ProofSpec>> =
@@ -61,6 +61,6 @@ impl MerklePrefixExt for MerklePrefix {
         let prefix_string = String::from_utf8(self.key_prefix.clone())
             .expect("commitment prefix is not valid utf-8");
 
-        format!("{}{}", prefix_string, path)
+        format!("{}/{}", prefix_string, path)
     }
 }

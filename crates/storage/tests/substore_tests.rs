@@ -21,11 +21,51 @@ async fn test_disallow_empty_prefix() -> () {
 }
 
 #[tokio::test]
+/// Test that we route keys correctly, in particular that we do not allow collisions for keys
+/// that lack a delimiter e.g. `prefix_a/key` and `prefix_akey`.
+async fn test_route_key_cases() -> () {
+    let tmpdir = tempfile::tempdir().expect("creating a temporary directory works");
+    let db_path = tmpdir.into_path();
+    let substore_prefixes = vec!["prefix_a", "prefix_b"]
+        .into_iter()
+        .map(|s| s.to_string())
+        .collect();
+    let storage = Storage::load(db_path, substore_prefixes).await.unwrap();
+    let mut delta = StateDelta::new(storage.latest_snapshot());
+
+    let keys = vec![
+        "prefix_a/key_1",
+        "prefix_akey_1",
+        "prefix_a/",
+        "prefix_a",
+        "prefix_b/key_1",
+    ];
+    let values = vec![
+        "value_1a".as_bytes().to_vec(),
+        "value_1b".as_bytes().to_vec(),
+        "value_1c".as_bytes().to_vec(),
+        "value_1d".as_bytes().to_vec(),
+        "value_1e".as_bytes().to_vec(),
+    ];
+
+    for (key, value) in keys.iter().zip(values.iter()) {
+        delta.put_raw(key.to_string(), value.to_vec());
+    }
+    let _ = storage.commit(delta).await.unwrap();
+    let snapshot = storage.latest_snapshot();
+
+    for (key, value) in keys.iter().zip(values.iter()) {
+        let retrieved_value = snapshot.get_raw(key).await.unwrap().unwrap();
+        assert_eq!(retrieved_value, *value, "key (key={}) should match", key);
+    }
+}
+
+#[tokio::test]
 async fn test_substore_proofs() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let tmpdir = tempfile::tempdir()?;
     let db_path = tmpdir.into_path();
-    let substore_prefixes = vec!["ibc/", "prefix_b", "prefix_c"]
+    let substore_prefixes = vec!["ibc", "prefix_b", "prefix_c"]
         .into_iter()
         .map(|s| s.to_string())
         .collect();
@@ -50,9 +90,13 @@ async fn test_substore_proofs() -> anyhow::Result<()> {
     // check that we can verify proofs back to the root for the new value.
     let root = snapshot.root_hash().await?;
     let (retreived_value, proof) = snapshot.get_with_proof(key_a_1.into()).await?;
-    assert_eq!(Some(value_a_1), retreived_value.clone());
+    assert_eq!(
+        Some(value_a_1),
+        retreived_value.clone(),
+        "key should exist and match value"
+    );
     let merkle_path = MerklePath {
-        key_path: vec!["ibc/".to_string(), "key_1".to_string()],
+        key_path: vec!["ibc".to_string(), "key_1".to_string()],
     };
     let merkle_root = MerkleRoot {
         hash: root.0.to_vec(),
@@ -67,14 +111,16 @@ async fn test_substore_proofs() -> anyhow::Result<()> {
 
     // check that non-existence proofs work
     let (retreived_value, nex_proof) = snapshot.get_with_proof("ibc/doesntexist".into()).await?;
-    assert_eq!(retreived_value, None);
+    assert_eq!(retreived_value, None, "key should not exist");
 
     tracing::debug!(?retreived_value, ?nex_proof, "got non-existence proof");
 
     let merkle_path = MerklePath {
-        key_path: vec!["ibc/".to_string(), "doesntexist".to_string()],
+        key_path: vec!["ibc".to_string(), "doesntexist".to_string()],
     };
-    nex_proof.verify_non_membership(&PENUMBRA_PROOF_SPECS, merkle_root, merkle_path)?;
+    nex_proof
+        .verify_non_membership(&PENUMBRA_PROOF_SPECS, merkle_root, merkle_path)
+        .expect("non-existence proof should verify");
 
     Ok(())
 }
@@ -216,7 +262,7 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_a{key}");
+        let key = format!("prefix_a/{key}");
         if counter >= kv_a.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
             panic!("prefix_keys query returned too many entries")
@@ -237,7 +283,7 @@ async fn test_substore_prefix_queries() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_b{key}");
+        let key = format!("prefix_b/{key}");
 
         if counter >= kv_b.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
@@ -330,7 +376,7 @@ async fn test_substore_prefix_keys() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_a{key}");
+        let key = format!("prefix_a/{key}");
         if counter >= kv_a.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
             panic!("prefix_keys query returned too many entries")
@@ -351,7 +397,7 @@ async fn test_substore_prefix_keys() -> anyhow::Result<()> {
     let mut range = snapshot.prefix_keys(query_prefix);
     while let Some(res) = range.next().await {
         let key = res?;
-        let key = format!("prefix_b{key}");
+        let key = format!("prefix_b/{key}");
 
         if counter >= kv_b.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
@@ -447,7 +493,7 @@ async fn test_substore_nv_prefix() -> anyhow::Result<()> {
         let (raw_key, raw_value) = res?;
         let key = String::from_utf8(raw_key)?;
         let value = String::from_utf8(raw_value)?;
-        let key = format!("prefix_a{key}");
+        let key = format!("prefix_a/{key}");
         if counter >= kv_a.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");
             panic!("prefix_keys query returned too many entries")
@@ -473,7 +519,7 @@ async fn test_substore_nv_prefix() -> anyhow::Result<()> {
         let (raw_key, raw_value) = res?;
         let key = String::from_utf8(raw_key)?;
         let value = String::from_utf8(raw_value)?;
-        let key = format!("prefix_b{key}");
+        let key = format!("prefix_b/{key}");
 
         if counter >= kv_b.len() {
             tracing::debug!(?key, ?query_prefix, "unexpected key");

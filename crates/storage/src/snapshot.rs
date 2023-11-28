@@ -60,6 +60,10 @@ impl Snapshot {
     /// up to the current JMT root hash. If the key is not present, returns `None` and a
     /// non-existence proof.
     pub async fn get_with_proof(&self, key: Vec<u8>) -> Result<(Option<Vec<u8>>, MerkleProof)> {
+        if key.is_empty() {
+            anyhow::bail!("empty keys are not allowed")
+        }
+
         let span = tracing::Span::current();
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
