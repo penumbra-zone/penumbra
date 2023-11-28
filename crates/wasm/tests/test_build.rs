@@ -29,7 +29,7 @@ mod tests {
     use penumbra_wasm::{
         error::WasmError,
         keys::load_proving_key,
-        storage::{IndexedDBStorage, IndexedDbConstants, Tables},
+        storage::IndexedDBStorage,
         tx::{authorize, build, build_parallel, witness},
         wasm_planner::WasmPlanner,
     };
@@ -65,13 +65,16 @@ mod tests {
             serde_wasm_bindgen::to_value(&undelegate_claim_key).unwrap();
 
         // Dynamically load the proving keys at runtime for each key type.
-        load_proving_key(spend_key_js, "spend");
-        load_proving_key(output_key_js, "output");
-        load_proving_key(delegator_vote_key_js, "delegator_vote");
-        load_proving_key(nullifier_derivation_key_js, "nullifier_derivation");
-        load_proving_key(swap_key_js, "swap");
-        load_proving_key(swap_claim_key_js, "swap_claim");
-        load_proving_key(undelegate_claim_key_js, "undelegate_claim");
+        load_proving_key(spend_key_js, "spend").expect("can load spend key");
+        load_proving_key(output_key_js, "output").expect("can load output key");
+        load_proving_key(delegator_vote_key_js, "delegator_vote")
+            .expect("can load delegator vote key");
+        load_proving_key(nullifier_derivation_key_js, "nullifier_derivation")
+            .expect("can load nullifier derivation key");
+        load_proving_key(swap_key_js, "swap").expect("can load swap key");
+        load_proving_key(swap_claim_key_js, "swap_claim").expect("can load swap claim key");
+        load_proving_key(undelegate_claim_key_js, "undelegate_claim")
+            .expect("can load undelegate claim key");
 
         // Define database parameters.
         #[derive(Clone, Debug, Serialize, Deserialize)]
