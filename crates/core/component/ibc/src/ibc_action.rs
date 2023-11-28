@@ -156,7 +156,6 @@ impl TryFrom<pb::IbcRelay> for IbcRelay {
             let msg = MsgUpgradeClient::decode(raw_action_bytes)?;
             IbcRelay::UpgradeClient(msg)
         } else if action_type == RawMsgSubmitMisbehaviour::type_url() {
-            // TODO: Check this - this variant was not handled previously in this trait impl
             let msg = MsgSubmitMisbehaviour::decode(raw_action_bytes)?;
             IbcRelay::SubmitMisbehavior(msg)
         } else if action_type == RawMsgConnectionOpenInit::type_url() {
