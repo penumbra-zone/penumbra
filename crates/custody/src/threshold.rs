@@ -119,6 +119,12 @@ pub struct Threshold<T> {
     terminal: T,
 }
 
+impl<T> Threshold<T> {
+    pub fn new(config: Config, terminal: T) -> Self {
+        Threshold { config, terminal }
+    }
+}
+
 impl<T: Terminal> Threshold<T> {
     /// Try and create the necessary signatures to authorize the transaction plan.
     async fn authorize(&self, request: AuthorizeRequest) -> Result<AuthorizationData> {
@@ -237,5 +243,137 @@ impl<T: Terminal + Sync + Send + 'static>
         Ok(Response::new(pb::ConfirmAddressResponse {
             address: Some(address.into()),
         }))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use tokio::sync;
+
+    use super::*;
+
+    struct FollowerTerminal {
+        incoming: sync::Mutex<sync::mpsc::Receiver<String>>,
+        outgoing: sync::mpsc::Sender<String>,
+    }
+
+    #[async_trait]
+    impl Terminal for FollowerTerminal {
+        async fn confirm_transaction(&self, _transaction: &TransactionPlan) -> Result<bool> {
+            Ok(true)
+        }
+
+        async fn explain(&self, _msg: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn broadcast(&self, data: &str) -> Result<()> {
+            self.outgoing.send(data.to_owned()).await?;
+            Ok(())
+        }
+
+        async fn next_response(&self) -> Result<Option<String>> {
+            Ok(self.incoming.lock().await.recv().await)
+        }
+    }
+
+    struct CoordinatorTerminalInner {
+        incoming: Vec<sync::mpsc::Receiver<String>>,
+        i: usize,
+    }
+
+    impl CoordinatorTerminalInner {
+        async fn recv(&mut self) -> Option<String> {
+            let out = self.incoming[self.i].recv().await;
+            self.i = (self.i + 1) % self.incoming.len();
+            out
+        }
+    }
+
+    struct CoordinatorTerminal {
+        incoming: sync::Mutex<CoordinatorTerminalInner>,
+        outgoing: Vec<sync::mpsc::Sender<String>>,
+    }
+
+    #[async_trait]
+    impl Terminal for CoordinatorTerminal {
+        async fn confirm_transaction(&self, _transaction: &TransactionPlan) -> Result<bool> {
+            Ok(true)
+        }
+
+        async fn explain(&self, _msg: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn broadcast(&self, data: &str) -> Result<()> {
+            for out in &self.outgoing {
+                out.send(data.to_owned()).await?;
+            }
+            Ok(())
+        }
+
+        async fn next_response(&self) -> Result<Option<String>> {
+            Ok(self.incoming.lock().await.recv().await)
+        }
+    }
+
+    fn make_terminals(follower_count: usize) -> (CoordinatorTerminal, Vec<FollowerTerminal>) {
+        let mut followers = Vec::new();
+        let mut incoming = Vec::new();
+        let mut outgoing = Vec::new();
+        for _ in 0..follower_count {
+            let (c2f_send, c2f_recv) = sync::mpsc::channel(1);
+            let (f2c_send, f2c_recv) = sync::mpsc::channel(1);
+            followers.push(FollowerTerminal {
+                incoming: sync::Mutex::new(f2c_recv),
+                outgoing: c2f_send,
+            });
+            incoming.push(c2f_recv);
+            outgoing.push(f2c_send);
+        }
+        let coordinator = CoordinatorTerminal {
+            incoming: sync::Mutex::new(CoordinatorTerminalInner { incoming, i: 0 }),
+            outgoing,
+        };
+        (coordinator, followers)
+    }
+
+    #[tokio::test]
+    async fn test_transaction_signing() -> Result<()> {
+        const TEST_PLAN: &'static str = r#"{"actions":[{"output":{"value":{"amount":{"lo":"1000000000"},"assetId":{"inner":"KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="}},"destAddress":{"inner":"UuFEV0VoZNxNTttsJVJzRqEzW4bm0z2RCxhUneve0KTvDjQipeg/1zx0ftbDjgr6uPiSA70yJIdlpFyxeLyXfAAtmSy6BCpR3YjEkf1bI5Q="},"rseed":"4m4bxumA0sHuonPjr12UnI4CWKj1wuq4y6rrMRb0nw0=","valueBlinding":"HHS7tY19JuWMwdKJvtKs8AmhMVa7osSpZ+CCBszu/AE=","proofBlindingR":"FmbXZoh5Pd2mEtiAEkkAZpllWo9pdwTPlXeODBXHUxA=","proofBlindingS":"0x96kUchW8jFfnxglAoMtvzPT5/RLg2RvfkRKjlU8BA="}},{"spend":{"note":{"value":{"amount":{"lo":"1000000000000"},"assetId":{"inner":"KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="}},"rseed":"3svSxWREwvvVzb2upQuu3Cyr56O2kRbo0nuX4+OWcdc=","address":{"inner":"6146pY5upA9bQa4tag+6hXpMXa2kO5fcicSJGVEUP4HhZt7m4FpwAJ3+qwr5gpbHUON7DigyEJRpeV31FATGdfJhHBzGDWC+CIvi8dyIzGo="}},"position":"90","randomizer":"dJvg8FGvw5rJAvtSQvlQ4imLXahVXn419+xroVMLSwA=","valueBlinding":"Ce1/hBKLEMB/bjEA06b4zUJVEstNUjkDBWM3WrVu+QM=","proofBlindingR":"gXA7M4VR48IoxKrf4w4jGae2O7OGlTecU/RBXd4g6QI=","proofBlindingS":"7+Rhrve7mdgsKbkfFq41yfq9+Mx2qRAZDtwP3VUDAAs="}},{"output":{"value":{"amount":{"lo":"999000000000"},"assetId":{"inner":"KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="}},"destAddress":{"inner":"6146pY5upA9bQa4tag+6hXpMXa2kO5fcicSJGVEUP4HhZt7m4FpwAJ3+qwr5gpbHUON7DigyEJRpeV31FATGdfJhHBzGDWC+CIvi8dyIzGo="},"rseed":"rCTbPc6xWyEcDV73Pl+W6XXbACShVOM+8/vdc7RSLlo=","valueBlinding":"DP0FN5CV4g9xZN6u2W6/4o6I/Zwr38n81q4YnJ6COAA=","proofBlindingR":"KV3u8Dc+cZo0HFUIn7n95UkQVXWeYp+3vAVuIpCIZRI=","proofBlindingS":"i00KyJVklWXUhVRy37N3p9szFIvo7383to/qxBexnBE="}}],"chainId":"penumbra-testnet-rhea-8b2dfc5c","fee":{"amount":{}},"cluePlans":[{"address":{"inner":"UuFEV0VoZNxNTttsJVJzRqEzW4bm0z2RCxhUneve0KTvDjQipeg/1zx0ftbDjgr6uPiSA70yJIdlpFyxeLyXfAAtmSy6BCpR3YjEkf1bI5Q="},"rseed":"1Li0Qx05txsyOrx2pfO9kD5rDSUMy9e+j/hHmucqARI="},{"address":{"inner":"6146pY5upA9bQa4tag+6hXpMXa2kO5fcicSJGVEUP4HhZt7m4FpwAJ3+qwr5gpbHUON7DigyEJRpeV31FATGdfJhHBzGDWC+CIvi8dyIzGo="},"rseed":"ePtCm9/tFcpLBdlgyu8bYRKV5CHbqd823UGDhG1LsGY="}],"memoPlan":{"plaintext":{"returnAddress":{"inner":"OB8AEHEehWo0o0/Dn7JtNmgdDX1VRPaDgn6MLl6n41hVjI3llljrTDCFRRjN5mkNwVwsAyJ/UdfjNIFzbGV62YVXfBJ/IMVTq2CNAHwR8Qo="}},"key":"3plOcPZzKKj8KT3sVdKnblUUFDRzCmMWYtgwB3BqfXQ="}}"#;
+        const T: u16 = 3;
+        const N: u16 = 3;
+        let (coordinator_config, follower_configs) = {
+            let mut configs = Config::deal(&mut OsRng, T, N)?;
+            (configs.pop().unwrap(), configs)
+        };
+        let (coordinator_terminal, follower_terminals) = make_terminals((N - 1) as usize);
+        for (config, terminal) in follower_configs
+            .into_iter()
+            .zip(follower_terminals.into_iter())
+        {
+            tokio::spawn(async move { follow(&config, &terminal).await });
+        }
+        let plan = serde_json::from_str::<TransactionPlan>(TEST_PLAN)?;
+        let fvk = coordinator_config.fvk.clone();
+        let authorization_data = Threshold::new(coordinator_config, coordinator_terminal)
+            .authorize(AuthorizeRequest {
+                plan: plan.clone(),
+                pre_authorizations: Vec::new(),
+            })
+            .await?;
+        assert_eq!(plan.effect_hash(&fvk), authorization_data.effect_hash);
+        // The transaction plan only has spends
+        for (randomizer, sig) in plan
+            .spend_plans()
+            .into_iter()
+            .map(|x| x.randomizer)
+            .zip(authorization_data.spend_auths)
+        {
+            fvk.spend_verification_key()
+                .randomize(&randomizer)
+                .verify(authorization_data.effect_hash.as_bytes(), &sig)?;
+        }
+        Ok(())
     }
 }
