@@ -195,7 +195,9 @@ pub trait ChannelProofVerifier: StateReadExt {
             .await?;
 
         trusted_client_state.verify_height(*proof_height)?;
-        let value = expected_channel.encode_vec();
+
+        // TODO: ok to clone this?
+        let value = expected_channel.clone().encode_vec();
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,
@@ -223,7 +225,8 @@ pub fn verify_connection_state(
 ) -> anyhow::Result<()> {
     client_state.verify_height(height)?;
 
-    let value = expected_connection_end.encode_vec();
+    // TODO: ok to clone this?
+    let value = expected_connection_end.clone().encode_vec();
 
     verify_merkle_proof(
         &client_state.proof_specs,

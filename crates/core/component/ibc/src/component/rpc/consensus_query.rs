@@ -6,12 +6,12 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryChannelResponse, QueryChannelsRequest, QueryChannelsResponse,
     QueryConnectionChannelsRequest, QueryConnectionChannelsResponse,
     QueryNextSequenceReceiveRequest, QueryNextSequenceReceiveResponse,
-    QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementResponse,
-    QueryPacketAcknowledgementsRequest, QueryPacketAcknowledgementsResponse,
-    QueryPacketCommitmentRequest, QueryPacketCommitmentResponse, QueryPacketCommitmentsRequest,
-    QueryPacketCommitmentsResponse, QueryPacketReceiptRequest, QueryPacketReceiptResponse,
-    QueryUnreceivedAcksRequest, QueryUnreceivedAcksResponse, QueryUnreceivedPacketsRequest,
-    QueryUnreceivedPacketsResponse,
+    QueryNextSequenceSendRequest, QueryNextSequenceSendResponse, QueryPacketAcknowledgementRequest,
+    QueryPacketAcknowledgementResponse, QueryPacketAcknowledgementsRequest,
+    QueryPacketAcknowledgementsResponse, QueryPacketCommitmentRequest,
+    QueryPacketCommitmentResponse, QueryPacketCommitmentsRequest, QueryPacketCommitmentsResponse,
+    QueryPacketReceiptRequest, QueryPacketReceiptResponse, QueryUnreceivedAcksRequest,
+    QueryUnreceivedAcksResponse, QueryUnreceivedPacketsRequest, QueryUnreceivedPacketsResponse,
 };
 
 use ibc_proto::ibc::core::client::v1::Height;
@@ -399,6 +399,14 @@ impl ConsensusQuery for IbcQuery {
         &self,
         _request: tonic::Request<QueryNextSequenceReceiveRequest>,
     ) -> std::result::Result<tonic::Response<QueryNextSequenceReceiveResponse>, tonic::Status> {
+        Err(tonic::Status::unimplemented("not implemented"))
+    }
+
+    /// NextSequenceSend returns the next send sequence for a given channel.
+    async fn next_sequence_send(
+        &self,
+        _request: tonic::Request<QueryNextSequenceSendRequest>,
+    ) -> std::result::Result<tonic::Response<QueryNextSequenceSendResponse>, tonic::Status> {
         Err(tonic::Status::unimplemented("not implemented"))
     }
 }
