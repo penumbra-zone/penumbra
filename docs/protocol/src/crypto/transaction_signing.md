@@ -104,7 +104,7 @@ In Penumbra, the effect hash of each transaction is computed using the BLAKE2b-5
 hash function. The effect hash is derived from the proto-encoding of the action - in
 cases where the effecting data and authorizing data are the same, or the *body*
 of the action - in cases where the effecting data and authorizing data are different.
-Each proto has a unique string associated with it which we call its *Type URL*,
+Each proto has a unique string associated with it called its *Type URL*,
 which is included in the inputs to BLAKE2b-512.
 Type URLs are variable length, so a fixed-length field (8 bytes) is first included
 in the hash to denote the length of the Type URL field.
@@ -115,51 +115,13 @@ Summarizing the above, the effect hash _for each action_ is computed as:
 effect_hash = BLAKE2b-512(len(type_url) || type_url || proto_encode(proto))
 ```
 
-where `type_url` is the bytes of the variable-length type URL, `len(type_url)` is the length of the type URL encoded as 8
+where `type_url` is the bytes of the variable-length Type URL, `len(type_url)` is the length of the Type URL encoded as 8
 bytes in little-endian byte order, `proto` represents the proto used to represent
 the effecting data, and `proto_encode` represents encoding the proto message as
-a vector of bytes.
+a vector of bytes. In Rust, the Type URL is found by calling [`type_url()` on the protobuf
+message](https://docs.rs/prost/latest/prost/trait.Name.html#method.type_url).
 
-### Per-Action Effect Hashes
-
-On a per-action basis, the effect hash is computed using the following labels and
-protos representing the effecting data in Penumbra:
-
-| Action | Type URL  | Proto  |
-|---|---|---|
-| `Spend` | `b"/penumbra.core.transaction.v1alpha1.SpendBody"` | `SpendBody`  |
-| `Output` | `b"/penumbra.core.transaction.v1alpha1.OutputBody"` | `OutputBody` |
-| `Ics20Withdrawal`  | `b"/penumbra.core.ibc.v1alpha1.Ics20Withdrawal"`  | `Ics20Withdrawal` |
-| `Swap`  | `b"/penumbra.core.dex.v1alpha1.SwapBody"`  | `SwapBody` |
-| `SwapClaim`  | `b"/penumbra.core.dex.v1alpha1.SwapClaimBody"`  | `SwapClaimBody` |
-| `Delegate`  | `b"/penumbra.core.stake.v1alpha1.Delegate"`  | `Delegate` |
-| `Undelegate`  | `b"/penumbra.core.stake.v1alpha1.Undelegate"`  | `Undelegate` |
-| `UndelegateClaim`  | `b"/penumbra.core.stake.v1alpha1.UndelegateClaimBody"`  | `UndelegateClaimBody` |
-| `Proposal`  | `b"/penumbra.core.governance.v1alpha1.Proposal"`  | `Proposal` |
-| `ProposalSubmit`  | `b"/penumbra.core.governance.v1alpha1.ProposalSubmit"`  | `ProposalSubmit` |
-| `ProposalWithdraw`  | `b"/penumbra.core.governance.v1alpha1.ProposalWithdraw"`  | `ProposalWithdraw` |
-| `ProposalDepositClaim`  | `b"/penumbra.core.governance.v1alpha1.ProposalDepositClaim"`   | `ProposalDepositClaim` |
-| `Vote`  | `b"/penumbra.core.governance.v1alpha1.Vote"`  | `Vote` |
-| `ValidatorVote`  | `b"/penumbra.core.governance.v1alpha1.ValidatorVoteBody"`  | `ValidatorVoteBody` |
-| `DelegatorVote`  | `b"/penumbra.core.governance.v1alpha1.DelegatorVoteBody"`  | `DelegatorVoteBody` |
-| `DaoDeposit`  | `b"/penumbra.core.governance.v1alpha1.DaoDepositt"`  | `DaoDeposit` |
-| `DaoOutput`  | `b"/penumbra.core.governance.v1alpha1.DaoOutput"`  | `DaoOutput` |
-| `DaoSpend`  | `b"/penumbra.core.governance.v1alpha1.DaoSpend"`  | `DaoSpend` |
-| `PositionOpen`  | `b"/penumbra.core.dex.v1alpha1.PositionOpen"`  | `PositionOpen` |
-| `PositionClose`  | `b"/penumbra.core.dex.v1alpha1.PositionClose"`  | `PositionClose` |
-| `PositionWithdraw`  | `b"/penumbra.core.dex.v1alpha1.PositionWithdraw"`  | `PositionWithdraw` |
-| `PositionRewardClaim`  | `b"/penumbra.core.dex.v1alpha1.PositionRewardClaim"`  | `PositionRewardClaim` |
-
-### Transaction Data Field Effect Hashes
-
-We compute the transaction data field effect hashes in the same manner as actions:
-
-| Field | Type URL  | Proto  |
-|---|---|---|
-| `TransactionParameters` | `b"/penumbra.core.transaction.v1alpha1.TransactionParameters"` | `TransactionParameters`  |
-| `Fee` | `b"/penumbra.core.crypto.v1alpha1.Fee"` | `Fee` |
-| `MemoCiphertext` | `b"/penumbra.core.crypto.v1alpha1.MemoCiphertext"` | `MemoCiphertext`
-| `DetectionData` | `b"/penumbra.core.transaction.v1alpha1.DetectionData"` | `DetectionData`
+All transaction data field effect hashes, such as the `Fee`, `MemoCiphertext`, and `TransactionParameters`, as well as the per-action effect hashes, are computed using this method.
 
 ### Transaction Effect Hash
 
@@ -169,8 +131,7 @@ To compute the effect hash of the _entire transaction_, we combine the hashes of
 effect_hash = BLAKE2b-512(len(type_url) || type_url || eh(tx_params) || eh(fee) || eh(memo) || eh(detection_data) || j || eh(a_0) || ... || eh(a_j))
 ```
 
-where the `type_url` are the bytes `/penumbra.core.transaction.v1alpha1.TransactionBody`,
-and `len(type_url)` is the length of that string encoded as 8 bytes in little-endian byte order.
+where the `type_url` is the variable-length Type URL of the transaction body message, and `len(type_url)` is the length of that string encoded as 8 bytes in little-endian byte order.
 
 ## `Binding` Signature
 
