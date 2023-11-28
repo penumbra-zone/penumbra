@@ -3,7 +3,7 @@
 This page describes a quickstart method for running `pd`+`cometbft` to test
 changes during development.
 
-To start, you'll need to [install CometBFT `v0.37`](../pd/build.md#installing-cometbft).
+To start, you'll need to [install CometBFT `v0.37`](../pd/install.md#installing-cometbft).
 
 ## Generating configs
 
