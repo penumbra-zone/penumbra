@@ -314,7 +314,6 @@ pub fn coordinator_round1(
     config: &Config,
     plan: TransactionPlan,
 ) -> Result<(CoordinatorRound1, CoordinatorState1)> {
-    let required = required_signatures(&plan);
     let message = CoordinatorRound1 { plan: plan.clone() };
     let (my_round1_reply, my_round1_state) = follower_round1(rng, config, message.clone())?;
     let state = CoordinatorState1 {
