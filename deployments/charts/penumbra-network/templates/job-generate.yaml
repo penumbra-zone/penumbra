@@ -74,6 +74,12 @@ spec:
                 {{- if .Values.network.preserve_chain_id }}
                 --preserve-chain-id \
                 {{- end }}
+                {{- if .Values.network.epoch_duration }}
+                --epoch-duration {{ .Values.network.epoch_duration }} \
+                {{- end }}
+                {{- if .Values.network.proposal_voting_blocks }}
+                --proposal-voting-blocks {{ .Values.network.proposal_voting_blocks }} \
+                {{- end }}
                 --validators-input-file /penumbra/validators.json \
                 --external-addresses {{ .Values.network.external_addresses }}
 

@@ -25,6 +25,9 @@ network:
   # It'd be grand to have a DNS hostname in here, e.g. `veil.petrichor.guru:31888`.
   # external_addresses: veil.petrichor.guru:31888
   external_addresses: ""
+  # Customization of the voting period for governance proposals.
+  # Dial this down if you want faster voting for testing.
+  proposal_voting_blocks:
 
   # How many validators are present at genesis. This number must
   # match the count in the JSON file used to define the validators.
