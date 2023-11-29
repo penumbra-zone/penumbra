@@ -5,14 +5,56 @@ use decaf377_frost as frost;
 use ed25519_consensus::{SigningKey, VerificationKey};
 use penumbra_keys::{keys::NullifierKey, FullViewingKey};
 use rand_core::CryptoRngCore;
+use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, Seq, TryFromInto};
 use std::collections::{HashMap, HashSet};
 
-#[derive(Debug, Clone)]
+/// A shim to serialize frost::keys::SigningShare
+#[derive(Serialize, Deserialize)]
+struct SigningShareWrapper(Vec<u8>);
+
+impl From<frost::keys::SigningShare> for SigningShareWrapper {
+    fn from(value: frost::keys::SigningShare) -> Self {
+        Self(value.serialize())
+    }
+}
+
+impl TryFrom<SigningShareWrapper> for frost::keys::SigningShare {
+    type Error = anyhow::Error;
+
+    fn try_from(value: SigningShareWrapper) -> std::result::Result<Self, Self::Error> {
+        Ok(Self::deserialize(value.0)?)
+    }
+}
+
+/// A shim to serialize frost::keys::VerifyingShare
+#[derive(Serialize, Deserialize)]
+struct VerifyingShareWrapper(Vec<u8>);
+
+impl From<frost::keys::VerifyingShare> for VerifyingShareWrapper {
+    fn from(value: frost::keys::VerifyingShare) -> Self {
+        Self(value.serialize())
+    }
+}
+
+impl TryFrom<VerifyingShareWrapper> for frost::keys::VerifyingShare {
+    type Error = anyhow::Error;
+
+    fn try_from(value: VerifyingShareWrapper) -> std::result::Result<Self, Self::Error> {
+        Ok(Self::deserialize(value.0)?)
+    }
+}
+
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
     threshold: u16,
+    #[serde_as(as = "DisplayFromStr")]
     fvk: FullViewingKey,
+    #[serde_as(as = "TryFromInto<SigningShareWrapper>")]
     spend_key_share: frost::keys::SigningShare,
     signing_key: SigningKey,
+    #[serde_as(as = "Seq<(_, TryFromInto<VerifyingShareWrapper>)>")]
     verifying_shares: HashMap<VerificationKey, frost::keys::VerifyingShare>,
 }
 
@@ -125,5 +167,26 @@ impl Config {
 
     pub fn verification_keys(&self) -> HashSet<VerificationKey> {
         self.verifying_shares.keys().cloned().collect()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use rand_core::OsRng;
+
+    use super::*;
+
+    #[test]
+    fn test_config_serialization_roundtrip() -> Result<()> {
+        // You can't put 1, because no FUN is allowed
+        let config = Config::deal(&mut OsRng, 2, 2)?.pop().unwrap();
+        let config_str = serde_json::to_string(&config)?;
+        let config2: Config = serde_json::from_str(&config_str)?;
+        // Can't derive partial eq, so go field by field
+        assert_eq!(config.threshold, config2.threshold);
+        assert_eq!(config.fvk, config2.fvk);
+        assert_eq!(config.spend_key_share, config2.spend_key_share);
+        assert_eq!(config.verifying_shares, config2.verifying_shares);
+        Ok(())
     }
 }
