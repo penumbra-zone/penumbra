@@ -21,6 +21,19 @@ jobs:
           # The `-D warnings` option causes an error on warnings;
           # we must duplicate the rustflags from `.cargo/config.toml`.
           RUSTFLAGS: "-D warnings --cfg tokio_unstable"
+
+      # If a dependency was modified, Cargo.lock may flap if not committed.
+      - name: Check for diffs
+        shell: bash
+        run: |
+          s="$(git status --porcelain)"
+          if [[ -n "$s" ]]; then
+              echo "ERROR: found modified files that should be committed:"
+              echo "$s"
+              exit 1
+          else
+              echo "OK: no uncommitted changes detected"
+          fi
       - name: Run tests with nextest
         run: cargo nextest run --release --features migration
         env:
@@ -39,17 +52,6 @@ jobs:
         uses: astriaorg/buildjet-rust-cache@v2.5.1
       - run: cargo fmt --all -- --check
 
-  check:
-    name: Check for warnings
-    runs-on: buildjet-16vcpu-ubuntu-2004
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-      - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-      - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
   docs:
     # We use a custom script to generate the index page for https://rustdoc.penumbra.zone,
     # and refactors to rust deps can break that generation. Let's ensure this script exits 0
