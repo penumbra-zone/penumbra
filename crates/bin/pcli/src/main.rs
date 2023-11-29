@@ -18,6 +18,7 @@ mod config;
 mod dex_utils;
 mod network;
 mod opt;
+mod terminal;
 mod warning;
 
 use opt::Opt;
