@@ -139,13 +139,13 @@ impl<T: Terminal> Threshold<T> {
         self.terminal
             .explain(&format!(
                 "Now, gather at least {} replies from the other signers, and paste them below:",
-                self.config.threshold
+                self.config.threshold()
             ))
             .await?;
         let round1_replies = {
             let mut acc = Vec::new();
             // We need 1 less, since we've already included ourselves.
-            for _ in 1..self.config.threshold {
+            for _ in 1..self.config.threshold() {
                 let reply_str = self
                     .terminal
                     .next_response()
@@ -171,7 +171,7 @@ impl<T: Terminal> Threshold<T> {
         let round2_replies = {
             let mut acc = Vec::new();
             // We need 1 less, since we've already included ourselves.
-            for _ in 1..self.config.threshold {
+            for _ in 1..self.config.threshold() {
                 let reply_str = self
                     .terminal
                     .next_response()
@@ -188,14 +188,14 @@ impl<T: Terminal> Threshold<T> {
 
     /// Return the full viewing key.
     fn export_full_viewing_key(&self) -> FullViewingKey {
-        self.config.fvk.clone()
+        self.config.fvk().clone()
     }
 
     /// Get the address associated with an index.
     ///
     /// This is just to match the API of the custody trait.
     fn confirm_address(&self, index: AddressIndex) -> Address {
-        self.config.fvk.payment_address(index).0
+        self.config.fvk().payment_address(index).0
     }
 }
 
@@ -355,7 +355,7 @@ mod test {
             tokio::spawn(async move { follow(&config, &terminal).await });
         }
         let plan = serde_json::from_str::<TransactionPlan>(TEST_PLAN)?;
-        let fvk = coordinator_config.fvk.clone();
+        let fvk = coordinator_config.fvk().clone();
         let authorization_data = Threshold::new(coordinator_config, coordinator_terminal)
             .authorize(AuthorizeRequest {
                 plan: plan.clone(),

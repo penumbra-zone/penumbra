@@ -9,12 +9,12 @@ use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    pub threshold: u16,
-    pub key_package: frost::keys::KeyPackage,
-    pub public_key_package: frost::keys::PublicKeyPackage,
-    pub signing_key: SigningKey,
-    pub fvk: FullViewingKey,
-    pub verification_keys: HashSet<VerificationKey>,
+    threshold: u16,
+    key_package: frost::keys::KeyPackage,
+    public_key_package: frost::keys::PublicKeyPackage,
+    signing_key: SigningKey,
+    fvk: FullViewingKey,
+    verification_keys: HashSet<VerificationKey>,
 }
 
 impl Config {
@@ -75,5 +75,29 @@ impl Config {
                 }
             })
             .collect())
+    }
+
+    pub fn threshold(&self) -> u16 {
+        self.threshold
+    }
+
+    pub fn key_package(&self) -> frost::keys::KeyPackage {
+        self.key_package.clone()
+    }
+
+    pub fn public_key_package(&self) -> frost::keys::PublicKeyPackage {
+        self.public_key_package.clone()
+    }
+
+    pub fn signing_key(&self) -> &SigningKey {
+        &self.signing_key
+    }
+
+    pub fn fvk(&self) -> &FullViewingKey {
+        &self.fvk
+    }
+
+    pub fn verification_keys(&self) -> HashSet<VerificationKey> {
+        self.verification_keys.clone()
     }
 }
