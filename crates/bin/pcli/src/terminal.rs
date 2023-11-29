@@ -14,9 +14,9 @@ impl Terminal for ActualTerminal {
     async fn confirm_transaction(&self, transaction: &TransactionPlan) -> Result<bool> {
         println!("Do you approve this transaction?");
         println!("{}", serde_json::to_string_pretty(transaction)?);
-        println!("Y/N?");
-        let response = self.next_response().await?;
-        Ok(response.map(|x| x.to_lowercase() == "y").unwrap_or(false))
+        println!("Press enter to continue");
+        self.next_response().await?;
+        Ok(true)
     }
 
     async fn explain(&self, msg: &str) -> Result<()> {

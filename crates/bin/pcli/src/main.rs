@@ -140,6 +140,7 @@ async fn main() -> Result<()> {
         Command::Validator(cmd) => cmd.exec(&mut app).await?,
         Command::Query(cmd) => cmd.exec(&mut app).await?,
         Command::Ceremony(cmd) => cmd.exec(&mut app).await?,
+        Command::Threshold(cmd) => cmd.exec(&mut app).await?,
     }
 
     Ok(())

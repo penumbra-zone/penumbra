@@ -6,10 +6,12 @@ mod tx;
 mod utils;
 mod validator;
 mod view;
+mod threshold;
 
 pub use debug::DebugCmd;
 pub use init::InitCmd;
 pub use query::QueryCmd;
+pub use threshold::ThresholdCmd;
 pub use tx::TxCmd;
 pub use validator::ValidatorCmd;
 pub use view::transaction_hashes::TransactionHashesCmd;
@@ -61,6 +63,9 @@ pub enum Command {
     /// Contribute to the summoning ceremony.
     #[clap(subcommand, display_order = 990)]
     Ceremony(CeremonyCmd),
+    /// Follow the threshold signing protocol.
+    #[clap(subcommand, display_order = 500)]
+    Threshold(ThresholdCmd),
 }
 
 impl Command {
@@ -74,6 +79,7 @@ impl Command {
             Command::Query(cmd) => cmd.offline(),
             Command::Debug(cmd) => cmd.offline(),
             Command::Ceremony(_) => false,
+            Command::Threshold(cmd) => cmd.offline(),
         }
     }
 }
