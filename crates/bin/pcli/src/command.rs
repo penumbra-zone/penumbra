@@ -2,11 +2,11 @@ mod ceremony;
 mod debug;
 mod init;
 mod query;
+mod threshold;
 mod tx;
 mod utils;
 mod validator;
 mod view;
-mod threshold;
 
 pub use debug::DebugCmd;
 pub use init::InitCmd;
