@@ -228,9 +228,16 @@ impl DomainType for AddressIndex {
 
 impl From<AddressIndex> for pb::AddressIndex {
     fn from(d: AddressIndex) -> pb::AddressIndex {
-        pb::AddressIndex {
-            account: d.account,
-            randomizer: d.randomizer.to_vec(),
+        if d.is_ephemeral() {
+            pb::AddressIndex {
+                account: d.account,
+                randomizer: d.randomizer.to_vec(),
+            }
+        } else {
+            pb::AddressIndex {
+                account: d.account,
+                randomizer: Vec::new(),
+            }
         }
     }
 }
