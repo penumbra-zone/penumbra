@@ -6,12 +6,13 @@ use ed25519_consensus::{SigningKey, VerificationKey};
 use penumbra_keys::{keys::NullifierKey, FullViewingKey};
 use rand_core::CryptoRngCore;
 use serde::{Deserialize, Serialize};
-use serde_with::{DisplayFromStr, Seq, TryFromInto};
+use serde_with::{formats::Uppercase, hex::Hex, DisplayFromStr, Seq, TryFromInto};
 use std::collections::{HashMap, HashSet};
 
 /// A shim to serialize frost::keys::SigningShare
+#[serde_as]
 #[derive(Serialize, Deserialize)]
-struct SigningShareWrapper(Vec<u8>);
+struct SigningShareWrapper(#[serde_as(as = "Hex<Uppercase>")] Vec<u8>);
 
 impl From<frost::keys::SigningShare> for SigningShareWrapper {
     fn from(value: frost::keys::SigningShare) -> Self {
@@ -28,8 +29,9 @@ impl TryFrom<SigningShareWrapper> for frost::keys::SigningShare {
 }
 
 /// A shim to serialize frost::keys::VerifyingShare
+#[serde_as]
 #[derive(Serialize, Deserialize)]
-struct VerifyingShareWrapper(Vec<u8>);
+struct VerifyingShareWrapper(#[serde_as(as = "Hex<Uppercase>")] Vec<u8>);
 
 impl From<frost::keys::VerifyingShare> for VerifyingShareWrapper {
     fn from(value: frost::keys::VerifyingShare) -> Self {
@@ -45,6 +47,44 @@ impl TryFrom<VerifyingShareWrapper> for frost::keys::VerifyingShare {
     }
 }
 
+/// A shim to serialize SigningKey
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+struct SigningKeyWrapper(#[serde_as(as = "Hex<Uppercase>")] Vec<u8>);
+
+impl From<SigningKey> for SigningKeyWrapper {
+    fn from(value: SigningKey) -> Self {
+        Self(value.to_bytes().to_vec())
+    }
+}
+
+impl TryFrom<SigningKeyWrapper> for SigningKey {
+    type Error = anyhow::Error;
+
+    fn try_from(value: SigningKeyWrapper) -> std::result::Result<Self, Self::Error> {
+        Ok(Self::try_from(value.0.as_slice())?)
+    }
+}
+
+/// A shim to serialize VerifyingKey
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+struct VerificationKeyWrapper(#[serde_as(as = "Hex<Uppercase>")] Vec<u8>);
+
+impl From<VerificationKey> for VerificationKeyWrapper {
+    fn from(value: VerificationKey) -> Self {
+        Self(value.to_bytes().to_vec())
+    }
+}
+
+impl TryFrom<VerificationKeyWrapper> for VerificationKey {
+    type Error = anyhow::Error;
+
+    fn try_from(value: VerificationKeyWrapper) -> std::result::Result<Self, Self::Error> {
+        Ok(Self::try_from(value.0.as_slice())?)
+    }
+}
+
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -53,8 +93,11 @@ pub struct Config {
     fvk: FullViewingKey,
     #[serde_as(as = "TryFromInto<SigningShareWrapper>")]
     spend_key_share: frost::keys::SigningShare,
+    #[serde_as(as = "TryFromInto<SigningKeyWrapper>")]
     signing_key: SigningKey,
-    #[serde_as(as = "Seq<(_, TryFromInto<VerifyingShareWrapper>)>")]
+    #[serde_as(
+        as = "HashMap<TryFromInto<VerificationKeyWrapper>, TryFromInto<VerifyingShareWrapper>>"
+    )]
     verifying_shares: HashMap<VerificationKey, frost::keys::VerifyingShare>,
 }
 
