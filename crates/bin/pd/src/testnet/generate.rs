@@ -5,6 +5,7 @@ use crate::testnet::config::{get_testnet_dir, TestnetTendermintConfig, Validator
 use anyhow::{Context, Result};
 use penumbra_app::{genesis, params::AppParameters};
 use penumbra_chain::{genesis::Content as ChainContent, params::ChainParameters};
+use penumbra_governance::genesis::Content as GovernanceContent;
 use penumbra_keys::{keys::SpendKey, Address};
 use penumbra_shielded_pool::genesis::{
     self as shielded_pool_genesis, Allocation, Content as ShieldedPoolContent,
@@ -65,6 +66,7 @@ impl TestnetConfig {
         active_validator_limit: Option<u64>,
         epoch_duration: Option<u64>,
         unbonding_epochs: Option<u64>,
+        proposal_voting_blocks: Option<u64>,
     ) -> anyhow::Result<TestnetConfig> {
         let external_addresses = external_addresses.unwrap_or_default();
 
@@ -93,6 +95,7 @@ impl TestnetConfig {
             active_validator_limit,
             epoch_duration,
             unbonding_epochs,
+            proposal_voting_blocks,
         )?;
         let genesis = Self::make_genesis(app_state)?;
 
@@ -180,19 +183,32 @@ impl TestnetConfig {
         active_validator_limit: Option<u64>,
         epoch_duration: Option<u64>,
         unbonding_epochs: Option<u64>,
+        proposal_voting_blocks: Option<u64>,
     ) -> anyhow::Result<genesis::Content> {
+        let default_gov_params = penumbra_governance::params::GovernanceParameters::default();
+
+        let gov_params = penumbra_governance::params::GovernanceParameters {
+            proposal_voting_blocks: proposal_voting_blocks
+                .unwrap_or(default_gov_params.proposal_voting_blocks),
+            ..default_gov_params
+        };
+
         // Look up default app params, so we can fill in defaults.
-        let default_params = AppParameters::default();
+        let default_app_params = AppParameters::default();
+
         let app_state = genesis::Content {
             stake_content: StakeContent {
                 validators: validators.into_iter().map(Into::into).collect(),
                 stake_params: StakeParameters {
                     active_validator_limit: active_validator_limit
-                        .unwrap_or(default_params.stake_params.active_validator_limit),
+                        .unwrap_or(default_app_params.stake_params.active_validator_limit),
                     unbonding_epochs: unbonding_epochs
-                        .unwrap_or(default_params.stake_params.unbonding_epochs),
+                        .unwrap_or(default_app_params.stake_params.unbonding_epochs),
                     ..Default::default()
                 },
+            },
+            governance_content: GovernanceContent {
+                governance_params: gov_params,
             },
             shielded_pool_content: ShieldedPoolContent {
                 allocations: allocations.clone(),
@@ -202,7 +218,7 @@ impl TestnetConfig {
                     chain_id: chain_id.to_string(),
                     // Fall back to chain param defaults
                     epoch_duration: epoch_duration
-                        .unwrap_or(default_params.chain_params.epoch_duration),
+                        .unwrap_or(default_app_params.chain_params.epoch_duration),
                 },
             },
             ..Default::default()
@@ -332,6 +348,7 @@ pub fn testnet_generate(
     external_addresses: Vec<TendermintAddress>,
     validators_input_file: Option<PathBuf>,
     allocations_input_file: Option<PathBuf>,
+    proposal_voting_blocks: Option<u64>,
 ) -> anyhow::Result<()> {
     tracing::info!(?chain_id, "Generating network config");
     let t = TestnetConfig::generate(
@@ -345,6 +362,7 @@ pub fn testnet_generate(
         active_validator_limit,
         epoch_duration,
         unbonding_epochs,
+        proposal_voting_blocks,
     )?;
     tracing::info!(
         n_validators = t.validators.len(),
@@ -649,6 +667,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         )?;
         assert_eq!(testnet_config.name, "test-chain-1234");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
@@ -672,6 +691,7 @@ mod tests {
             None,
             None,
             Some(ci_validators_filepath),
+            None,
             None,
             None,
             None,

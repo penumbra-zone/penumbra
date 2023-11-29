@@ -183,6 +183,10 @@ enum TestnetCommand {
         /// Testnet name [default: latest testnet].
         #[clap(long)]
         chain_id: Option<String>,
+        /// The duration, in number of blocks, that a governance proposal
+        /// can be voted on.
+        #[clap(long)]
+        proposal_voting_blocks: Option<u64>,
         /// Base hostname for a validator's p2p service. If multiple validators
         /// exist in the genesis, e.g. via `--validators-input-file`, then
         /// numeric suffixes are automatically added, e.g. "-0", "-1", etc.
@@ -605,6 +609,7 @@ async fn main() -> anyhow::Result<()> {
                     chain_id,
                     preserve_chain_id,
                     external_addresses,
+                    proposal_voting_blocks,
                 },
             testnet_dir,
         } => {
@@ -660,6 +665,7 @@ async fn main() -> anyhow::Result<()> {
                 active_validator_limit,
                 epoch_duration,
                 unbonding_epochs,
+                proposal_voting_blocks,
             )?;
             tracing::info!(
                 n_validators = t.validators.len(),
