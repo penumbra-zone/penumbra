@@ -1,6 +1,7 @@
 use std::{io::Read, str::FromStr};
 
 use anyhow::Result;
+use camino::Utf8PathBuf;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use rand_core::OsRng;
 use url::Url;
@@ -30,6 +31,9 @@ pub enum InitSubCmd {
     /// Initialize `pcli` with a basic, file-based custody backend.
     #[clap(subcommand, display_order = 100)]
     SoftKms(SoftKmsInitCmd),
+    /// Initialize `pcli` with a manbual threshold signing backend.
+    #[clap(subcommand, display_order = 150)]
+    Threshold(ThresholdInitCmd),
     /// Initialize `pcli` in view-only mode, without spending keys.
     #[clap(display_order = 200)]
     ViewOnly {
@@ -106,8 +110,53 @@ impl SoftKmsInitCmd {
     }
 }
 
+#[derive(Debug, clap::Subcommand)]
+pub enum ThresholdInitCmd {
+    /// Use a centralized dealer to create config files for each signer.
+    Deal {
+        /// The minimum number of signers required to make a signature (>= 2).
+        #[clap(short, long)]
+        threshold: u16,
+        /// One file name for each signer, where the dealt config will be saved.
+        #[clap(short, long, value_delimiter = ' ', multiple_values = true)]
+        out: Vec<Utf8PathBuf>,
+    },
+}
+
+impl ThresholdInitCmd {
+    fn exec(&self, grpc_url: Url) -> Result<()> {
+        use penumbra_custody::threshold;
+
+        match self {
+            ThresholdInitCmd::Deal { threshold: t, out } => {
+                if *t < 2 {
+                    anyhow::bail!("threshold must be >= 2");
+                }
+                let configs = threshold::Config::deal(&mut OsRng, *t, out.len() as u16)?;
+                println!("Writing dealt config files.");
+                for (config, path) in configs.into_iter().zip(out.iter()) {
+                    let full_viewing_key = config.fvk().clone();
+                    let config = PcliConfig {
+                        custody: CustodyConfig::Threshold(config),
+                        full_viewing_key,
+                        grpc_url: grpc_url.clone(),
+                        view_url: None,
+                        disable_warning: false,
+                    };
+                    config.save(path)?;
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
 impl InitCmd {
     pub fn exec(&self, home_dir: impl AsRef<camino::Utf8Path>) -> Result<()> {
+        if let InitSubCmd::Threshold(cmd) = &self.subcmd {
+            cmd.exec(self.grpc_url.clone())?;
+            return Ok(());
+        }
         let home_dir = home_dir.as_ref();
 
         match &self.subcmd {
@@ -136,6 +185,7 @@ impl InitCmd {
                     CustodyConfig::SoftKms(spend_key.into()),
                 )
             }
+            InitSubCmd::Threshold(_) => panic!("this should already have been handled above"),
             InitSubCmd::ViewOnly { full_viewing_key } => {
                 let full_viewing_key = full_viewing_key.parse()?;
                 (full_viewing_key, CustodyConfig::ViewOnly)

@@ -1,6 +1,7 @@
 use crate::{
     box_grpc_svc,
     config::{CustodyConfig, PcliConfig},
+    terminal::ActualTerminal,
     App, Command,
 };
 use anyhow::Result;
@@ -68,6 +69,13 @@ impl Opt {
                 tracing::info!("using software KMS custody service");
                 let soft_kms = SoftKms::new(config.clone());
                 let custody_svc = CustodyProtocolServiceServer::new(soft_kms);
+                CustodyProtocolServiceClient::new(box_grpc_svc::local(custody_svc))
+            }
+            CustodyConfig::Threshold(config) => {
+                tracing::info!("using manual threshold custody service");
+                let threshold_kms =
+                    penumbra_custody::threshold::Threshold::new(config.clone(), ActualTerminal);
+                let custody_svc = CustodyProtocolServiceServer::new(threshold_kms);
                 CustodyProtocolServiceClient::new(box_grpc_svc::local(custody_svc))
             }
         };

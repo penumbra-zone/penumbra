@@ -58,6 +58,19 @@ pub struct Config {
     verifying_shares: HashMap<VerificationKey, frost::keys::VerifyingShare>,
 }
 
+impl PartialEq for Config {
+    fn eq(&self, other: &Self) -> bool {
+        self.threshold == other.threshold
+            && self.fvk == other.fvk
+            && self.spend_key_share == other.spend_key_share
+            // TIMING LEAK
+            && self.signing_key.as_bytes() == other.signing_key.as_bytes()
+            && self.verifying_shares == other.verifying_shares
+    }
+}
+
+impl Eq for Config {}
+
 impl Config {
     pub fn deal(mut rng: &mut impl CryptoRngCore, t: u16, n: u16) -> Result<Vec<Self>> {
         let signing_keys = (0..n)
