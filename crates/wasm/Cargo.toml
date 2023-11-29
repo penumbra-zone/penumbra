@@ -51,5 +51,10 @@ web-sys                  = { version = "0.3.64", features = ["console"] }
 wasm-bindgen-test        = "0.3.37"
 serde_json               = "1.0.107"
 
-[profile.release]
-lto = true
+# Profiles are ignored for crates within a workspace.
+# In order to customize the profile for wasm, we must
+# either break the crate out of the workspace, or set
+# the profile options at the workspace level, affecting
+# all crates.
+# [profile.release]
+# lto = true
