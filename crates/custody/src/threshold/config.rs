@@ -10,11 +10,10 @@ use std::collections::{HashMap, HashSet};
 #[derive(Debug, Clone)]
 pub struct Config {
     threshold: u16,
-    key_package: frost::keys::KeyPackage,
-    public_key_package: frost::keys::PublicKeyPackage,
-    signing_key: SigningKey,
     fvk: FullViewingKey,
-    verification_keys: HashSet<VerificationKey>,
+    spend_key_share: frost::keys::SigningShare,
+    signing_key: SigningKey,
+    verifying_shares: HashMap<VerificationKey, frost::keys::VerifyingShare>,
 }
 
 impl Config {
@@ -40,7 +39,14 @@ impl Config {
             ),
             &mut rng,
         )?;
-        let verification_keys = signing_keys.keys().cloned().collect::<HashSet<_>>();
+        let verifying_shares = signing_keys
+            .keys()
+            .map(|pk| {
+                let identifier = frost::Identifier::derive(pk.to_bytes().as_slice())
+                    .expect("should be able to derive identifier");
+                (pk.clone(), public_key_package.signer_pubkeys()[&identifier])
+            })
+            .collect::<HashMap<_, _>>();
         // Okay, this conversion is a bit of a hack, but it should work...
         // It's a hack cause we're going via the serialization, but, you know, that should be fine.
         let fvk = FullViewingKey::from_components(
@@ -58,20 +64,12 @@ impl Config {
             .map(|(verification_key, signing_key)| {
                 let identifier = identifiers[&verification_key];
                 let signing_share = share_map[&identifier].value().clone();
-                let key_package = frost::keys::KeyPackage::new(
-                    identifier,
-                    signing_share,
-                    signing_share.into(),
-                    public_key_package.group_public().clone(),
-                    t,
-                );
                 Self {
                     threshold: t,
-                    key_package,
-                    public_key_package: public_key_package.clone(),
                     signing_key,
                     fvk: fvk.clone(),
-                    verification_keys: verification_keys.clone(),
+                    spend_key_share: signing_share,
+                    verifying_shares: verifying_shares.clone(),
                 }
             })
             .collect())
@@ -81,12 +79,40 @@ impl Config {
         self.threshold
     }
 
+    fn group_public(&self) -> frost::keys::VerifyingKey {
+        frost::keys::VerifyingKey::deserialize(
+            self.fvk.spend_verification_key().to_bytes().to_vec(),
+        )
+        .expect("should be able to parse out VerifyingKey from FullViewingKey")
+    }
+
     pub fn key_package(&self) -> frost::keys::KeyPackage {
-        self.key_package.clone()
+        let identifier =
+            frost::Identifier::derive(&self.signing_key.verification_key().as_bytes().as_slice())
+                .expect("deriving our identifier should not fail");
+
+        frost::keys::KeyPackage::new(
+            identifier,
+            self.spend_key_share,
+            self.spend_key_share.into(),
+            self.group_public(),
+            self.threshold,
+        )
     }
 
     pub fn public_key_package(&self) -> frost::keys::PublicKeyPackage {
-        self.public_key_package.clone()
+        let signer_pubkeys = self
+            .verifying_shares
+            .iter()
+            .map(|(vk, share)| {
+                (
+                    frost::Identifier::derive(vk.to_bytes().as_slice())
+                        .expect("deriving an identifier should not fail"),
+                    share.clone(),
+                )
+            })
+            .collect();
+        frost::keys::PublicKeyPackage::new(signer_pubkeys, self.group_public())
     }
 
     pub fn signing_key(&self) -> &SigningKey {
@@ -98,6 +124,6 @@ impl Config {
     }
 
     pub fn verification_keys(&self) -> HashSet<VerificationKey> {
-        self.verification_keys.clone()
+        self.verifying_shares.keys().cloned().collect()
     }
 }
