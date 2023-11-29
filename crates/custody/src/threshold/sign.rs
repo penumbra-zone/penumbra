@@ -336,7 +336,7 @@ pub fn coordinator_round2(
         .chain(iter::once(state.my_round1_reply))
     {
         let (pk, commitments) = message.checked_commitments()?;
-        if !config.verification_keys.contains(&pk) {
+        if !config.verification_keys().contains(&pk) {
             anyhow::bail!("unknown verification key: {:?}", pk);
         }
         // The public key acts as the identifier
@@ -348,7 +348,7 @@ pub fn coordinator_round2(
     let reply = CoordinatorRound2 { all_commitments };
 
     let my_round2_reply = follower_round2(config, state.my_round1_state, reply.clone())?;
-    let effect_hash = state.plan.effect_hash(&config.fvk);
+    let effect_hash = state.plan.effect_hash(config.fvk());
     let signing_packages = {
         reply
             .all_commitments
@@ -378,7 +378,7 @@ pub fn coordinator_round3(
         .chain(iter::once(state.my_round2_reply))
     {
         let (pk, shares) = message.checked_shares()?;
-        if !config.verification_keys.contains(&pk) {
+        if !config.verification_keys().contains(&pk) {
             anyhow::bail!("unknown verification key: {:?}", pk);
         }
         let identifier = frost::Identifier::derive(pk.as_bytes().as_slice())?;
@@ -397,7 +397,7 @@ pub fn coordinator_round3(
             frost::aggregate_randomized(
                 signing_package,
                 &share_map,
-                &config.public_key_package,
+                &config.public_key_package(),
                 randomizer,
             )
         })
@@ -417,9 +417,9 @@ pub fn follower_round1(
 ) -> Result<(FollowerRound1, FollowerState)> {
     let required = required_signatures(&coordinator.plan);
     let (nonces, commitments) = (0..required)
-        .map(|_| frost::round1::commit(&config.key_package.secret_share(), rng))
+        .map(|_| frost::round1::commit(&config.key_package().secret_share(), rng))
         .unzip();
-    let reply = FollowerRound1::make(&config.signing_key, commitments);
+    let reply = FollowerRound1::make(config.signing_key(), commitments);
     let state = FollowerState {
         plan: coordinator.plan,
         nonces,
@@ -432,7 +432,7 @@ pub fn follower_round2(
     state: FollowerState,
     coordinator: CoordinatorRound2,
 ) -> Result<FollowerRound2> {
-    let effect_hash = state.plan.effect_hash(&config.fvk);
+    let effect_hash = state.plan.effect_hash(config.fvk());
     let signing_packages = coordinator
         .all_commitments
         .into_iter()
@@ -448,10 +448,10 @@ pub fn follower_round2(
             frost::round2::sign_randomized(
                 &signing_package,
                 &signer_nonces,
-                &config.key_package,
+                &config.key_package(),
                 randomizer,
             )
         })
         .collect::<Result<_, _>>()?;
-    Ok(FollowerRound2::make(&config.signing_key, shares))
+    Ok(FollowerRound2::make(config.signing_key(), shares))
 }
