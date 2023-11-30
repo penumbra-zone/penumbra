@@ -16,18 +16,18 @@ fn test_height_err() {
             "inner": "by+DwROtdzWZu+W+gQ+e7pJ328aBf4Lng1dtnnkH971ebSC4O1+fQE+QmMNQ0iEg1/ARaF6yop4BurwW0Z1B7v0/o3AYchf6IEMYBxGyN18="
           },
           "timeoutHeight": {
-            "revisionNumber": "5",
-            "revisionHeight": "3928271"
+            "revision_number": 5,
+            "revision_height": 3928271
           },
           "timeoutTime": "1701471437169",
-          "sourceChannel": "0"
+          "sourceChannel": "channel-0"
         }
     "#;
 
     let withdrawal_proto: PbIcs20Withdrawal = serde_json::from_str(data).unwrap();
     let height = withdrawal_proto.clone().timeout_height.unwrap();
-    assert_eq!(height.revision_height, 5u64); // 5 != 0 ❌
-    assert_eq!(height.revision_number, 3928271u64); // 3928271 != 0 ❌
+    assert_eq!(height.revision_number, 5u64); // 5 != 0 ❌
+    assert_eq!(height.revision_height, 3928271u64); // 3928271 != 0 ❌
 
     let domain_type: Ics20Withdrawal = withdrawal_proto.try_into().unwrap();
     assert_eq!(domain_type.timeout_height.revision_number, 5u64);
