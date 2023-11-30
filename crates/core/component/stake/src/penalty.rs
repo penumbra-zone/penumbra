@@ -55,9 +55,9 @@ impl Penalty {
             * (1_0000_0000 - self.0 as u128)
             / 1_0000_0000;
         Amount::try_from(
-            u64::try_from(penalized_amount).expect("penalized amount should fit in u64"),
+            u128::try_from(penalized_amount).expect("penalized amount should fit in u128"),
         )
-        .expect("all u64 values should be valid Amounts")
+        .expect("all u128 values should be valid Amounts")
     }
 
     /// Helper method to compute the effect of an UndelegateClaim on the
@@ -161,7 +161,7 @@ impl PenaltyVar {
         // Witness the result in the circuit.
         let penalized_amount_var = AmountVar::new_witness(self.cs(), || {
             Ok(Amount::from(
-                u64::try_from(penalized_amount).expect("can fit in u64"),
+                u128::try_from(penalized_amount).expect("can fit in u64"),
             ))
         })?;
 
