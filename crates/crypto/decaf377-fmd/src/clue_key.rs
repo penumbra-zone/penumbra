@@ -2,7 +2,7 @@ use std::{cell::RefCell, convert::TryFrom};
 
 use ark_ff::{Field, PrimeField};
 use bitvec::{array::BitArray, order};
-use decaf377::{FieldExt, Fr};
+use decaf377::{FieldExt, Fq, Fr};
 use rand_core::{CryptoRng, RngCore};
 
 use crate::{hash, hkd, Clue, Error, MAX_PRECISION};
@@ -33,6 +33,22 @@ impl ClueKey {
     /// Fails if the bytes don't encode a valid clue key.
     pub fn expand(&self) -> Result<ExpandedClueKey, Error> {
         ExpandedClueKey::new(self)
+    }
+
+    /// Expand this clue key encoding.
+    ///
+    /// This method always results in a valid clue key, though the clue key may not have
+    /// a known detection key.
+    pub fn expand_infallible(&self) -> ExpandedClueKey {
+        let mut counter = 0u32;
+        loop {
+            let ck_fq_incremented = Fq::from_le_bytes_mod_order(&self.0) + Fq::from(counter);
+            let ck = ClueKey(ck_fq_incremented.to_bytes());
+            if let Ok(eck) = ck.expand() {
+                return eck;
+            }
+            counter += 1;
+        }
     }
 }
 
