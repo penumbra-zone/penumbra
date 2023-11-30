@@ -371,7 +371,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         .try_into()
         .expect("rounded to an integral value");
 
-        // MERGEBLOCK(erwan): unsafe casting to `u64`. Should we use `Amount`s?
+        // TODO(erwan): use fixnum and amounts. Tracked in #3453.
         let next_base_rate = prev_base_rate.next(base_reward_rate.value() as u64);
         tracing::debug!(
             ?prev_base_rate,
