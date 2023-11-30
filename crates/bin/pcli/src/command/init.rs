@@ -31,7 +31,7 @@ pub enum InitSubCmd {
     /// Initialize `pcli` with a basic, file-based custody backend.
     #[clap(subcommand, display_order = 100)]
     SoftKms(SoftKmsInitCmd),
-    /// Initialize `pcli` with a manbual threshold signing backend.
+    /// Initialize `pcli` with a manual threshold signing backend.
     #[clap(subcommand, display_order = 150)]
     Threshold(ThresholdInitCmd),
     /// Initialize `pcli` in view-only mode, without spending keys.
