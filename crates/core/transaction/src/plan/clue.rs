@@ -1,4 +1,4 @@
-use decaf377_fmd::{Clue, ExpandedClueKey};
+use decaf377_fmd::Clue;
 use penumbra_keys::Address;
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 
@@ -30,7 +30,7 @@ impl CluePlan {
     /// Create a [`Clue`] from the [`CluePlan`].
     pub fn clue(&self) -> Clue {
         let clue_key = self.address.clue_key();
-        let expanded_clue_key = ExpandedClueKey::new(clue_key).expect("valid address");
+        let expanded_clue_key = clue_key.expand_infallible();
         expanded_clue_key
             .create_clue_deterministic(self.precision_bits, self.rseed)
             .expect("can construct clue key")

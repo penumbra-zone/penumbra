@@ -42,12 +42,12 @@ impl ClueKey {
     pub fn expand_infallible(&self) -> ExpandedClueKey {
         let mut counter = 0u32;
         loop {
+            counter += 1;
             let ck_fq_incremented = Fq::from_le_bytes_mod_order(&self.0) + Fq::from(counter);
             let ck = ClueKey(ck_fq_incremented.to_bytes());
             if let Ok(eck) = ck.expand() {
                 return eck;
             }
-            counter += 1;
         }
     }
 }
