@@ -8,7 +8,7 @@ use tct::builder::{block, epoch};
 
 // TODO: make epoch management the responsibility of this component
 
-use crate::state_key;
+use crate::{event, state_key};
 
 /// This trait provides read access to common parts of the Penumbra
 /// state store.
@@ -149,6 +149,7 @@ trait StateWriteExt: StateWrite {
     fn set_sct_anchor(&mut self, height: u64, sct_anchor: tct::Root) {
         tracing::debug!(?height, ?sct_anchor, "writing anchor");
 
+        self.record(event::sct_anchor(height, &sct_anchor));
         self.put(state_key::anchor_by_height(height), sct_anchor);
         self.put_proto(state_key::anchor_lookup(sct_anchor), height);
     }
@@ -156,15 +157,17 @@ trait StateWriteExt: StateWrite {
     fn set_sct_block_anchor(&mut self, height: u64, sct_block_anchor: block::Root) {
         tracing::debug!(?height, ?sct_block_anchor, "writing block anchor");
 
+        self.record(event::sct_block_anchor(height, &sct_block_anchor));
         self.put(state_key::block_anchor_by_height(height), sct_block_anchor);
         self.put_proto(state_key::block_anchor_lookup(sct_block_anchor), height);
     }
 
-    fn set_sct_epoch_anchor(&mut self, index: u64, sct_block_anchor: epoch::Root) {
-        tracing::debug!(?index, ?sct_block_anchor, "writing epoch anchor");
+    fn set_sct_epoch_anchor(&mut self, index: u64, sct_epoch_anchor: epoch::Root) {
+        tracing::debug!(?index, ?sct_epoch_anchor, "writing epoch anchor");
 
-        self.put(state_key::epoch_anchor_by_index(index), sct_block_anchor);
-        self.put_proto(state_key::epoch_anchor_lookup(sct_block_anchor), index);
+        self.record(event::sct_epoch_anchor(index, &sct_epoch_anchor));
+        self.put(state_key::epoch_anchor_by_index(index), sct_epoch_anchor);
+        self.put_proto(state_key::epoch_anchor_lookup(sct_epoch_anchor), index);
     }
 
     async fn write_sct(
