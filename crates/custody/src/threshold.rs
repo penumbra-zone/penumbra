@@ -14,6 +14,7 @@ use crate::AuthorizeRequest;
 pub use self::config::Config;
 
 mod config;
+mod dkg;
 mod sign;
 
 fn to_json<T>(data: &T) -> Result<String>
