@@ -117,7 +117,11 @@ impl Storage {
                     conn.set_prepared_statement_cache_capacity(32);
                     Ok(())
                 });
-            Ok(r2d2::Pool::new(manager)?)
+            Ok(r2d2::Pool::builder()
+                // We set max_size=1 to avoid "database is locked" sqlite errors,
+                // when accessing across multiple threads.
+                .max_size(1)
+                .build(manager)?)
         } else {
             let manager = SqliteConnectionManager::memory();
             // Max size needs to be set to 1, otherwise a new in-memory database is created for each
