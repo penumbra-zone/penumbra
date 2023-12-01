@@ -367,6 +367,7 @@ async fn main() -> anyhow::Result<()> {
                     stake::v1alpha1::query_service_server::QueryServiceServer as StakeQueryServiceServer,
                 },
             };
+            use penumbra_storage::rpc::proto::penumbra::storage::v1alpha1::query_service_server::QueryServiceServer as StorageQueryServiceServer;
             use tonic_web::enable as we;
 
             use penumbra_app::rpc::Server as AppServer;
@@ -407,6 +408,9 @@ async fn main() -> anyhow::Result<()> {
                 // new blocks.
                 // .timeout(std::time::Duration::from_secs(7))
                 // Wrap each of the gRPC services in a tonic-web proxy:
+                .add_service(we(StorageQueryServiceServer::new(StorageServer::new(
+                    storage.clone(),
+                ))))
                 .add_service(we(AppQueryServiceServer::new(AppServer::new(
                     storage.clone(),
                 ))))
