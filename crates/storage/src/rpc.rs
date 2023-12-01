@@ -81,10 +81,6 @@ impl QueryService for Server {
         request: tonic::Request<PrefixValueRequest>,
     ) -> Result<tonic::Response<Self::PrefixValueStream>, Status> {
         let state = self.storage.latest_snapshot();
-        // state
-        //     .check_chain_id(&request.get_ref().chain_id)
-        //     .await
-        //     .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
         let request = request.into_inner();
         tracing::debug!(?request);
 
@@ -104,8 +100,6 @@ impl QueryService for Server {
                         "error getting prefix value from storage: {e}"
                     ))
                 })
-                // TODO: how do we instrument a Stream
-                //.instrument(Span::current())
                 .boxed(),
         ))
     }
