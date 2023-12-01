@@ -377,6 +377,7 @@ async fn main() -> anyhow::Result<()> {
             use penumbra_sct::component::rpc::Server as SctServer;
             use penumbra_shielded_pool::component::rpc::Server as ShieldedPoolServer;
             use penumbra_stake::component::rpc::Server as StakeServer;
+            use penumbra_storage::rpc::Server as StorageServer;
 
             // Set rather permissive CORS headers for pd's gRPC: the service
             // should be accessible from arbitrary web contexts, such as localhost,
