@@ -1,7 +1,6 @@
 syntax = "proto3";
 package penumbra.core.app.v1alpha1;
 
-import "ibc/core/commitment/v1/commitment.proto";
 import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/core/component/dao/v1alpha1/dao.proto";
 import "penumbra/core/component/distributions/v1alpha1/distributions.proto";
