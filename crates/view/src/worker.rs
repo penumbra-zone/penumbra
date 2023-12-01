@@ -391,7 +391,7 @@ async fn sct_divergence_check(
     height: u64,
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
-    use penumbra_proto::core::app::v1alpha1::query_service_client::QueryServiceClient;
+    use penumbra_proto::storage::v1alpha1::query_service_client::QueryServiceClient;
     use penumbra_sct::state_key as sct_state_key;
 
     let mut client = QueryServiceClient::new(channel);
