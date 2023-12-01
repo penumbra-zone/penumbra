@@ -397,7 +397,7 @@ async fn sct_divergence_check(
     let mut client = QueryServiceClient::new(channel);
 
     let value = client
-        .key_value(penumbra_proto::core::app::v1alpha1::KeyValueRequest {
+        .key_value(penumbra_proto::storage::v1alpha1::KeyValueRequest {
             key: sct_state_key::anchor_by_height(height),
             ..Default::default()
         })
