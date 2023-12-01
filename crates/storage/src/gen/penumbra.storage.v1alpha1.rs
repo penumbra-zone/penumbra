@@ -14,6 +14,13 @@ pub struct KeyValueRequest {
     #[prost(bool, tag = "3")]
     pub proof: bool,
 }
+impl ::prost::Name for KeyValueRequest {
+    const NAME: &'static str = "KeyValueRequest";
+    const PACKAGE: &'static str = "penumbra.storage.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.storage.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct KeyValueResponse {
@@ -34,6 +41,22 @@ pub mod key_value_response {
         #[prost(bytes = "vec", tag = "1")]
         pub value: ::prost::alloc::vec::Vec<u8>,
     }
+    impl ::prost::Name for Value {
+        const NAME: &'static str = "Value";
+        const PACKAGE: &'static str = "penumbra.storage.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.storage.v1alpha1.KeyValueResponse.{}", Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for KeyValueResponse {
+    const NAME: &'static str = "KeyValueResponse";
+    const PACKAGE: &'static str = "penumbra.storage.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.storage.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Performs a prefixed key-value query, by string prefix.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -46,6 +69,13 @@ pub struct PrefixValueRequest {
     #[prost(string, tag = "2")]
     pub prefix: ::prost::alloc::string::String,
 }
+impl ::prost::Name for PrefixValueRequest {
+    const NAME: &'static str = "PrefixValueRequest";
+    const PACKAGE: &'static str = "penumbra.storage.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.storage.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PrefixValueResponse {
@@ -53,6 +83,13 @@ pub struct PrefixValueResponse {
     pub key: ::prost::alloc::string::String,
     #[prost(bytes = "vec", tag = "2")]
     pub value: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for PrefixValueResponse {
+    const NAME: &'static str = "PrefixValueResponse";
+    const PACKAGE: &'static str = "penumbra.storage.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.storage.v1alpha1.{}", Self::NAME)
+    }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
@@ -68,7 +105,7 @@ pub mod query_service_client {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
-            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D: TryInto<tonic::transport::Endpoint>,
             D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
@@ -124,12 +161,31 @@ pub mod query_service_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
         /// General-purpose key-value state query API, that can be used to query
         /// arbitrary keys in the JMT storage.
         pub async fn key_value(
             &mut self,
             request: impl tonic::IntoRequest<super::KeyValueRequest>,
-        ) -> Result<tonic::Response<super::KeyValueResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::KeyValueResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -143,7 +199,12 @@ pub mod query_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.storage.v1alpha1.QueryService/KeyValue",
             );
-            self.inner.unary(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.storage.v1alpha1.QueryService", "KeyValue"),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// General-purpose prefixed key-value state query API, that can be used to query
         /// arbitrary prefixes in the JMT storage.
@@ -151,7 +212,7 @@ pub mod query_service_client {
         pub async fn prefix_value(
             &mut self,
             request: impl tonic::IntoRequest<super::PrefixValueRequest>,
-        ) -> Result<
+        ) -> std::result::Result<
             tonic::Response<tonic::codec::Streaming<super::PrefixValueResponse>>,
             tonic::Status,
         > {
@@ -168,7 +229,15 @@ pub mod query_service_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.storage.v1alpha1.QueryService/PrefixValue",
             );
-            self.inner.server_streaming(request.into_request(), path, codec).await
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.storage.v1alpha1.QueryService",
+                        "PrefixValue",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
     }
 }
@@ -185,10 +254,13 @@ pub mod query_service_server {
         async fn key_value(
             &self,
             request: tonic::Request<super::KeyValueRequest>,
-        ) -> Result<tonic::Response<super::KeyValueResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::KeyValueResponse>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the PrefixValue method.
-        type PrefixValueStream: futures_core::Stream<
-                Item = Result<super::PrefixValueResponse, tonic::Status>,
+        type PrefixValueStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::PrefixValueResponse, tonic::Status>,
             >
             + Send
             + 'static;
@@ -198,13 +270,18 @@ pub mod query_service_server {
         async fn prefix_value(
             &self,
             request: tonic::Request<super::PrefixValueRequest>,
-        ) -> Result<tonic::Response<Self::PrefixValueStream>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<Self::PrefixValueStream>,
+            tonic::Status,
+        >;
     }
     #[derive(Debug)]
     pub struct QueryServiceServer<T: QueryService> {
         inner: _Inner<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
+        max_decoding_message_size: Option<usize>,
+        max_encoding_message_size: Option<usize>,
     }
     struct _Inner<T>(Arc<T>);
     impl<T: QueryService> QueryServiceServer<T> {
@@ -217,6 +294,8 @@ pub mod query_service_server {
                 inner,
                 accept_compression_encodings: Default::default(),
                 send_compression_encodings: Default::default(),
+                max_decoding_message_size: None,
+                max_encoding_message_size: None,
             }
         }
         pub fn with_interceptor<F>(
@@ -240,6 +319,22 @@ pub mod query_service_server {
             self.send_compression_encodings.enable(encoding);
             self
         }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.max_decoding_message_size = Some(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.max_encoding_message_size = Some(limit);
+            self
+        }
     }
     impl<T, B> tonic::codegen::Service<http::Request<B>> for QueryServiceServer<T>
     where
@@ -253,7 +348,7 @@ pub mod query_service_server {
         fn poll_ready(
             &mut self,
             _cx: &mut Context<'_>,
-        ) -> Poll<Result<(), Self::Error>> {
+        ) -> Poll<std::result::Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
@@ -275,13 +370,17 @@ pub mod query_service_server {
                             &mut self,
                             request: tonic::Request<super::KeyValueRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
-                            let fut = async move { (*inner).key_value(request).await };
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::key_value(&inner, request).await
+                            };
                             Box::pin(fut)
                         }
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -291,6 +390,10 @@ pub mod query_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
                         Ok(res)
@@ -314,15 +417,17 @@ pub mod query_service_server {
                             &mut self,
                             request: tonic::Request<super::PrefixValueRequest>,
                         ) -> Self::Future {
-                            let inner = self.0.clone();
+                            let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                (*inner).prefix_value(request).await
+                                <T as QueryService>::prefix_value(&inner, request).await
                             };
                             Box::pin(fut)
                         }
                     }
                     let accept_compression_encodings = self.accept_compression_encodings;
                     let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
@@ -332,6 +437,10 @@ pub mod query_service_server {
                             .apply_compression_config(
                                 accept_compression_encodings,
                                 send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
                         Ok(res)
@@ -360,12 +469,14 @@ pub mod query_service_server {
                 inner,
                 accept_compression_encodings: self.accept_compression_encodings,
                 send_compression_encodings: self.send_compression_encodings,
+                max_decoding_message_size: self.max_decoding_message_size,
+                max_encoding_message_size: self.max_encoding_message_size,
             }
         }
     }
     impl<T: QueryService> Clone for _Inner<T> {
         fn clone(&self) -> Self {
-            Self(self.0.clone())
+            Self(Arc::clone(&self.0))
         }
     }
     impl<T: std::fmt::Debug> std::fmt::Debug for _Inner<T> {

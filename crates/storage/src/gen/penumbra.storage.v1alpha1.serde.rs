@@ -85,32 +85,32 @@ impl<'de> serde::Deserialize<'de> for KeyValueRequest {
                 formatter.write_str("struct penumbra.storage.v1alpha1.KeyValueRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<KeyValueRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<KeyValueRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut chain_id__ = None;
                 let mut key__ = None;
                 let mut proof__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ChainId => {
                             if chain_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("chainId"));
                             }
-                            chain_id__ = Some(map.next_value()?);
+                            chain_id__ = Some(map_.next_value()?);
                         }
                         GeneratedField::Key => {
                             if key__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("key"));
                             }
-                            key__ = Some(map.next_value()?);
+                            key__ = Some(map_.next_value()?);
                         }
                         GeneratedField::Proof => {
                             if proof__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proof"));
                             }
-                            proof__ = Some(map.next_value()?);
+                            proof__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -201,25 +201,25 @@ impl<'de> serde::Deserialize<'de> for KeyValueResponse {
                 formatter.write_str("struct penumbra.storage.v1alpha1.KeyValueResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<KeyValueResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<KeyValueResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut value__ = None;
                 let mut proof__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Value => {
                             if value__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("value"));
                             }
-                            value__ = map.next_value()?;
+                            value__ = map_.next_value()?;
                         }
                         GeneratedField::Proof => {
                             if proof__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proof"));
                             }
-                            proof__ = map.next_value()?;
+                            proof__ = map_.next_value()?;
                         }
                     }
                 }
@@ -245,6 +245,7 @@ impl serde::Serialize for key_value_response::Value {
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.storage.v1alpha1.KeyValueResponse.Value", len)?;
         if !self.value.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("value", pbjson::private::base64::encode(&self.value).as_str())?;
         }
         struct_ser.end()
@@ -300,19 +301,19 @@ impl<'de> serde::Deserialize<'de> for key_value_response::Value {
                 formatter.write_str("struct penumbra.storage.v1alpha1.KeyValueResponse.Value")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<key_value_response::Value, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<key_value_response::Value, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut value__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Value => {
                             if value__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("value"));
                             }
                             value__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
@@ -403,25 +404,25 @@ impl<'de> serde::Deserialize<'de> for PrefixValueRequest {
                 formatter.write_str("struct penumbra.storage.v1alpha1.PrefixValueRequest")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<PrefixValueRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<PrefixValueRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut chain_id__ = None;
                 let mut prefix__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ChainId => {
                             if chain_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("chainId"));
                             }
-                            chain_id__ = Some(map.next_value()?);
+                            chain_id__ = Some(map_.next_value()?);
                         }
                         GeneratedField::Prefix => {
                             if prefix__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("prefix"));
                             }
-                            prefix__ = Some(map.next_value()?);
+                            prefix__ = Some(map_.next_value()?);
                         }
                     }
                 }
@@ -453,6 +454,7 @@ impl serde::Serialize for PrefixValueResponse {
             struct_ser.serialize_field("key", &self.key)?;
         }
         if !self.value.is_empty() {
+            #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("value", pbjson::private::base64::encode(&self.value).as_str())?;
         }
         struct_ser.end()
@@ -511,26 +513,26 @@ impl<'de> serde::Deserialize<'de> for PrefixValueResponse {
                 formatter.write_str("struct penumbra.storage.v1alpha1.PrefixValueResponse")
             }
 
-            fn visit_map<V>(self, mut map: V) -> std::result::Result<PrefixValueResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<PrefixValueResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut key__ = None;
                 let mut value__ = None;
-                while let Some(k) = map.next_key()? {
+                while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Key => {
                             if key__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("key"));
                             }
-                            key__ = Some(map.next_value()?);
+                            key__ = Some(map_.next_value()?);
                         }
                         GeneratedField::Value => {
                             if value__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("value"));
                             }
                             value__ = 
-                                Some(map.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }
