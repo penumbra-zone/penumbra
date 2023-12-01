@@ -1,11 +1,7 @@
 pub mod proto {
-    pub mod penumbra {
-        pub mod storage {
-            pub mod v1alpha1 {
-                include!("gen/penumbra.storage.v1alpha1.rs");
-                include!("gen/penumbra.storage.v1alpha1.serde.rs");
-            }
-        }
+    pub mod v1alpha1 {
+        include!("gen/penumbra.storage.v1alpha1.rs");
+        include!("gen/penumbra.storage.v1alpha1.serde.rs");
     }
 
     // https://github.com/penumbra-zone/penumbra/issues/3038#issuecomment-1722534133
@@ -24,7 +20,7 @@ impl Server {
 use std::pin::Pin;
 
 use crate::read::StateRead;
-use crate::rpc::proto::penumbra::storage::v1alpha1::{
+use crate::rpc::proto::v1alpha1::{
     key_value_response::Value, query_service_server::QueryService, KeyValueRequest,
     KeyValueResponse, PrefixValueRequest, PrefixValueResponse,
 };
