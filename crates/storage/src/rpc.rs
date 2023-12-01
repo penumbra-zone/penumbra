@@ -3,11 +3,6 @@ use penumbra_proto::storage::v1alpha1::{
     PrefixValueResponse,
 };
 
-/// Generated proto definitions.
-// pub mod proto {
-//     // https://github.com/penumbra-zone/penumbra/issues/3038#issuecomment-1722534133
-//     pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("gen/proto_descriptor.bin.no_lfs");
-// }
 pub struct Server {
     storage: Storage,
 }
