@@ -40,7 +40,7 @@ pub fn load_proving_key(parameters: JsValue, key_type: &str) -> WasmResult<()> {
     };
 
     // Load proving key.
-    proving_key_map.try_load(&parameters_bytes)?;
+    proving_key_map.try_load_unchecked(&parameters_bytes)?;
     Ok(())
 }
 

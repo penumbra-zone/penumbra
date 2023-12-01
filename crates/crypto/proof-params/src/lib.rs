@@ -68,6 +68,18 @@ impl LazyProvingKey {
             Ok(pk)
         })
     }
+
+    /// Attempt to load the proving key from the given bytes.
+    ///
+    /// This method bypasses the validation checks against the hardcoded
+    /// hash of the expected proving key.
+    pub fn try_load_unchecked(&self, bytes: &[u8]) -> Result<&ProvingKey<Bls12_377>> {
+        self.inner.get_or_try_init(|| {
+            let pk = ProvingKey::deserialize_uncompressed_unchecked(bytes)?;
+
+            Ok(pk)
+        })
+    }
 }
 
 impl Deref for LazyProvingKey {
