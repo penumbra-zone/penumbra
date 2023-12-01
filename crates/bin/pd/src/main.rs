@@ -367,7 +367,7 @@ async fn main() -> anyhow::Result<()> {
                     stake::v1alpha1::query_service_server::QueryServiceServer as StakeQueryServiceServer,
                 },
             };
-            use penumbra_storage::rpc::proto::penumbra::storage::v1alpha1::query_service_server::QueryServiceServer as StorageQueryServiceServer;
+            use penumbra_storage::rpc::proto::v1alpha1::query_service_server::QueryServiceServer as StorageQueryServiceServer;
             use tonic_web::enable as we;
 
             use penumbra_app::rpc::Server as AppServer;
