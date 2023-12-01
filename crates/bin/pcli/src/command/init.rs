@@ -143,7 +143,7 @@ impl ThresholdInitCmd {
                         view_url: None,
                         disable_warning: false,
                     };
-                    config.save(path)?;
+                    config.save(path.join(crate::CONFIG_FILE_NAME))?;
                 }
                 Ok(())
             }
