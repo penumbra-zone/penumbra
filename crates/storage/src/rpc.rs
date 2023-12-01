@@ -1,7 +1,16 @@
-use penumbra_proto::storage::v1alpha1::{
-    query_service_server::QueryService, KeyValueRequest, KeyValueResponse, PrefixValueRequest,
-    PrefixValueResponse,
-};
+pub mod proto {
+    pub mod penumbra {
+        pub mod storage {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.storage.v1alpha1.rs");
+                include!("gen/penumbra.storage.v1alpha1.serde.rs");
+            }
+        }
+    }
+
+    // https://github.com/penumbra-zone/penumbra/issues/3038#issuecomment-1722534133
+    pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("gen/proto_descriptor.bin.no_lfs");
+}
 
 pub struct Server {
     storage: Storage,
@@ -14,7 +23,17 @@ impl Server {
 }
 use std::pin::Pin;
 
+use crate::read::StateRead;
+use crate::rpc::proto::penumbra::storage::v1alpha1::{
+    key_value_response::Value, query_service_server::QueryService, KeyValueRequest,
+    KeyValueResponse, PrefixValueRequest, PrefixValueResponse,
+};
 use futures::{StreamExt, TryStreamExt};
+use tonic::Status;
+use tracing::instrument;
+
+use crate::Storage;
+#[tonic::async_trait]
 impl QueryService for Server {
     #[instrument(skip(self, request))]
     async fn key_value(
@@ -24,11 +43,6 @@ impl QueryService for Server {
         let state = self.storage.latest_snapshot();
         // We map the error here to avoid including `tonic` as a dependency
         // in the `chain` crate, to support its compilation to wasm.
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
-
         let request = request.into_inner();
         tracing::debug!(?request, "processing key_value request");
 
@@ -71,10 +85,10 @@ impl QueryService for Server {
         request: tonic::Request<PrefixValueRequest>,
     ) -> Result<tonic::Response<Self::PrefixValueStream>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+        // state
+        //     .check_chain_id(&request.get_ref().chain_id)
+        //     .await
+        //     .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
         let request = request.into_inner();
         tracing::debug!(?request);
 
