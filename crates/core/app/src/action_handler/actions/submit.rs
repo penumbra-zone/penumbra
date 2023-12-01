@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
@@ -6,6 +7,8 @@ use async_trait::async_trait;
 use cnidarium::{StateDelta, StateRead, StateWrite};
 use decaf377::Fq;
 use decaf377_rdsa::{VerificationKey, VerificationKeyBytes};
+use ibc_types::core::client::ClientId;
+use ibc_types::core::connection::ConnectionId;
 use once_cell::sync::Lazy;
 use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_chain::component::StateReadExt as _;
@@ -231,7 +234,7 @@ impl ActionHandler for ProposalSubmit {
                 // Validate the client isn't already frozen:
                 let client_id = &ClientId::from_str(client_id)
                     .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
-                let client_state = self.get_client_state(client_id).await?;
+                let client_state = state.get_client_state(client_id).await?;
 
                 if client_state.is_frozen() {
                     anyhow::bail!("client is already frozen");
@@ -241,7 +244,7 @@ impl ActionHandler for ProposalSubmit {
                 // Validate the client is frozen:
                 let client_id = &ClientId::from_str(client_id)
                     .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
-                let client_state = self.get_client_state(client_id).await?;
+                let client_state = state.get_client_state(client_id).await?;
 
                 if !client_state.is_frozen() {
                     anyhow::bail!("client is already unfrozen");
