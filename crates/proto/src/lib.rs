@@ -218,14 +218,12 @@ pub mod penumbra {
         }
     }
 
-    /*
     pub mod storage {
         pub mod v1alpha1 {
             include!("gen/penumbra.storage.v1alpha1.rs");
             include!("gen/penumbra.storage.v1alpha1.serde.rs");
         }
     }
-    */
 
     pub mod util {
         pub mod tendermint_proxy {
