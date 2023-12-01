@@ -109,12 +109,20 @@ impl Storage {
                     OpenFlags::default() & !OpenFlags::SQLITE_OPEN_URI,
                 )
                 .with_init(|conn| {
+                    // "NORMAL" will be consistent, but maybe not durable -- this is fine,
+                    // since all our data is being synced from the chain, so if we lose a dbtx,
+                    // it's like we're resuming sync from a previous height.
+                    conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;")?;
                     // We use `prepare_cached` a fair amount: this is an overestimate of the number
                     // of cached prepared statements likely to be used.
                     conn.set_prepared_statement_cache_capacity(32);
                     Ok(())
                 });
-            Ok(r2d2::Pool::new(manager)?)
+            Ok(r2d2::Pool::builder()
+                // We set max_size=1 to avoid "database is locked" sqlite errors,
+                // when accessing across multiple threads.
+                .max_size(1)
+                .build(manager)?)
         } else {
             let manager = SqliteConnectionManager::memory();
             // Max size needs to be set to 1, otherwise a new in-memory database is created for each
