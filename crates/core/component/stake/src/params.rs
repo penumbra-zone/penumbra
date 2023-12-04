@@ -1,3 +1,4 @@
+use penumbra_num::fixpoint::U128x128;
 use penumbra_proto::core::component::stake::v1alpha1 as pb;
 use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
@@ -10,10 +11,10 @@ pub struct StakeParameters {
     pub active_validator_limit: u64,
     /// The base reward rate, expressed in basis points of basis points
     pub base_reward_rate: u64,
-    /// The penalty for slashing due to misbehavior, expressed in basis points squared (10^-8)
-    pub slashing_penalty_misbehavior: u64,
-    /// The penalty for slashing due to downtime, expressed in basis points squared (10^-8)
-    pub slashing_penalty_downtime: u64,
+    /// The penalty for slashing due to misbehavior.
+    pub slashing_penalty_misbehavior: U128x128,
+    /// The penalty for slashing due to downtime.
+    pub slashing_penalty_downtime: U128x128,
     /// The number of blocks in the window to check for downtime.
     pub signed_blocks_window_len: u64,
     /// The maximum number of blocks in the window each validator can miss signing without slashing.
@@ -31,8 +32,8 @@ impl TryFrom<pb::StakeParameters> for StakeParameters {
         Ok(StakeParameters {
             unbonding_epochs: msg.unbonding_epochs,
             active_validator_limit: msg.active_validator_limit,
-            slashing_penalty_downtime: msg.slashing_penalty_downtime,
-            slashing_penalty_misbehavior: msg.slashing_penalty_misbehavior,
+            slashing_penalty_downtime: todo!("convert proto defs"),
+            slashing_penalty_misbehavior: todo!("convert proto defs"),
             base_reward_rate: msg.base_reward_rate,
             missed_blocks_maximum: msg.missed_blocks_maximum,
             signed_blocks_window_len: msg.signed_blocks_window_len,
@@ -47,8 +48,8 @@ impl From<StakeParameters> for pb::StakeParameters {
             active_validator_limit: params.active_validator_limit,
             signed_blocks_window_len: params.signed_blocks_window_len,
             missed_blocks_maximum: params.missed_blocks_maximum,
-            slashing_penalty_downtime: params.slashing_penalty_downtime,
-            slashing_penalty_misbehavior: params.slashing_penalty_misbehavior,
+            slashing_penalty_downtime: todo!("convert proto defs"),
+            slashing_penalty_misbehavior: todo!("convert proto defs"),
             base_reward_rate: params.base_reward_rate,
         }
     }
@@ -65,9 +66,9 @@ impl Default for StakeParameters {
             signed_blocks_window_len: 10000,
             missed_blocks_maximum: 9500,
             // 1000 basis points = 10%
-            slashing_penalty_misbehavior: 1000_0000,
+            slashing_penalty_misbehavior: U128x128::ratio(10u128, 100u128).expect("infallible"),
             // 1 basis point = 0.01%
-            slashing_penalty_downtime: 1_0000,
+            slashing_penalty_downtime: U128x128::ratio(1u128, 10000u128).expect("infallible"),
             // 3bps -> 11% return over 365 epochs
             base_reward_rate: 3_0000,
         }

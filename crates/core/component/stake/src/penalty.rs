@@ -12,52 +12,58 @@ use penumbra_asset::{
     balance::BalanceVar,
     Balance, Value, ValueVar, STAKING_TOKEN_ASSET_ID,
 };
-use penumbra_num::{fixpoint::bit_constrain, Amount, AmountVar};
+use penumbra_num::{
+    fixpoint::{bit_constrain, U128x128},
+    Amount, AmountVar,
+};
 
 /// Tracks slashing penalties applied to a validator in some epoch.
 ///
-/// The penalty is represented as a fixed-point integer in bps^2 (denominator 10^8).
+/// Note(erwan): we are trying to get a sense of what a `U128x128` based penalty would
+/// look like. However, since this might be a bit too much for the undelegate claim
+/// circuit to handle, we can keep using an `Amount` in our back pocket.
+///
+/// Another thing to consider is to either limit the magnitude of the penalty, or change the
+/// API to propagate errors. Many operations are simply infallible if we assume that the penalty
+/// is at most 100%. It also aligns with how penalties are used in practice. TODO(erwan).
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
 #[serde(try_from = "pbs::Penalty", into = "pbs::Penalty")]
-pub struct Penalty(pub u64);
+pub struct Penalty(pub U128x128);
 
 impl Penalty {
-    /// Create a `Penalty` from a percentage e.g.
-    /// `Penalty::from_percent(1)` is a 1% penalty.
-    /// `Penalty::from_percent(100)` is a 100% penalty.
     pub fn from_percent(percent: u64) -> Self {
-        Penalty::from_bps(percent * 100)
+        Penalty(U128x128::ratio(percent as u128, 100u128).expect("infaillible"))
     }
-
-    /// Create a `Penalty` from a basis point e.g.
-    /// `Penalty::from_bps(1)` is a 1 bps penalty.
-    /// `Penalty::from_bps(100)` is a 100 bps penalty.
     pub fn from_bps(bps: u64) -> Self {
-        Penalty(bps * 10_000)
+        Penalty(U128x128::ratio(bps as u128, 10000u128).expect("infaillible"))
     }
 
     /// Compound this `Penalty` with another `Penalty`.
     pub fn compound(&self, other: Penalty) -> Penalty {
-        // We want to compute q sth (1 - q) = (1-p1)(1-p2)
-        // q = 1 - (1-p1)(1-p2)
-        // but since each p_i implicitly carries a factor of 10^8, we need to divide by 10^8 after multiplying.
-        let one = 1_0000_0000u128;
-        let p1 = self.0 as u128;
-        let p2 = other.0 as u128;
-        let q = u64::try_from(one - (((one - p1) * (one - p2)) / 1_0000_0000))
-            .expect("value should fit in 64 bits");
+        /* Compounding:
+         * For two penalty rates p1 and p2, the compounded penalty rate q is:
+         *     `1 - q = (1-p1)(1-p2)``
+         *     `q = 1 - (1-p1)(1-p2)`
+         */
+        let one = U128x128::from(1u128);
+        let p1 = self.0;
+        let p2 = other.0;
+        let p1_retention = (one - p1).expect("p1 is less than 1");
+        let p2_retention = (one - p2).expect("p2 is less than 1");
+        let q = one - (p1_retention * p2_retention).expect("cannot overflow");
+        let q = q.expect("product of two factors less than 1 is less than 1");
         Penalty(q)
     }
 
     /// Apply this `Penalty` to an `Amount` of unbonding tokens.
     pub fn apply_to(&self, amount: Amount) -> Amount {
-        let penalized_amount = (u128::try_from(amount).expect("amount should be a valid u128"))
-            * (1_0000_0000 - self.0 as u128)
-            / 1_0000_0000;
-        Amount::try_from(
-            u64::try_from(penalized_amount).expect("penalized amount should fit in u64"),
-        )
-        .expect("all u64 values should be valid Amounts")
+        let amount = U128x128::from(amount);
+        let penalized_amount = (amount * self.0).expect("cannot overflow");
+        penalized_amount
+            .round_up()
+            .expect("cannot overflow")
+            .try_into()
+            .expect("integral value")
     }
 
     /// Helper method to compute the effect of an UndelegateClaim on the

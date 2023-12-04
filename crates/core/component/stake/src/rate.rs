@@ -280,7 +280,7 @@ mod tests {
             validator_exchange_rate: 2_0000_0000,
         };
         // 10%
-        let penalty = Penalty(1000_0000);
+        let penalty = Penalty::from_bps
         let slashed = rate_data.slash(penalty);
         assert_eq!(slashed.validator_exchange_rate, 1_8000_0000);
     }
