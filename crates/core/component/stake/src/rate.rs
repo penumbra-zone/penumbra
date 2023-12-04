@@ -96,15 +96,16 @@ impl RateData {
     pub fn slash(&self, penalty: Penalty) -> Self {
         let mut slashed = self.clone();
         // (1 - penalty) * exchange_rate
-        slashed.validator_exchange_rate = self
-            .validator_exchange_rate
-            // Slashing penalty is in bps^2, so we divide by 1e8
-            .saturating_sub(
-                u64::try_from(
-                    (self.validator_exchange_rate as u128 * penalty.0 as u128) / 1_0000_0000,
-                )
-                .expect("penalty should fit in u64"),
-            );
+        // TODO: Must fix penalty.0 as u128
+        // slashed.validator_exchange_rate = self
+        //     .validator_exchange_rate
+        //     // Slashing penalty is in bps^2, so we divide by 1e8
+        //     .saturating_sub(
+        //         u64::try_from(
+        //             (self.validator_exchange_rate as u128 * penalty.0 as u128) / 1_0000_0000,
+        //         )
+        //         .expect("penalty should fit in u64"),
+        //     );
 
         slashed
     }
@@ -280,7 +281,7 @@ mod tests {
             validator_exchange_rate: 2_0000_0000,
         };
         // 10%
-        let penalty = Penalty::from_bps
+        let penalty = Penalty::from_percent(10);
         let slashed = rate_data.slash(penalty);
         assert_eq!(slashed.validator_exchange_rate, 1_8000_0000);
     }

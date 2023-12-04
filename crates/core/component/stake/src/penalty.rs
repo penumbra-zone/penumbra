@@ -12,6 +12,7 @@ use penumbra_asset::{
     balance::BalanceVar,
     Balance, Value, ValueVar, STAKING_TOKEN_ASSET_ID,
 };
+use penumbra_num::fixpoint::U128x128Var;
 use penumbra_num::{
     fixpoint::{bit_constrain, U128x128},
     Amount, AmountVar,
@@ -60,8 +61,7 @@ impl Penalty {
         let amount = U128x128::from(amount);
         let penalized_amount = (amount * self.0).expect("cannot overflow");
         penalized_amount
-            .round_up()
-            .expect("cannot overflow")
+            .round_down()
             .try_into()
             .expect("integral value")
     }
@@ -90,13 +90,13 @@ impl Penalty {
 
 impl ToConstraintField<Fq> for Penalty {
     fn to_field_elements(&self) -> Option<Vec<Fq>> {
-        let field_elements = vec![Fq::from(self.0)];
+        let field_elements = self.0.to_field_elements()?;
         Some(field_elements)
     }
 }
 
 pub struct PenaltyVar {
-    inner: FqVar,
+    inner: U128x128Var,
 }
 
 impl AllocVar<Penalty, Fq> for PenaltyVar {
@@ -108,27 +108,14 @@ impl AllocVar<Penalty, Fq> for PenaltyVar {
         let ns = cs.into();
         let cs = ns.cs();
         let inner: Penalty = *f()?.borrow();
-        let penalty = FqVar::new_variable(cs, || Ok(Fq::from(inner.0)), mode)?;
-        // Check the Penalty is 64 bits
-        let _ = bit_constrain(penalty.clone(), 64);
+        let penalty = U128x128Var::new_variable(cs, || Ok(inner.0), mode)?;
+
         Ok(Self { inner: penalty })
     }
 }
 
-impl From<&PenaltyVar> for AmountVar {
-    fn from(penalty_var: &PenaltyVar) -> Self {
-        // `AmountVar`s must fit in 128 bits, but `PenaltyVar`s have already
-        // been constrained to fit in 64 bits, so we can safely
-        // construct an `AmountVar` from a `PenaltyVar`.
-        AmountVar {
-            amount: penalty_var.inner.clone(),
-        }
-    }
-}
-
 impl PenaltyVar {
-    pub fn apply_to(&self, amount: AmountVar) -> Result<AmountVar, SynthesisError> {
-        let penalty = self.value().unwrap_or(Penalty(0));
+    pub fn apply_to(&self, staked_amount: AmountVar) -> Result<AmountVar, SynthesisError> {
         /* Bound analysis
          *      `penalty_amount = amount * (1_0000_0000 - penalty) / 1_0000_0000`
          * Order of operations:
@@ -152,33 +139,16 @@ impl PenaltyVar {
          *    Find x: 2^(x+20) * 2^27 < 2^128
          *    True for x < 81 (~10^24 staking tokens), so an overflow for 128 bits is implausible.
          *
-         *    What quantity of staking tokens would cause an overflow? (for 64 bits)
-         *    Find x: 2^(x+20) * 2^27 < 2^64
-         *    True for x < 17 (~10^5 staking tokens), so an overflow for 64 bits is possible and plausible.
-         *
          */
 
-        // Out of circuit penalized amount computation:
-        let amount_bytes = &amount.value().unwrap_or(Amount::from(0u64)).to_le_bytes()[0..16];
-        let amount_128 =
-            u128::from_le_bytes(amount_bytes.try_into().expect("should fit in 16 bytes"));
-        let penalized_amount = amount_128 * (1_0000_0000 - penalty.0 as u128) / 1_0000_0000;
+        // This is the same as the `Penalty::apply_to` impl but in circuit
+        let staked_amount = U128x128Var::from_amount_var(staked_amount)?;
+        let penalized_amount = staked_amount.checked_mul(&self.inner)?;
 
-        // Witness the result in the circuit.
-        let penalized_amount_var = AmountVar::new_witness(self.cs(), || {
-            Ok(Amount::from(
-                u64::try_from(penalized_amount).expect("can fit in u64"),
-            ))
-        })?;
+        // Round down and construct a AmountVar
+        let rounded_penalized_amount = penalized_amount.round_down_to_amount()?;
 
-        // Now we certify the witnessed penalized amount was calculated correctly.
-        // Constrain: penalized_amount = amount * (1_0000_0000 - penalty (public)) / 1_0000_0000
-        let hundred_mil = AmountVar::new_constant(self.cs(), Amount::from(1_0000_0000u128))?; // 1_0000_0000
-        let numerator = amount * (hundred_mil.clone() - self.into());
-        let (penalized_amount_quo, _) = numerator.quo_rem(&hundred_mil)?;
-        penalized_amount_quo.enforce_equal(&penalized_amount_var)?;
-
-        Ok(penalized_amount_var)
+        Ok(rounded_penalized_amount)
     }
 
     pub fn balance_for_claim(
@@ -209,12 +179,7 @@ impl R1CSVar<Fq> for PenaltyVar {
     }
 
     fn value(&self) -> Result<Self::Value, SynthesisError> {
-        let inner_fq = self.inner.value()?;
-        let inner_bytes = &inner_fq.to_bytes()[0..8];
-        let penalty_bytes: [u8; 8] = inner_bytes
-            .try_into()
-            .expect("should be able to fit in 16 bytes");
-        Ok(Penalty(u64::from_le_bytes(penalty_bytes)))
+        Ok(Penalty(self.inner.value()?))
     }
 }
 
@@ -222,7 +187,8 @@ impl FromStr for Penalty {
     type Err = <u64 as FromStr>::Err;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let v = u64::from_str(s)?;
-        Ok(Penalty(v))
+        //Ok(Penalty(v))
+        todo!()
     }
 }
 
@@ -238,14 +204,16 @@ impl DomainType for Penalty {
 
 impl From<Penalty> for pbs::Penalty {
     fn from(v: Penalty) -> Self {
-        pbs::Penalty { inner: v.0 }
+        todo!()
+        //pbs::Penalty { inner: v.0 }
     }
 }
 
 impl TryFrom<pbs::Penalty> for Penalty {
     type Error = anyhow::Error;
     fn try_from(v: pbs::Penalty) -> Result<Self, Self::Error> {
-        Ok(Penalty(v.inner))
+        todo!()
+        // Ok(Penalty(v.inner))
     }
 }
 
@@ -255,7 +223,7 @@ mod tests {
 
     #[test]
     fn penalty_display_fromstr_roundtrip() {
-        let p = Penalty(123456789);
+        let p = Penalty(123456789u128.into());
         let s = p.to_string();
         let p2 = Penalty::from_str(&s).unwrap();
         assert_eq!(p, p2);

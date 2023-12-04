@@ -20,6 +20,7 @@ use decaf377::{r1cs::FqVar, Fq};
 use ethnum::U256;
 
 use self::div::stub_div_rem_u384_by_u256;
+use crate::AmountVar;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -639,6 +640,17 @@ impl U128x128Var {
                 UInt64::constant(0u64),
             ],
         }
+    }
+
+    pub fn round_down_to_amount(self) -> Result<AmountVar, SynthesisError> {
+        let bits = self.limbs[2]
+            .to_bits_le()
+            .into_iter()
+            .chain(self.limbs[3].to_bits_le().into_iter())
+            .collect::<Vec<Boolean<Fq>>>();
+        Ok(AmountVar {
+            amount: Boolean::<Fq>::le_bits_to_fp_var(&bits)?,
+        })
     }
 }
 

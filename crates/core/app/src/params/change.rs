@@ -162,19 +162,19 @@ impl AppParameters {
                 "base reward rate must be at least 1 basis point",
             ),
             (
-                *slashing_penalty_misbehavior >= 1,
+                *slashing_penalty_misbehavior >= 1u128.into(),
                 "slashing penalty (misbehavior) must be at least 1 basis point",
             ),
             (
-                *slashing_penalty_misbehavior <= 100_000_000,
+                *slashing_penalty_misbehavior <= 100_000_000u128.into(),
                 "slashing penalty (misbehavior) must be at most 10,000 basis points^2",
             ),
             (
-                *slashing_penalty_downtime >= 1,
+                *slashing_penalty_downtime >= 1u128.into(),
                 "slashing penalty (downtime) must be at least 1 basis point",
             ),
             (
-                *slashing_penalty_downtime <= 100_000_000,
+                *slashing_penalty_downtime <= 100_000_000u128.into(),
                 "slashing penalty (downtime) must be at most 10,000 basis points^2",
             ),
             (
