@@ -153,6 +153,9 @@ impl TransactionPlan {
             })
             .collect::<Result<Vec<_>>>()?;
 
+        // 1.5. Order the actions.
+        let actions = TransactionPlan::order_actions(actions);
+
         // 2. Pass in the prebuilt actions to the build method.
         let tx = self
             .clone()
@@ -192,11 +195,12 @@ impl TransactionPlan {
             })
             .collect::<Vec<_>>();
 
-        // 1.5. Collect all of the actions.
+        // 1.5. Collect and order all of the actions.
         let mut actions = Vec::new();
         for handle in action_handles {
             actions.push(handle.await??);
         }
+        let actions = TransactionPlan::order_actions(actions);
 
         // 2. Pass in the prebuilt actions to the build method.
         let tx = self
@@ -208,5 +212,13 @@ impl TransactionPlan {
 
         // 4. Return the completed transaction.
         Ok(tx)
+    }
+
+    pub fn order_actions(
+        mut actions: Vec<Action>
+    ) -> Vec<Action> {
+        actions.sort_by_key(|action| action.variant_index());
+    
+        actions
     }
 }
