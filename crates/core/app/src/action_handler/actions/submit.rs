@@ -228,7 +228,6 @@ impl ActionHandler for ProposalSubmit {
             }
             ProposalPayload::UnplannedIbcUpgrade { .. } => {
                 // TODO: which checks happen here?
-                todo!();
             }
             ProposalPayload::FreezeIbcClient { client_id } => {
                 // Validate the client isn't already frozen:

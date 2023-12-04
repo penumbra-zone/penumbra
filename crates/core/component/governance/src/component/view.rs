@@ -25,6 +25,7 @@ use tracing::instrument;
 use penumbra_stake::{rate::RateData, validator, StateReadExt as _};
 
 use crate::{
+    event,
     params::GovernanceParameters,
     proposal::{ChangedAppParameters, ChangedAppParametersSet, Proposal, ProposalPayload},
     proposal_state::State as ProposalState,
@@ -893,8 +894,6 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
                 // We need to at least validate the connection is existing (this probably
                 // should happen both here and when the proposal is made)
                 self.update_connection(connection_id, new_config.clone());
-
-                // TODO: do we need to record an ABCI event here?
             }
             ProposalPayload::FreezeIbcClient { client_id } => {
                 let client_id = &ClientId::from_str(client_id)
@@ -913,8 +912,6 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
                 let ibc_height = IbcHeight::new(epoch.index, block_height - epoch.start_height)?;
                 let frozen_client = client_state.with_frozen_height(ibc_height);
                 self.put_client(client_id, frozen_client);
-
-                // TODO: do we need to record an ABCI event here?
             }
             ProposalPayload::UnfreezeIbcClient { client_id } => {
                 let client_id = &ClientId::from_str(client_id)
@@ -924,10 +921,10 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
                 // unfreeze the client
                 let unfrozen_client = client_state.unfrozen();
                 self.put_client(client_id, unfrozen_client);
-
-                // TODO: do we need to record an ABCI event here?
             }
         }
+
+        self.record(event::proposal_payload(proposal_id, payload));
 
         Ok(Ok(()))
     }
