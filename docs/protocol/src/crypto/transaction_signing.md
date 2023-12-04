@@ -8,20 +8,23 @@ what they are signing.
 
 To avoid the blind signing problem, in the Penumbra protocol we allow the user
 to review a description of the transaction - the `TransactionPlan` - prior to
-signing. The `TransactionPlan` contains a description of all details of the proposed transaction, including a plan of each action in a transparent
+signing. The `TransactionPlan` contains a declarative description of all details of the proposed transaction, including a plan of each action in a transparent
 form, the fee specified, the chain ID, and so on. From this plan, we authorize the and build the transaction. This has the additional advantage of allowing the signer to authorize the
 transaction while the computationally-intensive Zero-Knowledge
-Proofs (ZKPs) are generated as part of the transaction build process.
+Proofs (ZKPs) are optimistically generated as part of the transaction build process.
 
-The signing process first takes a `TransactionPlan` and returns
+The signing process first takes a `TransactionPlan` and `SpendKey` and returns
 the `AuthorizationData`, essentially a bundle of signatures over
 the *effect hash*, which can be computed directly from the plan data. You can
 read more about the details of the effect hash computation below.
 
-The building process takes the `TransactionPlan`, generates the proofs, and constructs a
-transaction with dummy signatures, that can be filled in once the
+The building process takes the `TransactionPlan`, generates the proofs, and constructs a fully-
+formed `Transaction`. This process is internally partitioned into three steps:
+1. Each `Action` is individually built based to its specification in the `TransactionPlan`. 
+2. The pre-built actions to collectively used to construct a transaction with placeholder dummy signatures, that can be filled in once the
 signatures from the `AuthorizationData` are ready[^1]. This intermediate state
-of the transaction without the full authorizing data is called the `UnauthTransaction`.
+of the transaction without the full authorizing data is referred to as the `PendingTransaction`.
+1. Slot the `AuthorizationData` to replace the placeholder singatures to assemble the final `Transaction`. 
 
 The Penumbra protocol was designed to only require the custodian, e.g. the hardware wallet
 environment, to do signing, as the generation of ZKPs can be done without access to signing keys, requiring only witness data and viewing keys.
@@ -59,11 +62,11 @@ A figure showing how these pieces fit together is shown below:
  ║                        ║                           │
  ║┌──────────────────────┐║                           │
  ║│     WitnessData      │║                           │
- ║└──────────────────────┘║   ┌───────────────────┐   │
- ║                        ║   │                   │   │
- ║                        ╠──▶│ UnauthTransaction ├───┘
- ║┌──────────────────────┐║   │                   │
- ║│   Full viewing key   │║   └───────────────────┘
+ ║└──────────────────────┘║   ┌────────────────────┐  │
+ ║                        ║   │                    │  │ 
+ ║                        ╠──▶│ PendingTransaction ├──┘
+ ║┌──────────────────────┐║   │                    │
+ ║│   Full viewing key   │║   └────────────────────┘
  ║└──────────────────────┘║
  ║                        ║
  ║                        ║
