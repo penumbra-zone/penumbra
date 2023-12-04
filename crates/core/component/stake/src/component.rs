@@ -358,21 +358,14 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // Compute the base reward rate for the upcoming epoch based on the total amount
         // of active stake and the issuance budget given to us by the distribution component.
         tracing::debug!("processing base rate");
-        let bps_squared = Amount::from(1_0000_0000u128);
-        let issuance_budget_for_epoch_bps = issuance_budget_for_epoch * bps_squared;
 
         let total_active_stake_previous_epoch = self.total_active_stake().await?;
-        let base_reward_rate: Amount = U128x128::ratio(
-            issuance_budget_for_epoch_bps,
-            total_active_stake_previous_epoch,
-        )
-        .expect("total active stake is nonzero")
-        .round_down()
-        .try_into()
-        .expect("rounded to an integral value");
+        let base_reward_rate =
+            U128x128::ratio(issuance_budget_for_epoch, total_active_stake_previous_epoch)
+                .expect("total active stake is nonzero");
 
         // TODO(erwan): use fixnum and amounts. Tracked in #3453.
-        let next_base_rate = prev_base_rate.next(base_reward_rate.value() as u64);
+        let next_base_rate = prev_base_rate.next(base_reward_rate);
         tracing::debug!(
             ?prev_base_rate,
             ?next_base_rate,
@@ -483,18 +476,22 @@ pub(crate) trait StakingImpl: StateWriteExt {
             if validator_state == validator::State::Active {
                 // distribute validator commission
                 for stream in &validator.funding_streams {
-                    let commission_reward_amount = stream.reward_amount(
+                    let commission_reward = stream.reward_amount(
                         &prev_base_rate,
                         &next_base_rate,
                         delegation_token_supply,
                     );
+                    let commission_reward_amount = commission_reward
+                        .round_down()
+                        .try_into()
+                        .expect("integral value");
 
                     match stream.recipient() {
                         // If the recipient is an address, mint a note to that address
                         Recipient::Address(address) => {
                             self.mint_note(
                                 Value {
-                                    amount: commission_reward_amount.into(),
+                                    amount: commission_reward_amount,
                                     asset_id: *STAKING_TOKEN_ASSET_ID,
                                 },
                                 &address,
@@ -795,15 +792,15 @@ pub(crate) trait StakingImpl: StateWriteExt {
     /// state with power assigned.
     async fn add_genesis_validator(
         &mut self,
-        genesis_allocations: &BTreeMap<String, u128>,
+        genesis_allocations: &BTreeMap<String, Amount>,
         genesis_base_rate: &BaseRateData,
         validator: Validator,
     ) -> Result<()> {
         let cur_rate_data = RateData {
             identity_key: validator.identity_key.clone(),
             epoch_index: genesis_base_rate.epoch_index,
-            validator_reward_rate: 0,
-            validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
+            validator_reward_rate: 0u128.into(),
+            validator_exchange_rate: 1u128.into(), // 1 represented as 1e8
         };
 
         // The initial allocations to the validator are specified in `genesis_allocations`.
@@ -814,7 +811,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         let total_delegation_tokens = genesis_allocations
             .get(&delegation_denom)
             .copied()
-            .unwrap_or(0);
+            .unwrap_or(Amount::zero());
         let power = cur_rate_data.voting_power(total_delegation_tokens, genesis_base_rate);
 
         self.add_validator_inner(
@@ -936,8 +933,8 @@ impl Component for Staking {
 
                 let genesis_base_rate = BaseRateData {
                     epoch_index,
-                    base_reward_rate: 0,
-                    base_exchange_rate: 1_0000_0000,
+                    base_reward_rate: 0u128.into(),
+                    base_exchange_rate: 1u128.into(),
                 };
                 state.set_base_rate(genesis_base_rate.clone());
 
@@ -1376,7 +1373,7 @@ pub trait StateWriteExt: StateWrite {
     async fn set_validator_power(
         &mut self,
         identity_key: &IdentityKey,
-        voting_power: u64,
+        voting_power: Amount,
     ) -> Result<()> {
         tracing::debug!("setting validator power");
         if voting_power as i64 > MAX_VOTING_POWER || (voting_power as i64) < 0 {

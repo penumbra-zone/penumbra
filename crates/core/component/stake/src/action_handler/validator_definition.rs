@@ -116,8 +116,8 @@ impl ActionHandler for validator::Definition {
             let cur_rate_data = RateData {
                 identity_key: validator_key,
                 epoch_index: cur_epoch.index,
-                validator_reward_rate: 0,
-                validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
+                validator_reward_rate: 0u128.into(),
+                validator_exchange_rate: 1u128.into(), // 1 represented as 1e8
             };
 
             state

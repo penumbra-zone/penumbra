@@ -1,5 +1,6 @@
 //! Staking reward and delegation token exchange rates.
 
+use penumbra_num::fixpoint::U128x128;
 use penumbra_num::Amount;
 use penumbra_proto::core::component::stake::v1alpha1::CurrentValidatorRateResponse;
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
@@ -17,9 +18,9 @@ pub struct RateData {
     /// The index of the epoch for which this rate is valid.
     pub epoch_index: u64,
     /// The validator-specific reward rate.
-    pub validator_reward_rate: u64,
+    pub validator_reward_rate: U128x128,
     /// The validator-specific exchange rate.
-    pub validator_exchange_rate: u64,
+    pub validator_exchange_rate: U128x128,
 }
 
 impl RateData {
@@ -45,16 +46,24 @@ impl RateData {
                 panic!("commission rate sums to > 100%")
             }
 
-            // compute next validator reward rate
-            // 1 bps = 1e-4, so here we group digits by 4s rather than 3s as is usual
-            let validator_reward_rate = ((1_0000_0000u64 - (commission_rate_bps * 1_0000))
+            // Compute the validator reward rate for the next epoch, it is the product of the base
+            // reward rate and the complement of the validator's commission rate, or:
+            // `(1 - commission_rate) * base_reward_rate`
+            let one: U128x128 = 1u128.into();
+            let commission_rate = U128x128::ratio(commission_rate_bps, 10000).expect("infaillible");
+            let residual_commission_rate = (one - commission_rate).expect("commission rate <= 1");
+            let validator_reward_rate = (residual_commission_rate
                 * base_rate_data.base_reward_rate)
-                / 1_0000_0000;
+                .expect("reward rate <= 1");
 
-            // compute validator exchange rate
+            // Compute the validator exchange rate for the next epoch, it is the product of the
+            // validator's previous exchange rate and the validator's reward rate, or:
+            // `prev.validator_exchange_rate * (1 + validator_reward_rate)`
+            let growth_factor_reward_rate = (validator_reward_rate + one)
+                .expect("validator_reward_rate <= 1 so this cannot overflow");
             let validator_exchange_rate = (prev.validator_exchange_rate
-                * (validator_reward_rate + 1_0000_0000))
-                / 1_0000_0000;
+                * growth_factor_reward_rate)
+                .expect("exchange rate is small");
 
             RateData {
                 identity_key: prev.identity_key.clone(),
@@ -87,26 +96,33 @@ impl RateData {
     /// unbonded_amount == rate_data.unbonded_amount(delegation_amount)
     /// ```
     /// but in general *not both*, because the computation involves rounding.
-    pub fn delegation_amount(&self, unbonded_amount: u128) -> u128 {
-        // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
-        // upconvert to u128 intermediates and panic if the result is too large (unlikely)
-        (unbonded_amount * 1_0000_0000) / self.validator_exchange_rate as u128
+    pub fn delegation_amount(&self, unbonded_amount: Amount) -> Amount {
+        let unbonded_amount_fp: U128x128 = unbonded_amount.into();
+        let delegation_amount = (unbonded_amount_fp / self.validator_exchange_rate)
+            .expect("exchange rate is close to 1"); // MERGEBLOCK(erwan): review the `expect`s statements
+
+        delegation_amount
+            .round_down()
+            .try_into()
+            .expect("integral value")
     }
 
+    /// Return a new [`RateData`] with the exchange rate slashed by the given penalty.
     pub fn slash(&self, penalty: Penalty) -> Self {
-        let mut slashed = self.clone();
-        // (1 - penalty) * exchange_rate
-        slashed.validator_exchange_rate = self
-            .validator_exchange_rate
-            // Slashing penalty is in bps^2, so we divide by 1e8
-            .saturating_sub(
-                u64::try_from(
-                    (self.validator_exchange_rate as u128 * penalty.0 as u128) / 1_0000_0000,
-                )
-                .expect("penalty should fit in u64"),
-            );
+        let one = U128x128::from(1u128);
 
-        slashed
+        // MERGEBLOCK(erwan): for now, used a stubbed penalty. This is because I want to be able
+        // to do side-by-side comparison of the `Penalty` implementation with the circuit change branch.
+        let stub_penalty = U128x128::from(1u128);
+        // replace later with: `let penalty = penalty.0;`
+
+        let complement_penalty = (one - stub_penalty).expect("penalty <= 1");
+        let slashed_validator_exchange_rate = (self.validator_exchange_rate * complement_penalty)
+            .expect("exchange rate is close to 1");
+
+        let mut slashed_rate = self.clone();
+        slashed_rate.validator_exchange_rate = slashed_validator_exchange_rate;
+        slashed_rate
     }
 
     /// Computes the amount of unbonded stake corresponding to the given amount of delegation tokens.
@@ -122,26 +138,41 @@ impl RateData {
     /// unbonded_amount == rate_data.unbonded_amount(delegation_amount)
     /// ```
     /// but in general *not both*, because the computation involves rounding.
-    pub fn unbonded_amount(&self, delegation_amount: u128) -> u128 {
-        (delegation_amount * self.validator_exchange_rate as u128) / 1_0000_0000
+    pub fn unbonded_amount(&self, delegation_amount: Amount) -> Amount {
+        let delegation_amount_fp: U128x128 = delegation_amount.into();
+        let unbonded_amount = (delegation_amount_fp * self.validator_exchange_rate)
+            .expect("exchange rate is close to 1");
+
+        unbonded_amount
+            .round_down()
+            .try_into()
+            .expect("integral value")
     }
 
-    /// Computes the validator's voting power at this epoch given the total supply of the
-    /// validator's delegation tokens.
+    /// Compute the validator's voting power at the current epoch, based on the size of
+    /// its delegation pool.
     pub fn voting_power(
         &self,
-        total_delegation_tokens: u128,
+        total_delegation_tokens: Amount,
         base_rate_data: &BaseRateData,
-    ) -> u64 {
-        ((total_delegation_tokens * self.validator_exchange_rate as u128)
-            / base_rate_data.base_exchange_rate as u128)
+    ) -> Amount {
+        let delegation_pool_size: U128x128 = total_delegation_tokens.into();
+        // Compute the amount of staking tokens that the delegation pool corresponds to.
+        let total_staking_tokens = (delegation_pool_size * base_rate_data.base_exchange_rate)
+            .expect("exchange rate is close to 1");
+        // We are not done yet, we have to normalize based on the base exchange rate.
+        let voting_power = (total_staking_tokens / base_rate_data.base_exchange_rate)
+            .expect("exchange rate is close to 1");
+
+        voting_power
+            .round_down()
             .try_into()
-            .expect("voting power should fit in u64")
+            .expect("integral value")
     }
 
     /// Uses this `RateData` to build a `Delegate` transaction action that
     /// delegates `unbonded_amount` of the staking token.
-    pub fn build_delegate(&self, unbonded_amount: u128) -> Delegate {
+    pub fn build_delegate(&self, unbonded_amount: Amount) -> Delegate {
         Delegate {
             delegation_amount: self.delegation_amount(unbonded_amount).into(),
             epoch_index: self.epoch_index,
@@ -169,17 +200,17 @@ pub struct BaseRateData {
     /// The index of the epoch for which this rate is valid.
     pub epoch_index: u64,
     /// The base reward rate.
-    pub base_reward_rate: u64,
+    pub base_reward_rate: U128x128,
     /// The base exchange rate.
-    pub base_exchange_rate: u64,
+    pub base_exchange_rate: U128x128,
 }
 
 impl BaseRateData {
     /// Compute the base rate data for the epoch following the current one,
     /// given the next epoch's base reward rate.
-    pub fn next(&self, base_reward_rate: u64) -> BaseRateData {
+    pub fn next(&self, base_reward_rate: U128x128) -> BaseRateData {
         let base_exchange_rate =
-            (self.base_exchange_rate * (base_reward_rate + 1_0000_0000)) / 1_0000_0000;
+            (self.base_exchange_rate * base_reward_rate).expect("rates are <= 1");
         BaseRateData {
             base_exchange_rate,
             base_reward_rate,
@@ -276,12 +307,15 @@ mod tests {
         let rate_data = RateData {
             identity_key: ik,
             epoch_index: 0,
-            validator_reward_rate: 1_0000_0000,
-            validator_exchange_rate: 2_0000_0000,
+            validator_reward_rate: 1u128.into(),
+            validator_exchange_rate: 2u128.into(),
         };
         // 10%
-        let penalty = Penalty(1000_0000);
+        let penalty = Penalty::from_percent(10);
         let slashed = rate_data.slash(penalty);
-        assert_eq!(slashed.validator_exchange_rate, 1_8000_0000);
+        assert_eq!(
+            slashed.validator_exchange_rate,
+            U128x128::ratio(18u128, 100)
+        );
     }
 }

@@ -1,5 +1,5 @@
 use penumbra_keys::Address;
-use penumbra_num::Amount;
+use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -55,17 +55,29 @@ impl FundingStream {
         prev_base_rate: &BaseRateData,
         next_base_rate: &BaseRateData,
         total_delegation_tokens: Amount,
-    ) -> u64 {
+    ) -> U128x128 {
         if prev_base_rate.epoch_index != next_base_rate.epoch_index - 1 {
             panic!("wrong base rate data for previous epoch")
         }
         // take yv*cve*re*psi(e-1)
-        let mut r =
-            (total_delegation_tokens.value() * (self.rate_bps() as u128 * 1_0000)) / 1_0000_0000;
-        r = (r * next_base_rate.base_reward_rate as u128) / 1_0000_0000;
-        r = (r * prev_base_rate.base_exchange_rate as u128) / 1_0000_0000;
+        /* For a given funding stream, the amount of reward is calculated as follows:
+         * r_e: base reward rate at epoch e
+         * psi(e-1): validator exchange rate at epoch e-1
+         * cv_e: the sum of the validator's commission rate
+         * y_v: the sum of tokens in the validator's delegation pool
+         *
+         * TODO(erwan): this seems wrong actually, but let's stick to the spec for now.
+         */
 
-        r as u64
+        let total_delegation_tokens: U128x128 = total_delegation_tokens.into();
+        let commission_rate = U128x128::ratio(self.rate_bps() as u128, 10_000).expect("infallible");
+        let reward = (total_delegation_tokens * commission_rate)
+            .expect("does not overflow since the commission rate is <= 1");
+        let reward = (reward * prev_base_rate.base_exchange_rate)
+            .expect("cannot overflow since the base exchange rate is <= 1");
+        let reward = (reward * next_base_rate.base_reward_rate)
+            .expect("cannot overflow since the base reward rate is <= 1");
+        reward
     }
 }
 
