@@ -109,6 +109,65 @@ pub async fn follow(config: &Config, terminal: &impl Terminal) -> Result<()> {
     Ok(())
 }
 
+/// A distributed key generation protocol, producing a config without a centralized dealer.
+///
+/// Unlike the deal method on Config, this method will never have any participant know
+/// the key. Otherwise, the parameters controlling the threshold and the number of participants
+/// are the same as that method.
+///
+/// This takes in a terminal, because it requires interacting with the other participants.
+pub async fn dkg(t: u16, n: u16, terminal: &impl Terminal) -> Result<Config> {
+    let expected_responses = n.saturating_sub(1) as usize;
+    // Round 1 top
+    let (round1_message, state) = dkg::round1(&mut OsRng, t, n)?;
+    terminal
+        .explain("Round 1/2: Send this message to all other participants:")
+        .await?;
+    terminal.broadcast(&to_json(&round1_message)?).await?;
+    // Round 1 bottom
+    terminal
+        .explain(&format!(
+            "Round 1/2: Gather {expected_responses} messages from the other participants:"
+        ))
+        .await?;
+    let round1_replies = {
+        let mut acc: Vec<dkg::Round1> = Vec::new();
+        while acc.len() < expected_responses {
+            let string = terminal
+                .next_response()
+                .await?
+                .ok_or(anyhow!("expected message from another participant"))?;
+            acc.push(from_json(&string)?);
+        }
+        acc
+    };
+
+    // Round 2 top
+    let (round2_message, state) = dkg::round2(&mut OsRng, state, round1_replies)?;
+    terminal
+        .explain("Round 2/2: Send this message to all other participants:")
+        .await?;
+    terminal.broadcast(&to_json(&round2_message)?).await?;
+    // Round 2 bottom
+    terminal
+        .explain(&format!(
+            "Round 2/2: Gather {expected_responses} messages from the other participants:"
+        ))
+        .await?;
+    let round2_replies = {
+        let mut acc: Vec<dkg::Round2> = Vec::new();
+        while acc.len() < expected_responses {
+            let string = terminal
+                .next_response()
+                .await?
+                .ok_or(anyhow!("expected message from another participant"))?;
+            acc.push(from_json(&string)?);
+        }
+        acc
+    };
+    dkg::round3(&mut OsRng, state, round2_replies)
+}
+
 /// A custody backend using threshold signing.  
 ///
 /// This backend is initialized with a full viewing key, but only a share
@@ -249,6 +308,8 @@ impl<T: Terminal + Sync + Send + 'static>
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
+
     use tokio::sync;
 
     use super::*;
@@ -339,13 +400,72 @@ mod test {
         (coordinator, followers)
     }
 
+    fn make_symmetric_terminals(count: usize) -> Vec<CoordinatorTerminal> {
+        // Make N^2 channels, ignore some of them:
+        let mut sending = HashMap::new();
+        let mut recving = HashMap::new();
+        for i in 0..count {
+            for j in 0..count {
+                let (send, recv) = sync::mpsc::channel(1);
+                sending.insert((i, j), send);
+                recving.insert((i, j), recv);
+            }
+        }
+        let mut out = Vec::new();
+        for i in 0..count {
+            let incoming = (0..count)
+                .filter(|&j| j != i)
+                .map(|j| recving.remove(&(j, i)).unwrap())
+                .collect();
+            let outgoing = (0..count)
+                .filter(|&j| j != i)
+                .map(|j| sending.remove(&(i, j)).unwrap())
+                .collect();
+            let coordinator = CoordinatorTerminal {
+                incoming: sync::Mutex::new(CoordinatorTerminalInner { incoming, i: 0 }),
+                outgoing,
+            };
+            out.push(coordinator);
+        }
+        out
+    }
+
+    async fn run_dkg(t: u16, n: u16) -> Result<Vec<Config>> {
+        let terminals = make_symmetric_terminals(n as usize);
+        let mut handles = Vec::new();
+        for terminal in terminals {
+            handles.push(tokio::spawn(async move { dkg(t, n, &terminal).await }));
+        }
+        let mut out = Vec::new();
+        for handle in handles {
+            out.push(handle.await??);
+        }
+        Ok(out)
+    }
+
+    #[tokio::test]
+    async fn test_dkg_produces_identical_fvks() -> Result<()> {
+        const T: u16 = 3;
+        const N: u16 = 3;
+        let (first_config, configs) = {
+            let mut configs = run_dkg(T, N).await?;
+            let first = configs.pop().unwrap();
+            (first, configs)
+        };
+        for config in configs {
+            assert_eq!(first_config.fvk(), config.fvk());
+        }
+        Ok(())
+    }
+
     #[tokio::test]
     async fn test_transaction_signing() -> Result<()> {
         const TEST_PLAN: &'static str = r#"{"actions":[{"output":{"value":{"amount":{"lo":"1000000000"},"assetId":{"inner":"KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="}},"destAddress":{"inner":"UuFEV0VoZNxNTttsJVJzRqEzW4bm0z2RCxhUneve0KTvDjQipeg/1zx0ftbDjgr6uPiSA70yJIdlpFyxeLyXfAAtmSy6BCpR3YjEkf1bI5Q="},"rseed":"4m4bxumA0sHuonPjr12UnI4CWKj1wuq4y6rrMRb0nw0=","valueBlinding":"HHS7tY19JuWMwdKJvtKs8AmhMVa7osSpZ+CCBszu/AE=","proofBlindingR":"FmbXZoh5Pd2mEtiAEkkAZpllWo9pdwTPlXeODBXHUxA=","proofBlindingS":"0x96kUchW8jFfnxglAoMtvzPT5/RLg2RvfkRKjlU8BA="}},{"spend":{"note":{"value":{"amount":{"lo":"1000000000000"},"assetId":{"inner":"KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="}},"rseed":"3svSxWREwvvVzb2upQuu3Cyr56O2kRbo0nuX4+OWcdc=","address":{"inner":"6146pY5upA9bQa4tag+6hXpMXa2kO5fcicSJGVEUP4HhZt7m4FpwAJ3+qwr5gpbHUON7DigyEJRpeV31FATGdfJhHBzGDWC+CIvi8dyIzGo="}},"position":"90","randomizer":"dJvg8FGvw5rJAvtSQvlQ4imLXahVXn419+xroVMLSwA=","valueBlinding":"Ce1/hBKLEMB/bjEA06b4zUJVEstNUjkDBWM3WrVu+QM=","proofBlindingR":"gXA7M4VR48IoxKrf4w4jGae2O7OGlTecU/RBXd4g6QI=","proofBlindingS":"7+Rhrve7mdgsKbkfFq41yfq9+Mx2qRAZDtwP3VUDAAs="}},{"output":{"value":{"amount":{"lo":"999000000000"},"assetId":{"inner":"KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="}},"destAddress":{"inner":"6146pY5upA9bQa4tag+6hXpMXa2kO5fcicSJGVEUP4HhZt7m4FpwAJ3+qwr5gpbHUON7DigyEJRpeV31FATGdfJhHBzGDWC+CIvi8dyIzGo="},"rseed":"rCTbPc6xWyEcDV73Pl+W6XXbACShVOM+8/vdc7RSLlo=","valueBlinding":"DP0FN5CV4g9xZN6u2W6/4o6I/Zwr38n81q4YnJ6COAA=","proofBlindingR":"KV3u8Dc+cZo0HFUIn7n95UkQVXWeYp+3vAVuIpCIZRI=","proofBlindingS":"i00KyJVklWXUhVRy37N3p9szFIvo7383to/qxBexnBE="}}],"chainId":"penumbra-testnet-rhea-8b2dfc5c","fee":{"amount":{}},"cluePlans":[{"address":{"inner":"UuFEV0VoZNxNTttsJVJzRqEzW4bm0z2RCxhUneve0KTvDjQipeg/1zx0ftbDjgr6uPiSA70yJIdlpFyxeLyXfAAtmSy6BCpR3YjEkf1bI5Q="},"rseed":"1Li0Qx05txsyOrx2pfO9kD5rDSUMy9e+j/hHmucqARI="},{"address":{"inner":"6146pY5upA9bQa4tag+6hXpMXa2kO5fcicSJGVEUP4HhZt7m4FpwAJ3+qwr5gpbHUON7DigyEJRpeV31FATGdfJhHBzGDWC+CIvi8dyIzGo="},"rseed":"ePtCm9/tFcpLBdlgyu8bYRKV5CHbqd823UGDhG1LsGY="}],"memoPlan":{"plaintext":{"returnAddress":{"inner":"OB8AEHEehWo0o0/Dn7JtNmgdDX1VRPaDgn6MLl6n41hVjI3llljrTDCFRRjN5mkNwVwsAyJ/UdfjNIFzbGV62YVXfBJ/IMVTq2CNAHwR8Qo="}},"key":"3plOcPZzKKj8KT3sVdKnblUUFDRzCmMWYtgwB3BqfXQ="}}"#;
         const T: u16 = 3;
         const N: u16 = 3;
+
         let (coordinator_config, follower_configs) = {
-            let mut configs = Config::deal(&mut OsRng, T, N)?;
+            let mut configs = run_dkg(T, N).await?;
             (configs.pop().unwrap(), configs)
         };
         let (coordinator_terminal, follower_terminals) = make_terminals((N - 1) as usize);
