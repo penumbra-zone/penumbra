@@ -8,6 +8,8 @@ use super::*;
 
 /// DKG Round 1 structures.
 pub mod round1 {
+    use penumbra_proto::DomainType;
+
     use super::*;
 
     /// The secret package that must be kept in memory by the participant
@@ -55,10 +57,16 @@ pub mod round1 {
             )))
         }
     }
+
+    impl DomainType for Package {
+        type Proto = pb::DkgRound1Package;
+    }
 }
 
 /// DKG Round 2 structures.
 pub mod round2 {
+    use penumbra_proto::DomainType;
+
     use super::*;
 
     /// The secret package that must be kept in memory by the participant
@@ -102,6 +110,10 @@ pub mod round2 {
                 )?,
             )))
         }
+    }
+
+    impl DomainType for Package {
+        type Proto = pb::DkgRound2Package;
     }
 }
 
