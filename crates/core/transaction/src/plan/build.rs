@@ -21,7 +21,7 @@ impl TransactionPlan {
     /// [`ActionPlan`]s in the TransactionPlan.
     pub fn build_unauth_with_actions(
         self,
-        actions: Vec<Action>,
+        mut actions: Vec<Action>,
         witness_data: &WitnessData,
     ) -> Result<Transaction> {
         // Add the memo if it is planned.
@@ -41,6 +41,9 @@ impl TransactionPlan {
             }
             Some(DetectionData { fmd_clues })
         };
+
+        // Order the actions to reduce client distinguishability.
+        actions.sort_by_key(|action: &Action| action.variant_index());
 
         let transaction_body = TransactionBody {
             actions,
@@ -140,7 +143,7 @@ impl TransactionPlan {
         auth_data: &AuthorizationData,
     ) -> Result<Transaction> {
         // 1. Build each action.
-        let actions = self
+        let mut actions = self
             .actions
             .iter()
             .map(|action_plan| {
@@ -152,9 +155,6 @@ impl TransactionPlan {
                 )
             })
             .collect::<Result<Vec<_>>>()?;
-
-        // 1.5. Order the actions.
-        let actions = TransactionPlan::order_actions(actions);
 
         // 2. Pass in the prebuilt actions to the build method.
         let tx = self
@@ -195,12 +195,11 @@ impl TransactionPlan {
             })
             .collect::<Vec<_>>();
 
-        // 1.5. Collect and order all of the actions.
+        // 1.5. Collect all of the actions.
         let mut actions = Vec::new();
         for handle in action_handles {
             actions.push(handle.await??);
         }
-        let actions = TransactionPlan::order_actions(actions);
 
         // 2. Pass in the prebuilt actions to the build method.
         let tx = self
@@ -212,13 +211,5 @@ impl TransactionPlan {
 
         // 4. Return the completed transaction.
         Ok(tx)
-    }
-
-    pub fn order_actions(
-        mut actions: Vec<Action>
-    ) -> Vec<Action> {
-        actions.sort_by_key(|action| action.variant_index());
-    
-        actions
     }
 }
