@@ -113,13 +113,20 @@ impl SoftKmsInitCmd {
 #[derive(Debug, clap::Subcommand)]
 pub enum ThresholdInitCmd {
     /// Use a centralized dealer to create config files for each signer.
+    ///
+    /// Unlike the other `pcli init` commands, this one ignores the global
+    /// `--home` argument, since it generates one config for each signer.
     Deal {
         /// The minimum number of signers required to make a signature (>= 2).
         #[clap(short, long)]
         threshold: u16,
-        /// One file name for each signer, where the dealt config will be saved.
-        #[clap(short, long, value_delimiter = ' ', multiple_values = true)]
-        out: Vec<Utf8PathBuf>,
+        /// A path to the home directory for each signer.
+        ///
+        /// Each directory will be configured to be used as the --home parameter
+        /// for that signer's pcli instance.  This implicitly specifies the
+        /// total number of signers (one for each --home).
+        #[clap(long, value_delimiter = ' ', multiple_values = true)]
+        home: Vec<Utf8PathBuf>,
     },
 }
 
@@ -128,13 +135,15 @@ impl ThresholdInitCmd {
         use penumbra_custody::threshold;
 
         match self {
-            ThresholdInitCmd::Deal { threshold: t, out } => {
+            ThresholdInitCmd::Deal { threshold: t, home } => {
                 if *t < 2 {
                     anyhow::bail!("threshold must be >= 2");
                 }
-                let configs = threshold::Config::deal(&mut OsRng, *t, out.len() as u16)?;
-                println!("Writing dealt config files.");
-                for (config, path) in configs.into_iter().zip(out.iter()) {
+                let n = home.len() as u16;
+                println!("Generating {}-of-{} threshold config.", t, n);
+                let configs = threshold::Config::deal(&mut OsRng, *t, n)?;
+                println!("Writing dealt config files...");
+                for (i, (config, path)) in configs.into_iter().zip(home.iter()).enumerate() {
                     let full_viewing_key = config.fvk().clone();
                     let config = PcliConfig {
                         custody: CustodyConfig::Threshold(config),
@@ -143,6 +152,8 @@ impl ThresholdInitCmd {
                         view_url: None,
                         disable_warning: false,
                     };
+                    println!("  Writing signer {} config to {}", i, path);
+                    std::fs::create_dir_all(path)?;
                     config.save(path.join(crate::CONFIG_FILE_NAME))?;
                 }
                 Ok(())
