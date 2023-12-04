@@ -5,7 +5,7 @@ releases:
     values:
       - persistence:
           enabled: true
-          size: 100G
+          size: 200G
       - preserve_lb_svc: true
       - only_lb_svc: false
       - image:
@@ -38,7 +38,7 @@ releases:
       - penumbra_bootstrap_node_cometbft_rpc_url: "http://penumbra-testnet-val-0:26657"
       - persistence:
           enabled: true
-          size: 100G
+          size: 200G
       - part_of: penumbra-testnet
       # Node config info, including ip address, monikers, and seed-mode status.
       - vars/penumbra-testnet-nodes-ips.yml
