@@ -2,7 +2,7 @@
 name = "narsil"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 description = "The software for the Narsil sharded custody implementation"
-version = "0.63.2"
+version = "0.63.3"
 edition = "2021"
 repository = "https://github.com/penumbra-zone/penumbra/"
 homepage = "https://penumbra.zone"

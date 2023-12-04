@@ -1,6 +1,6 @@
 [package]
 name = "summonerd"
-version = "0.63.2"
+version = "0.63.3"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"
 description = "Coordination node for summoning ceremony"
