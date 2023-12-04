@@ -396,15 +396,18 @@ async fn sct_divergence_check(
 
     let mut client = QueryServiceClient::new(channel);
 
-    let value = client
-        .key_value(penumbra_proto::core::app::v1alpha1::KeyValueRequest {
-            key: sct_state_key::anchor_by_height(height),
-            ..Default::default()
-        })
-        .await?
-        .into_inner()
-        .value
-        .context("sct state not found")?;
+    let req = penumbra_proto::core::app::v1alpha1::KeyValueRequest {
+        key: sct_state_key::anchor_by_height(height),
+        ..Default::default()
+    };
+    let rsp = client.key_value(req.clone()).await?.into_inner();
+    tracing::error!(?req, ?rsp);
+
+    let value = rsp.value.context(format!(
+        "sct state not found at height {}, state key {}",
+        height,
+        sct_state_key::anchor_by_height(height)
+    ))?;
 
     let expected_root = penumbra_tct::Root::decode(value.value.as_slice())?;
 

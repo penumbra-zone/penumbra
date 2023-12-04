@@ -145,7 +145,7 @@ impl ViewService {
             return Err(tonic::Status::new(
                 tonic::Code::Internal,
                 format!(
-                    "Worker failed: {}",
+                    "Worker failed: {:#}",
                     self.error_slot
                         .lock()
                         .map_err(|e| {
