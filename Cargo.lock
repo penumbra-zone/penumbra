@@ -5130,6 +5130,7 @@ version = "0.63.1"
 dependencies = [
  "anyhow",
  "ark-ff",
+ "ark-serialize",
  "base64 0.20.0",
  "blake2b_simd 0.5.11",
  "bytes",
