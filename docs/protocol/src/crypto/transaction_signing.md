@@ -23,7 +23,7 @@ formed `Transaction`. This process is internally partitioned into three steps:
 1. Each `Action` is individually built based to its specification in the `TransactionPlan`. 
 2. The pre-built actions to collectively used to construct a transaction with placeholder dummy signatures, that can be filled in once the
 signatures from the `AuthorizationData` are ready[^1]. This intermediate state
-of the transaction without the full authorizing data is referred to as the `PendingTransaction`.
+of the transaction without the full authorizing data is referred to as the `UnauthenticatedTransaction`.
 1. Slot the `AuthorizationData` to replace the placeholder singatures to assemble the final `Transaction`. 
 
 The Penumbra protocol was designed to only require the custodian, e.g. the hardware wallet
@@ -48,25 +48,25 @@ A figure showing how these pieces fit together is shown below:
 ║                        ║                           │
 ╚════════════▲═══════════╝                           │
              │                                       │
-             │                                       │      ┌───────────┐
- ┌───────────┴───────────┐                           │      │           │
- │                       │                           └┬────▶│Transaction│
- │    TransactionPlan    │                            │     │           │
- │                       │                            │     └───────────┘
- └───────────┬───────────┘                            │
-             │                                        │
-             │                                        │
-             │                                        │
- ╔═══════════▼════════════╗                           │
- ║                Proving ║                           │
- ║                        ║                           │
- ║┌──────────────────────┐║                           │
- ║│     WitnessData      │║                           │
- ║└──────────────────────┘║   ┌────────────────────┐  │
- ║                        ║   │                    │  │ 
- ║                        ╠──▶│ PendingTransaction ├──┘
- ║┌──────────────────────┐║   │                    │
- ║│   Full viewing key   │║   └────────────────────┘
+             │                                       │              ┌───────────┐
+ ┌───────────┴───────────┐                           │              │           │
+ │                       │                           └────────┬────▶│Transaction│
+ │    TransactionPlan    │                                    |     │           │
+ │                       │                                    │     └───────────┘
+ └───────────┬───────────┘                                    │
+             │                                                │
+             │                                                │
+             │                                                │
+ ╔═══════════▼════════════╗                                   │
+ ║                Proving ║                                   │
+ ║                        ║                                   │
+ ║┌──────────────────────┐║                                   │
+ ║│     WitnessData      │║                                   │
+ ║└──────────────────────┘║   ┌─────────────────────────────┐ │
+ ║                        ║   │                             │ │
+ ║                        ╠──▶│ UnauthenticatedTransaction  ├─┘
+ ║┌──────────────────────┐║   │                             │
+ ║│   Full viewing key   │║   └─────────────────────────────┘
  ║└──────────────────────┘║
  ║                        ║
  ║                        ║
