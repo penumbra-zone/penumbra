@@ -105,7 +105,7 @@ async fn main() -> Result<()> {
     // create the client state, so handle it specially here so that we can have
     // common code for the other subcommands.
     if let Command::Init(init_cmd) = &opt.cmd {
-        init_cmd.exec(opt.home.as_path())?;
+        init_cmd.exec(opt.home.as_path()).await?;
         return Ok(());
     }
 
