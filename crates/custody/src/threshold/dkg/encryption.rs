@@ -94,6 +94,20 @@ impl EncryptionKey {
 
         ciphertext
     }
+
+    /// Return a view of this value's underlying bytes
+    pub fn as_bytes(&self) -> &[u8; 32] {
+        &self.0 .0
+    }
+}
+
+impl TryFrom<&[u8]> for EncryptionKey {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &[u8]) -> std::result::Result<Self, Self::Error> {
+        let repr: [u8; 32] = value.try_into()?;
+        Ok(Self(decaf377_ka::Public(repr)))
+    }
 }
 
 /// A key that allows decrypting ciphertexts sent to the corresponding encryption key.
