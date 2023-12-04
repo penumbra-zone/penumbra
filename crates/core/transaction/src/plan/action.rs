@@ -164,6 +164,34 @@ impl ActionPlan {
         })
     }
 
+    /// Canonical action plan ordering according to protobuf definitions
+    pub fn variant_index(&self) -> usize {
+        match self {
+            ActionPlan::Spend(_) => 1,
+            ActionPlan::Output(_) => 2,
+            ActionPlan::Swap(_) => 3,
+            ActionPlan::SwapClaim(_) => 4,
+            ActionPlan::ValidatorDefinition(_) => 16,
+            ActionPlan::IbcAction(_) => 17,
+            ActionPlan::ProposalSubmit(_) => 18,
+            ActionPlan::ProposalWithdraw(_) => 19,
+            ActionPlan::ValidatorVote(_) => 20,
+            ActionPlan::DelegatorVote(_) => 21,
+            ActionPlan::ProposalDepositClaim(_) => 22,
+            ActionPlan::Withdrawal(_) => 23,
+            ActionPlan::PositionOpen(_) => 30,
+            ActionPlan::PositionClose(_) => 31,
+            ActionPlan::PositionWithdraw(_) => 32,
+            ActionPlan::PositionRewardClaim(_) => 34,
+            ActionPlan::Delegate(_) => 40,
+            ActionPlan::Undelegate(_) => 41,
+            ActionPlan::UndelegateClaim(_) => 42,
+            ActionPlan::DaoSpend(_) => 50,
+            ActionPlan::DaoOutput(_) => 51,
+            ActionPlan::DaoDeposit(_) => 52,
+        }
+    }
+
     pub fn balance(&self) -> Balance {
         use ActionPlan::*;
 

@@ -143,7 +143,7 @@ impl TransactionPlan {
         auth_data: &AuthorizationData,
     ) -> Result<Transaction> {
         // 1. Build each action.
-        let mut actions = self
+        let actions = self
             .actions
             .iter()
             .map(|action_plan| {
