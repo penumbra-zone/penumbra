@@ -89,10 +89,10 @@
           to set up <span class="font-mono">pcli</span> and create a wallet.
           <br>
           If you already have <span class="font-mono">pcli</span> installed, make sure you're using
-          <span class="font-bold">v0.63.1</span>:
+          <span class="font-bold">v0.63.3</span>:
         <pre
-          class="text-sm my-8 p-2 bg-charcoal rounded-lg"><span class="no-select">$ </span>cargo run --quiet --release --bin pcli -- --version
-<span class="no-select">pcli v0.63.1</span></pre>
+          class="text-sm my-8 p-2 bg-charcoal rounded-lg"><span class="no-select">$ </span>pcli --version
+<span class="no-select">pcli v0.63.3</span></pre>
         </p>
         <h3 class="font-bold text-xl pt-4 bg-text-linear bg-clip-text text-transparent">Receiving Faucet Funds</h3>
         <p>
@@ -104,7 +104,7 @@
           To do this, you need to first get your address from <span class="font-mono">pcli</span>:
         </p>
         <pre
-          class="text-sm my-8 p-2 bg-charcoal rounded-lg">cargo run --quiet --release --bin pcli -- view address</pre>
+          class="text-sm my-8 p-2 bg-charcoal rounded-lg">pcli view address</pre>
         <p>
           Then, you can go to the <span class="font-bold">#testnet-faucet</span> channel in the Discord, and paste that
           address to receive funds.
@@ -118,7 +118,7 @@
           To join the queue, use <span class="font-mono">pcli ceremony contribute</span> to place a bid:
         </p>
         <pre
-          class="text-sm my-8 p-4 bg-charcoal rounded-lg overflow-x-auto">cargo run --quiet --release --bin pcli -- ceremony contribute --phase {{ phase_number }} --bid {{ min_bid }} --coordinator-address {{ address }}</pre>
+          class="text-sm my-8 p-4 bg-charcoal rounded-lg overflow-x-auto">pcli ceremony contribute --phase {{ phase_number }} --bid {{ min_bid }} --coordinator-address {{ address }}</pre>
         <p>
           The minimum bid for this ceremony is {{ min_bid }}.
         </p>
