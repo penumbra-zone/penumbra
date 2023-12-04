@@ -209,7 +209,7 @@ mod tests {
     proptest! {
     #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
-    fn undelegate_claim_proof_happy_path(validator_randomness in fr_strategy(), balance_blinding in fr_strategy(), value1_amount in 2..200u64, penalty_amount in 0..200u64) {
+    fn undelegate_claim_proof_happy_path(validator_randomness in fr_strategy(), balance_blinding in fr_strategy(), value1_amount in 2..200u64, penalty_amount in 0..100u64) {
             let mut rng = OsRng;
             let (pk, vk) = generate_prepared_test_parameters::<UndelegateClaimCircuit>(&mut rng);
 
@@ -220,7 +220,8 @@ mod tests {
             let start_epoch_index = 1;
             let unbonding_token = UnbondingToken::new(validator_identity, start_epoch_index);
             let unbonding_id = unbonding_token.id();
-            let penalty = Penalty(penalty_amount);
+            let penalty_actual = penalty_amount / 100;
+            let penalty = Penalty(penalty_amount.into());
             let balance = penalty.balance_for_claim(unbonding_id, unbonding_amount);
             let balance_commitment = balance.commit(balance_blinding);
 
