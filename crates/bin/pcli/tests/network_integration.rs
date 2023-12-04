@@ -109,7 +109,7 @@ fn get_validator(tmpdir: &TempDir) -> String {
     captures.unwrap()[0].to_string()
 }
 
-// #[ignore]
+#[ignore]
 #[test]
 fn transaction_send_from_addr_0_to_addr_1() {
     let tmpdir = load_wallet_into_tmpdir();
@@ -166,7 +166,6 @@ fn transaction_send_from_addr_0_to_addr_1() {
 
     let tvp: ProtoTransactionView = serde_json::value::from_value(view_json).unwrap();
     let tv: TransactionView = tvp.try_into().unwrap();
-    println!("action_views is: {:?}", tv.body_view.action_views);
 
     assert!(matches!(
         &tv.body_view.action_views[0],
