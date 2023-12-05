@@ -47,7 +47,7 @@ impl Default for Content {
                     denom: "penumbra"
                         .parse()
                         .expect("hardcoded \"penumbra\" denom should be parseable"),
-                    address: penumbra_chain::test_keys::ADDRESS_0_STR
+                    address: penumbra_keys::test_keys::ADDRESS_0_STR
                         .parse()
                         .expect("hardcoded test address should be valid"),
                 },
@@ -56,7 +56,7 @@ impl Default for Content {
                     denom: "test_usd"
                         .parse()
                         .expect("hardcoded \"test_usd\" denom should be parseable"),
-                    address: penumbra_chain::test_keys::ADDRESS_0_STR
+                    address: penumbra_keys::test_keys::ADDRESS_0_STR
                         .parse()
                         .expect("hardcoded test address should be valid"),
                 },
@@ -65,7 +65,7 @@ impl Default for Content {
                     denom: "gm"
                         .parse()
                         .expect("hardcoded \"gm\" denom should be parseable"),
-                    address: penumbra_chain::test_keys::ADDRESS_1_STR
+                    address: penumbra_keys::test_keys::ADDRESS_1_STR
                         .parse()
                         .expect("hardcoded test address should be valid"),
                 },
@@ -74,7 +74,7 @@ impl Default for Content {
                     denom: "gn"
                         .parse()
                         .expect("hardcoded \"gn\" denom should be parseable"),
-                    address: penumbra_chain::test_keys::ADDRESS_1_STR
+                    address: penumbra_keys::test_keys::ADDRESS_1_STR
                         .parse()
                         .expect("hardcoded test address should be valid"),
                 },

@@ -24,7 +24,7 @@ use regex::Regex;
 use serde_json::Value;
 use tempfile::{tempdir, NamedTempFile, TempDir};
 
-use penumbra_chain::test_keys::{ADDRESS_0_STR, ADDRESS_1_STR, SEED_PHRASE};
+use penumbra_keys::test_keys::{ADDRESS_0_STR, ADDRESS_1_STR, SEED_PHRASE};
 use penumbra_proto::core::transaction::v1alpha1::TransactionView as ProtoTransactionView;
 use penumbra_transaction::view::TransactionView;
 

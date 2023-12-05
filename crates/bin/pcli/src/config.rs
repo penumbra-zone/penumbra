@@ -82,9 +82,9 @@ mod tests {
             grpc_url: Url::parse("https://grpc.testnet.penumbra.zone").unwrap(),
             disable_warning: false,
             view_url: None,
-            full_viewing_key: penumbra_chain::test_keys::FULL_VIEWING_KEY.clone(),
+            full_viewing_key: penumbra_keys::test_keys::FULL_VIEWING_KEY.clone(),
             custody: CustodyConfig::SoftKms(SoftKmsConfig::from(
-                penumbra_chain::test_keys::SPEND_KEY.clone(),
+                penumbra_keys::test_keys::SPEND_KEY.clone(),
             )),
         };
 
