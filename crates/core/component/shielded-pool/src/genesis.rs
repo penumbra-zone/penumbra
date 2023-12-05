@@ -43,8 +43,8 @@ impl Default for Content {
         Self {
             allocations: vec![
                 Allocation {
-                    amount: 1000u128.into(),
-                    denom: "penumbra"
+                    raw_amount: 1000u128.into(),
+                    raw_denom: "penumbra"
                         .parse()
                         .expect("hardcoded \"penumbra\" denom should be parseable"),
                     address: penumbra_keys::test_keys::ADDRESS_0_STR
@@ -52,8 +52,8 @@ impl Default for Content {
                         .expect("hardcoded test address should be valid"),
                 },
                 Allocation {
-                    amount: 100u128.into(),
-                    denom: "test_usd"
+                    raw_amount: 100u128.into(),
+                    raw_denom: "test_usd"
                         .parse()
                         .expect("hardcoded \"test_usd\" denom should be parseable"),
                     address: penumbra_keys::test_keys::ADDRESS_0_STR
@@ -61,8 +61,8 @@ impl Default for Content {
                         .expect("hardcoded test address should be valid"),
                 },
                 Allocation {
-                    amount: 100u128.into(),
-                    denom: "gm"
+                    raw_amount: 100u128.into(),
+                    raw_denom: "gm"
                         .parse()
                         .expect("hardcoded \"gm\" denom should be parseable"),
                     address: penumbra_keys::test_keys::ADDRESS_1_STR
@@ -70,8 +70,8 @@ impl Default for Content {
                         .expect("hardcoded test address should be valid"),
                 },
                 Allocation {
-                    amount: 100u128.into(),
-                    denom: "gn"
+                    raw_amount: 100u128.into(),
+                    raw_denom: "gn"
                         .parse()
                         .expect("hardcoded \"gn\" denom should be parseable"),
                     address: penumbra_keys::test_keys::ADDRESS_1_STR

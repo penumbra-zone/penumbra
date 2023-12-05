@@ -15,7 +15,7 @@ pub use self::metrics::register_metrics;
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
-use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::{
     component::{StateReadExt as _, StateWriteExt as _},
     Epoch, NoteSource,
@@ -29,7 +29,10 @@ use penumbra_proto::{
     state::future::{DomainFuture, ProtoFuture},
     StateReadProto, StateWriteProto,
 };
-use penumbra_shielded_pool::component::{NoteManager, SupplyRead, SupplyWrite};
+use penumbra_shielded_pool::{
+    component::{NoteManager, SupplyRead, SupplyWrite},
+    genesis::Content as ShieldedPoolGenesisContent,
+};
 use penumbra_storage::{StateRead, StateWrite};
 use sha2::{Digest, Sha256};
 use tendermint::validator::Update;
@@ -795,7 +798,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
     /// state with power assigned.
     async fn add_genesis_validator(
         &mut self,
-        genesis_allocations: &BTreeMap<String, u128>,
+        genesis_allocations: &BTreeMap<asset::Id, Amount>,
         genesis_base_rate: &BaseRateData,
         validator: Validator,
     ) -> Result<()> {
@@ -808,14 +811,12 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
         // The initial allocations to the validator are specified in `genesis_allocations`.
         // We use these to determine the initial voting power for each validator.
-        let delegation_denom = DelegationToken::from(validator.identity_key.clone())
-            .denom()
-            .to_string();
+        let delegation_id = DelegationToken::from(validator.identity_key.clone()).id();
         let total_delegation_tokens = genesis_allocations
-            .get(&delegation_denom)
+            .get(&delegation_id)
             .copied()
-            .unwrap_or(0);
-        let power = cur_rate_data.voting_power(total_delegation_tokens, genesis_base_rate);
+            .unwrap_or(0u64.into());
+        let power = cur_rate_data.voting_power(total_delegation_tokens.value(), genesis_base_rate);
 
         self.add_validator_inner(
             validator.clone(),
@@ -918,12 +919,15 @@ impl<T: StateWrite + StateWriteExt + ?Sized> StakingImpl for T {}
 
 #[async_trait]
 impl Component for Staking {
-    type AppState = GenesisContent;
+    type AppState = (GenesisContent, ShieldedPoolGenesisContent);
 
     #[instrument(name = "staking", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&GenesisContent>) {
+    async fn init_chain<S: StateWrite>(
+        mut state: S,
+        app_state: Option<&(GenesisContent, ShieldedPoolGenesisContent)>,
+    ) {
         match app_state {
-            Some(app_state) => {
+            Some((app_state, sp_app_state)) => {
                 let starting_height = state
                     .get_block_height()
                     .await
@@ -943,25 +947,10 @@ impl Component for Staking {
 
                 // Compile totals of genesis allocations by denom, which we can use
                 // to compute the delegation tokens for each validator.
-                let mut genesis_allocations = BTreeMap::new();
-                // Grab the token supply info from the staking component's state.
-                // Note that this requires the staking component's init_chain to be called first.
-                // First grab all known assets:
-                let known_assets = state
-                    .known_assets()
-                    .await
-                    .expect("shielded pool component called first");
-                for asset in known_assets.0 {
-                    // Grab the associated denom
-                    let denom = asset.base_denom().denom;
-                    // Grab the token supply associated with the denom
-                    let genesis_allocation = state
-                        .token_supply(&asset.id())
-                        .await
-                        .expect("should be able to get token supply")
-                        .expect("should have token supply for known denom")
-                        .value();
-                    genesis_allocations.insert(denom, genesis_allocation);
+                let mut genesis_allocations = BTreeMap::<_, Amount>::new();
+                for allocation in &sp_app_state.allocations {
+                    let value = allocation.value();
+                    *genesis_allocations.entry(value.asset_id).or_default() += value.amount;
                 }
 
                 // Add initial validators to the JMT

@@ -122,9 +122,9 @@ impl Note {
         Note::from_parts(
             allocation.address,
             Value {
-                amount: allocation.amount,
+                amount: allocation.raw_amount,
                 asset_id: asset::REGISTRY
-                    .parse_denom(&allocation.denom)
+                    .parse_denom(&allocation.raw_denom)
                     .ok_or_else(|| anyhow::anyhow!("invalid denomination"))?
                     .id(),
             },

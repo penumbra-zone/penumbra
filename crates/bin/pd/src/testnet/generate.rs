@@ -446,8 +446,8 @@ impl TestnetValidator {
             // Add an initial allocation of 25,000 delegation tokens,
             // starting them with 2.5x the individual allocations to discord users.
             // 25,000 delegation tokens * 1e6 udelegation factor
-            amount: (25_000 * 10u128.pow(6)).into(),
-            denom: delegation_denom.to_string(),
+            raw_amount: (25_000 * 10u128.pow(6)).into(),
+            raw_denom: delegation_denom.to_string(),
         })
     }
     /// Return a URL for Tendermint P2P service for this node.
@@ -552,8 +552,8 @@ impl TryFrom<TestnetAllocation> for shielded_pool_genesis::Allocation {
 
     fn try_from(a: TestnetAllocation) -> anyhow::Result<shielded_pool_genesis::Allocation> {
         Ok(shielded_pool_genesis::Allocation {
-            amount: a.amount.into(),
-            denom: a.denom.clone(),
+            raw_amount: a.amount.into(),
+            raw_denom: a.denom.clone(),
             address: Address::from_str(&a.address)
                 .context("invalid address format in genesis allocations")?,
         })
@@ -612,14 +612,14 @@ mod tests {
         let allos = TestnetAllocation::from_reader(csv_content.as_bytes())?;
 
         let a1 = &allos[0];
-        assert!(a1.denom == "udelegation_penumbravalid1jzcc6vsm29am9ggs8z0d7s9jk9uf8tfrqg7hglc9ufs7r23nu5yqtw77ex");
+        assert!(a1.raw_denom == "udelegation_penumbravalid1jzcc6vsm29am9ggs8z0d7s9jk9uf8tfrqg7hglc9ufs7r23nu5yqtw77ex");
         assert!(a1.address == Address::from_str("penumbra1rqcd3hfvkvc04c4c9vc0ac87lh4y0z8l28k4xp6d0cnd5jc6f6k0neuzp6zdwtpwyfpswtdzv9jzqtpjn5t6wh96pfx3flq2dhqgc42u7c06kj57dl39w2xm6tg0wh4zc8kjjk")?);
-        assert!(a1.amount.value() == 100000);
+        assert!(a1.raw_amount.value() == 100000);
 
         let a2 = &allos[1];
-        assert!(a2.denom == "upenumbra");
+        assert!(a2.raw_denom == "upenumbra");
         assert!(a2.address == Address::from_str("penumbra1rqcd3hfvkvc04c4c9vc0ac87lh4y0z8l28k4xp6d0cnd5jc6f6k0neuzp6zdwtpwyfpswtdzv9jzqtpjn5t6wh96pfx3flq2dhqgc42u7c06kj57dl39w2xm6tg0wh4zc8kjjk")?);
-        assert!(a2.amount.value() == 100000);
+        assert!(a2.raw_amount.value() == 100000);
 
         Ok(())
     }

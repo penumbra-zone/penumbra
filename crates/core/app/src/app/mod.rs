@@ -134,7 +134,14 @@ impl App {
                 ShieldedPool::init_chain(&mut state_tx, Some(&app_state.shielded_pool_content))
                     .await;
                 Distributions::init_chain(&mut state_tx, Some(&())).await;
-                Staking::init_chain(&mut state_tx, Some(&app_state.stake_content)).await;
+                Staking::init_chain(
+                    &mut state_tx,
+                    Some(&(
+                        app_state.stake_content.clone(),
+                        app_state.shielded_pool_content.clone(),
+                    )),
+                )
+                .await;
                 IBCComponent::init_chain(&mut state_tx, Some(&())).await;
                 Dex::init_chain(&mut state_tx, Some(&())).await;
                 Governance::init_chain(&mut state_tx, Some(&())).await;
