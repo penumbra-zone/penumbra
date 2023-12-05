@@ -4,20 +4,15 @@ use anyhow::Context;
 use async_stream::try_stream;
 use futures::{StreamExt as _, TryStreamExt as _};
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_proto::{
-    core::app::v1alpha1::{
-        query_service_server::QueryService, AppParametersRequest, AppParametersResponse,
-        TransactionsByHeightRequest, TransactionsByHeightResponse,
-    },
-    StateReadProto as _,
+use penumbra_proto::core::app::v1alpha1::{
+    query_service_server::QueryService, AppParametersRequest, AppParametersResponse,
+    TransactionsByHeightRequest, TransactionsByHeightResponse,
 };
-use penumbra_storage::{StateRead as _, Storage};
-use sha2::Digest;
-use tokio::task::JoinSet;
+use penumbra_storage::Storage;
 use tonic::Status;
 use tracing::instrument;
 
-use crate::app::{state_key, StateReadExt as _};
+use crate::app::StateReadExt as _;
 
 // TODO: Hide this and only expose a Router?
 pub struct Server {
