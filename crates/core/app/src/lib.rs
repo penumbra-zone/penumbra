@@ -5,14 +5,19 @@ mod mock_client;
 mod temp_storage_ext;
 
 pub use action_handler::ActionHandler;
+pub use app::StateWriteExt;
 pub use dao_ext::DaoStateReadExt;
 pub use mock_client::MockClient;
 pub use temp_storage_ext::TempStorageExt;
 
 use once_cell::sync::Lazy;
 
-pub static SUBSTORE_PREFIXES: Lazy<Vec<String>> =
-    Lazy::new(|| vec![penumbra_ibc::IBC_SUBSTORE_PREFIX.to_string()]);
+pub static SUBSTORE_PREFIXES: Lazy<Vec<String>> = Lazy::new(|| {
+    vec![
+        penumbra_ibc::IBC_SUBSTORE_PREFIX.to_string(),
+        penumbra_chain::COMETBFT_SUBSTORE_PREFIX.to_string(),
+    ]
+});
 
 pub mod app;
 pub mod genesis;

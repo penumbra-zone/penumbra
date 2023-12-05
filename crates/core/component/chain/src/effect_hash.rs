@@ -1,4 +1,4 @@
-use penumbra_proto::{penumbra::core::component::chain::v1alpha1 as pb_crypto, DomainType};
+use penumbra_proto::{penumbra::core::transaction::v1alpha1 as pb_transaction, DomainType};
 
 /// Something that can be hashed to produce an [`EffectHash`].
 pub trait EffectingData {
@@ -11,6 +11,8 @@ pub trait EffectingData {
 /// This includes, e.g., the commitments to new output notes created by the
 /// transaction, or nullifiers spent by the transaction, but does not include
 /// _authorizing data_ such as signatures or zk proofs.
+///
+/// TODO: move this to the transaction crate, can be done when we ditch the chain component.
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct EffectHash(pub [u8; 64]);
 
@@ -35,10 +37,10 @@ impl std::fmt::Debug for EffectHash {
 }
 
 impl DomainType for EffectHash {
-    type Proto = pb_crypto::EffectHash;
+    type Proto = pb_transaction::EffectHash;
 }
 
-impl From<EffectHash> for pb_crypto::EffectHash {
+impl From<EffectHash> for pb_transaction::EffectHash {
     fn from(msg: EffectHash) -> Self {
         Self {
             inner: msg.0.to_vec(),
@@ -46,9 +48,9 @@ impl From<EffectHash> for pb_crypto::EffectHash {
     }
 }
 
-impl TryFrom<pb_crypto::EffectHash> for EffectHash {
+impl TryFrom<pb_transaction::EffectHash> for EffectHash {
     type Error = anyhow::Error;
-    fn try_from(value: pb_crypto::EffectHash) -> Result<Self, Self::Error> {
+    fn try_from(value: pb_transaction::EffectHash) -> Result<Self, Self::Error> {
         Ok(Self(value.inner.try_into().map_err(|_| {
             anyhow::anyhow!("incorrect length for effect hash")
         })?))

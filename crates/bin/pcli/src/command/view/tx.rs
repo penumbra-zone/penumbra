@@ -255,7 +255,11 @@ impl TxCmd {
         let tx_info = if let Ok(tx_info) = app.view().transaction_info_by_hash(hash).await {
             tx_info
         } else {
-            println!("Transaction not found in view service, fetching from fullnode...");
+            if !self.raw {
+                println!("Transaction not found in view service, fetching from fullnode...");
+            } else {
+                tracing::info!("Transaction not found in view service, fetching from fullnode...");
+            }
             // Fall back to fetching from fullnode
             let mut client = app.tendermint_proxy_client().await?;
             let rsp = client

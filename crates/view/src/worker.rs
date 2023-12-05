@@ -9,24 +9,23 @@ use penumbra_dex::lp::{position, LpNft};
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     self as proto,
-    core::component::{
-        compact_block::v1alpha1::{
-            query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
-            CompactBlockRangeRequest,
-        },
-        shielded_pool::v1alpha1::{
-            query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
-            DenomMetadataByIdRequest,
+    core::{
+        app::v1alpha1::query_service_client::QueryServiceClient as AppQueryServiceClient,
+        component::{
+            compact_block::v1alpha1::{
+                query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
+                CompactBlockRangeRequest,
+            },
+            shielded_pool::v1alpha1::{
+                query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
+                DenomMetadataByIdRequest,
+            },
         },
     },
-    util::tendermint_proxy::v1alpha1::{
-        tendermint_proxy_service_client::TendermintProxyServiceClient, GetBlockByHeightRequest,
-    },
-    DomainType,
 };
 use penumbra_sct::Nullifier;
 use penumbra_transaction::Transaction;
-use sha2::Digest;
+use proto::core::app::v1alpha1::TransactionsByHeightRequest;
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
 use url::Url;
@@ -122,28 +121,25 @@ impl Worker {
             "fetching full transaction data"
         );
 
-        let block = fetch_block(self.channel.clone(), filtered_block.height as i64).await?;
+        let transactions = fetch_transactions(self.channel.clone(), filtered_block.height)
+            .await?
+            .iter()
+            .filter_map(|tx| {
+                let tx_id = tx.id().0;
 
-        let mut transactions = Vec::new();
+                // Check if the transaction is a known inbound transaction or spends one of our nullifiers.
+                if inbound_transaction_ids.contains(&tx_id)
+                    || tx
+                        .spent_nullifiers()
+                        .any(|nf| spent_nullifiers.contains(&nf))
+                {
+                    return Some(tx.clone());
+                }
+                None
+            })
+            .collect::<Vec<_>>();
 
-        for tx_bytes in block.data.as_ref().expect("block data").txs.iter() {
-            let tx_id: [u8; 32] = sha2::Sha256::digest(tx_bytes.as_slice())
-                .as_slice()
-                .try_into()?;
-
-            let transaction = Transaction::decode(tx_bytes.as_slice())?;
-
-            // Check if the transaction is a known inbound transaction or spends one of our nullifiers.
-            if inbound_transaction_ids.contains(&tx_id)
-                || transaction
-                    .spent_nullifiers()
-                    .any(|nf| spent_nullifiers.contains(&nf))
-            {
-                transactions.push(transaction)
-            }
-        }
         tracing::debug!(
-            transactions_in_block = block.data.expect("block data").txs.len(),
             matched = transactions.len(),
             "filtered relevant transactions"
         );
@@ -372,17 +368,24 @@ impl Worker {
     }
 }
 
-async fn fetch_block(
+// Fetches all transactions in the block.
+async fn fetch_transactions(
     channel: Channel,
-    height: i64,
-) -> anyhow::Result<proto::tendermint::types::Block> {
-    let mut client = TendermintProxyServiceClient::new(channel);
-    Ok(client
-        .get_block_by_height(GetBlockByHeightRequest { height })
+    block_height: u64,
+) -> anyhow::Result<Vec<Transaction>> {
+    let mut client = AppQueryServiceClient::new(channel);
+    let transactions = client
+        .transactions_by_height(TransactionsByHeightRequest {
+            block_height,
+            ..Default::default()
+        })
         .await?
         .into_inner()
-        .block
-        .expect("block not found"))
+        .transactions
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<anyhow::Result<Vec<_>>>()?;
+    Ok(transactions)
 }
 
 #[cfg(feature = "sct-divergence-check")]
@@ -391,7 +394,7 @@ async fn sct_divergence_check(
     height: u64,
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
-    use penumbra_proto::storage::v1alpha1::query_service_client::QueryServiceClient;
+    use penumbra_proto::{storage::v1alpha1::query_service_client::QueryServiceClient, DomainType};
     use penumbra_sct::state_key as sct_state_key;
 
     let mut client = QueryServiceClient::new(channel);

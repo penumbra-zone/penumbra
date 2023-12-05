@@ -422,15 +422,27 @@ impl ::prost::Name for ActionView {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
     }
 }
+/// An authorization hash for a Penumbra transaction.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EffectHash {
+    #[prost(bytes = "vec", tag = "1")]
+    pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for EffectHash {
+    const NAME: &'static str = "EffectHash";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
+}
 /// The data required to authorize a transaction plan.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizationData {
     /// The computed auth hash for the approved transaction plan.
     #[prost(message, optional, tag = "1")]
-    pub effect_hash: ::core::option::Option<
-        super::super::component::chain::v1alpha1::EffectHash,
-    >,
+    pub effect_hash: ::core::option::Option<EffectHash>,
     /// The required spend authorizations, returned in the same order as the
     /// Spend actions in the original request.
     #[prost(message, repeated, tag = "2")]

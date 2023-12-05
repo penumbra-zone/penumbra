@@ -17,12 +17,14 @@ use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
 use penumbra_ibc::component::{IBCComponent, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
+use penumbra_proto::core::app::v1alpha1::TransactionsByHeightResponse;
 use penumbra_proto::DomainType;
 use penumbra_sct::component::SctManager;
 use penumbra_shielded_pool::component::{NoteManager, ShieldedPool};
 use penumbra_stake::component::{Staking, StateReadExt as _, StateWriteExt as _, ValidatorUpdates};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use penumbra_transaction::Transaction;
+use prost::Message as _;
 use tendermint::abci::{self, Event};
 use tendermint::validator::Update;
 use tracing::Instrument;
@@ -300,6 +302,14 @@ impl App {
             .state
             .try_begin_transaction()
             .expect("state Arc should be present and unique");
+
+        // Index the transaction:
+        let height = state_tx.get_block_height().await?;
+        let transaction = Arc::as_ref(&tx).clone();
+        state_tx
+            .put_block_transaction(height, transaction.into())
+            .await?;
+
         tx.execute(&mut state_tx).await?;
 
         // At this point, we've completed execution successfully with no errors,
@@ -677,6 +687,25 @@ pub trait StateReadExt: StateRead {
             stake_params,
         })
     }
+
+    async fn transactions_by_height(
+        &self,
+        block_height: u64,
+    ) -> Result<TransactionsByHeightResponse> {
+        let transactions = match self
+            .nonverifiable_get_raw(state_key::transactions_by_height(block_height).as_bytes())
+            .await?
+        {
+            Some(transactions) => transactions,
+            None => TransactionsByHeightResponse {
+                transactions: vec![],
+                block_height,
+            }
+            .encode_to_vec(),
+        };
+
+        Ok(TransactionsByHeightResponse::decode(&transactions[..])?)
+    }
 }
 
 impl<
@@ -692,3 +721,32 @@ impl<
     > StateReadExt for T
 {
 }
+
+#[async_trait]
+pub trait StateWriteExt: StateWrite {
+    /// Stores the transactions that occurred during a CometBFT block.
+    /// This is used to create a durable transaction log for clients to retrieve;
+    /// the CometBFT `get_block_by_height` RPC call will only return data for blocks
+    /// since the last checkpoint, so we need to store the transactions separately.
+    async fn put_block_transaction(
+        &mut self,
+        height: u64,
+        transaction: penumbra_proto::core::transaction::v1alpha1::Transaction,
+    ) -> Result<()> {
+        // Extend the existing transactions with the new one.
+        let mut transactions_response = self.transactions_by_height(height).await?;
+        transactions_response.transactions = transactions_response
+            .transactions
+            .into_iter()
+            .chain(std::iter::once(transaction))
+            .collect();
+
+        self.nonverifiable_put_raw(
+            state_key::transactions_by_height(height).into(),
+            transactions_response.encode_to_vec(),
+        );
+        Ok(())
+    }
+}
+
+impl<T: StateWrite + ?Sized> StateWriteExt for T {}

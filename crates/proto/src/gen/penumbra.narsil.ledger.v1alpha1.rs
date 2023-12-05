@@ -259,7 +259,7 @@ impl ::prost::Name for ShardInfo {
 pub struct RequestIndex {
     #[prost(message, optional, tag = "1")]
     pub effect_hash: ::core::option::Option<
-        super::super::super::core::component::chain::v1alpha1::EffectHash,
+        super::super::super::core::transaction::v1alpha1::EffectHash,
     >,
 }
 impl ::prost::Name for RequestIndex {

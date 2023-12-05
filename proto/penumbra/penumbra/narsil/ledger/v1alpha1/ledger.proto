@@ -142,7 +142,7 @@ message ShardInfo {
 //   authorization of the same `TransactionPlan` after it has been signed, and the
 //   ledger can immediately return the already-existing authorization data.
 message RequestIndex {
-  core.component.chain.v1alpha1.EffectHash effect_hash = 1;
+  core.transaction.v1alpha1.EffectHash effect_hash = 1;
 }
 
 // Identifies a particular signing ceremony.
