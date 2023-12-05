@@ -75,3 +75,40 @@ message FollowerRound2 {
   // A signature over the proto-encoded bytes of inner.
   Signature sig = 3;
 }
+
+// The first message we broadcast in the DKG protocol.
+message DKGRound1 {
+  // The package we're sending to other people
+  crypto.decaf377_frost.v1alpha1.DKGRound1Package pkg = 1;
+  // A commitment to a share of the nullifier-deriving key
+  bytes nullifier_commitment = 2;
+  // An encryption key for the second round.
+  bytes epk = 3;
+  // A verification key establishing an identity for the sender of this message.
+  bytes vk = 4;
+}
+
+// The second message we broadcast in the DKG protocol.
+message DKGRound2 {
+  // A round2 package, encrypted, along with an identifier for the recipient.
+  message TargetedPackage {
+    // A verification key identifying the recipient.
+    bytes vk = 1;
+    // The ciphertext of an encrypted frost package for round 2.
+    bytes encrypted_package = 2;
+  }
+
+  // An inner message that will be signed.
+  message Inner {
+    // Encrypted packages for each recipient.
+    repeated TargetedPackage encrypted_packages = 1;
+    // An opening of the share of the nullifier-deriving key commitment
+    bytes nullifier = 2;
+  }
+
+  Inner inner = 1;
+  // The verification key identifying the sender.
+  bytes vk = 2;
+  // A signature over the proto-encoded inner message.
+  bytes sig = 3;
+}

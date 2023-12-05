@@ -350,6 +350,148 @@ func (x *FollowerRound2) GetSig() *Signature {
 	return nil
 }
 
+// The first message we broadcast in the DKG protocol.
+type DKGRound1 struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The package we're sending to other people
+	Pkg *v1alpha11.DKGRound1Package `protobuf:"bytes,1,opt,name=pkg,proto3" json:"pkg,omitempty"`
+	// A commitment to a share of the nullifier-deriving key
+	NullifierCommitment []byte `protobuf:"bytes,2,opt,name=nullifier_commitment,json=nullifierCommitment,proto3" json:"nullifier_commitment,omitempty"`
+	// An encryption key for the second round.
+	Epk []byte `protobuf:"bytes,3,opt,name=epk,proto3" json:"epk,omitempty"`
+	// A verification key establishing an identity for the sender of this message.
+	Vk []byte `protobuf:"bytes,4,opt,name=vk,proto3" json:"vk,omitempty"`
+}
+
+func (x *DKGRound1) Reset() {
+	*x = DKGRound1{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DKGRound1) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DKGRound1) ProtoMessage() {}
+
+func (x *DKGRound1) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DKGRound1.ProtoReflect.Descriptor instead.
+func (*DKGRound1) Descriptor() ([]byte, []int) {
+	return file_penumbra_custody_threshold_v1alpha1_threshold_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *DKGRound1) GetPkg() *v1alpha11.DKGRound1Package {
+	if x != nil {
+		return x.Pkg
+	}
+	return nil
+}
+
+func (x *DKGRound1) GetNullifierCommitment() []byte {
+	if x != nil {
+		return x.NullifierCommitment
+	}
+	return nil
+}
+
+func (x *DKGRound1) GetEpk() []byte {
+	if x != nil {
+		return x.Epk
+	}
+	return nil
+}
+
+func (x *DKGRound1) GetVk() []byte {
+	if x != nil {
+		return x.Vk
+	}
+	return nil
+}
+
+// The second message we broadcast in the DKG protocol.
+type DKGRound2 struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Inner *DKGRound2_Inner `protobuf:"bytes,1,opt,name=inner,proto3" json:"inner,omitempty"`
+	// The verification key identifying the sender.
+	Vk []byte `protobuf:"bytes,2,opt,name=vk,proto3" json:"vk,omitempty"`
+	// A signature over the proto-encoded inner message.
+	Sig []byte `protobuf:"bytes,3,opt,name=sig,proto3" json:"sig,omitempty"`
+}
+
+func (x *DKGRound2) Reset() {
+	*x = DKGRound2{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DKGRound2) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DKGRound2) ProtoMessage() {}
+
+func (x *DKGRound2) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DKGRound2.ProtoReflect.Descriptor instead.
+func (*DKGRound2) Descriptor() ([]byte, []int) {
+	return file_penumbra_custody_threshold_v1alpha1_threshold_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *DKGRound2) GetInner() *DKGRound2_Inner {
+	if x != nil {
+		return x.Inner
+	}
+	return nil
+}
+
+func (x *DKGRound2) GetVk() []byte {
+	if x != nil {
+		return x.Vk
+	}
+	return nil
+}
+
+func (x *DKGRound2) GetSig() []byte {
+	if x != nil {
+		return x.Sig
+	}
+	return nil
+}
+
 // A commitment along with a FROST identifier.
 type CoordinatorRound2_IdentifiedCommitments struct {
 	state         protoimpl.MessageState
@@ -365,7 +507,7 @@ type CoordinatorRound2_IdentifiedCommitments struct {
 func (x *CoordinatorRound2_IdentifiedCommitments) Reset() {
 	*x = CoordinatorRound2_IdentifiedCommitments{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[6]
+		mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -378,7 +520,7 @@ func (x *CoordinatorRound2_IdentifiedCommitments) String() string {
 func (*CoordinatorRound2_IdentifiedCommitments) ProtoMessage() {}
 
 func (x *CoordinatorRound2_IdentifiedCommitments) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[6]
+	mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -424,7 +566,7 @@ type CoordinatorRound2_PartialSigningPackage struct {
 func (x *CoordinatorRound2_PartialSigningPackage) Reset() {
 	*x = CoordinatorRound2_PartialSigningPackage{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[7]
+		mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -437,7 +579,7 @@ func (x *CoordinatorRound2_PartialSigningPackage) String() string {
 func (*CoordinatorRound2_PartialSigningPackage) ProtoMessage() {}
 
 func (x *CoordinatorRound2_PartialSigningPackage) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[7]
+	mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -473,7 +615,7 @@ type FollowerRound1_Inner struct {
 func (x *FollowerRound1_Inner) Reset() {
 	*x = FollowerRound1_Inner{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[8]
+		mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -486,7 +628,7 @@ func (x *FollowerRound1_Inner) String() string {
 func (*FollowerRound1_Inner) ProtoMessage() {}
 
 func (x *FollowerRound1_Inner) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[8]
+	mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -522,7 +664,7 @@ type FollowerRound2_Inner struct {
 func (x *FollowerRound2_Inner) Reset() {
 	*x = FollowerRound2_Inner{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[9]
+		mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -535,7 +677,7 @@ func (x *FollowerRound2_Inner) String() string {
 func (*FollowerRound2_Inner) ProtoMessage() {}
 
 func (x *FollowerRound2_Inner) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[9]
+	mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -554,6 +696,122 @@ func (*FollowerRound2_Inner) Descriptor() ([]byte, []int) {
 func (x *FollowerRound2_Inner) GetShares() []*v1alpha11.SignatureShare {
 	if x != nil {
 		return x.Shares
+	}
+	return nil
+}
+
+// A round2 package, encrypted, along with an identifier for the recipient.
+type DKGRound2_TargetedPackage struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// A verification key identifying the recipient.
+	Vk []byte `protobuf:"bytes,1,opt,name=vk,proto3" json:"vk,omitempty"`
+	// The ciphertext of an encrypted frost package for round 2.
+	EncryptedPackage []byte `protobuf:"bytes,2,opt,name=encrypted_package,json=encryptedPackage,proto3" json:"encrypted_package,omitempty"`
+}
+
+func (x *DKGRound2_TargetedPackage) Reset() {
+	*x = DKGRound2_TargetedPackage{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[12]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DKGRound2_TargetedPackage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DKGRound2_TargetedPackage) ProtoMessage() {}
+
+func (x *DKGRound2_TargetedPackage) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[12]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DKGRound2_TargetedPackage.ProtoReflect.Descriptor instead.
+func (*DKGRound2_TargetedPackage) Descriptor() ([]byte, []int) {
+	return file_penumbra_custody_threshold_v1alpha1_threshold_proto_rawDescGZIP(), []int{7, 0}
+}
+
+func (x *DKGRound2_TargetedPackage) GetVk() []byte {
+	if x != nil {
+		return x.Vk
+	}
+	return nil
+}
+
+func (x *DKGRound2_TargetedPackage) GetEncryptedPackage() []byte {
+	if x != nil {
+		return x.EncryptedPackage
+	}
+	return nil
+}
+
+// An inner message that will be signed.
+type DKGRound2_Inner struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Encrypted packages for each recipient.
+	EncryptedPackages []*DKGRound2_TargetedPackage `protobuf:"bytes,1,rep,name=encrypted_packages,json=encryptedPackages,proto3" json:"encrypted_packages,omitempty"`
+	// An opening of the share of the nullifier-deriving key commitment
+	Nullifier []byte `protobuf:"bytes,2,opt,name=nullifier,proto3" json:"nullifier,omitempty"`
+}
+
+func (x *DKGRound2_Inner) Reset() {
+	*x = DKGRound2_Inner{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[13]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DKGRound2_Inner) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DKGRound2_Inner) ProtoMessage() {}
+
+func (x *DKGRound2_Inner) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[13]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DKGRound2_Inner.ProtoReflect.Descriptor instead.
+func (*DKGRound2_Inner) Descriptor() ([]byte, []int) {
+	return file_penumbra_custody_threshold_v1alpha1_threshold_proto_rawDescGZIP(), []int{7, 1}
+}
+
+func (x *DKGRound2_Inner) GetEncryptedPackages() []*DKGRound2_TargetedPackage {
+	if x != nil {
+		return x.EncryptedPackages
+	}
+	return nil
+}
+
+func (x *DKGRound2_Inner) GetNullifier() []byte {
+	if x != nil {
+		return x.Nullifier
 	}
 	return nil
 }
@@ -653,29 +911,62 @@ var file_penumbra_custody_threshold_v1alpha1_threshold_proto_rawDesc = []byte{
 	0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x2e, 0x64, 0x65, 0x63,
 	0x61, 0x66, 0x33, 0x37, 0x37, 0x5f, 0x66, 0x72, 0x6f, 0x73, 0x74, 0x2e, 0x76, 0x31, 0x61, 0x6c,
 	0x70, 0x68, 0x61, 0x31, 0x2e, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x53, 0x68,
-	0x61, 0x72, 0x65, 0x52, 0x06, 0x73, 0x68, 0x61, 0x72, 0x65, 0x73, 0x42, 0xce, 0x02, 0x0a, 0x27,
-	0x63, 0x6f, 0x6d, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x75, 0x73,
-	0x74, 0x6f, 0x64, 0x79, 0x2e, 0x74, 0x68, 0x72, 0x65, 0x73, 0x68, 0x6f, 0x6c, 0x64, 0x2e, 0x76,
-	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x42, 0x0e, 0x54, 0x68, 0x72, 0x65, 0x73, 0x68, 0x6f,
-	0x6c, 0x64, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x64, 0x67, 0x69, 0x74, 0x68, 0x75,
-	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2d, 0x7a,
-	0x6f, 0x6e, 0x65, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62,
-	0x72, 0x61, 0x2f, 0x63, 0x75, 0x73, 0x74, 0x6f, 0x64, 0x79, 0x2f, 0x74, 0x68, 0x72, 0x65, 0x73,
-	0x68, 0x6f, 0x6c, 0x64, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x3b, 0x74, 0x68,
-	0x72, 0x65, 0x73, 0x68, 0x6f, 0x6c, 0x64, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xa2,
-	0x02, 0x03, 0x50, 0x43, 0x54, 0xaa, 0x02, 0x23, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61,
-	0x2e, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x64, 0x79, 0x2e, 0x54, 0x68, 0x72, 0x65, 0x73, 0x68, 0x6f,
-	0x6c, 0x64, 0x2e, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xca, 0x02, 0x23, 0x50, 0x65,
-	0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x5c, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x64, 0x79, 0x5c, 0x54,
-	0x68, 0x72, 0x65, 0x73, 0x68, 0x6f, 0x6c, 0x64, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
-	0x31, 0xe2, 0x02, 0x2f, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x5c, 0x43, 0x75, 0x73,
-	0x74, 0x6f, 0x64, 0x79, 0x5c, 0x54, 0x68, 0x72, 0x65, 0x73, 0x68, 0x6f, 0x6c, 0x64, 0x5c, 0x56,
-	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64,
-	0x61, 0x74, 0x61, 0xea, 0x02, 0x26, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x3a, 0x3a,
-	0x43, 0x75, 0x73, 0x74, 0x6f, 0x64, 0x79, 0x3a, 0x3a, 0x54, 0x68, 0x72, 0x65, 0x73, 0x68, 0x6f,
-	0x6c, 0x64, 0x3a, 0x3a, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x62, 0x06, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x33,
+	0x61, 0x72, 0x65, 0x52, 0x06, 0x73, 0x68, 0x61, 0x72, 0x65, 0x73, 0x22, 0xad, 0x01, 0x0a, 0x09,
+	0x44, 0x4b, 0x47, 0x52, 0x6f, 0x75, 0x6e, 0x64, 0x31, 0x12, 0x4b, 0x0a, 0x03, 0x70, 0x6b, 0x67,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72,
+	0x61, 0x2e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x2e, 0x64, 0x65, 0x63, 0x61, 0x66, 0x33, 0x37,
+	0x37, 0x5f, 0x66, 0x72, 0x6f, 0x73, 0x74, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
+	0x2e, 0x44, 0x4b, 0x47, 0x52, 0x6f, 0x75, 0x6e, 0x64, 0x31, 0x50, 0x61, 0x63, 0x6b, 0x61, 0x67,
+	0x65, 0x52, 0x03, 0x70, 0x6b, 0x67, 0x12, 0x31, 0x0a, 0x14, 0x6e, 0x75, 0x6c, 0x6c, 0x69, 0x66,
+	0x69, 0x65, 0x72, 0x5f, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x0c, 0x52, 0x13, 0x6e, 0x75, 0x6c, 0x6c, 0x69, 0x66, 0x69, 0x65, 0x72, 0x43,
+	0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x12, 0x10, 0x0a, 0x03, 0x65, 0x70, 0x6b,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x03, 0x65, 0x70, 0x6b, 0x12, 0x0e, 0x0a, 0x02, 0x76,
+	0x6b, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x02, 0x76, 0x6b, 0x22, 0xe0, 0x02, 0x0a, 0x09,
+	0x44, 0x4b, 0x47, 0x52, 0x6f, 0x75, 0x6e, 0x64, 0x32, 0x12, 0x4a, 0x0a, 0x05, 0x69, 0x6e, 0x6e,
+	0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x34, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d,
+	0x62, 0x72, 0x61, 0x2e, 0x63, 0x75, 0x73, 0x74, 0x6f, 0x64, 0x79, 0x2e, 0x74, 0x68, 0x72, 0x65,
+	0x73, 0x68, 0x6f, 0x6c, 0x64, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x44,
+	0x4b, 0x47, 0x52, 0x6f, 0x75, 0x6e, 0x64, 0x32, 0x2e, 0x49, 0x6e, 0x6e, 0x65, 0x72, 0x52, 0x05,
+	0x69, 0x6e, 0x6e, 0x65, 0x72, 0x12, 0x0e, 0x0a, 0x02, 0x76, 0x6b, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x0c, 0x52, 0x02, 0x76, 0x6b, 0x12, 0x10, 0x0a, 0x03, 0x73, 0x69, 0x67, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x0c, 0x52, 0x03, 0x73, 0x69, 0x67, 0x1a, 0x4e, 0x0a, 0x0f, 0x54, 0x61, 0x72, 0x67, 0x65,
+	0x74, 0x65, 0x64, 0x50, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x76, 0x6b,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x02, 0x76, 0x6b, 0x12, 0x2b, 0x0a, 0x11, 0x65, 0x6e,
+	0x63, 0x72, 0x79, 0x70, 0x74, 0x65, 0x64, 0x5f, 0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x10, 0x65, 0x6e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x65, 0x64,
+	0x50, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x1a, 0x94, 0x01, 0x0a, 0x05, 0x49, 0x6e, 0x6e, 0x65,
+	0x72, 0x12, 0x6d, 0x0a, 0x12, 0x65, 0x6e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x65, 0x64, 0x5f, 0x70,
+	0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x3e, 0x2e,
+	0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x75, 0x73, 0x74, 0x6f, 0x64, 0x79,
+	0x2e, 0x74, 0x68, 0x72, 0x65, 0x73, 0x68, 0x6f, 0x6c, 0x64, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70,
+	0x68, 0x61, 0x31, 0x2e, 0x44, 0x4b, 0x47, 0x52, 0x6f, 0x75, 0x6e, 0x64, 0x32, 0x2e, 0x54, 0x61,
+	0x72, 0x67, 0x65, 0x74, 0x65, 0x64, 0x50, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x52, 0x11, 0x65,
+	0x6e, 0x63, 0x72, 0x79, 0x70, 0x74, 0x65, 0x64, 0x50, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x73,
+	0x12, 0x1c, 0x0a, 0x09, 0x6e, 0x75, 0x6c, 0x6c, 0x69, 0x66, 0x69, 0x65, 0x72, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x0c, 0x52, 0x09, 0x6e, 0x75, 0x6c, 0x6c, 0x69, 0x66, 0x69, 0x65, 0x72, 0x42, 0xce,
+	0x02, 0x0a, 0x27, 0x63, 0x6f, 0x6d, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e,
+	0x63, 0x75, 0x73, 0x74, 0x6f, 0x64, 0x79, 0x2e, 0x74, 0x68, 0x72, 0x65, 0x73, 0x68, 0x6f, 0x6c,
+	0x64, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x42, 0x0e, 0x54, 0x68, 0x72, 0x65,
+	0x73, 0x68, 0x6f, 0x6c, 0x64, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x64, 0x67, 0x69,
+	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72,
+	0x61, 0x2d, 0x7a, 0x6f, 0x6e, 0x65, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x70, 0x65, 0x6e,
+	0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x63, 0x75, 0x73, 0x74, 0x6f, 0x64, 0x79, 0x2f, 0x74, 0x68,
+	0x72, 0x65, 0x73, 0x68, 0x6f, 0x6c, 0x64, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
+	0x3b, 0x74, 0x68, 0x72, 0x65, 0x73, 0x68, 0x6f, 0x6c, 0x64, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
+	0x61, 0x31, 0xa2, 0x02, 0x03, 0x50, 0x43, 0x54, 0xaa, 0x02, 0x23, 0x50, 0x65, 0x6e, 0x75, 0x6d,
+	0x62, 0x72, 0x61, 0x2e, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x64, 0x79, 0x2e, 0x54, 0x68, 0x72, 0x65,
+	0x73, 0x68, 0x6f, 0x6c, 0x64, 0x2e, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xca, 0x02,
+	0x23, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x5c, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x64,
+	0x79, 0x5c, 0x54, 0x68, 0x72, 0x65, 0x73, 0x68, 0x6f, 0x6c, 0x64, 0x5c, 0x56, 0x31, 0x61, 0x6c,
+	0x70, 0x68, 0x61, 0x31, 0xe2, 0x02, 0x2f, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x5c,
+	0x43, 0x75, 0x73, 0x74, 0x6f, 0x64, 0x79, 0x5c, 0x54, 0x68, 0x72, 0x65, 0x73, 0x68, 0x6f, 0x6c,
+	0x64, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65,
+	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x26, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72,
+	0x61, 0x3a, 0x3a, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x64, 0x79, 0x3a, 0x3a, 0x54, 0x68, 0x72, 0x65,
+	0x73, 0x68, 0x6f, 0x6c, 0x64, 0x3a, 0x3a, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -690,7 +981,7 @@ func file_penumbra_custody_threshold_v1alpha1_threshold_proto_rawDescGZIP() []by
 	return file_penumbra_custody_threshold_v1alpha1_threshold_proto_rawDescData
 }
 
-var file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_penumbra_custody_threshold_v1alpha1_threshold_proto_goTypes = []interface{}{
 	(*VerificationKey)(nil),                         // 0: penumbra.custody.threshold.v1alpha1.VerificationKey
 	(*Signature)(nil),                               // 1: penumbra.custody.threshold.v1alpha1.Signature
@@ -698,32 +989,40 @@ var file_penumbra_custody_threshold_v1alpha1_threshold_proto_goTypes = []interfa
 	(*CoordinatorRound2)(nil),                       // 3: penumbra.custody.threshold.v1alpha1.CoordinatorRound2
 	(*FollowerRound1)(nil),                          // 4: penumbra.custody.threshold.v1alpha1.FollowerRound1
 	(*FollowerRound2)(nil),                          // 5: penumbra.custody.threshold.v1alpha1.FollowerRound2
-	(*CoordinatorRound2_IdentifiedCommitments)(nil), // 6: penumbra.custody.threshold.v1alpha1.CoordinatorRound2.IdentifiedCommitments
-	(*CoordinatorRound2_PartialSigningPackage)(nil), // 7: penumbra.custody.threshold.v1alpha1.CoordinatorRound2.PartialSigningPackage
-	(*FollowerRound1_Inner)(nil),                    // 8: penumbra.custody.threshold.v1alpha1.FollowerRound1.Inner
-	(*FollowerRound2_Inner)(nil),                    // 9: penumbra.custody.threshold.v1alpha1.FollowerRound2.Inner
-	(*v1alpha1.TransactionPlan)(nil),                // 10: penumbra.core.transaction.v1alpha1.TransactionPlan
-	(*v1alpha11.SigningCommitments)(nil),            // 11: penumbra.crypto.decaf377_frost.v1alpha1.SigningCommitments
-	(*v1alpha11.SignatureShare)(nil),                // 12: penumbra.crypto.decaf377_frost.v1alpha1.SignatureShare
+	(*DKGRound1)(nil),                               // 6: penumbra.custody.threshold.v1alpha1.DKGRound1
+	(*DKGRound2)(nil),                               // 7: penumbra.custody.threshold.v1alpha1.DKGRound2
+	(*CoordinatorRound2_IdentifiedCommitments)(nil), // 8: penumbra.custody.threshold.v1alpha1.CoordinatorRound2.IdentifiedCommitments
+	(*CoordinatorRound2_PartialSigningPackage)(nil), // 9: penumbra.custody.threshold.v1alpha1.CoordinatorRound2.PartialSigningPackage
+	(*FollowerRound1_Inner)(nil),                    // 10: penumbra.custody.threshold.v1alpha1.FollowerRound1.Inner
+	(*FollowerRound2_Inner)(nil),                    // 11: penumbra.custody.threshold.v1alpha1.FollowerRound2.Inner
+	(*DKGRound2_TargetedPackage)(nil),               // 12: penumbra.custody.threshold.v1alpha1.DKGRound2.TargetedPackage
+	(*DKGRound2_Inner)(nil),                         // 13: penumbra.custody.threshold.v1alpha1.DKGRound2.Inner
+	(*v1alpha1.TransactionPlan)(nil),                // 14: penumbra.core.transaction.v1alpha1.TransactionPlan
+	(*v1alpha11.DKGRound1Package)(nil),              // 15: penumbra.crypto.decaf377_frost.v1alpha1.DKGRound1Package
+	(*v1alpha11.SigningCommitments)(nil),            // 16: penumbra.crypto.decaf377_frost.v1alpha1.SigningCommitments
+	(*v1alpha11.SignatureShare)(nil),                // 17: penumbra.crypto.decaf377_frost.v1alpha1.SignatureShare
 }
 var file_penumbra_custody_threshold_v1alpha1_threshold_proto_depIdxs = []int32{
-	10, // 0: penumbra.custody.threshold.v1alpha1.CoordinatorRound1.plan:type_name -> penumbra.core.transaction.v1alpha1.TransactionPlan
-	7,  // 1: penumbra.custody.threshold.v1alpha1.CoordinatorRound2.signing_packages:type_name -> penumbra.custody.threshold.v1alpha1.CoordinatorRound2.PartialSigningPackage
-	8,  // 2: penumbra.custody.threshold.v1alpha1.FollowerRound1.inner:type_name -> penumbra.custody.threshold.v1alpha1.FollowerRound1.Inner
+	14, // 0: penumbra.custody.threshold.v1alpha1.CoordinatorRound1.plan:type_name -> penumbra.core.transaction.v1alpha1.TransactionPlan
+	9,  // 1: penumbra.custody.threshold.v1alpha1.CoordinatorRound2.signing_packages:type_name -> penumbra.custody.threshold.v1alpha1.CoordinatorRound2.PartialSigningPackage
+	10, // 2: penumbra.custody.threshold.v1alpha1.FollowerRound1.inner:type_name -> penumbra.custody.threshold.v1alpha1.FollowerRound1.Inner
 	0,  // 3: penumbra.custody.threshold.v1alpha1.FollowerRound1.pk:type_name -> penumbra.custody.threshold.v1alpha1.VerificationKey
 	1,  // 4: penumbra.custody.threshold.v1alpha1.FollowerRound1.sig:type_name -> penumbra.custody.threshold.v1alpha1.Signature
-	9,  // 5: penumbra.custody.threshold.v1alpha1.FollowerRound2.inner:type_name -> penumbra.custody.threshold.v1alpha1.FollowerRound2.Inner
+	11, // 5: penumbra.custody.threshold.v1alpha1.FollowerRound2.inner:type_name -> penumbra.custody.threshold.v1alpha1.FollowerRound2.Inner
 	0,  // 6: penumbra.custody.threshold.v1alpha1.FollowerRound2.pk:type_name -> penumbra.custody.threshold.v1alpha1.VerificationKey
 	1,  // 7: penumbra.custody.threshold.v1alpha1.FollowerRound2.sig:type_name -> penumbra.custody.threshold.v1alpha1.Signature
-	11, // 8: penumbra.custody.threshold.v1alpha1.CoordinatorRound2.IdentifiedCommitments.commitments:type_name -> penumbra.crypto.decaf377_frost.v1alpha1.SigningCommitments
-	6,  // 9: penumbra.custody.threshold.v1alpha1.CoordinatorRound2.PartialSigningPackage.all_commitments:type_name -> penumbra.custody.threshold.v1alpha1.CoordinatorRound2.IdentifiedCommitments
-	11, // 10: penumbra.custody.threshold.v1alpha1.FollowerRound1.Inner.commitments:type_name -> penumbra.crypto.decaf377_frost.v1alpha1.SigningCommitments
-	12, // 11: penumbra.custody.threshold.v1alpha1.FollowerRound2.Inner.shares:type_name -> penumbra.crypto.decaf377_frost.v1alpha1.SignatureShare
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	15, // 8: penumbra.custody.threshold.v1alpha1.DKGRound1.pkg:type_name -> penumbra.crypto.decaf377_frost.v1alpha1.DKGRound1Package
+	13, // 9: penumbra.custody.threshold.v1alpha1.DKGRound2.inner:type_name -> penumbra.custody.threshold.v1alpha1.DKGRound2.Inner
+	16, // 10: penumbra.custody.threshold.v1alpha1.CoordinatorRound2.IdentifiedCommitments.commitments:type_name -> penumbra.crypto.decaf377_frost.v1alpha1.SigningCommitments
+	8,  // 11: penumbra.custody.threshold.v1alpha1.CoordinatorRound2.PartialSigningPackage.all_commitments:type_name -> penumbra.custody.threshold.v1alpha1.CoordinatorRound2.IdentifiedCommitments
+	16, // 12: penumbra.custody.threshold.v1alpha1.FollowerRound1.Inner.commitments:type_name -> penumbra.crypto.decaf377_frost.v1alpha1.SigningCommitments
+	17, // 13: penumbra.custody.threshold.v1alpha1.FollowerRound2.Inner.shares:type_name -> penumbra.crypto.decaf377_frost.v1alpha1.SignatureShare
+	12, // 14: penumbra.custody.threshold.v1alpha1.DKGRound2.Inner.encrypted_packages:type_name -> penumbra.custody.threshold.v1alpha1.DKGRound2.TargetedPackage
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_penumbra_custody_threshold_v1alpha1_threshold_proto_init() }
@@ -805,7 +1104,7 @@ func file_penumbra_custody_threshold_v1alpha1_threshold_proto_init() {
 			}
 		}
 		file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CoordinatorRound2_IdentifiedCommitments); i {
+			switch v := v.(*DKGRound1); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -817,7 +1116,7 @@ func file_penumbra_custody_threshold_v1alpha1_threshold_proto_init() {
 			}
 		}
 		file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CoordinatorRound2_PartialSigningPackage); i {
+			switch v := v.(*DKGRound2); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -829,7 +1128,7 @@ func file_penumbra_custody_threshold_v1alpha1_threshold_proto_init() {
 			}
 		}
 		file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*FollowerRound1_Inner); i {
+			switch v := v.(*CoordinatorRound2_IdentifiedCommitments); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -841,7 +1140,55 @@ func file_penumbra_custody_threshold_v1alpha1_threshold_proto_init() {
 			}
 		}
 		file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CoordinatorRound2_PartialSigningPackage); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*FollowerRound1_Inner); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*FollowerRound2_Inner); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DKGRound2_TargetedPackage); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_custody_threshold_v1alpha1_threshold_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DKGRound2_Inner); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -859,7 +1206,7 @@ func file_penumbra_custody_threshold_v1alpha1_threshold_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_penumbra_custody_threshold_v1alpha1_threshold_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

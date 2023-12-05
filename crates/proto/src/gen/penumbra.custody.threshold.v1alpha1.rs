@@ -191,3 +191,92 @@ impl ::prost::Name for FollowerRound2 {
         ::prost::alloc::format!("penumbra.custody.threshold.v1alpha1.{}", Self::NAME)
     }
 }
+/// The first message we broadcast in the DKG protocol.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DkgRound1 {
+    /// The package we're sending to other people
+    #[prost(message, optional, tag = "1")]
+    pub pkg: ::core::option::Option<
+        super::super::super::crypto::decaf377_frost::v1alpha1::DkgRound1Package,
+    >,
+    /// A commitment to a share of the nullifier-deriving key
+    #[prost(bytes = "vec", tag = "2")]
+    pub nullifier_commitment: ::prost::alloc::vec::Vec<u8>,
+    /// An encryption key for the second round.
+    #[prost(bytes = "vec", tag = "3")]
+    pub epk: ::prost::alloc::vec::Vec<u8>,
+    /// A verification key establishing an identity for the sender of this message.
+    #[prost(bytes = "vec", tag = "4")]
+    pub vk: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for DkgRound1 {
+    const NAME: &'static str = "DKGRound1";
+    const PACKAGE: &'static str = "penumbra.custody.threshold.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.custody.threshold.v1alpha1.{}", Self::NAME)
+    }
+}
+/// The second message we broadcast in the DKG protocol.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DkgRound2 {
+    #[prost(message, optional, tag = "1")]
+    pub inner: ::core::option::Option<dkg_round2::Inner>,
+    /// The verification key identifying the sender.
+    #[prost(bytes = "vec", tag = "2")]
+    pub vk: ::prost::alloc::vec::Vec<u8>,
+    /// A signature over the proto-encoded inner message.
+    #[prost(bytes = "vec", tag = "3")]
+    pub sig: ::prost::alloc::vec::Vec<u8>,
+}
+/// Nested message and enum types in `DKGRound2`.
+pub mod dkg_round2 {
+    /// A round2 package, encrypted, along with an identifier for the recipient.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct TargetedPackage {
+        /// A verification key identifying the recipient.
+        #[prost(bytes = "vec", tag = "1")]
+        pub vk: ::prost::alloc::vec::Vec<u8>,
+        /// The ciphertext of an encrypted frost package for round 2.
+        #[prost(bytes = "vec", tag = "2")]
+        pub encrypted_package: ::prost::alloc::vec::Vec<u8>,
+    }
+    impl ::prost::Name for TargetedPackage {
+        const NAME: &'static str = "TargetedPackage";
+        const PACKAGE: &'static str = "penumbra.custody.threshold.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.custody.threshold.v1alpha1.DKGRound2.{}", Self::NAME
+            )
+        }
+    }
+    /// An inner message that will be signed.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Inner {
+        /// Encrypted packages for each recipient.
+        #[prost(message, repeated, tag = "1")]
+        pub encrypted_packages: ::prost::alloc::vec::Vec<TargetedPackage>,
+        /// An opening of the share of the nullifier-deriving key commitment
+        #[prost(bytes = "vec", tag = "2")]
+        pub nullifier: ::prost::alloc::vec::Vec<u8>,
+    }
+    impl ::prost::Name for Inner {
+        const NAME: &'static str = "Inner";
+        const PACKAGE: &'static str = "penumbra.custody.threshold.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.custody.threshold.v1alpha1.DKGRound2.{}", Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for DkgRound2 {
+    const NAME: &'static str = "DKGRound2";
+    const PACKAGE: &'static str = "penumbra.custody.threshold.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.custody.threshold.v1alpha1.{}", Self::NAME)
+    }
+}
