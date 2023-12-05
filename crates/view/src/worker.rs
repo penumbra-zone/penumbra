@@ -22,15 +22,10 @@ use penumbra_proto::{
             },
         },
     },
-    util::tendermint_proxy::v1alpha1::{
-        tendermint_proxy_service_client::TendermintProxyServiceClient, GetBlockByHeightRequest,
-    },
-    DomainType,
 };
 use penumbra_sct::Nullifier;
 use penumbra_transaction::Transaction;
 use proto::core::app::v1alpha1::TransactionsByHeightRequest;
-use sha2::Digest;
 use tokio::sync::{watch, RwLock};
 use tokio_stream::StreamExt;
 use tonic::transport::Channel;
