@@ -384,6 +384,516 @@ impl<'de> serde::Deserialize<'de> for coordinator_round2::PartialSigningPackage 
         deserializer.deserialize_struct("penumbra.custody.threshold.v1alpha1.CoordinatorRound2.PartialSigningPackage", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for DkgRound1 {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.pkg.is_some() {
+            len += 1;
+        }
+        if !self.nullifier_commitment.is_empty() {
+            len += 1;
+        }
+        if !self.epk.is_empty() {
+            len += 1;
+        }
+        if !self.vk.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.custody.threshold.v1alpha1.DKGRound1", len)?;
+        if let Some(v) = self.pkg.as_ref() {
+            struct_ser.serialize_field("pkg", v)?;
+        }
+        if !self.nullifier_commitment.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("nullifierCommitment", pbjson::private::base64::encode(&self.nullifier_commitment).as_str())?;
+        }
+        if !self.epk.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("epk", pbjson::private::base64::encode(&self.epk).as_str())?;
+        }
+        if !self.vk.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("vk", pbjson::private::base64::encode(&self.vk).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for DkgRound1 {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "pkg",
+            "nullifier_commitment",
+            "nullifierCommitment",
+            "epk",
+            "vk",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Pkg,
+            NullifierCommitment,
+            Epk,
+            Vk,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "pkg" => Ok(GeneratedField::Pkg),
+                            "nullifierCommitment" | "nullifier_commitment" => Ok(GeneratedField::NullifierCommitment),
+                            "epk" => Ok(GeneratedField::Epk),
+                            "vk" => Ok(GeneratedField::Vk),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = DkgRound1;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.custody.threshold.v1alpha1.DKGRound1")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DkgRound1, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut pkg__ = None;
+                let mut nullifier_commitment__ = None;
+                let mut epk__ = None;
+                let mut vk__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Pkg => {
+                            if pkg__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("pkg"));
+                            }
+                            pkg__ = map_.next_value()?;
+                        }
+                        GeneratedField::NullifierCommitment => {
+                            if nullifier_commitment__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("nullifierCommitment"));
+                            }
+                            nullifier_commitment__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Epk => {
+                            if epk__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("epk"));
+                            }
+                            epk__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Vk => {
+                            if vk__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("vk"));
+                            }
+                            vk__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(DkgRound1 {
+                    pkg: pkg__,
+                    nullifier_commitment: nullifier_commitment__.unwrap_or_default(),
+                    epk: epk__.unwrap_or_default(),
+                    vk: vk__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.custody.threshold.v1alpha1.DKGRound1", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for DkgRound2 {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.inner.is_some() {
+            len += 1;
+        }
+        if !self.vk.is_empty() {
+            len += 1;
+        }
+        if !self.sig.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.custody.threshold.v1alpha1.DKGRound2", len)?;
+        if let Some(v) = self.inner.as_ref() {
+            struct_ser.serialize_field("inner", v)?;
+        }
+        if !self.vk.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("vk", pbjson::private::base64::encode(&self.vk).as_str())?;
+        }
+        if !self.sig.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("sig", pbjson::private::base64::encode(&self.sig).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for DkgRound2 {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "inner",
+            "vk",
+            "sig",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Inner,
+            Vk,
+            Sig,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "inner" => Ok(GeneratedField::Inner),
+                            "vk" => Ok(GeneratedField::Vk),
+                            "sig" => Ok(GeneratedField::Sig),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = DkgRound2;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.custody.threshold.v1alpha1.DKGRound2")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DkgRound2, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut inner__ = None;
+                let mut vk__ = None;
+                let mut sig__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Inner => {
+                            if inner__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("inner"));
+                            }
+                            inner__ = map_.next_value()?;
+                        }
+                        GeneratedField::Vk => {
+                            if vk__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("vk"));
+                            }
+                            vk__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Sig => {
+                            if sig__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sig"));
+                            }
+                            sig__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(DkgRound2 {
+                    inner: inner__,
+                    vk: vk__.unwrap_or_default(),
+                    sig: sig__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.custody.threshold.v1alpha1.DKGRound2", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for dkg_round2::Inner {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.encrypted_packages.is_empty() {
+            len += 1;
+        }
+        if !self.nullifier.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.custody.threshold.v1alpha1.DKGRound2.Inner", len)?;
+        if !self.encrypted_packages.is_empty() {
+            struct_ser.serialize_field("encryptedPackages", &self.encrypted_packages)?;
+        }
+        if !self.nullifier.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("nullifier", pbjson::private::base64::encode(&self.nullifier).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for dkg_round2::Inner {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "encrypted_packages",
+            "encryptedPackages",
+            "nullifier",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            EncryptedPackages,
+            Nullifier,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "encryptedPackages" | "encrypted_packages" => Ok(GeneratedField::EncryptedPackages),
+                            "nullifier" => Ok(GeneratedField::Nullifier),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = dkg_round2::Inner;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.custody.threshold.v1alpha1.DKGRound2.Inner")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<dkg_round2::Inner, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut encrypted_packages__ = None;
+                let mut nullifier__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::EncryptedPackages => {
+                            if encrypted_packages__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("encryptedPackages"));
+                            }
+                            encrypted_packages__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Nullifier => {
+                            if nullifier__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("nullifier"));
+                            }
+                            nullifier__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(dkg_round2::Inner {
+                    encrypted_packages: encrypted_packages__.unwrap_or_default(),
+                    nullifier: nullifier__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.custody.threshold.v1alpha1.DKGRound2.Inner", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for dkg_round2::TargetedPackage {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.vk.is_empty() {
+            len += 1;
+        }
+        if !self.encrypted_package.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.custody.threshold.v1alpha1.DKGRound2.TargetedPackage", len)?;
+        if !self.vk.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("vk", pbjson::private::base64::encode(&self.vk).as_str())?;
+        }
+        if !self.encrypted_package.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("encryptedPackage", pbjson::private::base64::encode(&self.encrypted_package).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for dkg_round2::TargetedPackage {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "vk",
+            "encrypted_package",
+            "encryptedPackage",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Vk,
+            EncryptedPackage,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "vk" => Ok(GeneratedField::Vk),
+                            "encryptedPackage" | "encrypted_package" => Ok(GeneratedField::EncryptedPackage),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = dkg_round2::TargetedPackage;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.custody.threshold.v1alpha1.DKGRound2.TargetedPackage")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<dkg_round2::TargetedPackage, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut vk__ = None;
+                let mut encrypted_package__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Vk => {
+                            if vk__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("vk"));
+                            }
+                            vk__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::EncryptedPackage => {
+                            if encrypted_package__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("encryptedPackage"));
+                            }
+                            encrypted_package__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(dkg_round2::TargetedPackage {
+                    vk: vk__.unwrap_or_default(),
+                    encrypted_package: encrypted_package__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.custody.threshold.v1alpha1.DKGRound2.TargetedPackage", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for FollowerRound1 {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
