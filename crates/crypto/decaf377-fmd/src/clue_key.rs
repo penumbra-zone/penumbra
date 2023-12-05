@@ -193,3 +193,16 @@ impl TryFrom<&[u8]> for ClueKey {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_clue_key_infallible_expand() {
+        let valid_ck = ClueKey(decaf377::basepoint().vartime_compress().0);
+        let ck_fq_invalid = Fq::from_le_bytes_mod_order(&valid_ck.0) + Fq::from(1u64);
+        let invalid_ck = ClueKey(ck_fq_invalid.to_bytes());
+        let _eck = invalid_ck.expand_infallible();
+    }
+}
