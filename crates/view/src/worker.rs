@@ -22,6 +22,7 @@ use penumbra_proto::{
             },
         },
     },
+    DomainType,
 };
 use penumbra_sct::Nullifier;
 use penumbra_transaction::Transaction;
