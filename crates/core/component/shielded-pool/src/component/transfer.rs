@@ -381,7 +381,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             .await?
             .unwrap_or_else(Amount::zero);
 
-        let new_value_balance = value_balance + value.amount;
+        let new_value_balance = value_balance.saturating_add(&value.amount);
         state.put(
             state_key::ics20_value_balance(&msg.packet.chan_on_b, &denom.id()),
             new_value_balance,
