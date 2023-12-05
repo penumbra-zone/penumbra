@@ -1,7 +1,10 @@
+use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Result;
+use async_stream::try_stream;
 use async_trait::async_trait;
+use futures::StreamExt as _;
 use jmt::RootHash;
 use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_chain::params::FmdParameters;
@@ -23,8 +26,10 @@ use penumbra_shielded_pool::component::{NoteManager, ShieldedPool};
 use penumbra_stake::component::{Staking, StateReadExt as _, StateWriteExt as _, ValidatorUpdates};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use penumbra_transaction::Transaction;
+use sha2::Digest;
 use tendermint::abci::{self, Event};
 use tendermint::validator::Update;
+use tokio_stream::Stream;
 use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
@@ -676,6 +681,26 @@ pub trait StateReadExt: StateRead {
             ibc_params,
             stake_params,
         })
+    }
+
+    fn transactions_by_height(
+        &self,
+        block_height: u64,
+    ) -> Pin<Box<dyn Stream<Item = Result<(u64, [u8; 32], Transaction)>> + Send>> {
+        let mut transactions = self
+            .nonverifiable_prefix_raw(&state_key::transactions_by_height(block_height).as_bytes())
+            .boxed();
+        try_stream! {
+            while let Some(transaction) = transactions
+                .next().await {
+                    let tx_bytes = transaction.expect("failed to fetch transaction").1;
+                    let tx_id: [u8; 32] = sha2::Sha256::digest(tx_bytes.as_slice())
+                        .as_slice()
+                            .try_into()?;
+                    yield (block_height, tx_id, tx_bytes.try_into().expect("invalid transaction bytes"));
+            }
+        }
+        .boxed()
     }
 }
 

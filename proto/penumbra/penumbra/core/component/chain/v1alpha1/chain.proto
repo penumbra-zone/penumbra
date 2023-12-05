@@ -3,11 +3,6 @@ package penumbra.core.component.chain.v1alpha1;
 
 import "penumbra/core/asset/v1alpha1/asset.proto";
 
-// An authorization hash for a Penumbra transaction.
-message EffectHash {
-  bytes inner = 1;
-}
-
 // Global chain configuration data, such as chain ID, epoch duration, etc.
 message ChainParameters {
   // The identifier of the chain.

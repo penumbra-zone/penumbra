@@ -1,17 +1,3 @@
-/// An authorization hash for a Penumbra transaction.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EffectHash {
-    #[prost(bytes = "vec", tag = "1")]
-    pub inner: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for EffectHash {
-    const NAME: &'static str = "EffectHash";
-    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
-    }
-}
 /// Global chain configuration data, such as chain ID, epoch duration, etc.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

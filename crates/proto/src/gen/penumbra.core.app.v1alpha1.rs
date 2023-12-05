@@ -1,3 +1,44 @@
+/// Requests the list of all transactions that occurred within a given block.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionsByHeightRequest {
+    /// The expected chain id (empty string if no expectation).
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    /// The block heights to retrieve.
+    #[prost(uint64, repeated, tag = "2")]
+    pub block_heights: ::prost::alloc::vec::Vec<u64>,
+}
+impl ::prost::Name for TransactionsByHeightRequest {
+    const NAME: &'static str = "TransactionsByHeightRequest";
+    const PACKAGE: &'static str = "penumbra.core.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.app.v1alpha1.{}", Self::NAME)
+    }
+}
+/// A transaction that appeared within a given block.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionsByHeightResponse {
+    /// The transaction.
+    #[prost(message, optional, tag = "1")]
+    pub transaction: ::core::option::Option<
+        super::super::transaction::v1alpha1::Transaction,
+    >,
+    /// The transaction's identifier.
+    #[prost(bytes = "vec", tag = "2")]
+    pub tx_id: ::prost::alloc::vec::Vec<u8>,
+    /// The block height.
+    #[prost(uint64, tag = "3")]
+    pub block_height: u64,
+}
+impl ::prost::Name for TransactionsByHeightResponse {
+    const NAME: &'static str = "TransactionsByHeightResponse";
+    const PACKAGE: &'static str = "penumbra.core.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.app.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AppParameters {
@@ -265,6 +306,39 @@ pub mod query_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        /// Returns the CometBFT transactions that occurred during a given block.
+        pub async fn transactions_by_height(
+            &mut self,
+            request: impl tonic::IntoRequest<super::TransactionsByHeightRequest>,
+        ) -> std::result::Result<
+            tonic::Response<
+                tonic::codec::Streaming<super::TransactionsByHeightResponse>,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.app.v1alpha1.QueryService/TransactionsByHeight",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.app.v1alpha1.QueryService",
+                        "TransactionsByHeight",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -281,6 +355,23 @@ pub mod query_service_server {
             request: tonic::Request<super::AppParametersRequest>,
         ) -> std::result::Result<
             tonic::Response<super::AppParametersResponse>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the TransactionsByHeight method.
+        type TransactionsByHeightStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<
+                    super::TransactionsByHeightResponse,
+                    tonic::Status,
+                >,
+            >
+            + Send
+            + 'static;
+        /// Returns the CometBFT transactions that occurred during a given block.
+        async fn transactions_by_height(
+            &self,
+            request: tonic::Request<super::TransactionsByHeightRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::TransactionsByHeightStream>,
             tonic::Status,
         >;
     }
@@ -406,6 +497,55 @@ pub mod query_service_server {
                                 max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.app.v1alpha1.QueryService/TransactionsByHeight" => {
+                    #[allow(non_camel_case_types)]
+                    struct TransactionsByHeightSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::ServerStreamingService<
+                        super::TransactionsByHeightRequest,
+                    > for TransactionsByHeightSvc<T> {
+                        type Response = super::TransactionsByHeightResponse;
+                        type ResponseStream = T::TransactionsByHeightStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::TransactionsByHeightRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::transactions_by_height(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = TransactionsByHeightSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

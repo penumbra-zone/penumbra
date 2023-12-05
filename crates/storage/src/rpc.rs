@@ -1,3 +1,5 @@
+// Autogen code isn't clippy clean:
+#[allow(clippy::unwrap_used)]
 pub mod proto {
     pub mod v1alpha1 {
         include!("gen/penumbra.storage.v1alpha1.rs");

@@ -9,14 +9,17 @@ use penumbra_dex::lp::{position, LpNft};
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     self as proto,
-    core::component::{
-        compact_block::v1alpha1::{
-            query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
-            CompactBlockRangeRequest,
-        },
-        shielded_pool::v1alpha1::{
-            query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
-            DenomMetadataByIdRequest,
+    core::{
+        app::v1alpha1::query_service_client::QueryServiceClient as AppQueryServiceClient,
+        component::{
+            compact_block::v1alpha1::{
+                query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
+                CompactBlockRangeRequest,
+            },
+            shielded_pool::v1alpha1::{
+                query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
+                DenomMetadataByIdRequest,
+            },
         },
     },
     util::tendermint_proxy::v1alpha1::{
@@ -26,8 +29,10 @@ use penumbra_proto::{
 };
 use penumbra_sct::Nullifier;
 use penumbra_transaction::Transaction;
+use proto::core::app::v1alpha1::TransactionsByHeightRequest;
 use sha2::Digest;
 use tokio::sync::{watch, RwLock};
+use tokio_stream::StreamExt;
 use tonic::transport::Channel;
 use url::Url;
 
@@ -122,28 +127,24 @@ impl Worker {
             "fetching full transaction data"
         );
 
-        let block = fetch_block(self.channel.clone(), filtered_block.height as i64).await?;
+        let transactions = fetch_transactions(self.channel.clone(), filtered_block.height)
+            .await?
+            .iter()
+            .filter(|(tx_id, tx)| {
+                // Check if the transaction is a known inbound transaction or spends one of our nullifiers.
+                if inbound_transaction_ids.contains(tx_id)
+                    || tx
+                        .spent_nullifiers()
+                        .any(|nf| spent_nullifiers.contains(&nf))
+                {
+                    return true;
+                }
+                false
+            })
+            .map(|(_, tx)| tx.clone())
+            .collect::<Vec<_>>();
 
-        let mut transactions = Vec::new();
-
-        for tx_bytes in block.data.as_ref().expect("block data").txs.iter() {
-            let tx_id: [u8; 32] = sha2::Sha256::digest(tx_bytes.as_slice())
-                .as_slice()
-                .try_into()?;
-
-            let transaction = Transaction::decode(tx_bytes.as_slice())?;
-
-            // Check if the transaction is a known inbound transaction or spends one of our nullifiers.
-            if inbound_transaction_ids.contains(&tx_id)
-                || transaction
-                    .spent_nullifiers()
-                    .any(|nf| spent_nullifiers.contains(&nf))
-            {
-                transactions.push(transaction)
-            }
-        }
         tracing::debug!(
-            transactions_in_block = block.data.expect("block data").txs.len(),
             matched = transactions.len(),
             "filtered relevant transactions"
         );
@@ -372,17 +373,31 @@ impl Worker {
     }
 }
 
-async fn fetch_block(
+// Fetches all transactions in the block.
+async fn fetch_transactions(
     channel: Channel,
-    height: i64,
-) -> anyhow::Result<proto::tendermint::types::Block> {
-    let mut client = TendermintProxyServiceClient::new(channel);
-    Ok(client
-        .get_block_by_height(GetBlockByHeightRequest { height })
+    block_height: u64,
+) -> anyhow::Result<Vec<([u8; 32], Transaction)>> {
+    let mut client = AppQueryServiceClient::new(channel);
+    let transactions = client
+        .transactions_by_height(TransactionsByHeightRequest {
+            block_heights: vec![block_height],
+            ..Default::default()
+        })
         .await?
         .into_inner()
-        .block
-        .expect("block not found"))
+        .map(|r| {
+            let r = r.expect("error in txbyheightresponse");
+            let tx = r
+                .transaction
+                .expect("transaction missing in txbyheightresponse");
+            let tx_id = r.tx_id.try_into().expect("bad tx bytes");
+
+            return (tx_id, tx.try_into().expect("bad tx"));
+        })
+        .collect::<Vec<([u8; 32], Transaction)>>()
+        .await;
+    Ok(transactions)
 }
 
 #[cfg(feature = "sct-divergence-check")]
