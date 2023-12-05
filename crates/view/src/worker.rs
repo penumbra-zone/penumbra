@@ -113,10 +113,6 @@ impl Worker {
         // Only make a block request if we detected transactions in the FilteredBlock.
         // TODO: in the future, we could perform chaff downloads.
         if spent_nullifiers.is_empty() && inbound_transaction_ids.is_empty() {
-            tracing::debug!(
-                height = filtered_block.height,
-                "skipping transaction download for block"
-            );
             return Ok(Vec::new());
         }
 
@@ -192,7 +188,6 @@ impl Worker {
 
         while let Some(block) = buffered_stream.recv().await {
             let block: CompactBlock = block?.try_into()?;
-            tracing::debug!(height = block.height, "GOT A BLOCK");
 
             let height = block.height;
 
@@ -200,7 +195,6 @@ impl Worker {
             let mut sct_guard = self.sct.write().await;
 
             if !block.requires_scanning() {
-                tracing::debug!(height, "skipping empty block");
                 // Optimization: if the block is empty, seal the in-memory SCT,
                 // and skip touching the database:
                 sct_guard.end_block()?;
@@ -215,7 +209,6 @@ impl Worker {
                 // Notify all watchers of the new height we just recorded.
                 self.sync_height_tx.send(height)?;
             } else {
-                tracing::debug!(height, "scanning block");
                 // Otherwise, scan the block and commit its changes:
                 let filtered_block =
                     scan_block(&self.fvk, &mut sct_guard, block, &self.storage).await?;

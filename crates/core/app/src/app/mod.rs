@@ -574,35 +574,6 @@ impl App {
         });
     }
 
-    // /// Stores the transactions that occurred during a CometBFT block
-    // /// in nonverifiable storage.
-    // pub async fn put_block_transaction(
-    //     &mut self,
-    //     height: u64,
-    //     transaction: Arc<penumbra_proto::core::transaction::v1alpha1::Transaction>,
-    // ) {
-    //     tracing::debug!("put block transactions");
-    //     let s = Arc::get_mut(&mut self.state).expect("no other references to inter-block state");
-    //     let existing_transactions = match s.transactions_by_height(height).await {
-    //         Ok(transactions) => transactions,
-    //         Err(_) => TransactionsByHeightResponse {
-    //             transactions: vec![],
-    //             block_height: height.into(),
-    //         },
-    //     };
-    //     let transaction = Arc::as_ref(&transaction).clone();
-    //     let transactions = existing_transactions
-    //         .transactions
-    //         .into_iter()
-    //         .chain(vec![transaction])
-    //         .collect::<Vec<_>>();
-    //     s.put_block_transactions(height, transactions)
-    //         .await
-    //         .expect("able to put block transactions");
-    //     tracing::debug!("applying state_tx");
-    //     tracing::debug!("finished put block transactions");
-    // }
-
     /// Commits the application state to persistent storage,
     /// returning the new root hash and storage version.
     ///
@@ -754,8 +725,6 @@ pub trait StateWriteExt: StateWrite {
         height: u64,
         transaction: penumbra_proto::core::transaction::v1alpha1::Transaction,
     ) -> Result<()> {
-        tracing::debug!("put_block_transactions");
-
         let transactions_response = match self.transactions_by_height(height).await {
             Ok(transactions) => transactions,
             Err(_) => TransactionsByHeightResponse {
@@ -767,7 +736,6 @@ pub trait StateWriteExt: StateWrite {
             state_key::transactions_by_height(height).into(),
             transactions_response.encode_to_vec(),
         );
-        tracing::debug!("done putting");
         Ok(())
     }
 }

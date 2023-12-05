@@ -251,8 +251,9 @@ impl Consensus {
     /// that the number of tx bytes is within the acceptable limit.
     async fn process_proposal(
         &mut self,
-        _proposal: request::ProcessProposal,
+        proposal: request::ProcessProposal,
     ) -> Result<response::ProcessProposal> {
+        tracing::debug!(?proposal, "processing proposal");
         Ok(response::ProcessProposal::Accept)
     }
 }
