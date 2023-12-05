@@ -30,10 +30,6 @@ message FmdParameters {
   uint64 as_of_block_height = 2;
 }
 
-message KnownAssets {
-  repeated asset.v1alpha1.DenomMetadata assets = 1;
-}
-
 // A spicy transaction ID
 message NoteSource {
   bytes inner = 1;

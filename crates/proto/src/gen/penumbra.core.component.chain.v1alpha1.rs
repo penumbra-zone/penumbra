@@ -64,21 +64,6 @@ impl ::prost::Name for FmdParameters {
         ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
     }
 }
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct KnownAssets {
-    #[prost(message, repeated, tag = "1")]
-    pub assets: ::prost::alloc::vec::Vec<
-        super::super::super::asset::v1alpha1::DenomMetadata,
-    >,
-}
-impl ::prost::Name for KnownAssets {
-    const NAME: &'static str = "KnownAssets";
-    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
-    }
-}
 /// A spicy transaction ID
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

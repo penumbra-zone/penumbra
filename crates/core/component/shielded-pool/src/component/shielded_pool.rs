@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_asset::{asset, Value};
 use penumbra_chain::{NoteSource, SpendInfo};
 use penumbra_component::Component;
 use penumbra_proto::StateReadProto;
@@ -32,28 +31,17 @@ impl Component for ShieldedPool {
                 for allocation in &app_state.allocations {
                     tracing::debug!(?allocation, "processing allocation");
                     assert_ne!(
-                        allocation.amount,
+                        allocation.raw_amount,
                         0u128.into(),
                         "Genesis allocations contain empty note",
                     );
 
-                    let unit = asset::REGISTRY.parse_unit(&allocation.denom);
-
                     state
-                        .register_denom(&unit.base())
+                        .register_denom(&allocation.denom())
                         .await
                         .expect("able to register denom for genesis allocation");
                     state
-                        .mint_note(
-                            Value {
-                                amount: (u128::from(allocation.amount)
-                                    * 10u128.pow(unit.exponent().into()))
-                                .into(),
-                                asset_id: unit.id(),
-                            },
-                            &allocation.address,
-                            NoteSource::Genesis,
-                        )
+                        .mint_note(allocation.value(), &allocation.address, NoteSource::Genesis)
                         .await
                         .expect("able to mint note for genesis allocation");
                 }

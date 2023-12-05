@@ -3,12 +3,10 @@
 
 pub use effect_hash::{EffectHash, EffectingData};
 pub use epoch::Epoch;
-pub use known_assets::KnownAssets;
 pub use note_source::{NoteSource, SpendInfo};
 pub use transaction::TransactionContext;
 
 mod epoch;
-mod known_assets;
 mod note_source;
 
 #[cfg_attr(docsrs, doc(cfg(feature = "component")))]
@@ -18,7 +16,6 @@ pub mod component;
 pub mod genesis;
 pub mod params;
 pub mod state_key;
-
 
 // Located here at the bottom of the dep tree for convenience
 mod effect_hash;

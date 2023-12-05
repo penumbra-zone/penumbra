@@ -1,7 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use penumbra_asset::asset::{self, DenomMetadata};
-use penumbra_chain::KnownAssets;
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_storage::{StateRead, StateWrite};
@@ -16,14 +15,6 @@ pub trait SupplyRead: StateRead {
         self.get(&state_key::token_supply(asset_id)).await
     }
 
-    // TODO: refactor for new state model -- no more list of known asset IDs with fixed key
-    async fn known_assets(&self) -> Result<KnownAssets> {
-        Ok(self
-            .get(state_key::known_assets())
-            .await?
-            .unwrap_or_default())
-    }
-
     async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<DenomMetadata>> {
         self.get(&state_key::denom_by_asset(asset_id)).await
     }
@@ -33,7 +24,7 @@ impl<T: StateRead + ?Sized> SupplyRead for T {}
 
 #[async_trait]
 pub trait SupplyWrite: StateWrite {
-    // TODO: refactor for new state model -- no more list of known asset IDs with fixed key
+    // TODO: why not make this infallible and synchronous?
     #[instrument(skip(self))]
     async fn register_denom(&mut self, denom: &DenomMetadata) -> Result<()> {
         let id = denom.id();
@@ -42,16 +33,8 @@ pub trait SupplyWrite: StateWrite {
             Ok(())
         } else {
             tracing::debug!(?denom, ?id, "registering new denom");
-            // We want to be able to query for the denom by asset ID...
+            // We want to be able to query for the denom by asset ID
             self.put(state_key::denom_by_asset(&id), denom.clone());
-            // ... and we want to record it in the list of known asset IDs
-            // (this requires reading the whole list, which is sad, but hopefully
-            // we don't do this often).
-            // TODO: fix with new state model
-            let mut known_assets = self.known_assets().await?;
-
-            known_assets.0.push(denom.to_owned());
-            self.put(state_key::known_assets().to_owned(), known_assets);
             Ok(())
         }
     }
