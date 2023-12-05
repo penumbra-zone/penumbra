@@ -4,13 +4,10 @@ use std::{ops::Deref, sync::Arc};
 use crate::{app::App, MockClient, TempStorageExt};
 use decaf377::Fq;
 use penumbra_asset::asset;
-use penumbra_chain::{
-    component::{StateReadExt, StateWriteExt},
-    test_keys,
-};
+use penumbra_chain::component::{StateReadExt, StateWriteExt};
 use penumbra_component::{ActionHandler, Component};
 use penumbra_fee::Fee;
-use penumbra_keys::Address;
+use penumbra_keys::{test_keys, Address};
 use penumbra_num::Amount;
 use penumbra_shielded_pool::component::ShieldedPool;
 use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};

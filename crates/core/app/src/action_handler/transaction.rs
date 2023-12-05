@@ -106,8 +106,8 @@ impl ActionHandler for Transaction {
 mod tests {
     use anyhow::Result;
     use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
-    use penumbra_chain::test_keys;
     use penumbra_fee::Fee;
+    use penumbra_keys::test_keys;
     use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
     use penumbra_tct as tct;
     use penumbra_transaction::{

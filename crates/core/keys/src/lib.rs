@@ -7,6 +7,7 @@ pub mod address;
 pub mod keys;
 pub mod prf;
 pub mod symmetric;
+pub mod test_keys;
 
 pub use address::{Address, AddressVar, AddressView};
 pub use keys::FullViewingKey;

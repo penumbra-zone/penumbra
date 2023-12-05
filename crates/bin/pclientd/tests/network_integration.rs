@@ -10,8 +10,8 @@ use assert_cmd::cargo::CommandCargoExt;
 use futures::StreamExt;
 use pclientd::PclientdConfig;
 use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_chain::test_keys;
 use penumbra_custody::soft_kms;
+use penumbra_keys::test_keys;
 use penumbra_proto::{
     core::{component::fee::v1alpha1::Fee, component::ibc::v1alpha1::IbcRelay},
     custody::v1alpha1::{
