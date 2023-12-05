@@ -5,9 +5,9 @@ pub struct TransactionsByHeightRequest {
     /// The expected chain id (empty string if no expectation).
     #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
-    /// The block heights to retrieve.
-    #[prost(uint64, repeated, tag = "2")]
-    pub block_heights: ::prost::alloc::vec::Vec<u64>,
+    /// The block height to retrieve.
+    #[prost(uint64, tag = "2")]
+    pub block_height: u64,
 }
 impl ::prost::Name for TransactionsByHeightRequest {
     const NAME: &'static str = "TransactionsByHeightRequest";
@@ -20,9 +20,9 @@ impl ::prost::Name for TransactionsByHeightRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionsByHeightResponse {
-    /// The transaction.
-    #[prost(message, optional, tag = "1")]
-    pub transaction: ::core::option::Option<
+    /// The transactions.
+    #[prost(message, repeated, tag = "1")]
+    pub transactions: ::prost::alloc::vec::Vec<
         super::super::transaction::v1alpha1::Transaction,
     >,
     /// The block height.
@@ -308,9 +308,7 @@ pub mod query_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::TransactionsByHeightRequest>,
         ) -> std::result::Result<
-            tonic::Response<
-                tonic::codec::Streaming<super::TransactionsByHeightResponse>,
-            >,
+            tonic::Response<super::TransactionsByHeightResponse>,
             tonic::Status,
         > {
             self.inner
@@ -334,7 +332,7 @@ pub mod query_service_client {
                         "TransactionsByHeight",
                     ),
                 );
-            self.inner.server_streaming(req, path, codec).await
+            self.inner.unary(req, path, codec).await
         }
     }
 }
@@ -354,21 +352,12 @@ pub mod query_service_server {
             tonic::Response<super::AppParametersResponse>,
             tonic::Status,
         >;
-        /// Server streaming response type for the TransactionsByHeight method.
-        type TransactionsByHeightStream: tonic::codegen::tokio_stream::Stream<
-                Item = std::result::Result<
-                    super::TransactionsByHeightResponse,
-                    tonic::Status,
-                >,
-            >
-            + Send
-            + 'static;
         /// Returns the CometBFT transactions that occurred during a given block.
         async fn transactions_by_height(
             &self,
             request: tonic::Request<super::TransactionsByHeightRequest>,
         ) -> std::result::Result<
-            tonic::Response<Self::TransactionsByHeightStream>,
+            tonic::Response<super::TransactionsByHeightResponse>,
             tonic::Status,
         >;
     }
@@ -503,13 +492,11 @@ pub mod query_service_server {
                     struct TransactionsByHeightSvc<T: QueryService>(pub Arc<T>);
                     impl<
                         T: QueryService,
-                    > tonic::server::ServerStreamingService<
-                        super::TransactionsByHeightRequest,
-                    > for TransactionsByHeightSvc<T> {
+                    > tonic::server::UnaryService<super::TransactionsByHeightRequest>
+                    for TransactionsByHeightSvc<T> {
                         type Response = super::TransactionsByHeightResponse;
-                        type ResponseStream = T::TransactionsByHeightStream;
                         type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
+                            tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
@@ -542,7 +529,7 @@ pub mod query_service_server {
                                 max_decoding_message_size,
                                 max_encoding_message_size,
                             );
-                        let res = grpc.server_streaming(method, req).await;
+                        let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

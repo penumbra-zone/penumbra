@@ -16,21 +16,21 @@ service QueryService {
   // Gets the app parameters.
   rpc AppParameters(AppParametersRequest) returns (AppParametersResponse);
   // Returns the CometBFT transactions that occurred during a given block.
-  rpc TransactionsByHeight(TransactionsByHeightRequest) returns (stream TransactionsByHeightResponse);
+  rpc TransactionsByHeight(TransactionsByHeightRequest) returns (TransactionsByHeightResponse);
 }
 
 // Requests the list of all transactions that occurred within a given block.
 message TransactionsByHeightRequest {
   // The expected chain id (empty string if no expectation).
   string chain_id = 1;
-  // The block heights to retrieve.
-  repeated uint64 block_heights = 2;
+  // The block height to retrieve.
+  uint64 block_height = 2;
 }
 
 // A transaction that appeared within a given block.
 message TransactionsByHeightResponse {
-  // The transaction.
-  core.transaction.v1alpha1.Transaction transaction = 1;
+  // The transactions.
+  repeated core.transaction.v1alpha1.Transaction transactions = 1;
   // The block height.
   uint64 block_height = 2;
 }

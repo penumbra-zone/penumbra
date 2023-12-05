@@ -1,10 +1,11 @@
 use anyhow::Result;
+use penumbra_chain::component::StateReadExt as _;
 use std::sync::Arc;
 
 // TODO: we should not have dependencies on penumbra_chain in narsil
 // and instead implement narsil-specific state accessors or extract
 // the common accessors elsewhere to avoid mingling penumbra-specific logic.
-use penumbra_app::genesis;
+use penumbra_app::{genesis, StateWriteExt as _};
 use penumbra_proto::{core::transaction::v1alpha1::Transaction, Message};
 use penumbra_storage::{ArcStateDeltaExt, RootHash, Snapshot, StateDelta, Storage};
 use tendermint::{abci, validator::Update};
@@ -51,8 +52,16 @@ impl App {
         self.deliver_tx(tx).await
     }
 
-    pub async fn deliver_tx(&mut self, _tx: Arc<Transaction>) -> Result<Vec<abci::Event>> {
-        Ok(vec![])
+    pub async fn deliver_tx(&mut self, tx: Arc<Transaction>) -> Result<Vec<abci::Event>> {
+        let mut state_tx = self
+            .state
+            .try_begin_transaction()
+            .expect("state Arc should not be referenced elsewhere");
+
+        let height = state_tx.get_block_height().await?;
+        let transaction = Arc::as_ref(&tx).clone();
+        state_tx.put_block_transaction(height, transaction).await?;
+        Ok(state_tx.apply().1)
     }
 
     pub async fn end_block(&mut self, _end_block: &abci::request::EndBlock) -> Vec<abci::Event> {

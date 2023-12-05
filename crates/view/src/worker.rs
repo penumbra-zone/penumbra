@@ -22,13 +22,11 @@ use penumbra_proto::{
             },
         },
     },
-    DomainType,
 };
 use penumbra_sct::Nullifier;
 use penumbra_transaction::Transaction;
 use proto::core::app::v1alpha1::TransactionsByHeightRequest;
 use tokio::sync::{watch, RwLock};
-use tokio_stream::StreamExt;
 use tonic::transport::Channel;
 use url::Url;
 
@@ -115,6 +113,10 @@ impl Worker {
         // Only make a block request if we detected transactions in the FilteredBlock.
         // TODO: in the future, we could perform chaff downloads.
         if spent_nullifiers.is_empty() && inbound_transaction_ids.is_empty() {
+            tracing::debug!(
+                height = filtered_block.height,
+                "skipping transaction download for block"
+            );
             return Ok(Vec::new());
         }
 
@@ -190,6 +192,7 @@ impl Worker {
 
         while let Some(block) = buffered_stream.recv().await {
             let block: CompactBlock = block?.try_into()?;
+            tracing::debug!(height = block.height, "GOT A BLOCK");
 
             let height = block.height;
 
@@ -197,6 +200,7 @@ impl Worker {
             let mut sct_guard = self.sct.write().await;
 
             if !block.requires_scanning() {
+                tracing::debug!(height, "skipping empty block");
                 // Optimization: if the block is empty, seal the in-memory SCT,
                 // and skip touching the database:
                 sct_guard.end_block()?;
@@ -211,6 +215,7 @@ impl Worker {
                 // Notify all watchers of the new height we just recorded.
                 self.sync_height_tx.send(height)?;
             } else {
+                tracing::debug!(height, "scanning block");
                 // Otherwise, scan the block and commit its changes:
                 let filtered_block =
                     scan_block(&self.fvk, &mut sct_guard, block, &self.storage).await?;
@@ -378,20 +383,15 @@ async fn fetch_transactions(
     let mut client = AppQueryServiceClient::new(channel);
     let transactions = client
         .transactions_by_height(TransactionsByHeightRequest {
-            block_heights: vec![block_height],
+            block_height,
             ..Default::default()
         })
         .await?
         .into_inner()
-        .map(|r| {
-            let r = r.expect("error in txbyheightresponse");
-            r.transaction
-                .expect("transaction missing in txbyheightresponse")
-                .try_into()
-                .expect("bad tx")
-        })
-        .collect::<Vec<Transaction>>()
-        .await;
+        .transactions
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<anyhow::Result<Vec<_>>>()?;
     Ok(transactions)
 }
 
@@ -401,7 +401,7 @@ async fn sct_divergence_check(
     height: u64,
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
-    use penumbra_proto::storage::v1alpha1::query_service_client::QueryServiceClient;
+    use penumbra_proto::{storage::v1alpha1::query_service_client::QueryServiceClient, DomainType};
     use penumbra_sct::state_key as sct_state_key;
 
     let mut client = QueryServiceClient::new(channel);

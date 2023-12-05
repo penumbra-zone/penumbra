@@ -1,10 +1,7 @@
-use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_stream::try_stream;
 use async_trait::async_trait;
-use futures::StreamExt as _;
 use jmt::RootHash;
 use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_chain::params::FmdParameters;
@@ -20,15 +17,16 @@ use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
 use penumbra_ibc::component::{IBCComponent, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
+use penumbra_proto::core::app::v1alpha1::TransactionsByHeightResponse;
 use penumbra_proto::DomainType;
 use penumbra_sct::component::SctManager;
 use penumbra_shielded_pool::component::{NoteManager, ShieldedPool};
 use penumbra_stake::component::{Staking, StateReadExt as _, StateWriteExt as _, ValidatorUpdates};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use penumbra_transaction::Transaction;
+use prost::Message as _;
 use tendermint::abci::{self, Event};
 use tendermint::validator::Update;
-use tokio_stream::Stream;
 use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
@@ -576,19 +574,34 @@ impl App {
         });
     }
 
-    /// Stores the transactions that occurred during a CometBFT block
-    /// in nonverifiable storage.
-    pub async fn put_block_transactions(&mut self, height: u64, transactions: Vec<Transaction>) {
-        let mut state_tx = self
-            .state
-            .try_begin_transaction()
-            .expect("state Arc should not be referenced elsewhere");
-        state_tx
-            .put_block_transactions(height, transactions)
-            .await
-            .expect("able to put block transactions");
-        state_tx.apply();
-    }
+    // /// Stores the transactions that occurred during a CometBFT block
+    // /// in nonverifiable storage.
+    // pub async fn put_block_transaction(
+    //     &mut self,
+    //     height: u64,
+    //     transaction: Arc<penumbra_proto::core::transaction::v1alpha1::Transaction>,
+    // ) {
+    //     tracing::debug!("put block transactions");
+    //     let s = Arc::get_mut(&mut self.state).expect("no other references to inter-block state");
+    //     let existing_transactions = match s.transactions_by_height(height).await {
+    //         Ok(transactions) => transactions,
+    //         Err(_) => TransactionsByHeightResponse {
+    //             transactions: vec![],
+    //             block_height: height.into(),
+    //         },
+    //     };
+    //     let transaction = Arc::as_ref(&transaction).clone();
+    //     let transactions = existing_transactions
+    //         .transactions
+    //         .into_iter()
+    //         .chain(vec![transaction])
+    //         .collect::<Vec<_>>();
+    //     s.put_block_transactions(height, transactions)
+    //         .await
+    //         .expect("able to put block transactions");
+    //     tracing::debug!("applying state_tx");
+    //     tracing::debug!("finished put block transactions");
+    // }
 
     /// Commits the application state to persistent storage,
     /// returning the new root hash and storage version.
@@ -696,21 +709,23 @@ pub trait StateReadExt: StateRead {
         })
     }
 
-    fn transactions_by_height(
+    async fn transactions_by_height(
         &self,
         block_height: u64,
-    ) -> Pin<Box<dyn Stream<Item = Result<(u64, Transaction)>> + Send>> {
-        let mut transactions = self
-            .nonverifiable_prefix_raw(&state_key::transactions_by_height(block_height).as_bytes())
-            .boxed();
-        try_stream! {
-            while let Some(transaction) = transactions
-                .next().await {
-                    let tx_bytes = transaction.expect("failed to fetch transaction").1;
-                    yield (block_height, tx_bytes.try_into().expect("invalid transaction bytes"));
+    ) -> Result<TransactionsByHeightResponse> {
+        let transactions = match self
+            .nonverifiable_get_raw(state_key::transactions_by_height(block_height).as_bytes())
+            .await?
+        {
+            Some(transactions) => transactions,
+            None => TransactionsByHeightResponse {
+                transactions: vec![],
+                block_height,
             }
-        }
-        .boxed()
+            .encode_to_vec(),
+        };
+
+        Ok(TransactionsByHeightResponse::decode(&transactions[..])?)
     }
 }
 
@@ -734,17 +749,25 @@ pub trait StateWriteExt: StateWrite {
     /// This is used to create a durable transaction log for clients to retrieve;
     /// the CometBFT `get_block_by_height` RPC call will only return data for blocks
     /// since the last checkpoint, so we need to store the transactions separately.
-    async fn put_block_transactions(
+    async fn put_block_transaction(
         &mut self,
         height: u64,
-        transactions: Vec<Transaction>,
+        transaction: penumbra_proto::core::transaction::v1alpha1::Transaction,
     ) -> Result<()> {
-        for tx in transactions.iter() {
-            self.nonverifiable_put_raw(
-                state_key::transaction_by_height_and_id(height, tx.id()).into(),
-                tx.into(),
-            );
-        }
+        tracing::debug!("put_block_transactions");
+
+        let transactions_response = match self.transactions_by_height(height).await {
+            Ok(transactions) => transactions,
+            Err(_) => TransactionsByHeightResponse {
+                transactions: vec![transaction],
+                block_height: height,
+            },
+        };
+        self.nonverifiable_put_raw(
+            state_key::transactions_by_height(height).into(),
+            transactions_response.encode_to_vec(),
+        );
+        tracing::debug!("done putting");
         Ok(())
     }
 }
