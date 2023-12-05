@@ -725,13 +725,14 @@ pub trait StateWriteExt: StateWrite {
         height: u64,
         transaction: penumbra_proto::core::transaction::v1alpha1::Transaction,
     ) -> Result<()> {
-        let transactions_response = match self.transactions_by_height(height).await {
-            Ok(transactions) => transactions,
-            Err(_) => TransactionsByHeightResponse {
-                transactions: vec![transaction],
-                block_height: height,
-            },
-        };
+        // Extend the existing transactions with the new one.
+        let mut transactions_response = self.transactions_by_height(height).await?;
+        transactions_response.transactions = transactions_response
+            .transactions
+            .into_iter()
+            .chain(std::iter::once(transaction))
+            .collect();
+
         self.nonverifiable_put_raw(
             state_key::transactions_by_height(height).into(),
             transactions_response.encode_to_vec(),
