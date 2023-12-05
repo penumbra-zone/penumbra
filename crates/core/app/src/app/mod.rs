@@ -302,6 +302,14 @@ impl App {
             .state
             .try_begin_transaction()
             .expect("state Arc should be present and unique");
+
+        // Index the transaction:
+        let height = state_tx.get_block_height().await?;
+        let transaction = Arc::as_ref(&tx).clone();
+        state_tx
+            .put_block_transaction(height, transaction.into())
+            .await?;
+
         tx.execute(&mut state_tx).await?;
 
         // At this point, we've completed execution successfully with no errors,
