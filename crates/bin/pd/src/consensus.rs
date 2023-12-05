@@ -1,7 +1,8 @@
 use anyhow::Result;
 
-use penumbra_app::genesis;
+use penumbra_app::{genesis, StateWriteExt as _};
 use penumbra_storage::Storage;
+use penumbra_transaction::Transaction;
 use tendermint::abci::Event;
 use tendermint::v0_37::abci::{
     request, response, ConsensusRequest as Request, ConsensusResponse as Response,
@@ -254,6 +255,17 @@ impl Consensus {
         proposal: request::ProcessProposal,
     ) -> Result<response::ProcessProposal> {
         tracing::debug!(?proposal, "processing proposal");
+        let txs: Vec<Transaction> = proposal
+            .txs
+            .iter()
+            .map(|tx| {
+                let tx_bytes: Vec<u8> = tx.clone().into();
+                tx_bytes.try_into().expect("bad tx in cometbft")
+            })
+            .collect::<Vec<Transaction>>();
+        self.app
+            .put_block_transactions(proposal.height.into(), txs)
+            .await;
         Ok(response::ProcessProposal::Accept)
     }
 }

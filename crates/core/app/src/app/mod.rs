@@ -1,3 +1,4 @@
+use std::io::Bytes;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -577,6 +578,20 @@ impl App {
         });
     }
 
+    /// Stores the transactions that occurred during a CometBFT block
+    /// in nonverifiable storage.
+    pub async fn put_block_transactions(&mut self, height: u64, transactions: Vec<Transaction>) {
+        let mut state_tx = self
+            .state
+            .try_begin_transaction()
+            .expect("state Arc should not be referenced elsewhere");
+        state_tx
+            .put_block_transactions(height, transactions)
+            .await
+            .expect("able to put block transactions");
+        state_tx.apply();
+    }
+
     /// Commits the application state to persistent storage,
     /// returning the new root hash and storage version.
     ///
@@ -686,7 +701,7 @@ pub trait StateReadExt: StateRead {
     fn transactions_by_height(
         &self,
         block_height: u64,
-    ) -> Pin<Box<dyn Stream<Item = Result<(u64, [u8; 32], Transaction)>> + Send>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<(u64, Transaction)>> + Send>> {
         let mut transactions = self
             .nonverifiable_prefix_raw(&state_key::transactions_by_height(block_height).as_bytes())
             .boxed();
@@ -694,10 +709,7 @@ pub trait StateReadExt: StateRead {
             while let Some(transaction) = transactions
                 .next().await {
                     let tx_bytes = transaction.expect("failed to fetch transaction").1;
-                    let tx_id: [u8; 32] = sha2::Sha256::digest(tx_bytes.as_slice())
-                        .as_slice()
-                            .try_into()?;
-                    yield (block_height, tx_id, tx_bytes.try_into().expect("invalid transaction bytes"));
+                    yield (block_height, tx_bytes.try_into().expect("invalid transaction bytes"));
             }
         }
         .boxed()
@@ -717,3 +729,26 @@ impl<
     > StateReadExt for T
 {
 }
+
+#[async_trait]
+pub trait StateWriteExt: StateWrite {
+    /// Stores the transactions that occurred during a CometBFT block.
+    /// This is used to create a durable transaction log for clients to retrieve;
+    /// the CometBFT `get_block_by_height` RPC call will only return data for blocks
+    /// since the last checkpoint, so we need to store the transactions separately.
+    async fn put_block_transactions(
+        &mut self,
+        height: u64,
+        transactions: Vec<Transaction>,
+    ) -> Result<()> {
+        for tx in transactions.iter() {
+            self.nonverifiable_put_raw(
+                state_key::transaction_by_height_and_id(height, tx.id()).into(),
+                tx.into(),
+            );
+        }
+        Ok(())
+    }
+}
+
+impl<T: StateWrite + ?Sized> StateWriteExt for T {}

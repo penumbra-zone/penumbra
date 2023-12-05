@@ -55,13 +55,11 @@ impl QueryService for Server {
 
                 while let Some(r) = transactions.next().await {
                     let r = r.context("error getting prefix value from storage")?;
-                    let tx_bytes = r.2;
-                    let tx_id = r.1;
+                    let tx_bytes = r.1;
                     let transaction = tx_bytes.try_into().context("bad tx bytes in storage")?;
                         yield TransactionsByHeightResponse {
                         block_height: r.0,
                         transaction: Some(transaction),
-                        tx_id: tx_id.to_vec()
                     };
                 }
             }

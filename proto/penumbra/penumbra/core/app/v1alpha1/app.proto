@@ -31,10 +31,8 @@ message TransactionsByHeightRequest {
 message TransactionsByHeightResponse {
   // The transaction.
   core.transaction.v1alpha1.Transaction transaction = 1;
-  // The transaction's identifier.
-  bytes tx_id = 2;
   // The block height.
-  uint64 block_height = 3;
+  uint64 block_height = 2;
 }
 
 

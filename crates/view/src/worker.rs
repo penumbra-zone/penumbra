@@ -130,18 +130,19 @@ impl Worker {
         let transactions = fetch_transactions(self.channel.clone(), filtered_block.height)
             .await?
             .iter()
-            .filter(|(tx_id, tx)| {
+            .filter_map(|tx| {
+                let tx_id = tx.id().0;
+
                 // Check if the transaction is a known inbound transaction or spends one of our nullifiers.
-                if inbound_transaction_ids.contains(tx_id)
+                if inbound_transaction_ids.contains(&tx_id)
                     || tx
                         .spent_nullifiers()
                         .any(|nf| spent_nullifiers.contains(&nf))
                 {
-                    return true;
+                    return Some(tx.clone());
                 }
-                false
+                None
             })
-            .map(|(_, tx)| tx.clone())
             .collect::<Vec<_>>();
 
         tracing::debug!(
@@ -377,7 +378,7 @@ impl Worker {
 async fn fetch_transactions(
     channel: Channel,
     block_height: u64,
-) -> anyhow::Result<Vec<([u8; 32], Transaction)>> {
+) -> anyhow::Result<Vec<Transaction>> {
     let mut client = AppQueryServiceClient::new(channel);
     let transactions = client
         .transactions_by_height(TransactionsByHeightRequest {
@@ -388,14 +389,12 @@ async fn fetch_transactions(
         .into_inner()
         .map(|r| {
             let r = r.expect("error in txbyheightresponse");
-            let tx = r
-                .transaction
-                .expect("transaction missing in txbyheightresponse");
-            let tx_id = r.tx_id.try_into().expect("bad tx bytes");
-
-            return (tx_id, tx.try_into().expect("bad tx"));
+            r.transaction
+                .expect("transaction missing in txbyheightresponse")
+                .try_into()
+                .expect("bad tx")
         })
-        .collect::<Vec<([u8; 32], Transaction)>>()
+        .collect::<Vec<Transaction>>()
         .await;
     Ok(transactions)
 }

@@ -25,11 +25,8 @@ pub struct TransactionsByHeightResponse {
     pub transaction: ::core::option::Option<
         super::super::transaction::v1alpha1::Transaction,
     >,
-    /// The transaction's identifier.
-    #[prost(bytes = "vec", tag = "2")]
-    pub tx_id: ::prost::alloc::vec::Vec<u8>,
     /// The block height.
-    #[prost(uint64, tag = "3")]
+    #[prost(uint64, tag = "2")]
     pub block_height: u64,
 }
 impl ::prost::Name for TransactionsByHeightResponse {

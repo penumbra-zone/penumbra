@@ -835,19 +835,12 @@ impl serde::Serialize for TransactionsByHeightResponse {
         if self.transaction.is_some() {
             len += 1;
         }
-        if !self.tx_id.is_empty() {
-            len += 1;
-        }
         if self.block_height != 0 {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.app.v1alpha1.TransactionsByHeightResponse", len)?;
         if let Some(v) = self.transaction.as_ref() {
             struct_ser.serialize_field("transaction", v)?;
-        }
-        if !self.tx_id.is_empty() {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("txId", pbjson::private::base64::encode(&self.tx_id).as_str())?;
         }
         if self.block_height != 0 {
             #[allow(clippy::needless_borrow)]
@@ -864,8 +857,6 @@ impl<'de> serde::Deserialize<'de> for TransactionsByHeightResponse {
     {
         const FIELDS: &[&str] = &[
             "transaction",
-            "tx_id",
-            "txId",
             "block_height",
             "blockHeight",
         ];
@@ -873,7 +864,6 @@ impl<'de> serde::Deserialize<'de> for TransactionsByHeightResponse {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Transaction,
-            TxId,
             BlockHeight,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -897,7 +887,6 @@ impl<'de> serde::Deserialize<'de> for TransactionsByHeightResponse {
                     {
                         match value {
                             "transaction" => Ok(GeneratedField::Transaction),
-                            "txId" | "tx_id" => Ok(GeneratedField::TxId),
                             "blockHeight" | "block_height" => Ok(GeneratedField::BlockHeight),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -919,7 +908,6 @@ impl<'de> serde::Deserialize<'de> for TransactionsByHeightResponse {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut transaction__ = None;
-                let mut tx_id__ = None;
                 let mut block_height__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
@@ -928,14 +916,6 @@ impl<'de> serde::Deserialize<'de> for TransactionsByHeightResponse {
                                 return Err(serde::de::Error::duplicate_field("transaction"));
                             }
                             transaction__ = map_.next_value()?;
-                        }
-                        GeneratedField::TxId => {
-                            if tx_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("txId"));
-                            }
-                            tx_id__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
                         }
                         GeneratedField::BlockHeight => {
                             if block_height__.is_some() {
@@ -949,7 +929,6 @@ impl<'de> serde::Deserialize<'de> for TransactionsByHeightResponse {
                 }
                 Ok(TransactionsByHeightResponse {
                     transaction: transaction__,
-                    tx_id: tx_id__.unwrap_or_default(),
                     block_height: block_height__.unwrap_or_default(),
                 })
             }
