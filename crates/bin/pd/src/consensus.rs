@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use penumbra_app::{genesis, StateWriteExt as _};
+use penumbra_app::genesis;
 use penumbra_storage::Storage;
 use penumbra_transaction::Transaction;
 use tendermint::abci::Event;

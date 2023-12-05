@@ -1,4 +1,3 @@
-use std::io::Bytes;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -27,7 +26,6 @@ use penumbra_shielded_pool::component::{NoteManager, ShieldedPool};
 use penumbra_stake::component::{Staking, StateReadExt as _, StateWriteExt as _, ValidatorUpdates};
 use penumbra_storage::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use penumbra_transaction::Transaction;
-use sha2::Digest;
 use tendermint::abci::{self, Event};
 use tendermint::validator::Update;
 use tokio_stream::Stream;
