@@ -6,7 +6,7 @@ publish = false
 
 [dependencies]
 penumbra-proof-params = { path = "../../crates/crypto/proof-params" }
-penumbra-proof-setup = { path = "../../crates/crypto/proof-setup" }
+penumbra-proof-setup = { path = "../../crates/crypto/proof-setup", features = ["parallel"] }
 penumbra-dex = { path = "../../crates/core/component/dex/" }
 penumbra-dao = { path = "../../crates/core/component/dao/", features = ["component"] }
 penumbra-governance = { path = "../../crates/core/component/governance/" }

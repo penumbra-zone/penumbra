@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use ark_ec::Group;
 use ark_ff::{One, UniformRand, Zero};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress, Valid, Validate};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress, Validate};
 use rand_core::{CryptoRngCore, OsRng};
 
 use crate::parallel_utils::{flatten_results, transform_parallel, zip_map_parallel};
@@ -151,8 +151,11 @@ impl RawCRSElements {
 
     /// This is a replacement for the CanonicalDeserialize trait impl (more or less).
     #[cfg(not(feature = "parallel"))]
-    pub(crate) fn checked_deserialize_parallel(compress: Compress, data: &[u8]) -> Self {
-        Self::deserialize_with_mode(data, compress, Validate::Yes)
+    pub(crate) fn checked_deserialize_parallel(
+        compress: Compress,
+        data: &[u8],
+    ) -> anyhow::Result<Self> {
+        Ok(Self::deserialize_with_mode(data, compress, Validate::Yes)?)
     }
 
     /// This is a replacement for the CanonicalDeserialize trait impl (more or less).
@@ -161,6 +164,7 @@ impl RawCRSElements {
         compress: Compress,
         data: &[u8],
     ) -> anyhow::Result<Self> {
+        use ark_serialize::Valid;
         use rayon::prelude::*;
 
         let out = Self::deserialize_with_mode(data, compress, Validate::No)?;
