@@ -19,6 +19,8 @@ use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{r1cs::FqVar, Fq};
 use ethnum::U256;
 
+use crate::AmountVar;
+
 use self::div::stub_div_rem_u384_by_u256;
 
 #[derive(thiserror::Error, Debug)]
@@ -628,6 +630,17 @@ impl U128x128Var {
                 self.limbs[3].clone(),
             ],
         }
+    }
+
+    pub fn round_down_to_amount(self) -> Result<AmountVar, SynthesisError> {
+        let bits = self.limbs[2]
+            .to_bits_le()
+            .into_iter()
+            .chain(self.limbs[3].to_bits_le().into_iter())
+            .collect::<Vec<Boolean<Fq>>>();
+        Ok(AmountVar {
+            amount: Boolean::<Fq>::le_bits_to_fp_var(&bits)?,
+        })
     }
 
     pub fn zero() -> U128x128Var {

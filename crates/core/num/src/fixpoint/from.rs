@@ -42,6 +42,13 @@ impl TryFrom<U128x128> for u128 {
     }
 }
 
+impl TryFrom<U128x128> for u64 {
+    type Error = super::Error;
+    fn try_from(value: U128x128) -> Result<Self, Self::Error> {
+        u128::try_from(value).and_then(|x| u64::try_from(x).map_err(|_| super::Error::Overflow))
+    }
+}
+
 impl From<[u8; 32]> for U128x128 {
     fn from(value: [u8; 32]) -> Self {
         Self::from_bytes(value)

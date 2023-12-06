@@ -220,7 +220,7 @@ message CurrentConsensusKeys {
 
 // Tracks slashing penalties applied to a validator in some epoch.
 message Penalty {
-  uint64 inner = 1;
+  bytes inner = 1;
 }
 
 // Query operations for the staking component.

@@ -45,7 +45,7 @@ fn undelegate_claim_proving_time(c: &mut Criterion) {
     let start_epoch_index = 1;
     let unbonding_token = UnbondingToken::new(validator_identity, start_epoch_index);
     let unbonding_id = unbonding_token.id();
-    let penalty = Penalty(1u64);
+    let penalty = Penalty::from_bps_squared(1u64);
     let balance = penalty.balance_for_claim(unbonding_id, unbonding_amount);
     let balance_commitment = balance.commit(balance_blinding);
 
