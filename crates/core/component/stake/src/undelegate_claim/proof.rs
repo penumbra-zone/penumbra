@@ -72,7 +72,7 @@ impl ConstraintSynthesizer<Fq> for UndelegateClaimCircuit {
 
 impl DummyWitness for UndelegateClaimCircuit {
     fn with_dummy_witness() -> Self {
-        let penalty = Penalty::default();
+        let penalty = Penalty::from_percent(0);
         let balance_blinding = Fr::from(1);
         let unbonding_amount = Amount::from(1u64);
         let unbonding_id = *STAKING_TOKEN_ASSET_ID;
