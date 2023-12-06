@@ -1,8 +1,6 @@
 syntax = "proto3";
 package penumbra.core.component.chain.v1alpha1;
 
-import "penumbra/core/asset/v1alpha1/asset.proto";
-
 // Global chain configuration data, such as chain ID, epoch duration, etc.
 message ChainParameters {
   // The identifier of the chain.
