@@ -18,7 +18,7 @@ use penumbra_num::{
 /// Tracks slashing penalties applied to a validator in some epoch.
 ///
 /// The penalty is represented as a fixed-point integer in bps^2 (denominator 10^8).
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "pbs::Penalty", into = "pbs::Penalty")]
 pub struct Penalty(U128x128);
 

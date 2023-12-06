@@ -411,7 +411,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             let penalty = self
                 .penalty_in_epoch(&validator.identity_key, epoch_to_end.index)
                 .await?
-                .unwrap_or_default();
+                .unwrap_or(Penalty::from_percent(0));
             let prev_validator_rate_with_penalty = prev_validator_rate.slash(penalty);
 
             // Then compute the next validator rate, accounting for funding streams and validator state.
@@ -1099,7 +1099,7 @@ pub trait StateReadExt: StateRead {
         let start_key = state_key::penalty_in_epoch(id, start);
         let end_key = state_key::penalty_in_epoch(id, end);
 
-        let mut compounded = Penalty::default();
+        let mut compounded = Penalty::from_percent(0);
         for (_key, penalty) in all_penalties.range(start_key..end_key) {
             compounded = compounded.compound(*penalty);
         }
@@ -1413,7 +1413,7 @@ pub trait StateWriteExt: StateWrite {
         let current_penalty = self
             .penalty_in_epoch(identity_key, current_epoch_index)
             .await?
-            .unwrap_or_default();
+            .unwrap_or(Penalty::from_percent(0));
 
         let new_penalty = current_penalty.compound(slashing_penalty);
 
