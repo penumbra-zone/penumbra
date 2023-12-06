@@ -39,7 +39,6 @@ use crate::{
 pub struct TransactionBody {
     pub actions: Vec<Action>,
     pub transaction_parameters: TransactionParameters,
-    pub fee: Fee,
     pub detection_data: Option<DetectionData>,
     pub memo: Option<MemoCiphertext>,
 }
@@ -49,6 +48,7 @@ pub struct TransactionBody {
 pub struct TransactionParameters {
     pub expiry_height: u64,
     pub chain_id: String,
+    pub fee: Fee,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -279,7 +279,7 @@ impl Transaction {
             body_view: TransactionBodyView {
                 action_views,
                 transaction_parameters: self.transaction_parameters(),
-                fee: self.transaction_body().fee,
+                fee: self.transaction_parameters().fee,
                 detection_data,
                 memo_view,
             },
@@ -507,7 +507,11 @@ impl Transaction {
 
         // Add fee into binding verification key computation.
         let fee_v_blinding = Fr::zero();
-        let fee_value_commitment = self.transaction_body.fee.commit(fee_v_blinding);
+        let fee_value_commitment = self
+            .transaction_body
+            .transaction_parameters
+            .fee
+            .commit(fee_v_blinding);
         balance_commitments += fee_value_commitment.0;
 
         let binding_verification_key_bytes: VerificationKeyBytes<Binding> =
@@ -537,6 +541,11 @@ impl TryFrom<pbt::TransactionParameters> for TransactionParameters {
         Ok(TransactionParameters {
             expiry_height: proto.expiry_height,
             chain_id: proto.chain_id,
+            fee: Fee(proto
+                .fee
+                .ok_or_else(|| anyhow::anyhow!("transaction parameters missing fee"))?
+                .try_into()
+                .context("fee malformed")?),
         })
     }
 }
@@ -546,6 +555,7 @@ impl From<TransactionParameters> for pbt::TransactionParameters {
         pbt::TransactionParameters {
             expiry_height: msg.expiry_height,
             chain_id: msg.chain_id,
+            fee: Some(msg.fee.value().into()),
         }
     }
 }
@@ -593,7 +603,6 @@ impl From<TransactionBody> for pbt::TransactionBody {
         pbt::TransactionBody {
             actions: msg.actions.into_iter().map(|x| x.into()).collect(),
             transaction_parameters: Some(msg.transaction_parameters.into()),
-            fee: Some(msg.fee.into()),
             detection_data: msg.detection_data.map(|x| x.into()),
             memo_data: Some(encrypted_memo),
         }
@@ -612,12 +621,6 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
                     .context("action malformed while parsing transaction body")?,
             );
         }
-
-        let fee: Fee = proto
-            .fee
-            .ok_or_else(|| anyhow::anyhow!("transaction body missing fee"))?
-            .try_into()
-            .context("fee malformed")?;
 
         let encrypted_memo = proto
             .memo_data
@@ -651,7 +654,6 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
         Ok(TransactionBody {
             actions,
             transaction_parameters,
-            fee,
             detection_data,
             memo,
         })

@@ -2881,9 +2881,6 @@ impl serde::Serialize for TransactionBody {
         if self.transaction_parameters.is_some() {
             len += 1;
         }
-        if self.fee.is_some() {
-            len += 1;
-        }
         if self.detection_data.is_some() {
             len += 1;
         }
@@ -2896,9 +2893,6 @@ impl serde::Serialize for TransactionBody {
         }
         if let Some(v) = self.transaction_parameters.as_ref() {
             struct_ser.serialize_field("transactionParameters", v)?;
-        }
-        if let Some(v) = self.fee.as_ref() {
-            struct_ser.serialize_field("fee", v)?;
         }
         if let Some(v) = self.detection_data.as_ref() {
             struct_ser.serialize_field("detectionData", v)?;
@@ -2919,7 +2913,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
             "actions",
             "transaction_parameters",
             "transactionParameters",
-            "fee",
             "detection_data",
             "detectionData",
             "memo_data",
@@ -2930,7 +2923,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
         enum GeneratedField {
             Actions,
             TransactionParameters,
-            Fee,
             DetectionData,
             MemoData,
         }
@@ -2956,7 +2948,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
                         match value {
                             "actions" => Ok(GeneratedField::Actions),
                             "transactionParameters" | "transaction_parameters" => Ok(GeneratedField::TransactionParameters),
-                            "fee" => Ok(GeneratedField::Fee),
                             "detectionData" | "detection_data" => Ok(GeneratedField::DetectionData),
                             "memoData" | "memo_data" => Ok(GeneratedField::MemoData),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
@@ -2980,7 +2971,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
             {
                 let mut actions__ = None;
                 let mut transaction_parameters__ = None;
-                let mut fee__ = None;
                 let mut detection_data__ = None;
                 let mut memo_data__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -2996,12 +2986,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
                                 return Err(serde::de::Error::duplicate_field("transactionParameters"));
                             }
                             transaction_parameters__ = map_.next_value()?;
-                        }
-                        GeneratedField::Fee => {
-                            if fee__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("fee"));
-                            }
-                            fee__ = map_.next_value()?;
                         }
                         GeneratedField::DetectionData => {
                             if detection_data__.is_some() {
@@ -3020,7 +3004,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
                 Ok(TransactionBody {
                     actions: actions__.unwrap_or_default(),
                     transaction_parameters: transaction_parameters__,
-                    fee: fee__,
                     detection_data: detection_data__,
                     memo_data: memo_data__,
                 })
@@ -3043,9 +3026,6 @@ impl serde::Serialize for TransactionBodyView {
         if self.transaction_parameters.is_some() {
             len += 1;
         }
-        if self.fee.is_some() {
-            len += 1;
-        }
         if self.detection_data.is_some() {
             len += 1;
         }
@@ -3058,9 +3038,6 @@ impl serde::Serialize for TransactionBodyView {
         }
         if let Some(v) = self.transaction_parameters.as_ref() {
             struct_ser.serialize_field("transactionParameters", v)?;
-        }
-        if let Some(v) = self.fee.as_ref() {
-            struct_ser.serialize_field("fee", v)?;
         }
         if let Some(v) = self.detection_data.as_ref() {
             struct_ser.serialize_field("detectionData", v)?;
@@ -3082,7 +3059,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
             "actionViews",
             "transaction_parameters",
             "transactionParameters",
-            "fee",
             "detection_data",
             "detectionData",
             "memo_view",
@@ -3093,7 +3069,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
         enum GeneratedField {
             ActionViews,
             TransactionParameters,
-            Fee,
             DetectionData,
             MemoView,
         }
@@ -3119,7 +3094,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
                         match value {
                             "actionViews" | "action_views" => Ok(GeneratedField::ActionViews),
                             "transactionParameters" | "transaction_parameters" => Ok(GeneratedField::TransactionParameters),
-                            "fee" => Ok(GeneratedField::Fee),
                             "detectionData" | "detection_data" => Ok(GeneratedField::DetectionData),
                             "memoView" | "memo_view" => Ok(GeneratedField::MemoView),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
@@ -3143,7 +3117,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
             {
                 let mut action_views__ = None;
                 let mut transaction_parameters__ = None;
-                let mut fee__ = None;
                 let mut detection_data__ = None;
                 let mut memo_view__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -3159,12 +3132,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
                                 return Err(serde::de::Error::duplicate_field("transactionParameters"));
                             }
                             transaction_parameters__ = map_.next_value()?;
-                        }
-                        GeneratedField::Fee => {
-                            if fee__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("fee"));
-                            }
-                            fee__ = map_.next_value()?;
                         }
                         GeneratedField::DetectionData => {
                             if detection_data__.is_some() {
@@ -3183,7 +3150,6 @@ impl<'de> serde::Deserialize<'de> for TransactionBodyView {
                 Ok(TransactionBodyView {
                     action_views: action_views__.unwrap_or_default(),
                     transaction_parameters: transaction_parameters__,
-                    fee: fee__,
                     detection_data: detection_data__,
                     memo_view: memo_view__,
                 })
@@ -3206,6 +3172,9 @@ impl serde::Serialize for TransactionParameters {
         if !self.chain_id.is_empty() {
             len += 1;
         }
+        if self.fee.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.TransactionParameters", len)?;
         if self.expiry_height != 0 {
             #[allow(clippy::needless_borrow)]
@@ -3213,6 +3182,9 @@ impl serde::Serialize for TransactionParameters {
         }
         if !self.chain_id.is_empty() {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
+        }
+        if let Some(v) = self.fee.as_ref() {
+            struct_ser.serialize_field("fee", v)?;
         }
         struct_ser.end()
     }
@@ -3228,12 +3200,14 @@ impl<'de> serde::Deserialize<'de> for TransactionParameters {
             "expiryHeight",
             "chain_id",
             "chainId",
+            "fee",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             ExpiryHeight,
             ChainId,
+            Fee,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3257,6 +3231,7 @@ impl<'de> serde::Deserialize<'de> for TransactionParameters {
                         match value {
                             "expiryHeight" | "expiry_height" => Ok(GeneratedField::ExpiryHeight),
                             "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
+                            "fee" => Ok(GeneratedField::Fee),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3278,6 +3253,7 @@ impl<'de> serde::Deserialize<'de> for TransactionParameters {
             {
                 let mut expiry_height__ = None;
                 let mut chain_id__ = None;
+                let mut fee__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ExpiryHeight => {
@@ -3294,11 +3270,18 @@ impl<'de> serde::Deserialize<'de> for TransactionParameters {
                             }
                             chain_id__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::Fee => {
+                            if fee__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("fee"));
+                            }
+                            fee__ = map_.next_value()?;
+                        }
                     }
                 }
                 Ok(TransactionParameters {
                     expiry_height: expiry_height__.unwrap_or_default(),
                     chain_id: chain_id__.unwrap_or_default(),
+                    fee: fee__,
                 })
             }
         }

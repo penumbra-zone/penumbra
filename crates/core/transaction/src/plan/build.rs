@@ -47,8 +47,8 @@ impl TransactionPlan {
             transaction_parameters: TransactionParameters {
                 expiry_height: self.expiry_height,
                 chain_id: self.chain_id,
+                fee: self.fee,
             },
-            fee: self.fee,
             detection_data,
             memo,
         };

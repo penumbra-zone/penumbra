@@ -57,7 +57,7 @@ impl TransactionBody {
 
         // Hash the fixed data of the transaction body.
         state.update(self.transaction_parameters.effect_hash().as_bytes());
-        state.update(self.fee.effect_hash().as_bytes());
+        state.update(self.transaction_parameters.fee.effect_hash().as_bytes());
         if self.memo.is_some() {
             let memo_ciphertext = self.memo.clone();
             state.update(
@@ -107,6 +107,7 @@ impl TransactionPlan {
         let tx_params = TransactionParameters {
             chain_id: self.chain_id.clone(),
             expiry_height: self.expiry_height,
+            fee: self.fee.clone(),
         };
         state.update(tx_params.effect_hash().as_bytes());
         state.update(self.fee.effect_hash().as_bytes());

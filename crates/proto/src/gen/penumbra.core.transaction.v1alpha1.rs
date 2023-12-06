@@ -45,14 +45,11 @@ pub struct TransactionBody {
     /// Parameters determining if a transaction should be accepted by this chain.
     #[prost(message, optional, tag = "2")]
     pub transaction_parameters: ::core::option::Option<TransactionParameters>,
-    /// The transaction fee.
-    #[prost(message, optional, tag = "3")]
-    pub fee: ::core::option::Option<super::super::component::fee::v1alpha1::Fee>,
     /// Detection data for use with Fuzzy Message Detection
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag = "3")]
     pub detection_data: ::core::option::Option<DetectionData>,
     /// Sub-message containing memo ciphertext if a memo was added to the transaction.
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag = "4")]
     pub memo_data: ::core::option::Option<MemoData>,
 }
 impl ::prost::Name for TransactionBody {
@@ -91,6 +88,9 @@ pub struct TransactionParameters {
     /// replaying a transaction on one chain onto a different chain.
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
+    /// The transaction fee.
+    #[prost(message, optional, tag = "3")]
+    pub fee: ::core::option::Option<super::super::asset::v1alpha1::Value>,
 }
 impl ::prost::Name for TransactionParameters {
     const NAME: &'static str = "TransactionParameters";
@@ -304,15 +304,12 @@ impl ::prost::Name for TransactionView {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionBodyView {
-    /// A list views into of actions (state changes) performed by this transaction.
+    /// A list of views into of actions (state changes) performed by this transaction.
     #[prost(message, repeated, tag = "1")]
     pub action_views: ::prost::alloc::vec::Vec<ActionView>,
     /// Transaction parameters.
     #[prost(message, optional, tag = "2")]
     pub transaction_parameters: ::core::option::Option<TransactionParameters>,
-    /// The transaction fee.
-    #[prost(message, optional, tag = "3")]
-    pub fee: ::core::option::Option<super::super::component::fee::v1alpha1::Fee>,
     /// The detection data in this transaction, only populated if
     /// there are outputs in the actions of this transaction.
     #[prost(message, optional, tag = "4")]

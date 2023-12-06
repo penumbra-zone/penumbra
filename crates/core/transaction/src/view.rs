@@ -86,7 +86,6 @@ impl TransactionView {
             transaction_body: TransactionBody {
                 actions,
                 transaction_parameters,
-                fee: self.body_view.fee.clone(),
                 detection_data,
                 memo: memo_ciphertext.cloned(),
             },
@@ -143,11 +142,14 @@ impl TryFrom<pbt::TransactionBodyView> for TransactionBodyView {
             action_views.push(av.try_into()?);
         }
 
-        let fee = body_view
+        let fee = Fee(body_view
+            .transaction_parameters
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("transaction view missing transaction parameters view"))?
             .fee
             .ok_or_else(|| anyhow::anyhow!("transaction view missing fee"))?
             .try_into()
-            .context("transaction fee malformed")?;
+            .context("transaction fee malformed")?);
 
         let memo_view: Option<MemoView> = match body_view.memo_view {
             Some(mv) => match mv.memo_view {
@@ -182,6 +184,7 @@ impl TryFrom<pbt::TransactionBodyView> for TransactionBodyView {
 
         let transaction_parameters = body_view
             .transaction_parameters
+            .clone()
             .ok_or_else(|| anyhow::anyhow!("transaction view missing transaction parameters view"))?
             .try_into()?;
 
@@ -223,7 +226,6 @@ impl From<TransactionBodyView> for pbt::TransactionBodyView {
         Self {
             action_views: v.action_views.into_iter().map(Into::into).collect(),
             transaction_parameters: Some(v.transaction_parameters.into()),
-            fee: Some(v.fee.into()),
             detection_data: v.detection_data.map(Into::into),
             memo_view: v.memo_view.map(|m| m.into()),
         }
