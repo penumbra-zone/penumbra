@@ -2,7 +2,7 @@ use ibc_types::core::commitment::MerklePrefix;
 use once_cell::sync::Lazy;
 
 /// The substore prefix used for IBC data.
-pub static IBC_SUBSTORE_PREFIX: &'static str = "ibc-data/";
+pub static IBC_SUBSTORE_PREFIX: &'static str = "ibc-data";
 
 /// The IBC commitment prefix used for the IBC substore, as a [`MerklePrefix`].
 pub static IBC_COMMITMENT_PREFIX: Lazy<MerklePrefix> = Lazy::new(|| MerklePrefix {
