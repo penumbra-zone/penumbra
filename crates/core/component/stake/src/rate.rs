@@ -1,6 +1,5 @@
 //! Staking reward and delegation token exchange rates.
 
-use penumbra_num::fixpoint::U128x128;
 use penumbra_num::Amount;
 use penumbra_proto::core::component::stake::v1alpha1::CurrentValidatorRateResponse;
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
@@ -98,15 +97,12 @@ impl RateData {
         let mut slashed = self.clone();
         // This will automatically produce a ratio which is multiplied by 1_0000_0000, and so
         // rounding down does what we want.
-        let penalty_times_exchange_rate: u64 = (U128x128::from(self.validator_exchange_rate)
-            * U128x128::from(penalty))
-        .and_then(|x| x.round_down().try_into())
-        .expect("multiplying will not overflow");
-        // (1 - penalty) * exchange_rate
-        slashed.validator_exchange_rate = self
-            .validator_exchange_rate
-            // Slashing penalty is in bps^2, so we divide by 1e8
-            .saturating_sub(penalty_times_exchange_rate);
+        let penalized_exchange_rate: u64 = penalty
+            .apply_to(self.validator_exchange_rate)
+            .round_down()
+            .try_into()
+            .expect("multiplying will not overflow");
+        slashed.validator_exchange_rate = penalized_exchange_rate;
         slashed
     }
 

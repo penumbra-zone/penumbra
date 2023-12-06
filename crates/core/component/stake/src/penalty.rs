@@ -44,6 +44,7 @@ impl Penalty {
         Self(U128x128::ratio(bps_squared, 1_0000_0000).expect(&format!(
             "{bps_squared} bps^2 should be convertible to a U128x128"
         )))
+        .one_minus_this()
     }
 
     fn one_minus_this(&self) -> Penalty {
@@ -55,22 +56,20 @@ impl Penalty {
 
     /// Compound this `Penalty` with another `Penalty`.
     pub fn compound(&self, other: Penalty) -> Penalty {
-        // We want to compute q sth (1 - q) = (1-p1)(1-p2)
-        // q = 1 - (1-p1)(1-p2)
-        Self(
-            (self.one_minus_this().0 * other.one_minus_this().0)
-                .expect("compounding penalties will never overflow, both are <= 1"),
-        )
-        .one_minus_this()
+        Self((self.0 * other.0).expect("compounding penalities will not overflow"))
     }
 
     /// Apply this `Penalty` to an `Amount` of unbonding tokens.
-    pub fn apply_to(&self, amount: Amount) -> Amount {
-        (U128x128::from(amount) * self.one_minus_this().0)
-            .expect("should not overflow, because penalty is <= 1")
+    pub fn apply_to_amount(&self, amount: Amount) -> Amount {
+        self.apply_to(amount)
             .round_down()
             .try_into()
             .expect("converting integral U128xU128 into Amount will succeed")
+    }
+
+    /// Apply this `Penalty` to an some fracton.
+    pub fn apply_to(&self, amount: impl Into<U128x128>) -> U128x128 {
+        (amount.into() * self.0).expect("should not overflow, because penalty is <= 1")
     }
 
     /// Helper method to compute the effect of an UndelegateClaim on the
@@ -89,7 +88,7 @@ impl Penalty {
                 asset_id: unbonding_id,
             }
             + Value {
-                amount: self.apply_to(unbonding_amount),
+                amount: self.apply_to_amount(unbonding_amount),
                 asset_id: *STAKING_TOKEN_ASSET_ID,
             }
     }
@@ -98,12 +97,6 @@ impl Penalty {
 impl ToConstraintField<Fq> for Penalty {
     fn to_field_elements(&self) -> Option<Vec<Fq>> {
         self.0.to_field_elements()
-    }
-}
-
-impl From<Penalty> for U128x128 {
-    fn from(value: Penalty) -> Self {
-        value.0
     }
 }
 
@@ -146,22 +139,9 @@ impl AllocVar<Penalty, Fq> for PenaltyVar {
 }
 
 impl PenaltyVar {
-    fn one_minus_this(&self) -> Result<PenaltyVar, SynthesisError> {
-        // Calculate 1 - self outside the circuit
-        let ooc_result = {
-            let value = self.value().unwrap_or(Penalty::default());
-            PenaltyVar::new_witness(self.cs(), || Ok(value.one_minus_this()))?
-        };
-        // Check that 1 + (1 - self) is self
-        let one = PenaltyVar::new_constant(self.cs(), Penalty::from_percent(100))?;
-        self.inner
-            .enforce_equal(&one.inner.checked_add(&ooc_result.inner)?)?;
-        Ok(ooc_result)
-    }
-
     pub fn apply_to(&self, amount: AmountVar) -> Result<AmountVar, SynthesisError> {
         U128x128Var::from_amount_var(amount)?
-            .checked_mul(&self.one_minus_this()?.inner)?
+            .checked_mul(&self.inner)?
             .round_down_to_amount()
     }
 
