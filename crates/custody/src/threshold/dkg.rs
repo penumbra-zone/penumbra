@@ -4,7 +4,7 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use decaf377::Fq;
 use decaf377_frost as frost;
 use frost::keys::dkg as frost_dkg;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 mod encryption;
 use ed25519_consensus::{Signature, SigningKey, VerificationKey};
 use encryption::EncryptionKey;
@@ -257,6 +257,17 @@ pub fn round2(
     state: Round1State,
     messages: Vec<Round1>,
 ) -> Result<(Round2, Round2State)> {
+    // Check that all verification keys are unique, and not equal to my own
+    {
+        let mut seen = HashSet::new();
+        seen.insert(state.sk.verification_key());
+        for m in &messages {
+            if seen.contains(&m.vk) {
+                anyhow::bail!("duplicate verification key in messages");
+            }
+        }
+    }
+
     let associated_info = messages
         .into_iter()
         .map(|x| {
