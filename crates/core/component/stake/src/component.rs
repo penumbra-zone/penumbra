@@ -249,7 +249,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 let penalty = self.get_stake_params().await?.slashing_penalty_downtime;
 
                 // Record the slashing penalty on this validator.
-                self.record_slashing_penalty(identity_key, Penalty(penalty))
+                self.record_slashing_penalty(identity_key, Penalty::from_bps_squared(penalty))
                     .await?;
 
                 // The validator's delegation pool begins unbonding.  Jailed
@@ -273,7 +273,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 let penalty = self.get_stake_params().await?.slashing_penalty_misbehavior;
 
                 // Record the slashing penalty on this validator.
-                self.record_slashing_penalty(identity_key, Penalty(penalty))
+                self.record_slashing_penalty(identity_key, Penalty::from_bps_squared(penalty))
                     .await?;
 
                 // Regardless of its current bonding state, the validator's

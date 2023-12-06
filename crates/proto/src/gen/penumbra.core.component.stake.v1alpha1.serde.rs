@@ -1309,13 +1309,13 @@ impl serde::Serialize for Penalty {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.inner != 0 {
+        if !self.inner.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1alpha1.Penalty", len)?;
-        if self.inner != 0 {
+        if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("inner", ToString::to_string(&self.inner).as_str())?;
+            struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
         }
         struct_ser.end()
     }
@@ -1382,7 +1382,7 @@ impl<'de> serde::Deserialize<'de> for Penalty {
                                 return Err(serde::de::Error::duplicate_field("inner"));
                             }
                             inner__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
                     }

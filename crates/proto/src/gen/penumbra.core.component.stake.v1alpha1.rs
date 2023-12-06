@@ -571,8 +571,8 @@ impl ::prost::Name for CurrentConsensusKeys {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Penalty {
-    #[prost(uint64, tag = "1")]
-    pub inner: u64,
+    #[prost(bytes = "vec", tag = "1")]
+    pub inner: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for Penalty {
     const NAME: &'static str = "Penalty";
