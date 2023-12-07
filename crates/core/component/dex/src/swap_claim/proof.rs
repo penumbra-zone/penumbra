@@ -437,13 +437,60 @@ mod tests {
     use proptest::prelude::*;
     use rand_core::OsRng;
 
+    #[derive(Debug)]
+    struct TestBatchSwapOutputData {
+        delta_1: Amount,
+        delta_2: Amount,
+        lambda_1: Amount,
+        lambda_2: Amount,
+        unfilled_1: Amount,
+        unfilled_2: Amount,
+    }
+
+    fn filled_bsod_strategy() -> BoxedStrategy<TestBatchSwapOutputData> {
+        let delta_1 = (4001..2000000000u128).prop_map(Amount::from);
+        let delta_2 = (4001..2000000000u128).prop_map(Amount::from);
+
+        let lambda_1 = (2..2000u64).prop_map(Amount::from);
+        let lambda_2 = (2..2000u64).prop_map(Amount::from);
+
+        let unfilled_1 = (2..2000u64).prop_map(Amount::from);
+        let unfilled_2 = (2..2000u64).prop_map(Amount::from);
+
+        (delta_1, delta_2, lambda_1, lambda_2, unfilled_1, unfilled_2)
+            .prop_flat_map(
+                move |(delta_1, delta_2, lambda_1, lambda_2, unfilled_1, unfilled_2)| {
+                    (
+                        Just(delta_1),
+                        Just(delta_2),
+                        Just(lambda_1),
+                        Just(lambda_2),
+                        Just(unfilled_1),
+                        Just(unfilled_2),
+                    )
+                },
+            )
+            .prop_map(
+                move |(delta_1, delta_2, lambda_1, lambda_2, unfilled_1, unfilled_2)| {
+                    TestBatchSwapOutputData {
+                        delta_1,
+                        delta_2,
+                        lambda_1,
+                        lambda_2,
+                        unfilled_1,
+                        unfilled_2,
+                    }
+                },
+            )
+            .boxed()
+    }
+
     proptest! {
     #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
-    fn swap_claim_proof_happy_path_filled(seed_phrase_randomness in any::<[u8; 32]>(), value1_amount in 2..200u64) {
+    fn swap_claim_proof_happy_path_filled(seed_phrase_randomness in any::<[u8; 32]>(), value1_amount in 2..200u64, test_bsod in filled_bsod_strategy()) {
         let mut rng = OsRng;
         let (pk, vk) = generate_prepared_test_parameters::<SwapClaimCircuit>(&mut rng);
-
 
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
         let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
@@ -474,12 +521,12 @@ mod tests {
         let height = epoch_duration * position.epoch() + position.block();
 
         let output_data = BatchSwapOutputData {
-            delta_1: Amount::from(1000u64),
-            delta_2: Amount::from(1000u64),
-            lambda_1: Amount::from(50u64),
-            lambda_2: Amount::from(25u64),
-            unfilled_1: Amount::from(23u64),
-            unfilled_2: Amount::from(50u64),
+            delta_1: test_bsod.delta_1,
+            delta_2: test_bsod.delta_2,
+            lambda_1: test_bsod.lambda_1,
+            lambda_2: test_bsod.lambda_2,
+            unfilled_1: test_bsod.unfilled_1,
+            unfilled_2: test_bsod.unfilled_2,
             height: height.into(),
             trading_pair: swap_plaintext.trading_pair,
             epoch_starting_height: (epoch_duration * position.epoch()).into(),
@@ -527,97 +574,124 @@ mod tests {
         }
     }
 
-    #[test]
-    fn swap_claim_proof_happy_path_unfilled() {
-        let mut rng = OsRng;
-        let (pk, vk) = generate_prepared_test_parameters::<SwapClaimCircuit>(&mut rng);
+    fn unfilled_bsod_strategy() -> BoxedStrategy<TestBatchSwapOutputData> {
+        let delta_1: Amount = 0u64.into();
+        let delta_2 = (4001..2000000000u128).prop_map(Amount::from);
 
-        let seed_phrase = SeedPhrase::generate(rng);
-        let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
-        let fvk_recipient = sk_recipient.full_viewing_key();
-        let ivk_recipient = fvk_recipient.incoming();
-        let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
-        let nk = *sk_recipient.nullifier_key();
+        let lambda_1: Amount = 0u64.into();
+        let lambda_2: Amount = 0u64.into();
 
-        let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
-        let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
-        let trading_pair = TradingPair::new(gm.id(), gn.id());
+        let unfilled_1: Amount = 0u64.into();
+        let unfilled_2 = delta_2.clone();
 
-        let delta_1_i = Amount::from(0u64);
-        let delta_2_i = Amount::from(1000000u64);
-        let fee = Fee::default();
+        (delta_2, unfilled_2)
+            .prop_flat_map(move |(delta_2, unfilled_2)| (Just(delta_2), Just(unfilled_2)))
+            .prop_map(move |(delta_2, unfilled_2)| TestBatchSwapOutputData {
+                delta_1,
+                delta_2,
+                lambda_1,
+                lambda_2,
+                unfilled_1,
+                unfilled_2,
+            })
+            .boxed()
+    }
 
-        let swap_plaintext = SwapPlaintext::new(
-            &mut rng,
-            trading_pair,
-            delta_1_i,
-            delta_2_i,
-            fee,
-            claim_address,
-        );
-        let fee = swap_plaintext.clone().claim_fee;
-        let mut sct = tct::Tree::new();
-        let swap_commitment = swap_plaintext.swap_commitment();
-        sct.insert(tct::Witness::Keep, swap_commitment).unwrap();
-        let anchor = sct.root();
-        let state_commitment_proof = sct.witness(swap_commitment).unwrap();
-        let position = state_commitment_proof.position();
-        let nullifier = Nullifier::derive(&nk, position, &swap_commitment);
-        let epoch_duration = 20;
-        let height = epoch_duration * position.epoch() + position.block();
+    proptest! {
+            #![proptest_config(ProptestConfig::with_cases(2))]
+            #[test]
+            fn swap_claim_proof_happy_path_unfilled(seed_phrase_randomness in any::<[u8; 32]>(), test_bsod in unfilled_bsod_strategy(), value2_amount in 2..200u64,) {
 
-        let output_data = BatchSwapOutputData {
-            delta_1: Amount::from(0u64),
-            delta_2: Amount::from(1000000u64),
-            lambda_1: Amount::from(0u64),
-            lambda_2: Amount::from(0u64),
-            unfilled_1: Amount::from(0u64),
-            unfilled_2: Amount::from(1000000u64),
-            height: height.into(),
-            trading_pair: swap_plaintext.trading_pair,
-            epoch_starting_height: (epoch_duration * position.epoch()).into(),
-        };
-        let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
+            let mut rng = OsRng;
+            let (pk, vk) = generate_prepared_test_parameters::<SwapClaimCircuit>(&mut rng);
 
-        let (output_rseed_1, output_rseed_2) = swap_plaintext.output_rseeds();
-        let note_blinding_1 = output_rseed_1.derive_note_blinding();
-        let note_blinding_2 = output_rseed_2.derive_note_blinding();
-        let (output_1_note, output_2_note) = swap_plaintext.output_notes(&output_data);
-        let note_commitment_1 = output_1_note.commit();
-        let note_commitment_2 = output_2_note.commit();
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+            let fvk_recipient = sk_recipient.full_viewing_key();
+            let ivk_recipient = fvk_recipient.incoming();
+            let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+            let nk = *sk_recipient.nullifier_key();
 
-        let blinding_r = Fq::rand(&mut rng);
-        let blinding_s = Fq::rand(&mut rng);
+            let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+            let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+            let trading_pair = TradingPair::new(gm.id(), gn.id());
 
-        let proof = SwapClaimProof::prove(
-            blinding_r,
-            blinding_s,
-            &pk,
-            swap_plaintext,
-            state_commitment_proof,
-            nk,
-            anchor,
-            nullifier,
-            lambda_1,
-            lambda_2,
-            note_blinding_1,
-            note_blinding_2,
-            note_commitment_1,
-            note_commitment_2,
-            output_data,
-        )
-        .expect("can create proof");
+            let delta_1_i = Amount::from(0u64);
+            let delta_2_i = Amount::from(value2_amount);
+            let fee = Fee::default();
 
-        let proof_result = proof.verify(
-            &vk,
-            anchor,
-            nullifier,
-            fee,
-            output_data,
-            note_commitment_1,
-            note_commitment_2,
-        );
+            let swap_plaintext = SwapPlaintext::new(
+                &mut rng,
+                trading_pair,
+                delta_1_i,
+                delta_2_i,
+                fee,
+                claim_address,
+            );
+            let fee = swap_plaintext.clone().claim_fee;
+            let mut sct = tct::Tree::new();
+            let swap_commitment = swap_plaintext.swap_commitment();
+            sct.insert(tct::Witness::Keep, swap_commitment).unwrap();
+            let anchor = sct.root();
+            let state_commitment_proof = sct.witness(swap_commitment).unwrap();
+            let position = state_commitment_proof.position();
+            let nullifier = Nullifier::derive(&nk, position, &swap_commitment);
+            let epoch_duration = 20;
+            let height = epoch_duration * position.epoch() + position.block();
 
-        assert!(proof_result.is_ok());
+            let output_data = BatchSwapOutputData {
+                delta_1: test_bsod.delta_1,
+                delta_2: test_bsod.delta_2,
+                lambda_1: test_bsod.lambda_1,
+                lambda_2: test_bsod.lambda_2,
+                unfilled_1: test_bsod.unfilled_1,
+                unfilled_2: test_bsod.unfilled_2,
+                height: height.into(),
+                trading_pair: swap_plaintext.trading_pair,
+                epoch_starting_height: (epoch_duration * position.epoch()).into(),
+            };
+            let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
+
+            let (output_rseed_1, output_rseed_2) = swap_plaintext.output_rseeds();
+            let note_blinding_1 = output_rseed_1.derive_note_blinding();
+            let note_blinding_2 = output_rseed_2.derive_note_blinding();
+            let (output_1_note, output_2_note) = swap_plaintext.output_notes(&output_data);
+            let note_commitment_1 = output_1_note.commit();
+            let note_commitment_2 = output_2_note.commit();
+
+            let blinding_r = Fq::rand(&mut rng);
+            let blinding_s = Fq::rand(&mut rng);
+
+            let proof = SwapClaimProof::prove(
+                blinding_r,
+                blinding_s,
+                &pk,
+                swap_plaintext,
+                state_commitment_proof,
+                nk,
+                anchor,
+                nullifier,
+                lambda_1,
+                lambda_2,
+                note_blinding_1,
+                note_blinding_2,
+                note_commitment_1,
+                note_commitment_2,
+                output_data,
+            )
+            .expect("can create proof");
+
+            let proof_result = proof.verify(
+                &vk,
+                anchor,
+                nullifier,
+                fee,
+                output_data,
+                note_commitment_1,
+                note_commitment_2,
+            );
+
+            assert!(proof_result.is_ok());
+        }
     }
 }
