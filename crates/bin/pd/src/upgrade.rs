@@ -85,7 +85,7 @@ impl Upgrade {
                     tracing::info!(%now, "no genesis time provided, detecting a testing setup");
                     now
                 });
-                let checkpoint = [32u8; 32].to_vec();
+                let checkpoint = app_hash.0;
                 let genesis = TestnetConfig::make_checkpoint(genesis, Some(checkpoint));
 
                 let genesis_json = serde_json::to_string(&genesis).expect("can serialize genesis");
