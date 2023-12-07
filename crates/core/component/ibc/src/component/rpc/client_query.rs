@@ -23,6 +23,8 @@ use std::str::FromStr;
 use tonic::{Response, Status};
 
 use crate::component::ClientStateReadExt;
+use crate::prefix::MerklePrefixExt;
+use crate::IBC_COMMITMENT_PREFIX;
 
 use super::IbcQuery;
 
@@ -46,8 +48,8 @@ impl ClientQuery for IbcQuery {
         // Query for client_state and associated proof.
         let (cs_opt, proof) = snapshot
             .get_with_proof(
-                ClientStatePath(client_id.clone())
-                    .to_string()
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(ClientStatePath(client_id.clone()).to_string())
                     .as_bytes()
                     .to_vec(),
             )
