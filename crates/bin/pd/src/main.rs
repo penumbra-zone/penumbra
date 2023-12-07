@@ -151,6 +151,9 @@ enum RootCommand {
         /// The directory containing exported state to which the upgrade will be applied.
         #[clap(long, display_order = 200)]
         upgrade_path: PathBuf,
+        #[clap(long, display_order = 300)]
+        /// Timestamp of the genesis file.
+        genesis_start: Option<tendermint::time::Time>,
     },
 }
 
@@ -704,9 +707,13 @@ async fn main() -> anyhow::Result<()> {
             // - apply checks: root hash, size, etc.
             todo!()
         }
-        RootCommand::Upgrade { upgrade_path } => {
+        RootCommand::Upgrade {
+            upgrade_path,
+            genesis_start,
+        } => {
+            use upgrade::Upgrade::SimpleUpgrade;
             tracing::info!("upgrading state from {}", upgrade_path.display());
-            upgrade::migrate(upgrade_path.clone(), Upgrade::Testnet60)
+            SimpleUpgrade::migrate(upgrade_path.clone(), genesis_start)
                 .await
                 .context("failed to upgrade state")?;
         }
