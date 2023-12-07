@@ -1,4 +1,4 @@
-use crate::{DomainType, Message};
+use crate::{DomainType, Message, event::ProtoEvent};
 
 use std::fmt::Debug;
 
@@ -20,6 +20,14 @@ pub trait StateWriteProto: StateWrite + Send + Sync {
         P: Message + Default + Debug,
     {
         self.put_raw(key, value.encode_to_vec());
+    }
+
+    /// Records a Protobuf message as a typed ABCI event.
+    fn record_proto<E>(&mut self, proto_event: E) 
+    where
+        E: ProtoEvent
+    {
+        self.record(proto_event.into_event())
     }
 }
 impl<T: StateWrite + ?Sized> StateWriteProto for T {}

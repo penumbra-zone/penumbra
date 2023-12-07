@@ -29,6 +29,8 @@ pub use prost::{Message, Name};
 /// Helper methods used for shaping the JSON (and other Serde) formats derived from the protos.
 pub mod serializers;
 
+/// Helper trait for 
+pub mod event;
 mod protobuf;
 pub use protobuf::DomainType;
 
