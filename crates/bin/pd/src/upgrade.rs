@@ -14,7 +14,7 @@ use crate::testnet::generate::TestnetConfig;
 pub enum Upgrade {
     /// No-op migration
     Noop,
-    /// Testnet 60 migration
+    /// A simple migration: adds a key to the consensus state.
     Testnet60,
 }
 
@@ -35,9 +35,9 @@ pub async fn migrate(path_to_export: PathBuf, upgrade: Upgrade) -> anyhow::Resul
             let post_ugprade_height = height.wrapping_add(1);
 
             /* --------- writing to the jmt  ------------ */
-            tracing::info!(?app_hash_pre_migration, "app hash pre upgrade");
+            tracing::info!(?app_hash_pre_migration, "app hash pre-upgrade");
             let mut delta = StateDelta::new(export_state);
-            delta.put_raw("testnet_60_forked".to_string(), "done".into());
+            delta.put_raw("has_migrated".to_string(), "yes".into());
             delta.put_block_height(0u64);
             let root_hash = storage.commit_in_place(delta).await?;
             let app_hash_post_migration: RootHash = root_hash.into();
@@ -48,7 +48,7 @@ pub async fn migrate(path_to_export: PathBuf, upgrade: Upgrade) -> anyhow::Resul
             let migrated_state = storage.latest_snapshot();
             let root_hash = migrated_state.root_hash().await.expect("can get root hash");
             let app_hash: RootHash = root_hash.into();
-            tracing::info!(?root_hash, "root hash post upgrade2");
+            tracing::info!(?root_hash, "root hash from snapshot (post-upgrade)");
             let chain_params = migrated_state
                 .get_chain_params()
                 .await
@@ -81,6 +81,12 @@ pub async fn migrate(path_to_export: PathBuf, upgrade: Upgrade) -> anyhow::Resul
             let mut genesis_path = path_to_export.clone();
             genesis_path.push("genesis.json");
             std::fs::write(genesis_path, genesis_json).expect("can write genesis");
+
+            let mut validator_state_path = path_to_export.clone();
+            validator_state_path.push("priv_validator_state.json");
+            let fresh_validator_state = crate::testnet::generate::TestnetValidator::initial_state();
+            std::fs::write(validator_state_path, fresh_validator_state)
+                .expect("can write validator state");
         }
     }
     Ok(())
