@@ -20,7 +20,7 @@ use pd::testnet::{
     generate::TestnetConfig,
     join::testnet_join,
 };
-use pd::upgrade::{self, Upgrade};
+use pd::upgrade;
 use penumbra_app::SUBSTORE_PREFIXES;
 use penumbra_proto::core::component::dex::v1alpha1::simulation_service_server::SimulationServiceServer;
 use penumbra_proto::util::tendermint_proxy::v1alpha1::tendermint_proxy_service_server::TendermintProxyServiceServer;
@@ -152,7 +152,8 @@ enum RootCommand {
         #[clap(long, display_order = 200)]
         upgrade_path: PathBuf,
         #[clap(long, display_order = 300)]
-        /// Timestamp of the genesis file.
+        /// Timestamp of the genesis file in RFC3339 format. If unset, defaults to the current time,
+        /// unless the migration script overrides it.
         genesis_start: Option<tendermint::time::Time>,
     },
 }
@@ -713,7 +714,8 @@ async fn main() -> anyhow::Result<()> {
         } => {
             use upgrade::Upgrade::SimpleUpgrade;
             tracing::info!("upgrading state from {}", upgrade_path.display());
-            SimpleUpgrade::migrate(upgrade_path.clone(), genesis_start)
+            SimpleUpgrade
+                .migrate(upgrade_path.clone(), genesis_start)
                 .await
                 .context("failed to upgrade state")?;
         }
