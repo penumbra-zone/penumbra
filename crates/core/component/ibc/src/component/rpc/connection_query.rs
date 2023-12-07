@@ -17,6 +17,8 @@ use prost::Message;
 use std::str::FromStr;
 
 use crate::component::ConnectionStateReadExt;
+use crate::prefix::MerklePrefixExt;
+use crate::IBC_COMMITMENT_PREFIX;
 
 use super::IbcQuery;
 
@@ -27,14 +29,15 @@ impl ConnectionQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryConnectionRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionResponse>, tonic::Status> {
+        tracing::debug!("querying connection {:?}", request);
         let snapshot = self.0.latest_snapshot();
         let connection_id = &ConnectionId::from_str(&request.get_ref().connection_id)
             .map_err(|e| tonic::Status::aborted(format!("invalid connection id: {e}")))?;
 
         let (conn, proof) = snapshot
             .get_with_proof(
-                ConnectionPath::new(connection_id)
-                    .to_string()
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(ConnectionPath::new(connection_id).to_string())
                     .as_bytes()
                     .to_vec(),
             )
