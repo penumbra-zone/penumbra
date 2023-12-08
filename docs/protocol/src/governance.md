@@ -44,7 +44,7 @@ alternative.
   <img src="governance/governance-light.png" />
 </picture>
 
-In the above, rounded grey boxes are actions submitted by the proposal author, rectangular colored
+In the above, rounded gray boxes are actions submitted by the proposal author, rectangular colored
 boxes are the state of the proposal on chain, and colored circles are outcomes of voting.
 
 ## Proposal NFTs
@@ -58,7 +58,7 @@ proposal deposit itself, provided the deposit has not been slashed. This is the 
 
 ### Kinds Of Proposal
 
-There are 4 kinds of governance proposal on Penumbra: **signaling**, **emergency**, **parameter
+There are 4 kinds of governance proposals on Penumbra: **signaling**, **emergency**, **parameter
 change**, and **DAO spend**.
 
 #### Signaling Proposals
