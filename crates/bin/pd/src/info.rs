@@ -79,10 +79,9 @@ impl Info {
             .unwrap_or_default()
             .try_into()?;
 
-        // likewise, we want to return 0 if we can't get the revision number
-        let app_version = state.get_revision_number().await.unwrap_or_default();
+        let app_version = penumbra_app::APP_VERSION;
 
-        tracing::info!(?info, state_version = ?state.version(), last_block_height = ?last_block_height, "reporting height in info query");
+        tracing::info!(?info, state_version = ?state.version(), last_block_height = ?last_block_height, ?app_version,"reporting height in info query");
 
         let last_block_app_hash = state.root_hash().await?.0.to_vec().try_into()?;
 
