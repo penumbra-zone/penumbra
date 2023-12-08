@@ -19,6 +19,8 @@ pub static SUBSTORE_PREFIXES: Lazy<Vec<String>> = Lazy::new(|| {
     ]
 });
 
+pub static APP_VERSION: &'static str = "v0.1.0";
+
 pub mod app;
 pub mod genesis;
 pub mod params;
