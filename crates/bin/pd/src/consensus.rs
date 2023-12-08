@@ -107,20 +107,6 @@ impl Consensus {
         let app_state: genesis::AppState = serde_json::from_slice(&init_chain.app_state_bytes)
             .expect("can parse app_state in genesis file");
 
-        match &app_state {
-            genesis::AppState::Checkpoint(h) => {
-                tracing::info!(?h, "genesis state is a checkpoint");
-                /* perform upgrade specific check */
-            }
-            genesis::AppState::Content(_) => {
-                tracing::info!("genesis state is a full configuration");
-                // Check that we haven't got a duplicated InitChain message for some reason:
-                if self.storage.latest_version() != u64::MAX {
-                    anyhow::bail!("database already initialized");
-                }
-            }
-        }
-
         self.app.init_chain(&app_state).await;
 
         // Extract the Tendermint validators from the app state
@@ -131,8 +117,23 @@ impl Consensus {
         // set. See https://docs.tendermint.com/master/spec/abci/abci.html#initchain
         let validators = self.app.tendermint_validator_updates();
 
-        // Note: App::commit resets internal components, so we don't need to do that ourselves.
-        let app_hash = self.app.commit(self.storage.clone()).await;
+        let app_hash = match &app_state {
+            genesis::AppState::Checkpoint(h) => {
+                tracing::info!(?h, "genesis state is a checkpoint");
+                // If we're starting from a checkpoint, we just need to forward the app hash
+                // back to CometBFT.
+                self.storage.latest_snapshot().root_hash().await?
+            }
+            genesis::AppState::Content(_) => {
+                tracing::info!("genesis state is a full configuration");
+                // Check that we haven't got a duplicated InitChain message for some reason:
+                if self.storage.latest_version() != u64::MAX {
+                    anyhow::bail!("database already initialized");
+                }
+                // Note: App::commit resets internal components, so we don't need to do that ourselves.
+                self.app.commit(self.storage.clone()).await
+            }
+        };
 
         tracing::info!(
             consensus_params = ?init_chain.consensus_params,
