@@ -233,6 +233,7 @@ pub fn validate_penumbra_client_state(
         // allow legacy proof specs without prehash_key_before_comparison
         let mut spec_with_prehash_key = tm_client_state.proof_specs.clone();
         spec_with_prehash_key[0].prehash_key_before_comparison = true;
+        spec_with_prehash_key[1].prehash_key_before_comparison = true;
         if IBC_PROOF_SPECS.clone() != spec_with_prehash_key {
             anyhow::bail!("invalid client state: proof specs do not match");
         }
