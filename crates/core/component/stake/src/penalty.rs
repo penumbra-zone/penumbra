@@ -17,7 +17,11 @@ use penumbra_num::{
 
 /// Tracks slashing penalties applied to a validator in some epoch.
 ///
-/// The penalty is represented as a fixed-point integer in bps^2 (denominator 10^8).
+/// You do not need to know how the penalty is represented.
+///
+/// If you insist on knowing, it's represented as a U128x128 between 0 and 1,
+/// which denotes the amount *kept* after applying a penalty. e.g. a 1% penalty
+/// would be 0.99.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "pbs::Penalty", into = "pbs::Penalty")]
 pub struct Penalty(U128x128);
@@ -67,7 +71,7 @@ impl Penalty {
             .expect("converting integral U128xU128 into Amount will succeed")
     }
 
-    /// Apply this `Penalty` to an some fracton.
+    /// Apply this `Penalty` to some fraction.
     pub fn apply_to(&self, amount: impl Into<U128x128>) -> U128x128 {
         (amount.into() * self.0).expect("should not overflow, because penalty is <= 1")
     }
