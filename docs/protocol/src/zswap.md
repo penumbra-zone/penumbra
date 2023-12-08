@@ -99,7 +99,7 @@ Swaps](./zswap/swap.md) section.
 
 ZSwap executes trades against *concentrated liquidity* positions.
 
-Uniswap v3's insight was that that existing constant-product market makers like
+Uniswap v3's insight was that existing constant-product market makers like
 Uniswap v2 allocate liquidity inefficiently, spreading it uniformly over the
 entire range of possible prices for a trading pair.  Instead, allowing liquidity
 providers (LPs) to restrict their liquidity to a price range of their choosing
