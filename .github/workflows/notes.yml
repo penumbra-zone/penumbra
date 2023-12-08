@@ -38,8 +38,9 @@ jobs:
           mkdir firebase-tmp
           mv book firebase-tmp/${{ steps.get_version.outputs.version }}
           tree firebase-tmp
+
       - name: Deploy software guide to firebase
-        uses: w9jds/firebase-action@v2.0.0
+        uses: w9jds/firebase-action@v12.9.0
         with:
           args: deploy
         env:
@@ -49,6 +50,7 @@ jobs:
 
       - name: Build protocol spec
         run: cd docs/protocol && mdbook build
+
       - name: Move protocol spec to subdirectory
         run: |
           cd docs/protocol
@@ -56,8 +58,9 @@ jobs:
           mkdir firebase-tmp
           mv book firebase-tmp/${{ steps.get_version.outputs.version }}
           tree firebase-tmp
+
       - name: Deploy protocol spec to firebase
-        uses: w9jds/firebase-action@v2.0.0
+        uses: w9jds/firebase-action@v12.9.0
         with:
           args: deploy
         env:
@@ -75,8 +78,9 @@ jobs:
           mv ../../target/doc firebase-tmp/${{ steps.get_version.outputs.version }}
           # Copy in the static index file
           cp index.html firebase-tmp/${{ steps.get_version.outputs.version }}
+
       - name: Deploy API docs to firebase
-        uses: w9jds/firebase-action@v2.0.0
+        uses: w9jds/firebase-action@v12.9.0
         with:
           args: deploy
         env:
