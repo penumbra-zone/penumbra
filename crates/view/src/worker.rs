@@ -411,6 +411,7 @@ async fn sct_divergence_check(
     use penumbra_sct::state_key as sct_state_key;
 
     let mut client = QueryServiceClient::new(channel);
+    tracing::info!(?height, "fetching anchor @ height");
 
     let value = client
         .key_value(penumbra_proto::storage::v1alpha1::KeyValueRequest {

@@ -148,9 +148,9 @@ impl App {
                 Dex::init_chain(&mut state_tx, Some(&())).await;
                 Governance::init_chain(&mut state_tx, Some(&())).await;
                 Fee::init_chain(&mut state_tx, Some(&app_state.fee_content)).await;
+                App::finish_block(&mut state_tx).await;
             }
             genesis::AppState::Checkpoint(_) => {
-                /* perform upgrade specific check */
                 ShieldedPool::init_chain(&mut state_tx, None).await;
                 Distributions::init_chain(&mut state_tx, None).await;
                 Staking::init_chain(&mut state_tx, None).await;
@@ -161,7 +161,6 @@ impl App {
             }
         };
 
-        App::finish_block(&mut state_tx).await;
         state_tx.apply();
     }
 
@@ -484,6 +483,7 @@ impl App {
             .get_block_height()
             .await
             .expect("height of block is always set");
+        tracing::debug!(?height, ?end_epoch, "finishing compact block");
 
         // Check to see if the app parameters have changed, and include a flag in the compact block
         // if they have (this is signaled by the various `penumbra_*::StateWriteExt::put_*_params` methods).
