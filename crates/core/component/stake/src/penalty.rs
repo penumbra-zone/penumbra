@@ -136,6 +136,10 @@ impl AllocVar<Penalty, Fq> for PenaltyVar {
         f: impl FnOnce() -> Result<T, SynthesisError>,
         mode: ark_r1cs_std::prelude::AllocationMode,
     ) -> Result<Self, SynthesisError> {
+        assert!(
+            matches!(mode, ark_r1cs_std::prelude::AllocationMode::Input),
+            "Penalty must be an input variable"
+        );
         Ok(Self {
             inner: U128x128Var::new_variable(cs, || Ok(f()?.borrow().0), mode)?,
         })
