@@ -62,6 +62,11 @@ message Spend {
   ZKSpendProof proof = 3;
 }
 
+// Penumbra's ABCI Event type for Spend
+message EventSpend {
+  bytes nullifier = 1;
+}
+
 // The body of a spend description, containing only the effecting data
 // describing changes to the ledger, and not the authorizing data that allows
 // those changes to be performed.

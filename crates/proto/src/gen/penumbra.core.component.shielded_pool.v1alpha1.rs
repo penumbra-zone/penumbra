@@ -155,6 +155,22 @@ impl ::prost::Name for Spend {
         )
     }
 }
+/// Penumbra's ABCI Event type for Spend
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventSpend {
+    #[prost(bytes = "vec", tag = "1")]
+    pub nullifier: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for EventSpend {
+    const NAME: &'static str = "EventSpend";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// The body of a spend description, containing only the effecting data
 /// describing changes to the ledger, and not the authorizing data that allows
 /// those changes to be performed.

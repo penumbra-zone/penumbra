@@ -5594,6 +5594,7 @@ dependencies = [
  "pin-project",
  "prost",
  "serde",
+ "serde_json",
  "subtle-encoding",
  "tendermint",
  "tonic",
