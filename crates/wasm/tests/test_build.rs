@@ -24,7 +24,7 @@ mod tests {
     use penumbra_tct::{structure::Hash, Forgotten};
     use penumbra_transaction::{
         plan::{ActionPlan, TransactionPlan},
-        Action,
+        Action, Transaction,
     };
     use penumbra_wasm::{
         build::build_action,
@@ -478,7 +478,7 @@ mod tests {
         }
 
         // Deserialize actions.
-        let action_deserialized = serde_wasm_bindgen::to_value(&actions).unwrap();
+        let action_deserialized: JsValue = serde_wasm_bindgen::to_value(&actions).unwrap();
 
         // Execute parallel spend transaction and generate proof.
         let parallel_transaction = build_parallel(
@@ -499,5 +499,17 @@ mod tests {
         )
         .unwrap();
         console_log!("Serial transaction is: {:?}", serial_transaction);
+
+        // Deserialize transactions and stringify actions in the transaction body into JSON
+        let serial_result: Transaction =
+            serde_wasm_bindgen::from_value(serial_transaction).unwrap();
+        let parallel_result: Transaction =
+            serde_wasm_bindgen::from_value(parallel_transaction).unwrap();
+        let serial_json = serde_json::to_string(&serial_result.transaction_body.actions).unwrap();
+        let parallel_json =
+            serde_json::to_string(&parallel_result.transaction_body.actions).unwrap();
+
+        // Perform assertion check
+        assert_eq!(serial_json, parallel_json);
     }
 }

@@ -85,22 +85,22 @@ jobs:
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
 
-      - name: build wasm32 target
-        run: cargo build --release --target wasm32-unknown-unknown
-        # TODO: consider failing on warnings here. A few dead-code
-        # warnings, leaving as-is because wasm is undergoing rapid dev
-        # in support of web extension.
-        working-directory: crates/wasm
-
       # Download prebuilt binary for wasm-pack; faster than `cargo install`.
       - uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: 'latest'
 
-      # `wasm-pack build` will automatically compile to target wasm32-unknown-unknown,
-      # but we run it as a separate task to isolate potential failures in the build pipeline.
+      # Ensure that wasm crate builds cleanly. Is this superfluous, given `wasm-pack test` below?
       - name: run wasm-pack build
         run: wasm-pack build
+        working-directory: crates/wasm
+
+      # Download firefox
+      - uses: browser-actions/setup-firefox@v1
+      - run: firefox --version
+
+      - name: Run headless browser tests
+        run: wasm-pack test --headless --firefox -- --test test_build --target wasm32-unknown-unknown --release --features "mock-database"
         working-directory: crates/wasm
 
       # Always show the results of `cargo tree`, even if the tests failed, since that
