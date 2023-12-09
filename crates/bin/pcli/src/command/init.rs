@@ -76,7 +76,7 @@ impl SoftKmsInitCmd {
 
                 display_string_discreetly(
                     &seed_phrase.to_string(),
-                    "\n\n### Save YOUR PRIVATE SEED PHRASE IN A SAFE PLACE! DO NOT SHARE WITH ANYONE! PRESS ANY KEY TO COMPLETE. ###",
+                    "\n\n### SAVE YOUR PRIVATE SEED PHRASE IN A SAFE PLACE! DO NOT SHARE WITH ANYONE! PRESS ANY KEY TO COMPLETE. ###",
                 )?;
 
                 let path = Bip44Path::new(0);
