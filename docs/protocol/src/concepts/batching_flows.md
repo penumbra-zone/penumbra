@@ -28,7 +28,7 @@ allowing value flows to be batched over any time interval from 1 block up to the
 length of an epoch. We propose epoch boundaries on the order of 1-3 days.
 
 At the beginning of each epoch, the validator set performs distributed key
-generation for to produce a decryption key jointly controlled by the
+generation to produce a decryption key jointly controlled by the
 validators (on an approximately stake-weighted basis) and includes the
 encryption key in the first block of the epoch.
 
