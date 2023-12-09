@@ -12,4 +12,4 @@ like so:
 REGENERATE_INDEX=1 ./deployments/scripts/rust-docs
 ```
 
-and then commiting the changes, if any, to `docs/rustdoc/index.html`.
+and then committing the changes, if any, to `docs/rustdoc/index.html`.
