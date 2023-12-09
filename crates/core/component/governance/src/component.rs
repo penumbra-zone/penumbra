@@ -30,11 +30,16 @@ pub struct Governance {}
 impl Component for Governance {
     type AppState = ();
 
-    #[instrument(name = "governance", skip(state, _app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, _app_state: Option<&()>) {
-        // Clients need to be able to read the next proposal number, even when no proposals have
-        // been submitted yet
-        state.init_proposal_counter();
+    #[instrument(name = "governance", skip(state, app_state))]
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&()>) {
+        match app_state {
+            Some(_) => {
+                // Clients need to be able to read the next proposal number, even when no proposals have
+                // been submitted yet
+                state.init_proposal_counter();
+            }
+            None => {}
+        }
     }
 
     #[instrument(name = "governance", skip(_state, _begin_block))]
