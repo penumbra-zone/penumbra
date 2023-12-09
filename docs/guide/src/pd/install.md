@@ -4,7 +4,7 @@ Download prebuilt binaries from the [Penumbra releases page on Github](https://g
 Make sure to use the most recent version available, as the version of `pd` must
 match the software currently running on the network.
 
-Make sure choose the correct platform for your machine. After downloading the `.tar.xz` file,
+Make sure to choose the correct platform for your machine. After downloading the `.tar.xz` file,
 extract it, and copy its contents to your `$PATH`. For example:
 
 ```
