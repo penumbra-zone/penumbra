@@ -23,9 +23,9 @@ pub trait StateWriteProto: StateWrite + Send + Sync {
     }
 
     /// Records a Protobuf message as a typed ABCI event.
-    fn record_proto<E>(&mut self, proto_event: E) 
+    fn record_proto<'a, E>(&mut self, proto_event: E)
     where
-        E: ProtoEvent
+        E: ProtoEvent<'a>
     {
         self.record(proto_event.into_event())
     }
