@@ -3875,6 +3875,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "libredox"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3af92c55d7d839293953fcd0fda5ecfe93297cfde6ffbdec13b41d99c0ba6607"
+dependencies = [
+ "bitflags 2.4.1",
+ "libc",
+ "redox_syscall 0.4.1",
+]
+
+[[package]]
 name = "librocksdb-sys"
 version = "0.11.0+8.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4386,6 +4397,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
+name = "numtoa"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8f8bdf33df195859076e54ab11ee78a1b208382d3a26ec40d142ffc1ecc49ef"
+
+[[package]]
 name = "object"
 version = "0.32.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4695,6 +4712,7 @@ dependencies = [
  "sha2 0.9.9",
  "tempfile",
  "tendermint",
+ "termion",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.10",
@@ -6811,13 +6829,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "redox_termios"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20145670ba436b55d91fc92d25e71160fbfbdd57831631c8d7d36377a476f1cb"
+
+[[package]]
 name = "redox_users"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a18479200779601e498ada4e8c1e1f50e3ee19deb0259c25825a98b5603b2cb4"
 dependencies = [
  "getrandom 0.2.11",
- "libredox",
+ "libredox 0.0.1",
  "thiserror",
 ]
 
@@ -8131,6 +8155,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff1bc3d3f05aff0403e8ac0d92ced918ec05b666a43f83297ccef5bea8a3d449"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "termion"
+version = "2.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4648c7def6f2043b2568617b9f9b75eae88ca185dbc1f1fda30e95a85d49d7d"
+dependencies = [
+ "libc",
+ "libredox 0.0.2",
+ "numtoa",
+ "redox_termios",
 ]
 
 [[package]]
