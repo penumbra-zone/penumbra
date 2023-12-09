@@ -95,6 +95,7 @@ ndarray = "0.15.6"
 dialoguer = "0.10.4"
 # ndarray-linalg = { version = "0.16.0", features = ["openblas-static"] }
 termion = "2.0"
+anyhow = "1.0"
 
 [dev-dependencies]
 assert_cmd = "2.0"

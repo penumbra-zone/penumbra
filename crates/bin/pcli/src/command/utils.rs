@@ -1,7 +1,8 @@
+use anyhow::{Ok, Result};
 use comfy_table::{presets, Table};
 use penumbra_asset::{asset, Value};
 use penumbra_dex::lp::position::Position;
-use std::io::{self, Read, Write};
+use std::io::{Read, Write};
 
 pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position]) -> String {
     let mut table = Table::new();

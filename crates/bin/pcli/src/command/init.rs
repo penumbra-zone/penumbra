@@ -8,7 +8,7 @@ use rand_core::OsRng;
 use url::Url;
 
 use crate::{
-    command::utils::{self, display_string_discreetly},
+    command::utils::display_string_discreetly,
     config::{CustodyConfig, PcliConfig},
     terminal::ActualTerminal,
 };
