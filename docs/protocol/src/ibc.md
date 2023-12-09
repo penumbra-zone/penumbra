@@ -30,7 +30,7 @@ In order to support the IBC protocol, Penumbra adds a single additional Action
 * `Acknowledgement`
 
 These datagrams are implemented as protocol buffers, with the enclosing
-`IBCAction` type using profobuf's `OneOf` directive to encapsulate all possible
+`IBCAction` type using protobuf's `OneOf` directive to encapsulate all possible
 IBC datagram types.
 
 # Transfers into Penumbra
