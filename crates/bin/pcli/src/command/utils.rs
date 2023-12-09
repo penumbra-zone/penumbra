@@ -1,6 +1,7 @@
 use comfy_table::{presets, Table};
 use penumbra_asset::{asset, Value};
 use penumbra_dex::lp::position::Position;
+use std::io::{self, Read, Write};
 
 pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position]) -> String {
     let mut table = Table::new();
@@ -100,4 +101,23 @@ pub(crate) fn render_positions(asset_cache: &asset::Cache, positions: &[Position
     }
 
     format!("{table}")
+}
+
+/// Print a string to an alternate screen, so the string isn't printed to the terminal.
+pub(crate) fn display_string_discreetly(
+    discreet_string: &str,
+    continue_message: &str,
+) -> Result<()> {
+    use termion::screen::IntoAlternateScreen;
+    let mut screen = std::io::stdout().into_alternate_screen()?;
+    writeln!(screen, "{discreet_string}")?;
+    screen.flush()?;
+    println!("{continue_message}");
+    wait_for_keypress();
+    Ok(())
+}
+
+fn wait_for_keypress() {
+    let mut single_key = [0u8];
+    std::io::stdin().read_exact(&mut single_key).unwrap();
 }

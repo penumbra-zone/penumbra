@@ -8,6 +8,7 @@ use rand_core::OsRng;
 use url::Url;
 
 use crate::{
+    command::utils::{self, display_string_discreetly},
     config::{CustodyConfig, PcliConfig},
     terminal::ActualTerminal,
 };
@@ -73,10 +74,9 @@ impl SoftKmsInitCmd {
             SoftKmsInitCmd::Generate => {
                 let seed_phrase = SeedPhrase::generate(OsRng);
 
-                // xxx: Something better should be done here, this is in danger of being
-                // shared by users accidentally in log output.
-                println!(
-                    "YOUR PRIVATE SEED PHRASE:\n{seed_phrase}\nSave this in a safe place!\nDO NOT SHARE WITH ANYONE!"
+                display_string_discreetly(
+                    seed_phrase,
+                    "### Save YOUR PRIVATE SEED PHRASE IN A SAFE PLACE!\nDO NOT SHARE WITH ANYONE! PRESS ANY KEY TO COMPLETE. ###",
                 );
 
                 let path = Bip44Path::new(0);
