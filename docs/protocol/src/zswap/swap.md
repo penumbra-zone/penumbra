@@ -164,7 +164,7 @@ potential places to try to correlate amounts:
 - Each epoch discloses the net amount of newly bonded stake for each validator;
 - Liquidity pool deposits disclose the precise type and amount of newly
   deposited reserves;
-- Liquidity pool deposits disclose the precise type and amount of newly
+- Liquidity pool withdrawals disclose the precise type and amount of newly
   withdrawn reserves;
 
 The existence of the swap mechanism potentially makes correlation by amount more
