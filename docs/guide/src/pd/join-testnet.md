@@ -241,7 +241,7 @@ First fetch your existing validator definition from the chain:
 pcli validator definition fetch --file validator.toml
 ```
 
-Then make any changes desired and **make sure to increase by `sequence_number` by at least 1!**
+Then make any changes desired and **make sure to increase `sequence_number` by at least 1!**
 The `sequence_number` is a unique, increasing identifier for the version of the validator definition.
 
 After updating the validator definition you can upload it again to update your validator metadata on-chain:
