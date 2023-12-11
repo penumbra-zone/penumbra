@@ -272,23 +272,15 @@ impl Storage {
             anyhow::bail!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, snapshot.version());
         }
 
-        self.commit_inner(snapshot, changes, new_version, false)
-            .await
+        self.commit_inner(snapshot, changes, new_version).await
     }
 
     /// Commits the supplied [`Cache`] to persistent storage.
-    ///
-    /// # Migrations
-    /// In the case of chain state migrations we need to commit the new state
-    /// without incrementing the version. If `perform_migration` is `true` the
-    /// snapshot will _not_ be written to the snapshot cache, and no subscribers
-    /// will be notified. Substore versions will not be updated.
     async fn commit_inner(
         &self,
         snapshot: Snapshot,
         cache: Cache,
         version: jmt::Version,
-        perform_migration: bool,
     ) -> Result<crate::RootHash> {
         tracing::debug!(new_jmt_version = ?version, "committing state delta");
         let mut changes_by_substore = cache.shard_by_prefix(&self.0.multistore_config);
@@ -341,12 +333,9 @@ impl Storage {
                 continue;
             };
 
-            let version = if perform_migration {
-                old_substore_version
-            } else {
-                old_substore_version.wrapping_add(1)
-            };
+            let version = old_substore_version.wrapping_add(1);
             new_versions.push(version);
+
             let substore_snapshot = SubstoreSnapshot {
                 config: config.clone(),
                 rocksdb_snapshot: rocksdb_snapshot.clone(),
@@ -423,11 +412,6 @@ impl Storage {
         multistore_versions.set_version(main_store_config, version);
 
         /* hydrate the snapshot cache */
-        if perform_migration {
-            tracing::debug!("skipping snapshot cache update");
-            return Ok(global_root_hash);
-        }
-
         tracing::debug!("updating snapshot cache");
 
         let latest_snapshot = Snapshot::new(db.clone(), version, multistore_versions);
@@ -446,16 +430,6 @@ impl Storage {
         let _ = self.0.tx_dispatcher.send(latest_snapshot);
 
         Ok(global_root_hash)
-    }
-
-    #[cfg(feature = "migration")]
-    /// Commits the provided [`StateDelta`] to persistent storage without increasing the version
-    /// of the chain state.
-    pub async fn commit_in_place(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
-        let (snapshot, changes) = delta.flatten();
-        let old_version = self.latest_version();
-        self.commit_inner(snapshot, changes, old_version, true)
-            .await
     }
 
     /// Returns the internal handle to RocksDB, this is useful to test adjacent storage crates.

@@ -47,7 +47,7 @@ impl Upgrade {
                 let mut delta = StateDelta::new(export_state);
                 delta.put_raw("has_migrated".to_string(), "yes".into());
                 delta.put_block_height(0u64);
-                let root_hash = storage.commit_in_place(delta).await?;
+                let root_hash = storage.commit(delta).await?;
                 let app_hash_post_migration: RootHash = root_hash.into();
                 tracing::info!(?app_hash_post_migration, "app hash post upgrade");
 

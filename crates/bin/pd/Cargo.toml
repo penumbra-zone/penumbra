@@ -22,7 +22,7 @@ download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
 [dependencies]
 # Workspace dependencies
 penumbra-proto = { path = "../../proto" }
-penumbra-storage = { path = "../../storage", features = ["migration", "rpc"] }
+penumbra-storage = { path = "../../storage", features = ["rpc"] }
 penumbra-asset = { path = "../../core/asset" }
 penumbra-keys = { path = "../../core/keys" }
 penumbra-shielded-pool = { path = "../../core/component/shielded-pool", features = [

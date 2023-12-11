@@ -35,7 +35,7 @@ jobs:
               echo "OK: no uncommitted changes detected"
           fi
       - name: Run tests with nextest
-        run: cargo nextest run --release --features migration
+        run: cargo nextest run --release
         env:
           CARGO_TERM_COLOR: always
 

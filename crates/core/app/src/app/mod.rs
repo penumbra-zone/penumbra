@@ -648,12 +648,6 @@ impl App {
     }
 }
 
-/// The total number of times the chain has been halted.
-///
-/// Increment this manually after fixing the root cause for a chain halt: updated nodes will then be
-/// able to proceed past the block height of the halt.
-const TOTAL_HALT_COUNT: u64 = 0;
-
 #[async_trait]
 pub trait StateReadExt: StateRead {
     /// Returns true if the app parameters have been changed in this block.
@@ -750,3 +744,9 @@ pub trait StateWriteExt: StateWrite {
 }
 
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
+
+/// The total number of times the chain has been halted.
+///
+/// Increment this manually after fixing the root cause for a chain halt: updated nodes will then be
+/// able to proceed past the block height of the halt.
+const TOTAL_HALT_COUNT: u64 = 0;
