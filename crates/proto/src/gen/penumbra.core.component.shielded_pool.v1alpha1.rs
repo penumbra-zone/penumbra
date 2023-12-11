@@ -155,7 +155,7 @@ impl ::prost::Name for Spend {
         )
     }
 }
-/// Penumbra's ABCI Event type for Spend
+/// ABCI Event recording a spend.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventSpend {
@@ -164,6 +164,24 @@ pub struct EventSpend {
 }
 impl ::prost::Name for EventSpend {
     const NAME: &'static str = "EventSpend";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+/// ABCI Event recording an output.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventOutput {
+    #[prost(message, optional, tag = "1")]
+    pub note_commitment: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1alpha1::StateCommitment,
+    >,
+}
+impl ::prost::Name for EventOutput {
+    const NAME: &'static str = "EventOutput";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(

@@ -62,9 +62,14 @@ message Spend {
   ZKSpendProof proof = 3;
 }
 
-// Penumbra's ABCI Event type for Spend
+// ABCI Event recording a spend.
 message EventSpend {
   bytes nullifier = 1;
+}
+
+// ABCI Event recording an output.
+message EventOutput {
+  crypto.tct.v1alpha1.StateCommitment note_commitment = 1;
 }
 
 // The body of a spend description, containing only the effecting data

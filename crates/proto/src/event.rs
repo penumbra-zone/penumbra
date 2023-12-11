@@ -1,5 +1,5 @@
 use crate::{Message, Name};
-use anyhow;
+use anyhow::{self, Context};
 use serde::{de::DeserializeOwned, Serialize};
 use std::collections::HashMap;
 use tendermint::abci::{self, EventAttribute};
@@ -17,10 +17,7 @@ pub trait ProtoEvent: Message + Name + Serialize + DeserializeOwned + Sized {
             .expect("serde_json Serialized ProtoEvent should not be empty.")
             .into_iter()
             .map(|(key, v)| abci::EventAttribute {
-                value: serde_json::from_value(v.clone()).expect(&format!(
-                    "serde_json Value for EventAttribute should have a value for key {}",
-                    key
-                )),
+                value: serde_json::to_string(v).expect("must be able to serialize value as JSON"),
                 key: key.to_string(),
                 index: true,
             })
@@ -44,23 +41,19 @@ pub trait ProtoEvent: Message + Name + Serialize + DeserializeOwned + Sized {
         }
 
         // NOTE: Is there any condition where there would be duplicate EventAttributes and problems that fall out of that?
-        let attributes = event
-            .clone()
-            .attributes
-            .into_iter()
-            .map(|x| {
-                (
-                    x.key,
-                    serde_json::to_value(x.value)
-                        .expect("EventAttribute Value should be Serializeable."),
-                )
-            })
-            .collect::<HashMap<String, serde_json::Value>>();
+        let mut attributes = HashMap::<String, serde_json::Value>::new();
+        for attr in &event.attributes {
+            let value = serde_json::from_str(&attr.value)
+                .with_context(|| format!("could not parse JSON for attribute {:?}", attr))?;
+            attributes.insert(attr.key.clone(), value);
+        }
 
         let json = serde_json::to_value(attributes)
             .expect("HashMap of String, serde_json::Value should be serializeable.");
 
-        return Ok(serde_json::from_value(json)?);
+        return Ok(
+            serde_json::from_value(json).context("could not deserialise ProtoJSON into event")?
+        );
     }
 }
 
@@ -69,30 +62,59 @@ impl<E: Message + Name + Serialize + DeserializeOwned + Sized> ProtoEvent for E 
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test_into_event() {
+    fn event_round_trip() {
         use super::*;
-        use crate::core::component::shielded_pool::v1alpha1::EventSpend;
-        let proto_event = EventSpend {
+        use crate::core::component::shielded_pool::v1alpha1::{EventOutput, EventSpend};
+        use crate::crypto::tct::v1alpha1::StateCommitment;
+
+        let proto_spend = EventSpend {
             nullifier: vec![
                 148, 190, 149, 23, 86, 113, 152, 145, 104, 242, 142, 162, 233, 239, 137, 141, 140,
                 164, 180, 98, 154, 55, 168, 255, 163, 228, 179, 176, 26, 25, 219, 211,
             ],
         };
 
-        let abci_event = proto_event.into_event();
+        let abci_spend = proto_spend.into_event();
 
-        let expected = abci::Event::new(
+        let expected_abci_spend = abci::Event::new(
             "penumbra.core.component.shielded_pool.v1alpha1.EventSpend",
             vec![abci::EventAttribute {
                 key: "nullifier".to_string(),
-                value: "lL6VF1ZxmJFo8o6i6e+JjYyktGKaN6j/o+SzsBoZ29M=".to_string(),
+                value: "\"lL6VF1ZxmJFo8o6i6e+JjYyktGKaN6j/o+SzsBoZ29M=\"".to_string(),
                 index: true,
             }],
         );
-        assert_eq!(abci_event, expected);
+        assert_eq!(abci_spend, expected_abci_spend);
 
-        let proto_event2 = EventSpend::from_event(&abci_event).unwrap();
+        let proto_spend2 = EventSpend::from_event(&abci_spend).unwrap();
 
-        assert_eq!(proto_event, proto_event2);
+        assert_eq!(proto_spend, proto_spend2);
+
+        let proto_output = EventOutput {
+            // This is the same bytes as the nullifier above, we just care about the data format, not the value.
+            note_commitment: Some(StateCommitment {
+                inner: vec![
+                    148, 190, 149, 23, 86, 113, 152, 145, 104, 242, 142, 162, 233, 239, 137, 141,
+                    140, 164, 180, 98, 154, 55, 168, 255, 163, 228, 179, 176, 26, 25, 219, 211,
+                ],
+            }),
+        };
+
+        let abci_output = proto_output.into_event();
+
+        let expected_abci_output = abci::Event::new(
+            "penumbra.core.component.shielded_pool.v1alpha1.EventOutput",
+            vec![abci::EventAttribute {
+                // note: attribute keys become camelCase because ProtoJSON...
+                key: "noteCommitment".to_string(),
+                // note: attribute values are JSON objects, potentially nested as here
+                value: "{\"inner\":\"lL6VF1ZxmJFo8o6i6e+JjYyktGKaN6j/o+SzsBoZ29M=\"}".to_string(),
+                index: true,
+            }],
+        );
+        assert_eq!(abci_output, expected_abci_output);
+
+        let proto_output2 = EventOutput::from_event(&abci_output).unwrap();
+        assert_eq!(proto_output, proto_output2);
     }
 }
