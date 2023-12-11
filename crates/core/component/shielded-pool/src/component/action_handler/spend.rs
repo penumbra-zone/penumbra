@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use penumbra_chain::TransactionContext;
 use penumbra_component::ActionHandler;
 use penumbra_proof_params::SPEND_PROOF_VERIFICATION_KEY;
+use penumbra_proto::StateWriteProto as _;
 use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
@@ -51,7 +52,7 @@ impl ActionHandler for Spend {
         state.spend_nullifier(self.body.nullifier, source).await;
 
         // Also record an ABCI event for transaction indexing.
-        state.record(event::spend(&self.body.nullifier));
+        state.record_proto(event::spend(&self.body.nullifier));
 
         Ok(())
     }
