@@ -1,18 +1,20 @@
 use penumbra_sct::Nullifier;
-use tendermint::abci::{Event, EventAttributeIndexExt};
+
+use penumbra_proto::core::component::shielded_pool::v1alpha1::{EventOutput, EventSpend};
 
 use crate::NotePayload;
 
-pub fn spend(nullifier: &Nullifier) -> Event {
-    Event::new(
-        "action_spend",
-        [("nullifier", nullifier.to_string()).index()],
-    )
+// These are sort of like the proto/domain type From impls, because
+// we don't have separate domain types for the events (yet, possibly ever).
+
+pub fn spend(nullifier: &Nullifier) -> EventSpend {
+    EventSpend {
+        nullifier: nullifier.to_bytes().to_vec(),
+    }
 }
 
-pub fn output(note_payload: &NotePayload) -> Event {
-    Event::new(
-        "action_output",
-        [("note_commitment", note_payload.note_commitment.to_string()).index()],
-    )
+pub fn output(note_payload: &NotePayload) -> EventOutput {
+    EventOutput {
+        note_commitment: Some(note_payload.note_commitment.into()),
+    }
 }
