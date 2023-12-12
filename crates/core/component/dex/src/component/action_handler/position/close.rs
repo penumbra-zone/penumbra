@@ -4,6 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
+use penumbra_proto::StateWriteProto as _;
 
 use crate::{component::PositionManager, event, lp::action::PositionClose};
 
