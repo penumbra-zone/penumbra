@@ -70,7 +70,7 @@ message PreAuthorization {
   }
 }
 
-message ExportFullViewingKeyRequest { }
+message ExportFullViewingKeyRequest {}
 
 message ExportFullViewingKeyResponse {
   // The full viewing key.

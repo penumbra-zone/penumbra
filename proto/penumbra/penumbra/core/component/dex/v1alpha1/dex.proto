@@ -561,3 +561,55 @@ message SimulateTradeRequest {
 message SimulateTradeResponse {
   core.component.dex.v1alpha1.SwapExecution output = 1;
 }
+
+message EventSwap {
+  // The trading pair to swap.
+  TradingPair trading_pair = 1;
+  // The amount for asset 1.
+  num.v1alpha1.Amount delta_1_i = 2;
+  // The amount for asset 2.
+  num.v1alpha1.Amount delta_2_i = 3;
+  // A commitment to a prepaid fee for the future SwapClaim.
+  asset.v1alpha1.BalanceCommitment commitment = 4;
+}
+
+message EventSwapClaim {
+  // The trading pair that is subject of the swap claim.
+  TradingPair trading_pair = 1;
+  // Note commitment for the first asset.
+  crypto.tct.v1alpha1.StateCommitment output_1_commitment = 2;
+  // Note commitment for the second asset.
+  crypto.tct.v1alpha1.StateCommitment output_2_commitment = 3;
+  // The nullifier for the swap commitment.
+  component.sct.v1alpha1.Nullifier nullifier = 4;
+}
+
+message EventPositionOpen {
+  // Position ID.
+  PositionId position_id = 1;
+  // The trading pair to open.
+  TradingPair trading_pair = 2;
+  // The amount for asset 1.
+  num.v1alpha1.Amount reserves_1 = 3;
+  // The amount for asset 2.
+  num.v1alpha1.Amount reserves_2 = 4;
+  // The trading fee for the position, expressed in basis points.
+  // e.g. 2% fee is expressed as 200, 100% fee is expressed as 10000;
+  uint32 trading_fee = 5;
+}
+
+message EventPositionClose {
+  // The ID of the closed position
+  PositionId position_id = 1;
+}
+
+message EventPositionWithdraw {
+  // The ID of the withdrawn position.
+  PositionId position_id = 1;
+  // The trading pair of the withdrawn position.
+  TradingPair trading_pair = 2;
+  // The reserves of asset 1 of the withdrawn position.
+  num.v1alpha1.Amount reserves_1 = 3;
+  // The reserves of asset 2 of the withdrawn position.
+  num.v1alpha1.Amount reserves_2 = 4;
+}
