@@ -4,7 +4,7 @@ on: pull_request
 jobs:
   test:
     name: Test Suite
-    runs-on: buildjet-16vcpu-ubuntu-2004
+    runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,7 +41,7 @@ jobs:
 
   fmt:
     name: Rustfmt
-    runs-on: buildjet-16vcpu-ubuntu-2004
+    runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
       - name: Install rust toolchain
@@ -57,7 +57,7 @@ jobs:
     # and refactors to rust deps can break that generation. Let's ensure this script exits 0
     # on PRs, but we'll still only deploy after merge into main.
     name: Check that rustdocs build OK
-    runs-on: buildjet-16vcpu-ubuntu-2004
+    runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
         with:
@@ -72,7 +72,7 @@ jobs:
 
   wasm:
     name: Build WASM
-    runs-on: buildjet-16vcpu-ubuntu-2004
+    runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
         with:

@@ -46,7 +46,7 @@ jobs:
 
   protobuf-fresh:
     name: Compile protobuf specs to rust code
-    runs-on: buildjet-16vcpu-ubuntu-2004
+    runs-on: buildjet-16vcpu-ubuntu-2204
     # runs-on: ubuntu-latest
     steps:
       - name: Checkout the source code

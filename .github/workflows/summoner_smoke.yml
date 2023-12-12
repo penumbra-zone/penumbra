@@ -10,7 +10,7 @@ on:
 
 jobs:
   smoke_test:
-    runs-on: buildjet-16vcpu-ubuntu-2004
+    runs-on: buildjet-16vcpu-ubuntu-2204
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true

@@ -11,7 +11,7 @@ on:
 
 jobs:
   penumbra:
-    runs-on: buildjet-16vcpu-ubuntu-2004
+    runs-on: buildjet-16vcpu-ubuntu-2204
     permissions:
       contents: read
       packages: write
