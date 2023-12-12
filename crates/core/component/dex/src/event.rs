@@ -1,5 +1,3 @@
-use tendermint::abci::{Event, EventAttributeIndexExt};
-
 use crate::{
     lp::{
         action::{PositionClose, PositionOpen, PositionWithdraw},
