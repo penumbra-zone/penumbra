@@ -6,7 +6,14 @@ use async_trait::async_trait;
 use cnidarium::StateWrite;
 use tendermint::abci;
 
-/// A component of the Penumbra application.
+/// A component of a [`cnidarium`]-based application.
+///
+/// The use of `&mut Arc<S>` may seem unintuitive at first.  However, it allows
+/// component implementations to optionally share state with
+/// concurrently-executing subtasks they spawn, without requiring additional
+/// locking.  Components can clone the `Arc` and pass clones to concurrent,
+/// read-only subtasks, then later once the subtasks complete, use `.get_mut()`
+/// to obtain a mutable reference to the state.
 #[async_trait]
 pub trait Component {
     /// A serialized representation of the component's application state,
@@ -16,7 +23,7 @@ pub trait Component {
     /// Performs initialization, given the genesis state.
     ///
     /// This method is called once per chain, and should only perform
-    /// writes, since the backing tree for the [`State`] will
+    /// writes, since the backing tree for the [`StateWrite`] will
     /// be empty.
     ///
     /// If the app is checkpointed, no genesis app state will be passed in,
@@ -58,7 +65,12 @@ pub trait Component {
         end_block: &abci::request::EndBlock,
     );
 
-    /// Ends the epoch, applying component-specific state transitions that should occur when an epoch ends.
+    /// Ends the epoch, applying component-specific state transitions that
+    /// should occur when an epoch ends.
+    ///
+    /// Note: epochs are not an ABCI concept. They are merely logical groups of
+    /// blocks, defined by the application. Applications can choose to treat
+    /// them as a no-op.
     ///
     /// # Invariants
     ///
@@ -67,5 +79,7 @@ pub trait Component {
     /// called, `state.get_mut().is_some()`, i.e., the `Arc` is not shared.  The
     /// implementor MUST ensure that any clones of the `Arc` are dropped before
     /// it returns, so that `state.get_mut().is_some()` on completion.
-    async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> Result<()>;
+    async fn end_epoch<S: StateWrite + 'static>(_state: &mut Arc<S>) -> Result<()> {
+        Ok(())
+    }
 }
