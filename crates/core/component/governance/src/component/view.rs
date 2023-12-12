@@ -881,19 +881,38 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
                 self.signal_upgrade(*height).await?;
             }
             ProposalPayload::UnplannedIbcUpgrade {
-                connection_id,
+                client_id,
                 new_config,
             } => {
-                let connection_id = &ConnectionId::from_str(connection_id)
-                    .map_err(|e| tonic::Status::aborted(format!("invalid connection id: {e}")))?;
+                let client_id = &ClientId::from_str(client_id)
+                    .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
                 tracing::info!(
-                    %connection_id,
+                    %client_id,
                     "unplanned IBC upgrade proposal passed");
                 // TODO: MsgConnectionOpenConfirm has various validation steps
                 // that aren't replicated here; are any of them needed?
                 // We need to at least validate the connection is existing (this probably
                 // should happen both here and when the proposal is made)
-                self.update_connection(connection_id, new_config.clone());
+                // self.update_connection(connection_id, new_config.clone());
+                state.put_client(&self.client_id, new_client_state);
+                state
+                    .put_verified_consensus_state(
+                        latest_height,
+                        self.client_id.clone(),
+                        new_consensus_state,
+                    )
+                    .await?;
+
+                state.record(
+                    events::UpgradeClient {
+                        client_id: self.client_id.clone(),
+                        client_type: ibc_types::core::client::ClientType(
+                            TENDERMINT_CLIENT_TYPE.to_string(),
+                        ),
+                        consensus_height: latest_height,
+                    }
+                    .into(),
+                );
             }
             ProposalPayload::FreezeIbcClient { client_id } => {
                 let client_id = &ClientId::from_str(client_id)

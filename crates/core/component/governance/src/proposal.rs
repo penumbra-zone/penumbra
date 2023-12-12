@@ -311,10 +311,10 @@ pub enum ProposalPayload {
     /// Proposes to update the configuration for an existing IBC connection. This should only be used
     /// for unplanned upgrades, as the IBC protocol has an existing update mechanism.
     UnplannedIbcUpgrade {
-        /// The connection ID to be upgraded.
-        connection_id: String,
-        /// The new configuration for the connection.
-        new_config: ConnectionEnd,
+        /// The client ID to be upgraded.
+        client_id: String,
+        /// The new configuration for the client.
+        new_config: TendermintClientState,
     },
     /// Freezes an existing IBC client.
     FreezeIbcClient {
