@@ -17,7 +17,7 @@ decaf377-frost = { path = "../crypto/decaf377-frost" }
 decaf377-ka = { path = "../crypto/decaf377-ka" }
 penumbra-chain = { path = "../core/component/chain" }
 penumbra-keys = { path = "../core/keys" }
-penumbra-proto = { path = "../proto" , features = ["rpc"] }
+penumbra-proto = { path = "../proto", features = ["rpc"] }
 penumbra-transaction = { path = "../core/transaction" }
 
 tokio = { version = "1.21.1", features = ["full"]}
