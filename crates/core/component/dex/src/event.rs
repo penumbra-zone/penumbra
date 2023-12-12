@@ -39,13 +39,12 @@ pub fn position_open(position_open: &PositionOpen) -> pb::EventPositionOpen {
     }
 }
 
-pub fn position_close(action: &PositionClose) -> Event {
+pub fn position_close(action: &PositionClose) -> pb::EventPositionClose {
     // TODO: should we have another event triggered by the position manager for when
     // the position is actually closed?
-    Event::new(
-        "action_position_close",
-        [("position_id", action.position_id.to_string()).index()],
-    )
+    pb::EventPositionClose {
+        position_id: Some(action.position_id.into()),
+    }
 }
 
 pub fn position_withdraw(
