@@ -6,7 +6,7 @@ import "penumbra/core/transaction/v1alpha1/transaction.proto";
 import "penumbra/crypto/decaf377_frost/v1alpha1/decaf377_frost.proto";
 
 // A key one can use to verify signatures.
-// 
+//
 // This key can also serve as a unique identifier for users.
 message VerificationKey {
   bytes inner = 1;
@@ -39,14 +39,14 @@ message CoordinatorRound2 {
   // FROST expects the signing package to include the identified commitments *and*
   // the message, but we have no need to include the message.
   message PartialSigningPackage {
-    repeated IdentifiedCommitments all_commitments = 1; 
+    repeated IdentifiedCommitments all_commitments = 1;
   }
 
   // The underlying signing packages being sent to the followers, for each signature.
   repeated PartialSigningPackage signing_packages = 1;
 }
 
-// The first message the followers send back to the coordinator when signing. 
+// The first message the followers send back to the coordinator when signing.
 message FollowerRound1 {
   // The inner message that will be signed by the follower.
   message Inner {
@@ -61,7 +61,7 @@ message FollowerRound1 {
   Signature sig = 3;
 }
 
-// The second message the followers send back to the coordinator when signing. 
+// The second message the followers send back to the coordinator when signing.
 message FollowerRound2 {
   // The inner message that will be signed by the follower.
   message Inner {

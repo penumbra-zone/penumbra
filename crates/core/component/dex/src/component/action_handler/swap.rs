@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
 use penumbra_proof_params::SWAP_PROOF_VERIFICATION_KEY;
+use penumbra_proto::StateWriteProto;
 
 use crate::{
     component::{metrics, StateReadExt, StateWriteExt, SwapManager},
@@ -61,7 +62,7 @@ impl ActionHandler for Swap {
             crate::component::metrics::DEX_SWAP_DURATION,
             swap_start.elapsed()
         );
-        state.record(event::swap(self));
+        state.record_proto(event::swap(self));
 
         Ok(())
     }
