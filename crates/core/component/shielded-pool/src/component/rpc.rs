@@ -1,9 +1,9 @@
+use cnidarium::Storage;
 use penumbra_asset::asset;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::core::component::shielded_pool::v1alpha1::{
     query_service_server::QueryService, DenomMetadataByIdRequest, DenomMetadataByIdResponse,
 };
-use penumbra_storage::Storage;
 use tonic::Status;
 use tracing::instrument;
 

@@ -1,8 +1,8 @@
+use cnidarium::Storage;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::core::component::sct::v1alpha1::{
     query_service_server::QueryService, TransactionByNoteRequest, TransactionByNoteResponse,
 };
-use penumbra_storage::Storage;
 use tonic::Status;
 use tracing::instrument;
 

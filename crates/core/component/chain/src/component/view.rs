@@ -2,9 +2,9 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::core::connection::ChainId;
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{StateRead, StateWrite};
 use tendermint::Time;
 
 use crate::{

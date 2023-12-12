@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use penumbra_storage::{Snapshot, Storage};
+use cnidarium::{Snapshot, Storage};
 
 use tendermint::v0_37::abci::{
     request::CheckTx as CheckTxReq, request::CheckTxKind, response::CheckTx as CheckTxRsp,

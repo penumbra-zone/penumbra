@@ -7,14 +7,14 @@ edition = "2021"
 
 [dependencies]
 # Workspace dependencies
-penumbra-proto = { path = "../../proto", features = ["penumbra-storage"] }
-penumbra-storage = { path = "../../storage" }
+cnidarium = { path = "../../cnidarium" }
+cnidarium-component = { path = "../../cnidarium-component" }
+penumbra-proto = { path = "../../proto", features = ["cnidarium"] }
 penumbra-tct = { path = "../../crypto/tct" }
 penumbra-proof-params = { path = "../../crypto/proof-params" }
 penumbra-asset = { path = "../asset" }
 penumbra-keys = { path = "../keys" }
 penumbra-num = { path = "../num" }
-penumbra-component = { path = "../component/component" }
 penumbra-chain = { path = "../component/chain", features = ["component"] }
 penumbra-shielded-pool = { path = "../component/shielded-pool", features = [
     "component",

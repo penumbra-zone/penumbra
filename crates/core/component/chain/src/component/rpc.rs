@@ -1,7 +1,7 @@
+use cnidarium::Storage;
 use penumbra_proto::core::component::chain::v1alpha1::{
     query_service_server::QueryService, EpochByHeightRequest, EpochByHeightResponse,
 };
-use penumbra_storage::Storage;
 use tonic::Status;
 use tracing::instrument;
 

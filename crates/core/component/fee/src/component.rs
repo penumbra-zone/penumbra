@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use crate::{genesis::Content as GenesisContent, state_key};
 use async_trait::async_trait;
-use penumbra_component::Component;
-use penumbra_storage::StateWrite;
+use cnidarium::StateWrite;
+use cnidarium_component::Component;
 use tendermint::abci;
 use tracing::instrument;
 pub use view::{StateReadExt, StateWriteExt};

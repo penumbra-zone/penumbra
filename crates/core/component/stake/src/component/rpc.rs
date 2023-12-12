@@ -1,6 +1,7 @@
 use std::pin::Pin;
 
 use async_stream::try_stream;
+use cnidarium::Storage;
 use futures::{StreamExt, TryStreamExt};
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{
@@ -12,7 +13,6 @@ use penumbra_proto::{
     },
     DomainType,
 };
-use penumbra_storage::Storage;
 use tonic::Status;
 use tracing::instrument;
 

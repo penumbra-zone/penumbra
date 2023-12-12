@@ -1,4 +1,4 @@
-use penumbra_component::ActionHandler;
+use cnidarium_component::ActionHandler;
 
 pub mod delegator_vote;
 pub mod deposit_claim;

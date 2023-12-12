@@ -1,11 +1,11 @@
 use anyhow::Result;
 use async_trait::async_trait;
 
+use cnidarium::{StateRead, StateWrite};
 use futures::{StreamExt, TryStreamExt};
 use penumbra_chain::component::StateReadExt;
 use penumbra_governance::state_key;
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 
 // Note: These should live in `penumbra-governance` in the `StateReadExt` and `StateWriteExt`

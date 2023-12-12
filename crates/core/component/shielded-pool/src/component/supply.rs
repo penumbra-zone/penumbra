@@ -1,9 +1,9 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use penumbra_asset::asset::{self, DenomMetadata};
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{StateRead, StateWrite};
 
 use tracing::instrument;
 

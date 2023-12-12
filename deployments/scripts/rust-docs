@@ -32,10 +32,11 @@ cargo +nightly doc --no-deps \
   -p decaf377-rdsa \
   -p decaf377-fmd \
   -p decaf377-ka \
+  -p cnidarium \
+  -p cnidarium-component \
   -p penumbra-app \
   -p penumbra-asset \
   -p penumbra-chain \
-  -p penumbra-component \
   -p penumbra-custody \
   -p penumbra-dao \
   -p penumbra-dex \
@@ -50,7 +51,6 @@ cargo +nightly doc --no-deps \
   -p penumbra-proto \
   -p penumbra-sct \
   -p penumbra-shielded-pool \
-  -p penumbra-storage \
   -p penumbra-tct \
   -p penumbra-transaction \
   -p penumbra-view \

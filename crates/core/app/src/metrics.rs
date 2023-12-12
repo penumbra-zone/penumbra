@@ -15,7 +15,7 @@ pub use metrics::*;
 
 /// Registers all metrics used by this crate.
 pub fn register_metrics() {
-    penumbra_storage::register_metrics();
+    cnidarium::register_metrics();
     penumbra_stake::component::register_metrics();
     penumbra_dex::component::register_metrics();
     // TODO: this should be under component::

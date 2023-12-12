@@ -11,8 +11,8 @@ use crate::component::{
     MsgHandler,
 };
 
+use cnidarium::StateWrite;
 use ibc_types::core::connection::State as ConnectionState;
-use penumbra_storage::StateWrite;
 
 #[async_trait]
 impl MsgHandler for MsgConnectionOpenInit {

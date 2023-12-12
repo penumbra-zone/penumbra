@@ -3,16 +3,16 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use ark_ff::Zero;
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use decaf377::Fr;
 use penumbra_chain::TransactionContext;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
-use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
     DelegatorVote, DelegatorVoteBody,
     {component::StateWriteExt, StateReadExt},
 };
-use penumbra_component::ActionHandler;
+use cnidarium_component::ActionHandler;
 
 #[async_trait]
 impl ActionHandler for DelegatorVote {

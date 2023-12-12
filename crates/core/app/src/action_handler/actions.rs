@@ -2,16 +2,16 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use penumbra_chain::TransactionContext;
 use penumbra_ibc::component::StateReadExt as _;
 use penumbra_shielded_pool::component::Ics20Transfer;
-use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Action;
 
 mod submit;
 
 use super::ActionHandler;
-use penumbra_component::ActionHandler as _;
+use cnidarium_component::ActionHandler as _;
 
 #[async_trait]
 impl ActionHandler for Action {

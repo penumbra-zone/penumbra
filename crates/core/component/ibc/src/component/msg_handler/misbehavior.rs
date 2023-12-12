@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::core::client::{events, ClientType};
 use ibc_types::core::client::{msgs::MsgSubmitMisbehaviour, ClientId};
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
@@ -7,7 +8,6 @@ use ibc_types::lightclients::tendermint::header::Header as TendermintHeader;
 use ibc_types::lightclients::tendermint::misbehaviour::Misbehaviour as TendermintMisbehavior;
 use ibc_types::lightclients::tendermint::TENDERMINT_CLIENT_TYPE;
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_storage::{StateRead, StateWrite};
 use tendermint_light_client_verifier::{
     types::{TrustedBlockState, UntrustedBlockState},
     ProdVerifier, Verdict, Verifier,

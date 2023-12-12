@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::StateWrite;
 use ibc_types::{
     core::{
         client::{events, msgs::MsgUpgradeClient},
@@ -10,7 +11,6 @@ use ibc_types::{
         client_state::ClientState as TendermintClientState, TENDERMINT_CLIENT_TYPE,
     },
 };
-use penumbra_storage::StateWrite;
 
 use crate::component::{
     client::{StateReadExt as _, StateWriteExt as _},

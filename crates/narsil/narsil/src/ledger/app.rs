@@ -5,9 +5,9 @@ use std::sync::Arc;
 // TODO: we should not have dependencies on penumbra_chain in narsil
 // and instead implement narsil-specific state accessors or extract
 // the common accessors elsewhere to avoid mingling penumbra-specific logic.
+use cnidarium::{ArcStateDeltaExt, RootHash, Snapshot, StateDelta, Storage};
 use penumbra_app::{genesis, StateWriteExt as _};
 use penumbra_proto::{core::transaction::v1alpha1::Transaction, Message};
-use penumbra_storage::{ArcStateDeltaExt, RootHash, Snapshot, StateDelta, Storage};
 use tendermint::{abci, validator::Update};
 
 /// The Narsil application.

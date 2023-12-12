@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package penumbra.storage.v1alpha1;
+package penumbra.cnidarium.v1alpha1;
 
 import "ibc/core/commitment/v1/commitment.proto";
 

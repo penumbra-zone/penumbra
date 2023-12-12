@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_component::ActionHandler;
+use cnidarium::{StateRead, StateWrite};
+use cnidarium_component::ActionHandler;
 use penumbra_proof_params::SWAP_PROOF_VERIFICATION_KEY;
-use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
     component::{metrics, StateReadExt, StateWriteExt, SwapManager},

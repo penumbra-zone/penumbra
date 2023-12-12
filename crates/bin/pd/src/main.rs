@@ -9,6 +9,7 @@ use metrics_util::layers::Stack;
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
+use cnidarium::{StateDelta, Storage};
 use futures::stream::TryStreamExt;
 use ibc_proto::ibc::core::channel::v1::query_server::QueryServer as ChannelQueryServer;
 use ibc_proto::ibc::core::client::v1::query_server::QueryServer as ClientQueryServer;
@@ -24,7 +25,6 @@ use pd::upgrade;
 use penumbra_app::SUBSTORE_PREFIXES;
 use penumbra_proto::core::component::dex::v1alpha1::simulation_service_server::SimulationServiceServer;
 use penumbra_proto::util::tendermint_proxy::v1alpha1::tendermint_proxy_service_server::TendermintProxyServiceServer;
-use penumbra_storage::{StateDelta, Storage};
 use penumbra_tendermint_proxy::TendermintProxy;
 use penumbra_tower_trace::remote_addr;
 use rand::Rng;
@@ -363,6 +363,7 @@ async fn main() -> anyhow::Result<()> {
             // its components' query services into a single `Routes` and then
             // just add that to the gRPC server.
 
+            use cnidarium::rpc::proto::v1alpha1::query_service_server::QueryServiceServer as StorageQueryServiceServer;
             use penumbra_proto::core::{
                 app::v1alpha1::query_service_server::QueryServiceServer as AppQueryServiceServer,
                 component::{
@@ -375,9 +376,9 @@ async fn main() -> anyhow::Result<()> {
                     stake::v1alpha1::query_service_server::QueryServiceServer as StakeQueryServiceServer,
                 },
             };
-            use penumbra_storage::rpc::proto::v1alpha1::query_service_server::QueryServiceServer as StorageQueryServiceServer;
             use tonic_web::enable as we;
 
+            use cnidarium::rpc::Server as StorageServer;
             use penumbra_app::rpc::Server as AppServer;
             use penumbra_chain::component::rpc::Server as ChainServer;
             use penumbra_compact_block::component::rpc::Server as CompactBlockServer;
@@ -386,7 +387,6 @@ async fn main() -> anyhow::Result<()> {
             use penumbra_sct::component::rpc::Server as SctServer;
             use penumbra_shielded_pool::component::rpc::Server as ShieldedPoolServer;
             use penumbra_stake::component::rpc::Server as StakeServer;
-            use penumbra_storage::rpc::Server as StorageServer;
 
             // Set rather permissive CORS headers for pd's gRPC: the service
             // should be accessible from arbitrary web contexts, such as localhost,
@@ -703,7 +703,7 @@ async fn main() -> anyhow::Result<()> {
             let export = Storage::load(export_path, SUBSTORE_PREFIXES.to_vec()).await?;
             let _ = StateDelta::new(export.latest_snapshot());
             // TODO:
-            // - add utilities in `penumbra_storage` to prune a tree
+            // - add utilities in `cnidarium` to prune a tree
             // - apply the delta to the exported storage
             // - apply checks: root hash, size, etc.
             todo!()

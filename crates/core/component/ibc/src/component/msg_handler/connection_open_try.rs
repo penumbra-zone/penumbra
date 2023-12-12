@@ -3,6 +3,7 @@ use crate::version::pick_connection_version;
 use crate::IBC_COMMITMENT_PREFIX;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
 use ibc_types::{
@@ -13,7 +14,6 @@ use ibc_types::{
     },
 };
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::{
     client::StateReadExt as _,

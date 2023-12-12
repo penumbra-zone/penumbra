@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use penumbra_chain::{component::StateReadExt as _, NoteSource};
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
 use tct::builder::{block, epoch};
 

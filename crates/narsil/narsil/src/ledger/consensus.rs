@@ -1,7 +1,7 @@
 use anyhow::Result;
 
+use cnidarium::Storage;
 use penumbra_app::genesis;
-use penumbra_storage::Storage;
 use tendermint::abci::Event;
 use tendermint::v0_37::abci::{
     request, response, ConsensusRequest as Request, ConsensusResponse as Response,

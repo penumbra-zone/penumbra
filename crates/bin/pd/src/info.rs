@@ -7,6 +7,7 @@ use std::{
 };
 
 use anyhow::Context as _;
+use cnidarium::Storage;
 use futures::FutureExt;
 use ibc_proto::ibc::core::{
     channel::v1::{
@@ -30,7 +31,6 @@ use penumbra_chain::component::StateReadExt;
 use penumbra_ibc::component::ChannelStateReadExt as _;
 use penumbra_ibc::component::ClientStateReadExt as _;
 use penumbra_ibc::component::ConnectionStateReadExt as _;
-use penumbra_storage::Storage;
 use prost::Message;
 use std::str::FromStr;
 use tendermint::v0_37::abci::{
@@ -97,7 +97,7 @@ impl Info {
     async fn get_snapshot_for_height(
         &self,
         height: u64,
-    ) -> anyhow::Result<(penumbra_storage::Snapshot, u64)> {
+    ) -> anyhow::Result<(cnidarium::Snapshot, u64)> {
         match height {
             // ABCI docs say:
             //

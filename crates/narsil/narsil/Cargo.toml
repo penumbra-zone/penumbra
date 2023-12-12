@@ -14,7 +14,7 @@ publish = false
 [dependencies]
 # Workspace dependencies
 penumbra-proto = { path = "../../proto", features = ["rpc"] }
-penumbra-storage = { path = "../../storage" }
+cnidarium = { path = "../../cnidarium" }
 penumbra-tower-trace = { path = "../../util/tower-trace" }
 penumbra-tendermint-proxy = { path = "../../util/tendermint-proxy" }
 # TODO: remove dependency on penumbra-chain

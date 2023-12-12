@@ -21,8 +21,8 @@ use penumbra_proto::{
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
+use cnidarium::Storage;
 use metrics_exporter_prometheus::PrometheusBuilder;
-use penumbra_storage::Storage;
 use penumbra_tower_trace::remote_addr;
 use tokio::runtime;
 use tonic::transport::Server;

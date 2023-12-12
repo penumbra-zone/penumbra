@@ -1,5 +1,5 @@
 [package]
-name = "penumbra-storage"
+name = "cnidarium"
 version = "0.64.0"
 edition = "2021"
 

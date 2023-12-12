@@ -1,12 +1,12 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::StateWrite;
 use ibc_types::core::channel::{
     channel::{Order as ChannelOrder, State as ChannelState},
     events,
     msgs::MsgTimeout,
     PortId,
 };
-use penumbra_storage::StateWrite;
 
 use crate::component::{
     app_handler::{AppHandlerCheck, AppHandlerExecute},
