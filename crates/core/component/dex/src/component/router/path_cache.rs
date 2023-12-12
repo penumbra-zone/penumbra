@@ -1,8 +1,8 @@
 use std::{collections::BTreeMap, sync::Arc};
 
+use cnidarium::{StateDelta, StateRead};
 use parking_lot::Mutex;
 use penumbra_asset::asset;
-use penumbra_storage::{StateDelta, StateRead};
 
 use super::Path;
 

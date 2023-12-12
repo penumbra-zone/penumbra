@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::core::{
     channel::{
         channel::State as ChannelState, events, msgs::MsgChannelOpenTry, ChannelEnd, Counterparty,
@@ -7,7 +8,6 @@ use ibc_types::core::{
     },
     connection::{ConnectionEnd, State as ConnectionState},
 };
-use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::{
     app_handler::{AppHandlerCheck, AppHandlerExecute},

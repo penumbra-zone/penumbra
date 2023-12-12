@@ -6,9 +6,9 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_component::Component;
+use cnidarium::StateWrite;
+use cnidarium_component::Component;
 use penumbra_num::Amount;
-use penumbra_storage::StateWrite;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 pub use view::{StateReadExt, StateWriteExt};

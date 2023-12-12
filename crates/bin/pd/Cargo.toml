@@ -22,7 +22,7 @@ download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
 [dependencies]
 # Workspace dependencies
 penumbra-proto = { path = "../../proto" }
-penumbra-storage = { path = "../../storage", features = ["migration", "rpc"] }
+cnidarium = { path = "../../cnidarium", features = ["migration", "rpc"] }
 penumbra-asset = { path = "../../core/asset" }
 penumbra-keys = { path = "../../core/keys" }
 penumbra-shielded-pool = { path = "../../core/component/shielded-pool", features = [
@@ -59,7 +59,9 @@ tendermint = "0.34.0"
 tendermint-light-client-verifier = "0.34.0"
 ibc-types = { version = "0.10.0" }
 
-ibc-proto = { version = "0.39.0", default-features = false, features = ["server"] }
+ibc-proto = { version = "0.39.0", default-features = false, features = [
+    "server",
+] }
 prost = "0.12.3"
 toml = "0.5"
 # We don't need this crate at all, but its upstream published a breaking change as

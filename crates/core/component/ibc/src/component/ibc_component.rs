@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::StateWrite;
+use cnidarium_component::Component;
 use ibc_types::{
     core::client::Height, lightclients::tendermint::ConsensusState as TendermintConsensusState,
 };
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_component::Component;
-use penumbra_storage::StateWrite;
 use tendermint::abci;
 use tracing::instrument;
 

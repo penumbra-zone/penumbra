@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use anyhow::Context;
 use async_stream::try_stream;
+use cnidarium::Storage;
 use futures::{StreamExt, TryStreamExt};
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_num::Amount;
@@ -23,7 +24,6 @@ use penumbra_proto::{
 };
 use penumbra_stake::rate::RateData;
 use penumbra_stake::IdentityKey;
-use penumbra_storage::Storage;
 use tonic::Status;
 use tracing::instrument;
 

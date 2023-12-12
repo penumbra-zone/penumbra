@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
+use cnidarium::{StateDelta, StateRead, StateWrite};
 use decaf377::Fq;
 use decaf377_rdsa::{VerificationKey, VerificationKeyBytes};
 use once_cell::sync::Lazy;
@@ -13,7 +14,6 @@ use penumbra_keys::keys::{FullViewingKey, NullifierKey};
 use penumbra_proto::DomainType;
 use penumbra_sct::component::StateReadExt as _;
 use penumbra_shielded_pool::component::SupplyWrite;
-use penumbra_storage::{StateDelta, StateRead, StateWrite};
 
 use penumbra_transaction::plan::TransactionPlan;
 use penumbra_transaction::Transaction;

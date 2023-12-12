@@ -18,7 +18,7 @@ pub use metrics::*;
 /// For this implementation, in the `narsild` crate, we also call the `register_metrics()`
 /// functions in our dependencies.
 pub fn register_metrics() {
-    penumbra_storage::register_metrics();
+    cnidarium::register_metrics();
 
     register_counter!(MEMPOOL_CHECKTX_TOTAL);
     describe_counter!(

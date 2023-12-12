@@ -139,7 +139,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "rate(penumbra_component_compact_block_compact_block_range_served_total[5m])",
+          "expr": "rate(cnidarium_component_compact_block_compact_block_range_served_total[5m])",
           "legendFormat": "Rate of served compact blocks (5m)",
           "range": true,
           "refId": "A"
@@ -150,7 +150,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "rate(penumbra_component_compact_block_compact_block_range_served_total[30s])",
+          "expr": "rate(cnidarium_component_compact_block_compact_block_range_served_total[30s])",
           "hide": false,
           "legendFormat": "Rate of served compact blocks (30s)",
           "range": true,
@@ -240,7 +240,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "penumbra_component_compact_block_compact_block_range_active_connections",
+          "expr": "cnidarium_component_compact_block_compact_block_range_active_connections",
           "refId": "A"
         }
       ],

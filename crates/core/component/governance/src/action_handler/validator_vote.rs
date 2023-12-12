@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use penumbra_proto::DomainType;
-use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::StateWriteExt;
 use crate::{action_handler::ActionHandler, StateReadExt};

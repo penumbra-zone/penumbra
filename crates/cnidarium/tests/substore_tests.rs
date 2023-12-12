@@ -1,11 +1,11 @@
+use cnidarium::StateDelta;
+use cnidarium::StateRead;
+use cnidarium::StateWrite;
+use cnidarium::Storage;
 use ibc_types::core::commitment::MerklePath;
 use ibc_types::core::commitment::MerkleRoot;
 use jmt::RootHash;
 use once_cell::sync::Lazy;
-use penumbra_storage::StateDelta;
-use penumbra_storage::StateRead;
-use penumbra_storage::StateWrite;
-use penumbra_storage::Storage;
 use tempfile;
 use tokio;
 use tokio_stream::StreamExt;
@@ -88,12 +88,8 @@ async fn test_substore_proofs() -> anyhow::Result<()> {
 
     let snapshot = storage.latest_snapshot();
 
-    pub static PENUMBRA_PROOF_SPECS: Lazy<Vec<ics23::ProofSpec>> = Lazy::new(|| {
-        vec![
-            penumbra_storage::ics23_spec(),
-            penumbra_storage::ics23_spec(),
-        ]
-    });
+    pub static PENUMBRA_PROOF_SPECS: Lazy<Vec<ics23::ProofSpec>> =
+        Lazy::new(|| vec![cnidarium::ics23_spec(), cnidarium::ics23_spec()]);
 
     // check that we can verify proofs back to the root for the new value.
     let root = snapshot.root_hash().await?;

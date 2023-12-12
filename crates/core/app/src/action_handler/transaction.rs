@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use penumbra_chain::NoteSource;
-use penumbra_storage::{StateRead, StateWrite};
 use penumbra_transaction::Transaction;
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};

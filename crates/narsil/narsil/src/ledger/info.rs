@@ -4,9 +4,9 @@ use std::{
     task::{Context, Poll},
 };
 
+use cnidarium::Storage;
 use futures::FutureExt;
 use penumbra_chain::component::StateReadExt;
-use penumbra_storage::Storage;
 use penumbra_tower_trace::v037::RequestExt;
 use tendermint::v0_37::abci::{self, response::Echo, InfoRequest, InfoResponse};
 use tower_abci::BoxError;

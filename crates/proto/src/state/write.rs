@@ -2,7 +2,7 @@ use crate::{event::ProtoEvent, DomainType, Message};
 
 use std::fmt::Debug;
 
-use penumbra_storage::StateWrite;
+use cnidarium::StateWrite;
 
 pub trait StateWriteProto: StateWrite + Send + Sync {
     /// Puts a domain type into the verifiable key-value store with the given key.

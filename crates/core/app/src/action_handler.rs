@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_storage::{StateRead, StateWrite};
+use cnidarium::{StateRead, StateWrite};
 
 mod actions;
 mod transaction;
 
-/// Stub: to be replaced with impls of penumbra_component::ActionHandler
+/// Stub: to be replaced with impls of cnidarium_component::ActionHandler
 ///
 /// This trait should move to that crate, but the orphan rules make it tricky to
 /// move it before we finish splitting all the crates: if we move the trait now,
@@ -24,7 +24,7 @@ pub trait ActionHandler {
     async fn execute<S: StateWrite>(&self, state: S) -> Result<()>;
 }
 
-use penumbra_component::ActionHandler as ComponentActionHandler;
+use cnidarium_component::ActionHandler as ComponentActionHandler;
 
 #[async_trait]
 impl<'a, T: ComponentActionHandler + Sync> ActionHandler for crate::Compat<'a, T> {

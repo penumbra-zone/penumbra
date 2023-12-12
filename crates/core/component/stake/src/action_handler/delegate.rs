@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_storage::{StateRead, StateWrite};
+use cnidarium::{StateRead, StateWrite};
 
 use crate::{
     action_handler::ActionHandler, component::StateWriteExt as _, event, validator, Delegate,

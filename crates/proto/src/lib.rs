@@ -1,4 +1,4 @@
-//! Protobuf definitions for Penumbra.o
+//! Protobuf definitions for Penumbra.
 //!
 //! This crate only contains the `.proto` files and the Rust types generated
 //! from them.  These types only handle parsing the wire format; validation
@@ -34,11 +34,11 @@ pub mod event;
 mod protobuf;
 pub use protobuf::DomainType;
 
-#[cfg(feature = "penumbra-storage")]
+#[cfg(feature = "cnidarium")]
 pub mod state;
-#[cfg(feature = "penumbra-storage")]
+#[cfg(feature = "cnidarium")]
 pub use state::StateReadProto;
-#[cfg(feature = "penumbra-storage")]
+#[cfg(feature = "cnidarium")]
 pub use state::StateWriteProto;
 
 pub use penumbra::*;
@@ -221,10 +221,10 @@ pub mod penumbra {
         }
     }
 
-    pub mod storage {
+    pub mod cnidarium {
         pub mod v1alpha1 {
-            include!("gen/penumbra.storage.v1alpha1.rs");
-            include!("gen/penumbra.storage.v1alpha1.serde.rs");
+            include!("gen/penumbra.cnidarium.v1alpha1.rs");
+            include!("gen/penumbra.cnidarium.v1alpha1.serde.rs");
         }
     }
 

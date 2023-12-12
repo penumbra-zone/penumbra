@@ -3,15 +3,13 @@
 # Set virtual workspace's resolver to v1, to support the "rust-docs" script.
 resolver = "1"
 
-exclude = [
-    "tools/proto-compiler",
-    "tools/parameter-setup",
-]
+exclude = ["tools/proto-compiler", "tools/parameter-setup"]
 
 # Also remember to add to deployments/scripts/rust-docs
 members = [
   "crates/proto",
-  "crates/storage",
+  "crates/cnidarium",
+  "crates/cnidarium-component",
   "crates/crypto/decaf377-fmd",
   "crates/crypto/decaf377-frost",
   "crates/crypto/decaf377-ka",
@@ -22,7 +20,6 @@ members = [
   "crates/core/num",
   "crates/core/keys",
   "crates/core/asset",
-  "crates/core/component/component",
   "crates/core/component/chain",
   "crates/core/component/shielded-pool",
   "crates/core/component/governance",
@@ -66,7 +63,11 @@ rust-toolchain-version = "1.73"
 # CI backends to support
 ci = ["github"]
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["x86_64-unknown-linux-gnu", "aarch64-apple-darwin", "x86_64-apple-darwin"]
+targets = [
+  "x86_64-unknown-linux-gnu",
+  "aarch64-apple-darwin",
+  "x86_64-apple-darwin",
+]
 # The installers to generate for each app
 installers = []
 # Publish jobs to run in CI

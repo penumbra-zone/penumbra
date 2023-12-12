@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_storage::{StateRead, StateWrite};
+use cnidarium::{StateRead, StateWrite};
 
 #[async_trait]
 /// Defines the interface for handling transaction actions.

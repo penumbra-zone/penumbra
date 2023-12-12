@@ -1,9 +1,9 @@
 #![cfg(feature = "migration")]
+use cnidarium::StateDelta;
+use cnidarium::StateRead;
+use cnidarium::StateWrite;
+use cnidarium::Storage;
 use jmt::RootHash;
-use penumbra_storage::StateDelta;
-use penumbra_storage::StateRead;
-use penumbra_storage::StateWrite;
-use penumbra_storage::Storage;
 use tempfile;
 use tokio;
 

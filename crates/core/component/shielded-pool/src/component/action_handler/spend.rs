@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
+use cnidarium_component::ActionHandler;
 use penumbra_chain::TransactionContext;
-use penumbra_component::ActionHandler;
 use penumbra_proof_params::SPEND_PROOF_VERIFICATION_KEY;
 use penumbra_proto::StateWriteProto as _;
-use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
     component::{NoteManager, StateReadExt},

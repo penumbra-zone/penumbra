@@ -1,4 +1,4 @@
-use penumbra_component::ActionHandler;
+use cnidarium_component::ActionHandler;
 
 mod delegate;
 mod undelegate;

@@ -1,12 +1,12 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::{
     core::connection::{
         events, msgs::MsgConnectionOpenConfirm, ConnectionEnd, Counterparty, State,
     },
     path::ConnectionPath,
 };
-use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
     component::{

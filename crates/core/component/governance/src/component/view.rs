@@ -5,6 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use futures::StreamExt;
 use penumbra_asset::{asset, Value, STAKING_TOKEN_DENOM};
 use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
@@ -13,7 +14,6 @@ use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::component::{StateReadExt as _, SupplyRead};
 use penumbra_stake::{DelegationToken, GovernanceKey, IdentityKey};
-use penumbra_storage::{StateRead, StateWrite};
 use penumbra_tct as tct;
 use tokio::task::JoinSet;
 use tracing::instrument;

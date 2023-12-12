@@ -1,10 +1,10 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::core::{
     channel::{channel::State as ChannelState, events, ChannelId, Packet, PortId},
     client::Height,
 };
-use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::{
     channel::{StateReadExt as _, StateWriteExt as _},

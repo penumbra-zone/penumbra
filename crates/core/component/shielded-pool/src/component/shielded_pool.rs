@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::StateRead;
+use cnidarium::StateWrite;
+use cnidarium_component::Component;
 use penumbra_chain::{NoteSource, SpendInfo};
-use penumbra_component::Component;
 use penumbra_proto::StateReadProto;
 use penumbra_sct::Nullifier;
-use penumbra_storage::StateRead;
-use penumbra_storage::StateWrite;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 

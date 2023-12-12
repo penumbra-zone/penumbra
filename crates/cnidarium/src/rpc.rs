@@ -2,8 +2,8 @@
 #[allow(clippy::unwrap_used)]
 pub mod proto {
     pub mod v1alpha1 {
-        include!("gen/penumbra.storage.v1alpha1.rs");
-        include!("gen/penumbra.storage.v1alpha1.serde.rs");
+        include!("gen/penumbra.cnidarium.v1alpha1.rs");
+        include!("gen/penumbra.cnidarium.v1alpha1.serde.rs");
     }
 
     // https://github.com/penumbra-zone/penumbra/issues/3038#issuecomment-1722534133

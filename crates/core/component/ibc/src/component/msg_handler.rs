@@ -19,7 +19,7 @@ mod upgrade_client;
 use crate::component::app_handler::{AppHandlerCheck, AppHandlerExecute};
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_storage::StateWrite;
+use cnidarium::StateWrite;
 
 /// Variant of ActionHandler defined locally (so it can be implemented for IBC
 /// message types) and tweaked (removing the separate check_stateless step).

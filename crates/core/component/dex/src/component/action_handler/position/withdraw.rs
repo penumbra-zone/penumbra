@@ -3,9 +3,9 @@ use std::sync::Arc;
 use anyhow::{anyhow, Result};
 use ark_ff::Zero;
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
+use cnidarium_component::ActionHandler;
 use decaf377::Fr;
-use penumbra_component::ActionHandler;
-use penumbra_storage::{StateRead, StateWrite};
 
 use crate::{
     component::{PositionManager, PositionRead},

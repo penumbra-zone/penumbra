@@ -7,6 +7,7 @@ use ibc_types::core::client::Height;
 
 use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ClientTypePath};
 
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::lightclients::tendermint::{
     client_state::ClientState as TendermintClientState,
     consensus_state::ConsensusState as TendermintConsensusState,
@@ -14,7 +15,6 @@ use ibc_types::lightclients::tendermint::{
 };
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::client_counter::{ClientCounter, VerifiedHeights};
 use crate::prefix::MerklePrefixExt;
@@ -369,11 +369,11 @@ mod tests {
     use std::sync::Arc;
 
     use super::*;
+    use cnidarium::{ArcStateDeltaExt, StateDelta};
+    use cnidarium_component::ActionHandler;
     use ibc_types::core::client::msgs::MsgUpdateClient;
     use ibc_types::{core::client::msgs::MsgCreateClient, DomainType};
     use penumbra_chain::component::StateWriteExt;
-    use penumbra_component::ActionHandler;
-    use penumbra_storage::{ArcStateDeltaExt, StateDelta};
     use std::str::FromStr;
     use tendermint::Time;
 

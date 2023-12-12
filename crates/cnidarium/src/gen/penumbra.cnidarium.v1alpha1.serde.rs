@@ -15,7 +15,7 @@ impl serde::Serialize for KeyValueRequest {
         if self.proof {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.storage.v1alpha1.KeyValueRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.cnidarium.v1alpha1.KeyValueRequest", len)?;
         if !self.chain_id.is_empty() {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
         }
@@ -82,7 +82,7 @@ impl<'de> serde::Deserialize<'de> for KeyValueRequest {
             type Value = KeyValueRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.storage.v1alpha1.KeyValueRequest")
+                formatter.write_str("struct penumbra.cnidarium.v1alpha1.KeyValueRequest")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<KeyValueRequest, V::Error>
@@ -121,7 +121,7 @@ impl<'de> serde::Deserialize<'de> for KeyValueRequest {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.storage.v1alpha1.KeyValueRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.cnidarium.v1alpha1.KeyValueRequest", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for KeyValueResponse {
@@ -138,7 +138,7 @@ impl serde::Serialize for KeyValueResponse {
         if self.proof.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.storage.v1alpha1.KeyValueResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.cnidarium.v1alpha1.KeyValueResponse", len)?;
         if let Some(v) = self.value.as_ref() {
             struct_ser.serialize_field("value", v)?;
         }
@@ -198,7 +198,7 @@ impl<'de> serde::Deserialize<'de> for KeyValueResponse {
             type Value = KeyValueResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.storage.v1alpha1.KeyValueResponse")
+                formatter.write_str("struct penumbra.cnidarium.v1alpha1.KeyValueResponse")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<KeyValueResponse, V::Error>
@@ -229,7 +229,7 @@ impl<'de> serde::Deserialize<'de> for KeyValueResponse {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.storage.v1alpha1.KeyValueResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.cnidarium.v1alpha1.KeyValueResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for key_value_response::Value {
@@ -243,7 +243,7 @@ impl serde::Serialize for key_value_response::Value {
         if !self.value.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.storage.v1alpha1.KeyValueResponse.Value", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.cnidarium.v1alpha1.KeyValueResponse.Value", len)?;
         if !self.value.is_empty() {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("value", pbjson::private::base64::encode(&self.value).as_str())?;
@@ -298,7 +298,7 @@ impl<'de> serde::Deserialize<'de> for key_value_response::Value {
             type Value = key_value_response::Value;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.storage.v1alpha1.KeyValueResponse.Value")
+                formatter.write_str("struct penumbra.cnidarium.v1alpha1.KeyValueResponse.Value")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<key_value_response::Value, V::Error>
@@ -323,7 +323,7 @@ impl<'de> serde::Deserialize<'de> for key_value_response::Value {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.storage.v1alpha1.KeyValueResponse.Value", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.cnidarium.v1alpha1.KeyValueResponse.Value", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for PrefixValueRequest {
@@ -340,7 +340,7 @@ impl serde::Serialize for PrefixValueRequest {
         if !self.prefix.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.storage.v1alpha1.PrefixValueRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.cnidarium.v1alpha1.PrefixValueRequest", len)?;
         if !self.chain_id.is_empty() {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
         }
@@ -401,7 +401,7 @@ impl<'de> serde::Deserialize<'de> for PrefixValueRequest {
             type Value = PrefixValueRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.storage.v1alpha1.PrefixValueRequest")
+                formatter.write_str("struct penumbra.cnidarium.v1alpha1.PrefixValueRequest")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<PrefixValueRequest, V::Error>
@@ -432,7 +432,7 @@ impl<'de> serde::Deserialize<'de> for PrefixValueRequest {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.storage.v1alpha1.PrefixValueRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.cnidarium.v1alpha1.PrefixValueRequest", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for PrefixValueResponse {
@@ -449,7 +449,7 @@ impl serde::Serialize for PrefixValueResponse {
         if !self.value.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.storage.v1alpha1.PrefixValueResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.cnidarium.v1alpha1.PrefixValueResponse", len)?;
         if !self.key.is_empty() {
             struct_ser.serialize_field("key", &self.key)?;
         }
@@ -510,7 +510,7 @@ impl<'de> serde::Deserialize<'de> for PrefixValueResponse {
             type Value = PrefixValueResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.storage.v1alpha1.PrefixValueResponse")
+                formatter.write_str("struct penumbra.cnidarium.v1alpha1.PrefixValueResponse")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<PrefixValueResponse, V::Error>
@@ -543,6 +543,6 @@ impl<'de> serde::Deserialize<'de> for PrefixValueResponse {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.storage.v1alpha1.PrefixValueResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.cnidarium.v1alpha1.PrefixValueResponse", FIELDS, GeneratedVisitor)
     }
 }

@@ -3,10 +3,10 @@ use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use futures::Stream;
 use futures::StreamExt;
 use penumbra_proto::DomainType;
-use penumbra_storage::{StateRead, StateWrite};
 use std::pin::Pin;
 
 #[async_trait]

@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use anyhow::Ok;
 use async_trait::async_trait;
+use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use futures::StreamExt;
 use penumbra_asset::{asset, Value};
 use penumbra_num::Amount;
-use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
 use rand_core::OsRng;
 
 //use crate::TempStorageExt;
@@ -449,7 +449,7 @@ async fn multiple_limit_orders() -> anyhow::Result<()> {
 #[tokio::test]
 /// Test that submitting a position that provisions no inventory fails.
 async fn empty_order_fails() -> anyhow::Result<()> {
-    use penumbra_component::ActionHandler;
+    use cnidarium_component::ActionHandler;
     let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
     let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
 

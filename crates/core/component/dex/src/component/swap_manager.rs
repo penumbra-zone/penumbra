@@ -1,7 +1,7 @@
 use async_trait::async_trait;
+use cnidarium::StateWrite;
 use penumbra_chain::NoteSource;
 use penumbra_sct::component::SctManager as _;
-use penumbra_storage::StateWrite;
 use penumbra_tct as tct;
 use tracing::instrument;
 

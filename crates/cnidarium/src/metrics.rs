@@ -30,6 +30,6 @@ pub fn register_metrics() {
     );
 }
 
-pub const STORAGE_GET_RAW_DURATION: &str = "penumbra_storage_get_raw_duration_seconds";
+pub const STORAGE_GET_RAW_DURATION: &str = "cnidarium_get_raw_duration_seconds";
 pub const STORAGE_NONCONSENSUS_GET_RAW_DURATION: &str =
-    "penumbra_storage_nonverifiable_get_raw_duration_seconds";
+    "cnidarium_nonverifiable_get_raw_duration_seconds";

@@ -6,7 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-component = ["penumbra-component", "penumbra-storage", "penumbra-proto/penumbra-storage", "penumbra-chain/component", "penumbra-shielded-pool/component"]
+component = [
+    "cnidarium-component",
+    "cnidarium",
+    "penumbra-proto/cnidarium",
+    "penumbra-chain/component",
+    "penumbra-shielded-pool/component",
+]
 default = ["component"]
 docsrs = []
 
@@ -14,12 +20,12 @@ docsrs = []
 
 # Workspace dependencies
 penumbra-asset = { path = "../../asset" }
-penumbra-component = { path = "../component", optional = true }
+cnidarium-component = { path = "../../../cnidarium-component", optional = true }
 penumbra-chain = { path = "../chain", default-features = false }
 penumbra-num = { path = "../../../core/num", default-features = false }
 penumbra-proto = { path = "../../../proto", default-features = false }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
-penumbra-storage = { path = "../../../storage", optional = true }
+cnidarium = { path = "../../../cnidarium", optional = true }
 
 # Crates.io deps
 async-trait = "0.1.52"

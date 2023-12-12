@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use penumbra_chain::component::StateReadExt;
 use penumbra_proof_params::UNDELEGATECLAIM_PROOF_VERIFICATION_KEY;
-use penumbra_storage::{StateRead, StateWrite};
 
 use crate::UndelegateClaim;
 use crate::{action_handler::ActionHandler, StateReadExt as _, UnbondingToken};

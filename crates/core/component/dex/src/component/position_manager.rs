@@ -4,13 +4,13 @@ use std::{pin::Pin, sync::Arc};
 use anyhow::Result;
 use async_stream::try_stream;
 use async_trait::async_trait;
+use cnidarium::{EscapedByteSlice, StateRead, StateWrite};
 use futures::Stream;
 use futures::StreamExt;
 use penumbra_asset::asset;
 use penumbra_num::Amount;
 use penumbra_proto::DomainType;
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{EscapedByteSlice, StateRead, StateWrite};
 
 use crate::lp::position::State;
 use crate::{

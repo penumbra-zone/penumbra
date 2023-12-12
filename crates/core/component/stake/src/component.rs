@@ -14,15 +14,16 @@ pub use self::metrics::register_metrics;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
+use cnidarium_component::Component;
 use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
 use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::{
     component::{StateReadExt as _, StateWriteExt as _},
     Epoch, NoteSource,
 };
-use penumbra_component::Component;
 use penumbra_dao::component::StateWriteExt as _;
 
+use cnidarium::{StateRead, StateWrite};
 use penumbra_distributions::component::StateReadExt as _;
 use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{
@@ -33,7 +34,6 @@ use penumbra_shielded_pool::{
     component::{NoteManager, SupplyRead, SupplyWrite},
     genesis::Content as ShieldedPoolGenesisContent,
 };
-use penumbra_storage::{StateRead, StateWrite};
 use sha2::{Digest, Sha256};
 use tendermint::validator::Update;
 use tendermint::{

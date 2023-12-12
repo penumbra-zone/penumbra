@@ -20,7 +20,7 @@ jobs:
 
       - uses: bufbuild/buf-lint-action@v1
         with:
-          input: 'proto'
+          input: "proto"
           buf_token: ${{ secrets.BUF_TOKEN }}
 
       - name: Check for module path changes
@@ -40,9 +40,9 @@ jobs:
       - name: Check for breaking changes
         uses: bufbuild/buf-breaking-action@v1
         with:
-          input: 'proto'
+          input: "proto"
           # The 'main' branch of the GitHub repository that defines the module.
-          against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=proto'
+          against: "https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=proto"
 
   protobuf-fresh:
     name: Compile protobuf specs to rust code
@@ -85,7 +85,7 @@ jobs:
           ./deployments/scripts/protobuf-codegen
           # https://github.com/penumbra-zone/penumbra/issues/3038#issuecomment-1722534133
           git checkout crates/proto/src/gen/proto_descriptor.bin.no_lfs
-          git checkout crates/storage/src/gen/proto_descriptor.bin.no_lfs
+          git checkout crates/cnidarium/src/gen/proto_descriptor.bin.no_lfs
           s="$(git status --porcelain)"
           if [[ -n "$s" ]]; then
               echo "ERROR: protobuf files must be regenerated and committed."
