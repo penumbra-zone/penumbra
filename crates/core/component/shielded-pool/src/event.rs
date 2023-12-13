@@ -9,7 +9,7 @@ use crate::NotePayload;
 
 pub fn spend(nullifier: &Nullifier) -> EventSpend {
     EventSpend {
-        nullifier: nullifier.to_bytes().to_vec(),
+        nullifier: Some((*nullifier).into()),
     }
 }
 

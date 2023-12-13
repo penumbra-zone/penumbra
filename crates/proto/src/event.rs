@@ -64,14 +64,17 @@ mod tests {
     #[test]
     fn event_round_trip() {
         use super::*;
+        use crate::core::component::sct::v1alpha1::Nullifier;
         use crate::core::component::shielded_pool::v1alpha1::{EventOutput, EventSpend};
         use crate::crypto::tct::v1alpha1::StateCommitment;
 
         let proto_spend = EventSpend {
-            nullifier: vec![
-                148, 190, 149, 23, 86, 113, 152, 145, 104, 242, 142, 162, 233, 239, 137, 141, 140,
-                164, 180, 98, 154, 55, 168, 255, 163, 228, 179, 176, 26, 25, 219, 211,
-            ],
+            nullifier: Some(Nullifier {
+                inner: vec![
+                    148, 190, 149, 23, 86, 113, 152, 145, 104, 242, 142, 162, 233, 239, 137, 141,
+                    140, 164, 180, 98, 154, 55, 168, 255, 163, 228, 179, 176, 26, 25, 219, 211,
+                ],
+            }),
         };
 
         let abci_spend = proto_spend.into_event();
@@ -80,7 +83,7 @@ mod tests {
             "penumbra.core.component.shielded_pool.v1alpha1.EventSpend",
             vec![abci::EventAttribute {
                 key: "nullifier".to_string(),
-                value: "\"lL6VF1ZxmJFo8o6i6e+JjYyktGKaN6j/o+SzsBoZ29M=\"".to_string(),
+                value: "{\"inner\":\"lL6VF1ZxmJFo8o6i6e+JjYyktGKaN6j/o+SzsBoZ29M=\"}".to_string(),
                 index: true,
             }],
         );

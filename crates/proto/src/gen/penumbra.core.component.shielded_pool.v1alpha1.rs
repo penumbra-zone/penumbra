@@ -159,8 +159,8 @@ impl ::prost::Name for Spend {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventSpend {
-    #[prost(bytes = "vec", tag = "1")]
-    pub nullifier: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "1")]
+    pub nullifier: ::core::option::Option<super::super::sct::v1alpha1::Nullifier>,
 }
 impl ::prost::Name for EventSpend {
     const NAME: &'static str = "EventSpend";

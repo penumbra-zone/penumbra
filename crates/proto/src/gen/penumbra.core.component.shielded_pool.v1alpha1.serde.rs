@@ -300,13 +300,12 @@ impl serde::Serialize for EventSpend {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.nullifier.is_empty() {
+        if self.nullifier.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1alpha1.EventSpend", len)?;
-        if !self.nullifier.is_empty() {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("nullifier", pbjson::private::base64::encode(&self.nullifier).as_str())?;
+        if let Some(v) = self.nullifier.as_ref() {
+            struct_ser.serialize_field("nullifier", v)?;
         }
         struct_ser.end()
     }
@@ -372,14 +371,12 @@ impl<'de> serde::Deserialize<'de> for EventSpend {
                             if nullifier__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("nullifier"));
                             }
-                            nullifier__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            nullifier__ = map_.next_value()?;
                         }
                     }
                 }
                 Ok(EventSpend {
-                    nullifier: nullifier__.unwrap_or_default(),
+                    nullifier: nullifier__,
                 })
             }
         }
