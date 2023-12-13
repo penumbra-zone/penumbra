@@ -109,7 +109,6 @@ fn main() -> anyhow::Result<()> {
                 "../../proto/penumbra/penumbra/crypto/tct/v1alpha1/tct.proto",
                 "../../proto/penumbra/penumbra/custody/v1alpha1/custody.proto",
                 "../../proto/penumbra/penumbra/custody/threshold/v1alpha1/threshold.proto",
-                "../../proto/penumbra/penumbra/narsil/ledger/v1alpha1/ledger.proto",
                 // Also included in the cnidarium crate directly.
                 "../../proto/penumbra/penumbra/cnidarium/v1alpha1/cnidarium.proto",
                 "../../proto/penumbra/penumbra/tools/summoning/v1alpha1/summoning.proto",

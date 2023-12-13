@@ -59,7 +59,6 @@ cargo +nightly doc --no-deps \
   -p pd \
   -p pclientd \
   -p pcli \
-  -p narsil
 
 >&2 echo "Copying newly built index file to version-controlled path:"
 cp -v target/doc/index.html docs/rustdoc/index.html

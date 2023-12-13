@@ -211,16 +211,6 @@ pub mod penumbra {
         }
     }
 
-    /// Narsil protocol structures.
-    pub mod narsil {
-        pub mod v1alpha1 {
-            pub mod ledger {
-                include!("gen/penumbra.narsil.ledger.v1alpha1.rs");
-                include!("gen/penumbra.narsil.ledger.v1alpha1.serde.rs");
-            }
-        }
-    }
-
     pub mod cnidarium {
         pub mod v1alpha1 {
             include!("gen/penumbra.cnidarium.v1alpha1.rs");
