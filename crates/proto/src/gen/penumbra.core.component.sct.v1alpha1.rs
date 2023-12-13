@@ -42,6 +42,44 @@ impl ::prost::Name for TransactionByNoteResponse {
         ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventBlockAnchor {
+    /// The height of the block.
+    #[prost(uint64, tag = "1")]
+    pub height: u64,
+    /// The root hash of a block.
+    #[prost(message, optional, tag = "2")]
+    pub root_hash: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1alpha1::MerkleRoot,
+    >,
+}
+impl ::prost::Name for EventBlockAnchor {
+    const NAME: &'static str = "EventBlockAnchor";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventEpochAnchor {
+    /// The epoch index.
+    #[prost(uint64, tag = "1")]
+    pub index: u64,
+    /// The root hash of an epoch.
+    #[prost(message, optional, tag = "2")]
+    pub root_hash: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1alpha1::MerkleRoot,
+    >,
+}
+impl ::prost::Name for EventEpochAnchor {
+    const NAME: &'static str = "EventEpochAnchor";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
