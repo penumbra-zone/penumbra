@@ -42,7 +42,6 @@ members = [
   "crates/bin/pclientd",
   "crates/bin/pcli",
   "crates/wasm",
-  "crates/narsil/narsil",
   "crates/test/tct-property-test",
   "crates/misc/measure",
   "crates/misc/tct-visualize",
