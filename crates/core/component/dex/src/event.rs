@@ -14,7 +14,7 @@ pub fn swap(swap: &Swap) -> pb::EventSwap {
         trading_pair: Some(swap.body.trading_pair.into()),
         delta_1_i: Some(swap.body.delta_1_i.into()),
         delta_2_i: Some(swap.body.delta_2_i.into()),
-        commitment: Some(swap.body.fee_commitment.into()),
+        swap_commitment: Some(swap.body.payload.commitment.into()),
     }
 }
 
