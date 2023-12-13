@@ -1,0 +1,12 @@
+#!/bin/bash
+# Utility script to download a version of CometBFT for use with Penumbra.
+
+
+COMETBFT_VERSION="${COMETBFT_VERSION:-0.37.2}"
+curl -L -O "https://github.com/cometbft/cometbft/releases/download/v${COMETBFT_VERSION}/cometbft_${COMETBFT_VERSION}_linux_amd64.tar.gz"
+tar -xzf "cometbft_${COMETBFT_VERSION}_linux_amd64.tar.gz" cometbft
+mkdir -p "$HOME/bin"
+cp -v cometbft "$HOME/bin/"
+export PATH="$HOME/bin:$PATH"
+which cometbft
+cometbft version
