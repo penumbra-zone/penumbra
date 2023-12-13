@@ -27,16 +27,7 @@ jobs:
         uses: astriaorg/buildjet-rust-cache@v2.5.1
 
       - name: Install cometbft binary
-        run: |
-          COMETBFT_VERSION="0.37.2"
-          curl -L -O "https://github.com/cometbft/cometbft/releases/download/v${COMETBFT_VERSION}/cometbft_${COMETBFT_VERSION}_linux_amd64.tar.gz"
-          tar -xzf "cometbft_${COMETBFT_VERSION}_linux_amd64.tar.gz" cometbft
-          mkdir -p $HOME/bin
-          cp cometbft $HOME/bin
-          echo $PATH
-          export PATH=$HOME/bin:$PATH
-          which cometbft
-          cometbft version
+        run: ./deployments/scripts/install-cometbft
 
       - name: Run e2e test of summoner
         run: |
