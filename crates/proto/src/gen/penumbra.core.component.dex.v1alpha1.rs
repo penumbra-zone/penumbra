@@ -1241,10 +1241,10 @@ pub struct EventSwap {
     /// The amount for asset 2.
     #[prost(message, optional, tag = "3")]
     pub delta_2_i: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
-    /// A commitment to a prepaid fee for the future SwapClaim.
+    /// The swap commitment.
     #[prost(message, optional, tag = "4")]
-    pub commitment: ::core::option::Option<
-        super::super::super::asset::v1alpha1::BalanceCommitment,
+    pub swap_commitment: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1alpha1::StateCommitment,
     >,
 }
 impl ::prost::Name for EventSwap {

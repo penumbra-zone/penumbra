@@ -1586,7 +1586,7 @@ impl serde::Serialize for EventSwap {
         if self.delta_2_i.is_some() {
             len += 1;
         }
-        if self.commitment.is_some() {
+        if self.swap_commitment.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1alpha1.EventSwap", len)?;
@@ -1599,8 +1599,8 @@ impl serde::Serialize for EventSwap {
         if let Some(v) = self.delta_2_i.as_ref() {
             struct_ser.serialize_field("delta2I", v)?;
         }
-        if let Some(v) = self.commitment.as_ref() {
-            struct_ser.serialize_field("commitment", v)?;
+        if let Some(v) = self.swap_commitment.as_ref() {
+            struct_ser.serialize_field("swapCommitment", v)?;
         }
         struct_ser.end()
     }
@@ -1618,7 +1618,8 @@ impl<'de> serde::Deserialize<'de> for EventSwap {
             "delta1I",
             "delta_2_i",
             "delta2I",
-            "commitment",
+            "swap_commitment",
+            "swapCommitment",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1626,7 +1627,7 @@ impl<'de> serde::Deserialize<'de> for EventSwap {
             TradingPair,
             Delta1I,
             Delta2I,
-            Commitment,
+            SwapCommitment,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -1651,7 +1652,7 @@ impl<'de> serde::Deserialize<'de> for EventSwap {
                             "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
                             "delta1I" | "delta_1_i" => Ok(GeneratedField::Delta1I),
                             "delta2I" | "delta_2_i" => Ok(GeneratedField::Delta2I),
-                            "commitment" => Ok(GeneratedField::Commitment),
+                            "swapCommitment" | "swap_commitment" => Ok(GeneratedField::SwapCommitment),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -1674,7 +1675,7 @@ impl<'de> serde::Deserialize<'de> for EventSwap {
                 let mut trading_pair__ = None;
                 let mut delta_1_i__ = None;
                 let mut delta_2_i__ = None;
-                let mut commitment__ = None;
+                let mut swap_commitment__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::TradingPair => {
@@ -1695,11 +1696,11 @@ impl<'de> serde::Deserialize<'de> for EventSwap {
                             }
                             delta_2_i__ = map_.next_value()?;
                         }
-                        GeneratedField::Commitment => {
-                            if commitment__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("commitment"));
+                        GeneratedField::SwapCommitment => {
+                            if swap_commitment__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swapCommitment"));
                             }
-                            commitment__ = map_.next_value()?;
+                            swap_commitment__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1707,7 +1708,7 @@ impl<'de> serde::Deserialize<'de> for EventSwap {
                     trading_pair: trading_pair__,
                     delta_1_i: delta_1_i__,
                     delta_2_i: delta_2_i__,
-                    commitment: commitment__,
+                    swap_commitment: swap_commitment__,
                 })
             }
         }
