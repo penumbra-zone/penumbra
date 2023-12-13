@@ -273,14 +273,15 @@ impl TxCmd {
                 let to = to
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
-                let memo_ephemeral_address = app
+
+                let return_address = app
                     .config
                     .full_viewing_key
-                    .ephemeral_address(OsRng, AddressIndex::new(*from))
+                    .payment_address((*from).into())
                     .0;
 
                 let memo_plaintext = MemoPlaintext {
-                    return_address: memo_ephemeral_address,
+                    return_address,
                     text: memo.clone().unwrap_or_default(),
                 };
 
