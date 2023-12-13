@@ -23,3 +23,17 @@ message TransactionByNoteRequest {
 message TransactionByNoteResponse {
   core.component.chain.v1alpha1.NoteSource note_source = 1;
 }
+
+message EventBlockAnchor {
+  // The height of the block.
+  uint64 height = 1;
+  // The root hash of a block.
+  crypto.tct.v1alpha1.MerkleRoot root_hash = 2;
+}
+
+message EventEpochAnchor {
+  // The epoch index.
+  uint64 index = 1;
+  // The root hash of an epoch.
+  crypto.tct.v1alpha1.MerkleRoot root_hash = 2;
+}
