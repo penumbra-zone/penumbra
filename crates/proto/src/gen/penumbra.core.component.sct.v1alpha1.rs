@@ -42,25 +42,27 @@ impl ::prost::Name for TransactionByNoteResponse {
         ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
     }
 }
+/// The global SCT root at the given height.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventBlockAnchor {
-    /// The height of the block.
+pub struct EventRootAnchor {
+    /// The height of the block
     #[prost(uint64, tag = "1")]
     pub height: u64,
-    /// The root hash of a block.
+    /// The root hash of a note commitment tree.
     #[prost(message, optional, tag = "2")]
-    pub root_hash: ::core::option::Option<
+    pub root_anchor: ::core::option::Option<
         super::super::super::super::crypto::tct::v1alpha1::MerkleRoot,
     >,
 }
-impl ::prost::Name for EventBlockAnchor {
-    const NAME: &'static str = "EventBlockAnchor";
+impl ::prost::Name for EventRootAnchor {
+    const NAME: &'static str = "EventRootAnchor";
     const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
     }
 }
+/// The root of the epoch subtree at the given height.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventEpochAnchor {
@@ -69,12 +71,32 @@ pub struct EventEpochAnchor {
     pub index: u64,
     /// The root hash of an epoch.
     #[prost(message, optional, tag = "2")]
-    pub root_hash: ::core::option::Option<
+    pub epoch_anchor: ::core::option::Option<
         super::super::super::super::crypto::tct::v1alpha1::MerkleRoot,
     >,
 }
 impl ::prost::Name for EventEpochAnchor {
     const NAME: &'static str = "EventEpochAnchor";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
+}
+/// The root of the block subtree at the given height.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventBlockAnchor {
+    /// The height of the block.
+    #[prost(uint64, tag = "1")]
+    pub height: u64,
+    /// The root hash of a block.
+    #[prost(message, optional, tag = "2")]
+    pub block_anchor: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1alpha1::MerkleRoot,
+    >,
+}
+impl ::prost::Name for EventBlockAnchor {
+    const NAME: &'static str = "EventBlockAnchor";
     const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
