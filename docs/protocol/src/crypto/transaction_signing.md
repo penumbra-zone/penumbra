@@ -24,7 +24,7 @@ formed `Transaction`. This process is internally partitioned into three steps:
 2. The pre-built actions to collectively used to construct a transaction with placeholder dummy signatures, that can be filled in once the
 signatures from the `AuthorizationData` are ready[^1]. This intermediate state
 of the transaction without the full authorizing data is referred to as the "**Unauthenticated Transaction**".
-1. Slot the `AuthorizationData` to replace the placeholder singatures to assemble the final `Transaction`. 
+1. Slot the `AuthorizationData` to replace the placeholder signatures to assemble the final `Transaction`. 
 
 The Penumbra protocol was designed to only require the custodian, e.g. the hardware wallet
 environment, to do signing, as the generation of ZKPs can be done without access to signing keys, requiring only witness data and viewing keys.
