@@ -24,16 +24,26 @@ message TransactionByNoteResponse {
   core.component.chain.v1alpha1.NoteSource note_source = 1;
 }
 
-message EventBlockAnchor {
-  // The height of the block.
+// The global SCT root at the given height.
+message EventRootAnchor {
+  // The height of the block
   uint64 height = 1;
-  // The root hash of a block.
-  crypto.tct.v1alpha1.MerkleRoot root_hash = 2;
+  // The root hash of a note commitment tree.
+  crypto.tct.v1alpha1.MerkleRoot root_anchor = 2;
 }
 
+// The root of the epoch subtree at the given height.
 message EventEpochAnchor {
   // The epoch index.
   uint64 index = 1;
   // The root hash of an epoch.
-  crypto.tct.v1alpha1.MerkleRoot root_hash = 2;
+  crypto.tct.v1alpha1.MerkleRoot epoch_anchor = 2;
+}
+
+// The root of the block subtree at the given height.
+message EventBlockAnchor {
+  // The height of the block.
+  uint64 height = 1;
+  // The root hash of a block.
+  crypto.tct.v1alpha1.MerkleRoot block_anchor = 2;
 }
