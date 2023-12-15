@@ -242,7 +242,8 @@ async fn main() -> anyhow::Result<()> {
             //
             // TODO(kate): this is where we may attach additional routes upon this router in the
             // future. see #3646 for more information.
-            let router = grpc_server.into_router();
+            let frontend = pd::zipserve::router("/app", pd::FRONTEND_APP_ARCHIVE_BYTES);
+            let router = grpc_server.into_router().merge(frontend);
             let make_svc = router.into_make_service();
 
             // Now start the GRPC server, initializing an ACME client to use as a certificate

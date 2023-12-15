@@ -10,6 +10,10 @@ mod metrics;
 pub mod cli;
 pub mod migrate;
 pub mod testnet;
+pub mod zipserve;
 
 pub use crate::metrics::register_metrics;
 pub use penumbra_app::app::App;
+
+pub const FRONTEND_APP_ARCHIVE_BYTES: &'static [u8] =
+    include_bytes!("../../../../assets/frontend.zip");
