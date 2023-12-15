@@ -3,12 +3,13 @@ use decaf377::{FieldExt, Fq, Fr};
 use penumbra_asset::{
     asset::{self, AssetIdVar},
     balance::{self, commitment::BalanceCommitmentVar, BalanceVar},
-    ValueVar,
+    Balance, Value, ValueVar, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_num::{
     fixpoint::{U128x128, U128x128Var},
     Amount, AmountVar,
 };
+use penumbra_proof_params::DummyWitness;
 
 /// A circuit that converts a private amount of one asset into another, by some rate.
 #[derive(Clone, Debug)]
@@ -83,5 +84,31 @@ impl r1cs::ConstraintSynthesizer<Fq> for ConvertCircuit {
         expected_commitment.enforce_equal(&balance_commitment)?;
 
         Ok(())
+    }
+}
+
+impl DummyWitness for ConvertCircuit {
+    fn with_dummy_witness() -> Self {
+        let amount = Amount::from(1u64);
+        let balance_blinding = Fr::from(1);
+        let from = *STAKING_TOKEN_ASSET_ID;
+        let to = *STAKING_TOKEN_ASSET_ID;
+        let rate = U128x128::from(1u64);
+        let balance = Balance::from(Value {
+            asset_id: to,
+            amount,
+        }) - Balance::from(Value {
+            asset_id: from,
+            amount,
+        });
+        let balance_commitment = balance.commit(balance_blinding);
+        Self {
+            amount,
+            balance_blinding,
+            from,
+            to,
+            rate,
+            balance_commitment,
+        }
     }
 }
