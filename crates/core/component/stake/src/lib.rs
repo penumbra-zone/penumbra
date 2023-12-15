@@ -33,6 +33,7 @@ pub use undelegate_claim::{
 };
 
 mod delegation_token;
+mod convert_proof;
 mod governance_key;
 mod identity_key;
 mod penalty;

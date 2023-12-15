@@ -19,7 +19,7 @@ use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{r1cs::FqVar, Fq};
 use ethnum::U256;
 
-use crate::AmountVar;
+use crate::{Amount, AmountVar};
 
 use self::div::stub_div_rem_u384_by_u256;
 
@@ -176,6 +176,16 @@ impl U128x128 {
     /// Saturating integer subtraction. Computes self - rhs, saturating at the numeric bounds instead of overflowing.
     pub fn saturating_sub(self, rhs: &Self) -> Self {
         U128x128(self.0.saturating_sub(rhs.0))
+    }
+
+    /// Multiply an amount by this fraction, then round down.
+    pub fn apply_to_amount(self, rhs: &Amount) -> Result<Amount, Error> {
+        let mul = (Self::from(rhs) * self)?;
+        let out = mul
+            .round_down()
+            .try_into()
+            .expect("converting integral U128xU128 into Amount will succeed");
+        Ok(out)
     }
 }
 
@@ -630,6 +640,12 @@ impl U128x128Var {
                 self.limbs[3].clone(),
             ],
         }
+    }
+    /// Multiply an amount by this fraction, then round down.
+    pub fn apply_to_amount(self, rhs: AmountVar) -> Result<AmountVar, SynthesisError> {
+        U128x128Var::from_amount_var(rhs)?
+            .checked_mul(&self)?
+            .round_down_to_amount()
     }
 
     pub fn round_down_to_amount(self) -> Result<AmountVar, SynthesisError> {
