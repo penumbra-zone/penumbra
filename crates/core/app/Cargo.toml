@@ -64,8 +64,8 @@ parking_lot = "0.12"
 tendermint = "0.34.0"
 tendermint-proto = "0.34.0"
 tendermint-light-client-verifier = "0.34.0"
-ibc-types = { version = "0.10.0", default-features = false }
-ibc-proto = { version = "0.39.0", default-features = false, features = [
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "ibc-proto-rs-update", default-features = false }
+ibc-proto = { git = "https://github.com/penumbra-zone/ibc-proto-rs", branch = "protobuild-support", default-features = false, features = [
     "server",
 ] }
 

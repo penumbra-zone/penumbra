@@ -49,9 +49,9 @@ tendermint = { version = "0.34.0", features = ["rust-crypto"] }
 jmt = "0.9"
 
 # External dependencies
-ibc-types = { version = "0.10.0", features = ["std", "with_serde"] }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "ibc-proto-rs-update", features = ["std", "with_serde"] }
 
-ibc-proto = { version = "0.39.0" }
+ibc-proto = { git = "https://github.com/penumbra-zone/ibc-proto-rs", branch = "protobuild-support", features = ["serde"] }
 ark-ff = { version = "0.4", default-features = false }
 atty = "0.2"
 ed25519-consensus = "2"

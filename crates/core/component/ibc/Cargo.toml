@@ -28,8 +28,8 @@ penumbra-num = { path = "../../../core/num", default-features = false }
 penumbra-keys = { path = "../../../core/keys", default-features = false }
 
 # Penumbra dependencies
-ibc-types = { version = "0.10.0", default-features = false }
-ibc-proto = { version = "0.39.0", default-features = false }
+ibc-types = { git = "https://github.com/penumbra-zone/ibc-types", branch = "ibc-proto-rs-update", default-features = false }
+ibc-proto = { git = "https://github.com/penumbra-zone/ibc-proto-rs", branch = "protobuild-support", default-features = false }
 
 # Crates.io deps
 ics23 = "0.11.0"
