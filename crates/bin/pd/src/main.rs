@@ -230,12 +230,15 @@ async fn main() -> anyhow::Result<()> {
                 )));
             }
 
-            // Now we drop down a layer of abstraction, from tonic to axum.
-            //
-            // TODO(kate): this is where we may attach additional routes upon this router in the
-            // future. see #3646 for more information.
+            // Create Axum routes for the frontend app.
+            let frontend = pd::zipserve::router("/app/", pd::MINIFRONT_ARCHIVE_BYTES);
+            let node_status = pd::zipserve::router("/", pd::NODE_STATUS_ARCHIVE_BYTES);
+
+            // Now we drop down a layer of abstraction, from tonic to axum, and merge handlers.
             let router = grpc_server
                 .into_router()
+                .merge(frontend)
+                .merge(node_status)
                 // Set rather permissive CORS headers for pd's gRPC: the service
                 // should be accessible from arbitrary web contexts, such as localhost,
                 // or any FQDN that wants to reference its data.
