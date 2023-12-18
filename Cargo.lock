@@ -5877,7 +5877,6 @@ dependencies = [
  "pbjson-types",
  "penumbra-asset",
  "penumbra-chain",
- "penumbra-compact-block",
  "penumbra-dao",
  "penumbra-dex",
  "penumbra-fee",

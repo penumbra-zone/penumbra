@@ -12,7 +12,6 @@ penumbra-tct = { path = "../../crypto/tct" }
 penumbra-proof-params = { path = "../../crypto/proof-params/" }
 penumbra-chain = { path = "../component/chain/", default-features = false }
 penumbra-governance = { path = "../component/governance/", default-features = false }
-penumbra-compact-block = { path = "../component/compact-block/", default-features = false }
 penumbra-shielded-pool = { path = "../component/shielded-pool/", default-features = false }
 penumbra-sct = { path = "../component/sct/", default-features = false }
 penumbra-stake = { path = "../component/stake", default-features = false }
