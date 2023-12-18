@@ -1,11 +1,12 @@
 use std::{ops::Deref, sync::Arc};
 
-use crate::{app::App, ActionHandler, MockClient, TempStorageExt};
+use crate::{ActionHandler, MockClient, TempStorageExt};
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler as _, Component};
 use decaf377_rdsa::SigningKey;
 use penumbra_asset::Value;
 use penumbra_chain::{component::StateWriteExt, EffectHash, TransactionContext};
+use penumbra_compact_block::component::CompactBlockManager;
 use penumbra_fee::Fee;
 use penumbra_keys::{test_keys, PayloadKey};
 use penumbra_num::Amount;
@@ -72,7 +73,7 @@ async fn spend_happy_path() -> anyhow::Result<()> {
 
     let mut state_tx = state.try_begin_transaction().unwrap();
     // ... and for the App, call `finish_block` to correctly write out the SCT with the data we'll use next.
-    App::finish_block(&mut state_tx).await;
+    state_tx.finish_block(false).await.unwrap();
 
     state_tx.apply();
 

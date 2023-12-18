@@ -1,7 +1,8 @@
 use ark_ff::UniformRand;
+use penumbra_compact_block::component::CompactBlockManager as _;
 use std::{ops::Deref, sync::Arc};
 
-use crate::{app::App, MockClient, TempStorageExt};
+use crate::{MockClient, TempStorageExt};
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler, Component};
 use decaf377::Fq;
@@ -80,7 +81,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
 
     let mut state_tx = state.try_begin_transaction().unwrap();
     // ... and for the App, call `finish_block` to correctly write out the SCT with the data we'll use next.
-    App::finish_block(&mut state_tx).await;
+    state_tx.finish_block(false).await.unwrap();
 
     state_tx.apply();
 
@@ -194,7 +195,7 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
 
     let mut state_tx = state.try_begin_transaction().unwrap();
     // ... and for the App, call `finish_block` to correctly write out the SCT with the data we'll use next.
-    App::finish_block(&mut state_tx).await;
+    state_tx.finish_block(false).await.unwrap();
 
     state_tx.apply();
 
@@ -312,7 +313,7 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
 
     let mut state_tx = state.try_begin_transaction().unwrap();
     // ... and for the App, call `finish_block` to correctly write out the SCT with the data we'll use next.
-    App::finish_block(&mut state_tx).await;
+    state_tx.finish_block(false).await.unwrap();
 
     state_tx.apply();
 

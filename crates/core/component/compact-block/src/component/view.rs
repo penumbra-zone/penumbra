@@ -3,7 +3,7 @@ use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateRead;
 use futures::Stream;
 use futures::StreamExt;
 use penumbra_proto::DomainType;
@@ -42,16 +42,3 @@ pub trait StateReadExt: StateRead {
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
-
-#[async_trait]
-pub trait StateWriteExt: StateWrite {
-    fn set_compact_block(&mut self, compact_block: CompactBlock) {
-        let height = compact_block.height;
-        self.nonverifiable_put_raw(
-            state_key::compact_block(height).into_bytes(),
-            compact_block.encode_to_vec(),
-        );
-    }
-}
-
-impl<T: StateWrite + ?Sized> StateWriteExt for T {}
