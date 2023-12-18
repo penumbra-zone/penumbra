@@ -5089,6 +5089,7 @@ dependencies = [
  "cnidarium-component",
  "decaf377-rdsa",
  "futures",
+ "im",
  "metrics",
  "penumbra-chain",
  "penumbra-dao",
