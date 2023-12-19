@@ -1406,7 +1406,7 @@ impl Storage {
             }
 
             // Insert new note records into storage
-            for note_record in &filtered_block.new_notes {
+            for note_record in filtered_block.new_notes.values() {
                 let note_commitment = note_record.note_commitment.0.to_bytes().to_vec();
                 let height_created = filtered_block.height as i64;
                 let address_index = note_record.address_index.to_bytes().to_vec();
@@ -1435,7 +1435,7 @@ impl Storage {
             }
 
             // Insert new swap records into storage
-            for swap in &filtered_block.new_swaps {
+            for swap in filtered_block.new_swaps.values() {
                 let swap_commitment = swap.swap_commitment.0.to_bytes().to_vec();
                 let swap_bytes = swap.swap.encode_to_vec();
                 let position = (u64::from(swap.position)) as i64;
@@ -1590,7 +1590,7 @@ impl Storage {
             // Broadcast all committed note records to channel
             // Done following tx.commit() to avoid notifying of a new SpendableNoteRecord before it is actually committed to the database
 
-            for note_record in &filtered_block.new_notes {
+            for note_record in filtered_block.new_notes.values() {
                 // This will fail to be broadcast if there is no active receiver (such as on initial
                 // sync) The error is ignored, as this isn't a problem, because if there is no
                 // active receiver there is nothing to do
@@ -1604,7 +1604,7 @@ impl Storage {
                 let _ = scanned_nullifiers_tx.send(*nullifier);
             }
 
-            for swap_record in filtered_block.new_swaps {
+            for swap_record in filtered_block.new_swaps.values() {
                 // This will fail to be broadcast if there is no active rece∑iver (such as on initial
                 // sync) The error is ignored, as this isn't a problem, because if there is no
                 // active receiver there is nothing to do

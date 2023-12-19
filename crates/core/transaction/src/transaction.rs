@@ -416,6 +416,26 @@ impl Transaction {
         })
     }
 
+    pub fn state_commitments(&self) -> impl Iterator<Item = StateCommitment> + '_ {
+        self.actions()
+            .flat_map(|action| {
+                // Note: adding future actions that include state commitments
+                // will need to be matched here.
+                match action {
+                    Action::Output(output) => {
+                        [Some(output.body.note_payload.note_commitment), None]
+                    }
+                    Action::Swap(swap) => [Some(swap.body.payload.commitment), None],
+                    Action::SwapClaim(claim) => [
+                        Some(claim.body.output_1_commitment),
+                        Some(claim.body.output_2_commitment),
+                    ],
+                    _ => [None, None],
+                }
+            })
+            .filter_map(|x| x)
+    }
+
     pub fn dao_deposits(&self) -> impl Iterator<Item = &DaoDeposit> {
         self.actions().filter_map(|action| {
             if let Action::DaoDeposit(d) = action {

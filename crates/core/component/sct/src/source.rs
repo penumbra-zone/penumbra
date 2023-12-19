@@ -42,15 +42,10 @@ impl CommitmentSource {
 
     /// Convenience method for stripping transaction hashes out of the source.
     pub fn stripped(&self) -> Self {
-        // TODO: make this not be a no-op AFTER changing client code to match up transactions
-        // Currently, client code uses the source IDs even though it could just look at txs
-        self.clone()
-        /*
         match self {
             CommitmentSource::Transaction { .. } => CommitmentSource::Transaction { id: None },
             x => x.clone(),
         }
-         */
     }
 
     /// Get the transaction ID, if this source is a hydrated transaction source.
