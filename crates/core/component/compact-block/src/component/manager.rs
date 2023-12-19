@@ -8,6 +8,7 @@ use penumbra_fee::component::StateReadExt as _;
 use penumbra_governance::StateReadExt as _;
 use penumbra_proto::DomainType;
 use penumbra_sct::component::SctManager as _;
+use penumbra_sct::component::StateReadExt;
 use penumbra_shielded_pool::component::NoteManager as _;
 use tracing::instrument;
 
@@ -115,11 +116,7 @@ trait Inner: StateWrite {
             .collect();
 
         // Add all the pending nullifiers to the compact block
-        let nullifiers = self
-            .object_get::<im::Vector<_>>(penumbra_shielded_pool::state_key::pending_nullifiers())
-            .unwrap_or_default()
-            .into_iter()
-            .collect();
+        let nullifiers = self.pending_nullifiers().into_iter().collect();
 
         let compact_block = CompactBlock {
             height,

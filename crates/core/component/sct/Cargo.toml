@@ -50,6 +50,7 @@ rand = "0.8"
 bincode = "1.3.3"
 once_cell = "1.8"
 hex = "0.4"
+im = "15.1"
 
 # Component dependencies
 tonic = { version = "0.10", optional = true }

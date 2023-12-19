@@ -5609,6 +5609,7 @@ dependencies = [
  "decaf377 0.5.0",
  "decaf377-rdsa",
  "hex",
+ "im",
  "metrics",
  "once_cell",
  "penumbra-chain",

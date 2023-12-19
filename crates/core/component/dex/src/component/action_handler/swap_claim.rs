@@ -9,8 +9,8 @@ use penumbra_chain::TransactionContext;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_proof_params::SWAPCLAIM_PROOF_VERIFICATION_KEY;
 use penumbra_proto::StateWriteProto;
-use penumbra_sct::component::SourceContext;
-use penumbra_shielded_pool::component::{NoteManager, StateReadExt as _};
+use penumbra_sct::component::{SctManager as _, SourceContext, StateReadExt as _};
+use penumbra_shielded_pool::component::NoteManager;
 
 use crate::{component::StateReadExt, event, swap_claim::SwapClaim};
 
@@ -79,7 +79,7 @@ impl ActionHandler for SwapClaim {
             .add_rolled_up_payload(self.body.output_2_commitment, source.clone())
             .await;
 
-        state.spend_nullifier(self.body.nullifier, source).await;
+        state.nullify(self.body.nullifier, source).await;
 
         state.record_proto(event::swap_claim(self));
 
