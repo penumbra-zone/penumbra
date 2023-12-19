@@ -2,11 +2,11 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use penumbra_asset::Value;
-use penumbra_chain::{component::StateReadExt as _, NoteSource, SpendInfo};
+use penumbra_chain::component::StateReadExt as _;
 use penumbra_keys::Address;
 use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::{SctManager as _, StateReadExt as _};
-use penumbra_sct::Nullifier;
+use penumbra_sct::{CommitmentSource, NullificationInfo, Nullifier};
 use penumbra_tct as tct;
 use tct::StateCommitment;
 use tracing::instrument;
@@ -29,7 +29,7 @@ pub trait NoteManager: StateWrite {
         &mut self,
         value: Value,
         address: &Address,
-        source: NoteSource,
+        source: CommitmentSource,
     ) -> Result<()> {
         tracing::debug!(?value, ?address, "minting tokens");
 
@@ -67,59 +67,60 @@ pub trait NoteManager: StateWrite {
     }
 
     #[instrument(skip(self, note_payload, source), fields(commitment = ?note_payload.note_commitment))]
-    async fn add_note_payload(&mut self, note_payload: NotePayload, source: NoteSource) {
+    async fn add_note_payload(&mut self, note_payload: NotePayload, source: CommitmentSource) {
         tracing::debug!(source = ?source);
 
         // 0. Record an ABCI event for transaction indexing.
         //self.record(event::state_payload(&payload));
 
         // 1. Insert it into the SCT, recording its note source:
-        let position = self.add_sct_commitment(note_payload.note_commitment, Some(source))
+        let position = self.add_sct_commitment(note_payload.note_commitment, source.clone())
             .await
             // TODO: why? can't we exceed the number of state commitments in a block?
             .expect("inserting into the state commitment tree should not fail because we should budget commitments per block (currently unimplemented)");
 
         // 2. Finally, record it to be inserted into the compact block:
-        let mut payloads: im::Vector<(tct::Position, NotePayload, NoteSource)> = self
-            .object_get(state_key::pending_notes())
-            .unwrap_or_default();
+        let mut payloads = self.pending_note_payloads();
         payloads.push_back((position, note_payload, source));
         self.object_put(state_key::pending_notes(), payloads);
     }
 
     #[instrument(skip(self, note_commitment))]
-    async fn add_rolled_up_payload(&mut self, note_commitment: StateCommitment) {
+    async fn add_rolled_up_payload(
+        &mut self,
+        note_commitment: StateCommitment,
+        source: CommitmentSource,
+    ) {
         tracing::debug!(?note_commitment);
 
         // 0. Record an ABCI event for transaction indexing.
         //self.record(event::state_payload(&payload));
 
         // 1. Insert it into the SCT:
-        let position = self.add_sct_commitment(note_commitment, None)
+        let position = self.add_sct_commitment(note_commitment, source)
             .await
             // TODO: why? can't we exceed the number of state commitments in a block?
             .expect("inserting into the state commitment tree should not fail because we should budget commitments per block (currently unimplemented)");
 
         // 2. Finally, record it to be inserted into the compact block:
-        let mut payloads: im::Vector<(tct::Position, StateCommitment)> = self
-            .object_get(state_key::pending_rolled_up_notes())
-            .unwrap_or_default();
+        let mut payloads = self.pending_rolled_up_payloads();
         payloads.push_back((position, note_commitment));
-        self.object_put(state_key::pending_rolled_up_notes(), payloads);
+        self.object_put(state_key::pending_rolled_up_payloads(), payloads);
     }
 
-    async fn pending_note_payloads(&self) -> im::Vector<(tct::Position, NotePayload, NoteSource)> {
+    fn pending_note_payloads(&self) -> im::Vector<(tct::Position, NotePayload, CommitmentSource)> {
         self.object_get(state_key::pending_notes())
             .unwrap_or_default()
     }
 
-    async fn pending_rolled_up_payloads(&self) -> im::Vector<(tct::Position, StateCommitment)> {
-        self.object_get(state_key::pending_rolled_up_notes())
+    fn pending_rolled_up_payloads(&self) -> im::Vector<(tct::Position, StateCommitment)> {
+        self.object_get(state_key::pending_rolled_up_payloads())
             .unwrap_or_default()
     }
 
+    // TODO: move to SCT
     #[instrument(skip(self, source))]
-    async fn spend_nullifier(&mut self, nullifier: Nullifier, source: NoteSource) {
+    async fn spend_nullifier(&mut self, nullifier: Nullifier, source: CommitmentSource) {
         tracing::debug!("marking as spent");
 
         // We need to record the nullifier as spent in the JMT (to prevent
@@ -129,8 +130,10 @@ pub trait NoteManager: StateWrite {
             state_key::spent_nullifier_lookup(&nullifier),
             // We don't use the value for validity checks, but writing the source
             // here lets us find out what transaction spent the nullifier.
-            SpendInfo {
-                note_source: source,
+            NullificationInfo {
+                id: source
+                    .id()
+                    .expect("nullifiers are only consumed by transactions"),
                 spend_height: self.get_block_height().await.expect("block height is set"),
             },
         );

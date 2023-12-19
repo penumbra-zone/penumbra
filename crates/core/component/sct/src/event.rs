@@ -1,26 +1,39 @@
-use penumbra_proto::penumbra::core::component::sct::v1alpha1 as pb;
-use penumbra_tct::builder::{block, epoch};
+use penumbra_tct as tct;
+use tct::builder::{block, epoch};
 
-/// Create an event tracking the new global SCT anchor.
-pub fn sct_anchor(height: u64, anchor: penumbra_tct::Root) -> pb::EventRootAnchor {
-    pb::EventRootAnchor {
-        height: height.into(),
-        root_anchor: Some(anchor.into()),
+use penumbra_proto::core::component::sct::v1alpha1 as pb;
+
+use crate::CommitmentSource;
+
+pub fn anchor(height: u64, anchor: tct::Root) -> pb::EventAnchor {
+    pb::EventAnchor {
+        height,
+        anchor: Some(anchor.into()),
     }
 }
 
-/// Create an event tracking the new SCT anchor for the epoch subtree.
-pub fn sct_epoch_anchor(index: u64, anchor: epoch::Root) -> pb::EventEpochAnchor {
-    pb::EventEpochAnchor {
-        index: index.into(),
-        epoch_anchor: Some(anchor.into()),
+pub fn block_root(height: u64, root: block::Root) -> pb::EventBlockRoot {
+    pb::EventBlockRoot {
+        height,
+        root: Some(root.into()),
     }
 }
 
-/// Create an event tracking the new SCT anchor for the block subtree.
-pub fn sct_block_anchor(height: u64, anchor: block::Root) -> pb::EventBlockAnchor {
-    pb::EventBlockAnchor {
-        height: height.into(),
-        block_anchor: Some(anchor.into()),
+pub fn epoch_root(index: u64, root: epoch::Root) -> pb::EventEpochRoot {
+    pb::EventEpochRoot {
+        index,
+        root: Some(root.into()),
+    }
+}
+
+pub fn commitment(
+    commitment: tct::StateCommitment,
+    position: tct::Position,
+    source: CommitmentSource,
+) -> pb::EventCommitment {
+    pb::EventCommitment {
+        commitment: Some(commitment.into()),
+        position: position.into(),
+        source: Some(source.into()),
     }
 }

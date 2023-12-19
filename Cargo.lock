@@ -5167,6 +5167,7 @@ dependencies = [
  "penumbra-keys",
  "penumbra-num",
  "penumbra-proto",
+ "penumbra-sct",
  "penumbra-shielded-pool",
  "prost",
  "serde",

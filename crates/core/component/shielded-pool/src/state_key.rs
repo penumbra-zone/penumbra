@@ -25,8 +25,8 @@ pub fn pending_notes() -> &'static str {
     "shielded_pool/pending_notes"
 }
 
-pub fn pending_rolled_up_notes() -> &'static str {
-    "shielded_pool/pending_rolled_up_notes"
+pub fn pending_rolled_up_payloads() -> &'static str {
+    "shielded_pool/pending_rolled_up_payloads"
 }
 
 pub fn pending_nullifiers() -> &'static str {

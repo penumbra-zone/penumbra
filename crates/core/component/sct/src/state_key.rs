@@ -41,3 +41,7 @@ pub fn note_source(note_commitment: &StateCommitment) -> String {
 pub fn cached_state_commitment_tree() -> &'static str {
     "sct/cached_state_commitment_tree"
 }
+
+pub fn current_source() -> &'static str {
+    "sct/current_source"
+}

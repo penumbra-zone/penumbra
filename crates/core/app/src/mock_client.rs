@@ -105,7 +105,7 @@ impl MockClient {
                         }
                     }
                 }
-                StatePayload::RolledUp(commitment) => {
+                StatePayload::RolledUp { commitment, .. } => {
                     if self.notes.contains_key(&commitment) {
                         // This is a note we anticipated, so retain its auth path.
                         self.sct.insert(Keep, commitment)?;

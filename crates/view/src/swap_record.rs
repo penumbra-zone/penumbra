@@ -1,7 +1,6 @@
-use penumbra_chain::NoteSource;
 use penumbra_dex::{swap::SwapPlaintext, BatchSwapOutputData};
 use penumbra_proto::{view::v1alpha1 as pb, DomainType};
-use penumbra_sct::Nullifier;
+use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_tct as tct;
 
 use r2d2_sqlite::rusqlite::Row;
@@ -16,7 +15,7 @@ pub struct SwapRecord {
     pub nullifier: Nullifier,
     pub output_data: BatchSwapOutputData,
     pub height_claimed: Option<u64>,
-    pub source: NoteSource,
+    pub source: CommitmentSource,
 }
 impl DomainType for SwapRecord {
     type Proto = pb::SwapRecord;
@@ -79,7 +78,7 @@ impl TryFrom<&Row<'_>> for SwapRecord {
             position: row.get::<_, u64>("position")?.into(),
             nullifier: row.get::<_, Vec<u8>>("nullifier")?[..].try_into()?,
             output_data: BatchSwapOutputData::decode(&row.get::<_, Vec<u8>>("output_data")?[..])?,
-            source: row.get::<_, Vec<u8>>("source")?[..].try_into()?,
+            source: CommitmentSource::decode(&row.get::<_, Vec<u8>>("source")?[..])?,
             swap: SwapPlaintext::decode(&row.get::<_, Vec<u8>>("swap")?[..])?,
         })
     }

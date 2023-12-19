@@ -83,19 +83,18 @@ trait Inner: StateWrite {
         // Pull out all the pending state payloads (note and swap)
         let note_payloads = self
             .pending_note_payloads()
-            .await
             .into_iter()
-            .map(|(pos, note, source)| (pos, (note, source).into()));
+            // Strip the sources of transaction IDs
+            .map(|(pos, note, source)| (pos, (note, source.stripped()).into()));
         let rolled_up_payloads = self
             .pending_rolled_up_payloads()
-            .await
             .into_iter()
             .map(|(pos, commitment)| (pos, commitment.into()));
         let swap_payloads = self
             .pending_swap_payloads()
-            .await
             .into_iter()
-            .map(|(pos, swap, source)| (pos, (swap, source).into()));
+            // Strip the sources of transaction IDs
+            .map(|(pos, swap, source)| (pos, (swap, source.stripped()).into()));
 
         // Sort the payloads by position and put them in the compact block
         let mut state_payloads = note_payloads
