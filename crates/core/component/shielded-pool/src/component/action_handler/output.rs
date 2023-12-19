@@ -6,6 +6,7 @@ use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
 use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
 use penumbra_proto::StateWriteProto as _;
+use penumbra_sct::component::SourceContext;
 
 use crate::{component::NoteManager, event, Output};
 
@@ -30,7 +31,7 @@ impl ActionHandler for Output {
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let source = state
-            .object_get("source")
+            .get_current_source()
             .expect("source should be set during execution");
 
         state
