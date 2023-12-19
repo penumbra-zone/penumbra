@@ -5,6 +5,16 @@ use penumbra_tct::{
     Root, StateCommitment,
 };
 
+use crate::Nullifier;
+
+pub fn spent_nullifier_lookup(nullifier: &Nullifier) -> String {
+    format!("sct/nf/{nullifier}")
+}
+
+pub fn pending_nullifiers() -> &'static str {
+    "sct/pending_nullifiers"
+}
+
 pub fn anchor_by_height(height: u64) -> String {
     format!("sct/anchor/{height}")
 }

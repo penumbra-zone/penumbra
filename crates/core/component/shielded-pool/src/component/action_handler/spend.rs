@@ -7,12 +7,9 @@ use cnidarium_component::ActionHandler;
 use penumbra_chain::TransactionContext;
 use penumbra_proof_params::SPEND_PROOF_VERIFICATION_KEY;
 use penumbra_proto::StateWriteProto as _;
-use penumbra_sct::component::SourceContext;
+use penumbra_sct::component::{SctManager, SourceContext, StateReadExt as _};
 
-use crate::{
-    component::{NoteManager, StateReadExt},
-    event, Spend,
-};
+use crate::{event, Spend};
 
 #[async_trait]
 impl ActionHandler for Spend {
@@ -50,7 +47,7 @@ impl ActionHandler for Spend {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let source = state.get_current_source().expect("source should be set");
 
-        state.spend_nullifier(self.body.nullifier, source).await;
+        state.nullify(self.body.nullifier, source).await;
 
         // Also record an ABCI event for transaction indexing.
         state.record_proto(event::spend(&self.body.nullifier));

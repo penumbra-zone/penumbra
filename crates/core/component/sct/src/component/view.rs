@@ -5,10 +5,11 @@ use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_tct as tct;
 use tct::builder::{block, epoch};
+use tracing::instrument;
 
 // TODO: make epoch management the responsibility of this component
 
-use crate::{event, state_key, CommitmentSource};
+use crate::{event, state_key, CommitmentSource, NullificationInfo, Nullifier};
 
 /// A helper trait for placing a `CommitmentSource` as ambient context during execution.
 #[async_trait]
@@ -76,12 +77,61 @@ pub trait StateReadExt: StateRead {
             ))
         }
     }
+
+    async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
+        if let Some(info) = self
+            .get::<NullificationInfo>(&state_key::spent_nullifier_lookup(&nullifier))
+            .await?
+        {
+            anyhow::bail!(
+                "nullifier {} was already spent in {:?}",
+                nullifier,
+                hex::encode(&info.id),
+            );
+        }
+        Ok(())
+    }
+
+    async fn spend_info(&self, nullifier: Nullifier) -> Result<Option<NullificationInfo>> {
+        self.get(&state_key::spent_nullifier_lookup(&nullifier))
+            .await
+    }
+
+    fn pending_nullifiers(&self) -> im::Vector<Nullifier> {
+        self.object_get(state_key::pending_nullifiers())
+            .unwrap_or_default()
+    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 #[async_trait]
 pub trait SctManager: StateWrite {
+    #[instrument(skip(self, source))]
+    async fn nullify(&mut self, nullifier: Nullifier, source: CommitmentSource) {
+        tracing::debug!("marking as spent");
+
+        // We need to record the nullifier as spent in the JMT (to prevent
+        // double spends), as well as in the CompactBlock (so that clients
+        // can learn that their note was spent).
+        self.put(
+            state_key::spent_nullifier_lookup(&nullifier),
+            // We don't use the value for validity checks, but writing the source
+            // here lets us find out what transaction spent the nullifier.
+            NullificationInfo {
+                id: source
+                    .id()
+                    .expect("nullifiers are only consumed by transactions"),
+                spend_height: self.get_block_height().await.expect("block height is set"),
+            },
+        );
+
+        // Record the nullifier to be inserted into the compact block
+        let mut nullifiers = self.pending_nullifiers();
+        nullifiers.push_back(nullifier);
+        self.object_put(state_key::pending_nullifiers(), nullifiers);
+    }
+
     async fn add_sct_commitment(
         &mut self,
         commitment: tct::StateCommitment,

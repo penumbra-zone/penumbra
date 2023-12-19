@@ -2,11 +2,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use penumbra_asset::Value;
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_keys::Address;
-use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::{SctManager as _, StateReadExt as _};
-use penumbra_sct::{CommitmentSource, NullificationInfo, Nullifier};
+use penumbra_sct::CommitmentSource;
 use penumbra_tct as tct;
 use tct::StateCommitment;
 use tracing::instrument;
@@ -116,34 +114,6 @@ pub trait NoteManager: StateWrite {
     fn pending_rolled_up_payloads(&self) -> im::Vector<(tct::Position, StateCommitment)> {
         self.object_get(state_key::pending_rolled_up_payloads())
             .unwrap_or_default()
-    }
-
-    // TODO: move to SCT
-    #[instrument(skip(self, source))]
-    async fn spend_nullifier(&mut self, nullifier: Nullifier, source: CommitmentSource) {
-        tracing::debug!("marking as spent");
-
-        // We need to record the nullifier as spent in the JMT (to prevent
-        // double spends), as well as in the CompactBlock (so that clients
-        // can learn that their note was spent).
-        self.put(
-            state_key::spent_nullifier_lookup(&nullifier),
-            // We don't use the value for validity checks, but writing the source
-            // here lets us find out what transaction spent the nullifier.
-            NullificationInfo {
-                id: source
-                    .id()
-                    .expect("nullifiers are only consumed by transactions"),
-                spend_height: self.get_block_height().await.expect("block height is set"),
-            },
-        );
-
-        // Record the nullifier to be inserted into the compact block
-        let mut nullifiers: im::Vector<Nullifier> = self
-            .object_get(state_key::pending_nullifiers())
-            .unwrap_or_default();
-        nullifiers.push_back(nullifier);
-        self.object_put(state_key::pending_nullifiers(), nullifiers);
     }
 }
 
