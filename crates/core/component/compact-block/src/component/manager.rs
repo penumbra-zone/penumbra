@@ -3,12 +3,13 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use penumbra_chain::component::StateReadExt as _;
+use penumbra_dex::component::StateReadExt;
 use penumbra_dex::component::SwapManager as _;
 use penumbra_fee::component::StateReadExt as _;
 use penumbra_governance::StateReadExt as _;
 use penumbra_proto::DomainType;
 use penumbra_sct::component::SctManager as _;
-use penumbra_sct::component::StateReadExt;
+use penumbra_sct::component::StateReadExt as _;
 use penumbra_shielded_pool::component::NoteManager as _;
 use tracing::instrument;
 
@@ -109,11 +110,7 @@ trait Inner: StateWrite {
             .collect();
 
         // Gather the swap outputs
-        let swap_outputs = self
-            .object_get::<im::OrdMap<_, _>>(penumbra_dex::state_key::pending_outputs())
-            .unwrap_or_default()
-            .into_iter()
-            .collect();
+        let swap_outputs = self.pending_batch_swap_outputs().into_iter().collect();
 
         // Add all the pending nullifiers to the compact block
         let nullifiers = self.pending_nullifiers().into_iter().collect();
