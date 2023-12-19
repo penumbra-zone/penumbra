@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_chain::NoteSource;
+use penumbra_sct::{component::SourceContext as _, CommitmentSource};
 use penumbra_transaction::Transaction;
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
@@ -87,8 +87,10 @@ impl ActionHandler for Transaction {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // While we have access to the full Transaction, hash it to
         // obtain a NoteSource we can cache for various actions.
-        let source = NoteSource::Transaction { id: self.id().0 };
-        state.object_put("source", source);
+        let source = CommitmentSource::Transaction {
+            id: Some(self.id().0),
+        };
+        state.put_current_source(Some(source));
 
         for (i, action) in self.actions().enumerate() {
             let span = action.create_span(i);
@@ -96,7 +98,7 @@ impl ActionHandler for Transaction {
         }
 
         // Delete the note source, in case someone else tries to read it.
-        state.object_delete("source");
+        state.put_current_source(None);
 
         Ok(())
     }

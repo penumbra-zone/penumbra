@@ -1412,7 +1412,7 @@ impl Storage {
                 let address_index = note_record.address_index.to_bytes().to_vec();
                 let nullifier = note_record.nullifier.to_bytes().to_vec();
                 let position = (u64::from(note_record.position)) as i64;
-                let source = note_record.source.to_bytes().to_vec();
+                let source = note_record.source.encode_to_vec();
 
                 // Record the inner note data in the notes table
 
@@ -1440,7 +1440,7 @@ impl Storage {
                 let swap_bytes = swap.swap.encode_to_vec();
                 let position = (u64::from(swap.position)) as i64;
                 let nullifier = swap.nullifier.to_bytes().to_vec();
-                let source = swap.source.to_bytes().to_vec();
+                let source = swap.source.encode_to_vec();
                 let output_data = swap.output_data.encode_to_vec();
 
                 dbtx.execute(

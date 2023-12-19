@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
-use penumbra_chain::NoteSource;
+use penumbra_sct::CommitmentSource;
 use penumbra_shielded_pool::component::NoteManager;
 
 use crate::DaoOutput;
@@ -25,7 +25,7 @@ impl ActionHandler for DaoOutput {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // Executing a DAO output is just minting a note to the recipient of the output.
         state
-            .mint_note(self.value, &self.address, NoteSource::DaoOutput)
+            .mint_note(self.value, &self.address, CommitmentSource::DaoOutput)
             .await
     }
 }

@@ -1,9 +1,8 @@
 use anyhow::Result;
 use colored_json::prelude::*;
-use penumbra_chain::{NoteSource, SpendInfo};
 use penumbra_compact_block::CompactBlock;
 use penumbra_proto::DomainType;
-use penumbra_sct::Nullifier;
+use penumbra_sct::{CommitmentSource, NullificationInfo, Nullifier};
 use penumbra_tct::StateCommitment;
 
 #[derive(Debug, clap::Subcommand)]
@@ -73,11 +72,11 @@ impl ShieldedPool {
                 serde_json::to_string_pretty(&compact_block)?
             }
             ShieldedPool::Commitment { .. } => {
-                let note_source = NoteSource::decode(bytes)?;
-                serde_json::to_string_pretty(&note_source)?
+                let commitment_source = CommitmentSource::decode(bytes)?;
+                serde_json::to_string_pretty(&commitment_source)?
             }
             ShieldedPool::Nullifier { .. } => {
-                let note_source = SpendInfo::decode(bytes)?;
+                let note_source = NullificationInfo::decode(bytes)?;
                 serde_json::to_string_pretty(&note_source)?
             }
         };

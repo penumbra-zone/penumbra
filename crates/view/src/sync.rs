@@ -1,11 +1,11 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use penumbra_chain::{params::FmdParameters, NoteSource};
+use penumbra_chain::params::FmdParameters;
 use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_dex::swap::{SwapPayload, SwapPlaintext};
 use penumbra_fee::GasPrices;
 use penumbra_keys::FullViewingKey;
-use penumbra_sct::Nullifier;
+use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_shielded_pool::{Note, NotePayload};
 use penumbra_tct as tct;
 use tracing::Instrument;
@@ -27,19 +27,19 @@ pub struct FilteredBlock {
 impl FilteredBlock {
     pub fn inbound_transaction_ids(&self) -> BTreeSet<[u8; 32]> {
         let mut ids = BTreeSet::new();
-        let sources: Vec<NoteSource> = self
+
+        for source in self
             .new_notes
             .clone()
             .iter()
-            .map(|n| n.source)
-            .chain(self.new_swaps.iter().map(|n| n.source))
-            .collect();
-
-        for source in sources {
-            if let NoteSource::Transaction { id } = source {
-                ids.insert(id);
+            .map(|n| &n.source)
+            .chain(self.new_swaps.iter().map(|n| &n.source))
+        {
+            if let CommitmentSource::Transaction { id: Some(id) } = source {
+                ids.insert(*id);
             }
         }
+
         ids
     }
 }
@@ -101,7 +101,7 @@ pub async fn scan_block(
             StatePayload::Swap { swap, .. } => {
                 swap_decryptions.push(trial_decrypt_swap((**swap).clone()));
             }
-            StatePayload::RolledUp(commitment) => unknown_commitments.push(*commitment),
+            StatePayload::RolledUp { commitment, .. } => unknown_commitments.push(*commitment),
         }
     }
     // Having started trial decryption in the background, ask the Storage for scanning advice:
@@ -153,7 +153,7 @@ pub async fn scan_block(
                         .insert(tct::Witness::Keep, *payload.commitment())
                         .expect("inserting a commitment must succeed");
 
-                    let source = payload.source().cloned().unwrap_or_default();
+                    let source = payload.source().clone();
                     let nullifier =
                         Nullifier::derive(fvk.nullifier_key(), position, payload.commitment());
                     let address_index = fvk.incoming().index_for_diversifier(note.diversifier());
@@ -192,7 +192,7 @@ pub async fn scan_block(
                     storage.give_advice(output_1).await?;
                     storage.give_advice(output_2).await?;
 
-                    let source = payload.source().cloned().unwrap_or_default();
+                    let source = payload.source().clone();
                     let nullifier =
                         Nullifier::derive(fvk.nullifier_key(), position, payload.commitment());
 

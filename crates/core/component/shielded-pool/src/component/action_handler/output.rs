@@ -29,7 +29,9 @@ impl ActionHandler for Output {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        let source = state.object_get("source").unwrap_or_default();
+        let source = state
+            .object_get("source")
+            .expect("source should be set during execution");
 
         state
             .add_note_payload(self.body.note_payload.clone(), source)

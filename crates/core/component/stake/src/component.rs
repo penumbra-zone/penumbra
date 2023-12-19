@@ -19,7 +19,7 @@ use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
 use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::{
     component::{StateReadExt as _, StateWriteExt as _},
-    Epoch, NoteSource,
+    Epoch,
 };
 use penumbra_dao::component::StateWriteExt as _;
 
@@ -30,6 +30,7 @@ use penumbra_proto::{
     state::future::{DomainFuture, ProtoFuture},
     StateReadProto, StateWriteProto,
 };
+use penumbra_sct::CommitmentSource;
 use penumbra_shielded_pool::{
     component::{NoteManager, SupplyRead, SupplyWrite},
     genesis::Content as ShieldedPoolGenesisContent,
@@ -501,7 +502,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                                     asset_id: *STAKING_TOKEN_ASSET_ID,
                                 },
                                 &address,
-                                NoteSource::FundingStreamReward {
+                                CommitmentSource::FundingStreamReward {
                                     epoch_index: epoch_to_end.index,
                                 },
                             )

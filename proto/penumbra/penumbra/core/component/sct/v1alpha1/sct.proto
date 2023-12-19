@@ -4,46 +4,86 @@ package penumbra.core.component.sct.v1alpha1;
 import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/crypto/tct/v1alpha1/tct.proto";
 
+// Metadata describing the source of a commitment in the state commitment tree.
+//
+// This message allows clients to track provenance of state commitments, and to
+// decide whether or not to download block data.
+message CommitmentSource {
+  // The state commitment was included in the genesis state.
+  message Genesis { }
+  // The commitment was created by a transaction.
+  //
+  // When included in a `CompactBlock` via a `StatePayload`, the transaction source is "dehydrated"
+  // by stripping the `id` field and putting empty bytes in its place.  When clients perform extended
+  // transaction fetch, they should match up transaction hashes to "rehydrate" the source info.
+  message Transaction {
+    // The transaction ID, if specified.
+    //
+    // This field may be omitted to save space, and should not be required to be present.
+    // If the bytes are missing, the message should be interpreted as "Transaction (Unknown)".
+    bytes id = 1;
+  }
+  // The commitment was created through a validator's funding stream.
+  message FundingStreamReward {
+    // The epoch index the rewards were issued in.
+    uint64 epoch_index = 1;
+  }
+  // The commitment was created through a `DaoOutput` in a governance-initated transaction.
+  message DaoOutput { }
+  // The commitment was created by an inbound ICS20 transfer.
+  message Ics20Transfer {
+    // The sequence number of the packet that triggered the transfer
+    uint64 packet_seq = 1;
+    // The channel id the transfer happened on
+    string channel_id = 2;
+    // The sender address on the counterparty chain
+    string sender = 3;
+  }
+  oneof source {
+    Transaction transaction = 1;
+    Ics20Transfer ics_20_transfer = 2;
+    FundingStreamReward funding_stream_reward = 20;
+    DaoOutput dao_output = 30;
+    Genesis genesis = 40;
+  }
+}
+
 message Nullifier {
   bytes inner = 1;
 }
 
+// Records information about what transaction spent a nullifier.
+message NullificationInfo {
+  bytes id = 1;
+  uint64 spend_height = 2;
+}
+
+// Event recording a new commitment added to the SCT.
+message EventCommitment {
+  crypto.tct.v1alpha1.StateCommitment commitment = 1;
+  uint64 position = 2;
+  CommitmentSource source = 3;
+}
+
+// Event recording an SCT anchor (global root).
+message EventAnchor {
+  crypto.tct.v1alpha1.MerkleRoot anchor = 1;
+  uint64 height = 2;
+}
+
+// Event recording an SCT epoch root.
+message EventEpochRoot {
+  crypto.tct.v1alpha1.MerkleRoot root = 1;
+  uint64 index = 2;
+}
+
+// Event recording an SCT block root.
+message EventBlockRoot {
+  crypto.tct.v1alpha1.MerkleRoot root = 1;
+  uint64 height = 2;
+}
+
 // Query operations for the SCT component.
 service QueryService {
-  // TODO: change to generic tx-by-commitment
-  rpc TransactionByNote(TransactionByNoteRequest) returns (TransactionByNoteResponse);
 }
 
-message TransactionByNoteRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
-  crypto.tct.v1alpha1.StateCommitment note_commitment = 2;
-}
-
-message TransactionByNoteResponse {
-  core.component.chain.v1alpha1.NoteSource note_source = 1;
-}
-
-// The global SCT root at the given height.
-message EventRootAnchor {
-  // The height of the block
-  uint64 height = 1;
-  // The root hash of a note commitment tree.
-  crypto.tct.v1alpha1.MerkleRoot root_anchor = 2;
-}
-
-// The root of the epoch subtree at the given height.
-message EventEpochAnchor {
-  // The epoch index.
-  uint64 index = 1;
-  // The root hash of an epoch.
-  crypto.tct.v1alpha1.MerkleRoot epoch_anchor = 2;
-}
-
-// The root of the block subtree at the given height.
-message EventBlockAnchor {
-  // The height of the block.
-  uint64 height = 1;
-  // The root hash of a block.
-  crypto.tct.v1alpha1.MerkleRoot block_anchor = 2;
-}

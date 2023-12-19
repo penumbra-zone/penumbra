@@ -517,8 +517,8 @@ message SpendableNoteRecord {
   uint64 height_spent = 6;
   // The note position.
   uint64 position = 7;
-  // The source of the note (a tx hash or otherwise)
-  core.component.chain.v1alpha1.NoteSource source = 8;
+  // The source of the note
+  core.component.sct.v1alpha1.CommitmentSource source = 8;
 }
 
 message SwapRecord {
@@ -528,7 +528,7 @@ message SwapRecord {
   core.component.sct.v1alpha1.Nullifier nullifier = 4;
   core.component.dex.v1alpha1.BatchSwapOutputData output_data = 5;
   uint64 height_claimed = 6;
-  core.component.chain.v1alpha1.NoteSource source = 7;
+  core.component.sct.v1alpha1.CommitmentSource source = 7;
 }
 
 message OwnedPositionIdsRequest {

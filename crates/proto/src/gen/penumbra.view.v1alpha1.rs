@@ -1138,10 +1138,10 @@ pub struct SpendableNoteRecord {
     /// The note position.
     #[prost(uint64, tag = "7")]
     pub position: u64,
-    /// The source of the note (a tx hash or otherwise)
+    /// The source of the note
     #[prost(message, optional, tag = "8")]
     pub source: ::core::option::Option<
-        super::super::core::component::chain::v1alpha1::NoteSource,
+        super::super::core::component::sct::v1alpha1::CommitmentSource,
     >,
 }
 impl ::prost::Name for SpendableNoteRecord {
@@ -1176,7 +1176,7 @@ pub struct SwapRecord {
     pub height_claimed: u64,
     #[prost(message, optional, tag = "7")]
     pub source: ::core::option::Option<
-        super::super::core::component::chain::v1alpha1::NoteSource,
+        super::super::core::component::sct::v1alpha1::CommitmentSource,
     >,
 }
 impl ::prost::Name for SwapRecord {

@@ -1,14 +1,32 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_chain::{component::StateReadExt as _, NoteSource};
+use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_tct as tct;
 use tct::builder::{block, epoch};
 
 // TODO: make epoch management the responsibility of this component
 
-use crate::{event, state_key};
+use crate::{event, state_key, CommitmentSource};
+
+/// A helper trait for placing a `CommitmentSource` as ambient context during execution.
+#[async_trait]
+pub trait SourceContext: StateWrite {
+    fn put_current_source(&mut self, source: Option<CommitmentSource>) {
+        if let Some(source) = source {
+            self.object_put(state_key::current_source(), source)
+        } else {
+            self.object_delete(state_key::current_source())
+        }
+    }
+
+    fn get_current_source(&self) -> Option<CommitmentSource> {
+        self.object_get(state_key::current_source())
+    }
+}
+
+impl<T: StateWrite + ?Sized> SourceContext for T {}
 
 /// This trait provides read access to common parts of the Penumbra
 /// state store.
@@ -18,10 +36,6 @@ use crate::{event, state_key};
 //#[async_trait(?Send)]
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    async fn note_source(&self, commitment: tct::StateCommitment) -> Result<Option<NoteSource>> {
-        self.get(&state_key::note_source(&commitment)).await
-    }
-
     async fn state_commitment_tree(&self) -> tct::Tree {
         // If we have a cached tree, use that.
         if let Some(tree) = self.object_get(state_key::cached_state_commitment_tree()) {
@@ -71,17 +85,15 @@ pub trait SctManager: StateWrite {
     async fn add_sct_commitment(
         &mut self,
         commitment: tct::StateCommitment,
-        source: Option<NoteSource>,
+        source: CommitmentSource,
     ) -> Result<tct::Position> {
         // Record in the SCT
         let mut tree = self.state_commitment_tree().await;
         let position = tree.insert(tct::Witness::Forget, commitment)?;
         self.put_state_commitment_tree(tree);
 
-        // Record the note source, if any
-        if let Some(source) = source {
-            self.put(state_key::note_source(&commitment), source);
-        }
+        // Record the commitment source in an event
+        self.record_proto(event::commitment(commitment, position, source));
 
         Ok(position)
     }
@@ -146,30 +158,6 @@ trait StateWriteExt: StateWrite {
         }
     }
 
-    fn set_sct_anchor(&mut self, height: u64, sct_anchor: tct::Root) {
-        tracing::debug!(?height, ?sct_anchor, "writing anchor");
-
-        self.record_proto(event::sct_anchor(height, sct_anchor));
-        self.put(state_key::anchor_by_height(height), sct_anchor);
-        self.put_proto(state_key::anchor_lookup(sct_anchor), height);
-    }
-
-    fn set_sct_block_anchor(&mut self, height: u64, sct_block_anchor: block::Root) {
-        tracing::debug!(?height, ?sct_block_anchor, "writing block anchor");
-
-        self.record_proto(event::sct_block_anchor(height, sct_block_anchor));
-        self.put(state_key::block_anchor_by_height(height), sct_block_anchor);
-        self.put_proto(state_key::block_anchor_lookup(sct_block_anchor), height);
-    }
-
-    fn set_sct_epoch_anchor(&mut self, index: u64, sct_epoch_anchor: epoch::Root) {
-        tracing::debug!(?index, ?sct_epoch_anchor, "writing epoch anchor");
-
-        self.record_proto(event::sct_epoch_anchor(index, sct_epoch_anchor));
-        self.put(state_key::epoch_anchor_by_index(index), sct_epoch_anchor);
-        self.put_proto(state_key::epoch_anchor_lookup(sct_epoch_anchor), index);
-    }
-
     async fn write_sct(
         &mut self,
         height: u64,
@@ -177,13 +165,20 @@ trait StateWriteExt: StateWrite {
         block_root: block::Root,
         epoch_root: Option<epoch::Root>,
     ) {
-        self.set_sct_anchor(height, sct.root());
+        let sct_anchor = sct.root();
 
-        self.set_sct_block_anchor(height, block_root);
+        // Write the anchor as a key, so we can check claimed anchors...
+        self.put_proto(state_key::anchor_lookup(sct_anchor), height);
+        // ... and as a value, so we can check SCT consistency.
+        // TODO: can we move this out to NV storage?
+        self.put(state_key::anchor_by_height(height), sct_anchor);
 
+        self.record_proto(event::anchor(height, sct_anchor));
+        self.record_proto(event::block_root(height, block_root));
+        // Only record an epoch root event if we are ending the epoch.
         if let Some(epoch_root) = epoch_root {
             let index = self.epoch().await.expect("epoch must be set").index;
-            self.set_sct_epoch_anchor(index, epoch_root);
+            self.record_proto(event::epoch_root(index, epoch_root));
         }
 
         self.put_state_commitment_tree(sct);

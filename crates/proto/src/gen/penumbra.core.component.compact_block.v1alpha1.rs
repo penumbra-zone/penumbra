@@ -49,10 +49,15 @@ impl ::prost::Name for CompactBlock {
         )
     }
 }
+/// An encrypted payload, corresponding to a single commitment in the state commitment tree.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatePayload {
-    #[prost(oneof = "state_payload::StatePayload", tags = "1, 2, 3")]
+    /// The source of the payload, if known.
+    #[prost(message, optional, tag = "1")]
+    pub source: ::core::option::Option<super::super::sct::v1alpha1::CommitmentSource>,
+    /// The state payload itself.
+    #[prost(oneof = "state_payload::StatePayload", tags = "2, 3, 4")]
     pub state_payload: ::core::option::Option<state_payload::StatePayload>,
 }
 /// Nested message and enum types in `StatePayload`.
@@ -78,10 +83,6 @@ pub mod state_payload {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Note {
-        #[prost(message, optional, tag = "1")]
-        pub source: ::core::option::Option<
-            super::super::super::chain::v1alpha1::NoteSource,
-        >,
         #[prost(message, optional, tag = "2")]
         pub note: ::core::option::Option<
             super::super::super::shielded_pool::v1alpha1::NotePayload,
@@ -100,10 +101,6 @@ pub mod state_payload {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Swap {
-        #[prost(message, optional, tag = "1")]
-        pub source: ::core::option::Option<
-            super::super::super::chain::v1alpha1::NoteSource,
-        >,
         #[prost(message, optional, tag = "2")]
         pub swap: ::core::option::Option<
             super::super::super::dex::v1alpha1::SwapPayload,
@@ -119,14 +116,15 @@ pub mod state_payload {
             )
         }
     }
+    /// The state payload itself.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum StatePayload {
-        #[prost(message, tag = "1")]
-        RolledUp(RolledUp),
         #[prost(message, tag = "2")]
-        Note(Note),
+        RolledUp(RolledUp),
         #[prost(message, tag = "3")]
+        Note(Note),
+        #[prost(message, tag = "4")]
         Swap(Swap),
     }
 }
