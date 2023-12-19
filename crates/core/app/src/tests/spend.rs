@@ -10,6 +10,7 @@ use penumbra_compact_block::component::CompactBlockManager;
 use penumbra_fee::Fee;
 use penumbra_keys::{test_keys, PayloadKey};
 use penumbra_num::Amount;
+use penumbra_sct::component::SourceContext;
 use penumbra_shielded_pool::{component::ShieldedPool, SpendPlan};
 use penumbra_transaction::{AuthorizingData, Transaction, TransactionBody, TransactionParameters};
 use rand_core::SeedableRng;
@@ -61,6 +62,7 @@ async fn spend_happy_path() -> anyhow::Result<()> {
     spend.check_stateless(transaction_context).await?;
     spend.check_stateful(state.clone()).await?;
     let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_mock_source(1u8);
     spend.execute(&mut state_tx).await?;
     state_tx.apply();
 
@@ -141,6 +143,7 @@ async fn spend_duplicate_nullifier_previous_transaction() {
         .await
         .expect("can apply first spend");
     let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_mock_source(1u8);
     spend
         .execute(&mut state_tx)
         .await
@@ -165,6 +168,7 @@ async fn spend_duplicate_nullifier_previous_transaction() {
         .expect("check stateless should succeed");
     spend.check_stateful(state.clone()).await.unwrap();
     let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_mock_source(2u8);
     spend.execute(&mut state_tx).await.unwrap();
     state_tx.apply();
 }

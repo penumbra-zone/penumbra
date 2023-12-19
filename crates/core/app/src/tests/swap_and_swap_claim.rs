@@ -1,5 +1,6 @@
 use ark_ff::UniformRand;
 use penumbra_compact_block::component::CompactBlockManager as _;
+use penumbra_sct::component::SourceContext as _;
 use std::{ops::Deref, sync::Arc};
 
 use crate::{MockClient, TempStorageExt};
@@ -67,6 +68,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     swap.check_stateless(()).await?;
     swap.check_stateful(state.clone()).await?;
     let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_mock_source(1u8);
     swap.execute(&mut state_tx).await?;
     state_tx.apply();
 
@@ -125,6 +127,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     claim.check_stateless(context.clone()).await?;
     claim.check_stateful(state.clone()).await?;
     let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_mock_source(2u8);
     claim.execute(&mut state_tx).await?;
     state_tx.apply();
 
@@ -181,6 +184,7 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
     swap.check_stateless(()).await.unwrap();
     swap.check_stateful(state.clone()).await.unwrap();
     let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_mock_source(1u8);
     swap.execute(&mut state_tx).await.unwrap();
     state_tx.apply();
 
@@ -237,6 +241,7 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
     claim.check_stateless(context.clone()).await.unwrap();
     claim.check_stateful(state.clone()).await.unwrap();
     let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_mock_source(2u8);
     claim.execute(&mut state_tx).await.unwrap();
     state_tx.apply();
 
@@ -299,6 +304,7 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
     swap.check_stateless(()).await?;
     swap.check_stateful(state.clone()).await?;
     let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_mock_source(1u8);
     swap.execute(&mut state_tx).await?;
     state_tx.apply();
 

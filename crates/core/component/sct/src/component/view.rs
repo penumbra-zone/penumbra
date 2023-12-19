@@ -25,6 +25,15 @@ pub trait SourceContext: StateWrite {
     fn get_current_source(&self) -> Option<CommitmentSource> {
         self.object_get(state_key::current_source())
     }
+
+    /// Sets a mock source, for testing.
+    ///
+    /// The `counter` field allows distinguishing hashes at different stages of the test.
+    fn put_mock_source(&mut self, counter: u8) {
+        self.put_current_source(Some(CommitmentSource::Transaction {
+            id: Some([counter; 32]),
+        }))
+    }
 }
 
 impl<T: StateWrite + ?Sized> SourceContext for T {}
