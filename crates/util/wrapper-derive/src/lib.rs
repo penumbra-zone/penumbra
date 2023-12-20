@@ -101,7 +101,7 @@ pub fn state_write_derive(input: TokenStream) -> TokenStream {
                 .expect("struct must have one field")
                 .ty
         }
-        _ => panic!("StateRead can only be derived for structs"),
+        _ => panic!("StateWrite can only be derived for structs"),
     };
 
     let expanded = if is_arc_type(field_type) {
@@ -205,7 +205,7 @@ pub fn chain_state_read_ext(input: TokenStream) -> TokenStream {
                 .expect("struct must have one field")
                 .ty
         }
-        _ => panic!("StateRead can only be derived for structs"),
+        _ => panic!("ChainStateReadExt can only be derived for structs"),
     };
 
     let expanded = quote! {

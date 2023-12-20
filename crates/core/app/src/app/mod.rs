@@ -210,10 +210,6 @@ impl App {
         }
 
         // Run each of the begin block handlers for each component, in sequence.
-        //
-        // note: IBC comes first due to [`StateDeltaWrapper`] not taking an `Arc`.
-        // if the ordering matters, this can be changed back (just need to update
-        // the derive macros)
         let mut arc_state_tx = Arc::new(state_tx);
         ShieldedPool::begin_block(&mut arc_state_tx, begin_block).await;
         Distributions::begin_block(&mut arc_state_tx, begin_block).await;

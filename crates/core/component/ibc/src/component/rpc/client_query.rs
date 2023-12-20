@@ -1,7 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateRead;
-use cnidarium_component::ChainStateReadExt;
 use ibc_proto::ibc::core::client::v1::query_server::Query as ClientQuery;
 use ibc_proto::ibc::core::client::v1::{
     Height, IdentifiedClientState, QueryClientParamsRequest, QueryClientParamsResponse,
@@ -27,31 +26,11 @@ use crate::IBC_COMMITMENT_PREFIX;
 
 use super::IbcQuery;
 
+// implemented automatically by [`SnapshotWrapper`]
+use penumbra_chain::component::StateReadExt as _;
+
 #[derive(wrapper_derive::StateRead)]
 struct SnapshotWrapper<S: StateRead>(S);
-
-#[async_trait]
-impl<S: StateRead + 'static> ChainStateReadExt for SnapshotWrapper<S> {
-    async fn get_chain_id(&self) -> Result<String> {
-        use penumbra_chain::component::StateReadExt as _;
-        self.0.get_chain_id().await
-    }
-
-    async fn get_revision_number(&self) -> Result<u64> {
-        use penumbra_chain::component::StateReadExt as _;
-        self.0.get_revision_number().await
-    }
-
-    async fn get_block_height(&self) -> Result<u64> {
-        use penumbra_chain::component::StateReadExt as _;
-        self.0.get_block_height().await
-    }
-
-    async fn get_block_timestamp(&self) -> Result<tendermint::Time> {
-        use penumbra_chain::component::StateReadExt as _;
-        self.0.get_block_timestamp().await
-    }
-}
 
 #[async_trait]
 impl ClientQuery for IbcQuery {

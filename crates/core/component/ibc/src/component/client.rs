@@ -391,27 +391,10 @@ mod tests {
         MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket, MsgTimeout,
     };
 
-    #[derive(wrapper_derive::StateRead, wrapper_derive::StateWrite)]
+    #[derive(
+        wrapper_derive::StateRead, wrapper_derive::StateWrite, wrapper_derive::ChainStateReadExt,
+    )]
     struct StateDeltaWrapper<'a, S: StateWrite>(&'a mut S);
-
-    #[async_trait]
-    impl<'a, S: StateRead + StateWrite> ChainStateReadExt for &'a mut StateDeltaWrapper<'a, S> {
-        async fn get_chain_id(&self) -> Result<String> {
-            self.0.get_chain_id().await
-        }
-
-        async fn get_revision_number(&self) -> Result<u64> {
-            self.0.get_revision_number().await
-        }
-
-        async fn get_block_height(&self) -> Result<u64> {
-            self.0.get_block_height().await
-        }
-
-        async fn get_block_timestamp(&self) -> Result<tendermint::Time> {
-            self.0.get_block_timestamp().await
-        }
-    }
 
     struct MockAppHandler {}
 
@@ -566,8 +549,9 @@ mod tests {
         create_client_action.check_stateless(()).await?;
         create_client_action.check_stateful(state.clone()).await?;
         let mut state_tx = state.try_begin_transaction().unwrap();
-        let mut wrapper = StateDeltaWrapper(&mut state_tx);
-        create_client_action.execute(&mut wrapper).await?;
+        create_client_action
+            .execute(StateDeltaWrapper(&mut state_tx))
+            .await?;
         state_tx.apply();
 
         // Check that state reflects +1 client apps registered.
@@ -578,7 +562,7 @@ mod tests {
         update_client_action.check_stateful(state.clone()).await?;
         let mut state_tx = state.try_begin_transaction().unwrap();
         update_client_action
-            .execute(&mut StateDeltaWrapper(&mut state_tx))
+            .execute(StateDeltaWrapper(&mut state_tx))
             .await?;
         state_tx.apply();
 
@@ -598,7 +582,7 @@ mod tests {
             .await?;
         let mut state_tx = state.try_begin_transaction().unwrap();
         second_update_client_action
-            .execute(&mut StateDeltaWrapper(&mut state_tx))
+            .execute(StateDeltaWrapper(&mut state_tx))
             .await?;
         state_tx.apply();
 
