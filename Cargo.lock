@@ -4954,6 +4954,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "wrapper-derive",
 ]
 
 [[package]]
@@ -5383,6 +5384,7 @@ dependencies = [
  "tonic",
  "tower",
  "tracing",
+ "wrapper-derive",
 ]
 
 [[package]]
@@ -9292,6 +9294,15 @@ checksum = "524e57b2c537c0f9b1e69f1965311ec12182b4122e45035b1508cd24d2adadb1"
 dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "wrapper-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2 1.0.70",
+ "quote 1.0.33",
+ "syn 1.0.109",
 ]
 
 [[package]]

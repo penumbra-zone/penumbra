@@ -15,7 +15,7 @@ component = [
 default = ["component", "std"]
 std = ["ibc-types/std"]
 docsrs = []
-rpc = ["dep:tonic", "dep:penumbra-chain", "ibc-proto/client", "ibc-proto/server"]
+rpc = ["dep:tonic", "dep:penumbra-chain", "dep:wrapper-derive", "ibc-proto/client", "ibc-proto/server"]
 
 [dependencies]
 # Workspace dependencies
@@ -25,6 +25,7 @@ cnidarium-component = { path = "../../../cnidarium-component", optional = true }
 penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-num = { path = "../../../core/num", default-features = false }
 penumbra-keys = { path = "../../../core/keys", default-features = false }
+wrapper-derive = { path = "../../../util/wrapper-derive", optional = true }
 
 penumbra-chain = { path = "../chain", default-features = false, optional = true }
 
@@ -57,3 +58,4 @@ tower = "0.4"
 [dev-dependencies]
 penumbra-chain = { path = "../chain", default-features = false }
 tokio = { version = "1.3", features = ["full"] }
+wrapper-derive = { path = "../../../util/wrapper-derive" }

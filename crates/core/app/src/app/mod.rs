@@ -29,6 +29,7 @@ use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
 use crate::params::AppParameters;
+use crate::state_delta_wrapper::StateDeltaWrapper;
 use crate::{genesis, DaoStateReadExt};
 
 pub mod state_key;
@@ -208,14 +209,16 @@ impl App {
             }
         }
 
-        use crate::state_delta_wrapper::StateDeltaWrapper;
-
-        // Run each of the begin block handlers for each component, in sequence:
+        // Run each of the begin block handlers for each component, in sequence.
+        //
+        // note: IBC comes first due to [`StateDeltaWrapper`] not taking an `Arc`.
+        // if the ordering matters, this can be changed back (just need to update
+        // the derive macros)
+        let mut wrapper = StateDeltaWrapper(&mut state_tx);
+        IBCComponent::begin_block(&mut wrapper, begin_block).await;
         let mut arc_state_tx = Arc::new(state_tx);
         ShieldedPool::begin_block(&mut arc_state_tx, begin_block).await;
         Distributions::begin_block(&mut arc_state_tx, begin_block).await;
-        let mut wrapper = StateDeltaWrapper(&mut arc_state_tx);
-        IBCComponent::begin_block(&mut wrapper, begin_block).await;
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
         Staking::begin_block(&mut arc_state_tx, begin_block).await;
         Fee::begin_block(&mut arc_state_tx, begin_block).await;

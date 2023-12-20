@@ -29,6 +29,7 @@ penumbra-ibc = { path = "../component/ibc", features = ["component"] }
 penumbra-distributions = { path = "../component/distributions" }
 penumbra-compact-block = { path = "../component/compact-block" }
 penumbra-transaction = { path = "../transaction", features = ["parallel"] }
+wrapper-derive = { path = "../../util/wrapper-derive" }
 
 # Penumbra dependencies
 decaf377 = { version = "0.5" }

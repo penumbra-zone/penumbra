@@ -47,6 +47,7 @@ members = [
   "crates/misc/tct-visualize",
   "crates/bench",
   "tools/summonerd",
+  "crates/util/wrapper-derive",
 ]
 
 # Optimize for small binaries in just the wasm crate.

@@ -111,7 +111,7 @@ impl ActionHandler for Action {
             Action::Spend(action) => action.execute(state).await,
             Action::Output(action) => action.execute(state).await,
             Action::IbcRelay(action) => {
-                let mut state = Arc::new(state);
+                let mut state = state;
                 let wrapper = StateDeltaWrapper(&mut state);
                 action
                     .clone()
