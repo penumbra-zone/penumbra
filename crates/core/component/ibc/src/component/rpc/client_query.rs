@@ -31,50 +31,6 @@ use cnidarium::StateRead;
 
 struct SnapshotWrapper<S: StateRead>(S);
 
-// impl<S: StateRead + StateWrite> StateWrite for StateDeltaWrapper<S> {
-//     fn put_raw(&mut self, key: String, value: Vec<u8>) {
-//         self.0.put_raw(key, value)
-//     }
-
-//     fn delete(&mut self, key: String) {
-//         self.0.delete(key)
-//     }
-
-//     fn nonverifiable_delete(&mut self, key: Vec<u8>) {
-//         self.0.nonverifiable_delete(key)
-//     }
-
-//     fn nonverifiable_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>) {
-//         self.0.nonverifiable_put_raw(key, value)
-//     }
-
-//     fn object_put<T: Clone + std::any::Any + Send + Sync>(
-//         &mut self,
-//         key: &'static str,
-//         value: T,
-//     ) {
-//         self.0.object_put(key, value)
-//     }
-
-//     fn object_delete(&mut self, key: &'static str) {
-//         self.0.object_delete(key)
-//     }
-
-//     fn object_merge(
-//         &mut self,
-//         objects: std::collections::BTreeMap<
-//             &'static str,
-//             Option<Box<dyn std::any::Any + Send + Sync>>,
-//         >,
-//     ) {
-//         self.0.object_merge(objects)
-//     }
-
-//     fn record(&mut self, event: tendermint::abci::Event) {
-//         self.0.record(event)
-//     }
-// }
-
 impl<S: StateRead> StateRead for SnapshotWrapper<S> {
     type GetRawFut = S::GetRawFut;
     type PrefixRawStream = S::PrefixRawStream;

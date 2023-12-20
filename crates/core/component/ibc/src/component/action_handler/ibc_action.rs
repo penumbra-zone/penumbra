@@ -1,9 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
-use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use cnidarium_component::ActionHandler;
 use cnidarium_component::ChainStateReadExt;
 
 use crate::{
@@ -12,8 +10,6 @@ use crate::{
 };
 
 impl<H: AppHandler> IbcActionWithHandler<H> {
-    //type CheckStatelessContext = ();
-
     pub async fn check_stateless(&self, _context: ()) -> Result<()> {
         let action = self.action();
         match action {

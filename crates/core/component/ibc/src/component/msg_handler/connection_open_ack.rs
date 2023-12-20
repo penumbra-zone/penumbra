@@ -7,7 +7,6 @@ use ibc_types::core::{
 };
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
-//use penumbra_chain::component::StateReadExt as _;
 use cnidarium_component::ChainStateReadExt;
 
 use crate::{

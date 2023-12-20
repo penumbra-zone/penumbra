@@ -10,6 +10,8 @@ use penumbra_transaction::Action;
 
 mod submit;
 
+use crate::state_delta_wrapper::StateDeltaWrapper;
+
 use super::ActionHandler;
 use cnidarium_component::ActionHandler as _;
 
@@ -109,10 +111,12 @@ impl ActionHandler for Action {
             Action::Spend(action) => action.execute(state).await,
             Action::Output(action) => action.execute(state).await,
             Action::IbcRelay(action) => {
+                let mut state = Arc::new(state);
+                let wrapper = StateDeltaWrapper(&mut state);
                 action
                     .clone()
                     .with_handler::<Ics20Transfer>()
-                    .execute(state)
+                    .execute(wrapper)
                     .await
             }
             Action::Ics20Withdrawal(action) => action.execute(state).await,

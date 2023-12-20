@@ -10,7 +10,6 @@ use ibc_types::{
         consensus_state::ConsensusState as TendermintConsensusState, TENDERMINT_CLIENT_TYPE,
     },
 };
-use penumbra_chain::component::StateReadExt as _;
 use tendermint::validator;
 use tendermint_light_client_verifier::{
     types::{TrustedBlockState, UntrustedBlockState},
@@ -193,8 +192,8 @@ async fn update_is_already_committed<S: StateRead>(
     }
 }
 
-async fn client_is_not_expired<S: StateRead>(
-    state: S,
+async fn client_is_not_expired<S: ChainStateReadExt>(
+    state: &S,
     client_id: &ClientId,
     client_state: &TendermintClientState,
 ) -> anyhow::Result<()> {

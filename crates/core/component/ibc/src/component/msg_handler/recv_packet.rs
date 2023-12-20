@@ -11,7 +11,6 @@ use ibc_types::core::{
     client::Height as IBCHeight,
     connection::State as ConnectionState,
 };
-//use penumbra_chain::component::StateReadExt;
 use cnidarium_component::ChainStateReadExt;
 
 use crate::component::{

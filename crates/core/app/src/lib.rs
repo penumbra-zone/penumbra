@@ -2,6 +2,7 @@
 mod action_handler;
 mod dao_ext;
 mod mock_client;
+mod state_delta_wrapper;
 mod temp_storage_ext;
 
 pub use action_handler::ActionHandler;

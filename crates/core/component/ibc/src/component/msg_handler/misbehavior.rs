@@ -7,11 +7,12 @@ use ibc_types::lightclients::tendermint::client_state::ClientState as Tendermint
 use ibc_types::lightclients::tendermint::header::Header as TendermintHeader;
 use ibc_types::lightclients::tendermint::misbehaviour::Misbehaviour as TendermintMisbehavior;
 use ibc_types::lightclients::tendermint::TENDERMINT_CLIENT_TYPE;
-use penumbra_chain::component::StateReadExt as _;
 use tendermint_light_client_verifier::{
     types::{TrustedBlockState, UntrustedBlockState},
     ProdVerifier, Verdict, Verifier,
 };
+
+use cnidarium_component::ChainStateReadExt;
 
 use crate::component::client::StateWriteExt as _;
 use crate::component::client_counter::ics02_validation;
@@ -38,7 +39,7 @@ impl MsgHandler for MsgSubmitMisbehaviour {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite + ChainStateReadExt, H>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         let untrusted_misbehavior =
@@ -114,8 +115,8 @@ fn client_is_not_frozen(client: &TendermintClientState) -> anyhow::Result<()> {
     }
 }
 
-async fn verify_misbehavior_header<S: StateRead>(
-    state: S,
+async fn verify_misbehavior_header<S: ChainStateReadExt>(
+    state: &S,
     client_id: ClientId,
     mb_header: &TendermintHeader,
     trusted_client_state: &TendermintClientState,

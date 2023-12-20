@@ -14,7 +14,6 @@ use ibc_types::lightclients::tendermint::{
     consensus_state::ConsensusState as TendermintConsensusState,
     header::Header as TendermintHeader,
 };
-//use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
 use crate::component::client_counter::{ClientCounter, VerifiedHeights};
@@ -22,14 +21,6 @@ use crate::prefix::MerklePrefixExt;
 use crate::IBC_COMMITMENT_PREFIX;
 
 use super::state_key;
-
-// #[async_trait]
-// pub trait ChainStateReadExt: StateRead {
-//     async fn get_chain_id(&self) -> Result<String>;
-//     async fn get_revision_number(&self) -> Result<u64>;
-//     async fn get_block_height(&self) -> Result<u64>;
-//     async fn get_block_timestamp(&self) -> Result<tendermint::Time>;
-// }
 
 // TODO(erwan): remove before opening PR
 // + replace concrete types with trait objects
@@ -380,13 +371,10 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 #[cfg(test)]
 mod tests {
-    use std::ops::DerefMut;
     use std::sync::Arc;
 
     use super::*;
     use cnidarium::{ArcStateDeltaExt, StateDelta};
-    use cnidarium_component::ActionHandler;
-    use cnidarium_component::ChainStateReadExt as _;
     use ibc_types::core::client::msgs::MsgUpdateClient;
     use ibc_types::{core::client::msgs::MsgCreateClient, DomainType};
     use penumbra_chain::component::StateReadExt as _;
@@ -404,20 +392,6 @@ mod tests {
     };
 
     struct StateDeltaWrapper<'a, S: StateRead + StateWrite>(&'a mut S);
-
-    // impl<'a, S: StateRead + StateWrite> std::ops::Deref for StateDeltaWrapper<'a, S> {
-    //     type Target = S;
-
-    //     fn deref(&self) -> &Self::Target {
-    //         &self.0
-    //     }
-    // }
-
-    // impl<'a> DerefMut for StateDeltaWrapper<'_, StateDelta<()>> {
-    //     fn deref_mut(&mut self) -> &mut Self::Target {
-    //         &mut self.0
-    //     }
-    // }
 
     impl<'a, S: StateRead + StateWrite> StateWrite for StateDeltaWrapper<'a, S> {
         fn put_raw(&mut self, key: String, value: Vec<u8>) {
@@ -528,12 +502,6 @@ mod tests {
             self.0.get_block_timestamp().await
         }
     }
-
-    // impl<'a, S> Drop for StateDeltaWrapper<'a, S> {
-    //     fn drop(&mut self) {
-    //         self.0.apply();
-    //     }
-    // }
 
     struct MockAppHandler {}
 

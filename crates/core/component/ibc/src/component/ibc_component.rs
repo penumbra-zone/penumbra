@@ -1,13 +1,10 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_trait::async_trait;
 use cnidarium::StateWrite;
-use cnidarium_component::Component;
 use ibc_types::{
     core::client::Height, lightclients::tendermint::ConsensusState as TendermintConsensusState,
 };
-//use penumbra_chain::component::StateReadExt as _;
 use tendermint::abci;
 use tracing::instrument;
 
@@ -18,10 +15,8 @@ use crate::component::{client::StateWriteExt as _, client_counter::ClientCounter
 pub struct IBCComponent {}
 
 impl IBCComponent {
-    //type AppState = ();
-
     #[instrument(name = "ibc", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&()>) {
+    pub async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&()>) {
         match app_state {
             Some(_) => state.put_client_counter(ClientCounter(0)),
             None => { /* perform upgrade specific check */ }
@@ -29,11 +24,10 @@ impl IBCComponent {
     }
 
     #[instrument(name = "ibc", skip(state, begin_block))]
-    async fn begin_block<S: StateWrite + ChainStateReadExt + 'static>(
-        state: &mut Arc<S>,
+    pub async fn begin_block<S: StateWrite + ChainStateReadExt>(
+        state: &mut S,
         begin_block: &abci::request::BeginBlock,
     ) {
-        let state = Arc::get_mut(state).expect("state should be unique");
         // In BeginBlock, we want to save a copy of our consensus state to our
         // own state tree, so that when we get a message from our
         // counterparties, we can verify that they are committing the correct
@@ -62,14 +56,14 @@ impl IBCComponent {
     }
 
     #[instrument(name = "ibc", skip(_state, _end_block))]
-    async fn end_block<S: StateWrite + 'static>(
+    pub async fn end_block<S: StateWrite + 'static>(
         mut _state: &mut Arc<S>,
         _end_block: &abci::request::EndBlock,
     ) {
     }
 
     #[instrument(name = "ibc", skip(_state))]
-    async fn end_epoch<S: StateWrite + 'static>(mut _state: &mut Arc<S>) -> Result<()> {
+    pub async fn end_epoch<S: StateWrite + 'static>(mut _state: &mut Arc<S>) -> Result<()> {
         Ok(())
     }
 }
