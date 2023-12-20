@@ -13,7 +13,8 @@ use ibc_types::{
         State as ConnectionState,
     },
 };
-use penumbra_chain::component::StateReadExt as _;
+//use penumbra_chain::component::StateReadExt as _;
+use cnidarium_component::ChainStateReadExt;
 
 use crate::component::{
     client::StateReadExt as _,
@@ -30,7 +31,7 @@ impl MsgHandler for MsgConnectionOpenTry {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite + ChainStateReadExt, H>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         // Validate a ConnectionOpenTry message, which is sent to us by a counterparty chain that
@@ -50,11 +51,11 @@ impl MsgHandler for MsgConnectionOpenTry {
         // POSTERIOR STATE: (INIT, TRYOPEN)
         // verify that the consensus height is correct
 
-        consensus_height_is_correct(&mut state, self).await?;
+        consensus_height_is_correct(&state, self).await?;
 
         // verify that the client state (which is a Penumbra client) is well-formed for a
         // penumbra client.
-        penumbra_client_state_is_well_formed(&mut state, self).await?;
+        penumbra_client_state_is_well_formed(&state, self).await?;
 
         // TODO(erwan): how to handle this with ibc-rs@0.23.0?
         // if this msg provides a previous_connection_id to resume from, then check that the
@@ -197,8 +198,8 @@ impl MsgHandler for MsgConnectionOpenTry {
         Ok(())
     }
 }
-async fn consensus_height_is_correct<S: StateRead>(
-    state: S,
+async fn consensus_height_is_correct<S: ChainStateReadExt>(
+    state: &S,
     msg: &MsgConnectionOpenTry,
 ) -> anyhow::Result<()> {
     let current_height = IBCHeight::new(
@@ -211,8 +212,8 @@ async fn consensus_height_is_correct<S: StateRead>(
 
     Ok(())
 }
-async fn penumbra_client_state_is_well_formed<S: StateRead>(
-    state: S,
+async fn penumbra_client_state_is_well_formed<S: ChainStateReadExt>(
+    state: &S,
     msg: &MsgConnectionOpenTry,
 ) -> anyhow::Result<()> {
     let height = state.get_block_height().await?;

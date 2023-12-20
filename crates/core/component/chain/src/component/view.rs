@@ -17,7 +17,6 @@ use crate::{
 ///
 /// Note: the `get_` methods in this trait assume that the state store has been
 /// initialized, so they will error on an empty state.
-//#[async_trait(?Send)]
 #[async_trait]
 pub trait StateReadExt: StateRead {
     /// Indicates if the chain parameters have been updated in this block.

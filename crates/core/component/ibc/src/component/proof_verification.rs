@@ -1,5 +1,6 @@
 use crate::component::client::StateReadExt;
 
+use cnidarium_component::ChainStateReadExt;
 use core::time::Duration;
 use ibc_proto::Protobuf;
 use ibc_types::path::{ClientConsensusStatePath, ClientUpgradePath};
@@ -28,7 +29,7 @@ use ibc_types::{
 use async_trait::async_trait;
 use cnidarium::StateRead;
 use num_traits::float::FloatCore;
-use penumbra_chain::component::StateReadExt as _;
+//use penumbra_chain::component::StateReadExt as _;
 use sha2::{Digest, Sha256};
 
 // NOTE: this is underspecified.
@@ -417,13 +418,13 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
     }
 }
 
-impl<T: StateRead> PacketProofVerifier for T {}
+impl<T: ChainStateReadExt + StateRead> PacketProofVerifier for T {}
 
 mod inner {
     use super::*;
 
     #[async_trait]
-    pub trait Inner: StateReadExt {
+    pub trait Inner: StateRead + ChainStateReadExt {
         async fn get_trusted_client_and_consensus_state(
             &self,
             client_id: &ClientId,
@@ -472,5 +473,5 @@ mod inner {
         }
     }
 
-    impl<T: StateReadExt> Inner for T {}
+    impl<T: StateReadExt + ChainStateReadExt> Inner for T {}
 }

@@ -14,6 +14,7 @@ use crate::component::{
     proof_verification::{commit_packet, PacketProofVerifier},
     MsgHandler,
 };
+use cnidarium_component::ChainStateReadExt;
 
 #[async_trait]
 impl MsgHandler for MsgAcknowledgement {
@@ -23,7 +24,10 @@ impl MsgHandler for MsgAcknowledgement {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+    async fn try_execute<
+        S: StateWrite + ChainStateReadExt,
+        H: AppHandlerCheck + AppHandlerExecute,
+    >(
         &self,
         mut state: S,
     ) -> Result<()> {

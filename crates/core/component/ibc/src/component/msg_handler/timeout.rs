@@ -1,6 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
+use cnidarium_component::ChainStateReadExt;
 use ibc_types::core::channel::{
     channel::{Order as ChannelOrder, State as ChannelState},
     events,
@@ -25,7 +26,10 @@ impl MsgHandler for MsgTimeout {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+    async fn try_execute<
+        S: StateWrite + ChainStateReadExt,
+        H: AppHandlerCheck + AppHandlerExecute,
+    >(
         &self,
         mut state: S,
     ) -> Result<()> {

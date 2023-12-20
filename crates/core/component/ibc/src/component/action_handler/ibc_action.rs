@@ -4,16 +4,17 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
+use cnidarium_component::ChainStateReadExt;
 
 use crate::{
     component::{app_handler::AppHandler, MsgHandler as _},
     IbcActionWithHandler, IbcRelay,
 };
 
-#[async_trait]
-impl<H: AppHandler> ActionHandler for IbcActionWithHandler<H> {
-    type CheckStatelessContext = ();
-    async fn check_stateless(&self, _context: ()) -> Result<()> {
+impl<H: AppHandler> IbcActionWithHandler<H> {
+    //type CheckStatelessContext = ();
+
+    pub async fn check_stateless(&self, _context: ()) -> Result<()> {
         let action = self.action();
         match action {
             IbcRelay::CreateClient(msg) => msg.check_stateless::<H>().await?,
@@ -41,12 +42,12 @@ impl<H: AppHandler> ActionHandler for IbcActionWithHandler<H> {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
+    pub async fn check_stateful<_S: StateRead + 'static>(&self, _state: Arc<_S>) -> Result<()> {
         // No-op: IBC actions merge check_stateful and execute.
         Ok(())
     }
 
-    async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
+    pub async fn execute<S: StateWrite + ChainStateReadExt>(&self, state: S) -> Result<()> {
         let action = self.action();
         match action {
             IbcRelay::CreateClient(msg) => msg

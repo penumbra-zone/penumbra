@@ -8,12 +8,13 @@ use ibc_types::core::client::Height;
 use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ClientTypePath};
 
 use cnidarium::{StateRead, StateWrite};
+use cnidarium_component::ChainStateReadExt;
 use ibc_types::lightclients::tendermint::{
     client_state::ClientState as TendermintClientState,
     consensus_state::ConsensusState as TendermintConsensusState,
     header::Header as TendermintHeader,
 };
-use penumbra_chain::component::StateReadExt as _;
+//use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
 use crate::component::client_counter::{ClientCounter, VerifiedHeights};
@@ -21,6 +22,14 @@ use crate::prefix::MerklePrefixExt;
 use crate::IBC_COMMITMENT_PREFIX;
 
 use super::state_key;
+
+// #[async_trait]
+// pub trait ChainStateReadExt: StateRead {
+//     async fn get_chain_id(&self) -> Result<String>;
+//     async fn get_revision_number(&self) -> Result<u64>;
+//     async fn get_block_height(&self) -> Result<u64>;
+//     async fn get_block_timestamp(&self) -> Result<tendermint::Time>;
+// }
 
 // TODO(erwan): remove before opening PR
 // + replace concrete types with trait objects
@@ -113,7 +122,53 @@ pub(crate) trait Ics2ClientExt: StateWrite {
 impl<T: StateWrite + ?Sized> Ics2ClientExt for T {}
 
 #[async_trait]
-pub trait StateWriteExt: StateWrite + StateReadExt {
+pub trait ConsensusStateWriteExt: StateWrite + ChainStateReadExt {
+    async fn put_verified_consensus_state(
+        &mut self,
+        height: Height,
+        client_id: ClientId,
+        consensus_state: TendermintConsensusState,
+    ) -> Result<()> {
+        self.put(
+            IBC_COMMITMENT_PREFIX
+                .apply_string(ClientConsensusStatePath::new(&client_id, &height).to_string()),
+            consensus_state,
+        );
+
+        let current_height = self.get_block_height().await?;
+        let current_time: ibc_types::timestamp::Timestamp =
+            self.get_block_timestamp().await?.into();
+
+        self.put_proto::<u64>(
+            state_key::client_processed_times(&client_id, &height),
+            current_time.nanoseconds(),
+        );
+
+        self.put(
+            state_key::client_processed_heights(&client_id, &height),
+            ibc_types::core::client::Height::new(0, current_height)?,
+        );
+
+        // update verified heights
+        let mut verified_heights =
+            self.get_verified_heights(&client_id)
+                .await?
+                .unwrap_or(VerifiedHeights {
+                    heights: Vec::new(),
+                });
+
+        verified_heights.heights.push(height);
+
+        self.put_verified_heights(&client_id, verified_heights);
+
+        Ok(())
+    }
+}
+
+impl<T: StateWrite + ChainStateReadExt + ?Sized> ConsensusStateWriteExt for T {}
+
+#[async_trait]
+pub trait StateWriteExt: StateWrite {
     fn put_client_counter(&mut self, counter: ClientCounter) {
         self.put("ibc_client_counter".into(), counter);
     }
@@ -154,47 +209,6 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
             format!("penumbra_consensus_states/{height}"),
             consensus_state,
         );
-    }
-
-    async fn put_verified_consensus_state(
-        &mut self,
-        height: Height,
-        client_id: ClientId,
-        consensus_state: TendermintConsensusState,
-    ) -> Result<()> {
-        self.put(
-            IBC_COMMITMENT_PREFIX
-                .apply_string(ClientConsensusStatePath::new(&client_id, &height).to_string()),
-            consensus_state,
-        );
-
-        let current_height = self.get_block_height().await?;
-        let current_time: ibc_types::timestamp::Timestamp =
-            self.get_block_timestamp().await?.into();
-
-        self.put_proto::<u64>(
-            state_key::client_processed_times(&client_id, &height),
-            current_time.nanoseconds(),
-        );
-
-        self.put(
-            state_key::client_processed_heights(&client_id, &height),
-            ibc_types::core::client::Height::new(0, current_height)?,
-        );
-
-        // update verified heights
-        let mut verified_heights =
-            self.get_verified_heights(&client_id)
-                .await?
-                .unwrap_or(VerifiedHeights {
-                    heights: Vec::new(),
-                });
-
-        verified_heights.heights.push(height);
-
-        self.put_verified_heights(&client_id, verified_heights);
-
-        Ok(())
     }
 }
 
@@ -366,13 +380,16 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 #[cfg(test)]
 mod tests {
+    use std::ops::DerefMut;
     use std::sync::Arc;
 
     use super::*;
     use cnidarium::{ArcStateDeltaExt, StateDelta};
     use cnidarium_component::ActionHandler;
+    use cnidarium_component::ChainStateReadExt as _;
     use ibc_types::core::client::msgs::MsgUpdateClient;
     use ibc_types::{core::client::msgs::MsgCreateClient, DomainType};
+    use penumbra_chain::component::StateReadExt as _;
     use penumbra_chain::component::StateWriteExt;
     use std::str::FromStr;
     use tendermint::Time;
@@ -385,6 +402,138 @@ mod tests {
         MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
         MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket, MsgTimeout,
     };
+
+    struct StateDeltaWrapper<'a, S: StateRead + StateWrite>(&'a mut S);
+
+    // impl<'a, S: StateRead + StateWrite> std::ops::Deref for StateDeltaWrapper<'a, S> {
+    //     type Target = S;
+
+    //     fn deref(&self) -> &Self::Target {
+    //         &self.0
+    //     }
+    // }
+
+    // impl<'a> DerefMut for StateDeltaWrapper<'_, StateDelta<()>> {
+    //     fn deref_mut(&mut self) -> &mut Self::Target {
+    //         &mut self.0
+    //     }
+    // }
+
+    impl<'a, S: StateRead + StateWrite> StateWrite for StateDeltaWrapper<'a, S> {
+        fn put_raw(&mut self, key: String, value: Vec<u8>) {
+            self.0.put_raw(key, value)
+        }
+
+        fn delete(&mut self, key: String) {
+            self.0.delete(key)
+        }
+
+        fn nonverifiable_delete(&mut self, key: Vec<u8>) {
+            self.0.nonverifiable_delete(key)
+        }
+
+        fn nonverifiable_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>) {
+            self.0.nonverifiable_put_raw(key, value)
+        }
+
+        fn object_put<T: Clone + std::any::Any + Send + Sync>(
+            &mut self,
+            key: &'static str,
+            value: T,
+        ) {
+            self.0.object_put(key, value)
+        }
+
+        fn object_delete(&mut self, key: &'static str) {
+            self.0.object_delete(key)
+        }
+
+        fn object_merge(
+            &mut self,
+            objects: std::collections::BTreeMap<
+                &'static str,
+                Option<Box<dyn std::any::Any + Send + Sync>>,
+            >,
+        ) {
+            self.0.object_merge(objects)
+        }
+
+        fn record(&mut self, event: tendermint::abci::Event) {
+            self.0.record(event)
+        }
+    }
+
+    impl<'a, S: StateRead + StateWrite> StateRead for StateDeltaWrapper<'a, S> {
+        type GetRawFut = S::GetRawFut;
+        type PrefixRawStream = S::PrefixRawStream;
+        type PrefixKeysStream = S::PrefixKeysStream;
+        type NonconsensusPrefixRawStream = S::NonconsensusPrefixRawStream;
+        type NonconsensusRangeRawStream = S::NonconsensusRangeRawStream;
+
+        fn get_raw(&self, key: &str) -> Self::GetRawFut {
+            self.0.get_raw(key)
+        }
+
+        fn prefix_raw(&self, prefix: &str) -> S::PrefixRawStream {
+            self.0.prefix_raw(prefix)
+        }
+
+        fn prefix_keys(&self, prefix: &str) -> S::PrefixKeysStream {
+            self.0.prefix_keys(prefix)
+        }
+
+        fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> S::NonconsensusPrefixRawStream {
+            self.0.nonverifiable_prefix_raw(prefix)
+        }
+
+        fn nonverifiable_range_raw(
+            &self,
+            prefix: Option<&[u8]>,
+            range: impl std::ops::RangeBounds<Vec<u8>>,
+        ) -> anyhow::Result<Self::NonconsensusRangeRawStream> {
+            self.0.nonverifiable_range_raw(prefix, range)
+        }
+
+        fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
+            self.0.nonverifiable_get_raw(key)
+        }
+
+        fn object_get<T: std::any::Any + Send + Sync + Clone>(
+            &self,
+            key: &'static str,
+        ) -> Option<T> {
+            self.0.object_get(key)
+        }
+
+        fn object_type(&self, key: &'static str) -> Option<std::any::TypeId> {
+            self.0.object_type(key)
+        }
+    }
+
+    #[async_trait]
+    impl<'a, S: StateRead + StateWrite> ChainStateReadExt for &'a mut StateDeltaWrapper<'a, S> {
+        async fn get_chain_id(&self) -> Result<String> {
+            self.0.get_chain_id().await
+        }
+
+        async fn get_revision_number(&self) -> Result<u64> {
+            self.0.get_revision_number().await
+        }
+
+        async fn get_block_height(&self) -> Result<u64> {
+            self.0.get_block_height().await
+        }
+
+        async fn get_block_timestamp(&self) -> Result<tendermint::Time> {
+            self.0.get_block_timestamp().await
+        }
+    }
+
+    // impl<'a, S> Drop for StateDeltaWrapper<'a, S> {
+    //     fn drop(&mut self) {
+    //         self.0.apply();
+    //     }
+    // }
 
     struct MockAppHandler {}
 
@@ -539,7 +688,8 @@ mod tests {
         create_client_action.check_stateless(()).await?;
         create_client_action.check_stateful(state.clone()).await?;
         let mut state_tx = state.try_begin_transaction().unwrap();
-        create_client_action.execute(&mut state_tx).await?;
+        let mut wrapper = StateDeltaWrapper(&mut state_tx);
+        create_client_action.execute(&mut wrapper).await?;
         state_tx.apply();
 
         // Check that state reflects +1 client apps registered.
@@ -549,7 +699,9 @@ mod tests {
         update_client_action.check_stateless(()).await?;
         update_client_action.check_stateful(state.clone()).await?;
         let mut state_tx = state.try_begin_transaction().unwrap();
-        update_client_action.execute(&mut state_tx).await?;
+        update_client_action
+            .execute(&mut StateDeltaWrapper(&mut state_tx))
+            .await?;
         state_tx.apply();
 
         // We've had one client update, yes. What about second client update?
@@ -567,7 +719,9 @@ mod tests {
             .check_stateful(state.clone())
             .await?;
         let mut state_tx = state.try_begin_transaction().unwrap();
-        second_update_client_action.execute(&mut state_tx).await?;
+        second_update_client_action
+            .execute(&mut StateDeltaWrapper(&mut state_tx))
+            .await?;
         state_tx.apply();
 
         Ok(())

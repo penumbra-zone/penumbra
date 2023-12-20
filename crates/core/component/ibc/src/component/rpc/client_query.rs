@@ -12,11 +12,11 @@ use ibc_proto::ibc::core::client::v1::{
     QueryUpgradedConsensusStateResponse,
 };
 
+use cnidarium_component::ChainStateReadExt;
 use ibc_types::core::client::ClientId;
 use ibc_types::lightclients::tendermint::client_state::TENDERMINT_CLIENT_STATE_TYPE_URL;
 use ibc_types::path::ClientStatePath;
 use ibc_types::DomainType;
-use penumbra_chain::component::StateReadExt;
 
 use std::str::FromStr;
 use tonic::{Response, Status};
@@ -26,6 +26,123 @@ use crate::prefix::MerklePrefixExt;
 use crate::IBC_COMMITMENT_PREFIX;
 
 use super::IbcQuery;
+
+use cnidarium::StateRead;
+
+struct SnapshotWrapper<S: StateRead>(S);
+
+// impl<S: StateRead + StateWrite> StateWrite for StateDeltaWrapper<S> {
+//     fn put_raw(&mut self, key: String, value: Vec<u8>) {
+//         self.0.put_raw(key, value)
+//     }
+
+//     fn delete(&mut self, key: String) {
+//         self.0.delete(key)
+//     }
+
+//     fn nonverifiable_delete(&mut self, key: Vec<u8>) {
+//         self.0.nonverifiable_delete(key)
+//     }
+
+//     fn nonverifiable_put_raw(&mut self, key: Vec<u8>, value: Vec<u8>) {
+//         self.0.nonverifiable_put_raw(key, value)
+//     }
+
+//     fn object_put<T: Clone + std::any::Any + Send + Sync>(
+//         &mut self,
+//         key: &'static str,
+//         value: T,
+//     ) {
+//         self.0.object_put(key, value)
+//     }
+
+//     fn object_delete(&mut self, key: &'static str) {
+//         self.0.object_delete(key)
+//     }
+
+//     fn object_merge(
+//         &mut self,
+//         objects: std::collections::BTreeMap<
+//             &'static str,
+//             Option<Box<dyn std::any::Any + Send + Sync>>,
+//         >,
+//     ) {
+//         self.0.object_merge(objects)
+//     }
+
+//     fn record(&mut self, event: tendermint::abci::Event) {
+//         self.0.record(event)
+//     }
+// }
+
+impl<S: StateRead> StateRead for SnapshotWrapper<S> {
+    type GetRawFut = S::GetRawFut;
+    type PrefixRawStream = S::PrefixRawStream;
+    type PrefixKeysStream = S::PrefixKeysStream;
+    type NonconsensusPrefixRawStream = S::NonconsensusPrefixRawStream;
+    type NonconsensusRangeRawStream = S::NonconsensusRangeRawStream;
+
+    fn get_raw(&self, key: &str) -> Self::GetRawFut {
+        self.0.get_raw(key)
+    }
+
+    fn prefix_raw(&self, prefix: &str) -> S::PrefixRawStream {
+        self.0.prefix_raw(prefix)
+    }
+
+    fn prefix_keys(&self, prefix: &str) -> S::PrefixKeysStream {
+        self.0.prefix_keys(prefix)
+    }
+
+    fn nonverifiable_prefix_raw(&self, prefix: &[u8]) -> S::NonconsensusPrefixRawStream {
+        self.0.nonverifiable_prefix_raw(prefix)
+    }
+
+    fn nonverifiable_range_raw(
+        &self,
+        prefix: Option<&[u8]>,
+        range: impl std::ops::RangeBounds<Vec<u8>>,
+    ) -> anyhow::Result<Self::NonconsensusRangeRawStream> {
+        self.0.nonverifiable_range_raw(prefix, range)
+    }
+
+    fn nonverifiable_get_raw(&self, key: &[u8]) -> Self::GetRawFut {
+        self.0.nonverifiable_get_raw(key)
+    }
+
+    fn object_get<T: std::any::Any + Send + Sync + Clone>(&self, key: &'static str) -> Option<T> {
+        self.0.object_get(key)
+    }
+
+    fn object_type(&self, key: &'static str) -> Option<std::any::TypeId> {
+        self.0.object_type(key)
+    }
+}
+
+use anyhow::Result;
+
+#[async_trait]
+impl<S: cnidarium::StateRead + 'static> ChainStateReadExt for SnapshotWrapper<S> {
+    async fn get_chain_id(&self) -> Result<String> {
+        use penumbra_chain::component::StateReadExt as _;
+        self.0.get_chain_id().await
+    }
+
+    async fn get_revision_number(&self) -> Result<u64> {
+        use penumbra_chain::component::StateReadExt as _;
+        self.0.get_revision_number().await
+    }
+
+    async fn get_block_height(&self) -> Result<u64> {
+        use penumbra_chain::component::StateReadExt as _;
+        self.0.get_block_height().await
+    }
+
+    async fn get_block_timestamp(&self) -> Result<tendermint::Time> {
+        use penumbra_chain::component::StateReadExt as _;
+        self.0.get_block_timestamp().await
+    }
+}
 
 #[async_trait]
 impl ClientQuery for IbcQuery {
@@ -37,7 +154,9 @@ impl ClientQuery for IbcQuery {
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
         let height = Height {
-            revision_number: snapshot
+            // TODO: need to pass in the `SnapshotWrapper` type somehow,
+            // need to make a generic arg that will wrap the snapshot?
+            revision_number: SnapshotWrapper(snapshot.clone())
                 .get_revision_number()
                 .await
                 .map_err(|e| tonic::Status::aborted(e.to_string()))?,

@@ -7,17 +7,18 @@ use cnidarium_component::Component;
 use ibc_types::{
     core::client::Height, lightclients::tendermint::ConsensusState as TendermintConsensusState,
 };
-use penumbra_chain::component::StateReadExt as _;
+//use penumbra_chain::component::StateReadExt as _;
 use tendermint::abci;
 use tracing::instrument;
+
+use cnidarium_component::ChainStateReadExt;
 
 use crate::component::{client::StateWriteExt as _, client_counter::ClientCounter};
 
 pub struct IBCComponent {}
 
-#[async_trait]
-impl Component for IBCComponent {
-    type AppState = ();
+impl IBCComponent {
+    //type AppState = ();
 
     #[instrument(name = "ibc", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&()>) {
@@ -28,7 +29,7 @@ impl Component for IBCComponent {
     }
 
     #[instrument(name = "ibc", skip(state, begin_block))]
-    async fn begin_block<S: StateWrite + 'static>(
+    async fn begin_block<S: StateWrite + ChainStateReadExt + 'static>(
         state: &mut Arc<S>,
         begin_block: &abci::request::BeginBlock,
     ) {

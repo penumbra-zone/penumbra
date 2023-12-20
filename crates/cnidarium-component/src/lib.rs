@@ -39,7 +39,9 @@
 #![deny(clippy::unwrap_used)]
 
 mod action_handler;
+mod chain_state_read_ext;
 mod component;
 
 pub use action_handler::ActionHandler;
+pub use chain_state_read_ext::ChainStateReadExt;
 pub use component::Component;

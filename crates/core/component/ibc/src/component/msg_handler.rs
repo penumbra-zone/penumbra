@@ -15,6 +15,7 @@ mod recv_packet;
 mod timeout;
 mod update_client;
 mod upgrade_client;
+use cnidarium_component::ChainStateReadExt;
 
 use crate::component::app_handler::{AppHandlerCheck, AppHandlerExecute};
 use anyhow::Result;
@@ -26,7 +27,10 @@ use cnidarium::StateWrite;
 #[async_trait]
 pub(crate) trait MsgHandler {
     async fn check_stateless<H: AppHandlerCheck>(&self) -> Result<()>;
-    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+    async fn try_execute<
+        S: StateWrite + ChainStateReadExt,
+        H: AppHandlerCheck + AppHandlerExecute,
+    >(
         &self,
         state: S,
     ) -> Result<()>;

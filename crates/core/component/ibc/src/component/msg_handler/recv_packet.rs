@@ -11,7 +11,8 @@ use ibc_types::core::{
     client::Height as IBCHeight,
     connection::State as ConnectionState,
 };
-use penumbra_chain::component::StateReadExt;
+//use penumbra_chain::component::StateReadExt;
+use cnidarium_component::ChainStateReadExt;
 
 use crate::component::{
     app_handler::{AppHandlerCheck, AppHandlerExecute},
@@ -29,7 +30,10 @@ impl MsgHandler for MsgRecvPacket {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+    async fn try_execute<
+        S: StateWrite + ChainStateReadExt,
+        H: AppHandlerCheck + AppHandlerExecute,
+    >(
         &self,
         mut state: S,
     ) -> Result<()> {

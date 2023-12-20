@@ -7,7 +7,8 @@ use ibc_types::core::{
 };
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
-use penumbra_chain::component::StateReadExt as _;
+//use penumbra_chain::component::StateReadExt as _;
+use cnidarium_component::ChainStateReadExt;
 
 use crate::{
     component::{
@@ -25,7 +26,7 @@ impl MsgHandler for MsgConnectionOpenAck {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite + ChainStateReadExt, H>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         // Validate a ConnectionOpenAck message, which is sent to us by a counterparty chain that
         // has committed a Connection to us expected to be in the TRYOPEN state. Before executing a
@@ -190,8 +191,8 @@ impl MsgHandler for MsgConnectionOpenAck {
         Ok(())
     }
 }
-async fn consensus_height_is_correct<S: StateRead>(
-    state: S,
+async fn consensus_height_is_correct<S: ChainStateReadExt>(
+    state: &S,
     msg: &MsgConnectionOpenAck,
 ) -> anyhow::Result<()> {
     let current_height = Height::new(
@@ -205,8 +206,8 @@ async fn consensus_height_is_correct<S: StateRead>(
     Ok(())
 }
 
-async fn penumbra_client_state_is_well_formed<S: StateRead>(
-    state: S,
+async fn penumbra_client_state_is_well_formed<S: ChainStateReadExt>(
+    state: &S,
     msg: &MsgConnectionOpenAck,
 ) -> anyhow::Result<()> {
     let height = state.get_block_height().await?;
