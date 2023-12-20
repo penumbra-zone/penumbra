@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
+use cnidarium_component::ChainStateReadExt;
 use ibc_types::core::{
     channel::{
         channel::{Order as ChannelOrder, State as ChannelState},
@@ -11,7 +12,6 @@ use ibc_types::core::{
     client::Height as IBCHeight,
     connection::State as ConnectionState,
 };
-use cnidarium_component::ChainStateReadExt;
 
 use crate::component::{
     app_handler::{AppHandlerCheck, AppHandlerExecute},
