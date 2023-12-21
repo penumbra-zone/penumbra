@@ -125,18 +125,33 @@ impl ClientQuery for IbcQuery {
         let snapshot = self.0.latest_snapshot();
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
-        let height = Height {
-            revision_number: snapshot
-                .get_revision_number()
-                .await
-                .map_err(|e| tonic::Status::aborted(e.to_string()))?,
-            revision_height: snapshot.version(),
+
+        let verified_heights = snapshot
+            .get_verified_heights(&client_id)
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get verified heights: {e}")))?;
+
+        let Some(mut verified_heights) = verified_heights else {
+            return Err(tonic::Status::not_found(format!(
+                "couldn't find verified heights for client: {client_id}"
+            )));
         };
+
+        verified_heights.heights.sort();
+        if verified_heights.heights.is_empty() {
+            return Err(tonic::Status::not_found(format!(
+                "verified heights for client were empty: {client_id}"
+            )));
+        }
+
+        let most_recent_height = verified_heights.heights.last().expect("must be non-empty");
 
         let (cs_opt, proof) = snapshot
             .get_with_proof(
                 IBC_COMMITMENT_PREFIX
-                    .apply_string(ClientConsensusStatePath::new(&client_id, &height).to_string())
+                    .apply_string(
+                        ClientConsensusStatePath::new(&client_id, &most_recent_height).to_string(),
+                    )
                     .as_bytes()
                     .to_vec(),
             )
@@ -161,7 +176,7 @@ impl ClientQuery for IbcQuery {
         let res = QueryConsensusStateResponse {
             consensus_state: Some(consensus_state),
             proof: proof.encode_to_vec(),
-            proof_height: Some(height.into()),
+            proof_height: Some((*most_recent_height).into()),
         };
 
         Ok(tonic::Response::new(res))
