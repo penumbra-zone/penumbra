@@ -1,6 +1,5 @@
-use anyhow::Result;
 use async_trait::async_trait;
-use cnidarium::StateRead;
+use cnidarium_component::ChainStateReadExt;
 use ibc_proto::ibc::core::client::v1::query_server::Query as ClientQuery;
 use ibc_proto::ibc::core::client::v1::{
     Height, IdentifiedClientState, QueryClientParamsRequest, QueryClientParamsResponse,
@@ -20,20 +19,14 @@ use ibc_types::DomainType;
 use std::str::FromStr;
 use tonic::{Response, Status};
 
+use crate::component::rpc::Snapshot;
+use crate::component::rpc::{IbcQuery, Storage};
 use crate::component::ClientStateReadExt;
 use crate::prefix::MerklePrefixExt;
 use crate::IBC_COMMITMENT_PREFIX;
 
-use super::IbcQuery;
-
-// implemented automatically by [`SnapshotWrapper`]
-use penumbra_chain::component::StateReadExt as _;
-
-#[derive(wrapper_derive::StateRead)]
-struct SnapshotWrapper<S: StateRead>(S);
-
 #[async_trait]
-impl ClientQuery for IbcQuery {
+impl<C: ChainStateReadExt + Snapshot + 'static, S: Storage<C>> ClientQuery for IbcQuery<C, S> {
     async fn client_state(
         &self,
         request: tonic::Request<QueryClientStateRequest>,
@@ -44,7 +37,7 @@ impl ClientQuery for IbcQuery {
         let height = Height {
             // TODO: need to pass in the `SnapshotWrapper` type somehow,
             // need to make a generic arg that will wrap the snapshot?
-            revision_number: SnapshotWrapper(snapshot.clone())
+            revision_number: snapshot
                 .get_revision_number()
                 .await
                 .map_err(|e| tonic::Status::aborted(e.to_string()))?,

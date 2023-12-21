@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use cnidarium_component::ChainStateReadExt;
 use ibc_proto::ibc::core::channel::v1::query_server::Query as ConsensusQuery;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelClientStateRequest, QueryChannelClientStateResponse,
@@ -13,21 +14,19 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryPacketReceiptRequest, QueryPacketReceiptResponse, QueryUnreceivedAcksRequest,
     QueryUnreceivedAcksResponse, QueryUnreceivedPacketsRequest, QueryUnreceivedPacketsResponse,
 };
-
 use ibc_proto::ibc::core::client::v1::Height;
-
 use ibc_types::core::channel::{ChannelId, IdentifiedChannelEnd, PortId};
-
 use ibc_types::core::connection::ConnectionId;
 
 use std::str::FromStr;
 
+use crate::component::rpc::{Snapshot, Storage};
 use crate::component::ChannelStateReadExt;
 
 use super::IbcQuery;
 
 #[async_trait]
-impl ConsensusQuery for IbcQuery {
+impl<C: ChainStateReadExt + Snapshot + 'static, S: Storage<C>> ConsensusQuery for IbcQuery<C, S> {
     /// Channel queries an IBC Channel.
     async fn channel(
         &self,

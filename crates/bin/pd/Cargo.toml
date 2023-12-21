@@ -23,6 +23,7 @@ download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
 # Workspace dependencies
 penumbra-proto = { path = "../../proto" }
 cnidarium = { path = "../../cnidarium", features = ["migration", "rpc"] }
+cnidarium-component = { path = "../../cnidarium-component" }
 penumbra-asset = { path = "../../core/asset" }
 penumbra-keys = { path = "../../core/keys" }
 penumbra-shielded-pool = { path = "../../core/component/shielded-pool", features = [
@@ -44,6 +45,7 @@ penumbra-app = { path = "../../core/app" }
 penumbra-custody = { path = "../../custody" }
 penumbra-tower-trace = { path = "../../util/tower-trace" }
 penumbra-tendermint-proxy = { path = "../../util/tendermint-proxy" }
+wrapper-derive = { path = "../../util/wrapper-derive" }
 
 # Penumbra dependencies
 decaf377 = { version = "0.5", features = ["parallel"] }

@@ -4776,6 +4776,7 @@ dependencies = [
  "chrono",
  "clap 3.2.25",
  "cnidarium",
+ "cnidarium-component",
  "console-subscriber",
  "csv",
  "decaf377 0.5.0",
@@ -4849,6 +4850,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
+ "wrapper-derive",
 ]
 
 [[package]]

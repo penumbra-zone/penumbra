@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 
+use cnidarium_component::ChainStateReadExt;
 use ibc_proto::ibc::core::client::v1::Height;
 use ibc_proto::ibc::core::connection::v1::query_server::Query as ConnectionQuery;
 use ibc_proto::ibc::core::connection::v1::{
@@ -16,6 +17,7 @@ use ibc_types::DomainType;
 use prost::Message;
 use std::str::FromStr;
 
+use crate::component::rpc::{Snapshot, Storage};
 use crate::component::ConnectionStateReadExt;
 use crate::prefix::MerklePrefixExt;
 use crate::IBC_COMMITMENT_PREFIX;
@@ -23,7 +25,7 @@ use crate::IBC_COMMITMENT_PREFIX;
 use super::IbcQuery;
 
 #[async_trait]
-impl ConnectionQuery for IbcQuery {
+impl<C: ChainStateReadExt + Snapshot + 'static, S: Storage<C>> ConnectionQuery for IbcQuery<C, S> {
     /// Connection queries an IBC connection end.
     async fn connection(
         &self,

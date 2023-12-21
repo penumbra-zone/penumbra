@@ -352,7 +352,8 @@ async fn main() -> anyhow::Result<()> {
                 )
                 .expect("failed to spawn abci server");
 
-            let ibc = penumbra_ibc::component::rpc::IbcQuery::new(storage.clone());
+            let ibc =
+                penumbra_ibc::component::rpc::IbcQuery::new(pd::StorageWrapper(storage.clone()));
 
             // TODO: Once we migrate to Tonic 0.10.0, we'll be able to use the
             // `Routes` structure to have each component define a method that
