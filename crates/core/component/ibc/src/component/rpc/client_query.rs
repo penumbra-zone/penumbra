@@ -19,7 +19,6 @@ use ibc_types::lightclients::tendermint::consensus_state::TENDERMINT_CONSENSUS_S
 use ibc_types::path::ClientConsensusStatePath;
 use ibc_types::path::ClientStatePath;
 use ibc_types::DomainType;
-use penumbra_chain::component::StateReadExt;
 
 use std::str::FromStr;
 use tonic::{Response, Status};
@@ -39,13 +38,7 @@ impl ClientQuery for IbcQuery {
         let snapshot = self.0.latest_snapshot();
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
-        let height = Height {
-            revision_number: snapshot
-                .get_revision_number()
-                .await
-                .map_err(|e| tonic::Status::aborted(e.to_string()))?,
-            revision_height: snapshot.version(),
-        };
+        let most_recent_height = get_latest_verified_height(&snapshot, &client_id).await?;
 
         // Query for client_state and associated proof.
         let (cs_opt, proof) = snapshot
@@ -76,7 +69,7 @@ impl ClientQuery for IbcQuery {
         let res = QueryClientStateResponse {
             client_state: Some(client_state),
             proof: proof.encode_to_vec(),
-            proof_height: Some(height.into()),
+            proof_height: Some(most_recent_height.into()),
         };
 
         Ok(tonic::Response::new(res))
@@ -125,26 +118,7 @@ impl ClientQuery for IbcQuery {
         let snapshot = self.0.latest_snapshot();
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
-
-        let verified_heights = snapshot
-            .get_verified_heights(&client_id)
-            .await
-            .map_err(|e| tonic::Status::aborted(format!("couldn't get verified heights: {e}")))?;
-
-        let Some(mut verified_heights) = verified_heights else {
-            return Err(tonic::Status::not_found(format!(
-                "couldn't find verified heights for client: {client_id}"
-            )));
-        };
-
-        verified_heights.heights.sort();
-        if verified_heights.heights.is_empty() {
-            return Err(tonic::Status::not_found(format!(
-                "verified heights for client were empty: {client_id}"
-            )));
-        }
-
-        let most_recent_height = verified_heights.heights.last().expect("must be non-empty");
+        let most_recent_height = get_latest_verified_height(&snapshot, &client_id).await?;
 
         let (cs_opt, proof) = snapshot
             .get_with_proof(
@@ -176,7 +150,7 @@ impl ClientQuery for IbcQuery {
         let res = QueryConsensusStateResponse {
             consensus_state: Some(consensus_state),
             proof: proof.encode_to_vec(),
-            proof_height: Some((*most_recent_height).into()),
+            proof_height: Some(most_recent_height.into()),
         };
 
         Ok(tonic::Response::new(res))
@@ -286,4 +260,29 @@ impl ClientQuery for IbcQuery {
     {
         Err(tonic::Status::unimplemented("not implemented"))
     }
+}
+
+async fn get_latest_verified_height(
+    snapshot: &cnidarium::Snapshot,
+    client_id: &ClientId,
+) -> Result<Height, tonic::Status> {
+    let verified_heights = snapshot
+        .get_verified_heights(&client_id)
+        .await
+        .map_err(|e| tonic::Status::aborted(format!("couldn't get verified heights: {e}")))?;
+
+    let Some(mut verified_heights) = verified_heights else {
+        return Err(tonic::Status::not_found(
+            "couldn't find verified heights for client: {client_id}",
+        ));
+    };
+
+    verified_heights.heights.sort();
+    if verified_heights.heights.is_empty() {
+        return Err(tonic::Status::not_found(
+            "verified heights for client were empty: {client_id}",
+        ));
+    }
+
+    Ok(verified_heights.heights.pop().expect("must be non-empty"))
 }
