@@ -125,13 +125,7 @@ impl ClientQuery for IbcQuery {
         let snapshot = self.0.latest_snapshot();
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
-        let height = Height {
-            revision_number: snapshot
-                .get_revision_number()
-                .await
-                .map_err(|e| tonic::Status::aborted(e.to_string()))?,
-            revision_height: snapshot.version(),
-        };
+        let height = get_latest_verified_height(&snapshot, &client_id).await?;
 
         let (cs_opt, proof) = snapshot
             .get_with_proof(
@@ -271,4 +265,29 @@ impl ClientQuery for IbcQuery {
     {
         Err(tonic::Status::unimplemented("not implemented"))
     }
+}
+
+async fn get_latest_verified_height(
+    snapshot: &cnidarium::Snapshot,
+    client_id: &ClientId,
+) -> Result<Height, tonic::Status> {
+    let verified_heights = snapshot
+        .get_verified_heights(&client_id)
+        .await
+        .map_err(|e| tonic::Status::aborted(format!("couldn't get verified heights: {e}")))?;
+
+    let Some(mut verified_heights) = verified_heights else {
+        return Err(tonic::Status::not_found(
+            "couldn't find verified heights for client: {client_id}",
+        ));
+    };
+
+    verified_heights.heights.sort();
+    if verified_heights.heights.is_empty() {
+        return Err(tonic::Status::not_found(
+            "verified heights for client were empty: {client_id}",
+        ));
+    }
+
+    Ok(verified_heights.heights.pop().expect("must be non-empty"))
 }
