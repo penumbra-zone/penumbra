@@ -94,7 +94,7 @@ impl MsgHandler for MsgConnectionOpenTry {
 
         // get the stored consensus state for the counterparty
         let trusted_consensus_state = state
-            .get_verified_consensus_state(self.proofs_height_on_a, self.client_id_on_b.clone())
+            .get_verified_consensus_state(&self.proofs_height_on_a, &self.client_id_on_b)
             .await?;
 
         // PROOF VERIFICATION
