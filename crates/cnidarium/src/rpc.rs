@@ -23,14 +23,17 @@ use std::pin::Pin;
 
 use crate::read::StateRead;
 use crate::rpc::proto::v1alpha1::{
-    key_value_response::Value, query_service_server::QueryService, KeyValueRequest,
-    KeyValueResponse, PrefixValueRequest, PrefixValueResponse,
+    key_value_response::Value, query_service_server::QueryService, watch_response as wr,
+    KeyValueRequest, KeyValueResponse, PrefixValueRequest, PrefixValueResponse, WatchRequest,
+    WatchResponse,
 };
 use futures::{StreamExt, TryStreamExt};
+use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
 use tracing::instrument;
 
 use crate::Storage;
+
 #[tonic::async_trait]
 impl QueryService for Server {
     #[instrument(skip(self, request))]
@@ -104,5 +107,85 @@ impl QueryService for Server {
                 })
                 .boxed(),
         ))
+    }
+
+    type WatchStream = ReceiverStream<Result<WatchResponse, tonic::Status>>;
+
+    #[instrument(skip(self, request))]
+    async fn watch(
+        &self,
+        request: tonic::Request<WatchRequest>,
+    ) -> Result<tonic::Response<Self::WatchStream>, Status> {
+        let request = request.into_inner();
+        tracing::debug!(?request);
+
+        const MAX_REGEX_LEN: usize = 1024;
+
+        let key_regex = regex::RegexBuilder::new(&request.key_regex)
+            .size_limit(MAX_REGEX_LEN)
+            .build()
+            .map_err(|e| Status::invalid_argument(format!("invalid key_regex: {}", e)))?;
+
+        // Use the `bytes` regex to allow matching byte strings.
+        let nv_key_regex = regex::bytes::RegexBuilder::new(&request.key_regex)
+            .size_limit(MAX_REGEX_LEN)
+            .unicode(false)
+            .build()
+            .map_err(|e| Status::invalid_argument(format!("invalid nv_key_regex: {}", e)))?;
+
+        let (tx, rx) = tokio::sync::mpsc::channel::<Result<WatchResponse, tonic::Status>>(10);
+
+        tokio::spawn(watch_changes(
+            self.storage.clone(),
+            key_regex,
+            nv_key_regex,
+            tx,
+        ));
+
+        Ok(tonic::Response::new(ReceiverStream::new(rx)))
+    }
+}
+
+async fn watch_changes(
+    storage: Storage,
+    key_regex: regex::Regex,
+    nv_key_regex: regex::bytes::Regex,
+    tx: tokio::sync::mpsc::Sender<Result<WatchResponse, tonic::Status>>,
+) -> anyhow::Result<()> {
+    let mut changes_rx = storage.subscribe_changes();
+    loop {
+        // Wait for a new set of changes, reporting an error if we don't get one.
+        if let Err(e) = changes_rx.changed().await {
+            tx.send(Err(tonic::Status::internal(e.to_string()))).await?;
+        }
+        let (version, changes) = changes_rx.borrow_and_update().clone();
+
+        for (key, value) in changes.unwritten_changes().iter() {
+            if key_regex.is_match(key) {
+                tx.send(Ok(WatchResponse {
+                    version,
+                    entry: Some(wr::Entry::Kv(wr::KeyValue {
+                        key: key.clone(),
+                        value: value.as_ref().cloned().unwrap_or_default(),
+                        deleted: value.is_none(),
+                    })),
+                }))
+                .await?;
+            }
+        }
+
+        for (key, value) in changes.nonverifiable_changes().iter() {
+            if nv_key_regex.is_match(key) {
+                tx.send(Ok(WatchResponse {
+                    version,
+                    entry: Some(wr::Entry::NvKv(wr::NvKeyValue {
+                        key: key.clone(),
+                        value: value.as_ref().cloned().unwrap_or_default(),
+                        deleted: value.is_none(),
+                    })),
+                }))
+                .await?;
+            }
+        }
     }
 }

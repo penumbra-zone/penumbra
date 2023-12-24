@@ -16,7 +16,17 @@ default = ["std", "parallel", "download-proving-keys"]
 download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
 sct-divergence-check = ["penumbra-view/sct-divergence-check"]
 std = ["ark-ff/std", "ibc-types/std"]
-parallel = ["penumbra-proof-params/parallel", "decaf377/parallel", "penumbra-shielded-pool/parallel", "penumbra-dex/parallel", "penumbra-governance/parallel", "penumbra-stake/parallel", "penumbra-transaction/parallel", "penumbra-wallet/parallel", "penumbra-proof-setup/parallel"]
+parallel = [
+    "penumbra-proof-params/parallel",
+    "decaf377/parallel",
+    "penumbra-shielded-pool/parallel",
+    "penumbra-dex/parallel",
+    "penumbra-governance/parallel",
+    "penumbra-stake/parallel",
+    "penumbra-transaction/parallel",
+    "penumbra-wallet/parallel",
+    "penumbra-proof-setup/parallel",
+]
 
 [dependencies]
 # Workspace dependencies
@@ -60,6 +70,7 @@ async-stream = "0.2"
 bincode = "1.3.3"
 blake2b_simd = "0.5"
 base64 = "0.21"
+simple-base64 = "0.23"
 bytes = "1"
 comfy-table = "5"
 directories = "4.0.1"
